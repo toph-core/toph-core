@@ -1,0 +1,128 @@
+name: mary_ai_pos
+description: "A new Flutter project."
+# The following line prevents the package from being accidentally published to
+# pub.dev using `flutter pub publish`. This is preferred for private packages.
+publish_to: 'none' # Remove this line if you wish to publish to pub.dev
+
+# The following defines the version and build number for your application.
+# A version number is three numbers separated by dots, like 1.2.43
+# followed by an optional build number separated by a +.
+# Both the version and the builder number may be overridden in flutter
+# build by specifying --build-name and --build-number, respectively.
+# In Android, build-name is used as versionName while build-number used as versionCode.
+# Read more about Android versioning at https://developer.android.com/studio/publish/versioning
+# In iOS, build-name is used as CFBundleShortVersionString while build-number is used as CFBundleVersion.
+# Read more about iOS versioning at
+# https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
+# In Windows, build-name is used as the major, minor, and patch parts
+# of the product and file versions while build-number is used as the build suffix.
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.10.4
+
+# Dependencies specify other packages that your package needs in order to work.
+# To automatically upgrade your package dependencies to the latest versions
+# consider running `flutter pub upgrade --major-versions`. Alternatively,
+# dependencies can be manually updated by changing the version numbers below to
+# the latest version available on pub.dev. To see which dependencies have newer
+# versions available, run `flutter pub outdated`.
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # The following adds the Cupertino Icons font to your application.
+  # Use with the CupertinoIcons class for iOS style icons.
+  intl: ^0.20.2
+  intl_utils: ^2.8.5
+  flutter_localizations:
+    sdk: flutter
+  cupertino_icons: ^1.0.6
+  # to use svg icons
+  flutter_svg: ^2.0.7
+  # cached network image
+  cached_network_image: ^3.3.0
+  # anotation
+  freezed: ^2.4.3
+  json_serializable: ^6.5.4
+  json_annotation: ^4.8.1
+  dartz: ^0.10.1
+  freezed_annotation: ^2.4.1
+  # state mangment
+  flutter_bloc: ^8.1.1
+  equatable: ^2.0.5
+  # injector
+  get_it: ^7.2.0
+  # for api
+  dio: ^5.5.0+1
+  # Flutter plugin for local db for small data
+  flutter_secure_storage: ^10.0.0
+  # for animation button
+  scale_button: ^2.1.2
+  # for animation
+  animate_do: ^3.0.2
+  # This Flutter plugin provides an API for querying information about an application package.
+  package_info_plus: ^8.0.1
+  # A Flutter plugin for launching a URL.
+  url_launcher: ^6.3.0
+  # This plugin allows Flutter apps to discover network connectivity and 
+  # configure themselves accordingly. It can distinguish between cellular vs WiFi connection.
+  connectivity_plus: ^6.1.4
+  # The package provides TextInputFormatter for TextField and TextFormField 
+  # which format the input by a given mask.
+  mask_text_input_formatter: ^2.5.0
+  # Get current device information from within the Flutter application.
+  device_info_plus: ^11.2.1
+  # use for shimmer loading
+  shimmer: ^3.0.0
+  # a widget provided to the flutter scroll component drop-down refresh and pull up load.support android and ios.
+  pull_to_refresh: ^2.0.0
+  # Use this package if you need more customization when notifying your user.
+  another_flushbar: ^1.12.30
+  # Custom Dropdown package lets you add customizable animated dropdown widget.
+  animated_custom_dropdown: ^3.1.1
+  flutter_native_splash: ^2.4.6
+  open_settings_plus: ^0.4.0
+  keyboard_dismisser: ^3.0.0
+  flutter_onscreen_keyboard: ^0.4.2+1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  flutter_lints: ^6.0.0
+  build_runner: ^2.4.6
+  hive_generator: ^2.0.1
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/fonts/
+    - assets/images/
+    - assets/icons/
+ 
+
+fonts:
+  - family: Montserrat
+    fonts:
+      - asset: assets/fonts/Inter.ttf
+
+flutter_intl:
+  enabled: true
+
+
+flutter_native_splash:
+  color: "#FFFFFF"
+  image: assets/images/splash_screen.png
+  fullscreen: true
+  
+  android: true
+  ios: true
+  web: true
+  
+  web_image_mode: center
+  android_12:
+    color: "#FFFFFF"
+    image: assets/images/splash_screen.png
+    icon_background_color: "#FFFFFF" 

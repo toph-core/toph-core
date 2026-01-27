@@ -1,0 +1,13 @@
+import 'package:flutter/material.dart';
+
+class AppColors {
+  AppColors._();
+
+  static const brandColor = Color(0xFF2529D8);
+  static const ff455DA7 = Color(0xFF455DA7);
+  static const ffF8F8FA = Color(0xFFF8F8FA);
+  static const black = Color(0xFF000000);
+  static const white = Color(0xFFFFFFFF);
+  static const ffC9C9C9 = Color(0xFFC9C9C9);
+
+}

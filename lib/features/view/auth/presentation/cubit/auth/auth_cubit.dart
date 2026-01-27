@@ -1,0 +1,58 @@
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:mary_ai_pos/core/api/api.dart';
+import 'package:mary_ai_pos/core/error/failure.dart';
+import 'package:mary_ai_pos/core/usecase/usecase.dart';
+import 'package:mary_ai_pos/features/view/auth/domain/usecases/check_user_auth/check_user_auth.dart';
+import 'package:mary_ai_pos/features/view/auth/domain/usecases/login/login_usecase.dart';
+import 'package:mary_ai_pos/features/view/auth/domain/usecases/logout/logout.dart';
+import 'package:mary_ai_pos/features/view/auth/presentation/cubit/auth/auth_state.dart';
+
+class AuthCubit extends Cubit<AuthState> {
+  AuthCubit(this._checkUserAuthUseCase, this._logoutUseCase, this._loginUsecase)
+    : super(const AuthState());
+  final CheckUserAuthUseCase _checkUserAuthUseCase;
+  final LogoutUseCase _logoutUseCase;
+  final LoginUsecase _loginUsecase;
+
+  Future<void> checkUserToAuth() async {
+    var result = await _checkUserAuthUseCase.call(NoParams());
+    result.fold(
+      (failure) => emit(state.copyWith(unAuth: true)),
+      (response) => emit(state.copyWith(unAuth: response)),
+    );
+  }
+
+  void login(LoginRequest req) async {
+    emit(state.copyWith(status: Status.LOADING));
+
+    var result = await _loginUsecase.call(req);
+
+    result.fold(
+      (failure) {
+        emit(state.copyWith(failure: failure, status: Status.ERROR));
+      },
+      (response) {
+        emit(state.copyWith(status: Status.SUCCESS));
+      },
+    );
+  }
+
+  Future<void> logout(Function() onSuccess) async {
+    emit(state.copyWith(status: Status.LOADING));
+
+    var result = await _logoutUseCase.call(NoParams());
+
+    result.fold(
+      (failure) {
+        failure.showErrorMsg();
+        emit(state.copyWith(failure: failure, status: Status.ERROR));
+      },
+      (response) {
+        emit(state.copyWith(status: Status.SUCCESS));
+        onSuccess();
+      },
+    );
+  }
+
+  void toggle() => emit(state.copyWith(obsecure: !state.obsecure));
+}
