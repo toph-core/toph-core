@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:mary_ai_pos/core/auth/models/auth_token_pair.dart';
+import 'package:mary_ai_pos/core/auth/models/auth_token_pair/auth_token_pair.dart';
+import 'package:mary_ai_pos/core/auth/models/brand_id_token_pair/brand_id_token_pair.dart';
 
 /// Keys for secure storage
 enum TokensStorageKeys {
@@ -10,8 +11,8 @@ enum TokensStorageKeys {
   /// Key for app language preference
   appLanguage('app_language'),
 
-  /// Key for app theme preference
-  appTheme('app_theme');
+  /// Key for brand ID tokens
+  brandId('app_brand_id_token');
 
   /// Key name
   final String keyName;
@@ -25,6 +26,31 @@ class AppTokenStorage {
 
   /// Creates a new TokenStorageImpl with the given secure storage
   const AppTokenStorage(this._secureStorage);
+
+  /// Read auth token pair from secure storage
+  Future<BrandIdTokenPair?> readBrandIdToken() async {
+    try {
+      final tokenJson = await _secureStorage.read(
+        key: TokensStorageKeys.brandId.keyName,
+      );
+      if (tokenJson == null) return null;
+      return BrandIdTokenPair.fromJson(
+        jsonDecode(tokenJson) as Map<String, dynamic>,
+      );
+    } catch (e) {
+      return null;
+    }
+  }
+
+  /// Write auth token pair to secure storage
+  Future<void> writeBrandIdToken(BrandIdTokenPair token) async {
+    await _secureStorage.write(
+      key: TokensStorageKeys.brandId.keyName,
+      value: jsonEncode(token.toJson()),
+    );
+  }
+
+  
 
   /// Read auth token pair from secure storage
   Future<AuthTokenPair?> readAuthToken() async {
@@ -129,8 +155,6 @@ class AppTokenStorage {
 
   /// Clear all stored data
   Future<void> deleteAll() async {
-    for (final key in TokensStorageKeys.values) {
-      await _secureStorage.delete(key: key.keyName);
-    }
+    await _secureStorage.deleteAll();
   }
 }

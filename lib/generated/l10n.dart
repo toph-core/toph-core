@@ -429,6 +429,46 @@ class S {
       args: [],
     );
   }
+
+  /// `Brand id ni yozing`
+  String get strEnterBrandID {
+    return Intl.message(
+      'Brand id ni yozing',
+      name: 'strEnterBrandID',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Parol`
+  String get strPassword {
+    return Intl.message(
+      'Parol',
+      name: 'strPassword',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Kodni yozing`
+  String get strEnterCode {
+    return Intl.message(
+      'Kodni yozing',
+      name: 'strEnterCode',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Kirish`
+  String get strLogin {
+    return Intl.message(
+      'Kirish',
+      name: 'strLogin',
+      desc: '',
+      args: [],
+    );
+  }
 }
 
 class AppLocalizationDelegate extends LocalizationsDelegate<S> {

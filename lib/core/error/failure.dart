@@ -1,4 +1,4 @@
-import 'package:mary_ai_pos/core/components/app_flush_bar.dart';
+import 'package:mary_ai_pos/core/components/flush_bars.dart';
 import 'package:mary_ai_pos/core/utils/helper/helper_widget.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
@@ -120,9 +120,9 @@ class OtherFailure extends Failure {
 
 extension ShowErrorExt on Failure {
   void showErrorMsg() {
-    showAppFlushbarMessage(
+    showErrorMessage(
       navigatorKey.currentContext!,
-      msg: getLocalizedMessage(navigatorKey.currentContext!),
+      getLocalizedMessage(navigatorKey.currentContext!),
     );
   }
 }

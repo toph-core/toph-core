@@ -1,21 +1,21 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'login_usecase.dart';
+part of 'brand_id_token_pair.dart';
 
 // **************************************************************************
 // JsonSerializableGenerator
 // **************************************************************************
 
-_$LoginRequestStateImpl _$$LoginRequestStateImplFromJson(
+_$BrandIdTokenPairImpl _$$BrandIdTokenPairImplFromJson(
         Map<String, dynamic> json) =>
-    _$LoginRequestStateImpl(
+    _$BrandIdTokenPairImpl(
+      brandId: json['brandId'] as String,
       password: json['password'] as String,
-      phoneNumber: json['phone_number'] as String,
     );
 
-Map<String, dynamic> _$$LoginRequestStateImplToJson(
-        _$LoginRequestStateImpl instance) =>
+Map<String, dynamic> _$$BrandIdTokenPairImplToJson(
+        _$BrandIdTokenPairImpl instance) =>
     <String, dynamic>{
+      'brandId': instance.brandId,
       'password': instance.password,
-      'phone_number': instance.phoneNumber,
     };

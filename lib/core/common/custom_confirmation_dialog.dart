@@ -21,7 +21,7 @@
 //           shape: RoundedRectangleBorder(
 //             borderRadius: BorderRadius.circular(16),
 //           ),
-//           insetPadding: EdgeInsets.symmetric(horizontal: wi(24)),
+//           insetPadding: EdgeInsets.symmetric(horizontal: (24)),
 //           child: Container(
 //             padding: const EdgeInsets.all(16),
 //             decoration: BoxDecoration(

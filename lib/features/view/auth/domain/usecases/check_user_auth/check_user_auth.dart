@@ -8,6 +8,6 @@ class CheckUserAuthUseCase extends UseCase<bool, NoParams> {
   CheckUserAuthUseCase(this._repository);
 
   @override
-  Future<Either<Failure, bool>> call(NoParams params) =>
-      _repository.checkUserToAuth();
+  Future<Either<Failure, bool>> call(NoParams params) async =>
+      await _repository.checkUserToAuth();
 }

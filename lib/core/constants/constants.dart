@@ -1,5 +1,5 @@
 // ignore_for_file: constant_identifier_names
-const BASE_URL = 'https://back.mary_ai_pos.yurtal.tech/api/';
+const BASE_URL = 'https://back.maryai.yurtal.tech/';
 // const BASE_URL = 'https://back.staging.mary_ai_pos.yurtal.tech/api/';
 
 const ACCESS_TOKEN = 'access-token';

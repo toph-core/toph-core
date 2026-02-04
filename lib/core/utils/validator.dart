@@ -15,11 +15,6 @@ class Validator {
       return S.current.strNameTooShort;
     }
 
-    final nameRegex = RegExp(r"^[a-zA-Z\s'-]+$");
-    if (!nameRegex.hasMatch(trimmed)) {
-      return S.current.strInvalidName;
-    }
-
     return null;
   }
 

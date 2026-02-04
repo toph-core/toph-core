@@ -37,7 +37,7 @@
 //     return AppBar(
 //       elevation: 0,
 //       leadingWidth: 0,
-//       toolbarHeight: he(70),
+//       toolbarHeight: (70),
 //       scrolledUnderElevation: 0.0,
 //       automaticallyImplyLeading: false,
 //       shape: RoundedRectangleBorder(borderRadius: context.radius.topBar),
@@ -46,7 +46,7 @@
 //           valueListenable: searchModeNotifier,
 //           builder: (context, isSearchMode, _) {
 //             return Row(
-//               spacing: wi(8),
+//               spacing: (8),
 //               crossAxisAlignment: CrossAxisAlignment.stretch,
 //               children: [
 //                 AnimatedSwitcher(
@@ -60,7 +60,7 @@
 //                   child: CustomIconButton(
 //                     radius: 14,
 //                     paddingV: 2,
-//                     heightIcon: he(19),
+//                     heightIcon: (19),
 //                     icon: AppIcons.icArrowLeft,
 //                     onTap: () => Navigator.pop(context),
 //                     borderColor: context.colors.bgSecondary,
@@ -86,8 +86,8 @@
 //                               focusNode: searchFocus,
 //                               key: const ValueKey('search_field'),
 //                               contentPadding: EdgeInsets.symmetric(
-//                                 horizontal: wi(12),
-//                                 vertical: he(10),
+//                                 horizontal: (12),
+//                                 vertical: (10),
 //                               ),
 //                               textEditingController: searchController,
 //                               hintText: hintText ?? "",
@@ -106,7 +106,7 @@
 //                                       },
 //                                       child: SvgPicture.asset(
 //                                         AppIcons.icXMark,
-//                                       ).marginOnly(right: wi(12)),
+//                                       ).marginOnly(right: (12)),
 //                                     ),
 //                                   );
 //                                 },
@@ -139,7 +139,7 @@
 //                   child: CustomIconButton(
 //                     key: ValueKey(isSearchMode),
 //                     radius: 14,
-//                     heightIcon: he(19),
+//                     heightIcon: (19),
 //                     icon: isSearchMode ? AppIcons.icXMark : AppIcons.icSearch,
 //                     iconcolor:
 //                         searchController.text.isEmpty
@@ -157,7 +157,7 @@
 //                   ),
 //                 ),
 //               ],
-//             ).paddingSymmetric(horizontal: wi(16));
+//             ).paddingSymmetric(horizontal: (16));
 //           },
 //         ),
 //       ),

@@ -1,7 +1,6 @@
 import 'package:mary_ai_pos/core/common/custom_loading_widget.dart';
 import 'package:mary_ai_pos/core/extension/for_context.dart';
 import 'package:mary_ai_pos/core/extension/widget_extension.dart';
-import 'package:mary_ai_pos/core/utils/size_config.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:scale_button/scale_button.dart';
@@ -65,10 +64,10 @@ class CustomButton extends StatelessWidget {
           borderRadius: radius ?? context.radius.buttonLg,
           onTap: isActive ? onTap : null,
           child: Ink(
-            height: he(height ?? 50),
+            height: height ?? 50,
             padding: EdgeInsets.symmetric(
-              vertical: isLoading ? he(8) : he(paddingV ?? 12),
-              horizontal: wi(paddingH ?? 8),
+              vertical: isLoading ? 8 : (paddingV ?? 12),
+              horizontal: paddingH ?? 8,
             ),
             decoration: BoxDecoration(
               borderRadius: radius ?? context.radius.buttonLg,
@@ -87,8 +86,8 @@ class CustomButton extends StatelessWidget {
               children: [
                 isLoading
                     ? SizedBox(
-                        height: he(29),
-                        width: he(29),
+                        height: 29,
+                        width: 29,
                         child: Center(
                           child: LoadingWidget(
                             color: colorL ?? context.colors.iconOnBrand,
@@ -108,7 +107,7 @@ class CustomButton extends StatelessWidget {
                                             iconColor!,
                                             BlendMode.srcIn,
                                           ),
-                                  ).paddingOnly(right: wi(8), left: wi(8))
+                                  ).paddingOnly(right: 8, left: 8)
                                 : const SizedBox.shrink(),
                             Text(
                               text,
@@ -188,16 +187,16 @@ class CustomOutlineButton extends StatelessWidget {
           borderRadius: BorderRadius.circular(radius ?? 12),
           onTap: onTap,
           child: Ink(
-            height: he(height ?? 50),
+            height: (height ?? 50),
             padding: EdgeInsets.symmetric(
-              vertical: isLoading ? he(8) : he(paddingV ?? 12),
-              horizontal: wi(paddingH ?? 8),
+              vertical: isLoading ? (8) : (paddingV ?? 12),
+              horizontal: (paddingH ?? 8),
             ),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(radius ?? 12),
               border: Border.all(
                 color: primaryColor ?? context.colors.borderBrand,
-                width: wi(1.5),
+                width: 1.5,
               ),
               color: bgColor ?? context.colors.textDefault,
             ),
@@ -214,14 +213,14 @@ class CustomOutlineButton extends StatelessWidget {
                   children: [
                     isLoading
                         ? SizedBox(
-                            height: he(29),
-                            width: he(29),
+                            height: 29,
+                            width: 29,
                             child: Center(child: LoadingWidget(color: colorL)),
                           )
                         : Center(
                             child: Row(
                               children: [
-                                leftW?.paddingOnly(right: wi(16)) ??
+                                leftW?.paddingOnly(right: 16) ??
                                     const SizedBox.shrink(),
                                 Text(
                                   text,
@@ -230,7 +229,7 @@ class CustomOutlineButton extends StatelessWidget {
                                     color:
                                         textColor ?? context.colors.textDefault,
                                     fontWeight: fontWeight,
-                                    fontSize: fontSize ?? he(16),
+                                    fontSize: fontSize ?? (16),
                                   ),
                                 ),
                                 rightW ?? const SizedBox.shrink(),
@@ -248,7 +247,7 @@ class CustomOutlineButton extends StatelessWidget {
   }
 }
 
-class CustomIconButton extends StatelessWidget {
+class CustomIconButton extends StatefulWidget {
   const CustomIconButton({
     super.key,
     this.onTap,
@@ -279,41 +278,55 @@ class CustomIconButton extends StatelessWidget {
   final double? borderWidth;
 
   @override
+  State<CustomIconButton> createState() => _CustomIconButtonState();
+}
+
+class _CustomIconButtonState extends State<CustomIconButton> {
+  bool isHovered = false;
+
+  @override
   Widget build(BuildContext context) {
-    return ScaleButton(
-      onTap: onTap,
-      bound: 0.030,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        height: he(height ?? 45),
-        width: he(height ?? 45),
-        padding: EdgeInsets.symmetric(
-          vertical: he(paddingV ?? 12),
-          horizontal: wi(paddingH ?? 8),
-        ),
-        decoration: BoxDecoration(
-          border: Border.all(
-            color: borderColor ?? context.colors.textBrand,
-            width: borderWidth ?? 1.0,
+    return MouseRegion(
+      onEnter: (_) => setState(() => isHovered = true),
+      onExit: (_) => setState(() => isHovered = false),
+      cursor: SystemMouseCursors.click,
+      child: ScaleButton(
+        onTap: widget.onTap,
+        bound: 0.030,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          height: (widget.height ?? 45),
+          width: (widget.height ?? 45),
+          padding: EdgeInsets.symmetric(
+            vertical: (widget.paddingV ?? 8),
+            horizontal: (widget.paddingH ?? 8),
           ),
-          borderRadius: BorderRadius.circular(radius ?? 12),
-          color: bgColor ?? context.colors.buttonBrand,
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          mainAxisSize: MainAxisSize.max,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            if (icon != null)
-              Center(
-                child: SvgPicture.asset(
-                  icon!,
-                  color: iconcolor,
-                  height: heightIcon,
-                  fit: BoxFit.cover,
+          decoration: BoxDecoration(
+            border: Border.all(
+              color: widget.borderColor ?? context.colors.border,
+              width: widget.borderWidth ?? 1.0,
+            ),
+            borderRadius: BorderRadius.circular(widget.radius ?? 12),
+            color: (widget.bgColor ?? context.colors.buttonBrand).withOpacity(
+              isHovered ? 0.8 : 1.0,
+            ),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.max,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              if (widget.icon != null)
+                Center(
+                  child: SvgPicture.asset(
+                    widget.icon!,
+                    color: widget.iconcolor,
+                    height: widget.heightIcon,
+                    fit: BoxFit.cover,
+                  ),
                 ),
-              ),
-          ],
+            ],
+          ),
         ),
       ),
     );

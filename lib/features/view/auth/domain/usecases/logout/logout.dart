@@ -8,5 +8,5 @@ class LogoutUseCase extends UseCase<bool, NoParams> {
   LogoutUseCase(this._repository);
 
   @override
-  Future<Either<Failure, bool>> call(NoParams params) => _repository.logout();
+  Future<Either<Failure, bool>> call(NoParams params) => _repository.logoutFromApp();
 }

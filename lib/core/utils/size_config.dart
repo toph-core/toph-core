@@ -14,13 +14,3 @@ class SizeConfig {
     orientation = _mediaQueryData!.orientation;
   }
 }
-
-double he(double inputHeight) {
-  double screenHeight = SizeConfig.screenHeight!;
-  return (inputHeight / 745) * screenHeight;
-}
-
-double wi(double inputWidth) {
-  double screenWidth = SizeConfig.screenWidth!;
-  return (inputWidth / 1128) * screenWidth;
-}

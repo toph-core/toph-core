@@ -9,9 +9,11 @@ import 'package:mary_ai_pos/features/view/auth/domain/repository/auth_repository
 import 'package:mary_ai_pos/features/view/auth/domain/usecases/check_user_auth/check_user_auth.dart';
 import 'package:mary_ai_pos/features/view/auth/domain/usecases/get_app_language/get_app_langauage_usecase.dart';
 import 'package:mary_ai_pos/features/view/auth/domain/usecases/login/login_usecase.dart';
+import 'package:mary_ai_pos/features/view/auth/domain/usecases/login_with_brand/login_with_brand_usecase.dart';
 import 'package:mary_ai_pos/features/view/auth/domain/usecases/logout/logout.dart';
 import 'package:mary_ai_pos/features/view/auth/domain/usecases/set_app_language/set_app_language_uscase.dart';
 import 'package:mary_ai_pos/features/view/auth/presentation/cubit/auth/auth_cubit.dart';
+import 'package:mary_ai_pos/features/view/auth/presentation/cubit/login_pin/login_pin_cubit.dart';
 import 'package:mary_ai_pos/features/view/auth/presentation/cubit/settings/settings_cubit.dart';
 
 final inject = GetIt.instance;
@@ -48,6 +50,7 @@ void _useCase() {
   inject.registerLazySingleton(() => LoginUsecase(inject()));
   inject.registerLazySingleton(() => GetAppLangauageUsecase(inject()));
   inject.registerLazySingleton(() => SetAppLanguageUscase(inject()));
+  inject.registerLazySingleton(() => LoginWithBrandUsecase(inject()));
 }
 
 void _cubit() {
@@ -56,4 +59,5 @@ void _cubit() {
   inject.registerLazySingleton(() => SettingsCubit(inject(), inject()));
 
   //? factory
+  inject.registerFactory(() => LoginPinCubit(inject(), inject(), inject()));
 }

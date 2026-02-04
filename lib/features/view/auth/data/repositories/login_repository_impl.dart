@@ -1,10 +1,10 @@
+import 'package:dartz/dartz.dart';
+import 'package:mary_ai_pos/core/auth/models/brand_id_token_pair/brand_id_token_pair.dart';
 import 'package:mary_ai_pos/core/auth/storage/token_storage_impl.dart';
 import 'package:mary_ai_pos/core/error/failure.dart';
-import 'package:mary_ai_pos/core/extension/log.dart';
 import 'package:mary_ai_pos/features/view/auth/data/data_sources/auth_datasource.dart';
+import 'package:mary_ai_pos/features/view/auth/data/models/login/request/login_request_model.dart';
 import 'package:mary_ai_pos/features/view/auth/domain/repository/auth_repository.dart';
-import 'package:mary_ai_pos/features/view/auth/domain/usecases/login/login_usecase.dart';
-import 'package:dartz/dartz.dart';
 
 class AuthRepositoryImpl implements AuthRepository {
   /// Data Source
@@ -15,25 +15,36 @@ class AuthRepositoryImpl implements AuthRepository {
   @override
   Future<Either<Failure, bool>> checkUserToAuth() async {
     try {
-      String token = await _tokenStorage.readAccessToken() ?? '';
-      return Right(token.isEmpty);
+      final BrandIdTokenPair? token = await _tokenStorage.readBrandIdToken();
+
+      return Right(token == null);
     } catch (e) {
-      e.printf();
       return const Left(CacheFailure());
     }
   }
 
   @override
-  Future<Either<Failure, bool>> logout() async {
-    final response = await _datasources.logout();
-    return response.fold(
-      (failure) => Left(failure),
-      (response) => Right(response),
-    );
+  Future<Either<Failure, bool>> loginWithBrandId(BrandIdTokenPair req) async {
+    try {
+      await _tokenStorage.writeBrandIdToken(req);
+      return const Right(true);
+    } catch (e) {
+      return const Left(CacheFailure());
+    }
   }
 
   @override
-  Future<Either<Failure, bool>> login(LoginRequest req) async {
+  Future<Either<Failure, bool>> logoutFromApp() async {
+    try {
+      await _tokenStorage.deleteAll();
+      return const Right(true);
+    } catch (e) {
+      return const Left(CacheFailure());
+    }
+  }
+
+  @override
+  Future<Either<Failure, bool>> login(LoginRequestModel req) async {
     final response = await _datasources.login(req);
     return response.fold(
       (failure) => Left(failure),

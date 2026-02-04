@@ -1,8 +1,8 @@
-import 'package:mary_ai_pos/core/auth/models/auth_token_pair.dart';
+import 'package:mary_ai_pos/core/auth/models/auth_token_pair/auth_token_pair.dart';
 import 'package:mary_ai_pos/core/auth/storage/token_storage_impl.dart';
 import 'package:mary_ai_pos/core/routes/app_routes.dart';
 import 'package:mary_ai_pos/core/utils/helper/helper_widget.dart';
-import 'package:mary_ai_pos/features/view/auth/data/models/login/login_response.dart';
+import 'package:mary_ai_pos/features/view/auth/data/models/login/response/login_response.dart';
 
 import 'api.dart';
 

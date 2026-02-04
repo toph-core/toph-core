@@ -1,4 +1,3 @@
-import 'package:mary_ai_pos/core/utils/size_config.dart';
 import 'package:flutter/material.dart';
 
 /// add Padding Property to widget
@@ -51,6 +50,6 @@ class NewList<T> {
 
 /// Allows add horizontal and vertical space between widgets
 extension SizedBoxExtension on num {
-  SizedBox get verticalSpace => SizedBox(height: he(toDouble()));
-  SizedBox get horizontalSpace => SizedBox(width: wi(toDouble()));
+  SizedBox get verticalSpace => SizedBox(height: (toDouble()));
+  SizedBox get horizontalSpace => SizedBox(width: (toDouble()));
 }

@@ -1,10 +1,12 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_acrylic/flutter_acrylic.dart' as flutter_acrylic;
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:mary_ai_pos/core/routes/app_pages.dart';
 import 'package:mary_ai_pos/core/routes/app_routes.dart';
+import 'package:mary_ai_pos/core/service/app_version/app_update_service.dart';
 import 'package:mary_ai_pos/core/theme/app_theme.dart';
 import 'package:mary_ai_pos/core/utils/helper/helper_widget.dart';
 import 'package:mary_ai_pos/core/utils/scroll_physics_modified.dart';
@@ -13,9 +15,26 @@ import 'package:mary_ai_pos/di.dart';
 import 'package:mary_ai_pos/features/view/auth/presentation/cubit/auth/auth_cubit.dart';
 import 'package:mary_ai_pos/features/view/auth/presentation/cubit/settings/settings_cubit.dart';
 import 'package:mary_ai_pos/generated/l10n.dart';
+import 'package:window_manager/window_manager.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await flutter_acrylic.Window.initialize();
+  await AppUpdateService.getCloudVersion();
+  await flutter_acrylic.Window.hideWindowControls();
+  await WindowManager.instance.ensureInitialized();
+  windowManager.waitUntilReadyToShow().then((_) async {
+    await windowManager.setTitleBarStyle(
+      TitleBarStyle.hidden,
+      windowButtonVisibility: false,
+    );
+    await windowManager.setMinimumSize(const Size(1000, 600));
+    await windowManager.show();
+    await windowManager.setPreventClose(true);
+    await windowManager.setSkipTaskbar(false);
+    // await windowManager.setFullScreen(true);
+  });
+
   await initDi();
   runApp(const MyApp());
 }
@@ -39,7 +58,6 @@ class MyApp extends StatelessWidget {
             title: 'Mary AI POS',
             navigatorKey: navigatorKey,
             debugShowCheckedModeBanner: false,
-            initialRoute: AppRoutes.loginScreen,
             onGenerateRoute: RouteGenerate().generate,
             localizationsDelegates: const [
               GlobalWidgetsLocalizations.delegate,
@@ -57,6 +75,7 @@ class MyApp extends StatelessWidget {
                 child: child!,
               );
             },
+            initialRoute: AppRoutes.splashScreen,
           );
         },
       ),

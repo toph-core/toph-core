@@ -1,169 +1,85 @@
-import 'package:mary_ai_pos/core/extension/for_context.dart';
-import 'package:mary_ai_pos/core/extension/widget_extension.dart';
-import 'package:mary_ai_pos/core/utils/size_config.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_svg/svg.dart';
+import 'package:mary_ai_pos/core/extension/for_context.dart';
+import 'package:mary_ai_pos/core/extension/widget_extension.dart';
 import 'package:mary_ai_pos/core/values/app_colors.dart';
 
 class LiquidTextField extends StatelessWidget {
   const LiquidTextField({
     super.key,
     this.onChange,
-    this.onEditingComplete,
     required this.hintText,
-    this.maxLines,
-    this.minLines,
-    this.prefixIcon,
-    this.suffixIcon,
     this.validator,
     this.obscure,
     this.textInputAction,
-    this.fillColor,
-    this.initialValue,
-    this.preIconColor,
     this.textEditingController,
-    this.readOnly = false,
     this.onTap,
     this.formatter,
     required this.textInputType,
-    this.maxLength,
-    this.focusNode,
-    this.contentPadding,
-    this.hintStyle,
-    this.borderRadius,
-    this.borderColor,
-    this.style,
-    this.textAlign = TextAlign.start,
     this.suffix,
   });
 
-  final TextEditingController? textEditingController;
   final Function(String value)? onChange;
-  final Function()? onEditingComplete;
   final String hintText;
-  final String? prefixIcon;
-  final Widget? suffixIcon;
-  final bool? obscure;
-  final bool readOnly;
-  final TextInputAction? textInputAction;
-  final Color? fillColor;
-  final Color? preIconColor;
-  final String? initialValue;
+  final TextEditingController? textEditingController;
   final FormFieldValidator<String>? validator;
-  final int? maxLines;
-  final TextInputType textInputType;
-  final int? minLines;
-  final int? maxLength;
-  final FocusNode? focusNode;
-  final EdgeInsetsGeometry? contentPadding;
+  final bool? obscure;
+  final TextInputAction? textInputAction;
   final Function()? onTap;
   final List<TextInputFormatter>? formatter;
-  final TextStyle? hintStyle;
-  final double? borderRadius;
-  final Color? borderColor;
-  final TextStyle? style;
-  final TextAlign textAlign;
+  final TextInputType textInputType;
   final Widget? suffix;
 
   @override
   Widget build(BuildContext context) {
     return TextFormField(
-      maxLines: maxLines ?? 1,
-      minLines: minLines ?? 1,
+      minLines: 1,
       validator: validator,
-      readOnly: readOnly,
-      focusNode: focusNode,
       inputFormatters: formatter,
       onTap: onTap,
-      textAlign: textAlign,
-      initialValue: initialValue,
-      style:
-          style ??
-          Theme.of(
-            context,
-          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w400, color: AppColors.white),
+      style: context.textStyles.bodyMd.copyWith(color: AppColors.white),
       obscureText: obscure ?? false,
       textInputAction: textInputAction,
       keyboardType: textInputType,
       onChanged: onChange,
-      onEditingComplete: onEditingComplete,
-      onTapOutside: (event) => onEditingComplete,
       controller: textEditingController,
       cursorColor: context.colors.borderBrand,
-      maxLength: maxLength,
       autovalidateMode: AutovalidateMode.onUserInteraction,
       decoration: InputDecoration(
         counterText: '',
-        contentPadding:
-            contentPadding ??
-            EdgeInsets.symmetric(horizontal: wi(16), vertical: he(12)),
-        suffixIconConstraints: BoxConstraints(
-          minHeight: he(25),
-          minWidth: he(25),
+        contentPadding: const EdgeInsets.symmetric(horizontal: (16), vertical: (16)),
+        suffixIcon: suffix?.paddingOnly(right: (16)),
+        suffixIconConstraints: const BoxConstraints(maxHeight: (50), maxWidth: (50)),
+        hintStyle: context.textStyles.bodyMd.copyWith(
+          color: AppColors.ffC9C9C9,
         ),
-        prefixIcon: prefixIcon == null
-            ? null
-            : SvgPicture.asset(
-                prefixIcon ?? "",
-                colorFilter: ColorFilter.mode(
-                  preIconColor ?? context.colors.border,
-                  BlendMode.srcIn,
-                ),
-              ).paddingOnly(
-                right: wi(6),
-                left: wi(12),
-                bottom: he(10),
-                top: he(10),
-              ),
-        suffix: suffix,
-        suffixIcon: SizedBox(
-          height: he(25),
-          width: he(25),
-          child: suffixIcon,
-        ),
-        hintStyle:
-            hintStyle ??
-            context.textStyles.bodyMd.copyWith(color: AppColors.ffC9C9C9),
         hintText: hintText,
         filled: true,
-        fillColor: fillColor ?? AppColors.black.withOpacity(.3),
+        fillColor: AppColors.black.withOpacity(.3),
         focusedErrorBorder: OutlineInputBorder(
           borderRadius: context.radius.segmentedControl,
           borderSide: BorderSide(
             color: context.colors.systemError,
-            width: wi(1.5),
+            width: (1.5),
           ),
         ),
-        enabledBorder: readOnly
-            ? OutlineInputBorder(
-                borderRadius: context.radius.segmentedControl,
-                borderSide: const BorderSide(color: Colors.transparent),
-              )
-            : OutlineInputBorder(
-                borderRadius: context.radius.segmentedControl,
-                borderSide: borderColor == null
-                    ? BorderSide.none
-                    : BorderSide(color: borderColor!, width: wi(0.5)),
-              ),
-        focusedBorder: readOnly
-            ? OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: Colors.transparent),
-              )
-            : OutlineInputBorder(
-                borderRadius: context.radius.segmentedControl,
-                borderSide: BorderSide(color: AppColors.white, width: wi(0.5)),
-              ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: context.radius.segmentedControl,
+          borderSide: BorderSide.none,
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: context.radius.segmentedControl,
+          borderSide: const BorderSide(color: AppColors.white, width: (0.5)),
+        ),
         disabledBorder: OutlineInputBorder(
           borderRadius: context.radius.segmentedControl,
-          borderSide: BorderSide(color: AppColors.white, width: wi(0.5)),
+          borderSide: const BorderSide(color: AppColors.white, width: (0.5)),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: context.radius.segmentedControl,
           borderSide: BorderSide(
             color: context.colors.systemError,
-            width: wi(0.5),
+            width: (0.5),
           ),
         ),
       ),

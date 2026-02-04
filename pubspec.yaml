@@ -63,12 +63,6 @@ dependencies:
   animate_do: ^3.0.2
   # This Flutter plugin provides an API for querying information about an application package.
   package_info_plus: ^8.0.1
-  # A Flutter plugin for launching a URL.
-  url_launcher: ^6.3.0
-  # This plugin allows Flutter apps to discover network connectivity and 
-  # configure themselves accordingly. It can distinguish between cellular vs WiFi connection.
-  connectivity_plus: ^6.1.4
-  # The package provides TextInputFormatter for TextField and TextFormField 
   # which format the input by a given mask.
   mask_text_input_formatter: ^2.5.0
   # Get current device information from within the Flutter application.
@@ -78,13 +72,12 @@ dependencies:
   # a widget provided to the flutter scroll component drop-down refresh and pull up load.support android and ios.
   pull_to_refresh: ^2.0.0
   # Use this package if you need more customization when notifying your user.
-  another_flushbar: ^1.12.30
-  # Custom Dropdown package lets you add customizable animated dropdown widget.
-  animated_custom_dropdown: ^3.1.1
-  flutter_native_splash: ^2.4.6
-  open_settings_plus: ^0.4.0
   keyboard_dismisser: ^3.0.0
   flutter_onscreen_keyboard: ^0.4.2+1
+  fluent_ui: ^4.13.0
+  window_manager: ^0.5.1
+  animated_snack_bar: ^0.4.0
+  flutter_acrylic: ^1.1.4
 
 dev_dependencies:
   flutter_test:
@@ -104,25 +97,9 @@ flutter:
  
 
 fonts:
-  - family: Montserrat
+  - family: Inter
     fonts:
       - asset: assets/fonts/Inter.ttf
 
 flutter_intl:
   enabled: true
-
-
-flutter_native_splash:
-  color: "#FFFFFF"
-  image: assets/images/splash_screen.png
-  fullscreen: true
-  
-  android: true
-  ios: true
-  web: true
-  
-  web_image_mode: center
-  android_12:
-    color: "#FFFFFF"
-    image: assets/images/splash_screen.png
-    icon_background_color: "#FFFFFF" 

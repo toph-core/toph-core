@@ -28,6 +28,9 @@ class MessageLookup extends MessageLookupByLibrary {
         "strContinue": MessageLookupByLibrary.simpleMessage("Davom etish"),
         "strDoYouWantToLogout": MessageLookupByLibrary.simpleMessage(
             "Ilovadan chiqishni xohlaysizmi?"),
+        "strEnterBrandID":
+            MessageLookupByLibrary.simpleMessage("Brand id ni yozing"),
+        "strEnterCode": MessageLookupByLibrary.simpleMessage("Kodni yozing"),
         "strFailureMessage_cache":
             MessageLookupByLibrary.simpleMessage("Error accessing cache"),
         "strFailureMessage_connection": MessageLookupByLibrary.simpleMessage(
@@ -63,6 +66,7 @@ class MessageLookup extends MessageLookupByLibrary {
         "strInvalidName": MessageLookupByLibrary.simpleMessage("Invalid name"),
         "strInvalidNumber":
             MessageLookupByLibrary.simpleMessage("Noto‘g‘ri raqam"),
+        "strLogin": MessageLookupByLibrary.simpleMessage("Kirish"),
         "strLogout": MessageLookupByLibrary.simpleMessage("Chiqish"),
         "strNameTooShort":
             MessageLookupByLibrary.simpleMessage("Name is too short"),
@@ -71,6 +75,7 @@ class MessageLookup extends MessageLookupByLibrary {
             MessageLookupByLibrary.simpleMessage("Ma\'lumot topilmadi"),
         "strNoInternetConnection":
             MessageLookupByLibrary.simpleMessage("Internet aloqasi yo‘q"),
+        "strPassword": MessageLookupByLibrary.simpleMessage("Parol"),
         "strPasswordContainAtLeastChars": MessageLookupByLibrary.simpleMessage(
             "Parol kamida 8 ta belgidan iborat bo‘lishi kerak."),
         "strPasswordsNotSame":

@@ -2,7 +2,6 @@ import 'package:animate_do/animate_do.dart';
 import 'package:mary_ai_pos/core/common/custom_button.dart';
 import 'package:mary_ai_pos/core/extension/for_context.dart';
 import 'package:mary_ai_pos/core/extension/widget_extension.dart';
-import 'package:mary_ai_pos/core/utils/size_config.dart';
 import 'package:mary_ai_pos/core/values/app_assets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -47,13 +46,13 @@ class CustomEmptyWidget extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 if (image != null)
-                  Image.asset(image!, height: he(iconH ?? 160))
+                  Image.asset(image!, height: (iconH ?? 160))
                 else
                   SvgPicture.asset(
                     icon ?? AppIcons.icInfoCircle,
-                    height: he(iconH ?? 40),
+                    height: (iconH ?? 40),
                   ),
-                SizedBox(height: he(14)),
+                const SizedBox(height: (14)),
                 Text(
                   title,
                   style:
@@ -65,15 +64,15 @@ class CustomEmptyWidget extends StatelessWidget {
                   textAlign: TextAlign.center,
                 ),
                 buttonText == null
-                    ? SizedBox(height: he(4))
-                    : SizedBox(height: he(18)),
+                    ? const SizedBox(height: (4))
+                    : const SizedBox(height: (18)),
                 if (subTitle != null)
                   Text(
                     subTitle!,
                     textAlign: TextAlign.center,
                     style: subTitleStyle ?? context.textStyles.bodySm,
                   ),
-                SizedBox(height: he(18)),
+                const SizedBox(height: (18)),
                 buttonText == null
                     ? const SizedBox.shrink()
                     : CustomButton(
@@ -82,7 +81,7 @@ class CustomEmptyWidget extends StatelessWidget {
                       ),
               ],
             ),
-          ).paddingOnly(top: he(12)),
+          ).paddingOnly(top: (12)),
         ],
       ),
     );

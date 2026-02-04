@@ -104,87 +104,6 @@ class AppTheme {
     ],
   );
 
-  static ThemeData darkTheme = ThemeData(
-    useMaterial3: true,
-    brightness: Brightness.dark,
-    fontFamily: 'Montserrat',
-    primaryColor: _darkColors.textBrand,
-    scaffoldBackgroundColor: _darkColors.bgDefault,
-    colorScheme: ColorScheme(
-      brightness: Brightness.dark,
-      primary: _darkColors.textBrand,
-      onPrimary: _darkColors.textOnBrand,
-      secondary: _darkColors.bgSecondary,
-      onSecondary: _darkColors.textDefault,
-      error: _darkColors.systemError,
-      onError: _darkColors.textOnBrand,
-      background: _darkColors.bgDefault,
-      onBackground: _darkColors.textDefault,
-      surface: _darkColors.bgSecondary,
-      onSurface: _darkColors.textDefault,
-    ),
-    appBarTheme: AppBarTheme(
-      backgroundColor: _darkColors.bgSecondary,
-      foregroundColor: _darkColors.textDefault,
-      elevation: 0,
-      centerTitle: true,
-      iconTheme: IconThemeData(color: _darkColors.iconDefault),
-      titleTextStyle: _darkTextStyles.headingMd,
-    ),
-    bottomNavigationBarTheme: BottomNavigationBarThemeData(
-      backgroundColor: _darkColors.bgSecondary,
-      selectedItemColor: _darkColors.textBrand,
-      unselectedItemColor: _darkColors.iconSecondary,
-      showUnselectedLabels: true,
-    ),
-    elevatedButtonTheme: ElevatedButtonThemeData(
-      style: ElevatedButton.styleFrom(
-        backgroundColor: _darkColors.textBrand,
-        foregroundColor: _darkColors.textOnBrand,
-        textStyle: _darkTextStyles.buttonText,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      ),
-    ),
-    textButtonTheme: TextButtonThemeData(
-      style: TextButton.styleFrom(
-        foregroundColor: _darkColors.textBrand,
-        textStyle: _darkTextStyles.linkText,
-      ),
-    ),
-    inputDecorationTheme: InputDecorationTheme(
-      filled: true,
-      fillColor: _darkColors.bgSecondary,
-      hintStyle: _darkTextStyles.bodySm.copyWith(
-        color: _darkColors.textTertiary,
-      ),
-      enabledBorder: OutlineInputBorder(
-        borderSide: BorderSide(color: _darkColors.border),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderSide: BorderSide(color: _darkColors.textBrand),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      errorBorder: OutlineInputBorder(
-        borderSide: BorderSide(color: _darkColors.systemError),
-        borderRadius: BorderRadius.circular(12),
-      ),
-    ),
-    dividerTheme: DividerThemeData(color: _darkColors.border, thickness: 1),
-    chipTheme: ChipThemeData(
-      backgroundColor: _darkColors.buttonSecondary,
-      selectedColor: _darkColors.textSecondary,
-      disabledColor: _darkColors.buttonDisabledBg,
-      labelStyle: _darkTextStyles.bodySm,
-      secondaryLabelStyle: _darkTextStyles.bodySm,
-    ),
-    extensions: <ThemeExtension<dynamic>>[
-      _darkColors,
-      _darkTextStyles,
-      _radius,
-    ],
-  );
-
   /// Radiuses
   static const _radius = ThemeRadius(
     buttonSm: BorderRadius.all(Radius.circular(9)),
@@ -202,34 +121,34 @@ class AppTheme {
 
   /// Light colors (JSON based)
   static const _lightColors = ThemeColors(
-    textBrand: Color(0xFF2529D8),
-    textDefault: Color(0xFF000000),
-    textButtonSecondary: Color(0xFF000000),
+    textBrand: Color(0xFFFB6633),
+    textDefault: Color(0xFF19160B),
+    textButtonSecondary: Color(0xFF19160B),
     textSecondary: Color(0xFF888888),
     textTertiary: Color(0xFFAAAAAA),
     textOnBrand: Color(0xFFFFFFFF),
     textOnBrandDark: Color(0xFF09131A),
 
-    iconBrand: Color(0xFF2529D8),
-    iconDefault: Color(0xFF000000),
+    iconBrand: Color(0xFFFB6633),
+    iconDefault: Color(0xFF19160B),
     iconSecondary: Color(0xFF888888),
-    iconButtonSecondary: Color(0xFF000000),
+    iconButtonSecondary: Color(0xFF19160B),
     iconTertiary: Color(0xFFA0A0A0),
     iconOnBrand: Color(0xFFFFFFFF),
     iconOnBrandDark: Color(0xFF09131A),
 
-    bgBrand: Color(0xFF2529D8),
+    bgBrand: Color(0xFFFB6633),
     bgDefault: Color(0xFFFFFFFF),
     bgSecondary: Color(0xFFF8F9FA),
-    bgTritary: Color(0xFFEBEBEB),
+    bgTritary: Color(0xFFF6F7F9),
     bgDefaultTritary: Color(0xFFF5F5F5),
     bgSecondaryTritary: Color(0xFFFFFFFF),
     bgBottomSheet: Color(0x3309131A),
 
-    borderBrand: Color(0xFF2529D8),
+    borderBrand: Color(0xFFFB6633),
     border: Color(0xFFEBEFF2),
 
-    buttonBrand: Color(0xFF2529D8),
+    buttonBrand: Color(0xFF2D2D2D),
     buttonBrandSecondary: Color(0xFFF2F2F4),
     buttonSecondary: Color(0xFFF8F9FA),
     buttonDisabledBg: Color(0xFFF8F9FA),
@@ -243,52 +162,9 @@ class AppTheme {
     extraOrange: Color(0xFFCF8506),
   );
 
-  /// Dark colors (JSON based)
-  static const _darkColors = ThemeColors(
-    textBrand: Color(0xFF2529D8),
-    textDefault: Color(0xFFEDEDED),
-    textButtonSecondary: Color(0xFFEDEDED),
-    textSecondary: Color(0xFFB0B0B0),
-    textTertiary: Color(0xFF888888),
-    textOnBrand: Color(0xFFFFFFFF),
-    textOnBrandDark: Color(0xFFE8EEFF),
-
-    iconBrand: Color(0xFF2529D8),
-    iconDefault: Color(0xFFEDEDED),
-    iconSecondary: Color(0xFFB0B0B0),
-    iconButtonSecondary: Color(0xFFEDEDED),
-    iconTertiary: Color(0xFF888888),
-    iconOnBrand: Color(0xFFFFFFFF),
-    iconOnBrandDark: Color(0xFFE8EEFF),
-
-    bgBrand: Color(0xFF2529D8),
-    bgDefault: Color(0xFF0F1115),
-    bgSecondary: Color(0xFF1A1D22),
-    bgTritary: Color(0xFF222529),
-    bgDefaultTritary: Color(0xFF1E2025),
-    bgSecondaryTritary: Color(0xFF17191E),
-    bgBottomSheet: Color(0xCC0F1115),
-
-    borderBrand: Color(0xFF2529D8),
-    border: Color(0xFF33363A),
-
-    buttonBrand: Color(0xFF2529D8),
-    buttonBrandSecondary: Color(0xFF2A2D6B),
-    buttonSecondary: Color(0xFF2A2E35),
-    buttonDisabledBg: Color(0xFF222529),
-
-    systemAccent: Color(0xFFFFC046),
-    systemSuccess: Color(0xFF4CAF50),
-    systemError: Color(0xFFF44336),
-
-    extraPurple: Color(0xFFBA9BF8),
-    extraCyan: Color(0xFF4FC3F7),
-    extraOrange: Color(0xFFFFB74D),
-  );
-
   /// Light text styles
   static final _lightTextStyles = ThemeTextStyle(
-    fontFamily: "Montserrat",
+    fontFamily: "Inter",
     displayXl: TextStyle(
       fontSize: 32,
       fontWeight: FontWeight.bold,
@@ -404,127 +280,6 @@ class AppTheme {
       fontSize: 24,
       fontWeight: FontWeight.w600,
       color: _lightColors.textDefault,
-    ),
-  );
-
-  /// Dark text styles
-  static final _darkTextStyles = ThemeTextStyle(
-    fontFamily: "Montserrat",
-    displayXl: TextStyle(
-      fontSize: 32,
-      fontWeight: FontWeight.bold,
-      height: 40 / 32,
-      color: _darkColors.textDefault,
-    ),
-    displayLg: TextStyle(
-      fontSize: 28,
-      fontWeight: FontWeight.bold,
-      height: 36 / 28,
-      color: _darkColors.textDefault,
-    ),
-    headingMd: TextStyle(
-      fontSize: 24,
-      fontWeight: FontWeight.w600,
-      height: 32 / 24,
-      color: _darkColors.textDefault,
-    ),
-    headingSm: TextStyle(
-      fontSize: 20,
-      fontWeight: FontWeight.w600,
-      height: 28 / 20,
-      color: _darkColors.textDefault,
-    ),
-    bodyLg: TextStyle(
-      fontSize: 18,
-      fontWeight: FontWeight.normal,
-      height: 26 / 18,
-      color: _darkColors.textSecondary,
-    ),
-    bodyMd: TextStyle(
-      fontSize: 16,
-      fontWeight: FontWeight.normal,
-      height: 24 / 16,
-      color: _darkColors.textTertiary,
-    ),
-    bodySm: TextStyle(
-      fontSize: 14,
-      fontWeight: FontWeight.normal,
-      height: 20 / 14,
-      color: _darkColors.textSecondary,
-    ),
-    caption: TextStyle(
-      fontSize: 12,
-      fontWeight: FontWeight.normal,
-      height: 16 / 12,
-      color: _darkColors.textTertiary,
-    ),
-    badgeText: TextStyle(
-      fontSize: 12,
-      fontWeight: FontWeight.normal,
-      height: 16 / 12,
-      color: _darkColors.textOnBrand,
-    ),
-    buttonText: TextStyle(
-      fontSize: 16,
-      fontWeight: FontWeight.w600,
-      height: 20 / 16,
-      color: _darkColors.textOnBrand,
-    ),
-    linkText: TextStyle(
-      fontSize: 14,
-      fontWeight: FontWeight.w600,
-      height: 20 / 14,
-      color: _darkColors.textBrand,
-    ),
-    bold14: TextStyle(
-      fontSize: 14,
-      fontWeight: FontWeight.bold,
-      color: _darkColors.textDefault,
-    ),
-    bold16: TextStyle(
-      fontSize: 16,
-      fontWeight: FontWeight.bold,
-      color: _darkColors.textDefault,
-    ),
-    bold18: TextStyle(
-      fontSize: 18,
-      fontWeight: FontWeight.bold,
-      color: _darkColors.textDefault,
-    ),
-    bold20: TextStyle(
-      fontSize: 20,
-      fontWeight: FontWeight.bold,
-      color: _darkColors.textDefault,
-    ),
-    bold24: TextStyle(
-      fontSize: 24,
-      fontWeight: FontWeight.bold,
-      color: _darkColors.textDefault,
-    ),
-    semibold14: TextStyle(
-      fontSize: 14,
-      fontWeight: FontWeight.w600,
-      color: _darkColors.textDefault,
-    ),
-    semibold16: TextStyle(
-      fontSize: 16,
-      fontWeight: FontWeight.w600,
-      color: _darkColors.textDefault,
-    ),
-    semibold18: TextStyle(
-      fontSize: 18,
-      fontWeight: FontWeight.w600,
-      color: _darkColors.textDefault,
-    ),
-    semibold20: TextStyle(
-      fontSize: 20,
-      fontWeight: FontWeight.w600,
-      color: _darkColors.textDefault,
-    ),
-    semibold24: TextStyle(
-      fontSize: 24,
-      fontWeight: FontWeight.w600,
-      color: _darkColors.textDefault,
     ),
   );
 }

@@ -16,8 +16,8 @@ gen_auto:
 	dart run build_runner watch --delete-conflicting-outputs
 
 # Generatsiya pakagelari uchun, o'zgarishlarni eshitib turadi
+# dart pub global activate intl_utils
 lang_auto:
-	dart pub global activate intl_utils
 	flutter pub run intl_utils:generate
 
 # Clean qilish uchun

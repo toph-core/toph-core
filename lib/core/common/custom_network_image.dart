@@ -1,12 +1,12 @@
 import 'dart:typed_data';
-import 'package:mary_ai_pos/core/service/minio/minio_service.dart';
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:mary_ai_pos/core/common/custom_shimmer_container.dart';
 import 'package:mary_ai_pos/core/extension/for_context.dart';
 import 'package:mary_ai_pos/core/extension/widget_extension.dart';
-import 'package:mary_ai_pos/core/utils/size_config.dart';
+import 'package:mary_ai_pos/core/service/minio/minio_service.dart';
 import 'package:mary_ai_pos/core/values/app_assets.dart';
 
 class CustomCachedNetworkImage extends StatelessWidget {
@@ -96,7 +96,7 @@ class CustomCachedNetworkImage extends StatelessWidget {
       children: [
         SvgPicture.asset(
           errorIcon ?? AppIcons.icNoImage,
-          height: he(iconSize),
+          height: iconSize,
           fit: BoxFit.contain,
           color: context.colors.iconSecondary,
         ),
@@ -106,7 +106,7 @@ class CustomCachedNetworkImage extends StatelessWidget {
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
             style: Theme.of(context).textTheme.titleSmall,
-          ).paddingOnly(top: he(8)),
+          ).paddingOnly(top: 8),
       ],
     ),
   );

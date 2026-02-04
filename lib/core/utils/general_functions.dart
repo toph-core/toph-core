@@ -3,7 +3,6 @@ import 'dart:io';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:mary_ai_pos/core/extension/for_context.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 class MyFunctions {
   MyFunctions._();
@@ -20,15 +19,15 @@ class MyFunctions {
   /// Opens a link in the default browser or app for the given url.
   ///
   /// If the link could not be opened, throws a string describing the error.
-  static Future<void> openLink(String link) async {
-    debugPrint("Link => $link");
-    final Uri url = Uri.parse(link);
-    if (await canLaunchUrl(url)) {
-      await launchUrl(url);
-    } else {
-      throw 'Could not launch $url';
-    }
-  }
+  // static Future<void> openLink(String link) async {
+  //   debugPrint("Link => $link");
+  //   final Uri url = Uri.parse(link);
+  //   if (await canLaunchUrl(url)) {
+  //     await launchUrl(url);
+  //   } else {
+  //     throw 'Could not launch $url';
+  //   }
+  // }
 
   /// Makes a phone call to the given phone number.
   ///
@@ -37,11 +36,11 @@ class MyFunctions {
   ///
   /// The function returns a [Future] that resolves when the call is made. If the
   /// call is not supported on the device, the [Future] will throw an error.
-  static Future<void> makePhoneCall(String phoneNumber) async {
-    debugPrint("Phone $phoneNumber");
-    final Uri launchUri = Uri(scheme: 'tel', path: phoneNumber);
-    await launchUrl(launchUri);
-  }
+  // static Future<void> makePhoneCall(String phoneNumber) async {
+  //   debugPrint("Phone $phoneNumber");
+  //   final Uri launchUri = Uri(scheme: 'tel', path: phoneNumber);
+  //   await launchUrl(launchUri);
+  // }
 
   static Future<String> getDeviceId() async {
     final deviceInfo = DeviceInfoPlugin();
