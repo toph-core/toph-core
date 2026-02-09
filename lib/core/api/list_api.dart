@@ -5,6 +5,9 @@ class ListAPI {
   static const String loginPinCode = "api/v1/auth/login-pincode";
   static const String refresh = "api/v1/auth/refresh";
 
+  //! general
+  static const String cafeTables = "api/v1/cafe-tables";
+
   //! minio
   static const String minioAudio = "api/v1/minio/audio/download";
   static const String minioImage = "api/v1/minio/image/download";

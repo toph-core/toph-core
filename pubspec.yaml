@@ -54,7 +54,7 @@ dependencies:
   # injector
   get_it: ^7.2.0
   # for api
-  dio: ^5.5.0+1
+  dio: ^5.9.1
   # Flutter plugin for local db for small data
   flutter_secure_storage: ^10.0.0
   # for animation button
@@ -66,18 +66,20 @@ dependencies:
   # which format the input by a given mask.
   mask_text_input_formatter: ^2.5.0
   # Get current device information from within the Flutter application.
-  device_info_plus: ^11.2.1
+  device_info_plus: ^12.3.0
   # use for shimmer loading
   shimmer: ^3.0.0
   # a widget provided to the flutter scroll component drop-down refresh and pull up load.support android and ios.
   pull_to_refresh: ^2.0.0
   # Use this package if you need more customization when notifying your user.
   keyboard_dismisser: ^3.0.0
-  flutter_onscreen_keyboard: ^0.4.2+1
   fluent_ui: ^4.13.0
   window_manager: ^0.5.1
   animated_snack_bar: ^0.4.0
   flutter_acrylic: ^1.1.4
+  device_preview: ^1.2.0
+  virtual_keyboard_multi_language: ^1.1.2
+
 
 dev_dependencies:
   flutter_test:

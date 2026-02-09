@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:mary_ai_pos/core/common/custom_button.dart';
+import 'package:mary_ai_pos/core/common/custom_loading_widget.dart';
 import 'package:mary_ai_pos/core/components/flush_bars.dart';
 import 'package:mary_ai_pos/core/constants/constants.dart';
 import 'package:mary_ai_pos/core/extension/for_context.dart';
@@ -29,7 +30,6 @@ class LoginPinScreen extends StatelessWidget {
                 state.failure.getLocalizedMessage(context),
               );
             }
-           
           },
           builder: (context, state) {
             final cubit = context.read<LoginPinCubit>();
@@ -115,6 +115,9 @@ class LoginPinScreen extends StatelessWidget {
                                   .map(
                                     (label) => _KeyButton(
                                       label: label,
+                                      isLoading:
+                                          state.status == Status.LOADING &&
+                                          label == '✓',
                                       onPressed: cubit.setPin,
                                     ),
                                   )
@@ -164,9 +167,14 @@ class _PinDot extends StatelessWidget {
 
 class _KeyButton extends StatelessWidget {
   final String label;
+  final bool isLoading;
   final ValueChanged<String> onPressed;
 
-  const _KeyButton({required this.label, required this.onPressed});
+  const _KeyButton({
+    required this.label,
+    required this.onPressed,
+    this.isLoading = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -182,12 +190,17 @@ class _KeyButton extends StatelessWidget {
             border: Border.all(color: Colors.white, width: 0.5),
           ),
           alignment: Alignment.center,
-          child: Text(
-            label,
-            style: context.textStyles.displayLg.copyWith(
-              color: AppColors.white,
-            ),
-          ),
+          child: isLoading
+              ? SizedBox(
+                  height: context.h * 0.1,
+                  child: const LoadingWidget(color: AppColors.white),
+                )
+              : Text(
+                  label,
+                  style: context.textStyles.displayLg.copyWith(
+                    color: AppColors.white,
+                  ),
+                ),
         ),
       ),
     );

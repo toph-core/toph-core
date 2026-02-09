@@ -10,7 +10,7 @@ const APP_THEME = 'app-theme';
 
 const TECHNICAL_SUPPORT_URL = '';
 
-enum Status { LOADING, UNKNOWN, SUCCESS, ERROR, OTHER, OTHER_LOADING }
+enum Status { LOADING, UNKNOWN, SUCCESS, ERROR, OTHER, OTHER_LOADING, IDLE }
 
 class LangModel {
   final String code;

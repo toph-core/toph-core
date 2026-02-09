@@ -1,6 +1,9 @@
 import 'dart:ui';
 
+import 'package:device_preview/device_preview.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_acrylic/flutter_acrylic.dart' as flutter_acrylic;
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -14,6 +17,7 @@ import 'package:mary_ai_pos/core/utils/size_config.dart';
 import 'package:mary_ai_pos/di.dart';
 import 'package:mary_ai_pos/features/view/auth/presentation/cubit/auth/auth_cubit.dart';
 import 'package:mary_ai_pos/features/view/auth/presentation/cubit/settings/settings_cubit.dart';
+import 'package:mary_ai_pos/features/view/main/presentation/cubit/main/main_cubit.dart';
 import 'package:mary_ai_pos/generated/l10n.dart';
 import 'package:window_manager/window_manager.dart';
 
@@ -21,6 +25,10 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await flutter_acrylic.Window.initialize();
   await AppUpdateService.getCloudVersion();
+  await SystemChrome.setPreferredOrientations([
+    DeviceOrientation.landscapeLeft,
+    DeviceOrientation.landscapeRight,
+  ]);
   await flutter_acrylic.Window.hideWindowControls();
   await WindowManager.instance.ensureInitialized();
   windowManager.waitUntilReadyToShow().then((_) async {
@@ -32,11 +40,13 @@ void main() async {
     await windowManager.show();
     await windowManager.setPreventClose(true);
     await windowManager.setSkipTaskbar(false);
-    // await windowManager.setFullScreen(true);
+    await windowManager.setFullScreen(true);
   });
 
   await initDi();
-  runApp(const MyApp());
+  runApp(
+    DevicePreview(enabled: !kReleaseMode, builder: (context) => const MyApp()),
+  );
 }
 
 class MyApp extends StatelessWidget {
@@ -50,6 +60,7 @@ class MyApp extends StatelessWidget {
       providers: [
         BlocProvider(create: (_) => inject<AuthCubit>()),
         BlocProvider(create: (_) => inject<SettingsCubit>()..loadAppLang()),
+        BlocProvider(create: (_) => inject<MainCubit>()),
       ],
       child: BlocSelector<SettingsCubit, SettingsState, String>(
         selector: (state) => state.language,

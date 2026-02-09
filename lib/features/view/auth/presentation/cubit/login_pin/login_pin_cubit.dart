@@ -65,6 +65,7 @@ class LoginPinCubit extends Cubit<LoginPinState> {
     emit(state.copyWith(pin: pinUpdated));
 
     if (pinUpdated.length >= 2 && value == '✓') {
+      emit(state.copyWith(pin: null));
       login(
         pincode: pinUpdated,
         onSuccess: () {

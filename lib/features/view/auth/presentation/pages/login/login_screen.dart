@@ -17,6 +17,7 @@ import 'package:mary_ai_pos/features/view/auth/presentation/cubit/auth/auth_stat
 import 'package:mary_ai_pos/features/view/auth/presentation/pages/login/widgets/liquid_text_field.dart';
 import 'package:mary_ai_pos/features/view/auth/presentation/pages/login/widgets/obsecure_icon_button_widget.dart';
 import 'package:mary_ai_pos/generated/l10n.dart';
+import 'package:virtual_keyboard_multi_language/virtual_keyboard_multi_language.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -29,11 +30,110 @@ class _OnlineOfflineStudentScreenState extends State<LoginScreen>
     with FormValidationMixin {
   final TextEditingController _brandIdController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+  final FocusNode _brandIdFocusNode = FocusNode();
+  final FocusNode _passwordFocusNode = FocusNode();
+  TextEditingController? _activeController;
+  bool _shiftEnabled = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _brandIdFocusNode.addListener(() {
+      if (_brandIdFocusNode.hasFocus) {
+        _activeController = _brandIdController;
+      }
+      setState(() {});
+    });
+    _brandIdFocusNode.requestFocus();
+    _passwordFocusNode.addListener(() {
+      if (_passwordFocusNode.hasFocus) {
+        _activeController = _passwordController;
+      }
+      setState(() {});
+    });
+  }
+
+  void _onKeyPress(VirtualKeyboardKey key) {
+    if (_activeController == null) return;
+
+    final TextEditingController controller = _activeController!;
+
+    final String currentText = controller.text;
+    final TextSelection selection = controller.selection.isValid
+        ? controller.selection
+        : TextSelection.collapsed(offset: currentText.length);
+
+    if (key.keyType == VirtualKeyboardKeyType.String) {
+      final String char = (_shiftEnabled ? key.capsText : key.text) ?? '';
+      final String newText = currentText.replaceRange(
+        selection.start,
+        selection.end,
+        char,
+      );
+      controller.value = TextEditingValue(
+        text: newText,
+        selection: TextSelection.collapsed(
+          offset: selection.start + char.length,
+        ),
+      );
+    } else if (key.keyType == VirtualKeyboardKeyType.Action) {
+      switch (key.action) {
+        case VirtualKeyboardKeyAction.Backspace:
+          if (selection.start == selection.end && selection.start > 0) {
+            final String newText = currentText.replaceRange(
+              selection.start - 1,
+              selection.start,
+              '',
+            );
+            controller.value = TextEditingValue(
+              text: newText,
+              selection: TextSelection.collapsed(offset: selection.start - 1),
+            );
+          } else if (selection.start != selection.end) {
+            final String newText = currentText.replaceRange(
+              selection.start,
+              selection.end,
+              '',
+            );
+            controller.value = TextEditingValue(
+              text: newText,
+              selection: TextSelection.collapsed(offset: selection.start),
+            );
+          }
+          break;
+        case VirtualKeyboardKeyAction.Return:
+          break;
+        case VirtualKeyboardKeyAction.Space:
+          final String char = (key.text ?? ' ');
+          final String newText = currentText.replaceRange(
+            selection.start,
+            selection.end,
+            char,
+          );
+          controller.value = TextEditingValue(
+            text: newText,
+            selection: TextSelection.collapsed(
+              offset: selection.start + char.length,
+            ),
+          );
+          break;
+        case VirtualKeyboardKeyAction.Shift:
+          setState(() {
+            _shiftEnabled = !_shiftEnabled;
+          });
+          break;
+        default:
+      }
+    }
+    updateFormValidity();
+  }
 
   @override
   void dispose() {
     _brandIdController.dispose();
     _passwordController.dispose();
+    _brandIdFocusNode.dispose();
+    _passwordFocusNode.dispose();
     super.dispose();
   }
 
@@ -44,109 +144,137 @@ class _OnlineOfflineStudentScreenState extends State<LoginScreen>
     return KeyboardDismisser(
       child: Scaffold(
         resizeToAvoidBottomInset: false,
-        body: SafeArea(
-          child: Form(
-            key: formKey,
-            child: BlocConsumer<AuthCubit, AuthState>(
-              listenWhen: (prev, curr) => prev.status != curr.status,
-              listener: (context, state) {
-                if (state.status == Status.ERROR) {
-                  showErrorMessage(
-                    context,
-                    state.failure.getLocalizedMessage(context),
-                  );
-                }
-              },
-              builder: (context, state) {
-                return Container(
-                  height: context.h,
-                  width: context.w,
-                  alignment: .center,
-                  decoration: const BoxDecoration(
-                    image: DecorationImage(
-                      image: AssetImage(AppImages.imgLoginBg),
-                      fit: BoxFit.cover,
-                    ),
-                  ),
-                  child: SizedBox(
-                    width: 400,
-                    child: Column(
-                      mainAxisSize: .min,
-                      crossAxisAlignment: .start,
-                      mainAxisAlignment: .center,
-                      children: [
-                        Text(
-                          AppStrings.strBrandId,
-                          style: context.textStyles.bodyMd.copyWith(
-                            color: AppColors.white,
-                          ),
-                        ),
-                        8.verticalSpace,
-                        LiquidTextField(
-                          hintText: S.current.strEnterBrandID,
-                          textInputType: TextInputType.text,
-                          onChange: (value) => updateFormValidity(),
-                          validator: (value) =>
-                              Validator.nameChecker(value ?? ''),
-                          textEditingController: _brandIdController,
-                        ),
-                        16.verticalSpace,
-                        Text(
-                          '${S.current.strPassword}*',
-                          style: context.textStyles.bodyMd.copyWith(
-                            color: AppColors.white,
-                          ),
-                        ),
-                        8.verticalSpace,
-                        LiquidTextField(
-                          hintText: S.current.strEnterCode,
-                          textInputType: TextInputType.text,
-                          obscure: state.obsecure,
-                          onChange: (value) => updateFormValidity(),
-                          textEditingController: _passwordController,
-                          validator: (value) =>
-                              Validator.passwordCheck(value ?? ''),
-                          suffix: ObsecureIconButtonWidget(
-                            obsecure: state.obsecure,
-                            onToggle: () => cubit.toggle(),
-                          ),
-                        ),
-                        36.verticalSpace,
-                        ValueListenableBuilder(
-                          valueListenable: formValidNotifier,
-                          builder: (_, isValid, _) {
-                            return CustomButton(
-                              text: S.current.strLogin,
-                              paddingV: 8,
-                              isLoading: state.status == Status.LOADING,
-                              onTap: () {
-                                if (isValid) {
-                                  cubit.loginWithBrandId(
-                                    req: BrandIdTokenPair(
-                                      brandId: _brandIdController.text,
-                                      password: _passwordController.text,
-                                    ),
-                                    onSuccess: () {
-                                      Navigator.pushNamed(
-                                        context,
-                                        AppRoutes.loginPinScreen,
-                                      );
-                                    },
-                                  );
-                                }
-                              },
-                              borderColor: AppColors.white,
-                              bgColor: AppColors.black.withOpacity(.3),
-                              radius: context.radius.segmentedControl,
-                            );
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
+        body: Form(
+          key: formKey,
+          child: BlocConsumer<AuthCubit, AuthState>(
+            listenWhen: (prev, curr) => prev.status != curr.status,
+            listener: (context, state) {
+              if (state.status == Status.ERROR) {
+                showErrorMessage(
+                  context,
+                  state.failure.getLocalizedMessage(context),
                 );
-              },
-            ),
+              }
+            },
+            builder: (context, state) {
+              return Stack(
+                children: [
+                  Container(
+                    height: context.h,
+                    width: context.w,
+                    alignment: .center,
+                    decoration: const BoxDecoration(
+                      image: DecorationImage(
+                        image: AssetImage(AppImages.imgLoginBg),
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                    child: SizedBox(
+                      width: 400,
+                      child: SafeArea(
+                        child: Column(
+                          mainAxisSize: .min,
+                          crossAxisAlignment: .start,
+                          mainAxisAlignment: .center,
+                          children: [
+                            Text(
+                              AppStrings.strBrandId,
+                              style: context.textStyles.bodyMd.copyWith(
+                                color: AppColors.white,
+                              ),
+                            ),
+                            8.verticalSpace,
+                            LiquidTextField(
+                              hintText: S.current.strEnterBrandID,
+                              textInputType: TextInputType.text,
+                              onChange: (value) => updateFormValidity(),
+                              validator: (value) =>
+                                  Validator.nameChecker(value ?? ''),
+                              textEditingController: _brandIdController,
+                              focusNode: _brandIdFocusNode,
+                            ),
+                            16.verticalSpace,
+                            Text(
+                              '${S.current.strPassword}*',
+                              style: context.textStyles.bodyMd.copyWith(
+                                color: AppColors.white,
+                              ),
+                            ),
+                            8.verticalSpace,
+                            LiquidTextField(
+                              hintText: S.current.strEnterCode,
+                              textInputType: TextInputType.text,
+                              obscure: state.obsecure,
+                              onChange: (value) => updateFormValidity(),
+                              textEditingController: _passwordController,
+                              validator: (value) =>
+                                  Validator.passwordCheck(value ?? ''),
+                              focusNode: _passwordFocusNode,
+                              suffix: ObsecureIconButtonWidget(
+                                obsecure: state.obsecure,
+                                onToggle: () => cubit.toggle(),
+                              ),
+                            ),
+                            36.verticalSpace,
+                            ValueListenableBuilder(
+                              valueListenable: formValidNotifier,
+                              builder: (_, isValid, _) {
+                                return CustomButton(
+                                  text: S.current.strLogin,
+                                  paddingV: 8,
+                                  isLoading: state.status == Status.LOADING,
+                                  onTap: () {
+                                    if (isValid) {
+                                      cubit.loginWithBrandId(
+                                        req: BrandIdTokenPair(
+                                          brandId: _brandIdController.text,
+                                          password: _passwordController.text,
+                                        ),
+                                        onSuccess: () {
+                                          Navigator.pushNamed(
+                                            context,
+                                            AppRoutes.loginPinScreen,
+                                          );
+                                        },
+                                      );
+                                    }
+                                  },
+                                  borderColor: AppColors.white,
+                                  bgColor: AppColors.black.withOpacity(.3),
+                                  radius: context.radius.segmentedControl,
+                                );
+                              },
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    bottom: 0,
+                    left: 0,
+                    right: 0,
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        color: context.colors.bgSecondary,
+                      ),
+                      child: SafeArea(
+                        child: VirtualKeyboard(
+                          height: context.h * .3,
+                          customLayoutKeys: VirtualKeyboardDefaultLayoutKeys([
+                            VirtualKeyboardDefaultLayouts.English,
+                          ]),
+                          textColor: Colors.black,
+                          fontSize: 24,
+                          type: VirtualKeyboardType.Alphanumeric,
+                          postKeyPress: _onKeyPress,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              );
+            },
           ),
         ),
       ),

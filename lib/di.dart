@@ -15,6 +15,11 @@ import 'package:mary_ai_pos/features/view/auth/domain/usecases/set_app_language/
 import 'package:mary_ai_pos/features/view/auth/presentation/cubit/auth/auth_cubit.dart';
 import 'package:mary_ai_pos/features/view/auth/presentation/cubit/login_pin/login_pin_cubit.dart';
 import 'package:mary_ai_pos/features/view/auth/presentation/cubit/settings/settings_cubit.dart';
+import 'package:mary_ai_pos/features/view/main/data/data_source/main_datasources.dart';
+import 'package:mary_ai_pos/features/view/main/data/repository/main_repository_impl.dart';
+import 'package:mary_ai_pos/features/view/main/domain/repository/main_repository.dart';
+import 'package:mary_ai_pos/features/view/main/domain/usecase/get_tables_usecase.dart';
+import 'package:mary_ai_pos/features/view/main/presentation/cubit/main/main_cubit.dart';
 
 final inject = GetIt.instance;
 Future<void> initDi() async {
@@ -36,11 +41,17 @@ void _dataSources() {
   inject.registerLazySingleton<AuthDatasource>(
     () => AuthDatasourceImpl(inject(), inject()),
   );
+  inject.registerLazySingleton<MainDataSources>(
+    () => MainDataSourcesImpl(inject()),
+  );
 }
 
 void _repositories() {
   inject.registerLazySingleton<AuthRepository>(
     () => AuthRepositoryImpl(inject(), inject()),
+  );
+  inject.registerLazySingleton<MainRepository>(
+    () => MainRepositoryImpl(inject()),
   );
 }
 
@@ -51,12 +62,14 @@ void _useCase() {
   inject.registerLazySingleton(() => GetAppLangauageUsecase(inject()));
   inject.registerLazySingleton(() => SetAppLanguageUscase(inject()));
   inject.registerLazySingleton(() => LoginWithBrandUsecase(inject()));
+  inject.registerLazySingleton(() => GetTablesUsecase(inject()));
 }
 
 void _cubit() {
   //? lazy singleton
   inject.registerLazySingleton(() => AuthCubit(inject(), inject(), inject()));
   inject.registerLazySingleton(() => SettingsCubit(inject(), inject()));
+  inject.registerLazySingleton(() => MainCubit(inject()));
 
   //? factory
   inject.registerFactory(() => LoginPinCubit(inject(), inject(), inject()));

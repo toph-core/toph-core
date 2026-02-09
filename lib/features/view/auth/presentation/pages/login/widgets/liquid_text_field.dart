@@ -17,6 +17,7 @@ class LiquidTextField extends StatelessWidget {
     this.formatter,
     required this.textInputType,
     this.suffix,
+    this.focusNode,
   });
 
   final Function(String value)? onChange;
@@ -29,6 +30,7 @@ class LiquidTextField extends StatelessWidget {
   final List<TextInputFormatter>? formatter;
   final TextInputType textInputType;
   final Widget? suffix;
+  final FocusNode? focusNode;
 
   @override
   Widget build(BuildContext context) {
@@ -43,13 +45,20 @@ class LiquidTextField extends StatelessWidget {
       keyboardType: textInputType,
       onChanged: onChange,
       controller: textEditingController,
+      focusNode: focusNode,
       cursorColor: context.colors.borderBrand,
       autovalidateMode: AutovalidateMode.onUserInteraction,
       decoration: InputDecoration(
         counterText: '',
-        contentPadding: const EdgeInsets.symmetric(horizontal: (16), vertical: (16)),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: (16),
+          vertical: (16),
+        ),
         suffixIcon: suffix?.paddingOnly(right: (16)),
-        suffixIconConstraints: const BoxConstraints(maxHeight: (50), maxWidth: (50)),
+        suffixIconConstraints: const BoxConstraints(
+          maxHeight: (50),
+          maxWidth: (50),
+        ),
         hintStyle: context.textStyles.bodyMd.copyWith(
           color: AppColors.ffC9C9C9,
         ),
