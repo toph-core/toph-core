@@ -4,7 +4,6 @@ import 'package:mary_ai_pos/core/common/custom_loading_widget.dart';
 import 'package:mary_ai_pos/core/constants/constants.dart';
 import 'package:mary_ai_pos/core/extension/for_context.dart';
 import 'package:mary_ai_pos/core/extension/widget_extension.dart';
-import 'package:mary_ai_pos/features/view/main/data/models/restaurant_table.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/main/main_cubit.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/main/widgets/main_header.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/main/widgets/tab_filter.dart';

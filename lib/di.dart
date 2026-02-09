@@ -23,7 +23,13 @@ import 'package:mary_ai_pos/features/view/main/presentation/cubit/main/main_cubi
 
 final inject = GetIt.instance;
 Future<void> initDi() async {
-  const FlutterSecureStorage secureStorage = FlutterSecureStorage();
+  const FlutterSecureStorage secureStorage = FlutterSecureStorage(
+    aOptions: AndroidOptions(encryptedSharedPreferences: true),
+    wOptions: WindowsOptions(useBackwardCompatibility: true),
+    mOptions: MacOsOptions(accessibility: KeychainAccessibility.first_unlock),
+    iOptions: IOSOptions(accessibility: KeychainAccessibility.first_unlock),
+  );
+
   const AppTokenStorage tokenStorage = AppTokenStorage(secureStorage);
 
   inject.registerSingleton<AppTokenStorage>(tokenStorage);
