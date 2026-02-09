@@ -5,10 +5,14 @@ import 'package:mary_ai_pos/core/api/dio_client.dart';
 import 'package:mary_ai_pos/core/api/dio_exception_handler.dart';
 import 'package:mary_ai_pos/core/api/list_api.dart';
 import 'package:mary_ai_pos/core/error/failure.dart';
-import 'package:mary_ai_pos/features/view/main/data/models/restaurant_table.dart';
+import 'package:mary_ai_pos/features/view/main/data/models/cafe_tables/cafe_tables_model.dart';
+import 'package:mary_ai_pos/features/view/main/data/models/hall/hall_model.dart';
 
 abstract class MainDataSources {
-  Future<Either<Failure, List<RestaurantTable>>> getTables();
+  Future<Either<Failure, List<CafeTableModel>>> getTablesByHallId(
+    String hallId,
+  );
+  Future<Either<Failure, List<HallModel>>> getHalls();
 }
 
 class MainDataSourcesImpl implements MainDataSources {
@@ -16,14 +20,42 @@ class MainDataSourcesImpl implements MainDataSources {
 
   MainDataSourcesImpl(this._client);
   @override
-  Future<Either<Failure, List<RestaurantTable>>> getTables() async {
+  Future<Either<Failure, List<CafeTableModel>>> getTablesByHallId(
+    String hallId,
+  ) async {
     try {
-      final response = await _client.get(ListAPI.cafeTables);
+      final response = await _client.get(
+        "${ListAPI.cafeTablesByHallId}/$hallId",
+      );
 
       return Right(
-        (response.data['data'] as List)
-            .map((e) => RestaurantTable.fromJson(e))
-            .toList(),
+        (response.data['data'] as List?)
+            ?.map((e) => CafeTableModel.fromJson(e))
+            .toList() ?? [],
+      );
+    } on DioException catch (exception) {
+      return Left(handleDioException(exception));
+    } on FormatException catch (e, st) {
+      if (kDebugMode) print('ParsingError: $e\n$st');
+      return const Left(ParsingFailure());
+    } on TypeError catch (e, st) {
+      if (kDebugMode) print('ParsingError: $e\n$st');
+      return const Left(ParsingFailure());
+    } catch (e, st) {
+      if (kDebugMode) print('Unknown error: $e\n$st');
+      return const Left(UnknownFailure());
+    }
+  }
+
+  @override
+  Future<Either<Failure, List<HallModel>>> getHalls() async {
+    try {
+      final response = await _client.get(ListAPI.halls);
+
+      return Right(
+        (response.data['data'] as List?)
+            ?.map((e) => HallModel.fromJson(e))
+            .toList() ?? [],
       );
     } on DioException catch (exception) {
       return Left(handleDioException(exception));

@@ -2457,7 +2457,6 @@ class CustomKeyboard extends StatelessWidget {
                             child: SizedBox(
                               width: 29.20,
                               height: 29.20,
-                              child: Stack(),
                             ),
                           ),
                         ],

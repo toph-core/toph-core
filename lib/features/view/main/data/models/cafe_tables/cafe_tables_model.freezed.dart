@@ -3,7 +3,7 @@
 // ignore_for_file: type=lint
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
-part of 'restaurant_table.dart';
+part of 'cafe_tables_model.dart';
 
 // **************************************************************************
 // FreezedGenerator
@@ -14,12 +14,12 @@ T _$identity<T>(T value) => value;
 final _privateConstructorUsedError = UnsupportedError(
     'It seems like you constructed your class using `MyClass._()`. This constructor is only meant to be used by freezed and you are not supposed to need it nor use it.\nPlease check the documentation here for more information: https://github.com/rrousselGit/freezed#adding-getters-and-methods-to-our-models');
 
-RestaurantTable _$RestaurantTableFromJson(Map<String, dynamic> json) {
-  return _RestaurantTable.fromJson(json);
+CafeTableModel _$CafeTableModelFromJson(Map<String, dynamic> json) {
+  return _CafeTableModel.fromJson(json);
 }
 
 /// @nodoc
-mixin _$RestaurantTable {
+mixin _$CafeTableModel {
   String get id => throw _privateConstructorUsedError;
   @JsonKey(name: 'hall_id')
   String get hallId => throw _privateConstructorUsedError;
@@ -36,15 +36,15 @@ mixin _$RestaurantTable {
 
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
   @JsonKey(ignore: true)
-  $RestaurantTableCopyWith<RestaurantTable> get copyWith =>
+  $CafeTableModelCopyWith<CafeTableModel> get copyWith =>
       throw _privateConstructorUsedError;
 }
 
 /// @nodoc
-abstract class $RestaurantTableCopyWith<$Res> {
-  factory $RestaurantTableCopyWith(
-          RestaurantTable value, $Res Function(RestaurantTable) then) =
-      _$RestaurantTableCopyWithImpl<$Res, RestaurantTable>;
+abstract class $CafeTableModelCopyWith<$Res> {
+  factory $CafeTableModelCopyWith(
+          CafeTableModel value, $Res Function(CafeTableModel) then) =
+      _$CafeTableModelCopyWithImpl<$Res, CafeTableModel>;
   @useResult
   $Res call(
       {String id,
@@ -60,9 +60,9 @@ abstract class $RestaurantTableCopyWith<$Res> {
 }
 
 /// @nodoc
-class _$RestaurantTableCopyWithImpl<$Res, $Val extends RestaurantTable>
-    implements $RestaurantTableCopyWith<$Res> {
-  _$RestaurantTableCopyWithImpl(this._value, this._then);
+class _$CafeTableModelCopyWithImpl<$Res, $Val extends CafeTableModel>
+    implements $CafeTableModelCopyWith<$Res> {
+  _$CafeTableModelCopyWithImpl(this._value, this._then);
 
   // ignore: unused_field
   final $Val _value;
@@ -129,11 +129,11 @@ class _$RestaurantTableCopyWithImpl<$Res, $Val extends RestaurantTable>
 }
 
 /// @nodoc
-abstract class _$$RestaurantTableImplCopyWith<$Res>
-    implements $RestaurantTableCopyWith<$Res> {
-  factory _$$RestaurantTableImplCopyWith(_$RestaurantTableImpl value,
-          $Res Function(_$RestaurantTableImpl) then) =
-      __$$RestaurantTableImplCopyWithImpl<$Res>;
+abstract class _$$CafeTableModelImplCopyWith<$Res>
+    implements $CafeTableModelCopyWith<$Res> {
+  factory _$$CafeTableModelImplCopyWith(_$CafeTableModelImpl value,
+          $Res Function(_$CafeTableModelImpl) then) =
+      __$$CafeTableModelImplCopyWithImpl<$Res>;
   @override
   @useResult
   $Res call(
@@ -150,11 +150,11 @@ abstract class _$$RestaurantTableImplCopyWith<$Res>
 }
 
 /// @nodoc
-class __$$RestaurantTableImplCopyWithImpl<$Res>
-    extends _$RestaurantTableCopyWithImpl<$Res, _$RestaurantTableImpl>
-    implements _$$RestaurantTableImplCopyWith<$Res> {
-  __$$RestaurantTableImplCopyWithImpl(
-      _$RestaurantTableImpl _value, $Res Function(_$RestaurantTableImpl) _then)
+class __$$CafeTableModelImplCopyWithImpl<$Res>
+    extends _$CafeTableModelCopyWithImpl<$Res, _$CafeTableModelImpl>
+    implements _$$CafeTableModelImplCopyWith<$Res> {
+  __$$CafeTableModelImplCopyWithImpl(
+      _$CafeTableModelImpl _value, $Res Function(_$CafeTableModelImpl) _then)
       : super(_value, _then);
 
   @pragma('vm:prefer-inline')
@@ -171,7 +171,7 @@ class __$$RestaurantTableImplCopyWithImpl<$Res>
     Object? capacity = null,
     Object? status = null,
   }) {
-    return _then(_$RestaurantTableImpl(
+    return _then(_$CafeTableModelImpl(
       id: null == id
           ? _value.id
           : id // ignore: cast_nullable_to_non_nullable
@@ -218,8 +218,8 @@ class __$$RestaurantTableImplCopyWithImpl<$Res>
 
 /// @nodoc
 @JsonSerializable()
-class _$RestaurantTableImpl implements _RestaurantTable {
-  const _$RestaurantTableImpl(
+class _$CafeTableModelImpl implements _CafeTableModel {
+  const _$CafeTableModelImpl(
       {required this.id,
       @JsonKey(name: 'hall_id') required this.hallId,
       required this.number,
@@ -231,8 +231,8 @@ class _$RestaurantTableImpl implements _RestaurantTable {
       required this.capacity,
       this.status = TableStatus.free});
 
-  factory _$RestaurantTableImpl.fromJson(Map<String, dynamic> json) =>
-      _$$RestaurantTableImplFromJson(json);
+  factory _$CafeTableModelImpl.fromJson(Map<String, dynamic> json) =>
+      _$$CafeTableModelImplFromJson(json);
 
   @override
   final String id;
@@ -261,14 +261,14 @@ class _$RestaurantTableImpl implements _RestaurantTable {
 
   @override
   String toString() {
-    return 'RestaurantTable(id: $id, hallId: $hallId, number: $number, posX: $posX, posY: $posY, width: $width, height: $height, rotation: $rotation, capacity: $capacity, status: $status)';
+    return 'CafeTableModel(id: $id, hallId: $hallId, number: $number, posX: $posX, posY: $posY, width: $width, height: $height, rotation: $rotation, capacity: $capacity, status: $status)';
   }
 
   @override
   bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$RestaurantTableImpl &&
+            other is _$CafeTableModelImpl &&
             (identical(other.id, id) || other.id == id) &&
             (identical(other.hallId, hallId) || other.hallId == hallId) &&
             (identical(other.number, number) || other.number == number) &&
@@ -291,20 +291,20 @@ class _$RestaurantTableImpl implements _RestaurantTable {
   @JsonKey(ignore: true)
   @override
   @pragma('vm:prefer-inline')
-  _$$RestaurantTableImplCopyWith<_$RestaurantTableImpl> get copyWith =>
-      __$$RestaurantTableImplCopyWithImpl<_$RestaurantTableImpl>(
+  _$$CafeTableModelImplCopyWith<_$CafeTableModelImpl> get copyWith =>
+      __$$CafeTableModelImplCopyWithImpl<_$CafeTableModelImpl>(
           this, _$identity);
 
   @override
   Map<String, dynamic> toJson() {
-    return _$$RestaurantTableImplToJson(
+    return _$$CafeTableModelImplToJson(
       this,
     );
   }
 }
 
-abstract class _RestaurantTable implements RestaurantTable {
-  const factory _RestaurantTable(
+abstract class _CafeTableModel implements CafeTableModel {
+  const factory _CafeTableModel(
       {required final String id,
       @JsonKey(name: 'hall_id') required final String hallId,
       required final int number,
@@ -314,10 +314,10 @@ abstract class _RestaurantTable implements RestaurantTable {
       required final double height,
       required final double rotation,
       required final int capacity,
-      final TableStatus status}) = _$RestaurantTableImpl;
+      final TableStatus status}) = _$CafeTableModelImpl;
 
-  factory _RestaurantTable.fromJson(Map<String, dynamic> json) =
-      _$RestaurantTableImpl.fromJson;
+  factory _CafeTableModel.fromJson(Map<String, dynamic> json) =
+      _$CafeTableModelImpl.fromJson;
 
   @override
   String get id;
@@ -344,6 +344,6 @@ abstract class _RestaurantTable implements RestaurantTable {
   TableStatus get status;
   @override
   @JsonKey(ignore: true)
-  _$$RestaurantTableImplCopyWith<_$RestaurantTableImpl> get copyWith =>
+  _$$CafeTableModelImplCopyWith<_$CafeTableModelImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }

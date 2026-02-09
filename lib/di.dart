@@ -18,7 +18,8 @@ import 'package:mary_ai_pos/features/view/auth/presentation/cubit/settings/setti
 import 'package:mary_ai_pos/features/view/main/data/data_source/main_datasources.dart';
 import 'package:mary_ai_pos/features/view/main/data/repository/main_repository_impl.dart';
 import 'package:mary_ai_pos/features/view/main/domain/repository/main_repository.dart';
-import 'package:mary_ai_pos/features/view/main/domain/usecase/get_tables_usecase.dart';
+import 'package:mary_ai_pos/features/view/main/domain/usecase/get_halls_usecase.dart';
+import 'package:mary_ai_pos/features/view/main/domain/usecase/get_tables_by_hall_id_usecase.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/main/main_cubit.dart';
 
 final inject = GetIt.instance;
@@ -68,14 +69,15 @@ void _useCase() {
   inject.registerLazySingleton(() => GetAppLangauageUsecase(inject()));
   inject.registerLazySingleton(() => SetAppLanguageUscase(inject()));
   inject.registerLazySingleton(() => LoginWithBrandUsecase(inject()));
-  inject.registerLazySingleton(() => GetTablesUsecase(inject()));
+  inject.registerLazySingleton(() => GetTablesByHallIdUsecase(inject()));
+  inject.registerLazySingleton(() => GetHallsUsecase(inject()));
 }
 
 void _cubit() {
   //? lazy singleton
   inject.registerLazySingleton(() => AuthCubit(inject(), inject(), inject()));
   inject.registerLazySingleton(() => SettingsCubit(inject(), inject()));
-  inject.registerLazySingleton(() => MainCubit(inject()));
+  inject.registerLazySingleton(() => MainCubit(inject(), inject()));
 
   //? factory
   inject.registerFactory(() => LoginPinCubit(inject(), inject(), inject()));

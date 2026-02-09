@@ -1,13 +1,13 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 
-part 'restaurant_table.freezed.dart';
-part 'restaurant_table.g.dart';
+part 'cafe_tables_model.freezed.dart';
+part 'cafe_tables_model.g.dart';
 
 enum TableStatus { free, busy }
 
 @freezed
-class RestaurantTable with _$RestaurantTable {
-  const factory RestaurantTable({
+class CafeTableModel with _$CafeTableModel {
+  const factory CafeTableModel({
     required String id,
     @JsonKey(name: 'hall_id') required String hallId,
     required int number,
@@ -18,8 +18,8 @@ class RestaurantTable with _$RestaurantTable {
     required double rotation,
     required int capacity,
     @Default(TableStatus.free) TableStatus status,
-  }) = _RestaurantTable;
+  }) = _CafeTableModel;
 
-  factory RestaurantTable.fromJson(Map<String, dynamic> json) =>
-      _$RestaurantTableFromJson(json);
+  factory CafeTableModel.fromJson(Map<String, dynamic> json) =>
+      _$CafeTableModelFromJson(json);
 }

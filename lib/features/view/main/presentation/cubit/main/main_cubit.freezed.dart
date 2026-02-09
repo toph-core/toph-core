@@ -16,7 +16,10 @@ final _privateConstructorUsedError = UnsupportedError(
 
 /// @nodoc
 mixin _$MainState {
-  List<RestaurantTable>? get tables => throw _privateConstructorUsedError;
+  List<CafeTableModel>? get tables => throw _privateConstructorUsedError;
+  List<HallModel>? get halls => throw _privateConstructorUsedError;
+  bool get isLoading => throw _privateConstructorUsedError;
+  String? get selectedHallId => throw _privateConstructorUsedError;
   Failure get failure => throw _privateConstructorUsedError;
   Status get status => throw _privateConstructorUsedError;
 
@@ -30,7 +33,13 @@ abstract class $MainStateCopyWith<$Res> {
   factory $MainStateCopyWith(MainState value, $Res Function(MainState) then) =
       _$MainStateCopyWithImpl<$Res, MainState>;
   @useResult
-  $Res call({List<RestaurantTable>? tables, Failure failure, Status status});
+  $Res call(
+      {List<CafeTableModel>? tables,
+      List<HallModel>? halls,
+      bool isLoading,
+      String? selectedHallId,
+      Failure failure,
+      Status status});
 }
 
 /// @nodoc
@@ -47,6 +56,9 @@ class _$MainStateCopyWithImpl<$Res, $Val extends MainState>
   @override
   $Res call({
     Object? tables = freezed,
+    Object? halls = freezed,
+    Object? isLoading = null,
+    Object? selectedHallId = freezed,
     Object? failure = null,
     Object? status = null,
   }) {
@@ -54,7 +66,19 @@ class _$MainStateCopyWithImpl<$Res, $Val extends MainState>
       tables: freezed == tables
           ? _value.tables
           : tables // ignore: cast_nullable_to_non_nullable
-              as List<RestaurantTable>?,
+              as List<CafeTableModel>?,
+      halls: freezed == halls
+          ? _value.halls
+          : halls // ignore: cast_nullable_to_non_nullable
+              as List<HallModel>?,
+      isLoading: null == isLoading
+          ? _value.isLoading
+          : isLoading // ignore: cast_nullable_to_non_nullable
+              as bool,
+      selectedHallId: freezed == selectedHallId
+          ? _value.selectedHallId
+          : selectedHallId // ignore: cast_nullable_to_non_nullable
+              as String?,
       failure: null == failure
           ? _value.failure
           : failure // ignore: cast_nullable_to_non_nullable
@@ -75,7 +99,13 @@ abstract class _$$MainStateImplCopyWith<$Res>
       __$$MainStateImplCopyWithImpl<$Res>;
   @override
   @useResult
-  $Res call({List<RestaurantTable>? tables, Failure failure, Status status});
+  $Res call(
+      {List<CafeTableModel>? tables,
+      List<HallModel>? halls,
+      bool isLoading,
+      String? selectedHallId,
+      Failure failure,
+      Status status});
 }
 
 /// @nodoc
@@ -90,6 +120,9 @@ class __$$MainStateImplCopyWithImpl<$Res>
   @override
   $Res call({
     Object? tables = freezed,
+    Object? halls = freezed,
+    Object? isLoading = null,
+    Object? selectedHallId = freezed,
     Object? failure = null,
     Object? status = null,
   }) {
@@ -97,7 +130,19 @@ class __$$MainStateImplCopyWithImpl<$Res>
       tables: freezed == tables
           ? _value._tables
           : tables // ignore: cast_nullable_to_non_nullable
-              as List<RestaurantTable>?,
+              as List<CafeTableModel>?,
+      halls: freezed == halls
+          ? _value._halls
+          : halls // ignore: cast_nullable_to_non_nullable
+              as List<HallModel>?,
+      isLoading: null == isLoading
+          ? _value.isLoading
+          : isLoading // ignore: cast_nullable_to_non_nullable
+              as bool,
+      selectedHallId: freezed == selectedHallId
+          ? _value.selectedHallId
+          : selectedHallId // ignore: cast_nullable_to_non_nullable
+              as String?,
       failure: null == failure
           ? _value.failure
           : failure // ignore: cast_nullable_to_non_nullable
@@ -114,14 +159,18 @@ class __$$MainStateImplCopyWithImpl<$Res>
 
 class _$MainStateImpl implements _MainState {
   const _$MainStateImpl(
-      {final List<RestaurantTable>? tables,
+      {final List<CafeTableModel>? tables,
+      final List<HallModel>? halls,
+      this.isLoading = false,
+      this.selectedHallId,
       this.failure = const UnknownFailure(),
       this.status = Status.UNKNOWN})
-      : _tables = tables;
+      : _tables = tables,
+        _halls = halls;
 
-  final List<RestaurantTable>? _tables;
+  final List<CafeTableModel>? _tables;
   @override
-  List<RestaurantTable>? get tables {
+  List<CafeTableModel>? get tables {
     final value = _tables;
     if (value == null) return null;
     if (_tables is EqualUnmodifiableListView) return _tables;
@@ -129,6 +178,21 @@ class _$MainStateImpl implements _MainState {
     return EqualUnmodifiableListView(value);
   }
 
+  final List<HallModel>? _halls;
+  @override
+  List<HallModel>? get halls {
+    final value = _halls;
+    if (value == null) return null;
+    if (_halls is EqualUnmodifiableListView) return _halls;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(value);
+  }
+
+  @override
+  @JsonKey()
+  final bool isLoading;
+  @override
+  final String? selectedHallId;
   @override
   @JsonKey()
   final Failure failure;
@@ -138,7 +202,7 @@ class _$MainStateImpl implements _MainState {
 
   @override
   String toString() {
-    return 'MainState(tables: $tables, failure: $failure, status: $status)';
+    return 'MainState(tables: $tables, halls: $halls, isLoading: $isLoading, selectedHallId: $selectedHallId, failure: $failure, status: $status)';
   }
 
   @override
@@ -147,13 +211,24 @@ class _$MainStateImpl implements _MainState {
         (other.runtimeType == runtimeType &&
             other is _$MainStateImpl &&
             const DeepCollectionEquality().equals(other._tables, _tables) &&
+            const DeepCollectionEquality().equals(other._halls, _halls) &&
+            (identical(other.isLoading, isLoading) ||
+                other.isLoading == isLoading) &&
+            (identical(other.selectedHallId, selectedHallId) ||
+                other.selectedHallId == selectedHallId) &&
             (identical(other.failure, failure) || other.failure == failure) &&
             (identical(other.status, status) || other.status == status));
   }
 
   @override
-  int get hashCode => Object.hash(runtimeType,
-      const DeepCollectionEquality().hash(_tables), failure, status);
+  int get hashCode => Object.hash(
+      runtimeType,
+      const DeepCollectionEquality().hash(_tables),
+      const DeepCollectionEquality().hash(_halls),
+      isLoading,
+      selectedHallId,
+      failure,
+      status);
 
   @JsonKey(ignore: true)
   @override
@@ -164,12 +239,21 @@ class _$MainStateImpl implements _MainState {
 
 abstract class _MainState implements MainState {
   const factory _MainState(
-      {final List<RestaurantTable>? tables,
+      {final List<CafeTableModel>? tables,
+      final List<HallModel>? halls,
+      final bool isLoading,
+      final String? selectedHallId,
       final Failure failure,
       final Status status}) = _$MainStateImpl;
 
   @override
-  List<RestaurantTable>? get tables;
+  List<CafeTableModel>? get tables;
+  @override
+  List<HallModel>? get halls;
+  @override
+  bool get isLoading;
+  @override
+  String? get selectedHallId;
   @override
   Failure get failure;
   @override

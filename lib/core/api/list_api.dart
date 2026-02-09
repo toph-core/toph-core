@@ -6,7 +6,8 @@ class ListAPI {
   static const String refresh = "api/v1/auth/refresh";
 
   //! general
-  static const String cafeTables = "api/v1/cafe-tables";
+  static const String cafeTablesByHallId = "api/v1/cafe-tables/available/hall";
+  static const String halls = "api/v1/halls";
 
   //! minio
   static const String minioAudio = "api/v1/minio/audio/download";

@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:mary_ai_pos/core/common/custom_hover_effect_widget.dart';
+import 'package:mary_ai_pos/core/extension/for_context.dart';
+import 'package:mary_ai_pos/core/extension/widget_extension.dart';
 import 'package:mary_ai_pos/core/routes/app_routes.dart';
 import 'package:mary_ai_pos/di.dart';
 import 'package:mary_ai_pos/features/view/auth/presentation/cubit/auth/auth_cubit.dart';
@@ -48,79 +51,53 @@ class LogoutDialog extends StatelessWidget {
                 spacing: 8,
                 children: [
                   Expanded(
-                    child: GestureDetector(
+                    child: CustomHoverEffectWidget(
                       onTap: () => Navigator.pop(context),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 12,
+                      bgColor: const Color(0xFFF6F7F9),
+                      borderRadius: BorderRadius.circular(16),
+                      child: const Text(
+                        'Bekor qilish',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: Color(0xFF2D2D2D),
+                          fontSize: 16,
+                          fontFamily: 'Inter',
+                          fontWeight: FontWeight.w500,
                         ),
-                        decoration: ShapeDecoration(
-                          color: const Color(0xFFF6F7F9),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                        ),
-                        child: const Row(
-                          mainAxisSize: MainAxisSize.min,
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          spacing: 10,
-                          children: [
-                            Text(
-                              'Bekor qilish',
-                              style: TextStyle(
-                                color: Color(0xFF2D2D2D),
-                                fontSize: 16,
-                                fontFamily: 'Inter',
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
+                      ).paddingSymmetric(horizontal: 10, vertical: 12),
                     ),
                   ),
                   Expanded(
-                    child: GestureDetector(
+                    child: CustomHoverEffectWidget(
+                      bgColor: const Color(0x19DB1F1F),
+                      borderRadius:context.radius.card,
                       onTap: () {
                         inject<AuthCubit>().logout(() {
                           Navigator.pushNamedAndRemoveUntil(
                             context,
-                            AppRoutes.loginPinScreen,
+                            AppRoutes.loginScreen,
                             (route) => false,
                           );
                         });
                       },
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 12,
-                        ),
-                        decoration: ShapeDecoration(
-                          color: const Color(0x19DB1F1F),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                        ),
-                        child: const Row(
-                          mainAxisSize: MainAxisSize.min,
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          spacing: 10,
-                          children: [
-                            Text(
-                              'Chiqish',
-                              style: TextStyle(
-                                color: Color(0xFFDB2020),
-                                fontSize: 16,
-                                fontFamily: 'Inter',
-                                fontWeight: FontWeight.w500,
-                              ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        spacing: 10,
+                        children: [
+                          Text(
+                            'Chiqish',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: Color(0xFFDB2020),
+                              fontSize: 16,
+                              fontFamily: 'Inter',
+                              fontWeight: FontWeight.w500,
                             ),
-                          ],
-                        ),
-                      ),
+                          ),
+                        ],
+                      ).paddingSymmetric(horizontal: 10, vertical: 12),
                     ),
                   ),
                 ],

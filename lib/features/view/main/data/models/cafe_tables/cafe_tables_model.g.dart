@@ -1,14 +1,13 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'restaurant_table.dart';
+part of 'cafe_tables_model.dart';
 
 // **************************************************************************
 // JsonSerializableGenerator
 // **************************************************************************
 
-_$RestaurantTableImpl _$$RestaurantTableImplFromJson(
-        Map<String, dynamic> json) =>
-    _$RestaurantTableImpl(
+_$CafeTableModelImpl _$$CafeTableModelImplFromJson(Map<String, dynamic> json) =>
+    _$CafeTableModelImpl(
       id: json['id'] as String,
       hallId: json['hall_id'] as String,
       number: (json['number'] as num).toInt(),
@@ -22,8 +21,8 @@ _$RestaurantTableImpl _$$RestaurantTableImplFromJson(
           TableStatus.free,
     );
 
-Map<String, dynamic> _$$RestaurantTableImplToJson(
-        _$RestaurantTableImpl instance) =>
+Map<String, dynamic> _$$CafeTableModelImplToJson(
+        _$CafeTableModelImpl instance) =>
     <String, dynamic>{
       'id': instance.id,
       'hall_id': instance.hallId,
