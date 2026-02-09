@@ -2,7 +2,7 @@ name: mary_ai_pos
 description: "A new Flutter project."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
-publish_to: 'none' # Remove this line if you wish to publish to pub.dev
+publish_to: "none" # Remove this line if you wish to publish to pub.dev
 
 # The following defines the version and build number for your application.
 # A version number is three numbers separated by dots, like 1.2.43
@@ -56,7 +56,7 @@ dependencies:
   # for api
   dio: ^5.9.1
   # Flutter plugin for local db for small data
-  flutter_secure_storage: ^10.0.0
+  shared_preferences: ^2.5.4
   # for animation button
   scale_button: ^2.1.2
   # for animation
@@ -80,7 +80,6 @@ dependencies:
   device_preview: ^1.2.0
   virtual_keyboard_multi_language: ^1.1.2
 
-
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -96,7 +95,6 @@ flutter:
     - assets/fonts/
     - assets/images/
     - assets/icons/
- 
 
 fonts:
   - family: Inter

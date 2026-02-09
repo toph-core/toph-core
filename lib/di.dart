@@ -1,7 +1,7 @@
 import 'package:mary_ai_pos/core/api/dio_client.dart';
 import 'package:mary_ai_pos/core/auth/storage/token_storage_impl.dart';
 import 'package:mary_ai_pos/core/service/minio/minio_service.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:get_it/get_it.dart';
 import 'package:mary_ai_pos/features/view/auth/data/data_sources/auth_datasource.dart';
 import 'package:mary_ai_pos/features/view/auth/data/repositories/login_repository_impl.dart';
@@ -24,14 +24,9 @@ import 'package:mary_ai_pos/features/view/main/presentation/cubit/main/main_cubi
 
 final inject = GetIt.instance;
 Future<void> initDi() async {
-  const FlutterSecureStorage secureStorage = FlutterSecureStorage(
-    aOptions: AndroidOptions(encryptedSharedPreferences: true),
-    wOptions: WindowsOptions(useBackwardCompatibility: true),
-    mOptions: MacOsOptions(accessibility: KeychainAccessibility.first_unlock),
-    iOptions: IOSOptions(accessibility: KeychainAccessibility.first_unlock),
-  );
+  final SharedPreferences prefs = await SharedPreferences.getInstance();
 
-  const AppTokenStorage tokenStorage = AppTokenStorage(secureStorage);
+  final AppTokenStorage tokenStorage = AppTokenStorage(prefs);
 
   inject.registerSingleton<AppTokenStorage>(tokenStorage);
   final MinioService minioService = MinioService.instance;
