@@ -6,6 +6,7 @@ import 'package:mary_ai_pos/features/view/auth/data/models/login/request/login_r
 abstract class AuthRepository {
   Future<Either<Failure, bool>> checkUserToAuth();
   Future<Either<Failure, bool>> logoutFromApp();
+  Future<Either<Failure, bool>> logout();
   Future<Either<Failure, bool>> login(LoginRequestModel req);
   Future<Either<Failure, bool>> loginWithBrandId(BrandIdTokenPair req);
   Future<Either<Failure, String>> setAppLang(String lang);

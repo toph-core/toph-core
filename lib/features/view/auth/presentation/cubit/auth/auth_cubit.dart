@@ -5,7 +5,7 @@ import 'package:mary_ai_pos/core/error/failure.dart';
 import 'package:mary_ai_pos/core/usecase/usecase.dart';
 import 'package:mary_ai_pos/features/view/auth/domain/usecases/check_user_auth/check_user_auth.dart';
 import 'package:mary_ai_pos/features/view/auth/domain/usecases/login_with_brand/login_with_brand_usecase.dart';
-import 'package:mary_ai_pos/features/view/auth/domain/usecases/logout/logout.dart';
+import 'package:mary_ai_pos/features/view/auth/domain/usecases/logout/logout_from_app_usecase.dart';
 import 'package:mary_ai_pos/features/view/auth/presentation/cubit/auth/auth_state.dart';
 
 class AuthCubit extends Cubit<AuthState> {
@@ -15,7 +15,7 @@ class AuthCubit extends Cubit<AuthState> {
     this._loginWithBrandUsecase,
   ) : super(const AuthState());
   final CheckUserAuthUseCase _checkUserAuthUseCase;
-  final LogoutUseCase _logoutUseCase;
+  final LogoutFromAppUseCase _logoutUseCase;
   final LoginWithBrandUsecase _loginWithBrandUsecase;
 
   Future<bool> checkUserToAuth() async {
@@ -47,7 +47,7 @@ class AuthCubit extends Cubit<AuthState> {
     );
   }
 
-  Future<void> logout(Function() onSuccess) async {
+  Future<void> logoutFromApp(Function() onSuccess) async {
     emit(state.copyWith(status: Status.LOADING));
 
     var result = await _logoutUseCase.call(NoParams());

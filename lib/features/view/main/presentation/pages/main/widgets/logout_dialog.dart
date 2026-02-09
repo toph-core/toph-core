@@ -7,7 +7,8 @@ import 'package:mary_ai_pos/di.dart';
 import 'package:mary_ai_pos/features/view/auth/presentation/cubit/auth/auth_cubit.dart';
 
 class LogoutDialog extends StatelessWidget {
-  const LogoutDialog({super.key});
+  final String routeName;
+  const LogoutDialog({super.key, required this.routeName});
 
   @override
   Widget build(BuildContext context) {
@@ -70,12 +71,12 @@ class LogoutDialog extends StatelessWidget {
                   Expanded(
                     child: CustomHoverEffectWidget(
                       bgColor: const Color(0x19DB1F1F),
-                      borderRadius:context.radius.card,
+                      borderRadius: context.radius.card,
                       onTap: () {
-                        inject<AuthCubit>().logout(() {
+                        inject<AuthCubit>().logoutFromApp(() {
                           Navigator.pushNamedAndRemoveUntil(
                             context,
-                            AppRoutes.loginScreen,
+                            routeName,
                             (route) => false,
                           );
                         });

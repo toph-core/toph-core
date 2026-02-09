@@ -9,14 +9,14 @@ import 'package:mary_ai_pos/core/usecase/usecase.dart';
 import 'package:mary_ai_pos/core/utils/helper/helper_widget.dart';
 import 'package:mary_ai_pos/features/view/auth/data/models/login/request/login_request_model.dart';
 import 'package:mary_ai_pos/features/view/auth/domain/usecases/login/login_usecase.dart';
-import 'package:mary_ai_pos/features/view/auth/domain/usecases/logout/logout.dart';
+import 'package:mary_ai_pos/features/view/auth/domain/usecases/logout/logout_from_app_usecase.dart';
 
 part 'login_pin_cubit.freezed.dart';
 part 'login_pin_state.dart';
 
 class LoginPinCubit extends Cubit<LoginPinState> {
   final LoginUsecase _loginUsecase;
-  final LogoutUseCase _logoutUseCase;
+  final LogoutFromAppUseCase _logoutUseCase;
   final AppTokenStorage _secureStorage;
   LoginPinCubit(this._loginUsecase, this._logoutUseCase, this._secureStorage)
     : super(const LoginPinState());
@@ -79,7 +79,7 @@ class LoginPinCubit extends Cubit<LoginPinState> {
     }
   }
 
-  void logout(Function() onLogout) async {
+  void logoutFromApp(Function() onLogout) async {
     emit(state.copyWith(status: Status.LOADING));
     var result = await _logoutUseCase.call(NoParams());
 

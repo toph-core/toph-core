@@ -50,7 +50,7 @@ class LoginPinScreen extends StatelessWidget {
                       child: IntrinsicWidth(
                         child: CustomButton(
                           text: "Chiqish",
-                          onTap: () => cubit.logout(() {
+                          onTap: () => cubit.logoutFromApp(() {
                             Navigator.pushNamedAndRemoveUntil(
                               context,
                               AppRoutes.loginScreen,

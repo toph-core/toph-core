@@ -3,6 +3,7 @@ import 'package:flutter_svg/svg.dart';
 import 'package:mary_ai_pos/core/common/custom_hover_effect_widget.dart';
 import 'package:mary_ai_pos/core/extension/for_context.dart';
 import 'package:mary_ai_pos/core/extension/widget_extension.dart';
+import 'package:mary_ai_pos/core/routes/app_routes.dart';
 import 'package:mary_ai_pos/core/values/app_assets.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/main/widgets/logout_dialog.dart';
 
@@ -90,7 +91,16 @@ class MainHeader extends StatelessWidget {
                 child: SvgPicture.asset(AppIcons.icArchive).paddingAll(16),
               ),
               CustomHoverEffectWidget(
-                onTap: () {},
+                onTap: () {
+                  showDialog(
+                    context: context,
+                    builder: (context) {
+                      return const LogoutDialog(
+                        routeName: AppRoutes.loginScreen,
+                      );
+                    },
+                  );
+                },
                 bgColor: const Color(0xFF2D2D2D),
                 borderRadius: context.radius.card,
                 child: Center(
@@ -110,7 +120,9 @@ class MainHeader extends StatelessWidget {
                   showDialog(
                     context: context,
                     builder: (context) {
-                      return const LogoutDialog();
+                      return const LogoutDialog(
+                        routeName: AppRoutes.loginPinScreen,
+                      );
                     },
                   );
                 },

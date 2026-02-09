@@ -44,6 +44,16 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
+  Future<Either<Failure, bool>> logout() async {
+    try {
+      await _tokenStorage.deleteAuthToken();
+      return const Right(true);
+    } catch (e) {
+      return const Left(CacheFailure());
+    }
+  }
+
+  @override
   Future<Either<Failure, bool>> login(LoginRequestModel req) async {
     final response = await _datasources.login(req);
     return response.fold(
