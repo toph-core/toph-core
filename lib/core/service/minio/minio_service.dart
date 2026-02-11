@@ -14,7 +14,7 @@ class MinioService {
   Future<Uint8List?> getImageByObjectName(String objectName) async {
     try {
       final Response response = await _client.post(
-        ListAPI.minioImage,
+        ListAPI.mediaImage,
         data: {"object_name": objectName},
         options: Options(responseType: ResponseType.bytes),
       );
@@ -28,7 +28,7 @@ class MinioService {
   Future<Uint8List?> getAudioByObjectName(String objectName) async {
     try {
       final Response response = await _client.post(
-        ListAPI.minioAudio,
+        ListAPI.mediaAudio,
         data: {"object_name": objectName},
         options: Options(responseType: ResponseType.bytes),
       );
@@ -42,7 +42,7 @@ class MinioService {
   Future<Uint8List?> getBookByObjectName(String objectName) async {
     try {
       final Response response = await _client.post(
-        ListAPI.minioBook,
+        ListAPI.mediaBook,
         data: {"object_name": objectName},
         options: Options(responseType: ResponseType.bytes),
       );
@@ -56,7 +56,7 @@ class MinioService {
   Future<Uint8List?> getVideoByObjectName(String objectName) async {
     try {
       final Response response = await _client.post(
-        ListAPI.minioVideo,
+        ListAPI.mediaVideo,
         data: {"object_name": objectName},
         options: Options(responseType: ResponseType.bytes),
       );
@@ -77,7 +77,7 @@ class MinioService {
       });
 
       final Response response = await _client.post(
-        ListAPI.minioImagePost,
+        ListAPI.mediaImagePost,
         data: formData,
       );
 

@@ -1,0 +1,93 @@
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:mary_ai_pos/core/constants/constants.dart';
+import 'package:mary_ai_pos/core/error/failure.dart';
+import 'package:mary_ai_pos/core/usecase/usecase.dart';
+import 'package:mary_ai_pos/features/view/main/data/models/category/category_model.dart';
+import 'package:mary_ai_pos/features/view/main/data/models/goods/goods_model.dart';
+import 'package:mary_ai_pos/features/view/main/domain/usecase/get_categories_usecase.dart';
+import 'package:mary_ai_pos/features/view/main/domain/usecase/get_goods_by_category_id_usecase.dart';
+
+part 'detail_cubit.freezed.dart';
+part 'detail_state.dart';
+
+class DetailCubit extends Cubit<DetailState> {
+  final GetCategoriesUsecase _getCategoriesUsecase;
+  final GetGoodsByCategoryIdUseCase _getGoodsByCategoryIdUseCase;
+  DetailCubit(this._getCategoriesUsecase, this._getGoodsByCategoryIdUseCase)
+    : super(const DetailState());
+
+  Future<void> getCategories() async {
+    emit(state.copyWith(status: Status.OTHER_LOADING));
+    final result = await _getCategoriesUsecase(NoParams());
+    result.fold(
+      (failure) => emit(state.copyWith(status: Status.ERROR, failure: failure)),
+      (categories) {
+        emit(state.copyWith(status: Status.SUCCESS, categories: categories));
+        if (categories.isNotEmpty) {
+          setSelectedCategoryId(categories.first.id);
+        }
+      },
+    );
+  }
+
+  void setSelectedCategoryId(String id) {
+    emit(state.copyWith(selectedCategoryId: id));
+    _getGoodsByCategoryId(id);
+  }
+
+  Future<void> _getGoodsByCategoryId(String categoryId) async {
+    emit(state.copyWith(status: Status.LOADING));
+    final result = await _getGoodsByCategoryIdUseCase(categoryId);
+    result.fold(
+      (failure) => emit(state.copyWith(status: Status.ERROR, failure: failure)),
+      (goods) => emit(state.copyWith(status: Status.SUCCESS, goods: goods)),
+    );
+  }
+
+  void selectGood(GoodsModel good) {
+    final selectedGoods = List<OrderItem>.from(state.selectedGoods);
+    final index = selectedGoods.indexWhere((item) => item.goods.id == good.id);
+
+    if (index != -1) {
+      selectedGoods[index] = selectedGoods[index].copyWith(
+        quantity: selectedGoods[index].quantity + 1,
+      );
+    } else {
+      selectedGoods.add(OrderItem(goods: good));
+    }
+    emit(state.copyWith(selectedGoods: selectedGoods));
+  }
+
+  void incrementQuantity(String goodsId) {
+    final selectedGoods = List<OrderItem>.from(state.selectedGoods);
+    final index = selectedGoods.indexWhere((item) => item.goods.id == goodsId);
+
+    if (index != -1) {
+      selectedGoods[index] = selectedGoods[index].copyWith(
+        quantity: selectedGoods[index].quantity + 1,
+      );
+      emit(state.copyWith(selectedGoods: selectedGoods));
+    }
+  }
+
+  void decrementQuantity(String goodsId) {
+    final selectedGoods = List<OrderItem>.from(state.selectedGoods);
+    final index = selectedGoods.indexWhere((item) => item.goods.id == goodsId);
+
+    if (index != -1) {
+      if (selectedGoods[index].quantity > 1) {
+        selectedGoods[index] = selectedGoods[index].copyWith(
+          quantity: selectedGoods[index].quantity - 1,
+        );
+      } else {
+        selectedGoods.removeAt(index);
+      }
+      emit(state.copyWith(selectedGoods: selectedGoods));
+    }
+  }
+
+  void clearGoods() {
+    emit(state.copyWith(selectedGoods: []));
+  }
+}

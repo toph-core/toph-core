@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:mary_ai_pos/core/common/custom_loading_widget.dart';
 import 'package:mary_ai_pos/core/extension/for_context.dart';
+import 'package:mary_ai_pos/core/routes/app_routes.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/cafe_tables/cafe_tables_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/hall/hall_model.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/main/widgets/table_widget.dart';
@@ -22,6 +23,14 @@ class HallWidget extends StatefulWidget {
 
 class _HallWidgetState extends State<HallWidget> {
   final TransformationController _controller = TransformationController();
+
+  @override
+  void didUpdateWidget(covariant HallWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.hall?.id != widget.hall?.id) {
+      _controller.value = Matrix4.identity();
+    }
+  }
 
   @override
   void dispose() {
@@ -56,8 +65,16 @@ class _HallWidgetState extends State<HallWidget> {
                         child: Stack(
                           children: widget.tables
                               .map(
-                                (table) =>
-                                    TableWidget(table: table, onTap: () {}),
+                                (table) => TableWidget(
+                                  table: table,
+                                  onTap: () {
+                                    Navigator.pushNamed(
+                                      context,
+                                      AppRoutes.detailScreen,
+                                      arguments: table,
+                                    );
+                                  },
+                                ),
                               )
                               .toList(),
                         ),

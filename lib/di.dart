@@ -1,6 +1,9 @@
 import 'package:mary_ai_pos/core/api/dio_client.dart';
 import 'package:mary_ai_pos/core/auth/storage/token_storage_impl.dart';
 import 'package:mary_ai_pos/core/service/minio/minio_service.dart';
+import 'package:mary_ai_pos/features/view/main/domain/usecase/get_categories_usecase.dart';
+import 'package:mary_ai_pos/features/view/main/domain/usecase/get_goods_by_category_id_usecase.dart';
+import 'package:mary_ai_pos/features/view/main/presentation/cubit/detail/detail_cubit.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:get_it/get_it.dart';
 import 'package:mary_ai_pos/features/view/auth/data/data_sources/auth_datasource.dart';
@@ -66,6 +69,8 @@ void _useCase() {
   inject.registerLazySingleton(() => LoginWithBrandUsecase(inject()));
   inject.registerLazySingleton(() => GetTablesByHallIdUsecase(inject()));
   inject.registerLazySingleton(() => GetHallsUsecase(inject()));
+  inject.registerLazySingleton(() => GetCategoriesUsecase(inject()));
+  inject.registerLazySingleton(() => GetGoodsByCategoryIdUseCase(inject()));
 }
 
 void _cubit() {
@@ -76,4 +81,5 @@ void _cubit() {
 
   //? factory
   inject.registerFactory(() => LoginPinCubit(inject(), inject(), inject()));
+  inject.registerFactory(() => DetailCubit(inject(), inject()));
 }

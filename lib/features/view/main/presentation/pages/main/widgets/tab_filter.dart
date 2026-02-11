@@ -35,7 +35,7 @@ class TabFilter extends StatelessWidget {
                   })
                 : halls
                       .map(
-                        (hall) => TabButton(
+                        (hall) => _TabButton(
                           hall: hall,
                           isActive: hall.id == selectedHallId,
                         ),
@@ -48,17 +48,17 @@ class TabFilter extends StatelessWidget {
   }
 }
 
-class TabButton extends StatefulWidget {
+class _TabButton extends StatefulWidget {
   final HallModel hall;
   final bool isActive;
 
-  const TabButton({super.key, required this.hall, required this.isActive});
+  const _TabButton({required this.hall, required this.isActive});
 
   @override
-  State<TabButton> createState() => _TabButtonState();
+  State<_TabButton> createState() => _TabButtonState();
 }
 
-class _TabButtonState extends State<TabButton> {
+class _TabButtonState extends State<_TabButton> {
   bool _isHovered = false;
 
   @override
