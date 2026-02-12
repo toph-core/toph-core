@@ -12,7 +12,7 @@
   "strFailureMessage_unauthenticated": "You are not logged in, please sign in first",
   "strFailureMessage_firebaseAuthFailure": "An error occurred when logging in via Firebase",
   "strFailureMessage_initializingFailure": "An error occurred while initializing the app",
-  
+   
   "strCheckInternetConnection": "Internet aloqasini tekshiring",
   "strNoInternetConnection": "Internet aloqasi yo‘q",
   "strYes": "Ha",
@@ -37,5 +37,10 @@
   "strNameTooShort": "Name is too short",
   "strInvalidDate": "Invalid date",
   "strUnacceptableDate": "Unacceptable date",
-  "strPasswordsNotSame": "Passwords are not same"
+  "strPasswordsNotSame": "Passwords are not same",
+  "strProductNotFound": "Mahsulotlar topilmadi",
+  "strEnterBrandID": "Brand id ni yozing",
+  "strPassword": "Parol",
+  "strEnterCode": "Kodni yozing",
+  "strLogin": "Kirish"
 }

@@ -41,6 +41,8 @@
   "strEnterBrandID": "Brand id ni yozing",
   "strPassword": "Parol",
   "strEnterCode": "Kodni yozing",
-  "strLogin": "Kirish"
+  "strLogin": "Kirish",
+  "strProductNotFound": "Mahsulotlar topilmadi"
+
   
 }

@@ -37,5 +37,7 @@
   "strNameTooShort": "Name is too short",
   "strInvalidDate": "Invalid date",
   "strUnacceptableDate": "Unacceptable date",
-  "strPasswordsNotSame": "Passwords are not same"
+  "strPasswordsNotSame": "Passwords are not same",
+  "strProductNotFound": "Mahsulotlar topilmadi"
+  
 }

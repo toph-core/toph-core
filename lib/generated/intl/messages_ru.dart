@@ -77,6 +77,8 @@ class MessageLookup extends MessageLookupByLibrary {
             MessageLookupByLibrary.simpleMessage("Passwords are not same"),
         "strPhoneOrPasswordWrong": MessageLookupByLibrary.simpleMessage(
             "Telefon raqami yoki parol noto‘g‘ri"),
+        "strProductNotFound":
+            MessageLookupByLibrary.simpleMessage("Mahsulotlar topilmadi"),
         "strProfile": MessageLookupByLibrary.simpleMessage("Profile"),
         "strPullDownToRefresh": MessageLookupByLibrary.simpleMessage(
             "Yangilash uchun pastga torting"),

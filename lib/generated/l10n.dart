@@ -469,6 +469,16 @@ class S {
       args: [],
     );
   }
+
+  /// `Mahsulotlar topilmadi`
+  String get strProductNotFound {
+    return Intl.message(
+      'Mahsulotlar topilmadi',
+      name: 'strProductNotFound',
+      desc: '',
+      args: [],
+    );
+  }
 }
 
 class AppLocalizationDelegate extends LocalizationsDelegate<S> {

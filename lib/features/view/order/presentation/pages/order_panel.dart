@@ -22,7 +22,7 @@ class OrderPanel extends StatelessWidget {
           )
         ],
       ),
-      child: Column(
+      child: Column( 
         children: [
           _buildHeader(context),
           const Divider(height: 1),
