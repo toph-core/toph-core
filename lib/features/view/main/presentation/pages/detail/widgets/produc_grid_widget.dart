@@ -88,7 +88,7 @@ class _ProductCard extends StatelessWidget {
                           color: context.colors.bgDefault,
                           border: Border(
                             left: BorderSide(
-                              width: 4,
+                              width: 5,
                               color: product.colorCode != null
                                   ? Color(int.parse(product.colorCode!))
                                   : context.colors.bgBrand,
@@ -97,10 +97,14 @@ class _ProductCard extends StatelessWidget {
                         ),
 
                         child: product.pictureUrl == null
-                            ? Icon(
-                                Icons.fastfood_outlined,
-                                color: context.colors.bgBrand,
-                                size: 40,
+                            ? Center(
+                                child: Text(
+                                  product.name.substring(0, 1),
+                                  style: context.textStyles.bodyLg.copyWith(
+                                    fontSize: 56,
+                                    color: context.colors.emptyValueColor,
+                                  ),
+                                ),
                               )
                             : CustomCachedNetworkImage(
                                 height: 160,

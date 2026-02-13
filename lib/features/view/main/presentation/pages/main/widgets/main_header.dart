@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:mary_ai_pos/core/common/custom_hover_effect_widget.dart';
 import 'package:mary_ai_pos/core/extension/for_context.dart';
 import 'package:mary_ai_pos/core/extension/widget_extension.dart';
 import 'package:mary_ai_pos/core/routes/app_routes.dart';
 import 'package:mary_ai_pos/core/values/app_assets.dart';
+import 'package:mary_ai_pos/features/view/auth/presentation/cubit/auth/auth_cubit.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/main/widgets/logout_dialog.dart';
 
 class MainHeader extends StatelessWidget {
@@ -92,14 +94,15 @@ class MainHeader extends StatelessWidget {
               ),
               CustomHoverEffectWidget(
                 onTap: () {
-                  showDialog(
-                    context: context,
-                    builder: (context) {
-                      return const LogoutDialog(
-                        routeName: AppRoutes.loginScreen,
-                      );
-                    },
-                  );
+                  context.read<AuthCubit>().logoutFromApp(() => Navigator.pushNamedAndRemoveUntil(context,AppRoutes.loginScreen,(route) => false));
+                  // showDialog(
+                  //   context: context,
+                  //   builder: (context) {
+                  //     return const LogoutDialog(
+                  //       routeName: AppRoutes.loginScreen,
+                  //     );
+                  //   },
+                  // );
                 },
                 bgColor: const Color(0xFF2D2D2D),
                 borderRadius: context.radius.card,

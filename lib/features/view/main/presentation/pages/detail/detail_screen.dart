@@ -29,7 +29,7 @@ class _DetailScreenState extends State<DetailScreen> {
         child: Scaffold(
           backgroundColor: context.colors.bgSecondary,
           body: Row(
-            spacing: 16,
+            spacing: 16, 
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Expanded(

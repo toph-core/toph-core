@@ -128,6 +128,7 @@ class AppTheme {
     textTertiary: Color(0xFFAAAAAA),
     textOnBrand: Color(0xFFFFFFFF),
     textOnBrandDark: Color(0xFF09131A),
+    emptyValueColor: Color(0xFFC9C9C9),
 
     iconBrand: Color(0xFFFB6633),
     iconDefault: Color(0xFF19160B),

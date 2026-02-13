@@ -35,6 +35,7 @@ class ThemeColors extends ThemeExtension<ThemeColors> {
   final Color extraPurple;
   final Color extraCyan;
   final Color extraOrange;
+  final Color emptyValueColor;
 
   const ThemeColors({
     required this.textBrand,
@@ -70,6 +71,7 @@ class ThemeColors extends ThemeExtension<ThemeColors> {
     required this.extraPurple,
     required this.extraCyan,
     required this.extraOrange,
+    required this.emptyValueColor,
   });
 
   @override
@@ -107,6 +109,7 @@ class ThemeColors extends ThemeExtension<ThemeColors> {
     Color? extraPurple,
     Color? extraCyan,
     Color? extraOrange,
+    Color? emptyValueColor,
   }) {
     return ThemeColors(
       textBrand: textBrand ?? this.textBrand,
@@ -142,18 +145,24 @@ class ThemeColors extends ThemeExtension<ThemeColors> {
       extraPurple: extraPurple ?? this.extraPurple,
       extraCyan: extraCyan ?? this.extraCyan,
       extraOrange: extraOrange ?? this.extraOrange,
+      emptyValueColor: emptyValueColor ?? this.emptyValueColor
     );
   }
 
   @override
   ThemeExtension<ThemeColors> lerp(
-      ThemeExtension<ThemeColors>? other, double t) {
+    ThemeExtension<ThemeColors>? other,
+    double t,
+  ) {
     if (other is! ThemeColors) return this;
     return ThemeColors(
       textBrand: Color.lerp(textBrand, other.textBrand, t)!,
       textDefault: Color.lerp(textDefault, other.textDefault, t)!,
-      textButtonSecondary:
-          Color.lerp(textButtonSecondary, other.textButtonSecondary, t)!,
+      textButtonSecondary: Color.lerp(
+        textButtonSecondary,
+        other.textButtonSecondary,
+        t,
+      )!,
       textSecondary: Color.lerp(textSecondary, other.textSecondary, t)!,
       textTertiary: Color.lerp(textTertiary, other.textTertiary, t)!,
       textOnBrand: Color.lerp(textOnBrand, other.textOnBrand, t)!,
@@ -161,8 +170,11 @@ class ThemeColors extends ThemeExtension<ThemeColors> {
       iconBrand: Color.lerp(iconBrand, other.iconBrand, t)!,
       iconDefault: Color.lerp(iconDefault, other.iconDefault, t)!,
       iconSecondary: Color.lerp(iconSecondary, other.iconSecondary, t)!,
-      iconButtonSecondary:
-          Color.lerp(iconButtonSecondary, other.iconButtonSecondary, t)!,
+      iconButtonSecondary: Color.lerp(
+        iconButtonSecondary,
+        other.iconButtonSecondary,
+        t,
+      )!,
       iconTertiary: Color.lerp(iconTertiary, other.iconTertiary, t)!,
       iconOnBrand: Color.lerp(iconOnBrand, other.iconOnBrand, t)!,
       iconOnBrandDark: Color.lerp(iconOnBrandDark, other.iconOnBrandDark, t)!,
@@ -170,25 +182,38 @@ class ThemeColors extends ThemeExtension<ThemeColors> {
       bgDefault: Color.lerp(bgDefault, other.bgDefault, t)!,
       bgSecondary: Color.lerp(bgSecondary, other.bgSecondary, t)!,
       bgTritary: Color.lerp(bgTritary, other.bgTritary, t)!,
-      bgDefaultTritary:
-          Color.lerp(bgDefaultTritary, other.bgDefaultTritary, t)!,
-      bgSecondaryTritary:
-          Color.lerp(bgSecondaryTritary, other.bgSecondaryTritary, t)!,
+      bgDefaultTritary: Color.lerp(
+        bgDefaultTritary,
+        other.bgDefaultTritary,
+        t,
+      )!,
+      bgSecondaryTritary: Color.lerp(
+        bgSecondaryTritary,
+        other.bgSecondaryTritary,
+        t,
+      )!,
       bgBottomSheet: Color.lerp(bgBottomSheet, other.bgBottomSheet, t)!,
       borderBrand: Color.lerp(borderBrand, other.borderBrand, t)!,
       border: Color.lerp(border, other.border, t)!,
       buttonBrand: Color.lerp(buttonBrand, other.buttonBrand, t)!,
-      buttonBrandSecondary:
-          Color.lerp(buttonBrandSecondary, other.buttonBrandSecondary, t)!,
+      buttonBrandSecondary: Color.lerp(
+        buttonBrandSecondary,
+        other.buttonBrandSecondary,
+        t,
+      )!,
       buttonSecondary: Color.lerp(buttonSecondary, other.buttonSecondary, t)!,
-      buttonDisabledBg:
-          Color.lerp(buttonDisabledBg, other.buttonDisabledBg, t)!,
+      buttonDisabledBg: Color.lerp(
+        buttonDisabledBg,
+        other.buttonDisabledBg,
+        t,
+      )!,
       systemAccent: Color.lerp(systemAccent, other.systemAccent, t)!,
       systemSuccess: Color.lerp(systemSuccess, other.systemSuccess, t)!,
       systemError: Color.lerp(systemError, other.systemError, t)!,
       extraPurple: Color.lerp(extraPurple, other.extraPurple, t)!,
       extraCyan: Color.lerp(extraCyan, other.extraCyan, t)!,
       extraOrange: Color.lerp(extraOrange, other.extraOrange, t)!,
+      emptyValueColor: this.emptyValueColor
     );
   }
 }

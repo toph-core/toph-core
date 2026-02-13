@@ -13,41 +13,41 @@ class DetailTabFilter extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocBuilder<DetailCubit, DetailState>(
       builder: (context, state) {
-        return ListView.separated(
-          itemBuilder: (context, index) => SizedBox(),
-          separatorBuilder: (context, index) => SizedBox(),
-          itemCount: state.categories!.length,
-        );
-
-        // return Row(
-        //   mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        //   children: [
-        //     Expanded(
-        //       child: Wrap(
-        //         spacing: 8,
-        //         runSpacing: 8,
-        //         children: isLoading
-        //             ? List.generate(4, (index) {
-        //                 return CustomShimmerBox(
-        //                   h: 52,
-        //                   w: 106,
-        //                   borderRadius: context.radius.buttonLg,
-        //                 );
-        //               })
-        //             : state.categories != null
-        //             ? state.categories!
-        //                   .map(
-        //                     (category) => _TabButton(
-        //                       category: category,
-        //                       isActive: category.id == state.selectedCategoryId,
-        //                     ),
-        //                   )
-        //                   .toList()
-        //             : [],
-        //       ),
-        //     ),
-        //   ],
+        // return ListView.separated(
+        //   itemBuilder: (context, index) => SizedBox(),
+        //   separatorBuilder: (context, index) => SizedBox(),
+        //   itemCount: state.categories!.length,
         // );
+
+        return Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Expanded(
+              child: Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: state.status == Status.LOADING
+                    ? List.generate(4, (index) {
+                        return CustomShimmerBox(
+                          h: 52,
+                          w: 106,
+                          borderRadius: context.radius.buttonLg,
+                        );
+                      })
+                    : state.categories != null
+                    ? state.categories!
+                          .map(
+                            (category) => _TabButton(
+                              category: category,
+                              isActive: category.id == state.selectedCategoryId,
+                            ),
+                          )
+                          .toList()
+                    : [],
+              ),
+            ),
+          ],
+        );
       },
     );
   }

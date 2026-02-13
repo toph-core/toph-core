@@ -18,6 +18,7 @@ class LoginPinScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    print("login pin screenda");
     return Scaffold(
       body: BlocProvider(
         create: (context) => inject<LoginPinCubit>(),

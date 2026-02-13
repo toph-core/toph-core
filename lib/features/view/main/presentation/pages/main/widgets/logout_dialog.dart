@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mary_ai_pos/core/common/custom_hover_effect_widget.dart';
 import 'package:mary_ai_pos/core/extension/for_context.dart';
 import 'package:mary_ai_pos/core/extension/widget_extension.dart';
+import 'package:mary_ai_pos/core/routes/app_routes.dart';
 import 'package:mary_ai_pos/di.dart';
 import 'package:mary_ai_pos/features/view/auth/presentation/cubit/auth/auth_cubit.dart';
 
@@ -72,13 +74,7 @@ class LogoutDialog extends StatelessWidget {
                       bgColor: const Color(0x19DB1F1F),
                       borderRadius: context.radius.card,
                       onTap: () {
-                        inject<AuthCubit>().logoutFromApp(() {
-                          Navigator.pushNamedAndRemoveUntil(
-                            context,
-                            routeName,
-                            (route) => false,
-                          );
-                        });
+                        context.read<AuthCubit>().logout(onSuccess: () => Navigator.pushNamedAndRemoveUntil(context, AppRoutes.loginPinScreen,(route) => false ));
                       },
                       child: const Row(
                         mainAxisSize: MainAxisSize.min,

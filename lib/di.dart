@@ -1,6 +1,8 @@
 import 'package:mary_ai_pos/core/api/dio_client.dart';
 import 'package:mary_ai_pos/core/auth/storage/token_storage_impl.dart';
 import 'package:mary_ai_pos/core/service/minio/minio_service.dart';
+import 'package:mary_ai_pos/features/view/auth/domain/usecases/check_user_auth/check_user_data_usecase.dart';
+import 'package:mary_ai_pos/features/view/auth/domain/usecases/logout/logout_usecase.dart';
 import 'package:mary_ai_pos/features/view/main/domain/usecase/get_categories_usecase.dart';
 import 'package:mary_ai_pos/features/view/main/domain/usecase/get_goods_by_category_id_usecase.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/detail/detail_cubit.dart';
@@ -71,11 +73,14 @@ void _useCase() {
   inject.registerLazySingleton(() => GetHallsUsecase(inject()));
   inject.registerLazySingleton(() => GetCategoriesUsecase(inject()));
   inject.registerLazySingleton(() => GetGoodsByCategoryIdUseCase(inject()));
+  inject.registerLazySingleton(() => LogoutUsecase(inject()));
+  inject.registerLazySingleton(() => CheckUserDataUsecase(inject()));
+
 }
 
 void _cubit() {
   //? lazy singleton
-  inject.registerLazySingleton(() => AuthCubit(inject(), inject(), inject()));
+  inject.registerLazySingleton(() => AuthCubit(inject(), inject(), inject(),inject(),inject()));
   inject.registerLazySingleton(() => SettingsCubit(inject(), inject()));
   inject.registerLazySingleton(() => MainCubit(inject(), inject()));
 

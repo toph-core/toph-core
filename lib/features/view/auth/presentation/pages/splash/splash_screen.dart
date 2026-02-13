@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:mary_ai_pos/core/auth/storage/token_storage_impl.dart';
 import 'package:mary_ai_pos/core/common/custom_loading_widget.dart';
 import 'package:mary_ai_pos/core/components/flush_bars.dart';
 import 'package:mary_ai_pos/core/constants/constants.dart';
@@ -17,9 +18,11 @@ import 'package:mary_ai_pos/core/routes/app_routes.dart';
 import 'package:mary_ai_pos/core/service/app_version/app_update_service.dart';
 import 'package:mary_ai_pos/core/utils/helper/helper_widget.dart';
 import 'package:mary_ai_pos/core/values/app_assets.dart';
+import 'package:mary_ai_pos/di.dart';
 import 'package:mary_ai_pos/features/view/auth/presentation/cubit/auth/auth_cubit.dart';
 import 'package:mary_ai_pos/features/view/auth/presentation/cubit/auth/auth_state.dart';
 import 'package:mary_ai_pos/generated/l10n.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -32,6 +35,7 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     super.initState();
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Timer(const Duration(milliseconds: 2500), () {
         _initializeAll();
@@ -42,15 +46,19 @@ class _SplashScreenState extends State<SplashScreen> {
   void _initializeAll() async {
     try {
       //! Auth status handling
-      final unAuth = await context.read<AuthCubit>().checkUserToAuth();
-
-      unAuth.printf();
-
-      if (unAuth) {
-        Navigator.pushReplacementNamed(context, AppRoutes.loginScreen);
+      final haveUserData = await context.read<AuthCubit>().chechUserData();
+      if (haveUserData) {
+        final unAuth = await context.read<AuthCubit>().checkUserToAuth();
+        if (!unAuth) {
+          Navigator.pushReplacementNamed(context, AppRoutes.loginPinScreen);
+        } else {
+          Navigator.pushReplacementNamed(context, AppRoutes.mainScreen);
+        }
       } else {
-        Navigator.pushReplacementNamed(context, AppRoutes.mainScreen);
+        Navigator.pushReplacementNamed(context, AppRoutes.loginScreen);
       }
+
+      
     } catch (error) {
       showErrorMessage(
         context,

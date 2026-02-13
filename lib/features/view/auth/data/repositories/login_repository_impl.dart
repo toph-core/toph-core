@@ -13,11 +13,21 @@ class AuthRepositoryImpl implements AuthRepository {
   const AuthRepositoryImpl(this._tokenStorage, this._datasources);
 
   @override
-  Future<Either<Failure, bool>> checkUserToAuth() async {
+  Future<Either<Failure, bool>> haveUserData() async {
     try {
       final BrandIdTokenPair? token = await _tokenStorage.readBrandIdToken();
+      return Right(token != null);
+    } catch (e) {
+      return const Left(CacheFailure());
+    }
+  }
 
-      return Right(token == null);
+  @override
+  Future<Either<Failure, bool>> checkUserToAuth() async {
+    try {
+      final token = await _tokenStorage.readAccessToken();
+
+      return Right(token != null);
     } catch (e) {
       return const Left(CacheFailure());
     }
