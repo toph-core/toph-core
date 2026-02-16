@@ -18,4 +18,7 @@ class ListAPI {
   static const String mediaBook = "api/v1/media/book/download";
   static const String mediaVideo = "api/v1/media/video/download";
   static const String mediaImagePost = "api/v1/media/image";
+
+  //! Orders
+  static const String orders = "/api/v1/orders";
 }

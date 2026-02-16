@@ -30,7 +30,7 @@ void main() async {
     DeviceOrientation.landscapeRight,
   ]);
   // await flutter_acrylic.Window.hideWindowControls();
-  // await WindowManager.instance.ensureInitialized();
+  // await WindowManager.instance.ensureInitiamlized();
   // windowManager.waitUntilReadyToShow().then((_) async {
   //   await windowManager.setTitleBarStyle(
   //     TitleBarStyle.hidden,
@@ -106,3 +106,4 @@ class ScrollBehaviorModified extends ScrollBehavior {
     return const ClampingScrollPhysicsModified();
   }
 }
+

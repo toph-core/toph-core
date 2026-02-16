@@ -49,7 +49,6 @@ class CustomHoverEffectWidget extends StatelessWidget {
               splashColor: Colors.transparent,
               highlightColor: effectiveHighlight,
               hoverColor: Colors.transparent,
-
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 160),
                 curve: Curves.easeOut,

@@ -2,18 +2,29 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mary_ai_pos/core/common/custom_hover_effect_widget.dart';
 import 'package:mary_ai_pos/core/components/flush_bars.dart';
+import 'package:mary_ai_pos/core/constants/constants.dart';
 import 'package:mary_ai_pos/core/extension/for_context.dart';
+import 'package:mary_ai_pos/core/extension/int_extension.dart';
 import 'package:mary_ai_pos/core/extension/number_formatter.dart';
 import 'package:mary_ai_pos/core/extension/widget_extension.dart';
 import 'package:mary_ai_pos/core/values/app_colors.dart';
+import 'package:mary_ai_pos/di.dart';
+import 'package:mary_ai_pos/features/view/main/presentation/cubit/create_order/create_order_bloc.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/detail/detail_cubit.dart';
+import 'package:mary_ai_pos/features/view/main/presentation/pages/detail/widgets/clear_dialog.dart';
+import 'package:mary_ai_pos/features/view/main/presentation/pages/detail/widgets/send_to_kitchen_dialog.dart';
+import 'package:mary_ai_pos/features/view/main/presentation/pages/main/widgets/logout_dialog.dart';
+import 'package:mary_ai_pos/generated/l10n.dart';
 
 class OrderSidebar extends StatelessWidget {
-  const OrderSidebar({super.key});
+  final String tableId;
+  const OrderSidebar({super.key, required this.tableId});
 
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<DetailCubit, DetailState>(
+      buildWhen: (previous, current) =>
+          previous.selectedGoods != current.selectedGoods,
       builder: (context, state) {
         final totalPrice = state.selectedGoods.fold<double>(
           0,
@@ -36,7 +47,21 @@ class OrderSidebar extends StatelessWidget {
                   Text('Buyurtmalar', style: context.textStyles.bold24),
                   CustomHoverEffectWidget(
                     bgColor: AppColors.ffDB2020.withOpacity(.1),
-                    onTap: () => context.read<DetailCubit>().clearGoods(),
+                    onTap: state.selectedGoods.isNotEmpty
+                        ? () async {
+                            await showDialog(
+                              context: context,
+                              builder: (context) => ClearDialog(
+                                onSuccess: () =>
+                                    context.read<DetailCubit>().clearGoods(),
+                              ),
+                            ).then(
+                              (value) => value != null && value is bool && value
+                                  ? context.read<DetailCubit>().clearGoods()
+                                  : () {},
+                            );
+                          }
+                        : () {},
                     borderRadius: context.radius.buttonLg,
                     child: Text(
                       "Tozalash",
@@ -47,14 +72,27 @@ class OrderSidebar extends StatelessWidget {
                   ),
                 ],
               ),
-              Expanded(
-                child: ListView(
-                  padding: EdgeInsets.zero,
-                  children: state.selectedGoods
-                      .map((item) => _OrderCard(orderItem: item))
-                      .toList(),
+
+              if (state.selectedGoods.isEmpty)
+                Expanded(
+                  child: Center(
+                    child: Text(
+                      S.current.strSelectFoodsNotFound,
+                      textAlign: TextAlign.center,
+                    ).paddingSymmetric(horizontal: 20),
+                  ),
                 ),
-              ),
+              if (state.selectedGoods.isNotEmpty)
+                Expanded(
+                  child: ListView.separated(
+                    padding: EdgeInsets.zero,
+                    physics: const BouncingScrollPhysics(),
+                    itemBuilder: (context, index) =>
+                        _OrderCard(orderItem: state.selectedGoods[index]),
+                    separatorBuilder: (context, index) => 12.hBox,
+                    itemCount: state.selectedGoods.length,
+                  ),
+                ),
               DecoratedBox(
                 decoration: BoxDecoration(
                   color: context.colors.bgDefault,
@@ -83,24 +121,63 @@ class OrderSidebar extends StatelessWidget {
                     ),
                     Column(
                       spacing: 8,
-                      crossAxisAlignment: .stretch,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        CustomHoverEffectWidget(
-                          bgColor: context.colors.buttonBrand,
-                          onTap: () {
-                            showSuccessMessage(
-                              context,
-                              "Buyurtmalar oshxonaga yuborildi",
-                            );
-                          },
-                          borderRadius: context.radius.buttonLg,
-                          child: Text(
-                            "Oshxonaga yuborish",
-                            textAlign: .center,
-                            style: context.textStyles.semibold16.copyWith(
-                              color: Colors.white,
-                            ),
-                          ).paddingSymmetric(horizontal: 16, vertical: 12.5),
+                        BlocProvider(
+                          create: (context) => inject<CreateOrderBloc>()
+                            ..add(CreateOrderEvent.started(tableId: tableId)),
+                          child: BlocConsumer<CreateOrderBloc, CreateOrderState>(
+                            listener: (context, state) {
+                              if (state.status != Status.LOADING &&
+                                  state.success) {
+                                showSuccessMessage(
+                                  context,
+                                  S.current.strOrderSuccessCreated,
+                                );
+                                Navigator.pop(context);
+                              }
+                            },
+                            builder: (context, createOrderState) {
+                              return CustomHoverEffectWidget(
+                                bgColor: context.colors.buttonBrand,
+                                onTap: () async {
+                                  if (state.selectedGoods.isNotEmpty &&
+                                      createOrderState.status !=
+                                          Status.LOADING) {
+                                    await showDialog(
+                                      context: context,
+                                      builder: (context) =>
+                                          const SendToKitchenDialog(),
+                                    ).then((value) {
+                                      if(value != null && value is bool && value){
+                                        context.read<CreateOrderBloc>()
+                                                .add(
+                                                  CreateOrderEvent.createOrder(
+                                                    orders: state.selectedGoods,
+                                                  ),
+                                                );
+                                      }
+                                    });
+                                  }
+                                },
+                                borderRadius: context.radius.buttonLg,
+                                child: state.status == Status.LOADING
+                                    ? CircularProgressIndicator.adaptive(
+                                        backgroundColor:
+                                            context.colors.iconOnBrand,
+                                      ).paddingSymmetric(vertical: 12.5)
+                                    : Text(
+                                        "Oshxonaga yuborish",
+                                        textAlign: TextAlign.center,
+                                        style: context.textStyles.semibold16
+                                            .copyWith(color: Colors.white),
+                                      ).paddingSymmetric(
+                                        horizontal: 16,
+                                        vertical: 12.5,
+                                      ),
+                              );
+                            },
+                          ),
                         ),
                         CustomHoverEffectWidget(
                           bgColor: AppColors.ffFB6633,
@@ -108,7 +185,7 @@ class OrderSidebar extends StatelessWidget {
                           borderRadius: context.radius.buttonLg,
                           child: Text(
                             "To’lovga o’tish",
-                            textAlign: .center,
+                            textAlign: TextAlign.center,
                             style: context.textStyles.semibold16.copyWith(
                               color: Colors.white,
                             ),
@@ -133,19 +210,19 @@ class _OrderCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return DecoratedBox(
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        color: context.colors.bgTritary,
+        borderRadius: context.radius.card,
       ),
-      padding: const EdgeInsets.all(12),
       child: Column(
-        spacing: 12,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             orderItem.goods.name,
-            style: const TextStyle(fontWeight: FontWeight.w600),
+            style: context.textStyles.headingSm.copyWith(
+              fontWeight: FontWeight.w500,
+            ),
           ),
           const Wrap(
             spacing: 8,
@@ -156,11 +233,12 @@ class _OrderCard extends StatelessWidget {
               _TagChip(text: 'Ketchup kamroq'),
               _TagChip(text: 'Sirsiz'),
             ],
-          ),
+          ).paddingSymmetric(vertical: 16),
           const Text(
             'Izoh: Mijoz qandaydir izoh aytsa qo\'shib qo\'yilgani shu yerda ko\'rinadi',
             style: TextStyle(color: Colors.grey, fontSize: 12),
           ),
+          16.hBox,
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -174,13 +252,18 @@ class _OrderCard extends StatelessWidget {
                     .incrementQuantity(orderItem.goods.id),
               ),
               Text(
-                (double.tryParse(orderItem.goods.price) ?? 0).formatN,
-                style: const TextStyle(fontWeight: FontWeight.bold),
+                ((double.tryParse(orderItem.goods.price) ?? 0) *
+                        orderItem.quantity)
+                    .formatN,
+                style: context.textStyles.headingSm.copyWith(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
             ],
           ),
         ],
-      ),
+      ).paddingAll(12),
     );
   }
 }
@@ -194,7 +277,7 @@ class _TagChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: const Color(0xFFF3F4F6),
+        color: context.colors.bgDefault,
         borderRadius: BorderRadius.circular(20),
       ),
       child: Text(text, style: const TextStyle(fontSize: 12)),
@@ -215,36 +298,41 @@ class _QuantitySelector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: const Color(0xFFF7F8FA),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Row(
-        children: [
-          InkWell(
-            onTap: onDecrement,
-            child: const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              child: Icon(Icons.remove, size: 18),
+    return Row(
+      children: [
+        InkWell(
+          onTap: onDecrement,
+          child: SizedBox(
+            height: 44,
+            width: 44,
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                borderRadius: context.radius.buttonMd,
+                color: context.colors.iconOnBrand,
+              ),
+              child: const Icon(Icons.remove, size: 18),
             ),
           ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            child: Text(
-              '$quantity',
-              style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
+        Text(
+          '$quantity',
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ).paddingSymmetric(horizontal: 16),
+        InkWell(
+          onTap: onIncrement,
+          child: SizedBox(
+            height: 44,
+            width: 44,
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                borderRadius: context.radius.buttonMd,
+                color: context.colors.iconOnBrand,
+              ),
+              child: const Icon(Icons.add, size: 18),
             ),
           ),
-          InkWell(
-            onTap: onIncrement,
-            child: const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              child: Icon(Icons.add, size: 18),
-            ),
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }

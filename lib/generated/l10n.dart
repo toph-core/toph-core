@@ -479,6 +479,96 @@ class S {
       args: [],
     );
   }
+
+  /// `Taomlar kategoriyasi topilmadi!`
+  String get strFoodsCategoriesNotFound {
+    return Intl.message(
+      'Taomlar kategoriyasi topilmadi!',
+      name: 'strFoodsCategoriesNotFound',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Buyurtmalar yo’q. Qo’shish uchun ovqat ustiga bosing`
+  String get strSelectFoodsNotFound {
+    return Intl.message(
+      'Buyurtmalar yo’q. Qo’shish uchun ovqat ustiga bosing',
+      name: 'strSelectFoodsNotFound',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Siz rostdan ham buyurtmalarni tozalashni hohlaysizmi?`
+  String get strDoYouWantClearOrders {
+    return Intl.message(
+      'Siz rostdan ham buyurtmalarni tozalashni hohlaysizmi?',
+      name: 'strDoYouWantClearOrders',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Bekor qilish`
+  String get strCancel {
+    return Intl.message(
+      'Bekor qilish',
+      name: 'strCancel',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Orgaga qaytish`
+  String get strBackToScreen {
+    return Intl.message(
+      'Orgaga qaytish',
+      name: 'strBackToScreen',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Rostdan ham chiqmoxchimisiz? Chiqsangiz ovqatlar bekor qilinadi.`
+  String get strYouWantLeaveOrderScreen {
+    return Intl.message(
+      'Rostdan ham chiqmoxchimisiz? Chiqsangiz ovqatlar bekor qilinadi.',
+      name: 'strYouWantLeaveOrderScreen',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Saqlash`
+  String get strSave {
+    return Intl.message(
+      'Saqlash',
+      name: 'strSave',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Siz rostdan ham buyurtmani oshxonaga yuborishni hohlaysizmi?`
+  String get strDoYouWantSendOrdersToKitchken {
+    return Intl.message(
+      'Siz rostdan ham buyurtmani oshxonaga yuborishni hohlaysizmi?',
+      name: 'strDoYouWantSendOrdersToKitchken',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Buyurtma muvafaqqiyatli yaratildi`
+  String get strOrderSuccessCreated {
+    return Intl.message(
+      'Buyurtma muvafaqqiyatli yaratildi',
+      name: 'strOrderSuccessCreated',
+      desc: '',
+      args: [],
+    );
+  }
 }
 
 class AppLocalizationDelegate extends LocalizationsDelegate<S> {

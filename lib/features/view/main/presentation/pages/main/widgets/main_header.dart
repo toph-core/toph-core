@@ -20,14 +20,14 @@ class MainHeader extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: context.colors.bgDefault,
-        borderRadius: .circular(24),
+        borderRadius: BorderRadius.circular(24),
       ),
       child: Row(
-        mainAxisAlignment: .spaceBetween,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           const Column(
-            crossAxisAlignment: .start,
-            mainAxisSize: .min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
             children: [
               Text(
                 'Bosh sahifa',
@@ -56,7 +56,7 @@ class MainHeader extends StatelessWidget {
             children: [
               Text(
                 'Xodim',
-                textAlign: .right,
+                textAlign: TextAlign.right,
                 style: TextStyle(
                   color: Color(0xFF7B7B7B),
                   fontSize: 16,
@@ -79,7 +79,7 @@ class MainHeader extends StatelessWidget {
           const SizedBox(width: 16),
           Row(
             mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: .stretch,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             spacing: 8,
             children: [
               CustomHoverEffectWidget(
@@ -94,7 +94,13 @@ class MainHeader extends StatelessWidget {
               ),
               CustomHoverEffectWidget(
                 onTap: () {
-                  context.read<AuthCubit>().logoutFromApp(() => Navigator.pushNamedAndRemoveUntil(context,AppRoutes.loginScreen,(route) => false));
+                  context.read<AuthCubit>().logoutFromApp(
+                    () => Navigator.pushNamedAndRemoveUntil(
+                      context,
+                      AppRoutes.loginScreen,
+                      (route) => false,
+                    ),
+                  );
                   // showDialog(
                   //   context: context,
                   //   builder: (context) {

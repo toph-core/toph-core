@@ -3,8 +3,10 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mary_ai_pos/core/common/custom_shimmer_container.dart';
 import 'package:mary_ai_pos/core/constants/constants.dart';
 import 'package:mary_ai_pos/core/extension/for_context.dart';
+import 'package:mary_ai_pos/core/extension/int_extension.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/category/category_model.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/detail/detail_cubit.dart';
+import 'package:mary_ai_pos/generated/l10n.dart';
 
 class DetailTabFilter extends StatelessWidget {
   const DetailTabFilter({super.key});
@@ -13,39 +15,71 @@ class DetailTabFilter extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocBuilder<DetailCubit, DetailState>(
       builder: (context, state) {
-        // return ListView.separated(
-        //   itemBuilder: (context, index) => SizedBox(),
-        //   separatorBuilder: (context, index) => SizedBox(),
-        //   itemCount: state.categories!.length,
-        // );
+        if (state.status == Status.LOADING && state.categories == null) {
+          return SizedBox(
+            height: 55,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemBuilder: (context, index) => CustomShimmerBox(
+                h: 52,
+                w: 106,
+                borderRadius: context.radius.buttonLg,
+              ),
+              separatorBuilder: (context, index) => 8.wBox,
+              itemCount: 10,
+            ),
+          );
+        }
+
+        if (state.status != Status.LOADING && state.categories == null) {
+          return Center(
+            child: Text(S.current.strFoodsCategoriesNotFound.trim()),
+          );
+        }
 
         return Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Expanded(
-              child: Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: state.status == Status.LOADING
-                    ? List.generate(4, (index) {
-                        return CustomShimmerBox(
-                          h: 52,
-                          w: 106,
-                          borderRadius: context.radius.buttonLg,
-                        );
-                      })
-                    : state.categories != null
-                    ? state.categories!
-                          .map(
-                            (category) => _TabButton(
-                              category: category,
-                              isActive: category.id == state.selectedCategoryId,
-                            ),
-                          )
-                          .toList()
-                    : [],
+              child: SizedBox(
+                height: 55,
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  physics: const BouncingScrollPhysics(),
+                  itemBuilder: (context, index) => _TabButton(
+                    category: state.categories![index],
+                    isActive:
+                        state.categories![index].id == state.selectedCategoryId,
+                  ),
+                  separatorBuilder: (context, index) => 8.wBox,
+                  itemCount: state.categories?.length ?? 0,
+                ),
               ),
             ),
+            // Expanded(
+            //   child: Wrap(
+            //     spacing: 8,
+            //     runSpacing: 8,
+            //     children: state.status == Status.LOADING
+            //         ? List.generate(4, (index) {
+            // return CustomShimmerBox(
+            //   h: 52,
+            //   w: 106,
+            //   borderRadius: context.radius.buttonLg,
+            // );
+            //           })
+            //         : state.categories != null
+            //         ? state.categories!
+            //               .map(
+            //                 (category) => _TabButton(
+            //                   category: category,
+            //                   isActive: category.id == state.selectedCategoryId,
+            //                 ),
+            //               )
+            //               .toList()
+            //         : [],
+            //   ),
+            // ),
           ],
         );
       },

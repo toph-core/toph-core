@@ -12,6 +12,8 @@ const TECHNICAL_SUPPORT_URL = '';
 
 enum Status { LOADING, UNKNOWN, SUCCESS, ERROR, OTHER, OTHER_LOADING, IDLE }
 
+enum OrderStatus {OPEN, PENDING,NONE}
+
 class LangModel {
   final String code;
   final String title;

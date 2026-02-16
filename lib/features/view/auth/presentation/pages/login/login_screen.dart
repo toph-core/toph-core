@@ -162,7 +162,7 @@ class _OnlineOfflineStudentScreenState extends State<LoginScreen>
                   Container(
                     height: context.h,
                     width: context.w,
-                    alignment: .center,
+                    alignment: Alignment.center,
                     decoration: const BoxDecoration(
                       image: DecorationImage(
                         image: AssetImage(AppImages.imgLoginBg),
@@ -173,9 +173,9 @@ class _OnlineOfflineStudentScreenState extends State<LoginScreen>
                       width: 400,
                       child: SafeArea(
                         child: Column(
-                          mainAxisSize: .min,
-                          crossAxisAlignment: .start,
-                          mainAxisAlignment: .center,
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Text(
                               AppStrings.strBrandId,

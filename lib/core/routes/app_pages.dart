@@ -10,7 +10,7 @@ import 'package:mary_ai_pos/features/view/main/presentation/pages/main/main_scre
 class RouteGenerate {
   Route generate(RouteSettings settings) {
     final args = settings.arguments;
-
+    print("bu kelgan arguments ${args}");
     switch (settings.name) {
       case AppRoutes.splashScreen:
         return simpleRoute(const SplashScreen());
@@ -31,15 +31,12 @@ class RouteGenerate {
   }
 
   Route<dynamic> simpleRoute(Widget route, {Object? args}) => PageRouteBuilder(
-        settings: RouteSettings(arguments: args),
-        pageBuilder: (context, animation, secondaryAnimation) => route,
-        transitionDuration: const Duration(milliseconds: 200),
-        reverseTransitionDuration: const Duration(milliseconds: 150),
-        transitionsBuilder: (context, animation, secondaryAnimation, child) {
-          return FadeTransition(
-            opacity: animation,
-            child: child,
-          );
-        },
-      );
+    settings: RouteSettings(arguments: args),
+    pageBuilder: (context, animation, secondaryAnimation) => route,
+    transitionDuration: const Duration(milliseconds: 200),
+    reverseTransitionDuration: const Duration(milliseconds: 150),
+    transitionsBuilder: (context, animation, secondaryAnimation, child) {
+      return FadeTransition(opacity: animation, child: child);
+    },
+  );
 }

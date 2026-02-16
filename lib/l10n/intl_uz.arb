@@ -42,5 +42,15 @@
   "strEnterBrandID": "Brand id ni yozing",
   "strPassword": "Parol",
   "strEnterCode": "Kodni yozing",
-  "strLogin": "Kirish"
+  "strLogin": "Kirish",
+  "strFoodsCategoriesNotFound": "Taomlar kategoriyasi topilmadi!",
+  "strSelectFoodsNotFound":"Buyurtmalar yo’q. Qo’shish uchun ovqat ustiga bosing",
+  "strDoYouWantClearOrders":"Siz rostdan ham buyurtmalarni tozalashni hohlaysizmi?",
+  "strCancel": "Bekor qilish",
+  "strYes":"Ha",
+  "strBackToScreen": "Orgaga qaytish",
+  "strYouWantLeaveOrderScreen": "Rostdan ham chiqmoxchimisiz? Chiqsangiz ovqatlar bekor qilinadi.",
+  "strSave":"Saqlash",
+  "strDoYouWantSendOrdersToKitchken": "Siz rostdan ham buyurtmani oshxonaga yuborishni hohlaysizmi?",
+  "strOrderSuccessCreated":"Buyurtma muvafaqqiyatli yaratildi"
 }

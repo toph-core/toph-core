@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:mary_ai_pos/core/auth/storage/token_storage_impl.dart';
 import 'package:mary_ai_pos/core/constants/constants.dart';
 import 'package:mary_ai_pos/core/api//dio_interceptor.dart';
+import 'package:pretty_dio_logger/pretty_dio_logger.dart';
 
 class DioClient {
   final AppTokenStorage _tokenStorage;
@@ -19,6 +20,15 @@ class DioClient {
     );
 
     _dio.interceptors.add(MySmartDioInterceptor(_dio, _tokenStorage));
+
+    _dio.interceptors.add(
+      PrettyDioLogger(
+        requestHeader: true,
+        requestBody: true,
+        responseBody: true,
+        enabled: kDebugMode,
+      ),
+    );
 
     if (kDebugMode) {
       _dio.interceptors.add(

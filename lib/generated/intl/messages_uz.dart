@@ -23,11 +23,22 @@ class MessageLookup extends MessageLookupByLibrary {
   final messages = _notInlinedMessages(_notInlinedMessages);
   static Map<String, Function> _notInlinedMessages(_) => <String, Function>{
         "strAppLanguage": MessageLookupByLibrary.simpleMessage("Ilova tili"),
+        "strBackToScreen":
+            MessageLookupByLibrary.simpleMessage("Orgaga qaytish"),
+        "strCancel": MessageLookupByLibrary.simpleMessage("Bekor qilish"),
         "strCheckInternetConnection": MessageLookupByLibrary.simpleMessage(
             "Internet aloqasini tekshiring"),
         "strContinue": MessageLookupByLibrary.simpleMessage("Davom etish"),
+        "strDoYouWantClearOrders": MessageLookupByLibrary.simpleMessage(
+            "Siz rostdan ham buyurtmalarni tozalashni hohlaysizmi?"),
+        "strDoYouWantSendOrdersToKitchken":
+            MessageLookupByLibrary.simpleMessage(
+                "Siz rostdan ham buyurtmani oshxonaga yuborishni hohlaysizmi?"),
         "strDoYouWantToLogout": MessageLookupByLibrary.simpleMessage(
             "Ilovadan chiqishni xohlaysizmi?"),
+        "strEnterBrandID":
+            MessageLookupByLibrary.simpleMessage("Brand id ni yozing"),
+        "strEnterCode": MessageLookupByLibrary.simpleMessage("Kodni yozing"),
         "strFailureMessage_cache":
             MessageLookupByLibrary.simpleMessage("Error accessing cache"),
         "strFailureMessage_connection": MessageLookupByLibrary.simpleMessage(
@@ -59,10 +70,13 @@ class MessageLookup extends MessageLookupByLibrary {
             "Validation error, please check your fields"),
         "strFieldCannotBeEmpty": MessageLookupByLibrary.simpleMessage(
             "Bu maydon bo‘sh bo‘lishi mumkin emas"),
+        "strFoodsCategoriesNotFound": MessageLookupByLibrary.simpleMessage(
+            "Taomlar kategoriyasi topilmadi!"),
         "strInvalidDate": MessageLookupByLibrary.simpleMessage("Invalid date"),
         "strInvalidName": MessageLookupByLibrary.simpleMessage("Invalid name"),
         "strInvalidNumber":
             MessageLookupByLibrary.simpleMessage("Noto‘g‘ri raqam"),
+        "strLogin": MessageLookupByLibrary.simpleMessage("Kirish"),
         "strLogout": MessageLookupByLibrary.simpleMessage("Chiqish"),
         "strNameTooShort":
             MessageLookupByLibrary.simpleMessage("Name is too short"),
@@ -71,6 +85,9 @@ class MessageLookup extends MessageLookupByLibrary {
             MessageLookupByLibrary.simpleMessage("Ma\'lumot topilmadi"),
         "strNoInternetConnection":
             MessageLookupByLibrary.simpleMessage("Internet aloqasi yo‘q"),
+        "strOrderSuccessCreated": MessageLookupByLibrary.simpleMessage(
+            "Buyurtma muvafaqqiyatli yaratildi"),
+        "strPassword": MessageLookupByLibrary.simpleMessage("Parol"),
         "strPasswordContainAtLeastChars": MessageLookupByLibrary.simpleMessage(
             "Parol kamida 8 ta belgidan iborat bo‘lishi kerak."),
         "strPasswordsNotSame":
@@ -92,8 +109,13 @@ class MessageLookup extends MessageLookupByLibrary {
             "Qo‘yib yuboring — yangilanadi"),
         "strRetry":
             MessageLookupByLibrary.simpleMessage("Qayta urinib ko‘rish"),
+        "strSave": MessageLookupByLibrary.simpleMessage("Saqlash"),
+        "strSelectFoodsNotFound": MessageLookupByLibrary.simpleMessage(
+            "Buyurtmalar yo’q. Qo’shish uchun ovqat ustiga bosing"),
         "strUnacceptableDate":
             MessageLookupByLibrary.simpleMessage("Unacceptable date"),
-        "strYes": MessageLookupByLibrary.simpleMessage("Ha")
+        "strYes": MessageLookupByLibrary.simpleMessage("Ha"),
+        "strYouWantLeaveOrderScreen": MessageLookupByLibrary.simpleMessage(
+            "Rostdan ham chiqmoxchimisiz? Chiqsangiz ovqatlar bekor qilinadi.")
       };
 }

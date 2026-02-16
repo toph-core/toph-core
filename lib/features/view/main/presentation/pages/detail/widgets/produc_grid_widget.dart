@@ -21,6 +21,7 @@ class ProductGridWidget extends StatelessWidget {
         borderRadius: context.radius.card24,
       ),
       child: BlocBuilder<DetailCubit, DetailState>(
+        buildWhen: (previous, current) => previous.goods != current.goods,
         builder: (context, state) {
           final products = state.goods;
           final bool isLoading = state.status == Status.LOADING;
@@ -110,7 +111,7 @@ class _ProductCard extends StatelessWidget {
                                 height: 160,
                                 width: double.infinity,
                                 minioObjectName: product.pictureUrl,
-                                fit: .contain,
+                                fit: BoxFit.contain,
                               ).paddingSymmetric(
                                 horizontal: constraints.maxWidth * 0.15,
                                 vertical: (constraints.maxWidth * 0.7) * 0.15,
@@ -119,12 +120,16 @@ class _ProductCard extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 12),
-                  Text(product.name, style: context.textStyles.headingSm),
+                  Text(
+                    product.name,
+                    style: context.textStyles.title14.copyWith(fontSize: 20),
+                  ),
                   const SizedBox(height: 8),
                   Text(
                     num.parse(product.price).formatN,
                     style: context.textStyles.bodyMd.copyWith(
                       color: context.colors.textBrand,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
                 ],

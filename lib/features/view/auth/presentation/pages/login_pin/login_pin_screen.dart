@@ -18,7 +18,6 @@ class LoginPinScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    print("login pin screenda");
     return Scaffold(
       body: BlocProvider(
         create: (context) => inject<LoginPinCubit>(),
@@ -47,7 +46,7 @@ class LoginPinScreen extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Align(
-                      alignment: .centerRight,
+                      alignment: Alignment.centerRight,
                       child: IntrinsicWidth(
                         child: CustomButton(
                           text: "Chiqish",

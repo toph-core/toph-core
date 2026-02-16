@@ -39,6 +39,10 @@ class ThemeTextStyle extends ThemeExtension<ThemeTextStyle> {
   final TextStyle semibold20;
   final TextStyle semibold24;
 
+  // Title
+  final TextStyle title14;
+
+
   const ThemeTextStyle({
     required this.fontFamily,
     required this.displayXl,
@@ -62,6 +66,7 @@ class ThemeTextStyle extends ThemeExtension<ThemeTextStyle> {
     required this.semibold18,
     required this.semibold20,
     required this.semibold24,
+    required this.title14,
   });
 
   @override
@@ -112,6 +117,7 @@ class ThemeTextStyle extends ThemeExtension<ThemeTextStyle> {
       semibold18: semibold18 ?? this.semibold18,
       semibold20: semibold20 ?? this.semibold20,
       semibold24: semibold24 ?? this.semibold24,
+      title14: title14
     );
   }
 
@@ -141,6 +147,7 @@ class ThemeTextStyle extends ThemeExtension<ThemeTextStyle> {
       semibold18: TextStyle.lerp(semibold18, other.semibold18, t)!,
       semibold20: TextStyle.lerp(semibold20, other.semibold20, t)!,
       semibold24: TextStyle.lerp(semibold24, other.semibold24, t)!,
+      title14: this.title14
     );
   }
 }

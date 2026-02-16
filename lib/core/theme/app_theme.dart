@@ -282,5 +282,10 @@ class AppTheme {
       fontWeight: FontWeight.w600,
       color: _lightColors.textDefault,
     ),
+    title14: TextStyle(
+      fontSize: 14,
+      fontWeight: FontWeight.normal,
+      color: _lightColors.textDefault,
+    )
   );
 }
