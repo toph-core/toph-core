@@ -110,12 +110,7 @@ class CustomTextField extends StatelessWidget {
                   preIconColor ?? context.colors.border,
                   BlendMode.srcIn,
                 ),
-              ).paddingOnly(
-                right: (6),
-                left: (12),
-                bottom: (10),
-                top: (10),
-              ),
+              ).paddingOnly(right: (6), left: (12), bottom: (10), top: (10)),
         suffix: suffix,
         suffixIcon: SizedBox(
           height: 23,

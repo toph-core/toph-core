@@ -6,8 +6,11 @@ import 'package:mary_ai_pos/core/constants/constants.dart';
 import 'package:mary_ai_pos/core/extension/for_context.dart';
 import 'package:mary_ai_pos/core/extension/number_formatter.dart';
 import 'package:mary_ai_pos/core/extension/widget_extension.dart';
+import 'package:mary_ai_pos/features/view/main/data/models/food_additional/food_additional_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/goods/goods_model.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/detail/detail_cubit.dart';
+import 'package:mary_ai_pos/features/view/main/presentation/pages/detail/detail_screen_mixin.dart';
+import 'package:mary_ai_pos/features/view/main/presentation/pages/detail/widgets/show_food_additional.dart';
 import 'package:mary_ai_pos/generated/l10n.dart';
 
 class ProductGridWidget extends StatelessWidget {
@@ -57,10 +60,10 @@ class ProductGridWidget extends StatelessWidget {
   }
 }
 
-class _ProductCard extends StatelessWidget {
+class _ProductCard extends StatelessWidget with DetailScreenMixin {
   final GoodsModel product;
 
-  const _ProductCard({required this.product});
+  _ProductCard({required this.product});
 
   @override
   Widget build(BuildContext context) {
@@ -74,6 +77,7 @@ class _ProductCard extends StatelessWidget {
             onTap: () {
               context.read<DetailCubit>().selectGood(product);
             },
+          
             child: Padding(
               padding: const EdgeInsets.all(10),
               child: Column(

@@ -22,6 +22,7 @@ class MessageLookup extends MessageLookupByLibrary {
 
   final messages = _notInlinedMessages(_notInlinedMessages);
   static Map<String, Function> _notInlinedMessages(_) => <String, Function>{
+        "strAdd": MessageLookupByLibrary.simpleMessage("Qo\'shish"),
         "strAppLanguage": MessageLookupByLibrary.simpleMessage("Ilova tili"),
         "strBackToScreen":
             MessageLookupByLibrary.simpleMessage("Orgaga qaytish"),
@@ -112,6 +113,9 @@ class MessageLookup extends MessageLookupByLibrary {
         "strSave": MessageLookupByLibrary.simpleMessage("Saqlash"),
         "strSelectFoodsNotFound": MessageLookupByLibrary.simpleMessage(
             "Buyurtmalar yo’q. Qo’shish uchun ovqat ustiga bosing"),
+        "strSelectGuestsCount":
+            MessageLookupByLibrary.simpleMessage("Mehmonlar sonini kiriting"),
+        "strTable": MessageLookupByLibrary.simpleMessage("Stol"),
         "strUnacceptableDate":
             MessageLookupByLibrary.simpleMessage("Unacceptable date"),
         "strYes": MessageLookupByLibrary.simpleMessage("Ha"),

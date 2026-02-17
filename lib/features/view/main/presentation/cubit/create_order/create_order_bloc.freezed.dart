@@ -18,19 +18,19 @@ final _privateConstructorUsedError = UnsupportedError(
 mixin _$CreateOrderEvent {
   @optionalTypeArgs
   TResult when<TResult extends Object?>({
-    required TResult Function(String tableId) started,
+    required TResult Function(int guestCount, String? tableId) started,
     required TResult Function(List<OrderItem> orders) createOrder,
   }) =>
       throw _privateConstructorUsedError;
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function(String tableId)? started,
+    TResult? Function(int guestCount, String? tableId)? started,
     TResult? Function(List<OrderItem> orders)? createOrder,
   }) =>
       throw _privateConstructorUsedError;
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
-    TResult Function(String tableId)? started,
+    TResult Function(int guestCount, String? tableId)? started,
     TResult Function(List<OrderItem> orders)? createOrder,
     required TResult orElse(),
   }) =>
@@ -80,7 +80,7 @@ abstract class _$$StartedImplCopyWith<$Res> {
           _$StartedImpl value, $Res Function(_$StartedImpl) then) =
       __$$StartedImplCopyWithImpl<$Res>;
   @useResult
-  $Res call({String tableId});
+  $Res call({int guestCount, String? tableId});
 }
 
 /// @nodoc
@@ -94,13 +94,18 @@ class __$$StartedImplCopyWithImpl<$Res>
   @pragma('vm:prefer-inline')
   @override
   $Res call({
-    Object? tableId = null,
+    Object? guestCount = null,
+    Object? tableId = freezed,
   }) {
     return _then(_$StartedImpl(
-      tableId: null == tableId
+      guestCount: null == guestCount
+          ? _value.guestCount
+          : guestCount // ignore: cast_nullable_to_non_nullable
+              as int,
+      tableId: freezed == tableId
           ? _value.tableId
           : tableId // ignore: cast_nullable_to_non_nullable
-              as String,
+              as String?,
     ));
   }
 }
@@ -108,14 +113,16 @@ class __$$StartedImplCopyWithImpl<$Res>
 /// @nodoc
 
 class _$StartedImpl implements _Started {
-  const _$StartedImpl({required this.tableId});
+  const _$StartedImpl({required this.guestCount, this.tableId});
 
   @override
-  final String tableId;
+  final int guestCount;
+  @override
+  final String? tableId;
 
   @override
   String toString() {
-    return 'CreateOrderEvent.started(tableId: $tableId)';
+    return 'CreateOrderEvent.started(guestCount: $guestCount, tableId: $tableId)';
   }
 
   @override
@@ -123,11 +130,13 @@ class _$StartedImpl implements _Started {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
             other is _$StartedImpl &&
+            (identical(other.guestCount, guestCount) ||
+                other.guestCount == guestCount) &&
             (identical(other.tableId, tableId) || other.tableId == tableId));
   }
 
   @override
-  int get hashCode => Object.hash(runtimeType, tableId);
+  int get hashCode => Object.hash(runtimeType, guestCount, tableId);
 
   @JsonKey(ignore: true)
   @override
@@ -138,30 +147,30 @@ class _$StartedImpl implements _Started {
   @override
   @optionalTypeArgs
   TResult when<TResult extends Object?>({
-    required TResult Function(String tableId) started,
+    required TResult Function(int guestCount, String? tableId) started,
     required TResult Function(List<OrderItem> orders) createOrder,
   }) {
-    return started(tableId);
+    return started(guestCount, tableId);
   }
 
   @override
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function(String tableId)? started,
+    TResult? Function(int guestCount, String? tableId)? started,
     TResult? Function(List<OrderItem> orders)? createOrder,
   }) {
-    return started?.call(tableId);
+    return started?.call(guestCount, tableId);
   }
 
   @override
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
-    TResult Function(String tableId)? started,
+    TResult Function(int guestCount, String? tableId)? started,
     TResult Function(List<OrderItem> orders)? createOrder,
     required TResult orElse(),
   }) {
     if (started != null) {
-      return started(tableId);
+      return started(guestCount, tableId);
     }
     return orElse();
   }
@@ -199,9 +208,11 @@ class _$StartedImpl implements _Started {
 }
 
 abstract class _Started implements CreateOrderEvent {
-  const factory _Started({required final String tableId}) = _$StartedImpl;
+  const factory _Started(
+      {required final int guestCount, final String? tableId}) = _$StartedImpl;
 
-  String get tableId;
+  int get guestCount;
+  String? get tableId;
   @JsonKey(ignore: true)
   _$$StartedImplCopyWith<_$StartedImpl> get copyWith =>
       throw _privateConstructorUsedError;
@@ -278,7 +289,7 @@ class _$CreateOrderImpl implements _CreateOrder {
   @override
   @optionalTypeArgs
   TResult when<TResult extends Object?>({
-    required TResult Function(String tableId) started,
+    required TResult Function(int guestCount, String? tableId) started,
     required TResult Function(List<OrderItem> orders) createOrder,
   }) {
     return createOrder(orders);
@@ -287,7 +298,7 @@ class _$CreateOrderImpl implements _CreateOrder {
   @override
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function(String tableId)? started,
+    TResult? Function(int guestCount, String? tableId)? started,
     TResult? Function(List<OrderItem> orders)? createOrder,
   }) {
     return createOrder?.call(orders);
@@ -296,7 +307,7 @@ class _$CreateOrderImpl implements _CreateOrder {
   @override
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
-    TResult Function(String tableId)? started,
+    TResult Function(int guestCount, String? tableId)? started,
     TResult Function(List<OrderItem> orders)? createOrder,
     required TResult orElse(),
   }) {
@@ -352,6 +363,7 @@ abstract class _CreateOrder implements CreateOrderEvent {
 mixin _$CreateOrderState {
   Status get status => throw _privateConstructorUsedError;
   String get tableId => throw _privateConstructorUsedError;
+  int get guestCount => throw _privateConstructorUsedError;
   bool get success => throw _privateConstructorUsedError;
   Failure? get failure => throw _privateConstructorUsedError;
 
@@ -366,7 +378,12 @@ abstract class $CreateOrderStateCopyWith<$Res> {
           CreateOrderState value, $Res Function(CreateOrderState) then) =
       _$CreateOrderStateCopyWithImpl<$Res, CreateOrderState>;
   @useResult
-  $Res call({Status status, String tableId, bool success, Failure? failure});
+  $Res call(
+      {Status status,
+      String tableId,
+      int guestCount,
+      bool success,
+      Failure? failure});
 }
 
 /// @nodoc
@@ -384,6 +401,7 @@ class _$CreateOrderStateCopyWithImpl<$Res, $Val extends CreateOrderState>
   $Res call({
     Object? status = null,
     Object? tableId = null,
+    Object? guestCount = null,
     Object? success = null,
     Object? failure = freezed,
   }) {
@@ -396,6 +414,10 @@ class _$CreateOrderStateCopyWithImpl<$Res, $Val extends CreateOrderState>
           ? _value.tableId
           : tableId // ignore: cast_nullable_to_non_nullable
               as String,
+      guestCount: null == guestCount
+          ? _value.guestCount
+          : guestCount // ignore: cast_nullable_to_non_nullable
+              as int,
       success: null == success
           ? _value.success
           : success // ignore: cast_nullable_to_non_nullable
@@ -416,7 +438,12 @@ abstract class _$$CreateOrderStateImplCopyWith<$Res>
       __$$CreateOrderStateImplCopyWithImpl<$Res>;
   @override
   @useResult
-  $Res call({Status status, String tableId, bool success, Failure? failure});
+  $Res call(
+      {Status status,
+      String tableId,
+      int guestCount,
+      bool success,
+      Failure? failure});
 }
 
 /// @nodoc
@@ -432,6 +459,7 @@ class __$$CreateOrderStateImplCopyWithImpl<$Res>
   $Res call({
     Object? status = null,
     Object? tableId = null,
+    Object? guestCount = null,
     Object? success = null,
     Object? failure = freezed,
   }) {
@@ -444,6 +472,10 @@ class __$$CreateOrderStateImplCopyWithImpl<$Res>
           ? _value.tableId
           : tableId // ignore: cast_nullable_to_non_nullable
               as String,
+      guestCount: null == guestCount
+          ? _value.guestCount
+          : guestCount // ignore: cast_nullable_to_non_nullable
+              as int,
       success: null == success
           ? _value.success
           : success // ignore: cast_nullable_to_non_nullable
@@ -462,6 +494,7 @@ class _$CreateOrderStateImpl implements _CreateOrderState {
   const _$CreateOrderStateImpl(
       {this.status = Status.UNKNOWN,
       this.tableId = '',
+      this.guestCount = 0,
       this.success = false,
       this.failure});
 
@@ -473,13 +506,16 @@ class _$CreateOrderStateImpl implements _CreateOrderState {
   final String tableId;
   @override
   @JsonKey()
+  final int guestCount;
+  @override
+  @JsonKey()
   final bool success;
   @override
   final Failure? failure;
 
   @override
   String toString() {
-    return 'CreateOrderState(status: $status, tableId: $tableId, success: $success, failure: $failure)';
+    return 'CreateOrderState(status: $status, tableId: $tableId, guestCount: $guestCount, success: $success, failure: $failure)';
   }
 
   @override
@@ -489,13 +525,15 @@ class _$CreateOrderStateImpl implements _CreateOrderState {
             other is _$CreateOrderStateImpl &&
             (identical(other.status, status) || other.status == status) &&
             (identical(other.tableId, tableId) || other.tableId == tableId) &&
+            (identical(other.guestCount, guestCount) ||
+                other.guestCount == guestCount) &&
             (identical(other.success, success) || other.success == success) &&
             (identical(other.failure, failure) || other.failure == failure));
   }
 
   @override
   int get hashCode =>
-      Object.hash(runtimeType, status, tableId, success, failure);
+      Object.hash(runtimeType, status, tableId, guestCount, success, failure);
 
   @JsonKey(ignore: true)
   @override
@@ -509,6 +547,7 @@ abstract class _CreateOrderState implements CreateOrderState {
   const factory _CreateOrderState(
       {final Status status,
       final String tableId,
+      final int guestCount,
       final bool success,
       final Failure? failure}) = _$CreateOrderStateImpl;
 
@@ -516,6 +555,8 @@ abstract class _CreateOrderState implements CreateOrderState {
   Status get status;
   @override
   String get tableId;
+  @override
+  int get guestCount;
   @override
   bool get success;
   @override

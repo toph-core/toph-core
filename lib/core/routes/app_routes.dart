@@ -5,4 +5,5 @@ sealed class AppRoutes {
   static const String loginPinScreen = "loginPinScreen";
   static const String splashScreen = "splashScreen";
   static const String detailScreen = "detailScreen";
+  static const String paymentScreen = "paymentScreen";
 }

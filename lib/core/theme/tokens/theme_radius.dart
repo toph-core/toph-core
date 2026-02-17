@@ -15,6 +15,9 @@ class ThemeRadius extends ThemeExtension<ThemeRadius> {
   final BorderRadius topBar;
   final BorderRadius segmentedControl;
 
+  //other radius
+  final BorderRadius infoRadius;
+
   const ThemeRadius({
     required this.buttonSm,
     required this.buttonMd,
@@ -27,6 +30,7 @@ class ThemeRadius extends ThemeExtension<ThemeRadius> {
     required this.bottomSheet,
     required this.topBar,
     required this.segmentedControl,
+    required this.infoRadius,
   });
 
   @override
@@ -55,6 +59,7 @@ class ThemeRadius extends ThemeExtension<ThemeRadius> {
       bottomSheet: bottomSheet ?? this.bottomSheet,
       topBar: topBar ?? this.topBar,
       segmentedControl: segmentedControl ?? this.segmentedControl,
+      infoRadius: this.infoRadius,
     );
   }
 
@@ -72,7 +77,12 @@ class ThemeRadius extends ThemeExtension<ThemeRadius> {
       card24: BorderRadius.lerp(card24, other.card24, t)!,
       bottomSheet: BorderRadius.lerp(bottomSheet, other.bottomSheet, t)!,
       topBar: BorderRadius.lerp(topBar, other.topBar, t)!,
-      segmentedControl: BorderRadius.lerp(segmentedControl, other.segmentedControl, t)!,
+      segmentedControl: BorderRadius.lerp(
+        segmentedControl,
+        other.segmentedControl,
+        t,
+      )!,
+      infoRadius: infoRadius,
     );
   }
 }

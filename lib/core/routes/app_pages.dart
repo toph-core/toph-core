@@ -6,11 +6,11 @@ import 'package:mary_ai_pos/features/view/auth/presentation/pages/login_pin/logi
 import 'package:mary_ai_pos/features/view/auth/presentation/pages/splash/splash_screen.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/detail/detail_screen.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/main/main_screen.dart';
+import 'package:mary_ai_pos/features/view/main/presentation/pages/payment/payment_screen.dart';
 
 class RouteGenerate {
   Route generate(RouteSettings settings) {
     final args = settings.arguments;
-    print("bu kelgan arguments ${args}");
     switch (settings.name) {
       case AppRoutes.splashScreen:
         return simpleRoute(const SplashScreen());
@@ -26,6 +26,9 @@ class RouteGenerate {
 
       case AppRoutes.detailScreen:
         return simpleRoute(const DetailScreen(), args: args);
+
+      case AppRoutes.paymentScreen:
+        return simpleRoute(const PaymentScreen());
     }
     return throw UnimplementedError();
   }

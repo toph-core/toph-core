@@ -569,6 +569,36 @@ class S {
       args: [],
     );
   }
+
+  /// `Stol`
+  String get strTable {
+    return Intl.message(
+      'Stol',
+      name: 'strTable',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Mehmonlar sonini kiriting`
+  String get strSelectGuestsCount {
+    return Intl.message(
+      'Mehmonlar sonini kiriting',
+      name: 'strSelectGuestsCount',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Qo'shish`
+  String get strAdd {
+    return Intl.message(
+      'Qo\'shish',
+      name: 'strAdd',
+      desc: '',
+      args: [],
+    );
+  }
 }
 
 class AppLocalizationDelegate extends LocalizationsDelegate<S> {

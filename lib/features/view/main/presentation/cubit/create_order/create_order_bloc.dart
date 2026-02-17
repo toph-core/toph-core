@@ -28,7 +28,7 @@ class CreateOrderBloc extends Bloc<CreateOrderEvent, CreateOrderState> {
       CreateOrderRequestModel(
         tableId: state.tableId,
         comment: "Very good",
-        guestCount: 2,
+        guestCount: state.guestCount,
         foods: event.orders,
         status: OrderStatus.OPEN,
       ),
@@ -40,5 +40,5 @@ class CreateOrderBloc extends Bloc<CreateOrderEvent, CreateOrderState> {
   }
 
   void _started(_Started event, emit) =>
-      emit(CreateOrderState(tableId: event.tableId));
+      emit(CreateOrderState(tableId: event.tableId ?? '',guestCount: event.guestCount));
 }

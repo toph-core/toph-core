@@ -7,18 +7,27 @@ import 'package:mary_ai_pos/core/extension/for_context.dart';
 import 'package:mary_ai_pos/core/extension/int_extension.dart';
 import 'package:mary_ai_pos/core/extension/number_formatter.dart';
 import 'package:mary_ai_pos/core/extension/widget_extension.dart';
+import 'package:mary_ai_pos/core/routes/app_routes.dart';
 import 'package:mary_ai_pos/core/values/app_colors.dart';
 import 'package:mary_ai_pos/di.dart';
+import 'package:mary_ai_pos/features/view/main/data/models/food_additional/food_additional_model.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/create_order/create_order_bloc.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/detail/detail_cubit.dart';
+import 'package:mary_ai_pos/features/view/main/presentation/pages/detail/detail_screen_mixin.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/detail/widgets/clear_dialog.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/detail/widgets/send_to_kitchen_dialog.dart';
+import 'package:mary_ai_pos/features/view/main/presentation/pages/detail/widgets/show_food_additional.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/main/widgets/logout_dialog.dart';
 import 'package:mary_ai_pos/generated/l10n.dart';
 
-class OrderSidebar extends StatelessWidget {
-  final String tableId;
-  const OrderSidebar({super.key, required this.tableId});
+class OrderSidebar extends StatelessWidget with DetailScreenMixin{
+  final String? tableId;
+  final int guestCount;
+ OrderSidebar({
+    super.key,
+   this.tableId,
+    required this.guestCount,
+  }); 
 
   @override
   Widget build(BuildContext context) {
@@ -26,11 +35,6 @@ class OrderSidebar extends StatelessWidget {
       buildWhen: (previous, current) =>
           previous.selectedGoods != current.selectedGoods,
       builder: (context, state) {
-        final totalPrice = state.selectedGoods.fold<double>(
-          0,
-          (sum, item) =>
-              sum + (double.tryParse(item.goods.price) ?? 0) * item.quantity,
-        );
 
         return DecoratedBox(
           decoration: BoxDecoration(
@@ -114,7 +118,7 @@ class OrderSidebar extends StatelessWidget {
                           ),
                         ),
                         Text(
-                          totalPrice.formatN,
+                          calculateTotalPrice(state.selectedGoods).formatN,
                           style: context.textStyles.semibold16,
                         ),
                       ],
@@ -125,63 +129,70 @@ class OrderSidebar extends StatelessWidget {
                       children: [
                         BlocProvider(
                           create: (context) => inject<CreateOrderBloc>()
-                            ..add(CreateOrderEvent.started(tableId: tableId)),
-                          child: BlocConsumer<CreateOrderBloc, CreateOrderState>(
-                            listener: (context, state) {
-                              if (state.status != Status.LOADING &&
-                                  state.success) {
-                                showSuccessMessage(
-                                  context,
-                                  S.current.strOrderSuccessCreated,
-                                );
-                                Navigator.pop(context);
-                              }
-                            },
-                            builder: (context, createOrderState) {
-                              return CustomHoverEffectWidget(
-                                bgColor: context.colors.buttonBrand,
-                                onTap: () async {
-                                  if (state.selectedGoods.isNotEmpty &&
-                                      createOrderState.status !=
-                                          Status.LOADING) {
-                                    await showDialog(
-                                      context: context,
-                                      builder: (context) =>
-                                          const SendToKitchenDialog(),
-                                    ).then((value) {
-                                      if(value != null && value is bool && value){
-                                        context.read<CreateOrderBloc>()
-                                                .add(
-                                                  CreateOrderEvent.createOrder(
-                                                    orders: state.selectedGoods,
-                                                  ),
-                                                );
-                                      }
-                                    });
+                            ..add(
+                              CreateOrderEvent.started(
+                                tableId: tableId,
+                                guestCount: guestCount,
+                              ),
+                            ),
+                          child:
+                              BlocConsumer<CreateOrderBloc, CreateOrderState>(
+                                listener: (context, state) {
+                                  if (state.status != Status.LOADING &&
+                                      state.success) {
+                                    showSuccessMessage(
+                                      context,
+                                      S.current.strOrderSuccessCreated,
+                                    );
+                                    Navigator.pop(context);
                                   }
                                 },
-                                borderRadius: context.radius.buttonLg,
-                                child: state.status == Status.LOADING
-                                    ? CircularProgressIndicator.adaptive(
-                                        backgroundColor:
-                                            context.colors.iconOnBrand,
-                                      ).paddingSymmetric(vertical: 12.5)
-                                    : Text(
-                                        "Oshxonaga yuborish",
-                                        textAlign: TextAlign.center,
-                                        style: context.textStyles.semibold16
-                                            .copyWith(color: Colors.white),
-                                      ).paddingSymmetric(
-                                        horizontal: 16,
-                                        vertical: 12.5,
-                                      ),
-                              );
-                            },
-                          ),
+                                builder: (context, createOrderState) {
+                                  return CustomHoverEffectWidget(
+                                    bgColor: context.colors.buttonBrand,
+                                    onTap: () async {
+                                      if (state.selectedGoods.isNotEmpty &&
+                                          createOrderState.status !=
+                                              Status.LOADING) {
+                                        await showDialog(
+                                          context: context,
+                                          builder: (context) =>
+                                              const SendToKitchenDialog(),
+                                        ).then((value) {
+                                          if (value != null &&
+                                              value is bool &&
+                                              value) {
+                                            context.read<CreateOrderBloc>().add(
+                                              CreateOrderEvent.createOrder(
+                                                orders: state.selectedGoods,
+                                              ),
+                                            );
+                                          }
+                                        });
+                                      }
+                                    },
+                                    borderRadius: context.radius.buttonLg,
+                                    child: state.status == Status.LOADING
+                                        ? CircularProgressIndicator.adaptive(
+                                            backgroundColor:
+                                                context.colors.iconOnBrand,
+                                          ).paddingSymmetric(vertical: 12.5)
+                                        : Text(
+                                            "Oshxonaga yuborish",
+                                            textAlign: TextAlign.center,
+                                            style: context.textStyles.semibold16
+                                                .copyWith(color: Colors.white),
+                                          ).paddingSymmetric(
+                                            horizontal: 16,
+                                            vertical: 12.5,
+                                          ),
+                                  );
+                                },
+                              ),
                         ),
                         CustomHoverEffectWidget(
                           bgColor: AppColors.ffFB6633,
-                          onTap: () {},
+                          onTap: () => Navigator.pushNamed(context, AppRoutes.paymentScreen),
                           borderRadius: context.radius.buttonLg,
                           child: Text(
                             "To’lovga o’tish",
@@ -204,66 +215,84 @@ class OrderSidebar extends StatelessWidget {
   }
 }
 
-class _OrderCard extends StatelessWidget {
+class _OrderCard extends StatelessWidget with DetailScreenMixin {
   final OrderItem orderItem;
-  const _OrderCard({required this.orderItem});
+  _OrderCard({required this.orderItem});
 
   @override
   Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: context.colors.bgTritary,
-        borderRadius: context.radius.card,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            orderItem.goods.name,
-            style: context.textStyles.headingSm.copyWith(
-              fontWeight: FontWeight.w500,
+    return InkWell(
+      onTap: () async {
+        await showDialog(
+          context: context,
+          builder: (context) => ShowFoodAdditional(
+            additionals: additionals,
+            goods: orderItem.goods,
+          ),
+        ).then((value) {
+          if (value != null && value is List<FoodAdditionalModel>) {
+            context.read<DetailCubit>().addFoodAdditional(value,orderItem.uniqueId);
+          }
+        });
+      },
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: context.colors.bgTritary,
+          borderRadius: context.radius.card,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              orderItem.goods.name,
+              style: context.textStyles.headingSm.copyWith(
+                fontWeight: FontWeight.w500,
+              ),
             ),
-          ),
-          const Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              _TagChip(text: "Qo'shimcha achchiq"),
-              _TagChip(text: 'Tuz kam'),
-              _TagChip(text: 'Ketchup kamroq'),
-              _TagChip(text: 'Sirsiz'),
-            ],
-          ).paddingSymmetric(vertical: 16),
-          const Text(
-            'Izoh: Mijoz qandaydir izoh aytsa qo\'shib qo\'yilgani shu yerda ko\'rinadi',
-            style: TextStyle(color: Colors.grey, fontSize: 12),
-          ),
-          16.hBox,
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              _QuantitySelector(
-                quantity: orderItem.quantity,
-                onDecrement: () => context
-                    .read<DetailCubit>()
-                    .decrementQuantity(orderItem.goods.id),
-                onIncrement: () => context
-                    .read<DetailCubit>()
-                    .incrementQuantity(orderItem.goods.id),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: List.generate(
+                orderItem.goods.additionals.length,
+                (index) =>
+                    _TagChip(text: orderItem.goods.additionals[index].title),
               ),
-              Text(
-                ((double.tryParse(orderItem.goods.price) ?? 0) *
-                        orderItem.quantity)
-                    .formatN,
-                style: context.textStyles.headingSm.copyWith(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w500,
+              // children: [
+              //   _TagChip(text: "Qo'shimcha achchiq"),
+              //   _TagChip(text: 'Tuz kam'),
+              //   _TagChip(text: 'Ketchup kamroq'),
+              //   _TagChip(text: 'Sirsiz'),
+              // ],
+            ).paddingSymmetric(vertical: 16),
+            const Text(
+              'Izoh: Mijoz qandaydir izoh aytsa qo\'shib qo\'yilgani shu yerda ko\'rinadi',
+              style: TextStyle(color: Colors.grey, fontSize: 12),
+            ),
+            16.hBox,
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                _QuantitySelector(
+                  quantity: orderItem.quantity,
+                  onDecrement: () => context
+                      .read<DetailCubit>()
+                      .decrementQuantity(orderItem.goods.id),
+                  onIncrement: () => context
+                      .read<DetailCubit>()
+                      .incrementQuantity(orderItem.goods.id),
                 ),
-              ),
-            ],
-          ),
-        ],
-      ).paddingAll(12),
+                Text(
+                  (orderItem.goods.additionals.isNotEmpty ? (orderItem.goods.additionals.map((v) => v.price).reduce((a,b) => a + b) + double.parse(orderItem.goods.price)) * orderItem.quantity : double.parse(orderItem.goods.price) * orderItem.quantity).formatN,
+                  style: context.textStyles.headingSm.copyWith(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ).paddingAll(12),
+      ),
     );
   }
 }

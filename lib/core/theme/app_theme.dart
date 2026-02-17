@@ -117,6 +117,7 @@ class AppTheme {
     bottomSheet: BorderRadius.vertical(top: Radius.circular(20)),
     topBar: BorderRadius.vertical(bottom: Radius.circular(24)),
     segmentedControl: BorderRadius.all(Radius.circular(100)),
+    infoRadius: BorderRadius.all(Radius.circular(59))
   );
 
   /// Light colors (JSON based)

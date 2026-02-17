@@ -16,8 +16,10 @@ final _privateConstructorUsedError = UnsupportedError(
 
 /// @nodoc
 mixin _$OrderItem {
+  String get uniqueId => throw _privateConstructorUsedError;
   GoodsModel get goods => throw _privateConstructorUsedError;
   int get quantity => throw _privateConstructorUsedError;
+  String get commet => throw _privateConstructorUsedError;
 
   @JsonKey(ignore: true)
   $OrderItemCopyWith<OrderItem> get copyWith =>
@@ -29,7 +31,7 @@ abstract class $OrderItemCopyWith<$Res> {
   factory $OrderItemCopyWith(OrderItem value, $Res Function(OrderItem) then) =
       _$OrderItemCopyWithImpl<$Res, OrderItem>;
   @useResult
-  $Res call({GoodsModel goods, int quantity});
+  $Res call({String uniqueId, GoodsModel goods, int quantity, String commet});
 
   $GoodsModelCopyWith<$Res> get goods;
 }
@@ -47,10 +49,16 @@ class _$OrderItemCopyWithImpl<$Res, $Val extends OrderItem>
   @pragma('vm:prefer-inline')
   @override
   $Res call({
+    Object? uniqueId = null,
     Object? goods = null,
     Object? quantity = null,
+    Object? commet = null,
   }) {
     return _then(_value.copyWith(
+      uniqueId: null == uniqueId
+          ? _value.uniqueId
+          : uniqueId // ignore: cast_nullable_to_non_nullable
+              as String,
       goods: null == goods
           ? _value.goods
           : goods // ignore: cast_nullable_to_non_nullable
@@ -59,6 +67,10 @@ class _$OrderItemCopyWithImpl<$Res, $Val extends OrderItem>
           ? _value.quantity
           : quantity // ignore: cast_nullable_to_non_nullable
               as int,
+      commet: null == commet
+          ? _value.commet
+          : commet // ignore: cast_nullable_to_non_nullable
+              as String,
     ) as $Val);
   }
 
@@ -79,7 +91,7 @@ abstract class _$$OrderItemImplCopyWith<$Res>
       __$$OrderItemImplCopyWithImpl<$Res>;
   @override
   @useResult
-  $Res call({GoodsModel goods, int quantity});
+  $Res call({String uniqueId, GoodsModel goods, int quantity, String commet});
 
   @override
   $GoodsModelCopyWith<$Res> get goods;
@@ -96,10 +108,16 @@ class __$$OrderItemImplCopyWithImpl<$Res>
   @pragma('vm:prefer-inline')
   @override
   $Res call({
+    Object? uniqueId = null,
     Object? goods = null,
     Object? quantity = null,
+    Object? commet = null,
   }) {
     return _then(_$OrderItemImpl(
+      uniqueId: null == uniqueId
+          ? _value.uniqueId
+          : uniqueId // ignore: cast_nullable_to_non_nullable
+              as String,
       goods: null == goods
           ? _value.goods
           : goods // ignore: cast_nullable_to_non_nullable
@@ -108,6 +126,10 @@ class __$$OrderItemImplCopyWithImpl<$Res>
           ? _value.quantity
           : quantity // ignore: cast_nullable_to_non_nullable
               as int,
+      commet: null == commet
+          ? _value.commet
+          : commet // ignore: cast_nullable_to_non_nullable
+              as String,
     ));
   }
 }
@@ -115,17 +137,27 @@ class __$$OrderItemImplCopyWithImpl<$Res>
 /// @nodoc
 
 class _$OrderItemImpl implements _OrderItem {
-  const _$OrderItemImpl({required this.goods, this.quantity = 1});
+  const _$OrderItemImpl(
+      {this.uniqueId = '',
+      required this.goods,
+      this.quantity = 1,
+      this.commet = ''});
 
+  @override
+  @JsonKey()
+  final String uniqueId;
   @override
   final GoodsModel goods;
   @override
   @JsonKey()
   final int quantity;
+  @override
+  @JsonKey()
+  final String commet;
 
   @override
   String toString() {
-    return 'OrderItem(goods: $goods, quantity: $quantity)';
+    return 'OrderItem(uniqueId: $uniqueId, goods: $goods, quantity: $quantity, commet: $commet)';
   }
 
   @override
@@ -133,13 +165,17 @@ class _$OrderItemImpl implements _OrderItem {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
             other is _$OrderItemImpl &&
+            (identical(other.uniqueId, uniqueId) ||
+                other.uniqueId == uniqueId) &&
             (identical(other.goods, goods) || other.goods == goods) &&
             (identical(other.quantity, quantity) ||
-                other.quantity == quantity));
+                other.quantity == quantity) &&
+            (identical(other.commet, commet) || other.commet == commet));
   }
 
   @override
-  int get hashCode => Object.hash(runtimeType, goods, quantity);
+  int get hashCode =>
+      Object.hash(runtimeType, uniqueId, goods, quantity, commet);
 
   @JsonKey(ignore: true)
   @override
@@ -150,12 +186,19 @@ class _$OrderItemImpl implements _OrderItem {
 
 abstract class _OrderItem implements OrderItem {
   const factory _OrderItem(
-      {required final GoodsModel goods, final int quantity}) = _$OrderItemImpl;
+      {final String uniqueId,
+      required final GoodsModel goods,
+      final int quantity,
+      final String commet}) = _$OrderItemImpl;
 
+  @override
+  String get uniqueId;
   @override
   GoodsModel get goods;
   @override
   int get quantity;
+  @override
+  String get commet;
   @override
   @JsonKey(ignore: true)
   _$$OrderItemImplCopyWith<_$OrderItemImpl> get copyWith =>

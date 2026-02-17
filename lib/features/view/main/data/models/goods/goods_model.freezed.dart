@@ -43,6 +43,9 @@ mixin _$GoodsModel {
   String get profit => throw _privateConstructorUsedError;
   @JsonKey(name: 'profit_margin')
   String get profitMargin => throw _privateConstructorUsedError;
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  List<FoodAdditionalModel> get additionals =>
+      throw _privateConstructorUsedError;
 
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
   @JsonKey(ignore: true)
@@ -70,7 +73,9 @@ abstract class $GoodsModelCopyWith<$Res> {
       @JsonKey(name: 'picture_url') String? pictureUrl,
       String price,
       String profit,
-      @JsonKey(name: 'profit_margin') String profitMargin});
+      @JsonKey(name: 'profit_margin') String profitMargin,
+      @JsonKey(includeFromJson: false, includeToJson: false)
+      List<FoodAdditionalModel> additionals});
 }
 
 /// @nodoc
@@ -100,6 +105,7 @@ class _$GoodsModelCopyWithImpl<$Res, $Val extends GoodsModel>
     Object? price = null,
     Object? profit = null,
     Object? profitMargin = null,
+    Object? additionals = null,
   }) {
     return _then(_value.copyWith(
       categoryId: null == categoryId
@@ -158,6 +164,10 @@ class _$GoodsModelCopyWithImpl<$Res, $Val extends GoodsModel>
           ? _value.profitMargin
           : profitMargin // ignore: cast_nullable_to_non_nullable
               as String,
+      additionals: null == additionals
+          ? _value.additionals
+          : additionals // ignore: cast_nullable_to_non_nullable
+              as List<FoodAdditionalModel>,
     ) as $Val);
   }
 }
@@ -184,7 +194,9 @@ abstract class _$$GoodsModelImplCopyWith<$Res>
       @JsonKey(name: 'picture_url') String? pictureUrl,
       String price,
       String profit,
-      @JsonKey(name: 'profit_margin') String profitMargin});
+      @JsonKey(name: 'profit_margin') String profitMargin,
+      @JsonKey(includeFromJson: false, includeToJson: false)
+      List<FoodAdditionalModel> additionals});
 }
 
 /// @nodoc
@@ -212,6 +224,7 @@ class __$$GoodsModelImplCopyWithImpl<$Res>
     Object? price = null,
     Object? profit = null,
     Object? profitMargin = null,
+    Object? additionals = null,
   }) {
     return _then(_$GoodsModelImpl(
       categoryId: null == categoryId
@@ -270,13 +283,17 @@ class __$$GoodsModelImplCopyWithImpl<$Res>
           ? _value.profitMargin
           : profitMargin // ignore: cast_nullable_to_non_nullable
               as String,
+      additionals: null == additionals
+          ? _value._additionals
+          : additionals // ignore: cast_nullable_to_non_nullable
+              as List<FoodAdditionalModel>,
     ));
   }
 }
 
 /// @nodoc
 @JsonSerializable()
-class _$GoodsModelImpl implements _GoodsModel {
+class _$GoodsModelImpl extends _GoodsModel {
   const _$GoodsModelImpl(
       {@JsonKey(name: 'category_id') required this.categoryId,
       @JsonKey(name: 'color_code') this.colorCode,
@@ -291,7 +308,11 @@ class _$GoodsModelImpl implements _GoodsModel {
       @JsonKey(name: 'picture_url') this.pictureUrl,
       required this.price,
       required this.profit,
-      @JsonKey(name: 'profit_margin') required this.profitMargin});
+      @JsonKey(name: 'profit_margin') required this.profitMargin,
+      @JsonKey(includeFromJson: false, includeToJson: false)
+      final List<FoodAdditionalModel> additionals = const []})
+      : _additionals = additionals,
+        super._();
 
   factory _$GoodsModelImpl.fromJson(Map<String, dynamic> json) =>
       _$$GoodsModelImplFromJson(json);
@@ -333,10 +354,18 @@ class _$GoodsModelImpl implements _GoodsModel {
   @override
   @JsonKey(name: 'profit_margin')
   final String profitMargin;
+  final List<FoodAdditionalModel> _additionals;
+  @override
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  List<FoodAdditionalModel> get additionals {
+    if (_additionals is EqualUnmodifiableListView) return _additionals;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(_additionals);
+  }
 
   @override
   String toString() {
-    return 'GoodsModel(categoryId: $categoryId, colorCode: $colorCode, cookTime: $cookTime, costPrice: $costPrice, departmentId: $departmentId, description: $description, descriptionI18n: $descriptionI18n, id: $id, name: $name, nameI18n: $nameI18n, pictureUrl: $pictureUrl, price: $price, profit: $profit, profitMargin: $profitMargin)';
+    return 'GoodsModel(categoryId: $categoryId, colorCode: $colorCode, cookTime: $cookTime, costPrice: $costPrice, departmentId: $departmentId, description: $description, descriptionI18n: $descriptionI18n, id: $id, name: $name, nameI18n: $nameI18n, pictureUrl: $pictureUrl, price: $price, profit: $profit, profitMargin: $profitMargin, additionals: $additionals)';
   }
 
   @override
@@ -367,7 +396,9 @@ class _$GoodsModelImpl implements _GoodsModel {
             (identical(other.price, price) || other.price == price) &&
             (identical(other.profit, profit) || other.profit == profit) &&
             (identical(other.profitMargin, profitMargin) ||
-                other.profitMargin == profitMargin));
+                other.profitMargin == profitMargin) &&
+            const DeepCollectionEquality()
+                .equals(other._additionals, _additionals));
   }
 
   @JsonKey(ignore: true)
@@ -387,7 +418,8 @@ class _$GoodsModelImpl implements _GoodsModel {
       pictureUrl,
       price,
       profit,
-      profitMargin);
+      profitMargin,
+      const DeepCollectionEquality().hash(_additionals));
 
   @JsonKey(ignore: true)
   @override
@@ -403,23 +435,25 @@ class _$GoodsModelImpl implements _GoodsModel {
   }
 }
 
-abstract class _GoodsModel implements GoodsModel {
+abstract class _GoodsModel extends GoodsModel {
   const factory _GoodsModel(
-          {@JsonKey(name: 'category_id') required final String categoryId,
-          @JsonKey(name: 'color_code') final String? colorCode,
-          @JsonKey(name: 'cook_time') required final int cookTime,
-          @JsonKey(name: 'cost_price') required final String costPrice,
-          @JsonKey(name: 'department_id') required final String departmentId,
-          required final String description,
-          @JsonKey(name: 'description_i18n') final String? descriptionI18n,
-          required final String id,
-          required final String name,
-          @JsonKey(name: 'name_i18n') final String? nameI18n,
-          @JsonKey(name: 'picture_url') final String? pictureUrl,
-          required final String price,
-          required final String profit,
-          @JsonKey(name: 'profit_margin') required final String profitMargin}) =
-      _$GoodsModelImpl;
+      {@JsonKey(name: 'category_id') required final String categoryId,
+      @JsonKey(name: 'color_code') final String? colorCode,
+      @JsonKey(name: 'cook_time') required final int cookTime,
+      @JsonKey(name: 'cost_price') required final String costPrice,
+      @JsonKey(name: 'department_id') required final String departmentId,
+      required final String description,
+      @JsonKey(name: 'description_i18n') final String? descriptionI18n,
+      required final String id,
+      required final String name,
+      @JsonKey(name: 'name_i18n') final String? nameI18n,
+      @JsonKey(name: 'picture_url') final String? pictureUrl,
+      required final String price,
+      required final String profit,
+      @JsonKey(name: 'profit_margin') required final String profitMargin,
+      @JsonKey(includeFromJson: false, includeToJson: false)
+      final List<FoodAdditionalModel> additionals}) = _$GoodsModelImpl;
+  const _GoodsModel._() : super._();
 
   factory _GoodsModel.fromJson(Map<String, dynamic> json) =
       _$GoodsModelImpl.fromJson;
@@ -461,6 +495,9 @@ abstract class _GoodsModel implements GoodsModel {
   @override
   @JsonKey(name: 'profit_margin')
   String get profitMargin;
+  @override
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  List<FoodAdditionalModel> get additionals;
   @override
   @JsonKey(ignore: true)
   _$$GoodsModelImplCopyWith<_$GoodsModelImpl> get copyWith =>

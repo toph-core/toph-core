@@ -87,7 +87,19 @@ dev_dependencies:
 
   flutter_lints: ^6.0.0
   build_runner: ^2.4.6
+  flutter_gen_runner: 5.8.0
   hive_generator: ^2.0.1
+
+flutter_gen:
+  output: lib/gen/
+  integrations:
+    flutter_svg: true
+  assets:
+    enabled: true
+    exclude:
+      - assets/fonts/**
+  fonts:
+    enabled: false
 
 flutter:
   uses-material-design: true

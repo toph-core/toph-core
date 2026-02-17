@@ -13,12 +13,12 @@ import 'package:mary_ai_pos/features/view/main/presentation/pages/detail/widgets
 import 'package:mary_ai_pos/features/view/main/presentation/pages/detail/widgets/leave_from_detail_screen_dialog.dart';
 
 class TopBarWidget extends StatelessWidget {
-  final CafeTableModel cafeTable;
+  final CafeTableModel? cafeTable;
   final ValueNotifier<bool> showKeyboard;
   final TextEditingController textEditingController;
   const TopBarWidget({
     super.key,
-    required this.cafeTable,
+   this.cafeTable,
     required this.showKeyboard,
     required this.textEditingController,
   });
@@ -60,8 +60,9 @@ class TopBarWidget extends StatelessWidget {
                   );
                 },
               ),
-              Text(
-                '${cafeTable.number}-stol',
+              if(cafeTable != null)
+                Text(
+                '${cafeTable!.number}-stol',
                 style: context.textStyles.headingSm,
               ),
               Expanded(

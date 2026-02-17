@@ -4,6 +4,7 @@ import 'package:mary_ai_pos/core/extension/for_context.dart';
 import 'package:mary_ai_pos/core/routes/app_routes.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/cafe_tables/cafe_tables_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/hall/hall_model.dart';
+import 'package:mary_ai_pos/features/view/main/presentation/pages/main/widgets/show_table_guest_count.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/main/widgets/table_widget.dart';
 
 class HallWidget extends StatefulWidget {
@@ -67,12 +68,27 @@ class _HallWidgetState extends State<HallWidget> {
                               .map(
                                 (table) => TableWidget(
                                   table: table,
-                                  onTap: () {
-                                    Navigator.pushNamed(
-                                      context,
-                                      AppRoutes.detailScreen,
-                                      arguments: table,
-                                    );
+                                  onTap: () async {
+                                    await showDialog(
+                                      context: context,
+                                      builder: (context) => ShowTableGuestCount(
+                                        tableNumber: table.number,
+                                      ),
+                                    ).then((value) {
+                                      if (value != null && value is int) {
+                                        Future.delayed(
+                                          const Duration(milliseconds: 500),
+                                          () => Navigator.pushNamed(
+                                            context,
+                                            AppRoutes.detailScreen,
+                                            arguments: {
+                                              "table": table,
+                                              "guest_count": value,
+                                            },
+                                          ),
+                                        );
+                                      }
+                                    });
                                   },
                                 ),
                               )
@@ -96,7 +112,6 @@ class _HallWidgetState extends State<HallWidget> {
 
                         return Stack(
                           children: [
-                            // Horizontal Scrollbar
                             if (contentWidth > viewWidth)
                               Positioned(
                                 left: 4,
@@ -109,7 +124,6 @@ class _HallWidgetState extends State<HallWidget> {
                                   offset: tx,
                                 ),
                               ),
-                            // Vertical Scrollbar
                             if (contentHeight > viewHeight)
                               Positioned(
                                 top: 4,

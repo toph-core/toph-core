@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/svg.dart';
 import 'package:mary_ai_pos/core/common/custom_shimmer_container.dart';
 import 'package:mary_ai_pos/core/extension/for_context.dart';
+import 'package:mary_ai_pos/core/extension/widget_extension.dart';
+import 'package:mary_ai_pos/core/routes/app_routes.dart';
 import 'package:mary_ai_pos/di.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/hall/hall_model.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/main/main_cubit.dart';
+import 'package:mary_ai_pos/gen/assets.gen.dart';
 
 class TabFilter extends StatelessWidget {
   final String? selectedHallId;
@@ -22,6 +26,7 @@ class TabFilter extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Expanded(
+          flex: 3,
           child: Wrap(
             spacing: 8,
             runSpacing: 8,
@@ -41,6 +46,36 @@ class TabFilter extends StatelessWidget {
                         ),
                       )
                       .toList(),
+          ),
+        ),
+        Expanded(
+          flex: 1,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              GestureDetector(
+                onTap: () {
+                  Navigator.pushNamed(
+                    context,
+                    AppRoutes.detailScreen,
+                    arguments: {"guest_count": 1},
+                  );
+                },
+                child: SizedBox(
+                  height: 52,
+                  width: 52,
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: context.colors.buttonBrand,
+                      borderRadius: context.radius.buttonLg,
+                    ),
+                    child: SvgPicture.asset(
+                      Assets.icons.icAddCircle.path,
+                    ).paddingAll(10),
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       ],

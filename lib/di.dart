@@ -6,6 +6,7 @@ import 'package:mary_ai_pos/features/view/auth/domain/usecases/logout/logout_use
 import 'package:mary_ai_pos/features/view/main/domain/usecase/create_order_usecase.dart';
 import 'package:mary_ai_pos/features/view/main/domain/usecase/get_categories_usecase.dart';
 import 'package:mary_ai_pos/features/view/main/domain/usecase/get_goods_by_category_id_usecase.dart';
+import 'package:mary_ai_pos/features/view/main/presentation/cubit/counter/counter_cubit.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/create_order/create_order_bloc.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/detail/detail_cubit.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -92,4 +93,6 @@ void _cubit() {
   inject.registerFactory(() => LoginPinCubit(inject(), inject(), inject()));
   inject.registerFactory(() => DetailCubit(inject(), inject()));
   inject.registerFactory(() => CreateOrderBloc(createOrderUsecase: inject()));
+  inject.registerFactory(() => CounterCubit());
+
 }

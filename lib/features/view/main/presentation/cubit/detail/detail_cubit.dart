@@ -1,9 +1,12 @@
+import 'package:dartz/dartz.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:mary_ai_pos/core/api/api.dart';
 import 'package:mary_ai_pos/core/constants/constants.dart';
 import 'package:mary_ai_pos/core/error/failure.dart';
 import 'package:mary_ai_pos/core/usecase/usecase.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/category/category_model.dart';
+import 'package:mary_ai_pos/features/view/main/data/models/food_additional/food_additional_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/goods/goods_model.dart';
 import 'package:mary_ai_pos/features/view/main/domain/usecase/get_categories_usecase.dart';
 import 'package:mary_ai_pos/features/view/main/domain/usecase/get_goods_by_category_id_usecase.dart';
@@ -45,6 +48,15 @@ class DetailCubit extends Cubit<DetailState> {
     );
   }
 
+  void addFoodAdditional(List<FoodAdditionalModel> additionals, String orderId) {
+    final id = state.selectedGoods.indexWhere((value) => value.uniqueId == orderId);
+    if(id != -1){
+      List<OrderItem> orders = List.from(state.selectedGoods);
+      orders[id] = orders[id].copyWith(goods: orders[id].goods.copyWith(additionals: additionals));
+      emit(state.copyWith(selectedGoods: orders));
+    }
+  }
+
   void selectGood(GoodsModel good) {
     final selectedGoods = List<OrderItem>.from(state.selectedGoods);
     final index = selectedGoods.indexWhere((item) => item.goods.id == good.id);
@@ -54,7 +66,7 @@ class DetailCubit extends Cubit<DetailState> {
         quantity: selectedGoods[index].quantity + 1,
       );
     } else {
-      selectedGoods.add(OrderItem(goods: good));
+      selectedGoods.add(OrderItem(goods: good,uniqueId: UniqueKey().toString()));
     }
     emit(state.copyWith(selectedGoods: selectedGoods));
   }

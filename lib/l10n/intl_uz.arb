@@ -52,5 +52,9 @@
   "strYouWantLeaveOrderScreen": "Rostdan ham chiqmoxchimisiz? Chiqsangiz ovqatlar bekor qilinadi.",
   "strSave":"Saqlash",
   "strDoYouWantSendOrdersToKitchken": "Siz rostdan ham buyurtmani oshxonaga yuborishni hohlaysizmi?",
-  "strOrderSuccessCreated":"Buyurtma muvafaqqiyatli yaratildi"
+  "strOrderSuccessCreated":"Buyurtma muvafaqqiyatli yaratildi",
+  "strTable": "Stol",
+  "strSelectGuestsCount": "Mehmonlar sonini belgilang",
+  "strAdd": "Qo'shish"
+
 }

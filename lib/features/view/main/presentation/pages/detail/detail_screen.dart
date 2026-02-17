@@ -7,6 +7,7 @@ import 'package:mary_ai_pos/core/extension/widget_extension.dart';
 import 'package:mary_ai_pos/di.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/cafe_tables/cafe_tables_model.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/detail/detail_cubit.dart';
+import 'package:mary_ai_pos/features/view/main/presentation/pages/detail/detail_screen_mixin.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/detail/widgets/order_side_bar_widget.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/detail/widgets/produc_grid_widget.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/detail/widgets/top_bar_widget.dart';
@@ -19,9 +20,11 @@ class DetailScreen extends StatefulWidget {
   State<DetailScreen> createState() => _DetailScreenState();
 }
 
-class _DetailScreenState extends State<DetailScreen> {
-  late final CafeTableModel cafeTable =
-      ModalRoute.of(context)?.settings.arguments as CafeTableModel;
+class _DetailScreenState extends State<DetailScreen> with DetailScreenMixin{
+  late final args =
+      ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>;
+  late final CafeTableModel? cafeTable = args['table'];
+  late final int guestCount = args['guest_count'];
   late ValueNotifier<bool> showVirtualKeyboard = ValueNotifier<bool>(false);
   final TextEditingController controller = TextEditingController();
 
@@ -59,7 +62,12 @@ class _DetailScreenState extends State<DetailScreen> {
                         ],
                       ),
                     ),
-                    Expanded(child: OrderSidebar(tableId: cafeTable.id)),
+                    Expanded(
+                      child: OrderSidebar(
+                        tableId: cafeTable?.id,
+                        guestCount: guestCount,
+                      ),
+                    ),
                   ],
                 ).paddingAll(32),
               ),
