@@ -88,7 +88,8 @@ class MainHeader extends StatelessWidget {
                 child: SvgPicture.asset(AppIcons.icBell).paddingAll(16),
               ),
               CustomHoverEffectWidget(
-                onTap: () {},
+                onTap: () =>
+                    Navigator.pushNamed(context, AppRoutes.archiveScreen),
                 borderRadius: context.radius.card,
                 child: SvgPicture.asset(AppIcons.icArchive).paddingAll(16),
               ),

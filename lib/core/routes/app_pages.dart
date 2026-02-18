@@ -4,6 +4,7 @@ import 'package:mary_ai_pos/core/routes/app_routes.dart';
 import 'package:mary_ai_pos/features/view/auth/presentation/pages/login/login_screen.dart';
 import 'package:mary_ai_pos/features/view/auth/presentation/pages/login_pin/login_pin_screen.dart';
 import 'package:mary_ai_pos/features/view/auth/presentation/pages/splash/splash_screen.dart';
+import 'package:mary_ai_pos/features/view/main/presentation/pages/archive/archive_screen.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/detail/detail_screen.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/main/main_screen.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/payment/payment_screen.dart';
@@ -29,6 +30,9 @@ class RouteGenerate {
 
       case AppRoutes.paymentScreen:
         return simpleRoute(const PaymentScreen());
+
+      case AppRoutes.archiveScreen:
+        return simpleRoute(const ArchiveScreen());
     }
     return throw UnimplementedError();
   }
