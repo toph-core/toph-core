@@ -46,21 +46,6 @@ class ArchiveScreen extends StatelessWidget {
               children: [
                 const ArchiveTopBar(),
                 16.hBox,
-                // Expanded(
-                //   child: GridView.builder(
-                //     padding: const EdgeInsets.all(16),
-                //     physics: const ScrollPhysics(),
-                //     gridDelegate:
-                //         const SliverGridDelegateWithFixedCrossAxisCount(
-                //           crossAxisCount: 2,
-                //           crossAxisSpacing: 12,
-                //           mainAxisSpacing: 12,
-                //           mainAxisExtent: 130,
-                //         ),
-                //     itemBuilder: (context, index) => const CheckItem(),
-                //     itemCount: 20,
-                //   ),
-                // ),
                 Expanded(
                   child: Container(
                     width: double.infinity,
@@ -71,7 +56,7 @@ class ArchiveScreen extends StatelessWidget {
                     ),
                     child: GridView.builder(
                       shrinkWrap: false,
-                      padding: const EdgeInsets.all(16),
+                      padding: const EdgeInsets.all(0),
                       gridDelegate:
                           const SliverGridDelegateWithFixedCrossAxisCount(
                             crossAxisCount: 2,
@@ -81,7 +66,7 @@ class ArchiveScreen extends StatelessWidget {
                           ),
                       itemBuilder: (context, index) => const CheckItem(),
                       itemCount: 20,
-                    ),
+                    ).paddingAll(16),
                   ),
                 ),
               ],

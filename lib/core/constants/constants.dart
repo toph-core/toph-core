@@ -1,6 +1,6 @@
 // ignore_for_file: constant_identifier_names
-const BASE_URL = 'https://back.maryai.yurtal.tech/';
-// const BASE_URL = 'https://back.staging.mary_ai_pos.yurtal.tech/api/';
+// const BASE_URL = 'https://back.maryai.yurtal.tech/';
+const BASE_URL = 'https://back.staging.maryai.yurtal.tech/';
 
 const ACCESS_TOKEN = 'access-token';
 const REFRESH_TOKEN = 'refresh-token';
@@ -12,7 +12,7 @@ const TECHNICAL_SUPPORT_URL = '';
 
 enum Status { LOADING, UNKNOWN, SUCCESS, ERROR, OTHER, OTHER_LOADING, IDLE }
 
-enum OrderStatus {OPEN, PENDING,NONE}
+enum OrderStatus { OPEN, PENDING, NONE }
 
 class LangModel {
   final String code;
