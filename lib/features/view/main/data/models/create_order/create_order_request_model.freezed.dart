@@ -22,6 +22,7 @@ mixin _$CreateOrderRequestModel {
   List<OrderItem> get foods => throw _privateConstructorUsedError;
   OrderStatus get status => throw _privateConstructorUsedError;
   String get tableId => throw _privateConstructorUsedError;
+  TableStatus get tableStatus => throw _privateConstructorUsedError;
 
   @JsonKey(ignore: true)
   $CreateOrderRequestModelCopyWith<CreateOrderRequestModel> get copyWith =>
@@ -40,7 +41,8 @@ abstract class $CreateOrderRequestModelCopyWith<$Res> {
       int guestCount,
       List<OrderItem> foods,
       OrderStatus status,
-      String tableId});
+      String tableId,
+      TableStatus tableStatus});
 }
 
 /// @nodoc
@@ -63,6 +65,7 @@ class _$CreateOrderRequestModelCopyWithImpl<$Res,
     Object? foods = null,
     Object? status = null,
     Object? tableId = null,
+    Object? tableStatus = null,
   }) {
     return _then(_value.copyWith(
       cashierId: null == cashierId
@@ -89,6 +92,10 @@ class _$CreateOrderRequestModelCopyWithImpl<$Res,
           ? _value.tableId
           : tableId // ignore: cast_nullable_to_non_nullable
               as String,
+      tableStatus: null == tableStatus
+          ? _value.tableStatus
+          : tableStatus // ignore: cast_nullable_to_non_nullable
+              as TableStatus,
     ) as $Val);
   }
 }
@@ -108,7 +115,8 @@ abstract class _$$CreateOrderRequestModelImplCopyWith<$Res>
       int guestCount,
       List<OrderItem> foods,
       OrderStatus status,
-      String tableId});
+      String tableId,
+      TableStatus tableStatus});
 }
 
 /// @nodoc
@@ -130,6 +138,7 @@ class __$$CreateOrderRequestModelImplCopyWithImpl<$Res>
     Object? foods = null,
     Object? status = null,
     Object? tableId = null,
+    Object? tableStatus = null,
   }) {
     return _then(_$CreateOrderRequestModelImpl(
       cashierId: null == cashierId
@@ -156,6 +165,10 @@ class __$$CreateOrderRequestModelImplCopyWithImpl<$Res>
           ? _value.tableId
           : tableId // ignore: cast_nullable_to_non_nullable
               as String,
+      tableStatus: null == tableStatus
+          ? _value.tableStatus
+          : tableStatus // ignore: cast_nullable_to_non_nullable
+              as TableStatus,
     ));
   }
 }
@@ -169,7 +182,8 @@ class _$CreateOrderRequestModelImpl extends _CreateOrderRequestModel {
       this.guestCount = 0,
       final List<OrderItem> foods = const [],
       this.status = OrderStatus.NONE,
-      this.tableId = ''})
+      this.tableId = '',
+      this.tableStatus = TableStatus.none})
       : _foods = foods,
         super._();
 
@@ -197,10 +211,13 @@ class _$CreateOrderRequestModelImpl extends _CreateOrderRequestModel {
   @override
   @JsonKey()
   final String tableId;
+  @override
+  @JsonKey()
+  final TableStatus tableStatus;
 
   @override
   String toString() {
-    return 'CreateOrderRequestModel(cashierId: $cashierId, comment: $comment, guestCount: $guestCount, foods: $foods, status: $status, tableId: $tableId)';
+    return 'CreateOrderRequestModel(cashierId: $cashierId, comment: $comment, guestCount: $guestCount, foods: $foods, status: $status, tableId: $tableId, tableStatus: $tableStatus)';
   }
 
   @override
@@ -215,12 +232,21 @@ class _$CreateOrderRequestModelImpl extends _CreateOrderRequestModel {
                 other.guestCount == guestCount) &&
             const DeepCollectionEquality().equals(other._foods, _foods) &&
             (identical(other.status, status) || other.status == status) &&
-            (identical(other.tableId, tableId) || other.tableId == tableId));
+            (identical(other.tableId, tableId) || other.tableId == tableId) &&
+            (identical(other.tableStatus, tableStatus) ||
+                other.tableStatus == tableStatus));
   }
 
   @override
-  int get hashCode => Object.hash(runtimeType, cashierId, comment, guestCount,
-      const DeepCollectionEquality().hash(_foods), status, tableId);
+  int get hashCode => Object.hash(
+      runtimeType,
+      cashierId,
+      comment,
+      guestCount,
+      const DeepCollectionEquality().hash(_foods),
+      status,
+      tableId,
+      tableStatus);
 
   @JsonKey(ignore: true)
   @override
@@ -237,7 +263,8 @@ abstract class _CreateOrderRequestModel extends CreateOrderRequestModel {
       final int guestCount,
       final List<OrderItem> foods,
       final OrderStatus status,
-      final String tableId}) = _$CreateOrderRequestModelImpl;
+      final String tableId,
+      final TableStatus tableStatus}) = _$CreateOrderRequestModelImpl;
   const _CreateOrderRequestModel._() : super._();
 
   @override
@@ -252,6 +279,8 @@ abstract class _CreateOrderRequestModel extends CreateOrderRequestModel {
   OrderStatus get status;
   @override
   String get tableId;
+  @override
+  TableStatus get tableStatus;
   @override
   @JsonKey(ignore: true)
   _$$CreateOrderRequestModelImplCopyWith<_$CreateOrderRequestModelImpl>

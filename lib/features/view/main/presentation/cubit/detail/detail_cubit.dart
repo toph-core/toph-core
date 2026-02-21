@@ -48,11 +48,20 @@ class DetailCubit extends Cubit<DetailState> {
     );
   }
 
-  void addFoodAdditional(List<FoodAdditionalModel> additionals, String orderId) {
-    final id = state.selectedGoods.indexWhere((value) => value.uniqueId == orderId);
-    if(id != -1){
+  void addFoodAdditional(
+    List<FoodAdditionalModel> additionals,
+    String orderId,
+    String comment,
+  ) {
+    final id = state.selectedGoods.indexWhere(
+      (value) => value.uniqueId == orderId,
+    );
+    if (id != -1) {
       List<OrderItem> orders = List.from(state.selectedGoods);
-      orders[id] = orders[id].copyWith(goods: orders[id].goods.copyWith(additionals: additionals));
+      orders[id] = orders[id].copyWith(
+        goods: orders[id].goods.copyWith(additionals: additionals),
+        commet: comment
+      );
       emit(state.copyWith(selectedGoods: orders));
     }
   }
@@ -66,7 +75,9 @@ class DetailCubit extends Cubit<DetailState> {
         quantity: selectedGoods[index].quantity + 1,
       );
     } else {
-      selectedGoods.add(OrderItem(goods: good,uniqueId: UniqueKey().toString()));
+      selectedGoods.add(
+        OrderItem(goods: good, uniqueId: UniqueKey().toString()),
+      );
     }
     emit(state.copyWith(selectedGoods: selectedGoods));
   }

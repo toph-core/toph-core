@@ -6,7 +6,7 @@ class ListAPI {
   static const String refresh = "api/v1/auth/refresh";
 
   //! general
-  static const String cafeTablesByHallId = "api/v1/cafe-tables/available/hall";
+  static const String cafeTablesByHallId = "api/v1/cafe-tables/hall";
   static const String halls = "api/v1/halls";
   static const String categories = "api/v1/categories";
   static String categoriesGoods(String categoryId) =>
@@ -21,4 +21,5 @@ class ListAPI {
 
   //! Orders
   static const String orders = "/api/v1/orders";
+  static const String archives = "/api/v1/bills";
 }

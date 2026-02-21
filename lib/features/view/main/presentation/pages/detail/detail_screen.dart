@@ -20,11 +20,12 @@ class DetailScreen extends StatefulWidget {
   State<DetailScreen> createState() => _DetailScreenState();
 }
 
-class _DetailScreenState extends State<DetailScreen> with DetailScreenMixin{
+class _DetailScreenState extends State<DetailScreen> with DetailScreenMixin {
   late final args =
       ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>;
   late final CafeTableModel? cafeTable = args['table'];
-  late final int guestCount = args['guest_count'];
+  late final int guestCount = args['guest_count'] ?? 0;
+  late final TableStatus tableStatus = args['table_status'];
   late ValueNotifier<bool> showVirtualKeyboard = ValueNotifier<bool>(false);
   final TextEditingController controller = TextEditingController();
 
@@ -66,6 +67,7 @@ class _DetailScreenState extends State<DetailScreen> with DetailScreenMixin{
                       child: OrderSidebar(
                         tableId: cafeTable?.id,
                         guestCount: guestCount,
+                        tableStatus: tableStatus,
                       ),
                     ),
                   ],

@@ -10,6 +10,7 @@ import 'package:mary_ai_pos/core/extension/widget_extension.dart';
 import 'package:mary_ai_pos/core/routes/app_routes.dart';
 import 'package:mary_ai_pos/core/values/app_colors.dart';
 import 'package:mary_ai_pos/di.dart';
+import 'package:mary_ai_pos/features/view/main/data/models/cafe_tables/cafe_tables_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/food_additional/food_additional_model.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/create_order/create_order_bloc.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/detail/detail_cubit.dart';
@@ -20,14 +21,16 @@ import 'package:mary_ai_pos/features/view/main/presentation/pages/detail/widgets
 import 'package:mary_ai_pos/features/view/main/presentation/pages/main/widgets/logout_dialog.dart';
 import 'package:mary_ai_pos/generated/l10n.dart';
 
-class OrderSidebar extends StatelessWidget with DetailScreenMixin{
+class OrderSidebar extends StatelessWidget with DetailScreenMixin {
   final String? tableId;
   final int guestCount;
- OrderSidebar({
+  final TableStatus tableStatus;
+  OrderSidebar({
     super.key,
-   this.tableId,
+    this.tableId,
     required this.guestCount,
-  }); 
+    required this.tableStatus,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -35,7 +38,6 @@ class OrderSidebar extends StatelessWidget with DetailScreenMixin{
       buildWhen: (previous, current) =>
           previous.selectedGoods != current.selectedGoods,
       builder: (context, state) {
-
         return DecoratedBox(
           decoration: BoxDecoration(
             color: context.colors.bgDefault,
@@ -133,6 +135,7 @@ class OrderSidebar extends StatelessWidget with DetailScreenMixin{
                               CreateOrderEvent.started(
                                 tableId: tableId,
                                 guestCount: guestCount,
+                                tableStatus: tableStatus,
                               ),
                             ),
                           child:
@@ -192,7 +195,10 @@ class OrderSidebar extends StatelessWidget with DetailScreenMixin{
                         ),
                         CustomHoverEffectWidget(
                           bgColor: AppColors.ffFB6633,
-                          onTap: () => Navigator.pushNamed(context, AppRoutes.paymentScreen),
+                          onTap: () => Navigator.pushNamed(
+                            context,
+                            AppRoutes.paymentScreen,
+                          ),
                           borderRadius: context.radius.buttonLg,
                           child: Text(
                             "To’lovga o’tish",
@@ -223,15 +229,26 @@ class _OrderCard extends StatelessWidget with DetailScreenMixin {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: () async {
+        List<FoodAdditionalModel> selectedAdditional = additionals;
+        additionals.asMap().forEach((index,value){
+          if(orderItem.goods.additionals.indexWhere((v) => v.price == value.price && v.title == value.title) != -1){
+            selectedAdditional[index].selected = true;
+          }
+        });
         await showDialog(
           context: context,
           builder: (context) => ShowFoodAdditional(
-            additionals: additionals,
+            additionals: selectedAdditional,
             goods: orderItem.goods,
+            comment: orderItem.commet,
           ),
         ).then((value) {
-          if (value != null && value is List<FoodAdditionalModel>) {
-            context.read<DetailCubit>().addFoodAdditional(value,orderItem.uniqueId);
+          if (value != null && value is Map<String, dynamic>) {
+            context.read<DetailCubit>().addFoodAdditional(
+              value['additional'],
+              orderItem.uniqueId,
+              value['comment'],
+            );
           }
         });
       },
@@ -264,9 +281,9 @@ class _OrderCard extends StatelessWidget with DetailScreenMixin {
               //   _TagChip(text: 'Sirsiz'),
               // ],
             ).paddingSymmetric(vertical: 16),
-            const Text(
-              'Izoh: Mijoz qandaydir izoh aytsa qo\'shib qo\'yilgani shu yerda ko\'rinadi',
-              style: TextStyle(color: Colors.grey, fontSize: 12),
+            Text(
+              'Izoh: ${orderItem.commet}',
+              style: const TextStyle(color: Colors.grey, fontSize: 12),
             ),
             16.hBox,
             Row(
@@ -282,7 +299,15 @@ class _OrderCard extends StatelessWidget with DetailScreenMixin {
                       .incrementQuantity(orderItem.goods.id),
                 ),
                 Text(
-                  (orderItem.goods.additionals.isNotEmpty ? (orderItem.goods.additionals.map((v) => v.price).reduce((a,b) => a + b) + double.parse(orderItem.goods.price)) * orderItem.quantity : double.parse(orderItem.goods.price) * orderItem.quantity).formatN,
+                  (orderItem.goods.additionals.isNotEmpty
+                          ? (orderItem.goods.additionals
+                                        .map((v) => v.price)
+                                        .reduce((a, b) => a + b) +
+                                    double.parse(orderItem.goods.price)) *
+                                orderItem.quantity
+                          : double.parse(orderItem.goods.price) *
+                                orderItem.quantity)
+                      .formatN,
                   style: context.textStyles.headingSm.copyWith(
                     fontSize: 18,
                     fontWeight: FontWeight.w500,

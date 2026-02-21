@@ -4,6 +4,7 @@ import 'package:mary_ai_pos/core/api/api.dart';
 import 'package:mary_ai_pos/core/components/flush_bars.dart';
 import 'package:mary_ai_pos/core/error/failure.dart';
 import 'package:mary_ai_pos/core/utils/helper/helper_widget.dart';
+import 'package:mary_ai_pos/features/view/main/data/models/cafe_tables/cafe_tables_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/create_order/create_order_request_model.dart';
 import 'package:mary_ai_pos/features/view/main/domain/usecase/create_order_usecase.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/detail/detail_cubit.dart';
@@ -31,6 +32,7 @@ class CreateOrderBloc extends Bloc<CreateOrderEvent, CreateOrderState> {
         guestCount: state.guestCount,
         foods: event.orders,
         status: OrderStatus.OPEN,
+        tableStatus: state.tableStatus
       ),
     );
     response.fold((l) {
@@ -40,5 +42,5 @@ class CreateOrderBloc extends Bloc<CreateOrderEvent, CreateOrderState> {
   }
 
   void _started(_Started event, emit) =>
-      emit(CreateOrderState(tableId: event.tableId ?? '',guestCount: event.guestCount));
+      emit(CreateOrderState(tableId: event.tableId ?? '',guestCount: event.guestCount,tableStatus: event.tableStatus));
 }

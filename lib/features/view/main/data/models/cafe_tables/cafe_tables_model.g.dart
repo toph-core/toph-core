@@ -39,4 +39,5 @@ Map<String, dynamic> _$$CafeTableModelImplToJson(
 const _$TableStatusEnumMap = {
   TableStatus.free: 'free',
   TableStatus.busy: 'busy',
+  TableStatus.none: 'none',
 };

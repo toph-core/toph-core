@@ -82,9 +82,9 @@ class MyApp extends StatelessWidget {
               return ScrollConfiguration(
                 behavior: const ScrollBehaviorModified(),
                 child: child!,
-              );
+              );  
             },
-            initialRoute: AppRoutes.splashScreen,
+            initialRoute: AppRoutes.archiveScreen,
           );
         },
       ),

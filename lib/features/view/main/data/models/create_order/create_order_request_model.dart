@@ -1,5 +1,6 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:mary_ai_pos/core/constants/constants.dart';
+import 'package:mary_ai_pos/features/view/main/data/models/cafe_tables/cafe_tables_model.dart';
 
 import '../../../presentation/cubit/detail/detail_cubit.dart';
 
@@ -14,6 +15,7 @@ class CreateOrderRequestModel with _$CreateOrderRequestModel {
     @Default([]) List<OrderItem> foods,
     @Default(OrderStatus.NONE) OrderStatus status,
     @Default('') String tableId,
+    @Default(TableStatus.none) TableStatus tableStatus,
   }) = _CreateOrderRequestModel;
 
   const CreateOrderRequestModel._();

@@ -1,0 +1,52 @@
+import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:mary_ai_pos/features/view/main/domain/entities/order_food_entity.dart';
+
+part 'order_food_model.freezed.dart';
+part 'order_food_model.g.dart';
+
+@freezed
+class OrderFoodModel with _$OrderFoodModel implements OrderFoodEntity {
+  const OrderFoodModel._();
+
+  const factory OrderFoodModel({
+    @Default('') String id,
+    @Default('') String name,
+    @Default(0) int quantity,
+    @Default(0) int price,
+    @Default('') String comment,
+  }) = _OrderFoodModel;
+
+  factory OrderFoodModel.fromJson(Map<String, dynamic> json) =>
+      _$OrderFoodModelFromJson(json);
+}
+
+class OrderFoodEntityListConverter
+    implements JsonConverter<List<OrderFoodEntity>, List<dynamic>> {
+  const OrderFoodEntityListConverter();
+
+  @override
+  List<OrderFoodEntity> fromJson(List<dynamic> json) {
+    return json
+        .whereType<Map>()
+        .map((item) => OrderFoodModel.fromJson(Map<String, dynamic>.from(item)))
+        .toList();
+  }
+
+  @override
+  List<dynamic> toJson(List<OrderFoodEntity> object) {
+    return object
+        .map(
+          (item) =>
+              item is OrderFoodModel
+                  ? item.toJson()
+                  : {
+                    'id': item.id,
+                    'name': item.name,
+                    'quantity': item.quantity,
+                    'price': item.price,
+                    'comment': item.comment,
+                  },
+        )
+        .toList();
+  }
+}

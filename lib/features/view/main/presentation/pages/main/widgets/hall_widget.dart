@@ -69,26 +69,42 @@ class _HallWidgetState extends State<HallWidget> {
                                 (table) => TableWidget(
                                   table: table,
                                   onTap: () async {
-                                    await showDialog(
-                                      context: context,
-                                      builder: (context) => ShowTableGuestCount(
-                                        tableNumber: table.number,
-                                      ),
-                                    ).then((value) {
-                                      if (value != null && value is int) {
-                                        Future.delayed(
-                                          const Duration(milliseconds: 500),
-                                          () => Navigator.pushNamed(
-                                            context,
-                                            AppRoutes.detailScreen,
-                                            arguments: {
-                                              "table": table,
-                                              "guest_count": value,
-                                            },
-                                          ),
-                                        );
-                                      }
-                                    });
+                                    if (table.status == TableStatus.free) {
+                                      await showDialog(
+                                        context: context,
+                                        builder: (context) =>
+                                            ShowTableGuestCount(
+                                              tableNumber: table.number,
+                                            ),
+                                      ).then((value) {
+                                        if (value != null && value is int) {
+                                          Future.delayed(
+                                            const Duration(milliseconds: 300),
+                                            () => Navigator.pushNamed(
+                                              context,
+                                              AppRoutes.detailScreen,
+                                              arguments: {
+                                                "table": table,
+                                                "guest_count": value,
+                                                // "table_status": table.status
+                                                "table_status":
+                                                    TableStatus.busy,
+                                              },
+                                            ),
+                                          );
+                                        }
+                                      });
+                                    } else {
+                                      Navigator.pushNamed(
+                                        context,
+                                        AppRoutes.detailScreen,
+                                        arguments: {
+                                          "table": table,
+                                          // "table_status": table.status
+                                          "table_status": TableStatus.busy,
+                                        },
+                                      );
+                                    }
                                   },
                                 ),
                               )

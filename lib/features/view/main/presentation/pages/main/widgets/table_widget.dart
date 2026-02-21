@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:mary_ai_pos/core/extension/color_extension.dart';
 import 'dart:math' as math;
 import 'package:mary_ai_pos/core/extension/for_context.dart';
+import 'package:mary_ai_pos/core/values/app_colors.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/cafe_tables/cafe_tables_model.dart';
 
 class TableWidget extends StatelessWidget {
@@ -14,9 +16,9 @@ class TableWidget extends StatelessWidget {
     final height = table.height
         .clamp(60, table.height < 60 ? 60 : table.height)
         .toDouble();
-    final width = table.width
-        .clamp(80, table.width < 80 ? 80 : table.width)
-        .toDouble();
+    final width =
+        table.width.clamp(80, table.width < 80 ? 80 : table.width).toDouble() *
+        2;
     final statusColor = _getStatusColor();
     final isFree = table.status == TableStatus.free;
 
@@ -130,7 +132,9 @@ class TableWidget extends StatelessWidget {
       case TableStatus.free:
         return const Color(0xFF13AF1B);
       case TableStatus.busy:
-        return const Color(0xFFDF8A1B);
+        return const Color(0xFFFB6633);
+      default:
+        return Colors.black;
     }
   }
 }
