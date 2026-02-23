@@ -21,7 +21,7 @@ ArchiveDetailModel _$ArchiveDetailModelFromJson(Map<String, dynamic> json) {
 /// @nodoc
 mixin _$ArchiveDetailModel {
   String get id => throw _privateConstructorUsedError;
-  @JsonKey(name: 'bil_no')
+  @JsonKey(name: 'bill_no')
   int get bilNumber => throw _privateConstructorUsedError;
   @JsonKey(name: "bill_status")
   OrderStatus get status => throw _privateConstructorUsedError;
@@ -33,7 +33,7 @@ mixin _$ArchiveDetailModel {
   int get tableNumber => throw _privateConstructorUsedError;
   @JsonKey(name: "items")
   @OrderFoodEntityListConverter()
-  List<OrderFoodEntity> get foods => throw _privateConstructorUsedError;
+  List<OrderFoodEntity> get goods => throw _privateConstructorUsedError;
 
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
   @JsonKey(ignore: true)
@@ -49,14 +49,14 @@ abstract class $ArchiveDetailModelCopyWith<$Res> {
   @useResult
   $Res call(
       {String id,
-      @JsonKey(name: 'bil_no') int bilNumber,
+      @JsonKey(name: 'bill_no') int bilNumber,
       @JsonKey(name: "bill_status") OrderStatus status,
       @JsonKey(name: "opened_at") DateTime? opened,
       @JsonKey(name: 'table_id') String tableId,
       @JsonKey(name: 'table_number') int tableNumber,
       @JsonKey(name: "items")
       @OrderFoodEntityListConverter()
-      List<OrderFoodEntity> foods});
+      List<OrderFoodEntity> goods});
 }
 
 /// @nodoc
@@ -78,7 +78,7 @@ class _$ArchiveDetailModelCopyWithImpl<$Res, $Val extends ArchiveDetailModel>
     Object? opened = freezed,
     Object? tableId = null,
     Object? tableNumber = null,
-    Object? foods = null,
+    Object? goods = null,
   }) {
     return _then(_value.copyWith(
       id: null == id
@@ -105,9 +105,9 @@ class _$ArchiveDetailModelCopyWithImpl<$Res, $Val extends ArchiveDetailModel>
           ? _value.tableNumber
           : tableNumber // ignore: cast_nullable_to_non_nullable
               as int,
-      foods: null == foods
-          ? _value.foods
-          : foods // ignore: cast_nullable_to_non_nullable
+      goods: null == goods
+          ? _value.goods
+          : goods // ignore: cast_nullable_to_non_nullable
               as List<OrderFoodEntity>,
     ) as $Val);
   }
@@ -123,14 +123,14 @@ abstract class _$$ArchiveDetailModelImplCopyWith<$Res>
   @useResult
   $Res call(
       {String id,
-      @JsonKey(name: 'bil_no') int bilNumber,
+      @JsonKey(name: 'bill_no') int bilNumber,
       @JsonKey(name: "bill_status") OrderStatus status,
       @JsonKey(name: "opened_at") DateTime? opened,
       @JsonKey(name: 'table_id') String tableId,
       @JsonKey(name: 'table_number') int tableNumber,
       @JsonKey(name: "items")
       @OrderFoodEntityListConverter()
-      List<OrderFoodEntity> foods});
+      List<OrderFoodEntity> goods});
 }
 
 /// @nodoc
@@ -150,7 +150,7 @@ class __$$ArchiveDetailModelImplCopyWithImpl<$Res>
     Object? opened = freezed,
     Object? tableId = null,
     Object? tableNumber = null,
-    Object? foods = null,
+    Object? goods = null,
   }) {
     return _then(_$ArchiveDetailModelImpl(
       id: null == id
@@ -177,9 +177,9 @@ class __$$ArchiveDetailModelImplCopyWithImpl<$Res>
           ? _value.tableNumber
           : tableNumber // ignore: cast_nullable_to_non_nullable
               as int,
-      foods: null == foods
-          ? _value._foods
-          : foods // ignore: cast_nullable_to_non_nullable
+      goods: null == goods
+          ? _value._goods
+          : goods // ignore: cast_nullable_to_non_nullable
               as List<OrderFoodEntity>,
     ));
   }
@@ -190,15 +190,15 @@ class __$$ArchiveDetailModelImplCopyWithImpl<$Res>
 class _$ArchiveDetailModelImpl extends _ArchiveDetailModel {
   const _$ArchiveDetailModelImpl(
       {this.id = '',
-      @JsonKey(name: 'bil_no') this.bilNumber = 0,
-      @JsonKey(name: "bill_status") this.status = OrderStatus.NONE,
+      @JsonKey(name: 'bill_no') this.bilNumber = 0,
+      @JsonKey(name: "bill_status") this.status = OrderStatus.none,
       @JsonKey(name: "opened_at") this.opened,
       @JsonKey(name: 'table_id') this.tableId = '',
       @JsonKey(name: 'table_number') this.tableNumber = 0,
       @JsonKey(name: "items")
       @OrderFoodEntityListConverter()
-      final List<OrderFoodEntity> foods = const []})
-      : _foods = foods,
+      final List<OrderFoodEntity> goods = const []})
+      : _goods = goods,
         super._();
 
   factory _$ArchiveDetailModelImpl.fromJson(Map<String, dynamic> json) =>
@@ -208,7 +208,7 @@ class _$ArchiveDetailModelImpl extends _ArchiveDetailModel {
   @JsonKey()
   final String id;
   @override
-  @JsonKey(name: 'bil_no')
+  @JsonKey(name: 'bill_no')
   final int bilNumber;
   @override
   @JsonKey(name: "bill_status")
@@ -222,19 +222,19 @@ class _$ArchiveDetailModelImpl extends _ArchiveDetailModel {
   @override
   @JsonKey(name: 'table_number')
   final int tableNumber;
-  final List<OrderFoodEntity> _foods;
+  final List<OrderFoodEntity> _goods;
   @override
   @JsonKey(name: "items")
   @OrderFoodEntityListConverter()
-  List<OrderFoodEntity> get foods {
-    if (_foods is EqualUnmodifiableListView) return _foods;
+  List<OrderFoodEntity> get goods {
+    if (_goods is EqualUnmodifiableListView) return _goods;
     // ignore: implicit_dynamic_type
-    return EqualUnmodifiableListView(_foods);
+    return EqualUnmodifiableListView(_goods);
   }
 
   @override
   String toString() {
-    return 'ArchiveDetailModel(id: $id, bilNumber: $bilNumber, status: $status, opened: $opened, tableId: $tableId, tableNumber: $tableNumber, foods: $foods)';
+    return 'ArchiveDetailModel(id: $id, bilNumber: $bilNumber, status: $status, opened: $opened, tableId: $tableId, tableNumber: $tableNumber, goods: $goods)';
   }
 
   @override
@@ -250,13 +250,13 @@ class _$ArchiveDetailModelImpl extends _ArchiveDetailModel {
             (identical(other.tableId, tableId) || other.tableId == tableId) &&
             (identical(other.tableNumber, tableNumber) ||
                 other.tableNumber == tableNumber) &&
-            const DeepCollectionEquality().equals(other._foods, _foods));
+            const DeepCollectionEquality().equals(other._goods, _goods));
   }
 
   @JsonKey(ignore: true)
   @override
   int get hashCode => Object.hash(runtimeType, id, bilNumber, status, opened,
-      tableId, tableNumber, const DeepCollectionEquality().hash(_foods));
+      tableId, tableNumber, const DeepCollectionEquality().hash(_goods));
 
   @JsonKey(ignore: true)
   @override
@@ -276,14 +276,14 @@ class _$ArchiveDetailModelImpl extends _ArchiveDetailModel {
 abstract class _ArchiveDetailModel extends ArchiveDetailModel {
   const factory _ArchiveDetailModel(
       {final String id,
-      @JsonKey(name: 'bil_no') final int bilNumber,
+      @JsonKey(name: 'bill_no') final int bilNumber,
       @JsonKey(name: "bill_status") final OrderStatus status,
       @JsonKey(name: "opened_at") final DateTime? opened,
       @JsonKey(name: 'table_id') final String tableId,
       @JsonKey(name: 'table_number') final int tableNumber,
       @JsonKey(name: "items")
       @OrderFoodEntityListConverter()
-      final List<OrderFoodEntity> foods}) = _$ArchiveDetailModelImpl;
+      final List<OrderFoodEntity> goods}) = _$ArchiveDetailModelImpl;
   const _ArchiveDetailModel._() : super._();
 
   factory _ArchiveDetailModel.fromJson(Map<String, dynamic> json) =
@@ -292,7 +292,7 @@ abstract class _ArchiveDetailModel extends ArchiveDetailModel {
   @override
   String get id;
   @override
-  @JsonKey(name: 'bil_no')
+  @JsonKey(name: 'bill_no')
   int get bilNumber;
   @override
   @JsonKey(name: "bill_status")
@@ -309,7 +309,7 @@ abstract class _ArchiveDetailModel extends ArchiveDetailModel {
   @override
   @JsonKey(name: "items")
   @OrderFoodEntityListConverter()
-  List<OrderFoodEntity> get foods;
+  List<OrderFoodEntity> get goods;
   @override
   @JsonKey(ignore: true)
   _$$ArchiveDetailModelImplCopyWith<_$ArchiveDetailModelImpl> get copyWith =>

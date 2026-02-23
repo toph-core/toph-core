@@ -1,4 +1,5 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:mary_ai_pos/core/extension/int_extension.dart';
 import 'package:mary_ai_pos/features/view/main/domain/entities/order_food_entity.dart';
 
 part 'order_food_model.freezed.dart';
@@ -10,9 +11,9 @@ class OrderFoodModel with _$OrderFoodModel implements OrderFoodEntity {
 
   const factory OrderFoodModel({
     @Default('') String id,
-    @Default('') String name,
+    @JsonKey(name: "good_name") @Default('') String name,
     @Default(0) int quantity,
-    @Default(0) int price,
+    @JsonKey(fromJson: parseInt) @Default(0) int price,
     @Default('') String comment,
   }) = _OrderFoodModel;
 

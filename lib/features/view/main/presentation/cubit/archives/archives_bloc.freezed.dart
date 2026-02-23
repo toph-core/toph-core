@@ -24,6 +24,8 @@ mixin _$ArchivesEvent {
     required TResult Function(ArchivesResponseEntity archives) archivesUpdated,
     required TResult Function(Failure? failure) failureChanged,
     required TResult Function(String value) searchChanged,
+    required TResult Function(String id) selectArchive,
+    required TResult Function() getArchiveDetail,
   }) =>
       throw _privateConstructorUsedError;
   @optionalTypeArgs
@@ -34,6 +36,8 @@ mixin _$ArchivesEvent {
     TResult? Function(ArchivesResponseEntity archives)? archivesUpdated,
     TResult? Function(Failure? failure)? failureChanged,
     TResult? Function(String value)? searchChanged,
+    TResult? Function(String id)? selectArchive,
+    TResult? Function()? getArchiveDetail,
   }) =>
       throw _privateConstructorUsedError;
   @optionalTypeArgs
@@ -44,6 +48,8 @@ mixin _$ArchivesEvent {
     TResult Function(ArchivesResponseEntity archives)? archivesUpdated,
     TResult Function(Failure? failure)? failureChanged,
     TResult Function(String value)? searchChanged,
+    TResult Function(String id)? selectArchive,
+    TResult Function()? getArchiveDetail,
     required TResult orElse(),
   }) =>
       throw _privateConstructorUsedError;
@@ -55,6 +61,8 @@ mixin _$ArchivesEvent {
     required TResult Function(_ArchivesUpdated value) archivesUpdated,
     required TResult Function(_FailureChanged value) failureChanged,
     required TResult Function(_SearchChanged value) searchChanged,
+    required TResult Function(_SelectArchive value) selectArchive,
+    required TResult Function(_GetArchiveDetail value) getArchiveDetail,
   }) =>
       throw _privateConstructorUsedError;
   @optionalTypeArgs
@@ -65,6 +73,8 @@ mixin _$ArchivesEvent {
     TResult? Function(_ArchivesUpdated value)? archivesUpdated,
     TResult? Function(_FailureChanged value)? failureChanged,
     TResult? Function(_SearchChanged value)? searchChanged,
+    TResult? Function(_SelectArchive value)? selectArchive,
+    TResult? Function(_GetArchiveDetail value)? getArchiveDetail,
   }) =>
       throw _privateConstructorUsedError;
   @optionalTypeArgs
@@ -75,6 +85,8 @@ mixin _$ArchivesEvent {
     TResult Function(_ArchivesUpdated value)? archivesUpdated,
     TResult Function(_FailureChanged value)? failureChanged,
     TResult Function(_SearchChanged value)? searchChanged,
+    TResult Function(_SelectArchive value)? selectArchive,
+    TResult Function(_GetArchiveDetail value)? getArchiveDetail,
     required TResult orElse(),
   }) =>
       throw _privateConstructorUsedError;
@@ -142,6 +154,8 @@ class _$StartedImpl implements _Started {
     required TResult Function(ArchivesResponseEntity archives) archivesUpdated,
     required TResult Function(Failure? failure) failureChanged,
     required TResult Function(String value) searchChanged,
+    required TResult Function(String id) selectArchive,
+    required TResult Function() getArchiveDetail,
   }) {
     return started();
   }
@@ -155,6 +169,8 @@ class _$StartedImpl implements _Started {
     TResult? Function(ArchivesResponseEntity archives)? archivesUpdated,
     TResult? Function(Failure? failure)? failureChanged,
     TResult? Function(String value)? searchChanged,
+    TResult? Function(String id)? selectArchive,
+    TResult? Function()? getArchiveDetail,
   }) {
     return started?.call();
   }
@@ -168,6 +184,8 @@ class _$StartedImpl implements _Started {
     TResult Function(ArchivesResponseEntity archives)? archivesUpdated,
     TResult Function(Failure? failure)? failureChanged,
     TResult Function(String value)? searchChanged,
+    TResult Function(String id)? selectArchive,
+    TResult Function()? getArchiveDetail,
     required TResult orElse(),
   }) {
     if (started != null) {
@@ -185,6 +203,8 @@ class _$StartedImpl implements _Started {
     required TResult Function(_ArchivesUpdated value) archivesUpdated,
     required TResult Function(_FailureChanged value) failureChanged,
     required TResult Function(_SearchChanged value) searchChanged,
+    required TResult Function(_SelectArchive value) selectArchive,
+    required TResult Function(_GetArchiveDetail value) getArchiveDetail,
   }) {
     return started(this);
   }
@@ -198,6 +218,8 @@ class _$StartedImpl implements _Started {
     TResult? Function(_ArchivesUpdated value)? archivesUpdated,
     TResult? Function(_FailureChanged value)? failureChanged,
     TResult? Function(_SearchChanged value)? searchChanged,
+    TResult? Function(_SelectArchive value)? selectArchive,
+    TResult? Function(_GetArchiveDetail value)? getArchiveDetail,
   }) {
     return started?.call(this);
   }
@@ -211,6 +233,8 @@ class _$StartedImpl implements _Started {
     TResult Function(_ArchivesUpdated value)? archivesUpdated,
     TResult Function(_FailureChanged value)? failureChanged,
     TResult Function(_SearchChanged value)? searchChanged,
+    TResult Function(_SelectArchive value)? selectArchive,
+    TResult Function(_GetArchiveDetail value)? getArchiveDetail,
     required TResult orElse(),
   }) {
     if (started != null) {
@@ -268,6 +292,8 @@ class _$GetArchivedImpl implements _GetArchived {
     required TResult Function(ArchivesResponseEntity archives) archivesUpdated,
     required TResult Function(Failure? failure) failureChanged,
     required TResult Function(String value) searchChanged,
+    required TResult Function(String id) selectArchive,
+    required TResult Function() getArchiveDetail,
   }) {
     return getArchived();
   }
@@ -281,6 +307,8 @@ class _$GetArchivedImpl implements _GetArchived {
     TResult? Function(ArchivesResponseEntity archives)? archivesUpdated,
     TResult? Function(Failure? failure)? failureChanged,
     TResult? Function(String value)? searchChanged,
+    TResult? Function(String id)? selectArchive,
+    TResult? Function()? getArchiveDetail,
   }) {
     return getArchived?.call();
   }
@@ -294,6 +322,8 @@ class _$GetArchivedImpl implements _GetArchived {
     TResult Function(ArchivesResponseEntity archives)? archivesUpdated,
     TResult Function(Failure? failure)? failureChanged,
     TResult Function(String value)? searchChanged,
+    TResult Function(String id)? selectArchive,
+    TResult Function()? getArchiveDetail,
     required TResult orElse(),
   }) {
     if (getArchived != null) {
@@ -311,6 +341,8 @@ class _$GetArchivedImpl implements _GetArchived {
     required TResult Function(_ArchivesUpdated value) archivesUpdated,
     required TResult Function(_FailureChanged value) failureChanged,
     required TResult Function(_SearchChanged value) searchChanged,
+    required TResult Function(_SelectArchive value) selectArchive,
+    required TResult Function(_GetArchiveDetail value) getArchiveDetail,
   }) {
     return getArchived(this);
   }
@@ -324,6 +356,8 @@ class _$GetArchivedImpl implements _GetArchived {
     TResult? Function(_ArchivesUpdated value)? archivesUpdated,
     TResult? Function(_FailureChanged value)? failureChanged,
     TResult? Function(_SearchChanged value)? searchChanged,
+    TResult? Function(_SelectArchive value)? selectArchive,
+    TResult? Function(_GetArchiveDetail value)? getArchiveDetail,
   }) {
     return getArchived?.call(this);
   }
@@ -337,6 +371,8 @@ class _$GetArchivedImpl implements _GetArchived {
     TResult Function(_ArchivesUpdated value)? archivesUpdated,
     TResult Function(_FailureChanged value)? failureChanged,
     TResult Function(_SearchChanged value)? searchChanged,
+    TResult Function(_SelectArchive value)? selectArchive,
+    TResult Function(_GetArchiveDetail value)? getArchiveDetail,
     required TResult orElse(),
   }) {
     if (getArchived != null) {
@@ -420,6 +456,8 @@ class _$StatusChangedImpl implements _StatusChanged {
     required TResult Function(ArchivesResponseEntity archives) archivesUpdated,
     required TResult Function(Failure? failure) failureChanged,
     required TResult Function(String value) searchChanged,
+    required TResult Function(String id) selectArchive,
+    required TResult Function() getArchiveDetail,
   }) {
     return statusChanged(status);
   }
@@ -433,6 +471,8 @@ class _$StatusChangedImpl implements _StatusChanged {
     TResult? Function(ArchivesResponseEntity archives)? archivesUpdated,
     TResult? Function(Failure? failure)? failureChanged,
     TResult? Function(String value)? searchChanged,
+    TResult? Function(String id)? selectArchive,
+    TResult? Function()? getArchiveDetail,
   }) {
     return statusChanged?.call(status);
   }
@@ -446,6 +486,8 @@ class _$StatusChangedImpl implements _StatusChanged {
     TResult Function(ArchivesResponseEntity archives)? archivesUpdated,
     TResult Function(Failure? failure)? failureChanged,
     TResult Function(String value)? searchChanged,
+    TResult Function(String id)? selectArchive,
+    TResult Function()? getArchiveDetail,
     required TResult orElse(),
   }) {
     if (statusChanged != null) {
@@ -463,6 +505,8 @@ class _$StatusChangedImpl implements _StatusChanged {
     required TResult Function(_ArchivesUpdated value) archivesUpdated,
     required TResult Function(_FailureChanged value) failureChanged,
     required TResult Function(_SearchChanged value) searchChanged,
+    required TResult Function(_SelectArchive value) selectArchive,
+    required TResult Function(_GetArchiveDetail value) getArchiveDetail,
   }) {
     return statusChanged(this);
   }
@@ -476,6 +520,8 @@ class _$StatusChangedImpl implements _StatusChanged {
     TResult? Function(_ArchivesUpdated value)? archivesUpdated,
     TResult? Function(_FailureChanged value)? failureChanged,
     TResult? Function(_SearchChanged value)? searchChanged,
+    TResult? Function(_SelectArchive value)? selectArchive,
+    TResult? Function(_GetArchiveDetail value)? getArchiveDetail,
   }) {
     return statusChanged?.call(this);
   }
@@ -489,6 +535,8 @@ class _$StatusChangedImpl implements _StatusChanged {
     TResult Function(_ArchivesUpdated value)? archivesUpdated,
     TResult Function(_FailureChanged value)? failureChanged,
     TResult Function(_SearchChanged value)? searchChanged,
+    TResult Function(_SelectArchive value)? selectArchive,
+    TResult Function(_GetArchiveDetail value)? getArchiveDetail,
     required TResult orElse(),
   }) {
     if (statusChanged != null) {
@@ -579,6 +627,8 @@ class _$ArchivesUpdatedImpl implements _ArchivesUpdated {
     required TResult Function(ArchivesResponseEntity archives) archivesUpdated,
     required TResult Function(Failure? failure) failureChanged,
     required TResult Function(String value) searchChanged,
+    required TResult Function(String id) selectArchive,
+    required TResult Function() getArchiveDetail,
   }) {
     return archivesUpdated(archives);
   }
@@ -592,6 +642,8 @@ class _$ArchivesUpdatedImpl implements _ArchivesUpdated {
     TResult? Function(ArchivesResponseEntity archives)? archivesUpdated,
     TResult? Function(Failure? failure)? failureChanged,
     TResult? Function(String value)? searchChanged,
+    TResult? Function(String id)? selectArchive,
+    TResult? Function()? getArchiveDetail,
   }) {
     return archivesUpdated?.call(archives);
   }
@@ -605,6 +657,8 @@ class _$ArchivesUpdatedImpl implements _ArchivesUpdated {
     TResult Function(ArchivesResponseEntity archives)? archivesUpdated,
     TResult Function(Failure? failure)? failureChanged,
     TResult Function(String value)? searchChanged,
+    TResult Function(String id)? selectArchive,
+    TResult Function()? getArchiveDetail,
     required TResult orElse(),
   }) {
     if (archivesUpdated != null) {
@@ -622,6 +676,8 @@ class _$ArchivesUpdatedImpl implements _ArchivesUpdated {
     required TResult Function(_ArchivesUpdated value) archivesUpdated,
     required TResult Function(_FailureChanged value) failureChanged,
     required TResult Function(_SearchChanged value) searchChanged,
+    required TResult Function(_SelectArchive value) selectArchive,
+    required TResult Function(_GetArchiveDetail value) getArchiveDetail,
   }) {
     return archivesUpdated(this);
   }
@@ -635,6 +691,8 @@ class _$ArchivesUpdatedImpl implements _ArchivesUpdated {
     TResult? Function(_ArchivesUpdated value)? archivesUpdated,
     TResult? Function(_FailureChanged value)? failureChanged,
     TResult? Function(_SearchChanged value)? searchChanged,
+    TResult? Function(_SelectArchive value)? selectArchive,
+    TResult? Function(_GetArchiveDetail value)? getArchiveDetail,
   }) {
     return archivesUpdated?.call(this);
   }
@@ -648,6 +706,8 @@ class _$ArchivesUpdatedImpl implements _ArchivesUpdated {
     TResult Function(_ArchivesUpdated value)? archivesUpdated,
     TResult Function(_FailureChanged value)? failureChanged,
     TResult Function(_SearchChanged value)? searchChanged,
+    TResult Function(_SelectArchive value)? selectArchive,
+    TResult Function(_GetArchiveDetail value)? getArchiveDetail,
     required TResult orElse(),
   }) {
     if (archivesUpdated != null) {
@@ -738,6 +798,8 @@ class _$FailureChangedImpl implements _FailureChanged {
     required TResult Function(ArchivesResponseEntity archives) archivesUpdated,
     required TResult Function(Failure? failure) failureChanged,
     required TResult Function(String value) searchChanged,
+    required TResult Function(String id) selectArchive,
+    required TResult Function() getArchiveDetail,
   }) {
     return failureChanged(failure);
   }
@@ -751,6 +813,8 @@ class _$FailureChangedImpl implements _FailureChanged {
     TResult? Function(ArchivesResponseEntity archives)? archivesUpdated,
     TResult? Function(Failure? failure)? failureChanged,
     TResult? Function(String value)? searchChanged,
+    TResult? Function(String id)? selectArchive,
+    TResult? Function()? getArchiveDetail,
   }) {
     return failureChanged?.call(failure);
   }
@@ -764,6 +828,8 @@ class _$FailureChangedImpl implements _FailureChanged {
     TResult Function(ArchivesResponseEntity archives)? archivesUpdated,
     TResult Function(Failure? failure)? failureChanged,
     TResult Function(String value)? searchChanged,
+    TResult Function(String id)? selectArchive,
+    TResult Function()? getArchiveDetail,
     required TResult orElse(),
   }) {
     if (failureChanged != null) {
@@ -781,6 +847,8 @@ class _$FailureChangedImpl implements _FailureChanged {
     required TResult Function(_ArchivesUpdated value) archivesUpdated,
     required TResult Function(_FailureChanged value) failureChanged,
     required TResult Function(_SearchChanged value) searchChanged,
+    required TResult Function(_SelectArchive value) selectArchive,
+    required TResult Function(_GetArchiveDetail value) getArchiveDetail,
   }) {
     return failureChanged(this);
   }
@@ -794,6 +862,8 @@ class _$FailureChangedImpl implements _FailureChanged {
     TResult? Function(_ArchivesUpdated value)? archivesUpdated,
     TResult? Function(_FailureChanged value)? failureChanged,
     TResult? Function(_SearchChanged value)? searchChanged,
+    TResult? Function(_SelectArchive value)? selectArchive,
+    TResult? Function(_GetArchiveDetail value)? getArchiveDetail,
   }) {
     return failureChanged?.call(this);
   }
@@ -807,6 +877,8 @@ class _$FailureChangedImpl implements _FailureChanged {
     TResult Function(_ArchivesUpdated value)? archivesUpdated,
     TResult Function(_FailureChanged value)? failureChanged,
     TResult Function(_SearchChanged value)? searchChanged,
+    TResult Function(_SelectArchive value)? selectArchive,
+    TResult Function(_GetArchiveDetail value)? getArchiveDetail,
     required TResult orElse(),
   }) {
     if (failureChanged != null) {
@@ -895,6 +967,8 @@ class _$SearchChangedImpl implements _SearchChanged {
     required TResult Function(ArchivesResponseEntity archives) archivesUpdated,
     required TResult Function(Failure? failure) failureChanged,
     required TResult Function(String value) searchChanged,
+    required TResult Function(String id) selectArchive,
+    required TResult Function() getArchiveDetail,
   }) {
     return searchChanged(value);
   }
@@ -908,6 +982,8 @@ class _$SearchChangedImpl implements _SearchChanged {
     TResult? Function(ArchivesResponseEntity archives)? archivesUpdated,
     TResult? Function(Failure? failure)? failureChanged,
     TResult? Function(String value)? searchChanged,
+    TResult? Function(String id)? selectArchive,
+    TResult? Function()? getArchiveDetail,
   }) {
     return searchChanged?.call(value);
   }
@@ -921,6 +997,8 @@ class _$SearchChangedImpl implements _SearchChanged {
     TResult Function(ArchivesResponseEntity archives)? archivesUpdated,
     TResult Function(Failure? failure)? failureChanged,
     TResult Function(String value)? searchChanged,
+    TResult Function(String id)? selectArchive,
+    TResult Function()? getArchiveDetail,
     required TResult orElse(),
   }) {
     if (searchChanged != null) {
@@ -938,6 +1016,8 @@ class _$SearchChangedImpl implements _SearchChanged {
     required TResult Function(_ArchivesUpdated value) archivesUpdated,
     required TResult Function(_FailureChanged value) failureChanged,
     required TResult Function(_SearchChanged value) searchChanged,
+    required TResult Function(_SelectArchive value) selectArchive,
+    required TResult Function(_GetArchiveDetail value) getArchiveDetail,
   }) {
     return searchChanged(this);
   }
@@ -951,6 +1031,8 @@ class _$SearchChangedImpl implements _SearchChanged {
     TResult? Function(_ArchivesUpdated value)? archivesUpdated,
     TResult? Function(_FailureChanged value)? failureChanged,
     TResult? Function(_SearchChanged value)? searchChanged,
+    TResult? Function(_SelectArchive value)? selectArchive,
+    TResult? Function(_GetArchiveDetail value)? getArchiveDetail,
   }) {
     return searchChanged?.call(this);
   }
@@ -964,6 +1046,8 @@ class _$SearchChangedImpl implements _SearchChanged {
     TResult Function(_ArchivesUpdated value)? archivesUpdated,
     TResult Function(_FailureChanged value)? failureChanged,
     TResult Function(_SearchChanged value)? searchChanged,
+    TResult Function(_SelectArchive value)? selectArchive,
+    TResult Function(_GetArchiveDetail value)? getArchiveDetail,
     required TResult orElse(),
   }) {
     if (searchChanged != null) {
@@ -983,11 +1067,323 @@ abstract class _SearchChanged implements ArchivesEvent {
 }
 
 /// @nodoc
+abstract class _$$SelectArchiveImplCopyWith<$Res> {
+  factory _$$SelectArchiveImplCopyWith(
+          _$SelectArchiveImpl value, $Res Function(_$SelectArchiveImpl) then) =
+      __$$SelectArchiveImplCopyWithImpl<$Res>;
+  @useResult
+  $Res call({String id});
+}
+
+/// @nodoc
+class __$$SelectArchiveImplCopyWithImpl<$Res>
+    extends _$ArchivesEventCopyWithImpl<$Res, _$SelectArchiveImpl>
+    implements _$$SelectArchiveImplCopyWith<$Res> {
+  __$$SelectArchiveImplCopyWithImpl(
+      _$SelectArchiveImpl _value, $Res Function(_$SelectArchiveImpl) _then)
+      : super(_value, _then);
+
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? id = null,
+  }) {
+    return _then(_$SelectArchiveImpl(
+      id: null == id
+          ? _value.id
+          : id // ignore: cast_nullable_to_non_nullable
+              as String,
+    ));
+  }
+}
+
+/// @nodoc
+
+class _$SelectArchiveImpl implements _SelectArchive {
+  const _$SelectArchiveImpl({required this.id});
+
+  @override
+  final String id;
+
+  @override
+  String toString() {
+    return 'ArchivesEvent.selectArchive(id: $id)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$SelectArchiveImpl &&
+            (identical(other.id, id) || other.id == id));
+  }
+
+  @override
+  int get hashCode => Object.hash(runtimeType, id);
+
+  @JsonKey(ignore: true)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$SelectArchiveImplCopyWith<_$SelectArchiveImpl> get copyWith =>
+      __$$SelectArchiveImplCopyWithImpl<_$SelectArchiveImpl>(this, _$identity);
+
+  @override
+  @optionalTypeArgs
+  TResult when<TResult extends Object?>({
+    required TResult Function() started,
+    required TResult Function() getArchived,
+    required TResult Function(Status status) statusChanged,
+    required TResult Function(ArchivesResponseEntity archives) archivesUpdated,
+    required TResult Function(Failure? failure) failureChanged,
+    required TResult Function(String value) searchChanged,
+    required TResult Function(String id) selectArchive,
+    required TResult Function() getArchiveDetail,
+  }) {
+    return selectArchive(id);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult? whenOrNull<TResult extends Object?>({
+    TResult? Function()? started,
+    TResult? Function()? getArchived,
+    TResult? Function(Status status)? statusChanged,
+    TResult? Function(ArchivesResponseEntity archives)? archivesUpdated,
+    TResult? Function(Failure? failure)? failureChanged,
+    TResult? Function(String value)? searchChanged,
+    TResult? Function(String id)? selectArchive,
+    TResult? Function()? getArchiveDetail,
+  }) {
+    return selectArchive?.call(id);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult maybeWhen<TResult extends Object?>({
+    TResult Function()? started,
+    TResult Function()? getArchived,
+    TResult Function(Status status)? statusChanged,
+    TResult Function(ArchivesResponseEntity archives)? archivesUpdated,
+    TResult Function(Failure? failure)? failureChanged,
+    TResult Function(String value)? searchChanged,
+    TResult Function(String id)? selectArchive,
+    TResult Function()? getArchiveDetail,
+    required TResult orElse(),
+  }) {
+    if (selectArchive != null) {
+      return selectArchive(id);
+    }
+    return orElse();
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult map<TResult extends Object?>({
+    required TResult Function(_Started value) started,
+    required TResult Function(_GetArchived value) getArchived,
+    required TResult Function(_StatusChanged value) statusChanged,
+    required TResult Function(_ArchivesUpdated value) archivesUpdated,
+    required TResult Function(_FailureChanged value) failureChanged,
+    required TResult Function(_SearchChanged value) searchChanged,
+    required TResult Function(_SelectArchive value) selectArchive,
+    required TResult Function(_GetArchiveDetail value) getArchiveDetail,
+  }) {
+    return selectArchive(this);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult? mapOrNull<TResult extends Object?>({
+    TResult? Function(_Started value)? started,
+    TResult? Function(_GetArchived value)? getArchived,
+    TResult? Function(_StatusChanged value)? statusChanged,
+    TResult? Function(_ArchivesUpdated value)? archivesUpdated,
+    TResult? Function(_FailureChanged value)? failureChanged,
+    TResult? Function(_SearchChanged value)? searchChanged,
+    TResult? Function(_SelectArchive value)? selectArchive,
+    TResult? Function(_GetArchiveDetail value)? getArchiveDetail,
+  }) {
+    return selectArchive?.call(this);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult maybeMap<TResult extends Object?>({
+    TResult Function(_Started value)? started,
+    TResult Function(_GetArchived value)? getArchived,
+    TResult Function(_StatusChanged value)? statusChanged,
+    TResult Function(_ArchivesUpdated value)? archivesUpdated,
+    TResult Function(_FailureChanged value)? failureChanged,
+    TResult Function(_SearchChanged value)? searchChanged,
+    TResult Function(_SelectArchive value)? selectArchive,
+    TResult Function(_GetArchiveDetail value)? getArchiveDetail,
+    required TResult orElse(),
+  }) {
+    if (selectArchive != null) {
+      return selectArchive(this);
+    }
+    return orElse();
+  }
+}
+
+abstract class _SelectArchive implements ArchivesEvent {
+  const factory _SelectArchive({required final String id}) =
+      _$SelectArchiveImpl;
+
+  String get id;
+  @JsonKey(ignore: true)
+  _$$SelectArchiveImplCopyWith<_$SelectArchiveImpl> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class _$$GetArchiveDetailImplCopyWith<$Res> {
+  factory _$$GetArchiveDetailImplCopyWith(_$GetArchiveDetailImpl value,
+          $Res Function(_$GetArchiveDetailImpl) then) =
+      __$$GetArchiveDetailImplCopyWithImpl<$Res>;
+}
+
+/// @nodoc
+class __$$GetArchiveDetailImplCopyWithImpl<$Res>
+    extends _$ArchivesEventCopyWithImpl<$Res, _$GetArchiveDetailImpl>
+    implements _$$GetArchiveDetailImplCopyWith<$Res> {
+  __$$GetArchiveDetailImplCopyWithImpl(_$GetArchiveDetailImpl _value,
+      $Res Function(_$GetArchiveDetailImpl) _then)
+      : super(_value, _then);
+}
+
+/// @nodoc
+
+class _$GetArchiveDetailImpl implements _GetArchiveDetail {
+  const _$GetArchiveDetailImpl();
+
+  @override
+  String toString() {
+    return 'ArchivesEvent.getArchiveDetail()';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType && other is _$GetArchiveDetailImpl);
+  }
+
+  @override
+  int get hashCode => runtimeType.hashCode;
+
+  @override
+  @optionalTypeArgs
+  TResult when<TResult extends Object?>({
+    required TResult Function() started,
+    required TResult Function() getArchived,
+    required TResult Function(Status status) statusChanged,
+    required TResult Function(ArchivesResponseEntity archives) archivesUpdated,
+    required TResult Function(Failure? failure) failureChanged,
+    required TResult Function(String value) searchChanged,
+    required TResult Function(String id) selectArchive,
+    required TResult Function() getArchiveDetail,
+  }) {
+    return getArchiveDetail();
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult? whenOrNull<TResult extends Object?>({
+    TResult? Function()? started,
+    TResult? Function()? getArchived,
+    TResult? Function(Status status)? statusChanged,
+    TResult? Function(ArchivesResponseEntity archives)? archivesUpdated,
+    TResult? Function(Failure? failure)? failureChanged,
+    TResult? Function(String value)? searchChanged,
+    TResult? Function(String id)? selectArchive,
+    TResult? Function()? getArchiveDetail,
+  }) {
+    return getArchiveDetail?.call();
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult maybeWhen<TResult extends Object?>({
+    TResult Function()? started,
+    TResult Function()? getArchived,
+    TResult Function(Status status)? statusChanged,
+    TResult Function(ArchivesResponseEntity archives)? archivesUpdated,
+    TResult Function(Failure? failure)? failureChanged,
+    TResult Function(String value)? searchChanged,
+    TResult Function(String id)? selectArchive,
+    TResult Function()? getArchiveDetail,
+    required TResult orElse(),
+  }) {
+    if (getArchiveDetail != null) {
+      return getArchiveDetail();
+    }
+    return orElse();
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult map<TResult extends Object?>({
+    required TResult Function(_Started value) started,
+    required TResult Function(_GetArchived value) getArchived,
+    required TResult Function(_StatusChanged value) statusChanged,
+    required TResult Function(_ArchivesUpdated value) archivesUpdated,
+    required TResult Function(_FailureChanged value) failureChanged,
+    required TResult Function(_SearchChanged value) searchChanged,
+    required TResult Function(_SelectArchive value) selectArchive,
+    required TResult Function(_GetArchiveDetail value) getArchiveDetail,
+  }) {
+    return getArchiveDetail(this);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult? mapOrNull<TResult extends Object?>({
+    TResult? Function(_Started value)? started,
+    TResult? Function(_GetArchived value)? getArchived,
+    TResult? Function(_StatusChanged value)? statusChanged,
+    TResult? Function(_ArchivesUpdated value)? archivesUpdated,
+    TResult? Function(_FailureChanged value)? failureChanged,
+    TResult? Function(_SearchChanged value)? searchChanged,
+    TResult? Function(_SelectArchive value)? selectArchive,
+    TResult? Function(_GetArchiveDetail value)? getArchiveDetail,
+  }) {
+    return getArchiveDetail?.call(this);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult maybeMap<TResult extends Object?>({
+    TResult Function(_Started value)? started,
+    TResult Function(_GetArchived value)? getArchived,
+    TResult Function(_StatusChanged value)? statusChanged,
+    TResult Function(_ArchivesUpdated value)? archivesUpdated,
+    TResult Function(_FailureChanged value)? failureChanged,
+    TResult Function(_SearchChanged value)? searchChanged,
+    TResult Function(_SelectArchive value)? selectArchive,
+    TResult Function(_GetArchiveDetail value)? getArchiveDetail,
+    required TResult orElse(),
+  }) {
+    if (getArchiveDetail != null) {
+      return getArchiveDetail(this);
+    }
+    return orElse();
+  }
+}
+
+abstract class _GetArchiveDetail implements ArchivesEvent {
+  const factory _GetArchiveDetail() = _$GetArchiveDetailImpl;
+}
+
+/// @nodoc
 mixin _$ArchivesState {
   Status get status => throw _privateConstructorUsedError;
+  Status get archiveStatus => throw _privateConstructorUsedError;
   TextEditingController? get textController =>
       throw _privateConstructorUsedError;
   ArchivesResponseEntity? get archives => throw _privateConstructorUsedError;
+  ArchiveDetailEntity? get selectArchiveDetail =>
+      throw _privateConstructorUsedError;
+  ArchiveEntity? get selectArchive => throw _privateConstructorUsedError;
   Failure? get failure => throw _privateConstructorUsedError;
 
   @JsonKey(ignore: true)
@@ -1003,8 +1399,11 @@ abstract class $ArchivesStateCopyWith<$Res> {
   @useResult
   $Res call(
       {Status status,
+      Status archiveStatus,
       TextEditingController? textController,
       ArchivesResponseEntity? archives,
+      ArchiveDetailEntity? selectArchiveDetail,
+      ArchiveEntity? selectArchive,
       Failure? failure});
 }
 
@@ -1022,14 +1421,21 @@ class _$ArchivesStateCopyWithImpl<$Res, $Val extends ArchivesState>
   @override
   $Res call({
     Object? status = null,
+    Object? archiveStatus = null,
     Object? textController = freezed,
     Object? archives = freezed,
+    Object? selectArchiveDetail = freezed,
+    Object? selectArchive = freezed,
     Object? failure = freezed,
   }) {
     return _then(_value.copyWith(
       status: null == status
           ? _value.status
           : status // ignore: cast_nullable_to_non_nullable
+              as Status,
+      archiveStatus: null == archiveStatus
+          ? _value.archiveStatus
+          : archiveStatus // ignore: cast_nullable_to_non_nullable
               as Status,
       textController: freezed == textController
           ? _value.textController
@@ -1039,6 +1445,14 @@ class _$ArchivesStateCopyWithImpl<$Res, $Val extends ArchivesState>
           ? _value.archives
           : archives // ignore: cast_nullable_to_non_nullable
               as ArchivesResponseEntity?,
+      selectArchiveDetail: freezed == selectArchiveDetail
+          ? _value.selectArchiveDetail
+          : selectArchiveDetail // ignore: cast_nullable_to_non_nullable
+              as ArchiveDetailEntity?,
+      selectArchive: freezed == selectArchive
+          ? _value.selectArchive
+          : selectArchive // ignore: cast_nullable_to_non_nullable
+              as ArchiveEntity?,
       failure: freezed == failure
           ? _value.failure
           : failure // ignore: cast_nullable_to_non_nullable
@@ -1057,8 +1471,11 @@ abstract class _$$ArchivesStateImplCopyWith<$Res>
   @useResult
   $Res call(
       {Status status,
+      Status archiveStatus,
       TextEditingController? textController,
       ArchivesResponseEntity? archives,
+      ArchiveDetailEntity? selectArchiveDetail,
+      ArchiveEntity? selectArchive,
       Failure? failure});
 }
 
@@ -1074,14 +1491,21 @@ class __$$ArchivesStateImplCopyWithImpl<$Res>
   @override
   $Res call({
     Object? status = null,
+    Object? archiveStatus = null,
     Object? textController = freezed,
     Object? archives = freezed,
+    Object? selectArchiveDetail = freezed,
+    Object? selectArchive = freezed,
     Object? failure = freezed,
   }) {
     return _then(_$ArchivesStateImpl(
       status: null == status
           ? _value.status
           : status // ignore: cast_nullable_to_non_nullable
+              as Status,
+      archiveStatus: null == archiveStatus
+          ? _value.archiveStatus
+          : archiveStatus // ignore: cast_nullable_to_non_nullable
               as Status,
       textController: freezed == textController
           ? _value.textController
@@ -1091,6 +1515,14 @@ class __$$ArchivesStateImplCopyWithImpl<$Res>
           ? _value.archives
           : archives // ignore: cast_nullable_to_non_nullable
               as ArchivesResponseEntity?,
+      selectArchiveDetail: freezed == selectArchiveDetail
+          ? _value.selectArchiveDetail
+          : selectArchiveDetail // ignore: cast_nullable_to_non_nullable
+              as ArchiveDetailEntity?,
+      selectArchive: freezed == selectArchive
+          ? _value.selectArchive
+          : selectArchive // ignore: cast_nullable_to_non_nullable
+              as ArchiveEntity?,
       failure: freezed == failure
           ? _value.failure
           : failure // ignore: cast_nullable_to_non_nullable
@@ -1104,23 +1536,33 @@ class __$$ArchivesStateImplCopyWithImpl<$Res>
 class _$ArchivesStateImpl implements _ArchivesState {
   const _$ArchivesStateImpl(
       {this.status = Status.UNKNOWN,
+      this.archiveStatus = Status.UNKNOWN,
       this.textController,
       this.archives,
+      this.selectArchiveDetail,
+      this.selectArchive,
       this.failure});
 
   @override
   @JsonKey()
   final Status status;
   @override
+  @JsonKey()
+  final Status archiveStatus;
+  @override
   final TextEditingController? textController;
   @override
   final ArchivesResponseEntity? archives;
+  @override
+  final ArchiveDetailEntity? selectArchiveDetail;
+  @override
+  final ArchiveEntity? selectArchive;
   @override
   final Failure? failure;
 
   @override
   String toString() {
-    return 'ArchivesState(status: $status, textController: $textController, archives: $archives, failure: $failure)';
+    return 'ArchivesState(status: $status, archiveStatus: $archiveStatus, textController: $textController, archives: $archives, selectArchiveDetail: $selectArchiveDetail, selectArchive: $selectArchive, failure: $failure)';
   }
 
   @override
@@ -1129,16 +1571,22 @@ class _$ArchivesStateImpl implements _ArchivesState {
         (other.runtimeType == runtimeType &&
             other is _$ArchivesStateImpl &&
             (identical(other.status, status) || other.status == status) &&
+            (identical(other.archiveStatus, archiveStatus) ||
+                other.archiveStatus == archiveStatus) &&
             (identical(other.textController, textController) ||
                 other.textController == textController) &&
             (identical(other.archives, archives) ||
                 other.archives == archives) &&
+            (identical(other.selectArchiveDetail, selectArchiveDetail) ||
+                other.selectArchiveDetail == selectArchiveDetail) &&
+            (identical(other.selectArchive, selectArchive) ||
+                other.selectArchive == selectArchive) &&
             (identical(other.failure, failure) || other.failure == failure));
   }
 
   @override
-  int get hashCode =>
-      Object.hash(runtimeType, status, textController, archives, failure);
+  int get hashCode => Object.hash(runtimeType, status, archiveStatus,
+      textController, archives, selectArchiveDetail, selectArchive, failure);
 
   @JsonKey(ignore: true)
   @override
@@ -1150,16 +1598,25 @@ class _$ArchivesStateImpl implements _ArchivesState {
 abstract class _ArchivesState implements ArchivesState {
   const factory _ArchivesState(
       {final Status status,
+      final Status archiveStatus,
       final TextEditingController? textController,
       final ArchivesResponseEntity? archives,
+      final ArchiveDetailEntity? selectArchiveDetail,
+      final ArchiveEntity? selectArchive,
       final Failure? failure}) = _$ArchivesStateImpl;
 
   @override
   Status get status;
   @override
+  Status get archiveStatus;
+  @override
   TextEditingController? get textController;
   @override
   ArchivesResponseEntity? get archives;
+  @override
+  ArchiveDetailEntity? get selectArchiveDetail;
+  @override
+  ArchiveEntity? get selectArchive;
   @override
   Failure? get failure;
   @override

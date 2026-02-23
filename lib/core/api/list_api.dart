@@ -22,4 +22,5 @@ class ListAPI {
   //! Orders
   static const String orders = "/api/v1/orders";
   static const String archives = "/api/v1/bills";
+  static String archiveWithId(String id) => "/api/v1/bills/$id";
 }

@@ -5,12 +5,14 @@ import 'package:mary_ai_pos/core/api/dio_client.dart';
 import 'package:mary_ai_pos/core/api/dio_exception_handler.dart';
 import 'package:mary_ai_pos/core/api/list_api.dart';
 import 'package:mary_ai_pos/core/error/failure.dart';
-import 'package:mary_ai_pos/features/view/main/data/models/archives_response/archive_response_model.dart';
+import 'package:mary_ai_pos/features/view/main/data/models/archive_detail/archive_detail_model.dart';
+import 'package:mary_ai_pos/features/view/main/data/models/archives_response/archives_response_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/cafe_tables/cafe_tables_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/category/category_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/create_order/create_order_request_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/goods/goods_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/hall/hall_model.dart';
+import 'package:mary_ai_pos/features/view/main/domain/entities/archive_detail_entity.dart';
 import 'package:mary_ai_pos/features/view/main/domain/entities/archives_response_entity.dart';
 import 'package:mary_ai_pos/features/view/main/domain/entities/pagination_request_entity.dart';
 
@@ -26,6 +28,7 @@ abstract class MainDataSources {
   Future<Either<Failure, ArchivesResponseEntity>> getArchives(
     PaginationRequestEntity request,
   );
+  Future<Either<Failure, ArchiveDetailEntity>> getArchiveWithId(String id);
 
   Future<Either<Failure, bool>> createOrder({
     required CreateOrderRequestModel request,
@@ -173,13 +176,34 @@ class MainDataSourcesImpl implements MainDataSources {
   ) async {
     try {
       final response = await _client.dio.get(ListAPI.archives);
-      Map<String, dynamic> json = response.data;
+      Map<String, dynamic> json = response.data['data'];
       json['pagination'] = {
         "total": response.data['data']['total'],
         "limit": response.data['data']['limit'],
         "offset": response.data['data']['offset'],
       };
-      return Right(ArchiveResponseModel.fromJson(json));
+      return Right(ArchivesResponseModel.fromJson(json));
+    } on DioException catch (exception) {
+      return Left(handleDioException(exception));
+    } on FormatException catch (e, st) {
+      if (kDebugMode) print('ParsingError: $e\n$st');
+      return const Left(ParsingFailure());
+    } on TypeError catch (e, st) {
+      if (kDebugMode) print('ParsingError: $e\n$st');
+      return const Left(ParsingFailure());
+    } catch (e, st) {
+      if (kDebugMode) print('Unknown error: $e\n$st');
+      return const Left(UnknownFailure());
+    }
+  }
+
+  @override
+  Future<Either<Failure, ArchiveDetailEntity>> getArchiveWithId(
+    String id,
+  ) async {
+    try {
+      final response = await _client.dio.get(ListAPI.archiveWithId(id));
+      return Right(ArchiveDetailModel.fromJson(response.data['data']));
     } on DioException catch (exception) {
       return Left(handleDioException(exception));
     } on FormatException catch (e, st) {

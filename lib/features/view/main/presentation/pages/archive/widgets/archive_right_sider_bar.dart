@@ -1,15 +1,23 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:mary_ai_pos/core/api/api.dart';
 import 'package:mary_ai_pos/core/common/custom_hover_effect_widget.dart';
+import 'package:mary_ai_pos/core/extension/date_time_extension.dart';
 import 'package:mary_ai_pos/core/extension/for_context.dart';
 import 'package:mary_ai_pos/core/extension/int_extension.dart';
 import 'package:mary_ai_pos/core/extension/number_formatter.dart';
 import 'package:mary_ai_pos/core/extension/widget_extension.dart';
 import 'package:mary_ai_pos/core/values/app_colors.dart';
+import 'package:mary_ai_pos/features/view/main/presentation/cubit/archives/archives_bloc.dart';
 import 'package:mary_ai_pos/gen/assets.gen.dart';
 
 class ArchiveRightSiderBar extends StatelessWidget {
   const ArchiveRightSiderBar({super.key});
+
+  TextStyle _increaseFontSize(TextStyle style) {
+    return style.copyWith(fontSize: (style.fontSize ?? 14) + 2);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -21,204 +29,342 @@ class ArchiveRightSiderBar extends StatelessWidget {
           color: context.colors.textOnBrand,
           borderRadius: context.radius.card24,
         ),
-        child: ListView(
-          physics: const BouncingScrollPhysics(),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          children: [
-            SizedBox(
-              width: context.w,
-              height: 52,
-              child: Row(
-                children: [
-                  Text(
-                    80500.formatN,
-                    style: context.textStyles.bold20.copyWith(
+        child: BlocBuilder<ArchivesBloc, ArchivesState>(
+          builder: (context, state) {
+            if (state.selectArchive == null) {
+              return Center(
+                child: Text(
+                  "Chek haqida batafsil ko'rish uchun ustiga bosing!",
+                  style: _increaseFontSize(context.textStyles.bodyMd),
+                ),
+              );
+            }
+
+            if (state.status == Status.LOADING &&
+                state.selectArchiveDetail == null) {
+              return const Center(child: CircularProgressIndicator.adaptive());
+            }
+
+            if (state.selectArchiveDetail == null) {
+              return Center(
+                child: Text(
+                  "Chek topildi",
+                  style: _increaseFontSize(context.textStyles.bodyMd),
+                ),
+              );
+            }
+
+            return ListView(
+              physics: const BouncingScrollPhysics(),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              children: [
+                SizedBox(
+                  width: context.w,
+                  height: 52,
+                  child: Row(
+                    children: [
+                      Text(
+                        state.selectArchive!.totalPrice.formatN,
+                        style: _increaseFontSize(
+                          context.textStyles.bold20.copyWith(
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                      const Spacer(),
+                      SizedBox(
+                        height: 52,
+                        child: CustomHoverEffectWidget(
+                          onTap: () {},
+                          borderRadius: context.radius.buttonMd,
+                          bgColor: context.colors.bgBrand,
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              SvgPicture.asset(
+                                Assets.icons.icPrinter.path,
+                                color: AppColors.white,
+                              ),
+                              10.wBox,
+                              Text(
+                                "Chop etish",
+                                style: _increaseFontSize(
+                                  context.textStyles.title14.copyWith(
+                                    fontSize: 18,
+                                    color: context.colors.textOnBrand,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ).paddingSymmetric(horizontal: 16),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                16.hBox,
+                SizedBox(
+                  width: context.w,
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      borderRadius: context.radius.buttonLg,
+                      color: context.colors.bgTritary,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          "Buyrutma tafsilotlari",
+                          style: _increaseFontSize(
+                            context.textStyles.bold20.copyWith(
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                        16.hBox,
+                        Row(
+                          children: [
+                            Text(
+                              "Check raqami:",
+                              style: _increaseFontSize(
+                                context.textStyles.bodySm,
+                              ),
+                            ),
+                            const Spacer(),
+                            Text(
+                              "#${state.selectArchive!.bilNumber}",
+                              style: _increaseFontSize(
+                                context.textStyles.bold16.copyWith(
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        13.hBox,
+                        Row(
+                          children: [
+                            Text(
+                              "Stol:",
+                              style: _increaseFontSize(
+                                context.textStyles.bodySm,
+                              ),
+                            ),
+                            const Spacer(),
+                            Text(
+                              state.selectArchive!.tableNumber.toString(),
+                              style: _increaseFontSize(
+                                context.textStyles.bold16.copyWith(
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        13.hBox,
+                        Row(
+                          children: [
+                            Text(
+                              "Sana:",
+                              style: _increaseFontSize(
+                                context.textStyles.bodySm,
+                              ),
+                            ),
+                            const Spacer(),
+                            Text(
+                              state.selectArchive!.opened.toYyyyMmDd,
+                              style: _increaseFontSize(
+                                context.textStyles.bold16.copyWith(
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        13.hBox,
+                        Row(
+                          children: [
+                            Text(
+                              "Kassir:",
+                              style: _increaseFontSize(
+                                context.textStyles.bodySm,
+                              ),
+                            ),
+                            const Spacer(),
+                            Text(
+                              "Admin",
+                              style: _increaseFontSize(
+                                context.textStyles.bold16.copyWith(
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        13.hBox,
+                        Row(
+                          children: [
+                            Text(
+                              "To'lov usuli:",
+                              style: _increaseFontSize(
+                                context.textStyles.bodySm,
+                              ),
+                            ),
+                            const Spacer(),
+                            Text(
+                              "Naqd",
+                              style: _increaseFontSize(
+                                context.textStyles.bold16.copyWith(
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ).paddingAll(16),
+                  ),
+                ),
+                16.hBox,
+                Text(
+                  "Buyurtma tarkibi",
+                  style: _increaseFontSize(
+                    context.textStyles.bold20.copyWith(
                       fontWeight: FontWeight.w500,
                     ),
                   ),
-                  const Spacer(),
-                  SizedBox(
-                    height: 52,
-                    child: CustomHoverEffectWidget(
-                      onTap: () {},
-                      borderRadius: context.radius.buttonMd,
-                      bgColor: context.colors.bgBrand,
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          SvgPicture.asset(
-                            Assets.icons.icPrinter.path,
-                            color: AppColors.white,
-                          ),
-                          10.wBox,
-                          Text(
-                            "Chop etish",
-                            style: context.textStyles.title14.copyWith(
-                              fontSize: 16,
-                              color: context.colors.textOnBrand,
+                ),
+                12.hBox,
+                Column(
+                  spacing: 8,
+                  children: List.generate(
+                    state.selectArchiveDetail!.goods.length,
+                    (index) => SizedBox(
+                      width: context.w,
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          borderRadius: context.radius.buttonLg,
+                          color: context.colors.bgTritary,
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  state.selectArchiveDetail!.goods[index].name,
+                                  style: _increaseFontSize(
+                                    context.textStyles.bold16.copyWith(
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ),
+                                8.hBox,
+                                Text(
+                                  "${state.selectArchiveDetail!.goods[index].name} x ${state.selectArchiveDetail!.goods[index].quantity}",
+                                  style: _increaseFontSize(
+                                    context.textStyles.bodySm,
+                                  ),
+                                ),
+                              ],
                             ),
-                          ),
-                        ],
-                      ).paddingSymmetric(horizontal: 16),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            16.hBox,
-            SizedBox(
-              width: context.w,
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  borderRadius: context.radius.buttonLg,
-                  color: context.colors.bgTritary,
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      "Buyrutma tafsilotlari",
-                      style: context.textStyles.bold20.copyWith(
-                        fontWeight: FontWeight.w500,
+                            Text(
+                              state
+                                  .selectArchiveDetail!
+                                  .goods[index]
+                                  .price
+                                  .formatN,
+                              style: _increaseFontSize(
+                                context.textStyles.bold16.copyWith(
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ).paddingSymmetric(horizontal: 16, vertical: 12),
                       ),
                     ),
-                    16.hBox,
-                    Row(
-                      children: [
-                        Text("Check raqami:", style: context.textStyles.bodySm),
-                        const Spacer(),
-                        Text(
-                          "#1025",
-                          style: context.textStyles.bold16.copyWith(
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
-                    ),
-                    13.hBox,
-                    Row(
-                      children: [
-                        Text("Stol:", style: context.textStyles.bodySm),
-                        const Spacer(),
-                        Text(
-                          "04",
-                          style: context.textStyles.bold16.copyWith(
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
-                    ),
-                    13.hBox,
-                    Row(
-                      children: [
-                        Text("Sana:", style: context.textStyles.bodySm),
-                        const Spacer(),
-                        Text(
-                          "2026.02.20",
-                          style: context.textStyles.bold16.copyWith(
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
-                    ),
-                    13.hBox,
-                    Row(
-                      children: [
-                        Text("Kassir:", style: context.textStyles.bodySm),
-                        const Spacer(),
-                        Text(
-                          "Admin",
-                          style: context.textStyles.bold16.copyWith(
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
-                    ),
-                    13.hBox,
-                    Row(
-                      children: [
-                        Text("To'lov usuli:", style: context.textStyles.bodySm),
-                        const Spacer(),
-                        Text(
-                          "Naqd",
-                          style: context.textStyles.bold16.copyWith(
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ).paddingAll(16),
-              ),
-            ),
-            16.hBox,
-            Text("Buyurtma tarkibi",style: context.textStyles.bold20.copyWith(fontWeight: FontWeight.w500,),),
-            12.hBox,
-            Column(
-              spacing: 8,
-              children: List.generate(3, (index) => SizedBox(
-                width: context.w,
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    borderRadius: context.radius.buttonLg,
-                    color: context.colors.bgTritary,
                   ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text("Osh",style: context.textStyles.bold16.copyWith(fontWeight: FontWeight.w500,),),
-                          8.hBox,
-                          Text("30000 x 2",style: context.textStyles.bodySm,)
-                        ],
-                      ),
-                      Text(56000.formatN,style: context.textStyles.bold16.copyWith(fontWeight: FontWeight.w500,),)
-                    ],
-                  ).paddingSymmetric(horizontal: 16,vertical: 12),
                 ),
-              )),
-            ),
-            16.hBox,
-            SizedBox(
-              width: context.h,
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  borderRadius: context.radius.buttonLg,
-                  color: context.colors.bgTritary,
+                16.hBox,
+                SizedBox(
+                  width: context.h,
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      borderRadius: context.radius.buttonLg,
+                      color: context.colors.bgTritary,
+                    ),
+                    child: Column(
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              "Jami:",
+                              style: _increaseFontSize(
+                                context.textStyles.bodySm,
+                              ),
+                            ),
+                            Text(
+                              state.selectArchive!.goodsTotal.formatN,
+                              style: _increaseFontSize(
+                                context.textStyles.bold16.copyWith(
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        12.hBox,
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              "Xizmat to'lovi:",
+                              style: _increaseFontSize(
+                                context.textStyles.bodySm,
+                              ),
+                            ),
+                            Text(
+                              state.selectArchive!.serviceAmount.formatN,
+                              style: _increaseFontSize(
+                                context.textStyles.bold16.copyWith(
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        12.hBox,
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              "Hammasi:",
+                              style: _increaseFontSize(
+                                context.textStyles.bodySm,
+                              ),
+                            ),
+                            Text(
+                              state.selectArchive!.totalPrice.formatN,
+                              style: _increaseFontSize(
+                                context.textStyles.bold18.copyWith(
+                                  fontWeight: FontWeight.w500,
+                                  color: context.colors.bgBrand,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ).paddingAll(16),
+                  ),
                 ),
-                child: Column(
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text("Jami:",style: context.textStyles.bodySm,),
-                        Text(90000.formatN,style: context.textStyles.bold16.copyWith(fontWeight: FontWeight.w500,),)
-                      ],
-                    ),
-                    12.hBox,
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text("Xizmat to'lovi:",style: context.textStyles.bodySm,),
-                        Text(4500.formatN,style: context.textStyles.bold16.copyWith(fontWeight: FontWeight.w500,),)
-                      ],
-                    ),
-                    12.hBox,
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text("Soliq:",style: context.textStyles.bodySm,),
-                        Text(10500.formatN,style: context.textStyles.bold16.copyWith(fontWeight: FontWeight.w500,),)
-                      ],
-                    ),
-                  ],
-                ).paddingAll(16),
-              ),
-            )
-          ],
+              ],
+            );
+          },
         ),
       ),
     );

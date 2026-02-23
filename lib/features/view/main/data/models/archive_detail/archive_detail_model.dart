@@ -15,12 +15,12 @@ class ArchiveDetailModel
 
   const factory ArchiveDetailModel({
     @Default('') String id,
-    @JsonKey(name: 'bil_no') @Default(0) int bilNumber,
-    @JsonKey(name: "bill_status") @Default(OrderStatus.NONE) OrderStatus status,
+    @JsonKey(name: 'bill_no') @Default(0) int bilNumber,
+    @JsonKey(name: "bill_status") @Default(OrderStatus.none) OrderStatus status,
     @JsonKey(name: "opened_at") DateTime? opened,
     @JsonKey(name: 'table_id') @Default('') String tableId,
     @JsonKey(name: 'table_number') @Default(0) int tableNumber,
-    @JsonKey(name: "items") @OrderFoodEntityListConverter() @Default([]) List<OrderFoodEntity> foods,
+    @JsonKey(name: "items") @OrderFoodEntityListConverter() @Default([]) List<OrderFoodEntity> goods,
   }) = _ArchiveDetailModel;
 
   factory ArchiveDetailModel.fromJson(Map<String, dynamic> json) =>

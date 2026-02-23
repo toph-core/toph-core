@@ -9,7 +9,7 @@ part of 'pagination_request_model.dart';
 _$PaginationRequestModelImpl _$$PaginationRequestModelImplFromJson(
         Map<String, dynamic> json) =>
     _$PaginationRequestModelImpl(
-      limit: (json['limit'] as num?)?.toInt() ?? 0,
+      limit: (json['limit'] as num?)?.toInt() ?? 10,
       offset: (json['offset'] as num?)?.toInt() ?? 0,
     );
 

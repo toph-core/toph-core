@@ -12,7 +12,9 @@ const TECHNICAL_SUPPORT_URL = '';
 
 enum Status { LOADING, UNKNOWN, SUCCESS, ERROR, OTHER, OTHER_LOADING, IDLE }
 
-enum OrderStatus { OPEN, PENDING, NONE }
+enum OrderStatus { opened, pending, none }
+
+enum ArchivesFilterType {All, Today, Week, month,}
 
 class LangModel {
   final String code;

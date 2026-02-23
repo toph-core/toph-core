@@ -21,8 +21,10 @@ OrderFoodModel _$OrderFoodModelFromJson(Map<String, dynamic> json) {
 /// @nodoc
 mixin _$OrderFoodModel {
   String get id => throw _privateConstructorUsedError;
+  @JsonKey(name: "good_name")
   String get name => throw _privateConstructorUsedError;
   int get quantity => throw _privateConstructorUsedError;
+  @JsonKey(fromJson: parseInt)
   int get price => throw _privateConstructorUsedError;
   String get comment => throw _privateConstructorUsedError;
 
@@ -38,7 +40,12 @@ abstract class $OrderFoodModelCopyWith<$Res> {
           OrderFoodModel value, $Res Function(OrderFoodModel) then) =
       _$OrderFoodModelCopyWithImpl<$Res, OrderFoodModel>;
   @useResult
-  $Res call({String id, String name, int quantity, int price, String comment});
+  $Res call(
+      {String id,
+      @JsonKey(name: "good_name") String name,
+      int quantity,
+      @JsonKey(fromJson: parseInt) int price,
+      String comment});
 }
 
 /// @nodoc
@@ -93,7 +100,12 @@ abstract class _$$OrderFoodModelImplCopyWith<$Res>
       __$$OrderFoodModelImplCopyWithImpl<$Res>;
   @override
   @useResult
-  $Res call({String id, String name, int quantity, int price, String comment});
+  $Res call(
+      {String id,
+      @JsonKey(name: "good_name") String name,
+      int quantity,
+      @JsonKey(fromJson: parseInt) int price,
+      String comment});
 }
 
 /// @nodoc
@@ -143,9 +155,9 @@ class __$$OrderFoodModelImplCopyWithImpl<$Res>
 class _$OrderFoodModelImpl extends _OrderFoodModel {
   const _$OrderFoodModelImpl(
       {this.id = '',
-      this.name = '',
+      @JsonKey(name: "good_name") this.name = '',
       this.quantity = 0,
-      this.price = 0,
+      @JsonKey(fromJson: parseInt) this.price = 0,
       this.comment = ''})
       : super._();
 
@@ -156,13 +168,13 @@ class _$OrderFoodModelImpl extends _OrderFoodModel {
   @JsonKey()
   final String id;
   @override
-  @JsonKey()
+  @JsonKey(name: "good_name")
   final String name;
   @override
   @JsonKey()
   final int quantity;
   @override
-  @JsonKey()
+  @JsonKey(fromJson: parseInt)
   final int price;
   @override
   @JsonKey()
@@ -209,9 +221,9 @@ class _$OrderFoodModelImpl extends _OrderFoodModel {
 abstract class _OrderFoodModel extends OrderFoodModel {
   const factory _OrderFoodModel(
       {final String id,
-      final String name,
+      @JsonKey(name: "good_name") final String name,
       final int quantity,
-      final int price,
+      @JsonKey(fromJson: parseInt) final int price,
       final String comment}) = _$OrderFoodModelImpl;
   const _OrderFoodModel._() : super._();
 
@@ -221,10 +233,12 @@ abstract class _OrderFoodModel extends OrderFoodModel {
   @override
   String get id;
   @override
+  @JsonKey(name: "good_name")
   String get name;
   @override
   int get quantity;
   @override
+  @JsonKey(fromJson: parseInt)
   int get price;
   @override
   String get comment;

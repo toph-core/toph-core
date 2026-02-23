@@ -11,6 +11,10 @@ import 'package:mary_ai_pos/gen/assets.gen.dart';
 class ArchiveTopBar extends StatelessWidget {
   const ArchiveTopBar({super.key});
 
+  TextStyle _increaseFontSize(TextStyle style) {
+    return style.copyWith(fontSize: (style.fontSize ?? 14) + 2);
+  }
+
   @override
   Widget build(BuildContext context) {
     return DecoratedBox(
@@ -33,8 +37,10 @@ class ArchiveTopBar extends StatelessWidget {
 
               Text(
                 "Arxiv",
-                style: context.textStyles.bold20.copyWith(
-                  fontWeight: FontWeight.w500,
+                style: _increaseFontSize(
+                  context.textStyles.bold20.copyWith(
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
               ),
               67.wBox,
@@ -43,7 +49,7 @@ class ArchiveTopBar extends StatelessWidget {
                   width: context.w,
                   height: 52,
                   child: CustomTextField(
-                    hintText: "Chek raqami yoki stol raqami bo'yicha qidirish",
+                    hintText: "Chek raqami bo'yicha qidirish",
                     textInputType: TextInputType.text,
                     suffixIcon: SvgPicture.asset(Assets.icons.icSearch.path),
                   ),
@@ -74,8 +80,10 @@ class ArchiveTopBar extends StatelessWidget {
                   child: Center(
                     child: Text(
                       "Hammasi",
-                      style: context.textStyles.bold16.copyWith(
-                        fontWeight: FontWeight.w500,
+                      style: _increaseFontSize(
+                        context.textStyles.bold16.copyWith(
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
                     ),
                   ).paddingSymmetric(horizontal: 20),
@@ -91,9 +99,11 @@ class ArchiveTopBar extends StatelessWidget {
                   child: Center(
                     child: Text(
                       "Bugun",
-                      style: context.textStyles.bold16.copyWith(
-                        fontWeight: FontWeight.w500,
-                        color: context.colors.textOnBrand,
+                      style: _increaseFontSize(
+                        context.textStyles.bold16.copyWith(
+                          fontWeight: FontWeight.w500,
+                          color: context.colors.textOnBrand,
+                        ),
                       ),
                     ),
                   ).paddingSymmetric(horizontal: 20),
@@ -108,8 +118,10 @@ class ArchiveTopBar extends StatelessWidget {
                   child: Center(
                     child: Text(
                       "Hafta",
-                      style: context.textStyles.bold16.copyWith(
-                        fontWeight: FontWeight.w500,
+                      style: _increaseFontSize(
+                        context.textStyles.bold16.copyWith(
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
                     ),
                   ).paddingSymmetric(horizontal: 20),
@@ -124,8 +136,10 @@ class ArchiveTopBar extends StatelessWidget {
                   child: Center(
                     child: Text(
                       "Oy",
-                      style: context.textStyles.bold16.copyWith(
-                        fontWeight: FontWeight.w500,
+                      style: _increaseFontSize(
+                        context.textStyles.bold16.copyWith(
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
                     ),
                   ).paddingSymmetric(horizontal: 20),
@@ -136,8 +150,19 @@ class ArchiveTopBar extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.end,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text("Jami:",style: context.textStyles.bodyMd,),
-                  Text("16 ta chek",style: context.textStyles.bold20.copyWith(fontWeight: FontWeight.w500,color: context.colors.bgBrand),)
+                  Text(
+                    "Jami:",
+                    style: _increaseFontSize(context.textStyles.bodyMd),
+                  ),
+                  Text(
+                    "16 ta chek",
+                    style: _increaseFontSize(
+                      context.textStyles.bold20.copyWith(
+                        fontWeight: FontWeight.w500,
+                        color: context.colors.bgBrand,
+                      ),
+                    ),
+                  ),
                 ],
               ),
             ],

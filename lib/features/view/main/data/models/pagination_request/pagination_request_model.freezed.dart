@@ -113,7 +113,7 @@ class __$$PaginationRequestModelImplCopyWithImpl<$Res>
 /// @nodoc
 @JsonSerializable()
 class _$PaginationRequestModelImpl extends _PaginationRequestModel {
-  const _$PaginationRequestModelImpl({this.limit = 0, this.offset = 0})
+  const _$PaginationRequestModelImpl({this.limit = 10, this.offset = 0})
       : super._();
 
   factory _$PaginationRequestModelImpl.fromJson(Map<String, dynamic> json) =>

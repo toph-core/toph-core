@@ -6,6 +6,7 @@ import 'package:mary_ai_pos/features/view/main/data/models/category/category_mod
 import 'package:mary_ai_pos/features/view/main/data/models/create_order/create_order_request_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/goods/goods_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/hall/hall_model.dart';
+import 'package:mary_ai_pos/features/view/main/domain/entities/archive_detail_entity.dart';
 import 'package:mary_ai_pos/features/view/main/domain/entities/archives_response_entity.dart';
 import 'package:mary_ai_pos/features/view/main/domain/entities/pagination_request_entity.dart';
 import 'package:mary_ai_pos/features/view/main/domain/repository/main_repository.dart';
@@ -49,5 +50,10 @@ class MainRepositoryImpl implements MainRepository {
     PaginationRequestEntity request,
   ) {
     return _dataSources.getArchives(request);
+  }
+
+  @override
+  Future<Either<Failure, ArchiveDetailEntity>> getArchiveWithId(String id) {
+    return _dataSources.getArchiveWithId(id);
   }
 }

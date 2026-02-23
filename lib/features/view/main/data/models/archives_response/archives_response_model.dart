@@ -5,24 +5,22 @@ import 'package:mary_ai_pos/features/view/main/domain/entities/archive_entity.da
 import 'package:mary_ai_pos/features/view/main/domain/entities/archives_response_entity.dart';
 import 'package:mary_ai_pos/features/view/main/domain/entities/pagination_response_entity.dart';
 
-part 'archive_response_model.freezed.dart';
-part 'archive_response_model.g.dart';
+part 'archives_response_model.freezed.dart';
+part 'archives_response_model.g.dart';
 
 @freezed
-class ArchiveResponseModel
-    with _$ArchiveResponseModel
+class ArchivesResponseModel
+    with _$ArchivesResponseModel
     implements ArchivesResponseEntity {
-  const ArchiveResponseModel._();
+  const ArchivesResponseModel._();
 
-  const factory ArchiveResponseModel({
-    @ArchiveEntityListConverter()
-    required List<ArchiveEntity> archives,
-    @PaginationResponseEntityConverter()
-    required PaginationResponseEntity pagination,
-  }) = _ArchiveResponseModel;
+  const factory ArchivesResponseModel({
+    @JsonKey(name: "items") @ArchiveEntityListConverter() @Default([]) List<ArchiveEntity> archives,
+    @PaginationResponseEntityConverter() @Default(PaginationResponseModel()) PaginationResponseEntity pagination,
+  }) = _ArchivesResponseModel;
 
-  factory ArchiveResponseModel.fromJson(Map<String, dynamic> json) =>
-      _$ArchiveResponseModelFromJson(json);
+  factory ArchivesResponseModel.fromJson(Map<String, dynamic> json) =>
+      _$ArchivesResponseModelFromJson(json);
 
   @override
   ArchivesResponseEntity updateModel(ArchivesResponseEntity newModel) {

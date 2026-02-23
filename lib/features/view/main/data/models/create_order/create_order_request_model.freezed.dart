@@ -181,7 +181,7 @@ class _$CreateOrderRequestModelImpl extends _CreateOrderRequestModel {
       this.comment = '',
       this.guestCount = 0,
       final List<OrderItem> foods = const [],
-      this.status = OrderStatus.NONE,
+      this.status = OrderStatus.none,
       this.tableId = '',
       this.tableStatus = TableStatus.none})
       : _foods = foods,

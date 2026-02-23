@@ -3,7 +3,7 @@
 // ignore_for_file: type=lint
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
-part of 'archive_response_model.dart';
+part of 'archives_response_model.dart';
 
 // **************************************************************************
 // FreezedGenerator
@@ -14,12 +14,14 @@ T _$identity<T>(T value) => value;
 final _privateConstructorUsedError = UnsupportedError(
     'It seems like you constructed your class using `MyClass._()`. This constructor is only meant to be used by freezed and you are not supposed to need it nor use it.\nPlease check the documentation here for more information: https://github.com/rrousselGit/freezed#adding-getters-and-methods-to-our-models');
 
-ArchiveResponseModel _$ArchiveResponseModelFromJson(Map<String, dynamic> json) {
-  return _ArchiveResponseModel.fromJson(json);
+ArchivesResponseModel _$ArchivesResponseModelFromJson(
+    Map<String, dynamic> json) {
+  return _ArchivesResponseModel.fromJson(json);
 }
 
 /// @nodoc
-mixin _$ArchiveResponseModel {
+mixin _$ArchivesResponseModel {
+  @JsonKey(name: "items")
   @ArchiveEntityListConverter()
   List<ArchiveEntity> get archives => throw _privateConstructorUsedError;
   @PaginationResponseEntityConverter()
@@ -27,27 +29,29 @@ mixin _$ArchiveResponseModel {
 
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
   @JsonKey(ignore: true)
-  $ArchiveResponseModelCopyWith<ArchiveResponseModel> get copyWith =>
+  $ArchivesResponseModelCopyWith<ArchivesResponseModel> get copyWith =>
       throw _privateConstructorUsedError;
 }
 
 /// @nodoc
-abstract class $ArchiveResponseModelCopyWith<$Res> {
-  factory $ArchiveResponseModelCopyWith(ArchiveResponseModel value,
-          $Res Function(ArchiveResponseModel) then) =
-      _$ArchiveResponseModelCopyWithImpl<$Res, ArchiveResponseModel>;
+abstract class $ArchivesResponseModelCopyWith<$Res> {
+  factory $ArchivesResponseModelCopyWith(ArchivesResponseModel value,
+          $Res Function(ArchivesResponseModel) then) =
+      _$ArchivesResponseModelCopyWithImpl<$Res, ArchivesResponseModel>;
   @useResult
   $Res call(
-      {@ArchiveEntityListConverter() List<ArchiveEntity> archives,
+      {@JsonKey(name: "items")
+      @ArchiveEntityListConverter()
+      List<ArchiveEntity> archives,
       @PaginationResponseEntityConverter()
       PaginationResponseEntity pagination});
 }
 
 /// @nodoc
-class _$ArchiveResponseModelCopyWithImpl<$Res,
-        $Val extends ArchiveResponseModel>
-    implements $ArchiveResponseModelCopyWith<$Res> {
-  _$ArchiveResponseModelCopyWithImpl(this._value, this._then);
+class _$ArchivesResponseModelCopyWithImpl<$Res,
+        $Val extends ArchivesResponseModel>
+    implements $ArchivesResponseModelCopyWith<$Res> {
+  _$ArchivesResponseModelCopyWithImpl(this._value, this._then);
 
   // ignore: unused_field
   final $Val _value;
@@ -74,25 +78,29 @@ class _$ArchiveResponseModelCopyWithImpl<$Res,
 }
 
 /// @nodoc
-abstract class _$$ArchiveResponseModelImplCopyWith<$Res>
-    implements $ArchiveResponseModelCopyWith<$Res> {
-  factory _$$ArchiveResponseModelImplCopyWith(_$ArchiveResponseModelImpl value,
-          $Res Function(_$ArchiveResponseModelImpl) then) =
-      __$$ArchiveResponseModelImplCopyWithImpl<$Res>;
+abstract class _$$ArchivesResponseModelImplCopyWith<$Res>
+    implements $ArchivesResponseModelCopyWith<$Res> {
+  factory _$$ArchivesResponseModelImplCopyWith(
+          _$ArchivesResponseModelImpl value,
+          $Res Function(_$ArchivesResponseModelImpl) then) =
+      __$$ArchivesResponseModelImplCopyWithImpl<$Res>;
   @override
   @useResult
   $Res call(
-      {@ArchiveEntityListConverter() List<ArchiveEntity> archives,
+      {@JsonKey(name: "items")
+      @ArchiveEntityListConverter()
+      List<ArchiveEntity> archives,
       @PaginationResponseEntityConverter()
       PaginationResponseEntity pagination});
 }
 
 /// @nodoc
-class __$$ArchiveResponseModelImplCopyWithImpl<$Res>
-    extends _$ArchiveResponseModelCopyWithImpl<$Res, _$ArchiveResponseModelImpl>
-    implements _$$ArchiveResponseModelImplCopyWith<$Res> {
-  __$$ArchiveResponseModelImplCopyWithImpl(_$ArchiveResponseModelImpl _value,
-      $Res Function(_$ArchiveResponseModelImpl) _then)
+class __$$ArchivesResponseModelImplCopyWithImpl<$Res>
+    extends _$ArchivesResponseModelCopyWithImpl<$Res,
+        _$ArchivesResponseModelImpl>
+    implements _$$ArchivesResponseModelImplCopyWith<$Res> {
+  __$$ArchivesResponseModelImplCopyWithImpl(_$ArchivesResponseModelImpl _value,
+      $Res Function(_$ArchivesResponseModelImpl) _then)
       : super(_value, _then);
 
   @pragma('vm:prefer-inline')
@@ -101,7 +109,7 @@ class __$$ArchiveResponseModelImplCopyWithImpl<$Res>
     Object? archives = null,
     Object? pagination = null,
   }) {
-    return _then(_$ArchiveResponseModelImpl(
+    return _then(_$ArchivesResponseModelImpl(
       archives: null == archives
           ? _value._archives
           : archives // ignore: cast_nullable_to_non_nullable
@@ -116,19 +124,22 @@ class __$$ArchiveResponseModelImplCopyWithImpl<$Res>
 
 /// @nodoc
 @JsonSerializable()
-class _$ArchiveResponseModelImpl extends _ArchiveResponseModel {
-  const _$ArchiveResponseModelImpl(
-      {@ArchiveEntityListConverter()
-      required final List<ArchiveEntity> archives,
-      @PaginationResponseEntityConverter() required this.pagination})
+class _$ArchivesResponseModelImpl extends _ArchivesResponseModel {
+  const _$ArchivesResponseModelImpl(
+      {@JsonKey(name: "items")
+      @ArchiveEntityListConverter()
+      final List<ArchiveEntity> archives = const [],
+      @PaginationResponseEntityConverter()
+      this.pagination = const PaginationResponseModel()})
       : _archives = archives,
         super._();
 
-  factory _$ArchiveResponseModelImpl.fromJson(Map<String, dynamic> json) =>
-      _$$ArchiveResponseModelImplFromJson(json);
+  factory _$ArchivesResponseModelImpl.fromJson(Map<String, dynamic> json) =>
+      _$$ArchivesResponseModelImplFromJson(json);
 
   final List<ArchiveEntity> _archives;
   @override
+  @JsonKey(name: "items")
   @ArchiveEntityListConverter()
   List<ArchiveEntity> get archives {
     if (_archives is EqualUnmodifiableListView) return _archives;
@@ -137,19 +148,20 @@ class _$ArchiveResponseModelImpl extends _ArchiveResponseModel {
   }
 
   @override
+  @JsonKey()
   @PaginationResponseEntityConverter()
   final PaginationResponseEntity pagination;
 
   @override
   String toString() {
-    return 'ArchiveResponseModel(archives: $archives, pagination: $pagination)';
+    return 'ArchivesResponseModel(archives: $archives, pagination: $pagination)';
   }
 
   @override
   bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$ArchiveResponseModelImpl &&
+            other is _$ArchivesResponseModelImpl &&
             const DeepCollectionEquality().equals(other._archives, _archives) &&
             (identical(other.pagination, pagination) ||
                 other.pagination == pagination));
@@ -163,32 +175,32 @@ class _$ArchiveResponseModelImpl extends _ArchiveResponseModel {
   @JsonKey(ignore: true)
   @override
   @pragma('vm:prefer-inline')
-  _$$ArchiveResponseModelImplCopyWith<_$ArchiveResponseModelImpl>
-      get copyWith =>
-          __$$ArchiveResponseModelImplCopyWithImpl<_$ArchiveResponseModelImpl>(
-              this, _$identity);
+  _$$ArchivesResponseModelImplCopyWith<_$ArchivesResponseModelImpl>
+      get copyWith => __$$ArchivesResponseModelImplCopyWithImpl<
+          _$ArchivesResponseModelImpl>(this, _$identity);
 
   @override
   Map<String, dynamic> toJson() {
-    return _$$ArchiveResponseModelImplToJson(
+    return _$$ArchivesResponseModelImplToJson(
       this,
     );
   }
 }
 
-abstract class _ArchiveResponseModel extends ArchiveResponseModel {
-  const factory _ArchiveResponseModel(
-          {@ArchiveEntityListConverter()
-          required final List<ArchiveEntity> archives,
-          @PaginationResponseEntityConverter()
-          required final PaginationResponseEntity pagination}) =
-      _$ArchiveResponseModelImpl;
-  const _ArchiveResponseModel._() : super._();
+abstract class _ArchivesResponseModel extends ArchivesResponseModel {
+  const factory _ArchivesResponseModel(
+      {@JsonKey(name: "items")
+      @ArchiveEntityListConverter()
+      final List<ArchiveEntity> archives,
+      @PaginationResponseEntityConverter()
+      final PaginationResponseEntity pagination}) = _$ArchivesResponseModelImpl;
+  const _ArchivesResponseModel._() : super._();
 
-  factory _ArchiveResponseModel.fromJson(Map<String, dynamic> json) =
-      _$ArchiveResponseModelImpl.fromJson;
+  factory _ArchivesResponseModel.fromJson(Map<String, dynamic> json) =
+      _$ArchivesResponseModelImpl.fromJson;
 
   @override
+  @JsonKey(name: "items")
   @ArchiveEntityListConverter()
   List<ArchiveEntity> get archives;
   @override
@@ -196,6 +208,6 @@ abstract class _ArchiveResponseModel extends ArchiveResponseModel {
   PaginationResponseEntity get pagination;
   @override
   @JsonKey(ignore: true)
-  _$$ArchiveResponseModelImplCopyWith<_$ArchiveResponseModelImpl>
+  _$$ArchivesResponseModelImplCopyWith<_$ArchivesResponseModelImpl>
       get copyWith => throw _privateConstructorUsedError;
 }

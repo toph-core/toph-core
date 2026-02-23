@@ -32,3 +32,26 @@ extension DateTimeExtension on DateTime {
     return ((dayOfMonth + firstWeekday - 1) / 7).ceil();
   }
 }
+
+/// Extension methods on nullable [DateTime] for safe formatting.
+extension NullableDateTimeExtension on DateTime? {
+  /// Returns date as `yyyy.MM.dd`.
+  ///
+  /// If this is `null`, [DateTime.now] is used.
+  String get toYyyyMmDd {
+    final date = this ?? DateTime.now();
+    final month = date.month.toString().padLeft(2, '0');
+    final day = date.day.toString().padLeft(2, '0');
+    return '${date.year}.$month.$day';
+  }
+
+  /// Returns time as `HH:mm`.
+  ///
+  /// If this is `null`, [DateTime.now] is used.
+  String get toHourMinute {
+    final date = this ?? DateTime.now();
+    final hour = date.hour.toString().padLeft(2, '0');
+    final minute = date.minute.toString().padLeft(2, '0');
+    return '$hour:$minute';
+  }
+}

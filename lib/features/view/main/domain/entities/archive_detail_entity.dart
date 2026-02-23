@@ -8,7 +8,7 @@ abstract class ArchiveDetailEntity {
   final DateTime? opened;
   final String tableId;
   final int tableNumber;
-  final List<OrderFoodEntity> foods;
+  final List<OrderFoodEntity> goods;
 
   ArchiveDetailEntity({
     required this.id,
@@ -17,6 +17,6 @@ abstract class ArchiveDetailEntity {
     required this.opened,
     required this.tableId,
     required this.tableNumber,
-    required this.foods,
+    required this.goods,
   });
 }

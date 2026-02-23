@@ -13,7 +13,7 @@ class CreateOrderRequestModel with _$CreateOrderRequestModel {
     @Default('') String comment,
     @Default(0) int guestCount,
     @Default([]) List<OrderItem> foods,
-    @Default(OrderStatus.NONE) OrderStatus status,
+    @Default(OrderStatus.none) OrderStatus status,
     @Default('') String tableId,
     @Default(TableStatus.none) TableStatus tableStatus,
   }) = _CreateOrderRequestModel;

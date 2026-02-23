@@ -32,3 +32,22 @@ class PaginationRequestModel
     return {'limit': limit, 'offset': offset};
   }
 }
+
+class PaginationRequestEntityConverter
+    implements JsonConverter<PaginationRequestEntity?, Map<String, dynamic>?> {
+  const PaginationRequestEntityConverter();
+
+  @override
+  PaginationRequestEntity? fromJson(Map<String, dynamic>? json) {
+    if (json == null) return null;
+    return PaginationRequestModel.fromJson(json);
+  }
+
+  @override
+  Map<String, dynamic>? toJson(PaginationRequestEntity? object) {
+    if (object == null) return null;
+    return object is PaginationRequestModel
+        ? object.toJson()
+        : {'limit': object.limit, 'offset': object.offset};
+  }
+}

@@ -31,7 +31,7 @@ class CreateOrderBloc extends Bloc<CreateOrderEvent, CreateOrderState> {
         comment: "Very good",
         guestCount: state.guestCount,
         foods: event.orders,
-        status: OrderStatus.OPEN,
+        status: OrderStatus.opened,
         tableStatus: state.tableStatus
       ),
     );

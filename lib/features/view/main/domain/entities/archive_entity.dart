@@ -7,13 +7,19 @@ abstract class ArchiveEntity {
   final DateTime? opened;
   final int tableNumber;
   final int totalPrice;
+  final int goodsTotal;
+  final int serviceAmount;
+  final int goodsQuantity;
 
   ArchiveEntity({
     required this.id,
     required this.bilNumber,
     required this.status,
-   this.opened,
+    this.opened,
     required this.tableNumber,
     required this.totalPrice,
+    required this.goodsTotal,
+    required this.serviceAmount,
+    required this.goodsQuantity,
   });
 }
