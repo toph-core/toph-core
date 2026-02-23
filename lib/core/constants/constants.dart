@@ -12,7 +12,7 @@ const TECHNICAL_SUPPORT_URL = '';
 
 enum Status { LOADING, UNKNOWN, SUCCESS, ERROR, OTHER, OTHER_LOADING, IDLE }
 
-enum OrderStatus { opened, pending, none }
+enum OrderStatus { opened, pending, open,none }
 
 enum ArchivesFilterType {All, Today, Week, month,}
 

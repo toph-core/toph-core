@@ -31,6 +31,7 @@ class _DetailScreenState extends State<DetailScreen> with DetailScreenMixin {
 
   @override
   Widget build(BuildContext context) {
+    print("bu table ${tableStatus}");
     return BlocProvider(
       create: (context) => inject<DetailCubit>()..getCategories(),
       child: KeyboardDismisser(

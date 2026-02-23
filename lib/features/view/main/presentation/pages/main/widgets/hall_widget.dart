@@ -88,7 +88,7 @@ class _HallWidgetState extends State<HallWidget> {
                                                 "guest_count": value,
                                                 // "table_status": table.status
                                                 "table_status":
-                                                    TableStatus.busy,
+                                                    table.status,
                                               },
                                             ),
                                           );

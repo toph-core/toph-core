@@ -51,10 +51,7 @@ class MainDataSourcesImpl implements MainDataSources {
         Map<String, dynamic> requestJson = request.request();
         requestJson['order_id'] = orders.data['data'][0]['id'];
         if (orders.data['data'] is List && orders.data['data'].isNotEmpty) {
-          await _client.dio.post(
-            ListAPI.createOrderItems,
-            data: requestJson,
-          );
+          await _client.dio.post(ListAPI.createOrderItems, data: requestJson);
         }
       } else {
         await _client.post(ListAPI.orders, data: request.request());

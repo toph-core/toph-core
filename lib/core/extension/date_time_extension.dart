@@ -31,6 +31,13 @@ extension DateTimeExtension on DateTime {
 
     return ((dayOfMonth + firstWeekday - 1) / 7).ceil();
   }
+
+  /// Returns date as `yyyy-MM-dd`.
+  String get toDateOnly {
+    final monthStr = month.toString().padLeft(2, '0');
+    final dayStr = day.toString().padLeft(2, '0');
+    return '$year-$monthStr-$dayStr';
+  }
 }
 
 /// Extension methods on nullable [DateTime] for safe formatting.
