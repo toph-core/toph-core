@@ -39,4 +39,5 @@ const _$ArchivesFilterTypeEnumMap = {
   ArchivesFilterType.Today: 'Today',
   ArchivesFilterType.Week: 'Week',
   ArchivesFilterType.month: 'month',
+  ArchivesFilterType.date: 'date',
 };

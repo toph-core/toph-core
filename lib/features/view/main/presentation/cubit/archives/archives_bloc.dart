@@ -37,6 +37,27 @@ class ArchivesBloc extends Bloc<ArchivesEvent, ArchivesState> {
     on<_GetArchived>(_getArchived);
     on<_SelectArchive>(_selectArchive);
     on<_GetArchiveDetail>(_getArchiveDetail);
+    on<_UpdateFilterType>(_updateFilterType);
+    on<_UpdateFilterDateRange>(_updateFilterDateRange);
+  }
+
+  void _updateFilterType(_UpdateFilterType event, emit) {
+    if (state.filterType != event.type) {
+      emit(state.copyWith(filterType: event.type, archives: null,startFilterDate: null,endFilterDate: null));
+      add(const _GetArchived());
+    }
+  }
+
+  void _updateFilterDateRange(_UpdateFilterDateRange event, emit) {
+    emit(
+      state.copyWith(
+        filterType: ArchivesFilterType.date,
+        startFilterDate: event.startDate,
+        endFilterDate: event.endDate,
+        archives: null,
+      ),
+    );
+    add(const _GetArchived());
   }
 
   void _getArchiveDetail(_GetArchiveDetail event, emit) async {
@@ -83,8 +104,13 @@ class ArchivesBloc extends Bloc<ArchivesEvent, ArchivesState> {
     emit(state.copyWith(status: Status.LOADING));
     final response = await _getArchivesUsecase.call(
       ArchivesFilterRequestModel(
-        filterType: ArchivesFilterType.Today,
-        pagination: PaginationRequestModel.calculate(items: state.archives?.archives.length ?? 0, limit: 20)
+        filterType: state.filterType,
+        startDate: state.startFilterDate,
+        endDate: state.endFilterDate,
+        pagination: PaginationRequestModel.calculate(
+          items: state.archives?.archives.length ?? 0,
+          limit: 20,
+        ),
       ),
     );
     response.fold(

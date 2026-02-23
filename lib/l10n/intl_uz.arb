@@ -55,6 +55,10 @@
   "strOrderSuccessCreated":"Buyurtma muvafaqqiyatli yaratildi",
   "strTable": "Stol",
   "strSelectGuestsCount": "Mehmonlar sonini belgilang",
-  "strAdd": "Qo'shish"
+  "strAdd": "Qo'shish",
+  "all": "Hammasi",
+  "today":"Bugun",
+  "week": "Hafta",
+  "month": "Oy"
 
 }

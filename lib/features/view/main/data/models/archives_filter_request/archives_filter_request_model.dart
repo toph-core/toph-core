@@ -1,6 +1,5 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:mary_ai_pos/core/constants/constants.dart';
-import 'package:mary_ai_pos/core/extension/date_time_extension.dart';
 import 'package:mary_ai_pos/features/view/main/domain/entities/archives_filter_request_entity.dart';
 import 'package:mary_ai_pos/features/view/main/domain/entities/pagination_request_entity.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/pagination_request/pagination_request_model.dart';
@@ -40,23 +39,39 @@ class ArchivesFilterRequestModel
         req.addAll({
           "start": DateTime.now()
               .subtract(const Duration(hours: 24))
-              .toDateOnly,
-          "end": DateTime.now().toDateOnly,
+              .toUtc()
+              .toIso8601String(),
+          "end": DateTime.now().toUtc().toIso8601String(),
         });
         break;
 
       case ArchivesFilterType.Week:
         req.addAll({
-          "start": DateTime.now().subtract(const Duration(days: 7)).toDateOnly,
-          "end": DateTime.now().toDateOnly,
+          "start": DateTime.now()
+              .subtract(const Duration(days: 7))
+              .toUtc()
+              .toIso8601String(),
+          "end": DateTime.now().toUtc().toIso8601String(),
         });
         break;
 
       case ArchivesFilterType.month:
         req.addAll({
-          "start": DateTime.now().subtract(const Duration(days: 30)).toDateOnly,
-          "end": DateTime.now().toDateOnly,
+          "start": DateTime.now()
+              .subtract(const Duration(days: 30))
+              .toUtc()
+              .toIso8601String(),
+          "end": DateTime.now().toUtc().toIso8601String(),
         });
+        break;
+
+      case ArchivesFilterType.date:
+        if (startDate != null && endDate != null) {
+          req.addAll({
+            "start": startDate!.toUtc().toIso8601String(),
+            "end": endDate!.toUtc().toIso8601String(),
+          });
+        }
         break;
     }
     return req;

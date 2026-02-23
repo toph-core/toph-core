@@ -51,9 +51,9 @@
   "strOrderSuccessCreated":"Buyurtma muvafaqqiyatli yaratildi",
   "strTable": "Stol",
   "strSelectGuestsCount": "Mehmonlar sonini kiriting",
-  "strAdd": "Qo'shish"
-
-
-
-
+  "strAdd": "Qo'shish",
+  "all": "Все",
+  "today":"Сегодня",
+  "week": "Неделя",
+  "month": "Месяц"
 }

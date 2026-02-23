@@ -39,5 +39,10 @@ Map<String, dynamic> _$$ArchiveDetailModelImplToJson(
 const _$OrderStatusEnumMap = {
   OrderStatus.opened: 'opened',
   OrderStatus.pending: 'pending',
+  OrderStatus.open: 'open',
+  OrderStatus.closed: 'closed',
+  OrderStatus.paid: 'paid',
+  OrderStatus.debt: 'debt',
+  OrderStatus.deleted: 'deleted',
   OrderStatus.none: 'none',
 };

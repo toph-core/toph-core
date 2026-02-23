@@ -14,6 +14,7 @@ import 'package:mary_ai_pos/features/view/main/presentation/cubit/create_order/c
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/detail/detail_cubit.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/archives/archives_bloc.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/keyboard/keyboard_cubit.dart';
+import 'package:mary_ai_pos/features/view/main/presentation/cubit/payment/payment_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:get_it/get_it.dart';
 import 'package:mary_ai_pos/features/view/auth/data/data_sources/auth_datasource.dart';
@@ -104,4 +105,5 @@ void _cubit() {
   inject.registerFactory(() => CounterCubit());
   inject.registerFactory(() => ArchivesBloc(getArchivesUsecase: inject(),getArchiveWithIdUsecase: inject()));
   inject.registerFactory(() => ArchiveBloc(getArchiveWithIdUsecase: inject()));
+  inject.registerFactory(() => PaymentBloc(getArchiveWithIdUsecase: inject()));
 }

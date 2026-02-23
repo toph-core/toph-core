@@ -53,6 +53,8 @@ class MainDataSourcesImpl implements MainDataSources {
         if (orders.data['data'] is List && orders.data['data'].isNotEmpty) {
           await _client.dio.post(ListAPI.createOrderItems, data: requestJson);
         }
+      } else if (request.tableStatus == TableStatus.away) {
+        await _client.post(ListAPI.orders, data: request.request());
       } else {
         await _client.post(ListAPI.orders, data: request.request());
       }
@@ -182,7 +184,10 @@ class MainDataSourcesImpl implements MainDataSources {
     ArchivesFilterRequestEntity request,
   ) async {
     try {
-      final response = await _client.dio.get(ListAPI.archives);
+      final response = await _client.dio.get(
+        ListAPI.archives,
+        queryParameters: request.request(),
+      );
       Map<String, dynamic> json = response.data['data'];
       json['pagination'] = {
         "total": response.data['data']['total'],

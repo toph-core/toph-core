@@ -82,9 +82,17 @@ class MyApp extends StatelessWidget {
               return ScrollConfiguration(
                 behavior: const ScrollBehaviorModified(),
                 child: child!,
-              );  
+              );
             },
-            initialRoute: AppRoutes.splashScreen,
+            initialRoute: AppRoutes.paymentScreen,
+            onGenerateInitialRoutes: (initialRoute) => [
+              RouteGenerate().generate(
+                RouteSettings(
+                  name: initialRoute,
+                  arguments: {"table_id": "048aa68f-4c4d-490a-8fa6-83025519c3b5"},
+                ),
+              ),
+            ],
           );
         },
       ),
@@ -106,4 +114,3 @@ class ScrollBehaviorModified extends ScrollBehavior {
     return const ClampingScrollPhysicsModified();
   }
 }
-

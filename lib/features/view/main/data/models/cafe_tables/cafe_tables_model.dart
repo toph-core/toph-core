@@ -3,7 +3,7 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 part 'cafe_tables_model.freezed.dart';
 part 'cafe_tables_model.g.dart';
 
-enum TableStatus { free, busy, none}
+enum TableStatus { free, busy, away, none}
 
 @freezed
 class CafeTableModel with _$CafeTableModel {

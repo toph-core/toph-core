@@ -195,10 +195,14 @@ class OrderSidebar extends StatelessWidget with DetailScreenMixin {
                         ),
                         CustomHoverEffectWidget(
                           bgColor: AppColors.ffFB6633,
-                          onTap: () => Navigator.pushNamed(
-                            context,
-                            AppRoutes.paymentScreen,
-                          ),
+                          onTap: () {
+                            if (tableStatus != TableStatus.free) {
+                              Navigator.pushNamed(
+                                context,
+                                AppRoutes.paymentScreen,
+                              );
+                            }
+                          },
                           borderRadius: context.radius.buttonLg,
                           child: Text(
                             "To’lovga o’tish",
@@ -230,8 +234,11 @@ class _OrderCard extends StatelessWidget with DetailScreenMixin {
     return InkWell(
       onTap: () async {
         List<FoodAdditionalModel> selectedAdditional = additionals;
-        additionals.asMap().forEach((index,value){
-          if(orderItem.goods.additionals.indexWhere((v) => v.price == value.price && v.title == value.title) != -1){
+        additionals.asMap().forEach((index, value) {
+          if (orderItem.goods.additionals.indexWhere(
+                (v) => v.price == value.price && v.title == value.title,
+              ) !=
+              -1) {
             selectedAdditional[index].selected = true;
           }
         });

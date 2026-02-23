@@ -12,9 +12,11 @@ const TECHNICAL_SUPPORT_URL = '';
 
 enum Status { LOADING, UNKNOWN, SUCCESS, ERROR, OTHER, OTHER_LOADING, IDLE }
 
-enum OrderStatus { opened, pending, open,none }
+enum OrderStatus { opened, pending, open, closed, paid, debt, deleted, none }
 
-enum ArchivesFilterType {All, Today, Week, month,}
+enum ArchivesFilterType { All, Today, Week, month, date }
+
+enum PaymentType {cash, card, qr}
 
 class LangModel {
   final String code;
