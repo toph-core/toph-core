@@ -25,11 +25,19 @@ class CreateOrderRequestModel with _$CreateOrderRequestModel {
     "comment": comment,
     "guest_count": guestCount,
     "items": List.generate(foods.length, (index) => {
-        "comment": "zo'r",
+        "comment": comment,
         "good_id": foods[index].goods.id,
         "quantity": foods[index].quantity,
       },),
     "status": status.name.toLowerCase(),
     "table_id": tableId,
+  };
+
+  Map<String, dynamic> createOrder() => {
+    "items": List.generate(foods.length, (index) => {
+        "comment": comment,
+        "good_id": foods[index].goods.id,
+        "quantity": foods[index].quantity,
+      },),
   };
 }

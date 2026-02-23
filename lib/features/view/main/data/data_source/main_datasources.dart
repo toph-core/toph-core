@@ -13,6 +13,7 @@ import 'package:mary_ai_pos/features/view/main/data/models/create_order/create_o
 import 'package:mary_ai_pos/features/view/main/data/models/goods/goods_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/hall/hall_model.dart';
 import 'package:mary_ai_pos/features/view/main/domain/entities/archive_detail_entity.dart';
+import 'package:mary_ai_pos/features/view/main/domain/entities/archives_filter_request_entity.dart';
 import 'package:mary_ai_pos/features/view/main/domain/entities/archives_response_entity.dart';
 import 'package:mary_ai_pos/features/view/main/domain/entities/pagination_request_entity.dart';
 
@@ -26,7 +27,7 @@ abstract class MainDataSources {
     String categoryId,
   );
   Future<Either<Failure, ArchivesResponseEntity>> getArchives(
-    PaginationRequestEntity request,
+    ArchivesFilterRequestEntity request,
   );
   Future<Either<Failure, ArchiveDetailEntity>> getArchiveWithId(String id);
 
@@ -46,9 +47,18 @@ class MainDataSourcesImpl implements MainDataSources {
   }) async {
     try {
       if (request.tableStatus == TableStatus.busy) {
-        //
+        final orders = await _client.dio.get(ListAPI.orders);
+        Map<String, dynamic> requestJson = request.request();
+        requestJson['order_id'] = orders.data['data'][0]['id'];
+        if (orders.data['data'] is List && orders.data['data'].isNotEmpty) {
+          await _client.dio.post(
+            ListAPI.createOrderItems,
+            data: requestJson,
+          );
+        }
+      } else {
+        await _client.post(ListAPI.orders, data: request.request());
       }
-      await _client.post(ListAPI.orders, data: request.request());
       return const Right(true);
     } on DioException catch (exception) {
       return Left(handleDioException(exception));
@@ -172,7 +182,7 @@ class MainDataSourcesImpl implements MainDataSources {
 
   @override
   Future<Either<Failure, ArchivesResponseEntity>> getArchives(
-    PaginationRequestEntity request,
+    ArchivesFilterRequestEntity request,
   ) async {
     try {
       final response = await _client.dio.get(ListAPI.archives);

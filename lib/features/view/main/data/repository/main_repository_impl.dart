@@ -7,6 +7,7 @@ import 'package:mary_ai_pos/features/view/main/data/models/create_order/create_o
 import 'package:mary_ai_pos/features/view/main/data/models/goods/goods_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/hall/hall_model.dart';
 import 'package:mary_ai_pos/features/view/main/domain/entities/archive_detail_entity.dart';
+import 'package:mary_ai_pos/features/view/main/domain/entities/archives_filter_request_entity.dart';
 import 'package:mary_ai_pos/features/view/main/domain/entities/archives_response_entity.dart';
 import 'package:mary_ai_pos/features/view/main/domain/entities/pagination_request_entity.dart';
 import 'package:mary_ai_pos/features/view/main/domain/repository/main_repository.dart';
@@ -47,7 +48,7 @@ class MainRepositoryImpl implements MainRepository {
 
   @override
   Future<Either<Failure, ArchivesResponseEntity>> getArchives(
-    PaginationRequestEntity request,
+    ArchivesFilterRequestEntity request,
   ) {
     return _dataSources.getArchives(request);
   }

@@ -6,6 +6,7 @@ import 'package:mary_ai_pos/core/components/flush_bars.dart';
 import 'package:mary_ai_pos/core/constants/constants.dart';
 import 'package:mary_ai_pos/core/error/failure.dart';
 import 'package:mary_ai_pos/core/utils/helper/helper_widget.dart';
+import 'package:mary_ai_pos/features/view/main/data/models/archives_filter_request/archives_filter_request_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/pagination_request/pagination_request_model.dart';
 import 'package:mary_ai_pos/features/view/main/domain/entities/archive_detail_entity.dart';
 import 'package:mary_ai_pos/features/view/main/domain/entities/archive_entity.dart';
@@ -81,9 +82,9 @@ class ArchivesBloc extends Bloc<ArchivesEvent, ArchivesState> {
   void _getArchived(_GetArchived event, emit) async {
     emit(state.copyWith(status: Status.LOADING));
     final response = await _getArchivesUsecase.call(
-      PaginationRequestModel(
-        limit: state.archives?.archives.length ?? 0,
-        offset: 20,
+      ArchivesFilterRequestModel(
+        filterType: ArchivesFilterType.Today,
+        pagination: PaginationRequestModel.calculate(items: state.archives?.archives.length ?? 0, limit: 20)
       ),
     );
     response.fold(

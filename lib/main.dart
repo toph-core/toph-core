@@ -84,7 +84,7 @@ class MyApp extends StatelessWidget {
                 child: child!,
               );  
             },
-            initialRoute: AppRoutes.archiveScreen,
+            initialRoute: AppRoutes.splashScreen,
           );
         },
       ),
