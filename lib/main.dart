@@ -84,7 +84,7 @@ class MyApp extends StatelessWidget {
                 child: child!,
               );
             },
-            initialRoute: AppRoutes.paymentScreen,
+            initialRoute: AppRoutes.splashScreen,
             onGenerateInitialRoutes: (initialRoute) => [
               RouteGenerate().generate(
                 RouteSettings(

@@ -30,10 +30,10 @@ class PaymentRightSideBar extends StatelessWidget with PaymentScreenMixin {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text("Jami to'lov", style: context.textStyles.bodyMd),
-                12.hBox,
+                8.hBox,
                 Text(
                   "80 500",
-                  style: context.textStyles.bold20.copyWith(
+                  style: context.textStyles.bold24.copyWith(
                     fontWeight: FontWeight.w500,
                   ),
                 ),

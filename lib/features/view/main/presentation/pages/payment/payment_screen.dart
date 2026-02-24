@@ -51,13 +51,14 @@ class PaymentScreen extends StatelessWidget {
                               fontWeight: FontWeight.w500,
                             ),
                           ),
-                          16.hBox,
                           Row(
+                            mainAxisAlignment: MainAxisAlignment.end,
                             children: [
                               Expanded(
                                 flex: 3,
                                 child: CustomTextField(
                                   hintText: "",
+                                  style: context.textStyles.semibold20.copyWith(fontWeight: FontWeight.w500),
                                   textInputType: TextInputType.text,
                                   textEditingController: TextEditingController(
                                     text: "0 so'm",
@@ -65,51 +66,43 @@ class PaymentScreen extends StatelessWidget {
                                 ),
                               ),
                               16.wBox,
-                              Expanded(
-                                flex: 2,
-                                child: Row(
-                                  children: [
-                                    SizedBox(
-                                      height: 52,
-                                      width: 143,
-                                      child: CustomHoverEffectWidget(
-                                        onTap: () {},
-                                        bgColor: AppColors.ffFF6900
-                                            .newWithOpacity(.15),
-                                        borderRadius: context.radius.buttonLg,
-                                        child: Center(
-                                          child: Text(
-                                            "Foiz",
-                                            style: context.textStyles.bold16
-                                                .copyWith(
-                                                  fontWeight: FontWeight.w500,
-                                                  color: AppColors.ffFB6633,
-                                                ),
-                                          ),
-                                        ),
+                              SizedBox(
+                                height: 52,
+                                width: 143,
+                                child: CustomHoverEffectWidget(
+                                  onTap: () {},
+                                  bgColor: AppColors.ffFF6900.newWithOpacity(
+                                    .15,
+                                  ),
+                                  borderRadius: context.radius.buttonLg,
+                                  child: Center(
+                                    child: Text(
+                                      "Foiz",
+                                      style: context.textStyles.bold16.copyWith(
+                                        fontWeight: FontWeight.w500,
+                                        color: AppColors.ffFB6633,
                                       ),
                                     ),
-                                    8.wBox,
-                                    SizedBox(
-                                      width: 143,
-                                      height: 52,
-                                      child: CustomHoverEffectWidget(
-                                        onTap: () {},
-                                        bgColor: AppColors.ffFB6633,
-                                        borderRadius: context.radius.buttonLg,
-                                        child: Center(
-                                          child: Text(
-                                            "Summa",
-                                            style: context.textStyles.bold16
-                                                .copyWith(
-                                                  fontWeight: FontWeight.w500,
-                                                  color: AppColors.white,
-                                                ),
-                                          ),
-                                        ),
+                                  ),
+                                ),
+                              ),
+                              8.wBox,
+                              SizedBox(
+                                width: 143,
+                                height: 52,
+                                child: CustomHoverEffectWidget(
+                                  onTap: () {},
+                                  bgColor: AppColors.ffFB6633,
+                                  borderRadius: context.radius.buttonLg,
+                                  child: Center(
+                                    child: Text(
+                                      "Summa",
+                                      style: context.textStyles.bold16.copyWith(
+                                        fontWeight: FontWeight.w500,
+                                        color: AppColors.white,
                                       ),
                                     ),
-                                  ],
+                                  ),
                                 ),
                               ),
                             ],
@@ -222,6 +215,7 @@ class PaymentScreen extends StatelessWidget {
                                 "8 000 so'm",
                                 style: context.textStyles.bold16.copyWith(
                                   fontWeight: FontWeight.w500,
+                                  color: AppColors.c13AF1B,
                                 ),
                               ),
                             ],

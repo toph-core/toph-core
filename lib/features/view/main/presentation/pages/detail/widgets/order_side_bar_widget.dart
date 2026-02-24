@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mary_ai_pos/core/common/custom_hover_effect_widget.dart';
 import 'package:mary_ai_pos/core/components/flush_bars.dart';
 import 'package:mary_ai_pos/core/constants/constants.dart';
+import 'package:mary_ai_pos/core/extension/color_extension.dart';
 import 'package:mary_ai_pos/core/extension/for_context.dart';
 import 'package:mary_ai_pos/core/extension/int_extension.dart';
 import 'package:mary_ai_pos/core/extension/number_formatter.dart';
@@ -44,13 +45,18 @@ class OrderSidebar extends StatelessWidget with DetailScreenMixin {
             borderRadius: context.radius.card24,
           ),
           child: Column(
-            spacing: 16,
             children: [
               Row(
                 spacing: 12,
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text('Buyurtmalar', style: context.textStyles.bold24),
+                  Text(
+                    'Buyurtmalar',
+                    style: context.textStyles.bold24.copyWith(
+                      fontWeight: FontWeight.w500,
+                      fontSize: 22,
+                    ),
+                  ),
                   CustomHoverEffectWidget(
                     bgColor: AppColors.ffDB2020.withOpacity(.1),
                     onTap: state.selectedGoods.isNotEmpty
@@ -77,8 +83,7 @@ class OrderSidebar extends StatelessWidget with DetailScreenMixin {
                     ).paddingSymmetric(horizontal: 16, vertical: 12.5),
                   ),
                 ],
-              ),
-
+              ).paddingAll(16),
               if (state.selectedGoods.isEmpty)
                 Expanded(
                   child: Center(
@@ -97,11 +102,18 @@ class OrderSidebar extends StatelessWidget with DetailScreenMixin {
                         _OrderCard(orderItem: state.selectedGoods[index]),
                     separatorBuilder: (context, index) => 12.hBox,
                     itemCount: state.selectedGoods.length,
-                  ),
+                  ).paddingSymmetric(horizontal: 16),
                 ),
               DecoratedBox(
                 decoration: BoxDecoration(
                   color: context.colors.bgDefault,
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.black.newWithOpacity(.07),
+                      offset: const Offset(0, -4),
+                      blurRadius: 12,
+                    ),
+                  ],
                   borderRadius: BorderRadius.only(
                     bottomLeft: context.radius.card.bottomLeft,
                     bottomRight: context.radius.card.bottomRight,
@@ -218,7 +230,7 @@ class OrderSidebar extends StatelessWidget with DetailScreenMixin {
                 ).paddingAll(16),
               ),
             ],
-          ).paddingAll(16),
+          ),
         );
       },
     );
