@@ -10,6 +10,7 @@ abstract class ArchiveEntity {
   final int goodsTotal;
   final int serviceAmount;
   final int goodsQuantity;
+  final int customerPaidAmount;
 
   ArchiveEntity({
     required this.id,
@@ -21,5 +22,6 @@ abstract class ArchiveEntity {
     required this.goodsTotal,
     required this.serviceAmount,
     required this.goodsQuantity,
+    required this.customerPaidAmount,
   });
 }

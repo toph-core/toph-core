@@ -15,6 +15,7 @@ import 'package:mary_ai_pos/features/view/main/data/models/cafe_tables/cafe_tabl
 import 'package:mary_ai_pos/features/view/main/data/models/food_additional/food_additional_model.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/create_order/create_order_bloc.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/detail/detail_cubit.dart';
+import 'package:mary_ai_pos/features/view/main/presentation/cubit/main/main_cubit.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/detail/detail_screen_mixin.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/detail/widgets/clear_dialog.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/detail/widgets/send_to_kitchen_dialog.dart';
@@ -26,11 +27,13 @@ class OrderSidebar extends StatelessWidget with DetailScreenMixin {
   final String? tableId;
   final int guestCount;
   final TableStatus tableStatus;
+  final String? orderId;
   OrderSidebar({
     super.key,
     this.tableId,
     required this.guestCount,
     required this.tableStatus,
+    this.orderId,
   });
 
   @override
@@ -63,6 +66,7 @@ class OrderSidebar extends StatelessWidget with DetailScreenMixin {
                         ? () async {
                             await showDialog(
                               context: context,
+                              barrierDismissible: false,
                               builder: (context) => ClearDialog(
                                 onSuccess: () =>
                                     context.read<DetailCubit>().clearGoods(),
@@ -155,6 +159,11 @@ class OrderSidebar extends StatelessWidget with DetailScreenMixin {
                                 listener: (context, state) {
                                   if (state.status != Status.LOADING &&
                                       state.success) {
+                                    context.read<MainCubit>().updateTableStatus(
+                                      state.tableId,
+                                      TableStatus.busy,
+                                    );
+
                                     showSuccessMessage(
                                       context,
                                       S.current.strOrderSuccessCreated,
@@ -171,6 +180,7 @@ class OrderSidebar extends StatelessWidget with DetailScreenMixin {
                                               Status.LOADING) {
                                         await showDialog(
                                           context: context,
+                                          barrierDismissible: false,
                                           builder: (context) =>
                                               const SendToKitchenDialog(),
                                         ).then((value) {
@@ -212,6 +222,7 @@ class OrderSidebar extends StatelessWidget with DetailScreenMixin {
                               Navigator.pushNamed(
                                 context,
                                 AppRoutes.paymentScreen,
+                                arguments: tableId,
                               );
                             }
                           },
@@ -256,6 +267,7 @@ class _OrderCard extends StatelessWidget with DetailScreenMixin {
         });
         await showDialog(
           context: context,
+          barrierDismissible: false,
           builder: (context) => ShowFoodAdditional(
             additionals: selectedAdditional,
             goods: orderItem.goods,

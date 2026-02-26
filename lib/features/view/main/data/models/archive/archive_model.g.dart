@@ -22,7 +22,10 @@ _$ArchiveModelImpl _$$ArchiveModelImplFromJson(Map<String, dynamic> json) =>
       goodsTotal: json['food_total'] == null ? 0 : parseInt(json['food_total']),
       serviceAmount:
           json['service_amount'] == null ? 0 : parseInt(json['service_amount']),
-      goodsQuantity: (json['quantity'] as num?)?.toInt() ?? 0,
+      goodsQuantity: json['quantity'] == null ? 0 : parseInt(json['quantity']),
+      customerPaidAmount: json['customer_paid_amount'] == null
+          ? 0
+          : parseInt(json['customer_paid_amount']),
     );
 
 Map<String, dynamic> _$$ArchiveModelImplToJson(_$ArchiveModelImpl instance) =>
@@ -36,6 +39,7 @@ Map<String, dynamic> _$$ArchiveModelImplToJson(_$ArchiveModelImpl instance) =>
       'food_total': instance.goodsTotal,
       'service_amount': instance.serviceAmount,
       'quantity': instance.goodsQuantity,
+      'customer_paid_amount': instance.customerPaidAmount,
     };
 
 const _$OrderStatusEnumMap = {

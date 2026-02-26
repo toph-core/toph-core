@@ -6,14 +6,17 @@ import 'package:mary_ai_pos/core/constants/constants.dart';
 import 'package:mary_ai_pos/core/extension/color_extension.dart';
 import 'package:mary_ai_pos/core/extension/for_context.dart';
 import 'package:mary_ai_pos/core/extension/int_extension.dart';
+import 'package:mary_ai_pos/core/extension/number_formatter.dart';
 import 'package:mary_ai_pos/core/extension/widget_extension.dart';
 import 'package:mary_ai_pos/core/values/app_colors.dart';
+import 'package:mary_ai_pos/features/view/main/domain/entities/archive_detail_entity.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/payment/payment_bloc.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/payment/payment_screen_mixin.dart';
 import 'package:mary_ai_pos/gen/assets.gen.dart';
 
 class PaymentRightSideBar extends StatelessWidget with PaymentScreenMixin {
-  PaymentRightSideBar({super.key});
+  final ArchiveDetailEntity detail;
+  PaymentRightSideBar({super.key, required this.detail});
 
   @override
   Widget build(BuildContext context) {
@@ -32,7 +35,7 @@ class PaymentRightSideBar extends StatelessWidget with PaymentScreenMixin {
                 Text("Jami to'lov", style: context.textStyles.bodyMd),
                 8.hBox,
                 Text(
-                  "80 500",
+                  detail.grandTotal.formatN,
                   style: context.textStyles.bold24.copyWith(
                     fontWeight: FontWeight.w500,
                   ),
@@ -188,7 +191,9 @@ class PaymentRightSideBar extends StatelessWidget with PaymentScreenMixin {
                             ),
                             child: Center(
                               child: Text(
-                                "${state.enterSum} so'm",
+                                int.tryParse(state.enterSum) != null
+                                    ? int.parse(state.enterSum).formatN
+                                    : '',
                                 style: context.textStyles.bold20.copyWith(
                                   fontWeight: FontWeight.w500,
                                 ),
@@ -207,15 +212,30 @@ class PaymentRightSideBar extends StatelessWidget with PaymentScreenMixin {
                                 mainAxisSpacing: 8,
                                 mainAxisExtent: 70,
                               ),
-                          itemBuilder: (context, index) => DecoratedBox(
-                            decoration: BoxDecoration(
-                              color: context.colors.bgTritary,
-                              borderRadius: context.radius.buttonLg,
-                            ),
-                            child: Center(
-                              child: Text(
-                                keyboardKeys[index],
-                                style: context.textStyles.headingMd,
+                          itemBuilder: (context, index) => GestureDetector(
+                            onTap: () {
+                              context.read<PaymentBloc>().add(
+                                PaymentEvent.updateEnterSum(
+                                  symbol: keyboardKeys[index],
+                                ),
+                              );
+                            },
+                            child: DecoratedBox(
+                              decoration: BoxDecoration(
+                                color: index == 9
+                                    ? AppColors.ffDB2020.newWithOpacity(.1)
+                                    : context.colors.bgTritary,
+                                borderRadius: context.radius.buttonLg,
+                              ),
+                              child: Center(
+                                child: Text(
+                                  keyboardKeys[index],
+                                  style: context.textStyles.headingMd.copyWith(
+                                    color: index == 9
+                                        ? AppColors.ffDB2020
+                                        : null,
+                                  ),
+                                ),
                               ),
                             ),
                           ),
@@ -278,7 +298,7 @@ class PaymentRightSideBar extends StatelessWidget with PaymentScreenMixin {
                             ),
                             const Spacer(),
                             Text(
-                              "19 500 so'm",
+                              state.returnAmount.formatN,
                               style: context.textStyles.bold20.copyWith(
                                 color: AppColors.ff13AF1B,
                               ),
@@ -307,17 +327,26 @@ class PaymentRightSideBar extends StatelessWidget with PaymentScreenMixin {
                                 width: context.w,
                                 height: 56,
                                 child: CustomHoverEffectWidget(
-                                  onTap: () {},
+                                  onTap: () {
+                                    if (state.status != Status.LOADING) {
+                                      context.read<PaymentBloc>().add(const PaymentEvent.payment());
+                                    }
+                                  },
                                   bgColor: context.colors.bgBrand,
                                   borderRadius: context.radius.buttonLg,
                                   child: Center(
-                                    child: Text(
-                                      "Tasdiqlash",
-                                      style: context.textStyles.bold16.copyWith(
-                                        fontWeight: FontWeight.w500,
-                                        color: context.colors.textOnBrand,
-                                      ),
-                                    ),
+                                    child: state.status == Status.LOADING
+                                        ? const CircularProgressIndicator.adaptive()
+                                        : Text(
+                                            "Tasdiqlash",
+                                            style: context.textStyles.bold16
+                                                .copyWith(
+                                                  fontWeight: FontWeight.w500,
+                                                  color: context
+                                                      .colors
+                                                      .textOnBrand,
+                                                ),
+                                          ),
                                   ),
                                 ),
                               ),

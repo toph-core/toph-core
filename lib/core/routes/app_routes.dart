@@ -7,4 +7,5 @@ sealed class AppRoutes {
   static const String detailScreen = "detailScreen";
   static const String paymentScreen = "paymentScreen";
   static const String archiveScreen = "archiveScreen";
+  static const String closeShiftScreen = "closeShiftScreen";
 }

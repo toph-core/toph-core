@@ -4,10 +4,12 @@ import 'package:mary_ai_pos/core/service/minio/minio_service.dart';
 import 'package:mary_ai_pos/features/view/auth/domain/usecases/check_user_auth/check_user_data_usecase.dart';
 import 'package:mary_ai_pos/features/view/auth/domain/usecases/logout/logout_usecase.dart';
 import 'package:mary_ai_pos/features/view/main/domain/usecase/create_order_usecase.dart';
+import 'package:mary_ai_pos/features/view/main/domain/usecase/create_payment_usecase.dart';
 import 'package:mary_ai_pos/features/view/main/domain/usecase/get_archive_with_id_usecase.dart';
 import 'package:mary_ai_pos/features/view/main/domain/usecase/get_archives_usecase.dart';
 import 'package:mary_ai_pos/features/view/main/domain/usecase/get_categories_usecase.dart';
 import 'package:mary_ai_pos/features/view/main/domain/usecase/get_goods_by_category_id_usecase.dart';
+import 'package:mary_ai_pos/features/view/main/domain/usecase/get_payment_detail_with_table_id_usecase.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/archive/archive_bloc.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/counter/counter_cubit.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/create_order/create_order_bloc.dart';
@@ -87,6 +89,10 @@ void _useCase() {
   inject.registerLazySingleton(() => LogoutUsecase(inject()));
   inject.registerLazySingleton(() => CheckUserDataUsecase(inject()));
   inject.registerLazySingleton(() => CreateOrderUsecase(inject()));
+  inject.registerLazySingleton(() => CreatePaymentUsecase(inject()));
+  inject.registerLazySingleton(
+    () => GetPaymentDetailWithTableIdUsecase(inject()),
+  );
 }
 
 void _cubit() {
@@ -103,7 +109,17 @@ void _cubit() {
   inject.registerFactory(() => DetailCubit(inject(), inject()));
   inject.registerFactory(() => CreateOrderBloc(createOrderUsecase: inject()));
   inject.registerFactory(() => CounterCubit());
-  inject.registerFactory(() => ArchivesBloc(getArchivesUsecase: inject(),getArchiveWithIdUsecase: inject()));
+  inject.registerFactory(
+    () => ArchivesBloc(
+      getArchivesUsecase: inject(),
+      getArchiveWithIdUsecase: inject(),
+    ),
+  );
   inject.registerFactory(() => ArchiveBloc(getArchiveWithIdUsecase: inject()));
-  inject.registerFactory(() => PaymentBloc(getArchiveWithIdUsecase: inject()));
+  inject.registerFactory(
+    () => PaymentBloc(
+      getPaymentDetailWithTableIdUsecase: inject(),
+      createPaymentUsecase: inject(),
+    ),
+  );
 }

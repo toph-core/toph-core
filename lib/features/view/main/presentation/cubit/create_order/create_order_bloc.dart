@@ -17,7 +17,7 @@ class CreateOrderBloc extends Bloc<CreateOrderEvent, CreateOrderState> {
   late final CreateOrderUsecase _createOrderUsecase;
   //
   CreateOrderBloc({required CreateOrderUsecase createOrderUsecase})
-    : _createOrderUsecase = createOrderUsecase,
+    : _createOrderUsecase = createOrderUsecase, 
       super(const CreateOrderState()) {
     on<_Started>(_started);
     on<_CreateOrder>(_createOrder);

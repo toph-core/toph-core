@@ -8,9 +8,11 @@ class PaymentState with _$PaymentState {
     ArchiveDetailEntity? detail,
     @Default('') String tableId,
     TextEditingController? textController,
+    @Default('0') String discountAmount,
     @Default(PaymentType.cash) PaymentType paymentType,
-    @Default('') String enterSum,
+    @Default('0') String enterSum,
+    @Default(0) int returnAmount,
+    @Default(DiscountType.money) DiscountType discountType,
     Failure? failure,
   }) = _PaymentState;
-
 }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:mary_ai_pos/core/theme/tokens/theme_colors.dart';
 import 'package:mary_ai_pos/core/theme/tokens/theme_radius.dart';
 import 'package:mary_ai_pos/core/theme/tokens/theme_text_style.dart';
+import 'package:mary_ai_pos/core/values/app_colors.dart';
 
 class AppTheme {
   static ThemeData lightTheme = ThemeData(
@@ -126,7 +127,7 @@ class AppTheme {
     textDefault: Color(0xFF19160B),
     textButtonSecondary: Color(0xFF19160B),
     textSecondary: Color(0xFF888888),
-    textTertiary: Color(0xFFAAAAAA),
+    textTertiary: Color(0xFF7B7B7B),
     textOnBrand: Color(0xFFFFFFFF),
     textOnBrandDark: Color(0xFF09131A),
     emptyValueColor: Color(0xFFC9C9C9),
@@ -162,6 +163,9 @@ class AppTheme {
     extraPurple: Color(0xFF9470DC),
     extraCyan: Color(0xFF32AACF),
     extraOrange: Color(0xFFCF8506),
+
+    informationColor: Color(0xFFDF8A1B),
+    responseTextColor: Color(0xFF13AF1B)
   );
 
   /// Light text styles

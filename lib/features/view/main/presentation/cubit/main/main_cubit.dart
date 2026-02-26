@@ -26,6 +26,17 @@ class MainCubit extends Cubit<MainState> {
     );
   }
 
+  void updateTableStatus(String id, TableStatus status) {
+    if (state.tables != null) {
+      final index = state.tables!.indexWhere((v) => v.id == id);
+      if (index != -1) {
+        List<CafeTableModel> newTables = List.from(state.tables!);
+        newTables[index] = newTables[index].copyWith(status: status);
+        emit(state.copyWith(tables: newTables));
+      }
+    }
+  }
+
   Future<void> getHalls() async {
     emit(state.copyWith(status: Status.OTHER_LOADING));
     final result = await _getHallsUsecase.call(NoParams());

@@ -76,6 +76,7 @@ class _HallWidgetState extends State<HallWidget> {
                                             ShowTableGuestCount(
                                               tableNumber: table.number,
                                             ),
+                                        barrierDismissible: false,
                                       ).then((value) {
                                         if (value != null && value is int) {
                                           Future.delayed(
@@ -87,8 +88,7 @@ class _HallWidgetState extends State<HallWidget> {
                                                 "table": table,
                                                 "guest_count": value,
                                                 // "table_status": table.status
-                                                "table_status":
-                                                    table.status,
+                                                "table_status": table.status,
                                               },
                                             ),
                                           );

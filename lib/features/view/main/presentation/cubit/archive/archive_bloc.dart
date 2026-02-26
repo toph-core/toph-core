@@ -22,7 +22,6 @@ class ArchiveBloc extends Bloc<ArchiveEvent, ArchiveState> {
   }
 
   void _getArchive(_GetArchive event, emit) async {
-    print("get arhieve evetn ishg atushdi bu id ${event.id}");
     if (event.id != null) {
       emit(state.copyWith(status: Status.LOADING, archiveDetail: null));
       final response = await _getArchiveWithIdUsecase.call(event.id!);

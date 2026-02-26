@@ -8,7 +8,8 @@ import 'package:mary_ai_pos/features/view/main/data/models/hall/hall_model.dart'
 import 'package:mary_ai_pos/features/view/main/domain/entities/archive_detail_entity.dart';
 import 'package:mary_ai_pos/features/view/main/domain/entities/archives_filter_request_entity.dart';
 import 'package:mary_ai_pos/features/view/main/domain/entities/archives_response_entity.dart';
-import 'package:mary_ai_pos/features/view/main/domain/entities/pagination_request_entity.dart';
+
+import 'package:mary_ai_pos/features/view/main/domain/entities/payment_pay_request_entity.dart';
 
 abstract class MainRepository {
   Future<Either<Failure, List<CafeTableModel>>> getTablesByHallId(
@@ -27,4 +28,10 @@ abstract class MainRepository {
     ArchivesFilterRequestEntity request,
   );
   Future<Either<Failure, ArchiveDetailEntity>> getArchiveWithId(String id);
+  Future<Either<Failure, ArchiveDetailEntity>> getPaymentDetailWithTableId(
+    String id,
+  );
+  Future<Either<Failure, bool>> createPayment({
+    required PaymentPayRequestEntity request,
+  });
 }

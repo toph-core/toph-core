@@ -36,6 +36,8 @@ class ThemeColors extends ThemeExtension<ThemeColors> {
   final Color extraCyan;
   final Color extraOrange;
   final Color emptyValueColor;
+  final Color informationColor;
+  final Color responseTextColor;
 
   const ThemeColors({
     required this.textBrand,
@@ -72,6 +74,8 @@ class ThemeColors extends ThemeExtension<ThemeColors> {
     required this.extraCyan,
     required this.extraOrange,
     required this.emptyValueColor,
+    required this.informationColor,
+    required this.responseTextColor,
   });
 
   @override
@@ -145,7 +149,9 @@ class ThemeColors extends ThemeExtension<ThemeColors> {
       extraPurple: extraPurple ?? this.extraPurple,
       extraCyan: extraCyan ?? this.extraCyan,
       extraOrange: extraOrange ?? this.extraOrange,
-      emptyValueColor: emptyValueColor ?? this.emptyValueColor
+      emptyValueColor: emptyValueColor ?? this.emptyValueColor,
+      informationColor: informationColor,
+      responseTextColor: responseTextColor
     );
   }
 
@@ -213,7 +219,9 @@ class ThemeColors extends ThemeExtension<ThemeColors> {
       extraPurple: Color.lerp(extraPurple, other.extraPurple, t)!,
       extraCyan: Color.lerp(extraCyan, other.extraCyan, t)!,
       extraOrange: Color.lerp(extraOrange, other.extraOrange, t)!,
-      emptyValueColor: this.emptyValueColor
+      emptyValueColor: this.emptyValueColor,
+      informationColor: informationColor,
+      responseTextColor: responseTextColor
     );
   }
 }

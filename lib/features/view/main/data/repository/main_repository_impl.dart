@@ -9,7 +9,8 @@ import 'package:mary_ai_pos/features/view/main/data/models/hall/hall_model.dart'
 import 'package:mary_ai_pos/features/view/main/domain/entities/archive_detail_entity.dart';
 import 'package:mary_ai_pos/features/view/main/domain/entities/archives_filter_request_entity.dart';
 import 'package:mary_ai_pos/features/view/main/domain/entities/archives_response_entity.dart';
-import 'package:mary_ai_pos/features/view/main/domain/entities/pagination_request_entity.dart';
+
+import 'package:mary_ai_pos/features/view/main/domain/entities/payment_pay_request_entity.dart';
 import 'package:mary_ai_pos/features/view/main/domain/repository/main_repository.dart';
 
 class MainRepositoryImpl implements MainRepository {
@@ -57,4 +58,16 @@ class MainRepositoryImpl implements MainRepository {
   Future<Either<Failure, ArchiveDetailEntity>> getArchiveWithId(String id) {
     return _dataSources.getArchiveWithId(id);
   }
+
+  @override
+  Future<Either<Failure, ArchiveDetailEntity>> getPaymentDetailWithTableId(
+    String id,
+  ) {
+    return _dataSources.getPaymentDetailWithTableId(id);
+  }
+
+  @override
+  Future<Either<Failure, bool>> createPayment({
+    required PaymentPayRequestEntity request,
+  }) async => await _dataSources.createPayment(request: request);
 }

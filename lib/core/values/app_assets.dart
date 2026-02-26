@@ -15,9 +15,14 @@ class AppIcons {
   static const String icBell = 'assets/icons/ic_bell.svg';
   static const String icSearch = 'assets/icons/ic_search.svg';
   static const String icXMark = 'assets/icons/ic_x_mark.svg';
-
- 
-
+  static const String icCalendar = 'assets/icons/ic_calendar.svg';
+  static const String icCard = 'assets/icons/ic_card.svg';
+  static const String icCash = 'assets/icons/ic_cash.svg';
+  static const String icIosLeft = 'assets/icons/ic_ios_left.svg';
+  static const String icMinus = 'assets/icons/ic_minus.svg';
+  static const String icPlus = 'assets/icons/ic_plus.svg';
+  static const String icPrinter = 'assets/icons/ic_printer.svg';
+  static const String icQr = 'assets/icons/ic_qr.svg';
 
   //! Flags
   static const String icUzbek = 'assets/icons/ic_uzbek.svg';

@@ -129,6 +129,7 @@ class MainHeader extends StatelessWidget {
                 onTap: () {
                   showDialog(
                     context: context,
+                    barrierDismissible: false,
                     builder: (context) {
                       return const LogoutDialog(
                         routeName: AppRoutes.loginPinScreen,

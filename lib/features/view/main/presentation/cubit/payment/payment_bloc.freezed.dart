@@ -19,21 +19,33 @@ mixin _$PaymentEvent {
   @optionalTypeArgs
   TResult when<TResult extends Object?>({
     required TResult Function(String tableId) started,
+    required TResult Function(String symbol) updateEnterSum,
     required TResult Function() getDetail,
+    required TResult Function() payment,
+    required TResult Function(DiscountType dicountType) updateDiscountType,
+    required TResult Function(String amount) updateDiscountAmount,
     required TResult Function(PaymentType paymentType) updatePaymentType,
   }) =>
       throw _privateConstructorUsedError;
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
     TResult? Function(String tableId)? started,
+    TResult? Function(String symbol)? updateEnterSum,
     TResult? Function()? getDetail,
+    TResult? Function()? payment,
+    TResult? Function(DiscountType dicountType)? updateDiscountType,
+    TResult? Function(String amount)? updateDiscountAmount,
     TResult? Function(PaymentType paymentType)? updatePaymentType,
   }) =>
       throw _privateConstructorUsedError;
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
     TResult Function(String tableId)? started,
+    TResult Function(String symbol)? updateEnterSum,
     TResult Function()? getDetail,
+    TResult Function()? payment,
+    TResult Function(DiscountType dicountType)? updateDiscountType,
+    TResult Function(String amount)? updateDiscountAmount,
     TResult Function(PaymentType paymentType)? updatePaymentType,
     required TResult orElse(),
   }) =>
@@ -41,21 +53,33 @@ mixin _$PaymentEvent {
   @optionalTypeArgs
   TResult map<TResult extends Object?>({
     required TResult Function(_Started value) started,
+    required TResult Function(_UpdateEnterSum value) updateEnterSum,
     required TResult Function(_GetDetail value) getDetail,
+    required TResult Function(_Payment value) payment,
+    required TResult Function(_DiscountType value) updateDiscountType,
+    required TResult Function(_UpdateDiscountAmount value) updateDiscountAmount,
     required TResult Function(_UpdatePaymentType value) updatePaymentType,
   }) =>
       throw _privateConstructorUsedError;
   @optionalTypeArgs
   TResult? mapOrNull<TResult extends Object?>({
     TResult? Function(_Started value)? started,
+    TResult? Function(_UpdateEnterSum value)? updateEnterSum,
     TResult? Function(_GetDetail value)? getDetail,
+    TResult? Function(_Payment value)? payment,
+    TResult? Function(_DiscountType value)? updateDiscountType,
+    TResult? Function(_UpdateDiscountAmount value)? updateDiscountAmount,
     TResult? Function(_UpdatePaymentType value)? updatePaymentType,
   }) =>
       throw _privateConstructorUsedError;
   @optionalTypeArgs
   TResult maybeMap<TResult extends Object?>({
     TResult Function(_Started value)? started,
+    TResult Function(_UpdateEnterSum value)? updateEnterSum,
     TResult Function(_GetDetail value)? getDetail,
+    TResult Function(_Payment value)? payment,
+    TResult Function(_DiscountType value)? updateDiscountType,
+    TResult Function(_UpdateDiscountAmount value)? updateDiscountAmount,
     TResult Function(_UpdatePaymentType value)? updatePaymentType,
     required TResult orElse(),
   }) =>
@@ -145,7 +169,11 @@ class _$StartedImpl implements _Started {
   @optionalTypeArgs
   TResult when<TResult extends Object?>({
     required TResult Function(String tableId) started,
+    required TResult Function(String symbol) updateEnterSum,
     required TResult Function() getDetail,
+    required TResult Function() payment,
+    required TResult Function(DiscountType dicountType) updateDiscountType,
+    required TResult Function(String amount) updateDiscountAmount,
     required TResult Function(PaymentType paymentType) updatePaymentType,
   }) {
     return started(tableId);
@@ -155,7 +183,11 @@ class _$StartedImpl implements _Started {
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
     TResult? Function(String tableId)? started,
+    TResult? Function(String symbol)? updateEnterSum,
     TResult? Function()? getDetail,
+    TResult? Function()? payment,
+    TResult? Function(DiscountType dicountType)? updateDiscountType,
+    TResult? Function(String amount)? updateDiscountAmount,
     TResult? Function(PaymentType paymentType)? updatePaymentType,
   }) {
     return started?.call(tableId);
@@ -165,7 +197,11 @@ class _$StartedImpl implements _Started {
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
     TResult Function(String tableId)? started,
+    TResult Function(String symbol)? updateEnterSum,
     TResult Function()? getDetail,
+    TResult Function()? payment,
+    TResult Function(DiscountType dicountType)? updateDiscountType,
+    TResult Function(String amount)? updateDiscountAmount,
     TResult Function(PaymentType paymentType)? updatePaymentType,
     required TResult orElse(),
   }) {
@@ -179,7 +215,11 @@ class _$StartedImpl implements _Started {
   @optionalTypeArgs
   TResult map<TResult extends Object?>({
     required TResult Function(_Started value) started,
+    required TResult Function(_UpdateEnterSum value) updateEnterSum,
     required TResult Function(_GetDetail value) getDetail,
+    required TResult Function(_Payment value) payment,
+    required TResult Function(_DiscountType value) updateDiscountType,
+    required TResult Function(_UpdateDiscountAmount value) updateDiscountAmount,
     required TResult Function(_UpdatePaymentType value) updatePaymentType,
   }) {
     return started(this);
@@ -189,7 +229,11 @@ class _$StartedImpl implements _Started {
   @optionalTypeArgs
   TResult? mapOrNull<TResult extends Object?>({
     TResult? Function(_Started value)? started,
+    TResult? Function(_UpdateEnterSum value)? updateEnterSum,
     TResult? Function(_GetDetail value)? getDetail,
+    TResult? Function(_Payment value)? payment,
+    TResult? Function(_DiscountType value)? updateDiscountType,
+    TResult? Function(_UpdateDiscountAmount value)? updateDiscountAmount,
     TResult? Function(_UpdatePaymentType value)? updatePaymentType,
   }) {
     return started?.call(this);
@@ -199,7 +243,11 @@ class _$StartedImpl implements _Started {
   @optionalTypeArgs
   TResult maybeMap<TResult extends Object?>({
     TResult Function(_Started value)? started,
+    TResult Function(_UpdateEnterSum value)? updateEnterSum,
     TResult Function(_GetDetail value)? getDetail,
+    TResult Function(_Payment value)? payment,
+    TResult Function(_DiscountType value)? updateDiscountType,
+    TResult Function(_UpdateDiscountAmount value)? updateDiscountAmount,
     TResult Function(_UpdatePaymentType value)? updatePaymentType,
     required TResult orElse(),
   }) {
@@ -216,6 +264,171 @@ abstract class _Started implements PaymentEvent {
   String get tableId;
   @JsonKey(ignore: true)
   _$$StartedImplCopyWith<_$StartedImpl> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class _$$UpdateEnterSumImplCopyWith<$Res> {
+  factory _$$UpdateEnterSumImplCopyWith(_$UpdateEnterSumImpl value,
+          $Res Function(_$UpdateEnterSumImpl) then) =
+      __$$UpdateEnterSumImplCopyWithImpl<$Res>;
+  @useResult
+  $Res call({String symbol});
+}
+
+/// @nodoc
+class __$$UpdateEnterSumImplCopyWithImpl<$Res>
+    extends _$PaymentEventCopyWithImpl<$Res, _$UpdateEnterSumImpl>
+    implements _$$UpdateEnterSumImplCopyWith<$Res> {
+  __$$UpdateEnterSumImplCopyWithImpl(
+      _$UpdateEnterSumImpl _value, $Res Function(_$UpdateEnterSumImpl) _then)
+      : super(_value, _then);
+
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? symbol = null,
+  }) {
+    return _then(_$UpdateEnterSumImpl(
+      symbol: null == symbol
+          ? _value.symbol
+          : symbol // ignore: cast_nullable_to_non_nullable
+              as String,
+    ));
+  }
+}
+
+/// @nodoc
+
+class _$UpdateEnterSumImpl implements _UpdateEnterSum {
+  const _$UpdateEnterSumImpl({required this.symbol});
+
+  @override
+  final String symbol;
+
+  @override
+  String toString() {
+    return 'PaymentEvent.updateEnterSum(symbol: $symbol)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$UpdateEnterSumImpl &&
+            (identical(other.symbol, symbol) || other.symbol == symbol));
+  }
+
+  @override
+  int get hashCode => Object.hash(runtimeType, symbol);
+
+  @JsonKey(ignore: true)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$UpdateEnterSumImplCopyWith<_$UpdateEnterSumImpl> get copyWith =>
+      __$$UpdateEnterSumImplCopyWithImpl<_$UpdateEnterSumImpl>(
+          this, _$identity);
+
+  @override
+  @optionalTypeArgs
+  TResult when<TResult extends Object?>({
+    required TResult Function(String tableId) started,
+    required TResult Function(String symbol) updateEnterSum,
+    required TResult Function() getDetail,
+    required TResult Function() payment,
+    required TResult Function(DiscountType dicountType) updateDiscountType,
+    required TResult Function(String amount) updateDiscountAmount,
+    required TResult Function(PaymentType paymentType) updatePaymentType,
+  }) {
+    return updateEnterSum(symbol);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult? whenOrNull<TResult extends Object?>({
+    TResult? Function(String tableId)? started,
+    TResult? Function(String symbol)? updateEnterSum,
+    TResult? Function()? getDetail,
+    TResult? Function()? payment,
+    TResult? Function(DiscountType dicountType)? updateDiscountType,
+    TResult? Function(String amount)? updateDiscountAmount,
+    TResult? Function(PaymentType paymentType)? updatePaymentType,
+  }) {
+    return updateEnterSum?.call(symbol);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult maybeWhen<TResult extends Object?>({
+    TResult Function(String tableId)? started,
+    TResult Function(String symbol)? updateEnterSum,
+    TResult Function()? getDetail,
+    TResult Function()? payment,
+    TResult Function(DiscountType dicountType)? updateDiscountType,
+    TResult Function(String amount)? updateDiscountAmount,
+    TResult Function(PaymentType paymentType)? updatePaymentType,
+    required TResult orElse(),
+  }) {
+    if (updateEnterSum != null) {
+      return updateEnterSum(symbol);
+    }
+    return orElse();
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult map<TResult extends Object?>({
+    required TResult Function(_Started value) started,
+    required TResult Function(_UpdateEnterSum value) updateEnterSum,
+    required TResult Function(_GetDetail value) getDetail,
+    required TResult Function(_Payment value) payment,
+    required TResult Function(_DiscountType value) updateDiscountType,
+    required TResult Function(_UpdateDiscountAmount value) updateDiscountAmount,
+    required TResult Function(_UpdatePaymentType value) updatePaymentType,
+  }) {
+    return updateEnterSum(this);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult? mapOrNull<TResult extends Object?>({
+    TResult? Function(_Started value)? started,
+    TResult? Function(_UpdateEnterSum value)? updateEnterSum,
+    TResult? Function(_GetDetail value)? getDetail,
+    TResult? Function(_Payment value)? payment,
+    TResult? Function(_DiscountType value)? updateDiscountType,
+    TResult? Function(_UpdateDiscountAmount value)? updateDiscountAmount,
+    TResult? Function(_UpdatePaymentType value)? updatePaymentType,
+  }) {
+    return updateEnterSum?.call(this);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult maybeMap<TResult extends Object?>({
+    TResult Function(_Started value)? started,
+    TResult Function(_UpdateEnterSum value)? updateEnterSum,
+    TResult Function(_GetDetail value)? getDetail,
+    TResult Function(_Payment value)? payment,
+    TResult Function(_DiscountType value)? updateDiscountType,
+    TResult Function(_UpdateDiscountAmount value)? updateDiscountAmount,
+    TResult Function(_UpdatePaymentType value)? updatePaymentType,
+    required TResult orElse(),
+  }) {
+    if (updateEnterSum != null) {
+      return updateEnterSum(this);
+    }
+    return orElse();
+  }
+}
+
+abstract class _UpdateEnterSum implements PaymentEvent {
+  const factory _UpdateEnterSum({required final String symbol}) =
+      _$UpdateEnterSumImpl;
+
+  String get symbol;
+  @JsonKey(ignore: true)
+  _$$UpdateEnterSumImplCopyWith<_$UpdateEnterSumImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }
 
@@ -258,7 +471,11 @@ class _$GetDetailImpl implements _GetDetail {
   @optionalTypeArgs
   TResult when<TResult extends Object?>({
     required TResult Function(String tableId) started,
+    required TResult Function(String symbol) updateEnterSum,
     required TResult Function() getDetail,
+    required TResult Function() payment,
+    required TResult Function(DiscountType dicountType) updateDiscountType,
+    required TResult Function(String amount) updateDiscountAmount,
     required TResult Function(PaymentType paymentType) updatePaymentType,
   }) {
     return getDetail();
@@ -268,7 +485,11 @@ class _$GetDetailImpl implements _GetDetail {
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
     TResult? Function(String tableId)? started,
+    TResult? Function(String symbol)? updateEnterSum,
     TResult? Function()? getDetail,
+    TResult? Function()? payment,
+    TResult? Function(DiscountType dicountType)? updateDiscountType,
+    TResult? Function(String amount)? updateDiscountAmount,
     TResult? Function(PaymentType paymentType)? updatePaymentType,
   }) {
     return getDetail?.call();
@@ -278,7 +499,11 @@ class _$GetDetailImpl implements _GetDetail {
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
     TResult Function(String tableId)? started,
+    TResult Function(String symbol)? updateEnterSum,
     TResult Function()? getDetail,
+    TResult Function()? payment,
+    TResult Function(DiscountType dicountType)? updateDiscountType,
+    TResult Function(String amount)? updateDiscountAmount,
     TResult Function(PaymentType paymentType)? updatePaymentType,
     required TResult orElse(),
   }) {
@@ -292,7 +517,11 @@ class _$GetDetailImpl implements _GetDetail {
   @optionalTypeArgs
   TResult map<TResult extends Object?>({
     required TResult Function(_Started value) started,
+    required TResult Function(_UpdateEnterSum value) updateEnterSum,
     required TResult Function(_GetDetail value) getDetail,
+    required TResult Function(_Payment value) payment,
+    required TResult Function(_DiscountType value) updateDiscountType,
+    required TResult Function(_UpdateDiscountAmount value) updateDiscountAmount,
     required TResult Function(_UpdatePaymentType value) updatePaymentType,
   }) {
     return getDetail(this);
@@ -302,7 +531,11 @@ class _$GetDetailImpl implements _GetDetail {
   @optionalTypeArgs
   TResult? mapOrNull<TResult extends Object?>({
     TResult? Function(_Started value)? started,
+    TResult? Function(_UpdateEnterSum value)? updateEnterSum,
     TResult? Function(_GetDetail value)? getDetail,
+    TResult? Function(_Payment value)? payment,
+    TResult? Function(_DiscountType value)? updateDiscountType,
+    TResult? Function(_UpdateDiscountAmount value)? updateDiscountAmount,
     TResult? Function(_UpdatePaymentType value)? updatePaymentType,
   }) {
     return getDetail?.call(this);
@@ -312,7 +545,11 @@ class _$GetDetailImpl implements _GetDetail {
   @optionalTypeArgs
   TResult maybeMap<TResult extends Object?>({
     TResult Function(_Started value)? started,
+    TResult Function(_UpdateEnterSum value)? updateEnterSum,
     TResult Function(_GetDetail value)? getDetail,
+    TResult Function(_Payment value)? payment,
+    TResult Function(_DiscountType value)? updateDiscountType,
+    TResult Function(_UpdateDiscountAmount value)? updateDiscountAmount,
     TResult Function(_UpdatePaymentType value)? updatePaymentType,
     required TResult orElse(),
   }) {
@@ -325,6 +562,469 @@ class _$GetDetailImpl implements _GetDetail {
 
 abstract class _GetDetail implements PaymentEvent {
   const factory _GetDetail() = _$GetDetailImpl;
+}
+
+/// @nodoc
+abstract class _$$PaymentImplCopyWith<$Res> {
+  factory _$$PaymentImplCopyWith(
+          _$PaymentImpl value, $Res Function(_$PaymentImpl) then) =
+      __$$PaymentImplCopyWithImpl<$Res>;
+}
+
+/// @nodoc
+class __$$PaymentImplCopyWithImpl<$Res>
+    extends _$PaymentEventCopyWithImpl<$Res, _$PaymentImpl>
+    implements _$$PaymentImplCopyWith<$Res> {
+  __$$PaymentImplCopyWithImpl(
+      _$PaymentImpl _value, $Res Function(_$PaymentImpl) _then)
+      : super(_value, _then);
+}
+
+/// @nodoc
+
+class _$PaymentImpl implements _Payment {
+  const _$PaymentImpl();
+
+  @override
+  String toString() {
+    return 'PaymentEvent.payment()';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType && other is _$PaymentImpl);
+  }
+
+  @override
+  int get hashCode => runtimeType.hashCode;
+
+  @override
+  @optionalTypeArgs
+  TResult when<TResult extends Object?>({
+    required TResult Function(String tableId) started,
+    required TResult Function(String symbol) updateEnterSum,
+    required TResult Function() getDetail,
+    required TResult Function() payment,
+    required TResult Function(DiscountType dicountType) updateDiscountType,
+    required TResult Function(String amount) updateDiscountAmount,
+    required TResult Function(PaymentType paymentType) updatePaymentType,
+  }) {
+    return payment();
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult? whenOrNull<TResult extends Object?>({
+    TResult? Function(String tableId)? started,
+    TResult? Function(String symbol)? updateEnterSum,
+    TResult? Function()? getDetail,
+    TResult? Function()? payment,
+    TResult? Function(DiscountType dicountType)? updateDiscountType,
+    TResult? Function(String amount)? updateDiscountAmount,
+    TResult? Function(PaymentType paymentType)? updatePaymentType,
+  }) {
+    return payment?.call();
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult maybeWhen<TResult extends Object?>({
+    TResult Function(String tableId)? started,
+    TResult Function(String symbol)? updateEnterSum,
+    TResult Function()? getDetail,
+    TResult Function()? payment,
+    TResult Function(DiscountType dicountType)? updateDiscountType,
+    TResult Function(String amount)? updateDiscountAmount,
+    TResult Function(PaymentType paymentType)? updatePaymentType,
+    required TResult orElse(),
+  }) {
+    if (payment != null) {
+      return payment();
+    }
+    return orElse();
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult map<TResult extends Object?>({
+    required TResult Function(_Started value) started,
+    required TResult Function(_UpdateEnterSum value) updateEnterSum,
+    required TResult Function(_GetDetail value) getDetail,
+    required TResult Function(_Payment value) payment,
+    required TResult Function(_DiscountType value) updateDiscountType,
+    required TResult Function(_UpdateDiscountAmount value) updateDiscountAmount,
+    required TResult Function(_UpdatePaymentType value) updatePaymentType,
+  }) {
+    return payment(this);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult? mapOrNull<TResult extends Object?>({
+    TResult? Function(_Started value)? started,
+    TResult? Function(_UpdateEnterSum value)? updateEnterSum,
+    TResult? Function(_GetDetail value)? getDetail,
+    TResult? Function(_Payment value)? payment,
+    TResult? Function(_DiscountType value)? updateDiscountType,
+    TResult? Function(_UpdateDiscountAmount value)? updateDiscountAmount,
+    TResult? Function(_UpdatePaymentType value)? updatePaymentType,
+  }) {
+    return payment?.call(this);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult maybeMap<TResult extends Object?>({
+    TResult Function(_Started value)? started,
+    TResult Function(_UpdateEnterSum value)? updateEnterSum,
+    TResult Function(_GetDetail value)? getDetail,
+    TResult Function(_Payment value)? payment,
+    TResult Function(_DiscountType value)? updateDiscountType,
+    TResult Function(_UpdateDiscountAmount value)? updateDiscountAmount,
+    TResult Function(_UpdatePaymentType value)? updatePaymentType,
+    required TResult orElse(),
+  }) {
+    if (payment != null) {
+      return payment(this);
+    }
+    return orElse();
+  }
+}
+
+abstract class _Payment implements PaymentEvent {
+  const factory _Payment() = _$PaymentImpl;
+}
+
+/// @nodoc
+abstract class _$$DiscountTypeImplCopyWith<$Res> {
+  factory _$$DiscountTypeImplCopyWith(
+          _$DiscountTypeImpl value, $Res Function(_$DiscountTypeImpl) then) =
+      __$$DiscountTypeImplCopyWithImpl<$Res>;
+  @useResult
+  $Res call({DiscountType dicountType});
+}
+
+/// @nodoc
+class __$$DiscountTypeImplCopyWithImpl<$Res>
+    extends _$PaymentEventCopyWithImpl<$Res, _$DiscountTypeImpl>
+    implements _$$DiscountTypeImplCopyWith<$Res> {
+  __$$DiscountTypeImplCopyWithImpl(
+      _$DiscountTypeImpl _value, $Res Function(_$DiscountTypeImpl) _then)
+      : super(_value, _then);
+
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? dicountType = null,
+  }) {
+    return _then(_$DiscountTypeImpl(
+      dicountType: null == dicountType
+          ? _value.dicountType
+          : dicountType // ignore: cast_nullable_to_non_nullable
+              as DiscountType,
+    ));
+  }
+}
+
+/// @nodoc
+
+class _$DiscountTypeImpl implements _DiscountType {
+  const _$DiscountTypeImpl({required this.dicountType});
+
+  @override
+  final DiscountType dicountType;
+
+  @override
+  String toString() {
+    return 'PaymentEvent.updateDiscountType(dicountType: $dicountType)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$DiscountTypeImpl &&
+            (identical(other.dicountType, dicountType) ||
+                other.dicountType == dicountType));
+  }
+
+  @override
+  int get hashCode => Object.hash(runtimeType, dicountType);
+
+  @JsonKey(ignore: true)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$DiscountTypeImplCopyWith<_$DiscountTypeImpl> get copyWith =>
+      __$$DiscountTypeImplCopyWithImpl<_$DiscountTypeImpl>(this, _$identity);
+
+  @override
+  @optionalTypeArgs
+  TResult when<TResult extends Object?>({
+    required TResult Function(String tableId) started,
+    required TResult Function(String symbol) updateEnterSum,
+    required TResult Function() getDetail,
+    required TResult Function() payment,
+    required TResult Function(DiscountType dicountType) updateDiscountType,
+    required TResult Function(String amount) updateDiscountAmount,
+    required TResult Function(PaymentType paymentType) updatePaymentType,
+  }) {
+    return updateDiscountType(dicountType);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult? whenOrNull<TResult extends Object?>({
+    TResult? Function(String tableId)? started,
+    TResult? Function(String symbol)? updateEnterSum,
+    TResult? Function()? getDetail,
+    TResult? Function()? payment,
+    TResult? Function(DiscountType dicountType)? updateDiscountType,
+    TResult? Function(String amount)? updateDiscountAmount,
+    TResult? Function(PaymentType paymentType)? updatePaymentType,
+  }) {
+    return updateDiscountType?.call(dicountType);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult maybeWhen<TResult extends Object?>({
+    TResult Function(String tableId)? started,
+    TResult Function(String symbol)? updateEnterSum,
+    TResult Function()? getDetail,
+    TResult Function()? payment,
+    TResult Function(DiscountType dicountType)? updateDiscountType,
+    TResult Function(String amount)? updateDiscountAmount,
+    TResult Function(PaymentType paymentType)? updatePaymentType,
+    required TResult orElse(),
+  }) {
+    if (updateDiscountType != null) {
+      return updateDiscountType(dicountType);
+    }
+    return orElse();
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult map<TResult extends Object?>({
+    required TResult Function(_Started value) started,
+    required TResult Function(_UpdateEnterSum value) updateEnterSum,
+    required TResult Function(_GetDetail value) getDetail,
+    required TResult Function(_Payment value) payment,
+    required TResult Function(_DiscountType value) updateDiscountType,
+    required TResult Function(_UpdateDiscountAmount value) updateDiscountAmount,
+    required TResult Function(_UpdatePaymentType value) updatePaymentType,
+  }) {
+    return updateDiscountType(this);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult? mapOrNull<TResult extends Object?>({
+    TResult? Function(_Started value)? started,
+    TResult? Function(_UpdateEnterSum value)? updateEnterSum,
+    TResult? Function(_GetDetail value)? getDetail,
+    TResult? Function(_Payment value)? payment,
+    TResult? Function(_DiscountType value)? updateDiscountType,
+    TResult? Function(_UpdateDiscountAmount value)? updateDiscountAmount,
+    TResult? Function(_UpdatePaymentType value)? updatePaymentType,
+  }) {
+    return updateDiscountType?.call(this);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult maybeMap<TResult extends Object?>({
+    TResult Function(_Started value)? started,
+    TResult Function(_UpdateEnterSum value)? updateEnterSum,
+    TResult Function(_GetDetail value)? getDetail,
+    TResult Function(_Payment value)? payment,
+    TResult Function(_DiscountType value)? updateDiscountType,
+    TResult Function(_UpdateDiscountAmount value)? updateDiscountAmount,
+    TResult Function(_UpdatePaymentType value)? updatePaymentType,
+    required TResult orElse(),
+  }) {
+    if (updateDiscountType != null) {
+      return updateDiscountType(this);
+    }
+    return orElse();
+  }
+}
+
+abstract class _DiscountType implements PaymentEvent {
+  const factory _DiscountType({required final DiscountType dicountType}) =
+      _$DiscountTypeImpl;
+
+  DiscountType get dicountType;
+  @JsonKey(ignore: true)
+  _$$DiscountTypeImplCopyWith<_$DiscountTypeImpl> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class _$$UpdateDiscountAmountImplCopyWith<$Res> {
+  factory _$$UpdateDiscountAmountImplCopyWith(_$UpdateDiscountAmountImpl value,
+          $Res Function(_$UpdateDiscountAmountImpl) then) =
+      __$$UpdateDiscountAmountImplCopyWithImpl<$Res>;
+  @useResult
+  $Res call({String amount});
+}
+
+/// @nodoc
+class __$$UpdateDiscountAmountImplCopyWithImpl<$Res>
+    extends _$PaymentEventCopyWithImpl<$Res, _$UpdateDiscountAmountImpl>
+    implements _$$UpdateDiscountAmountImplCopyWith<$Res> {
+  __$$UpdateDiscountAmountImplCopyWithImpl(_$UpdateDiscountAmountImpl _value,
+      $Res Function(_$UpdateDiscountAmountImpl) _then)
+      : super(_value, _then);
+
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? amount = null,
+  }) {
+    return _then(_$UpdateDiscountAmountImpl(
+      amount: null == amount
+          ? _value.amount
+          : amount // ignore: cast_nullable_to_non_nullable
+              as String,
+    ));
+  }
+}
+
+/// @nodoc
+
+class _$UpdateDiscountAmountImpl implements _UpdateDiscountAmount {
+  const _$UpdateDiscountAmountImpl({required this.amount});
+
+  @override
+  final String amount;
+
+  @override
+  String toString() {
+    return 'PaymentEvent.updateDiscountAmount(amount: $amount)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$UpdateDiscountAmountImpl &&
+            (identical(other.amount, amount) || other.amount == amount));
+  }
+
+  @override
+  int get hashCode => Object.hash(runtimeType, amount);
+
+  @JsonKey(ignore: true)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$UpdateDiscountAmountImplCopyWith<_$UpdateDiscountAmountImpl>
+      get copyWith =>
+          __$$UpdateDiscountAmountImplCopyWithImpl<_$UpdateDiscountAmountImpl>(
+              this, _$identity);
+
+  @override
+  @optionalTypeArgs
+  TResult when<TResult extends Object?>({
+    required TResult Function(String tableId) started,
+    required TResult Function(String symbol) updateEnterSum,
+    required TResult Function() getDetail,
+    required TResult Function() payment,
+    required TResult Function(DiscountType dicountType) updateDiscountType,
+    required TResult Function(String amount) updateDiscountAmount,
+    required TResult Function(PaymentType paymentType) updatePaymentType,
+  }) {
+    return updateDiscountAmount(amount);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult? whenOrNull<TResult extends Object?>({
+    TResult? Function(String tableId)? started,
+    TResult? Function(String symbol)? updateEnterSum,
+    TResult? Function()? getDetail,
+    TResult? Function()? payment,
+    TResult? Function(DiscountType dicountType)? updateDiscountType,
+    TResult? Function(String amount)? updateDiscountAmount,
+    TResult? Function(PaymentType paymentType)? updatePaymentType,
+  }) {
+    return updateDiscountAmount?.call(amount);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult maybeWhen<TResult extends Object?>({
+    TResult Function(String tableId)? started,
+    TResult Function(String symbol)? updateEnterSum,
+    TResult Function()? getDetail,
+    TResult Function()? payment,
+    TResult Function(DiscountType dicountType)? updateDiscountType,
+    TResult Function(String amount)? updateDiscountAmount,
+    TResult Function(PaymentType paymentType)? updatePaymentType,
+    required TResult orElse(),
+  }) {
+    if (updateDiscountAmount != null) {
+      return updateDiscountAmount(amount);
+    }
+    return orElse();
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult map<TResult extends Object?>({
+    required TResult Function(_Started value) started,
+    required TResult Function(_UpdateEnterSum value) updateEnterSum,
+    required TResult Function(_GetDetail value) getDetail,
+    required TResult Function(_Payment value) payment,
+    required TResult Function(_DiscountType value) updateDiscountType,
+    required TResult Function(_UpdateDiscountAmount value) updateDiscountAmount,
+    required TResult Function(_UpdatePaymentType value) updatePaymentType,
+  }) {
+    return updateDiscountAmount(this);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult? mapOrNull<TResult extends Object?>({
+    TResult? Function(_Started value)? started,
+    TResult? Function(_UpdateEnterSum value)? updateEnterSum,
+    TResult? Function(_GetDetail value)? getDetail,
+    TResult? Function(_Payment value)? payment,
+    TResult? Function(_DiscountType value)? updateDiscountType,
+    TResult? Function(_UpdateDiscountAmount value)? updateDiscountAmount,
+    TResult? Function(_UpdatePaymentType value)? updatePaymentType,
+  }) {
+    return updateDiscountAmount?.call(this);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult maybeMap<TResult extends Object?>({
+    TResult Function(_Started value)? started,
+    TResult Function(_UpdateEnterSum value)? updateEnterSum,
+    TResult Function(_GetDetail value)? getDetail,
+    TResult Function(_Payment value)? payment,
+    TResult Function(_DiscountType value)? updateDiscountType,
+    TResult Function(_UpdateDiscountAmount value)? updateDiscountAmount,
+    TResult Function(_UpdatePaymentType value)? updatePaymentType,
+    required TResult orElse(),
+  }) {
+    if (updateDiscountAmount != null) {
+      return updateDiscountAmount(this);
+    }
+    return orElse();
+  }
+}
+
+abstract class _UpdateDiscountAmount implements PaymentEvent {
+  const factory _UpdateDiscountAmount({required final String amount}) =
+      _$UpdateDiscountAmountImpl;
+
+  String get amount;
+  @JsonKey(ignore: true)
+  _$$UpdateDiscountAmountImplCopyWith<_$UpdateDiscountAmountImpl>
+      get copyWith => throw _privateConstructorUsedError;
 }
 
 /// @nodoc
@@ -394,7 +1094,11 @@ class _$UpdatePaymentTypeImpl implements _UpdatePaymentType {
   @optionalTypeArgs
   TResult when<TResult extends Object?>({
     required TResult Function(String tableId) started,
+    required TResult Function(String symbol) updateEnterSum,
     required TResult Function() getDetail,
+    required TResult Function() payment,
+    required TResult Function(DiscountType dicountType) updateDiscountType,
+    required TResult Function(String amount) updateDiscountAmount,
     required TResult Function(PaymentType paymentType) updatePaymentType,
   }) {
     return updatePaymentType(paymentType);
@@ -404,7 +1108,11 @@ class _$UpdatePaymentTypeImpl implements _UpdatePaymentType {
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
     TResult? Function(String tableId)? started,
+    TResult? Function(String symbol)? updateEnterSum,
     TResult? Function()? getDetail,
+    TResult? Function()? payment,
+    TResult? Function(DiscountType dicountType)? updateDiscountType,
+    TResult? Function(String amount)? updateDiscountAmount,
     TResult? Function(PaymentType paymentType)? updatePaymentType,
   }) {
     return updatePaymentType?.call(paymentType);
@@ -414,7 +1122,11 @@ class _$UpdatePaymentTypeImpl implements _UpdatePaymentType {
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
     TResult Function(String tableId)? started,
+    TResult Function(String symbol)? updateEnterSum,
     TResult Function()? getDetail,
+    TResult Function()? payment,
+    TResult Function(DiscountType dicountType)? updateDiscountType,
+    TResult Function(String amount)? updateDiscountAmount,
     TResult Function(PaymentType paymentType)? updatePaymentType,
     required TResult orElse(),
   }) {
@@ -428,7 +1140,11 @@ class _$UpdatePaymentTypeImpl implements _UpdatePaymentType {
   @optionalTypeArgs
   TResult map<TResult extends Object?>({
     required TResult Function(_Started value) started,
+    required TResult Function(_UpdateEnterSum value) updateEnterSum,
     required TResult Function(_GetDetail value) getDetail,
+    required TResult Function(_Payment value) payment,
+    required TResult Function(_DiscountType value) updateDiscountType,
+    required TResult Function(_UpdateDiscountAmount value) updateDiscountAmount,
     required TResult Function(_UpdatePaymentType value) updatePaymentType,
   }) {
     return updatePaymentType(this);
@@ -438,7 +1154,11 @@ class _$UpdatePaymentTypeImpl implements _UpdatePaymentType {
   @optionalTypeArgs
   TResult? mapOrNull<TResult extends Object?>({
     TResult? Function(_Started value)? started,
+    TResult? Function(_UpdateEnterSum value)? updateEnterSum,
     TResult? Function(_GetDetail value)? getDetail,
+    TResult? Function(_Payment value)? payment,
+    TResult? Function(_DiscountType value)? updateDiscountType,
+    TResult? Function(_UpdateDiscountAmount value)? updateDiscountAmount,
     TResult? Function(_UpdatePaymentType value)? updatePaymentType,
   }) {
     return updatePaymentType?.call(this);
@@ -448,7 +1168,11 @@ class _$UpdatePaymentTypeImpl implements _UpdatePaymentType {
   @optionalTypeArgs
   TResult maybeMap<TResult extends Object?>({
     TResult Function(_Started value)? started,
+    TResult Function(_UpdateEnterSum value)? updateEnterSum,
     TResult Function(_GetDetail value)? getDetail,
+    TResult Function(_Payment value)? payment,
+    TResult Function(_DiscountType value)? updateDiscountType,
+    TResult Function(_UpdateDiscountAmount value)? updateDiscountAmount,
     TResult Function(_UpdatePaymentType value)? updatePaymentType,
     required TResult orElse(),
   }) {
@@ -477,8 +1201,11 @@ mixin _$PaymentState {
   String get tableId => throw _privateConstructorUsedError;
   TextEditingController? get textController =>
       throw _privateConstructorUsedError;
+  String get discountAmount => throw _privateConstructorUsedError;
   PaymentType get paymentType => throw _privateConstructorUsedError;
   String get enterSum => throw _privateConstructorUsedError;
+  int get returnAmount => throw _privateConstructorUsedError;
+  DiscountType get discountType => throw _privateConstructorUsedError;
   Failure? get failure => throw _privateConstructorUsedError;
 
   @JsonKey(ignore: true)
@@ -498,8 +1225,11 @@ abstract class $PaymentStateCopyWith<$Res> {
       ArchiveDetailEntity? detail,
       String tableId,
       TextEditingController? textController,
+      String discountAmount,
       PaymentType paymentType,
       String enterSum,
+      int returnAmount,
+      DiscountType discountType,
       Failure? failure});
 }
 
@@ -521,8 +1251,11 @@ class _$PaymentStateCopyWithImpl<$Res, $Val extends PaymentState>
     Object? detail = freezed,
     Object? tableId = null,
     Object? textController = freezed,
+    Object? discountAmount = null,
     Object? paymentType = null,
     Object? enterSum = null,
+    Object? returnAmount = null,
+    Object? discountType = null,
     Object? failure = freezed,
   }) {
     return _then(_value.copyWith(
@@ -546,6 +1279,10 @@ class _$PaymentStateCopyWithImpl<$Res, $Val extends PaymentState>
           ? _value.textController
           : textController // ignore: cast_nullable_to_non_nullable
               as TextEditingController?,
+      discountAmount: null == discountAmount
+          ? _value.discountAmount
+          : discountAmount // ignore: cast_nullable_to_non_nullable
+              as String,
       paymentType: null == paymentType
           ? _value.paymentType
           : paymentType // ignore: cast_nullable_to_non_nullable
@@ -554,6 +1291,14 @@ class _$PaymentStateCopyWithImpl<$Res, $Val extends PaymentState>
           ? _value.enterSum
           : enterSum // ignore: cast_nullable_to_non_nullable
               as String,
+      returnAmount: null == returnAmount
+          ? _value.returnAmount
+          : returnAmount // ignore: cast_nullable_to_non_nullable
+              as int,
+      discountType: null == discountType
+          ? _value.discountType
+          : discountType // ignore: cast_nullable_to_non_nullable
+              as DiscountType,
       failure: freezed == failure
           ? _value.failure
           : failure // ignore: cast_nullable_to_non_nullable
@@ -576,8 +1321,11 @@ abstract class _$$PaymentStateImplCopyWith<$Res>
       ArchiveDetailEntity? detail,
       String tableId,
       TextEditingController? textController,
+      String discountAmount,
       PaymentType paymentType,
       String enterSum,
+      int returnAmount,
+      DiscountType discountType,
       Failure? failure});
 }
 
@@ -597,8 +1345,11 @@ class __$$PaymentStateImplCopyWithImpl<$Res>
     Object? detail = freezed,
     Object? tableId = null,
     Object? textController = freezed,
+    Object? discountAmount = null,
     Object? paymentType = null,
     Object? enterSum = null,
+    Object? returnAmount = null,
+    Object? discountType = null,
     Object? failure = freezed,
   }) {
     return _then(_$PaymentStateImpl(
@@ -622,6 +1373,10 @@ class __$$PaymentStateImplCopyWithImpl<$Res>
           ? _value.textController
           : textController // ignore: cast_nullable_to_non_nullable
               as TextEditingController?,
+      discountAmount: null == discountAmount
+          ? _value.discountAmount
+          : discountAmount // ignore: cast_nullable_to_non_nullable
+              as String,
       paymentType: null == paymentType
           ? _value.paymentType
           : paymentType // ignore: cast_nullable_to_non_nullable
@@ -630,6 +1385,14 @@ class __$$PaymentStateImplCopyWithImpl<$Res>
           ? _value.enterSum
           : enterSum // ignore: cast_nullable_to_non_nullable
               as String,
+      returnAmount: null == returnAmount
+          ? _value.returnAmount
+          : returnAmount // ignore: cast_nullable_to_non_nullable
+              as int,
+      discountType: null == discountType
+          ? _value.discountType
+          : discountType // ignore: cast_nullable_to_non_nullable
+              as DiscountType,
       failure: freezed == failure
           ? _value.failure
           : failure // ignore: cast_nullable_to_non_nullable
@@ -647,8 +1410,11 @@ class _$PaymentStateImpl implements _PaymentState {
       this.detail,
       this.tableId = '',
       this.textController,
+      this.discountAmount = '0',
       this.paymentType = PaymentType.cash,
-      this.enterSum = '',
+      this.enterSum = '0',
+      this.returnAmount = 0,
+      this.discountType = DiscountType.money,
       this.failure});
 
   @override
@@ -666,16 +1432,25 @@ class _$PaymentStateImpl implements _PaymentState {
   final TextEditingController? textController;
   @override
   @JsonKey()
+  final String discountAmount;
+  @override
+  @JsonKey()
   final PaymentType paymentType;
   @override
   @JsonKey()
   final String enterSum;
   @override
+  @JsonKey()
+  final int returnAmount;
+  @override
+  @JsonKey()
+  final DiscountType discountType;
+  @override
   final Failure? failure;
 
   @override
   String toString() {
-    return 'PaymentState(status: $status, detailStatus: $detailStatus, detail: $detail, tableId: $tableId, textController: $textController, paymentType: $paymentType, enterSum: $enterSum, failure: $failure)';
+    return 'PaymentState(status: $status, detailStatus: $detailStatus, detail: $detail, tableId: $tableId, textController: $textController, discountAmount: $discountAmount, paymentType: $paymentType, enterSum: $enterSum, returnAmount: $returnAmount, discountType: $discountType, failure: $failure)';
   }
 
   @override
@@ -690,16 +1465,33 @@ class _$PaymentStateImpl implements _PaymentState {
             (identical(other.tableId, tableId) || other.tableId == tableId) &&
             (identical(other.textController, textController) ||
                 other.textController == textController) &&
+            (identical(other.discountAmount, discountAmount) ||
+                other.discountAmount == discountAmount) &&
             (identical(other.paymentType, paymentType) ||
                 other.paymentType == paymentType) &&
             (identical(other.enterSum, enterSum) ||
                 other.enterSum == enterSum) &&
+            (identical(other.returnAmount, returnAmount) ||
+                other.returnAmount == returnAmount) &&
+            (identical(other.discountType, discountType) ||
+                other.discountType == discountType) &&
             (identical(other.failure, failure) || other.failure == failure));
   }
 
   @override
-  int get hashCode => Object.hash(runtimeType, status, detailStatus, detail,
-      tableId, textController, paymentType, enterSum, failure);
+  int get hashCode => Object.hash(
+      runtimeType,
+      status,
+      detailStatus,
+      detail,
+      tableId,
+      textController,
+      discountAmount,
+      paymentType,
+      enterSum,
+      returnAmount,
+      discountType,
+      failure);
 
   @JsonKey(ignore: true)
   @override
@@ -715,8 +1507,11 @@ abstract class _PaymentState implements PaymentState {
       final ArchiveDetailEntity? detail,
       final String tableId,
       final TextEditingController? textController,
+      final String discountAmount,
       final PaymentType paymentType,
       final String enterSum,
+      final int returnAmount,
+      final DiscountType discountType,
       final Failure? failure}) = _$PaymentStateImpl;
 
   @override
@@ -730,9 +1525,15 @@ abstract class _PaymentState implements PaymentState {
   @override
   TextEditingController? get textController;
   @override
+  String get discountAmount;
+  @override
   PaymentType get paymentType;
   @override
   String get enterSum;
+  @override
+  int get returnAmount;
+  @override
+  DiscountType get discountType;
   @override
   Failure? get failure;
   @override

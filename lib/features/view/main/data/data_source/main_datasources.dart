@@ -15,7 +15,8 @@ import 'package:mary_ai_pos/features/view/main/data/models/hall/hall_model.dart'
 import 'package:mary_ai_pos/features/view/main/domain/entities/archive_detail_entity.dart';
 import 'package:mary_ai_pos/features/view/main/domain/entities/archives_filter_request_entity.dart';
 import 'package:mary_ai_pos/features/view/main/domain/entities/archives_response_entity.dart';
-import 'package:mary_ai_pos/features/view/main/domain/entities/pagination_request_entity.dart';
+
+import 'package:mary_ai_pos/features/view/main/domain/entities/payment_pay_request_entity.dart';
 
 abstract class MainDataSources {
   Future<Either<Failure, List<CafeTableModel>>> getTablesByHallId(
@@ -31,9 +32,19 @@ abstract class MainDataSources {
   );
   Future<Either<Failure, ArchiveDetailEntity>> getArchiveWithId(String id);
 
+  Future<Either<Failure, ArchiveDetailEntity>> getPaymentDetailWithTableId(
+    String id,
+  );
+
+  Future<Either<Failure, bool>> createPayment({
+    required PaymentPayRequestEntity request,
+  });
+
   Future<Either<Failure, bool>> createOrder({
     required CreateOrderRequestModel request,
   });
+
+  Future<String> getOrderIdWithTableId({required String tableId});
 }
 
 class MainDataSourcesImpl implements MainDataSources {
@@ -42,15 +53,49 @@ class MainDataSourcesImpl implements MainDataSources {
   MainDataSourcesImpl(this._client);
 
   @override
+  Future<String> getOrderIdWithTableId({required String tableId}) async {
+    try {
+      final orders = await _client.dio.get(ListAPI.orderWithTableId(tableId));
+      return orders.data['data'][0]['id'] ?? '';
+    } catch (e) {
+      return '';
+    }
+  }
+
+  @override
+  Future<Either<Failure, bool>> createPayment({
+    required PaymentPayRequestEntity request,
+  }) async {
+    try {
+      await _client.post(ListAPI.payToOrder(request.orderId),data: request.request());
+      return const Right(true);
+    } on DioException catch (exception) {
+      return Left(handleDioException(exception));
+    } on FormatException catch (e, st) {
+      if (kDebugMode) print('ParsingError: $e\n$st');
+      return const Left(ParsingFailure());
+    } on TypeError catch (e, st) {
+      if (kDebugMode) print('ParsingError: $e\n$st');
+      return const Left(ParsingFailure());
+    } on String catch (e) {
+      return Left(MessageFailure(e));
+    } catch (e, st) {
+      if (kDebugMode) print('Unknown error: $e\n$st');
+      return const Left(UnknownFailure());
+    }
+  }
+
+  @override
   Future<Either<Failure, bool>> createOrder({
     required CreateOrderRequestModel request,
   }) async {
     try {
       if (request.tableStatus == TableStatus.busy) {
-        final orders = await _client.dio.get(ListAPI.orders);
         Map<String, dynamic> requestJson = request.request();
-        requestJson['order_id'] = orders.data['data'][0]['id'];
-        if (orders.data['data'] is List && orders.data['data'].isNotEmpty) {
+        requestJson['order_id'] = await getOrderIdWithTableId(
+          tableId: request.tableId,
+        );
+        if (requestJson['order_id'] != null) {
           await _client.dio.post(ListAPI.createOrderItems, data: requestJson);
         }
       } else if (request.tableStatus == TableStatus.away) {
@@ -152,7 +197,32 @@ class MainDataSourcesImpl implements MainDataSources {
     }
   }
 
-  //
+  @override
+  Future<Either<Failure, ArchiveDetailEntity>> getPaymentDetailWithTableId(
+    String id,
+  ) async {
+    try {
+      final orderId = await getOrderIdWithTableId(tableId: id);
+      if (orderId.isEmpty) {
+        throw "To'lov ma'lumotlarini olishda xatolik yuzaga keldi";
+      }
+      final response = await _client.dio.get(ListAPI.archiveWithId(orderId));
+      return Right(ArchiveDetailModel.fromJson(response.data['data']));
+    } on DioException catch (exception) {
+      return Left(handleDioException(exception));
+    } on FormatException catch (e, st) {
+      if (kDebugMode) print('ParsingError: $e\n$st');
+      return const Left(ParsingFailure());
+    } on TypeError catch (e, st) {
+      if (kDebugMode) print('ParsingError: $e\n$st');
+      return const Left(ParsingFailure());
+    } on String catch (e) {
+      return Left(MessageFailure(e));
+    } catch (e, st) {
+      if (kDebugMode) print('Unknown error: $e\n$st');
+      return const Left(UnknownFailure());
+    }
+  }
 
   @override
   Future<Either<Failure, List<GoodsModel>>> getGoodsByCategoryId(

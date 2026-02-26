@@ -23,14 +23,44 @@ mixin _$ArchiveDetailModel {
   String get id => throw _privateConstructorUsedError;
   @JsonKey(name: 'bill_no')
   int get bilNumber => throw _privateConstructorUsedError;
-  @JsonKey(name: "bill_status")
+  @JsonKey(name: 'bill_status')
   OrderStatus get status => throw _privateConstructorUsedError;
-  @JsonKey(name: "opened_at")
+  @JsonKey(name: 'opened_at')
   DateTime? get opened => throw _privateConstructorUsedError;
+  @JsonKey(name: 'payment_type')
+  String get paymentType => throw _privateConstructorUsedError;
   @JsonKey(name: 'table_id')
   String get tableId => throw _privateConstructorUsedError;
   @JsonKey(name: 'table_number')
   int get tableNumber => throw _privateConstructorUsedError;
+  @JsonKey(name: 'hall_name')
+  String get hallName => throw _privateConstructorUsedError;
+  @JsonKey(name: 'cashier_id')
+  String get cashierId => throw _privateConstructorUsedError;
+  @JsonKey(name: 'cashier_name')
+  String get cashierName => throw _privateConstructorUsedError;
+  @JsonKey(name: 'guest_count')
+  int get guestCount => throw _privateConstructorUsedError;
+  @JsonKey(name: 'food_cost', fromJson: _parseInt)
+  int get foodCost => throw _privateConstructorUsedError;
+  @JsonKey(name: 'food_total', fromJson: _parseInt)
+  int get foodTotal => throw _privateConstructorUsedError;
+  @JsonKey(name: 'service_percent', fromJson: _parseInt)
+  int get servicePercent => throw _privateConstructorUsedError;
+  @JsonKey(name: 'service_amount', fromJson: _parseInt)
+  int get serviceAmount => throw _privateConstructorUsedError;
+  @JsonKey(name: 'discount_percent', fromJson: _parseInt)
+  int get discountPercent => throw _privateConstructorUsedError;
+  @JsonKey(name: 'discount_amount', fromJson: _parseInt)
+  int get discountAmount => throw _privateConstructorUsedError;
+  @JsonKey(name: 'grand_total', fromJson: _parseInt)
+  int get grandTotal => throw _privateConstructorUsedError;
+  @JsonKey(name: 'customer_paid_amount', fromJson: _parseInt)
+  int get customerPaidAmount => throw _privateConstructorUsedError;
+  @JsonKey(name: 'change_amount', fromJson: _parseInt)
+  int get changeAmount => throw _privateConstructorUsedError;
+  @JsonKey(name: 'comment')
+  String get comment => throw _privateConstructorUsedError;
   @JsonKey(name: "items")
   @OrderFoodEntityListConverter()
   List<OrderFoodEntity> get goods => throw _privateConstructorUsedError;
@@ -50,10 +80,27 @@ abstract class $ArchiveDetailModelCopyWith<$Res> {
   $Res call(
       {String id,
       @JsonKey(name: 'bill_no') int bilNumber,
-      @JsonKey(name: "bill_status") OrderStatus status,
-      @JsonKey(name: "opened_at") DateTime? opened,
+      @JsonKey(name: 'bill_status') OrderStatus status,
+      @JsonKey(name: 'opened_at') DateTime? opened,
+      @JsonKey(name: 'payment_type') String paymentType,
       @JsonKey(name: 'table_id') String tableId,
       @JsonKey(name: 'table_number') int tableNumber,
+      @JsonKey(name: 'hall_name') String hallName,
+      @JsonKey(name: 'cashier_id') String cashierId,
+      @JsonKey(name: 'cashier_name') String cashierName,
+      @JsonKey(name: 'guest_count') int guestCount,
+      @JsonKey(name: 'food_cost', fromJson: _parseInt) int foodCost,
+      @JsonKey(name: 'food_total', fromJson: _parseInt) int foodTotal,
+      @JsonKey(name: 'service_percent', fromJson: _parseInt) int servicePercent,
+      @JsonKey(name: 'service_amount', fromJson: _parseInt) int serviceAmount,
+      @JsonKey(name: 'discount_percent', fromJson: _parseInt)
+      int discountPercent,
+      @JsonKey(name: 'discount_amount', fromJson: _parseInt) int discountAmount,
+      @JsonKey(name: 'grand_total', fromJson: _parseInt) int grandTotal,
+      @JsonKey(name: 'customer_paid_amount', fromJson: _parseInt)
+      int customerPaidAmount,
+      @JsonKey(name: 'change_amount', fromJson: _parseInt) int changeAmount,
+      @JsonKey(name: 'comment') String comment,
       @JsonKey(name: "items")
       @OrderFoodEntityListConverter()
       List<OrderFoodEntity> goods});
@@ -76,8 +123,23 @@ class _$ArchiveDetailModelCopyWithImpl<$Res, $Val extends ArchiveDetailModel>
     Object? bilNumber = null,
     Object? status = null,
     Object? opened = freezed,
+    Object? paymentType = null,
     Object? tableId = null,
     Object? tableNumber = null,
+    Object? hallName = null,
+    Object? cashierId = null,
+    Object? cashierName = null,
+    Object? guestCount = null,
+    Object? foodCost = null,
+    Object? foodTotal = null,
+    Object? servicePercent = null,
+    Object? serviceAmount = null,
+    Object? discountPercent = null,
+    Object? discountAmount = null,
+    Object? grandTotal = null,
+    Object? customerPaidAmount = null,
+    Object? changeAmount = null,
+    Object? comment = null,
     Object? goods = null,
   }) {
     return _then(_value.copyWith(
@@ -97,6 +159,10 @@ class _$ArchiveDetailModelCopyWithImpl<$Res, $Val extends ArchiveDetailModel>
           ? _value.opened
           : opened // ignore: cast_nullable_to_non_nullable
               as DateTime?,
+      paymentType: null == paymentType
+          ? _value.paymentType
+          : paymentType // ignore: cast_nullable_to_non_nullable
+              as String,
       tableId: null == tableId
           ? _value.tableId
           : tableId // ignore: cast_nullable_to_non_nullable
@@ -105,6 +171,62 @@ class _$ArchiveDetailModelCopyWithImpl<$Res, $Val extends ArchiveDetailModel>
           ? _value.tableNumber
           : tableNumber // ignore: cast_nullable_to_non_nullable
               as int,
+      hallName: null == hallName
+          ? _value.hallName
+          : hallName // ignore: cast_nullable_to_non_nullable
+              as String,
+      cashierId: null == cashierId
+          ? _value.cashierId
+          : cashierId // ignore: cast_nullable_to_non_nullable
+              as String,
+      cashierName: null == cashierName
+          ? _value.cashierName
+          : cashierName // ignore: cast_nullable_to_non_nullable
+              as String,
+      guestCount: null == guestCount
+          ? _value.guestCount
+          : guestCount // ignore: cast_nullable_to_non_nullable
+              as int,
+      foodCost: null == foodCost
+          ? _value.foodCost
+          : foodCost // ignore: cast_nullable_to_non_nullable
+              as int,
+      foodTotal: null == foodTotal
+          ? _value.foodTotal
+          : foodTotal // ignore: cast_nullable_to_non_nullable
+              as int,
+      servicePercent: null == servicePercent
+          ? _value.servicePercent
+          : servicePercent // ignore: cast_nullable_to_non_nullable
+              as int,
+      serviceAmount: null == serviceAmount
+          ? _value.serviceAmount
+          : serviceAmount // ignore: cast_nullable_to_non_nullable
+              as int,
+      discountPercent: null == discountPercent
+          ? _value.discountPercent
+          : discountPercent // ignore: cast_nullable_to_non_nullable
+              as int,
+      discountAmount: null == discountAmount
+          ? _value.discountAmount
+          : discountAmount // ignore: cast_nullable_to_non_nullable
+              as int,
+      grandTotal: null == grandTotal
+          ? _value.grandTotal
+          : grandTotal // ignore: cast_nullable_to_non_nullable
+              as int,
+      customerPaidAmount: null == customerPaidAmount
+          ? _value.customerPaidAmount
+          : customerPaidAmount // ignore: cast_nullable_to_non_nullable
+              as int,
+      changeAmount: null == changeAmount
+          ? _value.changeAmount
+          : changeAmount // ignore: cast_nullable_to_non_nullable
+              as int,
+      comment: null == comment
+          ? _value.comment
+          : comment // ignore: cast_nullable_to_non_nullable
+              as String,
       goods: null == goods
           ? _value.goods
           : goods // ignore: cast_nullable_to_non_nullable
@@ -124,10 +246,27 @@ abstract class _$$ArchiveDetailModelImplCopyWith<$Res>
   $Res call(
       {String id,
       @JsonKey(name: 'bill_no') int bilNumber,
-      @JsonKey(name: "bill_status") OrderStatus status,
-      @JsonKey(name: "opened_at") DateTime? opened,
+      @JsonKey(name: 'bill_status') OrderStatus status,
+      @JsonKey(name: 'opened_at') DateTime? opened,
+      @JsonKey(name: 'payment_type') String paymentType,
       @JsonKey(name: 'table_id') String tableId,
       @JsonKey(name: 'table_number') int tableNumber,
+      @JsonKey(name: 'hall_name') String hallName,
+      @JsonKey(name: 'cashier_id') String cashierId,
+      @JsonKey(name: 'cashier_name') String cashierName,
+      @JsonKey(name: 'guest_count') int guestCount,
+      @JsonKey(name: 'food_cost', fromJson: _parseInt) int foodCost,
+      @JsonKey(name: 'food_total', fromJson: _parseInt) int foodTotal,
+      @JsonKey(name: 'service_percent', fromJson: _parseInt) int servicePercent,
+      @JsonKey(name: 'service_amount', fromJson: _parseInt) int serviceAmount,
+      @JsonKey(name: 'discount_percent', fromJson: _parseInt)
+      int discountPercent,
+      @JsonKey(name: 'discount_amount', fromJson: _parseInt) int discountAmount,
+      @JsonKey(name: 'grand_total', fromJson: _parseInt) int grandTotal,
+      @JsonKey(name: 'customer_paid_amount', fromJson: _parseInt)
+      int customerPaidAmount,
+      @JsonKey(name: 'change_amount', fromJson: _parseInt) int changeAmount,
+      @JsonKey(name: 'comment') String comment,
       @JsonKey(name: "items")
       @OrderFoodEntityListConverter()
       List<OrderFoodEntity> goods});
@@ -148,8 +287,23 @@ class __$$ArchiveDetailModelImplCopyWithImpl<$Res>
     Object? bilNumber = null,
     Object? status = null,
     Object? opened = freezed,
+    Object? paymentType = null,
     Object? tableId = null,
     Object? tableNumber = null,
+    Object? hallName = null,
+    Object? cashierId = null,
+    Object? cashierName = null,
+    Object? guestCount = null,
+    Object? foodCost = null,
+    Object? foodTotal = null,
+    Object? servicePercent = null,
+    Object? serviceAmount = null,
+    Object? discountPercent = null,
+    Object? discountAmount = null,
+    Object? grandTotal = null,
+    Object? customerPaidAmount = null,
+    Object? changeAmount = null,
+    Object? comment = null,
     Object? goods = null,
   }) {
     return _then(_$ArchiveDetailModelImpl(
@@ -169,6 +323,10 @@ class __$$ArchiveDetailModelImplCopyWithImpl<$Res>
           ? _value.opened
           : opened // ignore: cast_nullable_to_non_nullable
               as DateTime?,
+      paymentType: null == paymentType
+          ? _value.paymentType
+          : paymentType // ignore: cast_nullable_to_non_nullable
+              as String,
       tableId: null == tableId
           ? _value.tableId
           : tableId // ignore: cast_nullable_to_non_nullable
@@ -177,6 +335,62 @@ class __$$ArchiveDetailModelImplCopyWithImpl<$Res>
           ? _value.tableNumber
           : tableNumber // ignore: cast_nullable_to_non_nullable
               as int,
+      hallName: null == hallName
+          ? _value.hallName
+          : hallName // ignore: cast_nullable_to_non_nullable
+              as String,
+      cashierId: null == cashierId
+          ? _value.cashierId
+          : cashierId // ignore: cast_nullable_to_non_nullable
+              as String,
+      cashierName: null == cashierName
+          ? _value.cashierName
+          : cashierName // ignore: cast_nullable_to_non_nullable
+              as String,
+      guestCount: null == guestCount
+          ? _value.guestCount
+          : guestCount // ignore: cast_nullable_to_non_nullable
+              as int,
+      foodCost: null == foodCost
+          ? _value.foodCost
+          : foodCost // ignore: cast_nullable_to_non_nullable
+              as int,
+      foodTotal: null == foodTotal
+          ? _value.foodTotal
+          : foodTotal // ignore: cast_nullable_to_non_nullable
+              as int,
+      servicePercent: null == servicePercent
+          ? _value.servicePercent
+          : servicePercent // ignore: cast_nullable_to_non_nullable
+              as int,
+      serviceAmount: null == serviceAmount
+          ? _value.serviceAmount
+          : serviceAmount // ignore: cast_nullable_to_non_nullable
+              as int,
+      discountPercent: null == discountPercent
+          ? _value.discountPercent
+          : discountPercent // ignore: cast_nullable_to_non_nullable
+              as int,
+      discountAmount: null == discountAmount
+          ? _value.discountAmount
+          : discountAmount // ignore: cast_nullable_to_non_nullable
+              as int,
+      grandTotal: null == grandTotal
+          ? _value.grandTotal
+          : grandTotal // ignore: cast_nullable_to_non_nullable
+              as int,
+      customerPaidAmount: null == customerPaidAmount
+          ? _value.customerPaidAmount
+          : customerPaidAmount // ignore: cast_nullable_to_non_nullable
+              as int,
+      changeAmount: null == changeAmount
+          ? _value.changeAmount
+          : changeAmount // ignore: cast_nullable_to_non_nullable
+              as int,
+      comment: null == comment
+          ? _value.comment
+          : comment // ignore: cast_nullable_to_non_nullable
+              as String,
       goods: null == goods
           ? _value._goods
           : goods // ignore: cast_nullable_to_non_nullable
@@ -191,10 +405,31 @@ class _$ArchiveDetailModelImpl extends _ArchiveDetailModel {
   const _$ArchiveDetailModelImpl(
       {this.id = '',
       @JsonKey(name: 'bill_no') this.bilNumber = 0,
-      @JsonKey(name: "bill_status") this.status = OrderStatus.none,
-      @JsonKey(name: "opened_at") this.opened,
+      @JsonKey(name: 'bill_status') this.status = OrderStatus.none,
+      @JsonKey(name: 'opened_at') this.opened,
+      @JsonKey(name: 'payment_type') this.paymentType = '',
       @JsonKey(name: 'table_id') this.tableId = '',
       @JsonKey(name: 'table_number') this.tableNumber = 0,
+      @JsonKey(name: 'hall_name') this.hallName = '',
+      @JsonKey(name: 'cashier_id') this.cashierId = '',
+      @JsonKey(name: 'cashier_name') this.cashierName = '',
+      @JsonKey(name: 'guest_count') this.guestCount = 0,
+      @JsonKey(name: 'food_cost', fromJson: _parseInt) this.foodCost = 0,
+      @JsonKey(name: 'food_total', fromJson: _parseInt) this.foodTotal = 0,
+      @JsonKey(name: 'service_percent', fromJson: _parseInt)
+      this.servicePercent = 0,
+      @JsonKey(name: 'service_amount', fromJson: _parseInt)
+      this.serviceAmount = 0,
+      @JsonKey(name: 'discount_percent', fromJson: _parseInt)
+      this.discountPercent = 0,
+      @JsonKey(name: 'discount_amount', fromJson: _parseInt)
+      this.discountAmount = 0,
+      @JsonKey(name: 'grand_total', fromJson: _parseInt) this.grandTotal = 0,
+      @JsonKey(name: 'customer_paid_amount', fromJson: _parseInt)
+      this.customerPaidAmount = 0,
+      @JsonKey(name: 'change_amount', fromJson: _parseInt)
+      this.changeAmount = 0,
+      @JsonKey(name: 'comment') this.comment = '',
       @JsonKey(name: "items")
       @OrderFoodEntityListConverter()
       final List<OrderFoodEntity> goods = const []})
@@ -211,17 +446,62 @@ class _$ArchiveDetailModelImpl extends _ArchiveDetailModel {
   @JsonKey(name: 'bill_no')
   final int bilNumber;
   @override
-  @JsonKey(name: "bill_status")
+  @JsonKey(name: 'bill_status')
   final OrderStatus status;
   @override
-  @JsonKey(name: "opened_at")
+  @JsonKey(name: 'opened_at')
   final DateTime? opened;
+  @override
+  @JsonKey(name: 'payment_type')
+  final String paymentType;
   @override
   @JsonKey(name: 'table_id')
   final String tableId;
   @override
   @JsonKey(name: 'table_number')
   final int tableNumber;
+  @override
+  @JsonKey(name: 'hall_name')
+  final String hallName;
+  @override
+  @JsonKey(name: 'cashier_id')
+  final String cashierId;
+  @override
+  @JsonKey(name: 'cashier_name')
+  final String cashierName;
+  @override
+  @JsonKey(name: 'guest_count')
+  final int guestCount;
+  @override
+  @JsonKey(name: 'food_cost', fromJson: _parseInt)
+  final int foodCost;
+  @override
+  @JsonKey(name: 'food_total', fromJson: _parseInt)
+  final int foodTotal;
+  @override
+  @JsonKey(name: 'service_percent', fromJson: _parseInt)
+  final int servicePercent;
+  @override
+  @JsonKey(name: 'service_amount', fromJson: _parseInt)
+  final int serviceAmount;
+  @override
+  @JsonKey(name: 'discount_percent', fromJson: _parseInt)
+  final int discountPercent;
+  @override
+  @JsonKey(name: 'discount_amount', fromJson: _parseInt)
+  final int discountAmount;
+  @override
+  @JsonKey(name: 'grand_total', fromJson: _parseInt)
+  final int grandTotal;
+  @override
+  @JsonKey(name: 'customer_paid_amount', fromJson: _parseInt)
+  final int customerPaidAmount;
+  @override
+  @JsonKey(name: 'change_amount', fromJson: _parseInt)
+  final int changeAmount;
+  @override
+  @JsonKey(name: 'comment')
+  final String comment;
   final List<OrderFoodEntity> _goods;
   @override
   @JsonKey(name: "items")
@@ -234,7 +514,7 @@ class _$ArchiveDetailModelImpl extends _ArchiveDetailModel {
 
   @override
   String toString() {
-    return 'ArchiveDetailModel(id: $id, bilNumber: $bilNumber, status: $status, opened: $opened, tableId: $tableId, tableNumber: $tableNumber, goods: $goods)';
+    return 'ArchiveDetailModel(id: $id, bilNumber: $bilNumber, status: $status, opened: $opened, paymentType: $paymentType, tableId: $tableId, tableNumber: $tableNumber, hallName: $hallName, cashierId: $cashierId, cashierName: $cashierName, guestCount: $guestCount, foodCost: $foodCost, foodTotal: $foodTotal, servicePercent: $servicePercent, serviceAmount: $serviceAmount, discountPercent: $discountPercent, discountAmount: $discountAmount, grandTotal: $grandTotal, customerPaidAmount: $customerPaidAmount, changeAmount: $changeAmount, comment: $comment, goods: $goods)';
   }
 
   @override
@@ -247,16 +527,68 @@ class _$ArchiveDetailModelImpl extends _ArchiveDetailModel {
                 other.bilNumber == bilNumber) &&
             (identical(other.status, status) || other.status == status) &&
             (identical(other.opened, opened) || other.opened == opened) &&
+            (identical(other.paymentType, paymentType) ||
+                other.paymentType == paymentType) &&
             (identical(other.tableId, tableId) || other.tableId == tableId) &&
             (identical(other.tableNumber, tableNumber) ||
                 other.tableNumber == tableNumber) &&
+            (identical(other.hallName, hallName) ||
+                other.hallName == hallName) &&
+            (identical(other.cashierId, cashierId) ||
+                other.cashierId == cashierId) &&
+            (identical(other.cashierName, cashierName) ||
+                other.cashierName == cashierName) &&
+            (identical(other.guestCount, guestCount) ||
+                other.guestCount == guestCount) &&
+            (identical(other.foodCost, foodCost) ||
+                other.foodCost == foodCost) &&
+            (identical(other.foodTotal, foodTotal) ||
+                other.foodTotal == foodTotal) &&
+            (identical(other.servicePercent, servicePercent) ||
+                other.servicePercent == servicePercent) &&
+            (identical(other.serviceAmount, serviceAmount) ||
+                other.serviceAmount == serviceAmount) &&
+            (identical(other.discountPercent, discountPercent) ||
+                other.discountPercent == discountPercent) &&
+            (identical(other.discountAmount, discountAmount) ||
+                other.discountAmount == discountAmount) &&
+            (identical(other.grandTotal, grandTotal) ||
+                other.grandTotal == grandTotal) &&
+            (identical(other.customerPaidAmount, customerPaidAmount) ||
+                other.customerPaidAmount == customerPaidAmount) &&
+            (identical(other.changeAmount, changeAmount) ||
+                other.changeAmount == changeAmount) &&
+            (identical(other.comment, comment) || other.comment == comment) &&
             const DeepCollectionEquality().equals(other._goods, _goods));
   }
 
   @JsonKey(ignore: true)
   @override
-  int get hashCode => Object.hash(runtimeType, id, bilNumber, status, opened,
-      tableId, tableNumber, const DeepCollectionEquality().hash(_goods));
+  int get hashCode => Object.hashAll([
+        runtimeType,
+        id,
+        bilNumber,
+        status,
+        opened,
+        paymentType,
+        tableId,
+        tableNumber,
+        hallName,
+        cashierId,
+        cashierName,
+        guestCount,
+        foodCost,
+        foodTotal,
+        servicePercent,
+        serviceAmount,
+        discountPercent,
+        discountAmount,
+        grandTotal,
+        customerPaidAmount,
+        changeAmount,
+        comment,
+        const DeepCollectionEquality().hash(_goods)
+      ]);
 
   @JsonKey(ignore: true)
   @override
@@ -277,10 +609,31 @@ abstract class _ArchiveDetailModel extends ArchiveDetailModel {
   const factory _ArchiveDetailModel(
       {final String id,
       @JsonKey(name: 'bill_no') final int bilNumber,
-      @JsonKey(name: "bill_status") final OrderStatus status,
-      @JsonKey(name: "opened_at") final DateTime? opened,
+      @JsonKey(name: 'bill_status') final OrderStatus status,
+      @JsonKey(name: 'opened_at') final DateTime? opened,
+      @JsonKey(name: 'payment_type') final String paymentType,
       @JsonKey(name: 'table_id') final String tableId,
       @JsonKey(name: 'table_number') final int tableNumber,
+      @JsonKey(name: 'hall_name') final String hallName,
+      @JsonKey(name: 'cashier_id') final String cashierId,
+      @JsonKey(name: 'cashier_name') final String cashierName,
+      @JsonKey(name: 'guest_count') final int guestCount,
+      @JsonKey(name: 'food_cost', fromJson: _parseInt) final int foodCost,
+      @JsonKey(name: 'food_total', fromJson: _parseInt) final int foodTotal,
+      @JsonKey(name: 'service_percent', fromJson: _parseInt)
+      final int servicePercent,
+      @JsonKey(name: 'service_amount', fromJson: _parseInt)
+      final int serviceAmount,
+      @JsonKey(name: 'discount_percent', fromJson: _parseInt)
+      final int discountPercent,
+      @JsonKey(name: 'discount_amount', fromJson: _parseInt)
+      final int discountAmount,
+      @JsonKey(name: 'grand_total', fromJson: _parseInt) final int grandTotal,
+      @JsonKey(name: 'customer_paid_amount', fromJson: _parseInt)
+      final int customerPaidAmount,
+      @JsonKey(name: 'change_amount', fromJson: _parseInt)
+      final int changeAmount,
+      @JsonKey(name: 'comment') final String comment,
       @JsonKey(name: "items")
       @OrderFoodEntityListConverter()
       final List<OrderFoodEntity> goods}) = _$ArchiveDetailModelImpl;
@@ -295,17 +648,62 @@ abstract class _ArchiveDetailModel extends ArchiveDetailModel {
   @JsonKey(name: 'bill_no')
   int get bilNumber;
   @override
-  @JsonKey(name: "bill_status")
+  @JsonKey(name: 'bill_status')
   OrderStatus get status;
   @override
-  @JsonKey(name: "opened_at")
+  @JsonKey(name: 'opened_at')
   DateTime? get opened;
+  @override
+  @JsonKey(name: 'payment_type')
+  String get paymentType;
   @override
   @JsonKey(name: 'table_id')
   String get tableId;
   @override
   @JsonKey(name: 'table_number')
   int get tableNumber;
+  @override
+  @JsonKey(name: 'hall_name')
+  String get hallName;
+  @override
+  @JsonKey(name: 'cashier_id')
+  String get cashierId;
+  @override
+  @JsonKey(name: 'cashier_name')
+  String get cashierName;
+  @override
+  @JsonKey(name: 'guest_count')
+  int get guestCount;
+  @override
+  @JsonKey(name: 'food_cost', fromJson: _parseInt)
+  int get foodCost;
+  @override
+  @JsonKey(name: 'food_total', fromJson: _parseInt)
+  int get foodTotal;
+  @override
+  @JsonKey(name: 'service_percent', fromJson: _parseInt)
+  int get servicePercent;
+  @override
+  @JsonKey(name: 'service_amount', fromJson: _parseInt)
+  int get serviceAmount;
+  @override
+  @JsonKey(name: 'discount_percent', fromJson: _parseInt)
+  int get discountPercent;
+  @override
+  @JsonKey(name: 'discount_amount', fromJson: _parseInt)
+  int get discountAmount;
+  @override
+  @JsonKey(name: 'grand_total', fromJson: _parseInt)
+  int get grandTotal;
+  @override
+  @JsonKey(name: 'customer_paid_amount', fromJson: _parseInt)
+  int get customerPaidAmount;
+  @override
+  @JsonKey(name: 'change_amount', fromJson: _parseInt)
+  int get changeAmount;
+  @override
+  @JsonKey(name: 'comment')
+  String get comment;
   @override
   @JsonKey(name: "items")
   @OrderFoodEntityListConverter()

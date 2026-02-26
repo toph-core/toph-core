@@ -18,7 +18,7 @@ class TopBarWidget extends StatelessWidget {
   final TextEditingController textEditingController;
   const TopBarWidget({
     super.key,
-   this.cafeTable,
+    this.cafeTable,
     required this.showKeyboard,
     required this.textEditingController,
   });
@@ -44,6 +44,7 @@ class TopBarWidget extends StatelessWidget {
                         ? () async {
                             await showDialog(
                               context: context,
+                              barrierDismissible: false,
                               builder: (context) =>
                                   const LeaveFromDetailScreenDialog(),
                             ).then(
@@ -60,11 +61,11 @@ class TopBarWidget extends StatelessWidget {
                   );
                 },
               ),
-              if(cafeTable != null)
+              if (cafeTable != null)
                 Text(
-                '${cafeTable!.number}-stol',
-                style: context.textStyles.headingSm,
-              ),
+                  '${cafeTable!.number}-stol',
+                  style: context.textStyles.headingSm,
+                ),
               Expanded(
                 child: CustomTextField(
                   hintText: "Taom nomi bilan qidirish",

@@ -82,6 +82,10 @@ class AtSignUsernameFormatter extends TextInputFormatter {
 }
 
 class PriceFormatter extends TextInputFormatter {
+  final String additional;
+
+  PriceFormatter({this.additional = ''});
+
   @override
   TextEditingValue formatEditUpdate(
     TextEditingValue oldValue,
@@ -100,7 +104,7 @@ class PriceFormatter extends TextInputFormatter {
     );
 
     return TextEditingValue(
-      text: formatted,
+      text: "$formatted $additional",
       selection: TextSelection.collapsed(offset: formatted.length),
     );
   }
