@@ -83,8 +83,9 @@ class AtSignUsernameFormatter extends TextInputFormatter {
 
 class PriceFormatter extends TextInputFormatter {
   final String additional;
+  final int? limit;
 
-  PriceFormatter({this.additional = ''});
+  PriceFormatter({this.additional = '', this.limit});
 
   @override
   TextEditingValue formatEditUpdate(
@@ -97,7 +98,16 @@ class PriceFormatter extends TextInputFormatter {
       return newValue.copyWith(text: '');
     }
 
-    final number = int.parse(text);
+    int number = int.parse(text);
+
+    if (additional == '%' && number > 100) {
+      number = 100;
+    }
+
+    if (limit != null && number > limit!) {
+      number = limit!;
+    }
+
     final formatted = number.toString().replaceAllMapped(
       RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
       (Match m) => '${m[1]} ',

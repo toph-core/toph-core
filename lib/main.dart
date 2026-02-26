@@ -23,25 +23,25 @@ import 'package:window_manager/window_manager.dart';
 
 void main(dynamic flutter_acrylic) async {
   WidgetsFlutterBinding.ensureInitialized();
-  await flutter_acrylic.Window.initialize();
+  // await flutter_acrylic.Window.initialize();
   await AppUpdateService.getCloudVersion();
   await SystemChrome.setPreferredOrientations([
     DeviceOrientation.landscapeLeft,
     DeviceOrientation.landscapeRight,
   ]);
-  await flutter_acrylic.Window.hideWindowControls();
-  await WindowManager.instance.ensureInitialized();
-  windowManager.waitUntilReadyToShow().then((_) async {
-    await windowManager.setTitleBarStyle(
-      TitleBarStyle.hidden,
-      windowButtonVisibility: false,
-    );
-    await windowManager.setMinimumSize(const Size(1000, 600));
-    await windowManager.show();
-    await windowManager.setPreventClose(true);
-    await windowManager.setSkipTaskbar(false);
-    await windowManager.setFullScreen(true);
-  });
+  // await flutter_acrylic.Window.hideWindowControls();
+  // await WindowManager.instance.ensureInitialized();
+  // windowManager.waitUntilReadyToShow().then((_) async {
+  //   await windowManager.setTitleBarStyle(
+  //     TitleBarStyle.hidden,
+  //     windowButtonVisibility: false,
+  //   );
+  //   await windowManager.setMinimumSize(const Size(1000, 600));
+  //   await windowManager.show();
+  //   await windowManager.setPreventClose(true);
+  //   await windowManager.setSkipTaskbar(false);
+  //   await windowManager.setFullScreen(true);
+  // });
 
   await initDi();
   runApp(const MyApp());

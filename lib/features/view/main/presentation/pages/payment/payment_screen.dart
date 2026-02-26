@@ -145,6 +145,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
                                                             DiscountType.money
                                                         ? "so'm"
                                                         : "%",
+                                                      limit: state.discountType == DiscountType.money ? state.detail!.grandTotal : null
                                                   ),
                                                 ],
                                                 onTap: () =>

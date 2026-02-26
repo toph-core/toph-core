@@ -35,7 +35,16 @@ class PaymentRightSideBar extends StatelessWidget with PaymentScreenMixin {
                 Text("Jami to'lov", style: context.textStyles.bodyMd),
                 8.hBox,
                 Text(
-                  detail.grandTotal.formatN,
+                  (detail.grandTotal -
+                          (state.discountType == DiscountType.money
+                              ? int.tryParse(state.discountAmount) != null
+                                    ? int.parse(state.discountAmount)
+                                    : 0
+                              : (state.detail!.grandTotal / 100) *
+                                    (int.tryParse(state.discountAmount) != null
+                                        ? int.parse(state.discountAmount)
+                                        : 0)))
+                      .formatN,
                   style: context.textStyles.bold24.copyWith(
                     fontWeight: FontWeight.w500,
                   ),
@@ -297,11 +306,36 @@ class PaymentRightSideBar extends StatelessWidget with PaymentScreenMixin {
                               ),
                             ),
                             const Spacer(),
-                            Text(
-                              state.returnAmount.formatN,
-                              style: context.textStyles.bold20.copyWith(
-                                color: AppColors.ff13AF1B,
-                              ),
+                            Builder(
+                              builder: (context) {
+                                int discountAmount =
+                                    int.tryParse(state.discountAmount) ?? 0;
+                                int finalTotal = detail.grandTotal;
+
+                                if (state.discountType == DiscountType.money) {
+                                  finalTotal -= discountAmount;
+                                } else if (state.discountType ==
+                                    DiscountType.percent) {
+                                  finalTotal -=
+                                      (finalTotal * (discountAmount / 100))
+                                          .round();
+                                }
+
+                                if (finalTotal < 0) finalTotal = 0;
+
+                                int parsedEnterSum =
+                                    int.tryParse(state.enterSum) ?? 0;
+                                int returnAmount = parsedEnterSum > finalTotal
+                                    ? parsedEnterSum - finalTotal
+                                    : 0;
+
+                                return Text(
+                                  returnAmount.formatN,
+                                  style: context.textStyles.bold20.copyWith(
+                                    color: AppColors.ff13AF1B,
+                                  ),
+                                );
+                              },
                             ),
                           ],
                         ),
@@ -329,7 +363,9 @@ class PaymentRightSideBar extends StatelessWidget with PaymentScreenMixin {
                                 child: CustomHoverEffectWidget(
                                   onTap: () {
                                     if (state.status != Status.LOADING) {
-                                      context.read<PaymentBloc>().add(const PaymentEvent.payment());
+                                      context.read<PaymentBloc>().add(
+                                        const PaymentEvent.payment(),
+                                      );
                                     }
                                   },
                                   bgColor: context.colors.bgBrand,

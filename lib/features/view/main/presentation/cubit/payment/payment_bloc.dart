@@ -40,8 +40,9 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
     on<_UpdateDiscountAmount>(_updateDiscountAmount);
   }
 
-  void _updateDiscountAmount(_UpdateDiscountAmount event, emit) =>
-      emit(state.copyWith(discountAmount: event.amount));
+  void _updateDiscountAmount(_UpdateDiscountAmount event, emit) => emit(
+    state.copyWith(discountAmount: event.amount.isEmpty ? "0" : event.amount),
+  );
 
   void _updateDiscountType(_DiscountType event, emit) =>
       emit(state.copyWith(discountType: event.dicountType));
@@ -57,8 +58,16 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
           customPaidAmount: state.paymentType == PaymentType.cash
               ? int.parse(state.enterSum)
               : state.detail!.grandTotal,
-          discountAmount: state.discountType == DiscountType.money ? int.tryParse(state.discountAmount) != null ? int.parse(state.discountAmount) : 0 : 0,
-          discountPercent: state.discountType == DiscountType.percent ? int.tryParse(state.discountAmount) != null ? int.parse(state.discountAmount) : 0 : 0,
+          discountAmount: state.discountType == DiscountType.money
+              ? int.tryParse(state.discountAmount) != null
+                    ? int.parse(state.discountAmount)
+                    : 0
+              : 0,
+          discountPercent: state.discountType == DiscountType.percent
+              ? int.tryParse(state.discountAmount) != null
+                    ? int.parse(state.discountAmount)
+                    : 0
+              : 0,
           paymentType: state.paymentType,
         ),
       );
@@ -74,7 +83,10 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
             navigatorKey.currentContext!,
             "Buyurtma muvafaqqiyatli to'landi",
           );
-          navigatorKey.currentContext!.read<MainCubit>().updateTableStatus(state.tableId, TableStatus.free);
+          navigatorKey.currentContext!.read<MainCubit>().updateTableStatus(
+            state.tableId,
+            TableStatus.free,
+          );
           Navigator.pushNamedAndRemoveUntil(
             navigatorKey.currentContext!,
             AppRoutes.mainScreen,
@@ -152,15 +164,7 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
       }
     }
 
-    int returnAmount = 0;
-    if (newEnterSum.isNotEmpty && state.detail != null) {
-      final int parsedEnterSum = int.tryParse(newEnterSum) ?? 0;
-      if (parsedEnterSum > state.detail!.grandTotal) {
-        returnAmount = parsedEnterSum - state.detail!.grandTotal;
-      }
-    }
-
-    emit(state.copyWith(enterSum: newEnterSum, returnAmount: returnAmount));
+    emit(state.copyWith(enterSum: newEnterSum));
   }
 
   @override
