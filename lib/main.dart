@@ -1,10 +1,7 @@
 import 'dart:ui';
 
-import 'package:device_preview/device_preview.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-// import 'package:flutter_acrylic/flutter_acrylic.dart' as flutter_acrylic;
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:mary_ai_pos/core/routes/app_pages.dart';
@@ -20,11 +17,10 @@ import 'package:mary_ai_pos/features/view/auth/presentation/cubit/settings/setti
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/main/main_cubit.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/orders/orders_bloc.dart';
 import 'package:mary_ai_pos/generated/l10n.dart';
-import 'package:window_manager/window_manager.dart';
 
-void main(dynamic flutter_acrylic) async {
-  WidgetsFlutterBinding.ensureInitialized();
+Future<void> main() async {
   // await flutter_acrylic.Window.initialize();
+  WidgetsFlutterBinding.ensureInitialized();
   await AppUpdateService.getCloudVersion();
   await SystemChrome.setPreferredOrientations([
     DeviceOrientation.landscapeLeft,
@@ -60,7 +56,7 @@ class MyApp extends StatelessWidget {
         BlocProvider(create: (_) => inject<AuthCubit>()),
         BlocProvider(create: (_) => inject<SettingsCubit>()..loadAppLang()),
         BlocProvider(create: (_) => inject<MainCubit>()),
-        BlocProvider(create: (_) => inject<SavedOrdersBloc>())
+        BlocProvider(create: (_) => inject<SavedOrdersBloc>()),
       ],
       child: BlocSelector<SettingsCubit, SettingsState, String>(
         selector: (state) => state.language,
@@ -91,7 +87,9 @@ class MyApp extends StatelessWidget {
               RouteGenerate().generate(
                 RouteSettings(
                   name: initialRoute,
-                  arguments: {"table_id": "048aa68f-4c4d-490a-8fa6-83025519c3b5"},
+                  arguments: {
+                    "table_id": "048aa68f-4c4d-490a-8fa6-83025519c3b5",
+                  },
                 ),
               ),
             ],

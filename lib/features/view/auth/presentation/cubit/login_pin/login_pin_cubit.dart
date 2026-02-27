@@ -50,7 +50,7 @@ class LoginPinCubit extends Cubit<LoginPinState> {
     } else {
       emit(state.copyWith(status: Status.UNKNOWN));
     }
-  }
+  } 
 
   void setPin(String value) {
     String pinUpdated = state.pin ?? '';

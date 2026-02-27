@@ -75,11 +75,12 @@ dependencies:
   # Use this package if you need more customization when notifying your user.
   keyboard_dismisser: ^3.0.0
   fluent_ui: ^4.13.0
-  window_manager: ^0.5.1
   animated_snack_bar: ^0.4.0
-  flutter_acrylic: ^1.1.4
   device_preview: ^1.2.0
   virtual_keyboard_multi_language: ^1.1.2
+  window_manager: ^0.5.1
+  flutter_acrylic: ^1.1.4
+
 
 dev_dependencies:
   flutter_test:
