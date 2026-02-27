@@ -48,7 +48,23 @@ class MySmartDioInterceptor extends Interceptor {
     final statusCode = err.response?.statusCode;
 
     if (statusCode == 401) {
-      if (err.requestOptions.path.endsWith(ListAPI.refresh)) {
+      final bool isRefreshCall = err.requestOptions.path.endsWith(
+        ListAPI.refresh,
+      );
+      final String? authHeader = err.requestOptions.headers['Authorization']
+          ?.toString();
+      final bool hasAuthHeader =
+          authHeader != null &&
+          authHeader.isNotEmpty &&
+          authHeader != 'Bearer ';
+
+      // Do not force logout for unauthorized calls made without auth token.
+      // Example: wrong pin on login-pincode endpoint.
+      if (!hasAuthHeader && !isRefreshCall) {
+        return handler.next(err);
+      }
+
+      if (isRefreshCall) {
         await _logoutAndRedirectToLogin();
         return handler.next(err);
       }
