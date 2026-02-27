@@ -8,6 +8,7 @@ import 'package:mary_ai_pos/features/view/main/presentation/pages/archive/archiv
 import 'package:mary_ai_pos/features/view/main/presentation/pages/close_shift/close_shift_screen.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/detail/detail_screen.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/main/main_screen.dart';
+import 'package:mary_ai_pos/features/view/main/presentation/pages/notification/notification_screen.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/payment/payment_screen.dart';
 
 class RouteGenerate {
@@ -30,13 +31,16 @@ class RouteGenerate {
         return simpleRoute(const DetailScreen(), args: args);
 
       case AppRoutes.paymentScreen:
-        return simpleRoute(const PaymentScreen(),args: args);
+        return simpleRoute(const PaymentScreen(), args: args);
 
       case AppRoutes.archiveScreen:
         return simpleRoute(const ArchiveScreen());
 
       case AppRoutes.closeShiftScreen:
         return simpleRoute(const CloseShiftScreen());
+
+      case AppRoutes.notificationsScreen:
+        return simpleRoute(const NotificationScreen());
     }
     return throw UnimplementedError();
   }
