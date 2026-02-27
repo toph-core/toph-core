@@ -7,6 +7,8 @@ class NotificationState with _$NotificationState {
     ScrollController? scrollController,
     TextEditingController? searchController,
     @Default(ArchivesFilterType.Today) ArchivesFilterType filterType,
+    DateTime? start,
+    DateTime? end,
     Failure? failure,
   }) = _NotificationState;
 

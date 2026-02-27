@@ -18,6 +18,7 @@ import 'package:mary_ai_pos/di.dart';
 import 'package:mary_ai_pos/features/view/auth/presentation/cubit/auth/auth_cubit.dart';
 import 'package:mary_ai_pos/features/view/auth/presentation/cubit/settings/settings_cubit.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/main/main_cubit.dart';
+import 'package:mary_ai_pos/features/view/main/presentation/cubit/orders/orders_bloc.dart';
 import 'package:mary_ai_pos/generated/l10n.dart';
 import 'package:window_manager/window_manager.dart';
 
@@ -59,6 +60,7 @@ class MyApp extends StatelessWidget {
         BlocProvider(create: (_) => inject<AuthCubit>()),
         BlocProvider(create: (_) => inject<SettingsCubit>()..loadAppLang()),
         BlocProvider(create: (_) => inject<MainCubit>()),
+        BlocProvider(create: (_) => inject<SavedOrdersBloc>())
       ],
       child: BlocSelector<SettingsCubit, SettingsState, String>(
         selector: (state) => state.language,

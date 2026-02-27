@@ -5,9 +5,13 @@ import 'package:mary_ai_pos/core/api/api.dart';
 import 'package:mary_ai_pos/core/constants/constants.dart';
 import 'package:mary_ai_pos/core/error/failure.dart';
 import 'package:mary_ai_pos/core/usecase/usecase.dart';
+import 'package:mary_ai_pos/features/view/main/data/models/cafe_tables/cafe_tables_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/category/category_model.dart';
+import 'package:mary_ai_pos/features/view/main/data/models/create_order/create_order_request_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/food_additional/food_additional_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/goods/goods_model.dart';
+import 'package:mary_ai_pos/features/view/main/data/models/save_order/save_order_model.dart';
+import 'package:mary_ai_pos/features/view/main/domain/entities/save_order_entity.dart';
 import 'package:mary_ai_pos/features/view/main/domain/usecase/get_categories_usecase.dart';
 import 'package:mary_ai_pos/features/view/main/domain/usecase/get_goods_by_category_id_usecase.dart';
 
@@ -32,6 +36,10 @@ class DetailCubit extends Cubit<DetailState> {
         }
       },
     );
+  }
+
+  void initSavedGoods(List<OrderItem> savedGoods) {
+    emit(state.copyWith(selectedGoods: savedGoods));
   }
 
   void setSelectedCategoryId(String id) {
@@ -60,9 +68,25 @@ class DetailCubit extends Cubit<DetailState> {
       List<OrderItem> orders = List.from(state.selectedGoods);
       orders[id] = orders[id].copyWith(
         goods: orders[id].goods.copyWith(additionals: additionals),
-        commet: comment
+        commet: comment,
       );
       emit(state.copyWith(selectedGoods: orders));
+    }
+  }
+
+  SaveOrderEntity? saveOrder(CafeTableModel cafeTable, int guestCount) {
+    if (state.selectedGoods.isNotEmpty) {
+      return SaveOrderModel(
+        cafeTable: cafeTable,
+        createOrderRequest: CreateOrderRequestModel(
+          tableId: cafeTable.id,
+          comment: "Very good",
+          guestCount: guestCount,
+          foods: state.selectedGoods,
+          status: OrderStatus.open,
+          tableStatus: TableStatus.busy,
+        ),
+      );
     }
   }
 

@@ -33,7 +33,7 @@ class OrderSidebar extends StatelessWidget with DetailScreenMixin {
     this.tableId,
     required this.guestCount,
     required this.tableStatus,
-    this.orderId,
+    this.orderId, 
   });
 
   @override

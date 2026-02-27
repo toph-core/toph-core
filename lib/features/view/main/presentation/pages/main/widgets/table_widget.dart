@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mary_ai_pos/core/extension/color_extension.dart';
 import 'dart:math' as math;
 import 'package:mary_ai_pos/core/extension/for_context.dart';
+import 'package:mary_ai_pos/core/extension/int_extension.dart';
 import 'package:mary_ai_pos/core/values/app_colors.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/cafe_tables/cafe_tables_model.dart';
+import 'package:mary_ai_pos/features/view/main/presentation/cubit/orders/orders_bloc.dart';
 
 class TableWidget extends StatelessWidget {
   final CafeTableModel table;
@@ -37,7 +40,14 @@ class TableWidget extends StatelessWidget {
               borderRadius: BorderRadius.circular(16),
               child: Container(
                 width: width,
-                height: height,
+                height:
+                    height +
+                    (context.read<SavedOrdersBloc>().state.order.indexWhere(
+                              (v) => v.cafeTable.id == table.id,
+                            ) !=
+                            -1
+                        ? 30
+                        : 20),
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(16),
@@ -81,6 +91,22 @@ class TableWidget extends StatelessWidget {
                                 color: statusColor,
                                 fontWeight: FontWeight.w500,
                               ),
+                            ),
+                            4.hBox,
+                            BlocBuilder<SavedOrdersBloc, SavedOrdersState>(
+                              builder: (context, state) {
+                                if (state.order.indexWhere(
+                                      (v) => v.cafeTable.id == table.id,
+                                    ) !=
+                                    -1) {
+                                  return Text(
+                                    "Saqlangan",
+                                    style: context.textStyles.bodyMd,
+                                  );
+                                }
+
+                                return const SizedBox();
+                              },
                             ),
                           ],
                         ),

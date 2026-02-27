@@ -14,7 +14,9 @@ enum Status { LOADING, UNKNOWN, SUCCESS, ERROR, OTHER, OTHER_LOADING, IDLE }
 
 enum OrderStatus { opened, pending, open, closed, paid, debt, deleted, none }
 
-enum ArchivesFilterType { All, Today, Week, month, date }
+enum ArchivesFilterType {All, Today, Week, month, date }
+
+
 
 enum PaymentType {cash, card, qr}
 

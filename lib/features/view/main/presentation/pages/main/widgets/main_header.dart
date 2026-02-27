@@ -9,7 +9,7 @@ import 'package:mary_ai_pos/core/values/app_assets.dart';
 import 'package:mary_ai_pos/features/view/auth/presentation/cubit/auth/auth_cubit.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/main/widgets/logout_dialog.dart';
 
-class MainHeader extends StatelessWidget {
+class MainHeader extends StatelessWidget { 
   const MainHeader({super.key});
 
   @override
@@ -83,7 +83,7 @@ class MainHeader extends StatelessWidget {
             spacing: 8,
             children: [
               CustomHoverEffectWidget(
-                onTap: () {},
+                onTap: () => Navigator.pushNamed(context, AppRoutes.notificationsScreen),
                 borderRadius: context.radius.card,
                 child: SvgPicture.asset(AppIcons.icBell).paddingAll(16),
               ),
@@ -94,23 +94,7 @@ class MainHeader extends StatelessWidget {
                 child: SvgPicture.asset(AppIcons.icArchive).paddingAll(16),
               ),
               CustomHoverEffectWidget(
-                onTap: () {
-                  context.read<AuthCubit>().logoutFromApp(
-                    () => Navigator.pushNamedAndRemoveUntil(
-                      context,
-                      AppRoutes.loginScreen,
-                      (route) => false,
-                    ),
-                  );
-                  // showDialog(
-                  //   context: context,
-                  //   builder: (context) {
-                  //     return const LogoutDialog(
-                  //       routeName: AppRoutes.loginScreen,
-                  //     );
-                  //   },
-                  // );
-                },
+                onTap: () => Navigator.pushNamed(context, AppRoutes.closeShiftScreen),
                 bgColor: const Color(0xFF2D2D2D),
                 borderRadius: context.radius.card,
                 child: Center(

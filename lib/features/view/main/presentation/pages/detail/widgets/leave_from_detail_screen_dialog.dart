@@ -15,7 +15,7 @@ class LeaveFromDetailScreenDialog extends StatelessWidget {
   Widget build(BuildContext context) {
     return Center(
       child: Container(
-        width: 364,
+        width: 464,
         padding: const EdgeInsets.all(20),
         clipBehavior: Clip.antiAlias,
         decoration: ShapeDecoration(
@@ -75,9 +75,34 @@ class LeaveFromDetailScreenDialog extends StatelessWidget {
                   ),
                   Expanded(
                     child: CustomHoverEffectWidget(
+                      bgColor: context.colors.bgBrand,
+                      borderRadius: context.radius.card,
+                      onTap: () => Navigator.pop(context, true),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        spacing: 10,
+                        children: [
+                          Text(
+                            'Saqlash',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: context.colors.textOnBrand,
+                              fontSize: 16,
+                              fontFamily: 'Inter',
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ).paddingSymmetric(horizontal: 10, vertical: 12),
+                    ),
+                  ),
+                  Expanded(
+                    child: CustomHoverEffectWidget(
                       bgColor: const Color(0x19DB1F1F),
                       borderRadius: context.radius.card,
-                      onTap: () => Navigator.pop(context,true),
+                      onTap: () => Navigator.pop(context, false),
                       child: const Row(
                         mainAxisSize: MainAxisSize.min,
                         mainAxisAlignment: MainAxisAlignment.center,

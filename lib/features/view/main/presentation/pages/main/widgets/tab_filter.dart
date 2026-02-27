@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:mary_ai_pos/core/common/custom_shimmer_container.dart';
 import 'package:mary_ai_pos/core/extension/for_context.dart';
@@ -8,6 +9,7 @@ import 'package:mary_ai_pos/di.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/cafe_tables/cafe_tables_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/hall/hall_model.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/main/main_cubit.dart';
+import 'package:mary_ai_pos/features/view/main/presentation/cubit/orders/orders_bloc.dart';
 import 'package:mary_ai_pos/gen/assets.gen.dart';
 
 class TabFilter extends StatelessWidget {
@@ -58,8 +60,11 @@ class TabFilter extends StatelessWidget {
                 onTap: () {
                   Navigator.pushNamed(
                     context,
-                    AppRoutes.detailScreen, 
-                    arguments: {"guest_count": 1,"table_status": TableStatus.away},
+                    AppRoutes.detailScreen,
+                    arguments: {
+                      "guest_count": 1,
+                      "table_status": TableStatus.away,
+                    },
                   );
                 },
                 child: SizedBox(

@@ -20,7 +20,7 @@ class CreateOrderBloc extends Bloc<CreateOrderEvent, CreateOrderState> {
     : _createOrderUsecase = createOrderUsecase, 
       super(const CreateOrderState()) {
     on<_Started>(_started);
-    on<_CreateOrder>(_createOrder);
+    on<_CreateOrder>(_createOrder); 
   }
 
   void _createOrder(_CreateOrder event, emit) async {
@@ -40,6 +40,7 @@ class CreateOrderBloc extends Bloc<CreateOrderEvent, CreateOrderState> {
       emit(state.copyWith(status: Status.ERROR, failure: l));
     }, (r) => emit(state.copyWith(status: Status.SUCCESS, success: r)));
   }
+
 
   void _started(_Started event, emit) =>
       emit(CreateOrderState(tableId: event.tableId ?? '',guestCount: event.guestCount,tableStatus: event.tableStatus));

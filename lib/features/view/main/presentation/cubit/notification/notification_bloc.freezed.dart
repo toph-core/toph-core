@@ -20,6 +20,8 @@ mixin _$NotificationEvent {
   TResult when<TResult extends Object?>({
     required TResult Function() started,
     required TResult Function(ArchivesFilterType filterType) updateFilterType,
+    required TResult Function(DateTime start, DateTime end)
+        updateDateFilterEvent,
     required TResult Function() getNotifications,
     required TResult Function() againNotifications,
   }) =>
@@ -28,6 +30,7 @@ mixin _$NotificationEvent {
   TResult? whenOrNull<TResult extends Object?>({
     TResult? Function()? started,
     TResult? Function(ArchivesFilterType filterType)? updateFilterType,
+    TResult? Function(DateTime start, DateTime end)? updateDateFilterEvent,
     TResult? Function()? getNotifications,
     TResult? Function()? againNotifications,
   }) =>
@@ -36,6 +39,7 @@ mixin _$NotificationEvent {
   TResult maybeWhen<TResult extends Object?>({
     TResult Function()? started,
     TResult Function(ArchivesFilterType filterType)? updateFilterType,
+    TResult Function(DateTime start, DateTime end)? updateDateFilterEvent,
     TResult Function()? getNotifications,
     TResult Function()? againNotifications,
     required TResult orElse(),
@@ -45,6 +49,8 @@ mixin _$NotificationEvent {
   TResult map<TResult extends Object?>({
     required TResult Function(_Started value) started,
     required TResult Function(_UpdateFilterType value) updateFilterType,
+    required TResult Function(_UpdateDateFilterEvent value)
+        updateDateFilterEvent,
     required TResult Function(_GetNotifications value) getNotifications,
     required TResult Function(_AgainNotifications value) againNotifications,
   }) =>
@@ -53,6 +59,7 @@ mixin _$NotificationEvent {
   TResult? mapOrNull<TResult extends Object?>({
     TResult? Function(_Started value)? started,
     TResult? Function(_UpdateFilterType value)? updateFilterType,
+    TResult? Function(_UpdateDateFilterEvent value)? updateDateFilterEvent,
     TResult? Function(_GetNotifications value)? getNotifications,
     TResult? Function(_AgainNotifications value)? againNotifications,
   }) =>
@@ -61,6 +68,7 @@ mixin _$NotificationEvent {
   TResult maybeMap<TResult extends Object?>({
     TResult Function(_Started value)? started,
     TResult Function(_UpdateFilterType value)? updateFilterType,
+    TResult Function(_UpdateDateFilterEvent value)? updateDateFilterEvent,
     TResult Function(_GetNotifications value)? getNotifications,
     TResult Function(_AgainNotifications value)? againNotifications,
     required TResult orElse(),
@@ -126,6 +134,8 @@ class _$StartedImpl implements _Started {
   TResult when<TResult extends Object?>({
     required TResult Function() started,
     required TResult Function(ArchivesFilterType filterType) updateFilterType,
+    required TResult Function(DateTime start, DateTime end)
+        updateDateFilterEvent,
     required TResult Function() getNotifications,
     required TResult Function() againNotifications,
   }) {
@@ -137,6 +147,7 @@ class _$StartedImpl implements _Started {
   TResult? whenOrNull<TResult extends Object?>({
     TResult? Function()? started,
     TResult? Function(ArchivesFilterType filterType)? updateFilterType,
+    TResult? Function(DateTime start, DateTime end)? updateDateFilterEvent,
     TResult? Function()? getNotifications,
     TResult? Function()? againNotifications,
   }) {
@@ -148,6 +159,7 @@ class _$StartedImpl implements _Started {
   TResult maybeWhen<TResult extends Object?>({
     TResult Function()? started,
     TResult Function(ArchivesFilterType filterType)? updateFilterType,
+    TResult Function(DateTime start, DateTime end)? updateDateFilterEvent,
     TResult Function()? getNotifications,
     TResult Function()? againNotifications,
     required TResult orElse(),
@@ -163,6 +175,8 @@ class _$StartedImpl implements _Started {
   TResult map<TResult extends Object?>({
     required TResult Function(_Started value) started,
     required TResult Function(_UpdateFilterType value) updateFilterType,
+    required TResult Function(_UpdateDateFilterEvent value)
+        updateDateFilterEvent,
     required TResult Function(_GetNotifications value) getNotifications,
     required TResult Function(_AgainNotifications value) againNotifications,
   }) {
@@ -174,6 +188,7 @@ class _$StartedImpl implements _Started {
   TResult? mapOrNull<TResult extends Object?>({
     TResult? Function(_Started value)? started,
     TResult? Function(_UpdateFilterType value)? updateFilterType,
+    TResult? Function(_UpdateDateFilterEvent value)? updateDateFilterEvent,
     TResult? Function(_GetNotifications value)? getNotifications,
     TResult? Function(_AgainNotifications value)? againNotifications,
   }) {
@@ -185,6 +200,7 @@ class _$StartedImpl implements _Started {
   TResult maybeMap<TResult extends Object?>({
     TResult Function(_Started value)? started,
     TResult Function(_UpdateFilterType value)? updateFilterType,
+    TResult Function(_UpdateDateFilterEvent value)? updateDateFilterEvent,
     TResult Function(_GetNotifications value)? getNotifications,
     TResult Function(_AgainNotifications value)? againNotifications,
     required TResult orElse(),
@@ -268,6 +284,8 @@ class _$UpdateFilterTypeImpl implements _UpdateFilterType {
   TResult when<TResult extends Object?>({
     required TResult Function() started,
     required TResult Function(ArchivesFilterType filterType) updateFilterType,
+    required TResult Function(DateTime start, DateTime end)
+        updateDateFilterEvent,
     required TResult Function() getNotifications,
     required TResult Function() againNotifications,
   }) {
@@ -279,6 +297,7 @@ class _$UpdateFilterTypeImpl implements _UpdateFilterType {
   TResult? whenOrNull<TResult extends Object?>({
     TResult? Function()? started,
     TResult? Function(ArchivesFilterType filterType)? updateFilterType,
+    TResult? Function(DateTime start, DateTime end)? updateDateFilterEvent,
     TResult? Function()? getNotifications,
     TResult? Function()? againNotifications,
   }) {
@@ -290,6 +309,7 @@ class _$UpdateFilterTypeImpl implements _UpdateFilterType {
   TResult maybeWhen<TResult extends Object?>({
     TResult Function()? started,
     TResult Function(ArchivesFilterType filterType)? updateFilterType,
+    TResult Function(DateTime start, DateTime end)? updateDateFilterEvent,
     TResult Function()? getNotifications,
     TResult Function()? againNotifications,
     required TResult orElse(),
@@ -305,6 +325,8 @@ class _$UpdateFilterTypeImpl implements _UpdateFilterType {
   TResult map<TResult extends Object?>({
     required TResult Function(_Started value) started,
     required TResult Function(_UpdateFilterType value) updateFilterType,
+    required TResult Function(_UpdateDateFilterEvent value)
+        updateDateFilterEvent,
     required TResult Function(_GetNotifications value) getNotifications,
     required TResult Function(_AgainNotifications value) againNotifications,
   }) {
@@ -316,6 +338,7 @@ class _$UpdateFilterTypeImpl implements _UpdateFilterType {
   TResult? mapOrNull<TResult extends Object?>({
     TResult? Function(_Started value)? started,
     TResult? Function(_UpdateFilterType value)? updateFilterType,
+    TResult? Function(_UpdateDateFilterEvent value)? updateDateFilterEvent,
     TResult? Function(_GetNotifications value)? getNotifications,
     TResult? Function(_AgainNotifications value)? againNotifications,
   }) {
@@ -327,6 +350,7 @@ class _$UpdateFilterTypeImpl implements _UpdateFilterType {
   TResult maybeMap<TResult extends Object?>({
     TResult Function(_Started value)? started,
     TResult Function(_UpdateFilterType value)? updateFilterType,
+    TResult Function(_UpdateDateFilterEvent value)? updateDateFilterEvent,
     TResult Function(_GetNotifications value)? getNotifications,
     TResult Function(_AgainNotifications value)? againNotifications,
     required TResult orElse(),
@@ -346,6 +370,172 @@ abstract class _UpdateFilterType implements NotificationEvent {
   @JsonKey(ignore: true)
   _$$UpdateFilterTypeImplCopyWith<_$UpdateFilterTypeImpl> get copyWith =>
       throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class _$$UpdateDateFilterEventImplCopyWith<$Res> {
+  factory _$$UpdateDateFilterEventImplCopyWith(
+          _$UpdateDateFilterEventImpl value,
+          $Res Function(_$UpdateDateFilterEventImpl) then) =
+      __$$UpdateDateFilterEventImplCopyWithImpl<$Res>;
+  @useResult
+  $Res call({DateTime start, DateTime end});
+}
+
+/// @nodoc
+class __$$UpdateDateFilterEventImplCopyWithImpl<$Res>
+    extends _$NotificationEventCopyWithImpl<$Res, _$UpdateDateFilterEventImpl>
+    implements _$$UpdateDateFilterEventImplCopyWith<$Res> {
+  __$$UpdateDateFilterEventImplCopyWithImpl(_$UpdateDateFilterEventImpl _value,
+      $Res Function(_$UpdateDateFilterEventImpl) _then)
+      : super(_value, _then);
+
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? start = null,
+    Object? end = null,
+  }) {
+    return _then(_$UpdateDateFilterEventImpl(
+      start: null == start
+          ? _value.start
+          : start // ignore: cast_nullable_to_non_nullable
+              as DateTime,
+      end: null == end
+          ? _value.end
+          : end // ignore: cast_nullable_to_non_nullable
+              as DateTime,
+    ));
+  }
+}
+
+/// @nodoc
+
+class _$UpdateDateFilterEventImpl implements _UpdateDateFilterEvent {
+  const _$UpdateDateFilterEventImpl({required this.start, required this.end});
+
+  @override
+  final DateTime start;
+  @override
+  final DateTime end;
+
+  @override
+  String toString() {
+    return 'NotificationEvent.updateDateFilterEvent(start: $start, end: $end)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$UpdateDateFilterEventImpl &&
+            (identical(other.start, start) || other.start == start) &&
+            (identical(other.end, end) || other.end == end));
+  }
+
+  @override
+  int get hashCode => Object.hash(runtimeType, start, end);
+
+  @JsonKey(ignore: true)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$UpdateDateFilterEventImplCopyWith<_$UpdateDateFilterEventImpl>
+      get copyWith => __$$UpdateDateFilterEventImplCopyWithImpl<
+          _$UpdateDateFilterEventImpl>(this, _$identity);
+
+  @override
+  @optionalTypeArgs
+  TResult when<TResult extends Object?>({
+    required TResult Function() started,
+    required TResult Function(ArchivesFilterType filterType) updateFilterType,
+    required TResult Function(DateTime start, DateTime end)
+        updateDateFilterEvent,
+    required TResult Function() getNotifications,
+    required TResult Function() againNotifications,
+  }) {
+    return updateDateFilterEvent(start, end);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult? whenOrNull<TResult extends Object?>({
+    TResult? Function()? started,
+    TResult? Function(ArchivesFilterType filterType)? updateFilterType,
+    TResult? Function(DateTime start, DateTime end)? updateDateFilterEvent,
+    TResult? Function()? getNotifications,
+    TResult? Function()? againNotifications,
+  }) {
+    return updateDateFilterEvent?.call(start, end);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult maybeWhen<TResult extends Object?>({
+    TResult Function()? started,
+    TResult Function(ArchivesFilterType filterType)? updateFilterType,
+    TResult Function(DateTime start, DateTime end)? updateDateFilterEvent,
+    TResult Function()? getNotifications,
+    TResult Function()? againNotifications,
+    required TResult orElse(),
+  }) {
+    if (updateDateFilterEvent != null) {
+      return updateDateFilterEvent(start, end);
+    }
+    return orElse();
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult map<TResult extends Object?>({
+    required TResult Function(_Started value) started,
+    required TResult Function(_UpdateFilterType value) updateFilterType,
+    required TResult Function(_UpdateDateFilterEvent value)
+        updateDateFilterEvent,
+    required TResult Function(_GetNotifications value) getNotifications,
+    required TResult Function(_AgainNotifications value) againNotifications,
+  }) {
+    return updateDateFilterEvent(this);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult? mapOrNull<TResult extends Object?>({
+    TResult? Function(_Started value)? started,
+    TResult? Function(_UpdateFilterType value)? updateFilterType,
+    TResult? Function(_UpdateDateFilterEvent value)? updateDateFilterEvent,
+    TResult? Function(_GetNotifications value)? getNotifications,
+    TResult? Function(_AgainNotifications value)? againNotifications,
+  }) {
+    return updateDateFilterEvent?.call(this);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult maybeMap<TResult extends Object?>({
+    TResult Function(_Started value)? started,
+    TResult Function(_UpdateFilterType value)? updateFilterType,
+    TResult Function(_UpdateDateFilterEvent value)? updateDateFilterEvent,
+    TResult Function(_GetNotifications value)? getNotifications,
+    TResult Function(_AgainNotifications value)? againNotifications,
+    required TResult orElse(),
+  }) {
+    if (updateDateFilterEvent != null) {
+      return updateDateFilterEvent(this);
+    }
+    return orElse();
+  }
+}
+
+abstract class _UpdateDateFilterEvent implements NotificationEvent {
+  const factory _UpdateDateFilterEvent(
+      {required final DateTime start,
+      required final DateTime end}) = _$UpdateDateFilterEventImpl;
+
+  DateTime get start;
+  DateTime get end;
+  @JsonKey(ignore: true)
+  _$$UpdateDateFilterEventImplCopyWith<_$UpdateDateFilterEventImpl>
+      get copyWith => throw _privateConstructorUsedError;
 }
 
 /// @nodoc
@@ -388,6 +578,8 @@ class _$GetNotificationsImpl implements _GetNotifications {
   TResult when<TResult extends Object?>({
     required TResult Function() started,
     required TResult Function(ArchivesFilterType filterType) updateFilterType,
+    required TResult Function(DateTime start, DateTime end)
+        updateDateFilterEvent,
     required TResult Function() getNotifications,
     required TResult Function() againNotifications,
   }) {
@@ -399,6 +591,7 @@ class _$GetNotificationsImpl implements _GetNotifications {
   TResult? whenOrNull<TResult extends Object?>({
     TResult? Function()? started,
     TResult? Function(ArchivesFilterType filterType)? updateFilterType,
+    TResult? Function(DateTime start, DateTime end)? updateDateFilterEvent,
     TResult? Function()? getNotifications,
     TResult? Function()? againNotifications,
   }) {
@@ -410,6 +603,7 @@ class _$GetNotificationsImpl implements _GetNotifications {
   TResult maybeWhen<TResult extends Object?>({
     TResult Function()? started,
     TResult Function(ArchivesFilterType filterType)? updateFilterType,
+    TResult Function(DateTime start, DateTime end)? updateDateFilterEvent,
     TResult Function()? getNotifications,
     TResult Function()? againNotifications,
     required TResult orElse(),
@@ -425,6 +619,8 @@ class _$GetNotificationsImpl implements _GetNotifications {
   TResult map<TResult extends Object?>({
     required TResult Function(_Started value) started,
     required TResult Function(_UpdateFilterType value) updateFilterType,
+    required TResult Function(_UpdateDateFilterEvent value)
+        updateDateFilterEvent,
     required TResult Function(_GetNotifications value) getNotifications,
     required TResult Function(_AgainNotifications value) againNotifications,
   }) {
@@ -436,6 +632,7 @@ class _$GetNotificationsImpl implements _GetNotifications {
   TResult? mapOrNull<TResult extends Object?>({
     TResult? Function(_Started value)? started,
     TResult? Function(_UpdateFilterType value)? updateFilterType,
+    TResult? Function(_UpdateDateFilterEvent value)? updateDateFilterEvent,
     TResult? Function(_GetNotifications value)? getNotifications,
     TResult? Function(_AgainNotifications value)? againNotifications,
   }) {
@@ -447,6 +644,7 @@ class _$GetNotificationsImpl implements _GetNotifications {
   TResult maybeMap<TResult extends Object?>({
     TResult Function(_Started value)? started,
     TResult Function(_UpdateFilterType value)? updateFilterType,
+    TResult Function(_UpdateDateFilterEvent value)? updateDateFilterEvent,
     TResult Function(_GetNotifications value)? getNotifications,
     TResult Function(_AgainNotifications value)? againNotifications,
     required TResult orElse(),
@@ -502,6 +700,8 @@ class _$AgainNotificationsImpl implements _AgainNotifications {
   TResult when<TResult extends Object?>({
     required TResult Function() started,
     required TResult Function(ArchivesFilterType filterType) updateFilterType,
+    required TResult Function(DateTime start, DateTime end)
+        updateDateFilterEvent,
     required TResult Function() getNotifications,
     required TResult Function() againNotifications,
   }) {
@@ -513,6 +713,7 @@ class _$AgainNotificationsImpl implements _AgainNotifications {
   TResult? whenOrNull<TResult extends Object?>({
     TResult? Function()? started,
     TResult? Function(ArchivesFilterType filterType)? updateFilterType,
+    TResult? Function(DateTime start, DateTime end)? updateDateFilterEvent,
     TResult? Function()? getNotifications,
     TResult? Function()? againNotifications,
   }) {
@@ -524,6 +725,7 @@ class _$AgainNotificationsImpl implements _AgainNotifications {
   TResult maybeWhen<TResult extends Object?>({
     TResult Function()? started,
     TResult Function(ArchivesFilterType filterType)? updateFilterType,
+    TResult Function(DateTime start, DateTime end)? updateDateFilterEvent,
     TResult Function()? getNotifications,
     TResult Function()? againNotifications,
     required TResult orElse(),
@@ -539,6 +741,8 @@ class _$AgainNotificationsImpl implements _AgainNotifications {
   TResult map<TResult extends Object?>({
     required TResult Function(_Started value) started,
     required TResult Function(_UpdateFilterType value) updateFilterType,
+    required TResult Function(_UpdateDateFilterEvent value)
+        updateDateFilterEvent,
     required TResult Function(_GetNotifications value) getNotifications,
     required TResult Function(_AgainNotifications value) againNotifications,
   }) {
@@ -550,6 +754,7 @@ class _$AgainNotificationsImpl implements _AgainNotifications {
   TResult? mapOrNull<TResult extends Object?>({
     TResult? Function(_Started value)? started,
     TResult? Function(_UpdateFilterType value)? updateFilterType,
+    TResult? Function(_UpdateDateFilterEvent value)? updateDateFilterEvent,
     TResult? Function(_GetNotifications value)? getNotifications,
     TResult? Function(_AgainNotifications value)? againNotifications,
   }) {
@@ -561,6 +766,7 @@ class _$AgainNotificationsImpl implements _AgainNotifications {
   TResult maybeMap<TResult extends Object?>({
     TResult Function(_Started value)? started,
     TResult Function(_UpdateFilterType value)? updateFilterType,
+    TResult Function(_UpdateDateFilterEvent value)? updateDateFilterEvent,
     TResult Function(_GetNotifications value)? getNotifications,
     TResult Function(_AgainNotifications value)? againNotifications,
     required TResult orElse(),
@@ -583,6 +789,8 @@ mixin _$NotificationState {
   TextEditingController? get searchController =>
       throw _privateConstructorUsedError;
   ArchivesFilterType get filterType => throw _privateConstructorUsedError;
+  DateTime? get start => throw _privateConstructorUsedError;
+  DateTime? get end => throw _privateConstructorUsedError;
   Failure? get failure => throw _privateConstructorUsedError;
 
   @JsonKey(ignore: true)
@@ -601,6 +809,8 @@ abstract class $NotificationStateCopyWith<$Res> {
       ScrollController? scrollController,
       TextEditingController? searchController,
       ArchivesFilterType filterType,
+      DateTime? start,
+      DateTime? end,
       Failure? failure});
 }
 
@@ -621,6 +831,8 @@ class _$NotificationStateCopyWithImpl<$Res, $Val extends NotificationState>
     Object? scrollController = freezed,
     Object? searchController = freezed,
     Object? filterType = null,
+    Object? start = freezed,
+    Object? end = freezed,
     Object? failure = freezed,
   }) {
     return _then(_value.copyWith(
@@ -640,6 +852,14 @@ class _$NotificationStateCopyWithImpl<$Res, $Val extends NotificationState>
           ? _value.filterType
           : filterType // ignore: cast_nullable_to_non_nullable
               as ArchivesFilterType,
+      start: freezed == start
+          ? _value.start
+          : start // ignore: cast_nullable_to_non_nullable
+              as DateTime?,
+      end: freezed == end
+          ? _value.end
+          : end // ignore: cast_nullable_to_non_nullable
+              as DateTime?,
       failure: freezed == failure
           ? _value.failure
           : failure // ignore: cast_nullable_to_non_nullable
@@ -661,6 +881,8 @@ abstract class _$$NotificationStateImplCopyWith<$Res>
       ScrollController? scrollController,
       TextEditingController? searchController,
       ArchivesFilterType filterType,
+      DateTime? start,
+      DateTime? end,
       Failure? failure});
 }
 
@@ -679,6 +901,8 @@ class __$$NotificationStateImplCopyWithImpl<$Res>
     Object? scrollController = freezed,
     Object? searchController = freezed,
     Object? filterType = null,
+    Object? start = freezed,
+    Object? end = freezed,
     Object? failure = freezed,
   }) {
     return _then(_$NotificationStateImpl(
@@ -698,6 +922,14 @@ class __$$NotificationStateImplCopyWithImpl<$Res>
           ? _value.filterType
           : filterType // ignore: cast_nullable_to_non_nullable
               as ArchivesFilterType,
+      start: freezed == start
+          ? _value.start
+          : start // ignore: cast_nullable_to_non_nullable
+              as DateTime?,
+      end: freezed == end
+          ? _value.end
+          : end // ignore: cast_nullable_to_non_nullable
+              as DateTime?,
       failure: freezed == failure
           ? _value.failure
           : failure // ignore: cast_nullable_to_non_nullable
@@ -714,6 +946,8 @@ class _$NotificationStateImpl implements _NotificationState {
       this.scrollController,
       this.searchController,
       this.filterType = ArchivesFilterType.Today,
+      this.start,
+      this.end,
       this.failure});
 
   @override
@@ -727,11 +961,15 @@ class _$NotificationStateImpl implements _NotificationState {
   @JsonKey()
   final ArchivesFilterType filterType;
   @override
+  final DateTime? start;
+  @override
+  final DateTime? end;
+  @override
   final Failure? failure;
 
   @override
   String toString() {
-    return 'NotificationState(status: $status, scrollController: $scrollController, searchController: $searchController, filterType: $filterType, failure: $failure)';
+    return 'NotificationState(status: $status, scrollController: $scrollController, searchController: $searchController, filterType: $filterType, start: $start, end: $end, failure: $failure)';
   }
 
   @override
@@ -746,12 +984,14 @@ class _$NotificationStateImpl implements _NotificationState {
                 other.searchController == searchController) &&
             (identical(other.filterType, filterType) ||
                 other.filterType == filterType) &&
+            (identical(other.start, start) || other.start == start) &&
+            (identical(other.end, end) || other.end == end) &&
             (identical(other.failure, failure) || other.failure == failure));
   }
 
   @override
   int get hashCode => Object.hash(runtimeType, status, scrollController,
-      searchController, filterType, failure);
+      searchController, filterType, start, end, failure);
 
   @JsonKey(ignore: true)
   @override
@@ -767,6 +1007,8 @@ abstract class _NotificationState implements NotificationState {
       final ScrollController? scrollController,
       final TextEditingController? searchController,
       final ArchivesFilterType filterType,
+      final DateTime? start,
+      final DateTime? end,
       final Failure? failure}) = _$NotificationStateImpl;
 
   @override
@@ -777,6 +1019,10 @@ abstract class _NotificationState implements NotificationState {
   TextEditingController? get searchController;
   @override
   ArchivesFilterType get filterType;
+  @override
+  DateTime? get start;
+  @override
+  DateTime? get end;
   @override
   Failure? get failure;
   @override

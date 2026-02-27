@@ -12,6 +12,7 @@ class NotificationBloc extends Bloc<NotificationEvent, NotificationState> {
   NotificationBloc() : super(NotificationState.initial()) {
     on<_Started>(_onStarted);
     on<_UpdateFilterType>(_onUpdateFilterType);
+    on<_UpdateDateFilterEvent>(_onUpdateDateFilterEvent);
     on<_GetNotifications>(_onGetNotifications);
     on<_AgainNotifications>(_onAgainNotifications);
   }
@@ -35,6 +36,19 @@ class NotificationBloc extends Bloc<NotificationEvent, NotificationState> {
 
     emit(state.copyWith(filterType: event.filterType, failure: null));
     add(const NotificationEvent.getNotifications());
+  }
+
+  void _onUpdateDateFilterEvent(
+    _UpdateDateFilterEvent event,
+    Emitter<NotificationState> emit,
+  ) {
+    emit(
+      state.copyWith(
+        start: event.start,
+        end: event.end,
+        filterType: ArchivesFilterType.date,
+      ),
+    );
   }
 
   Future<void> _onGetNotifications(

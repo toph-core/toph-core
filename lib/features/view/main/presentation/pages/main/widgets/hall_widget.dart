@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mary_ai_pos/core/common/custom_loading_widget.dart';
 import 'package:mary_ai_pos/core/extension/for_context.dart';
 import 'package:mary_ai_pos/core/routes/app_routes.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/cafe_tables/cafe_tables_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/hall/hall_model.dart';
+import 'package:mary_ai_pos/features/view/main/presentation/cubit/orders/orders_bloc.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/main/widgets/show_table_guest_count.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/main/widgets/table_widget.dart';
 
@@ -79,6 +81,7 @@ class _HallWidgetState extends State<HallWidget> {
                                         barrierDismissible: false,
                                       ).then((value) {
                                         if (value != null && value is int) {
+                                          final index = context.read<SavedOrdersBloc>().state.order.indexWhere((v) => v.createOrderRequest.tableId == table.id);
                                           Future.delayed(
                                             const Duration(milliseconds: 300),
                                             () => Navigator.pushNamed(
@@ -89,12 +92,14 @@ class _HallWidgetState extends State<HallWidget> {
                                                 "guest_count": value,
                                                 // "table_status": table.status
                                                 "table_status": table.status,
+                                                "saved_orders": index != -1 ? context.read<SavedOrdersBloc>().state.order[index] : null
                                               },
                                             ),
                                           );
                                         }
                                       });
                                     } else {
+                                      final index = context.read<SavedOrdersBloc>().state.order.indexWhere((v) => v.createOrderRequest.tableId == table.id);
                                       Navigator.pushNamed(
                                         context,
                                         AppRoutes.detailScreen,
@@ -102,6 +107,8 @@ class _HallWidgetState extends State<HallWidget> {
                                           "table": table,
                                           // "table_status": table.status
                                           "table_status": TableStatus.busy,
+                                          "saved_orders": index != -1 ? context.read<SavedOrdersBloc>().state.order[index] : null
+
                                         },
                                       );
                                     }
