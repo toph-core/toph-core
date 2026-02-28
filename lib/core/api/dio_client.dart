@@ -15,7 +15,8 @@ class DioClient {
     final bool isStaging = _prefs.getBool(STAGING_PREF_KEY) ?? true;
     _dio = Dio(
       BaseOptions(
-        baseUrl: isStaging ? STAGING_BASE_URL : PRODUCTION_BASE_URL,
+        baseUrl: PRODUCTION_BASE_URL,
+        // baseUrl: isStaging ? STAGING_BASE_URL : PRODUCTION_BASE_URL,
         connectTimeout: const Duration(seconds: 30),
         receiveTimeout: const Duration(seconds: 30),
         validateStatus: (status) => status != null && status < 400,
