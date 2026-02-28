@@ -14,10 +14,6 @@ class CheckItem extends StatelessWidget {
   final ArchiveEntity archive;
   final String selectChekId;
 
-  TextStyle _increaseFontSize(TextStyle style) {
-    return style.copyWith(fontSize: (style.fontSize ?? 14) + 2);
-  }
-
   const CheckItem({
     super.key,
     required this.archive,
@@ -45,32 +41,25 @@ class CheckItem extends StatelessWidget {
               children: [
                 Text(
                   "#${archive.bilNumber}",
-                  style: _increaseFontSize(
-                    context.textStyles.bold20.copyWith(
-                      fontWeight: FontWeight.w500,
-                    ),
+                  style: context.textStyles.bold20.copyWith(
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
                 const Spacer(),
-                Text(
-                  "Naqd",
-                  style: _increaseFontSize(context.textStyles.bodyMd),
-                ),
+                Text("Naqd", style: context.textStyles.bodyMd),
               ],
             ),
             Row(
               children: [
                 Text(
                   "Stol ${archive.tableNumber}",
-                  style: _increaseFontSize(context.textStyles.bodyMd),
+                  style: context.textStyles.bodyMd,
                 ),
                 const Spacer(),
                 Text(
                   archive.totalPrice.formatN,
-                  style: _increaseFontSize(
-                    context.textStyles.bold20.copyWith(
-                      fontWeight: FontWeight.w500,
-                    ),
+                  style: context.textStyles.bold20.copyWith(
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
               ],
@@ -85,22 +74,25 @@ class CheckItem extends StatelessWidget {
                 12.wBox,
                 Text(
                   archive.opened.toYyyyMmDd,
-                  style: _increaseFontSize(
-                    context.textStyles.title14.copyWith(fontSize: 16),
-                  ),
+                  style: context.textStyles.title14.copyWith(fontSize: 16),
                 ),
                 12.wBox,
                 Text(
                   archive.opened.toHourMinute,
-                  style: _increaseFontSize(
-                    context.textStyles.title14.copyWith(fontSize: 16),
-                  ),
+                  style: context.textStyles.title14.copyWith(fontSize: 16),
                 ),
-                const Spacer(),
-                Text(
-                  "${archive.goodsQuantity} ta mahsulot",
-                  style: _increaseFontSize(
-                    context.textStyles.title14.copyWith(fontSize: 16),
+                10.wBox,
+                Expanded(
+                  child: Align(
+                    alignment: Alignment.centerRight,
+                    child: Text(
+                      // "asdf",
+                      "${archive.goodsQuantity} ta mahsulot",
+                      style: context.textStyles.title14.copyWith(
+                        fontSize: 16,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
                   ),
                 ),
               ],

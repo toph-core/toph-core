@@ -5,11 +5,9 @@ import 'package:mary_ai_pos/core/common/custom_hover_effect_widget.dart';
 import 'package:mary_ai_pos/core/common/custom_text_field.dart';
 import 'package:mary_ai_pos/core/extension/for_context.dart';
 import 'package:mary_ai_pos/core/extension/widget_extension.dart';
-import 'package:mary_ai_pos/core/routes/app_routes.dart';
 import 'package:mary_ai_pos/core/values/app_assets.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/cafe_tables/cafe_tables_model.dart';
-import 'package:mary_ai_pos/features/view/main/presentation/cubit/create_order/create_order_bloc.dart';
-import 'package:mary_ai_pos/features/view/main/presentation/cubit/detail/detail_cubit.dart';
+import 'package:mary_ai_pos/features/view/main/presentation/cubit/detail/detail_bloc.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/orders/orders_bloc.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/detail/widgets/detail_tab_widget.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/detail/widgets/leave_from_detail_screen_dialog.dart';
@@ -37,12 +35,12 @@ class TopBarWidget extends StatelessWidget {
       child: Column(
         spacing: 12,
         children: [
-          Row(
-            spacing: 12,
-            children: [
-              BlocBuilder<DetailCubit, DetailState>(
-                builder: (context, state) {
-                  return CustomHoverEffectWidget(
+          BlocBuilder<DetailBloc, DetailState>(
+            builder: (context, state) {
+              return Row(
+                spacing: 12,
+                children: [
+                  CustomHoverEffectWidget(
                     bgColor: context.colors.bgSecondary,
                     onTap: state.selectedGoods.isNotEmpty
                         ? () async {
@@ -53,14 +51,24 @@ class TopBarWidget extends StatelessWidget {
                                   const LeaveFromDetailScreenDialog(),
                             ).then((value) {
                               if (value != null && value is bool && value) {
-                                final saved = context.read<DetailCubit>().saveOrder(cafeTable!, guestCount);
+                                final saved = context
+                                    .read<DetailBloc>()
+                                    .saveOrder(cafeTable!, guestCount);
                                 if (saved != null) {
-                                  context.read<SavedOrdersBloc>().add(SavedOrdersEvent.addNewOrder(order: saved));
+                                  context.read<SavedOrdersBloc>().add(
+                                    SavedOrdersEvent.addNewOrder(order: saved),
+                                  );
                                   Navigator.pop(context);
                                 }
-                              }else if(value != null && value is bool && !value){
-                                  context.read<SavedOrdersBloc>().add(SavedOrdersEvent.removeOrder(tableId: cafeTable?.id ?? ''));
-                                  Navigator.pop(context);
+                              } else if (value != null &&
+                                  value is bool &&
+                                  !value) {
+                                context.read<SavedOrdersBloc>().add(
+                                  SavedOrdersEvent.removeOrder(
+                                    tableId: cafeTable?.id ?? '',
+                                  ),
+                                );
+                                Navigator.pop(context);
                               }
                             });
                           }
@@ -69,24 +77,27 @@ class TopBarWidget extends StatelessWidget {
                     child: SvgPicture.asset(
                       AppIcons.icArrowLeft,
                     ).paddingAll(14),
-                  );
-                },
-              ),
-              if (cafeTable != null)
-                Text(
-                  '${cafeTable!.number}-stol',
-                  style: context.textStyles.headingSm,
-                ),
-              Expanded(
-                child: CustomTextField(
-                  hintText: "Taom nomi bilan qidirish",
-                  textInputType: TextInputType.webSearch,
-                  onTap: () => showKeyboard.value = true,
-                  suffixIcon: SvgPicture.asset(AppIcons.icSearch),
-                  textEditingController: textEditingController,
-                ),
-              ),
-            ],
+                  ),
+                  if (cafeTable != null)
+                    Text(
+                      '${cafeTable!.number}-stol',
+                      style: context.textStyles.headingSm,
+                    ),
+                  Expanded(
+                    child: CustomTextField(
+                      hintText: "Taom nomi bilan qidirish",
+                      textInputType: TextInputType.webSearch,
+                      onTap: () => showKeyboard.value = true,
+                      suffixIcon: SvgPicture.asset(AppIcons.icSearch),
+                      onChange: (value) => context.read<DetailBloc>().add(
+                        DetailEvent.searchTextChanged(text: value),
+                      ),
+                      textEditingController: textEditingController,
+                    ),
+                  ),
+                ],
+              );
+            },
           ),
           const DetailTabFilter(),
         ],

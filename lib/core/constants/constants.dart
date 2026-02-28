@@ -1,6 +1,10 @@
 // ignore_for_file: constant_identifier_names
 // const BASE_URL = 'https://back.maryai.yurtal.tech/';
 const BASE_URL = 'https://back.staging.maryai.yurtal.tech/';
+const STAGING_BASE_URL = 'https://back.staging.maryai.yurtal.tech/';
+const PRODUCTION_BASE_URL = 'https://back.maryai.yurtal.tech/';
+const STAGING_PREF_KEY = 'staging';
+const LEGACY_DEV_MODE_PREF_KEY = 'dev_mode';
 
 const ACCESS_TOKEN = 'access-token';
 const REFRESH_TOKEN = 'refresh-token';
@@ -14,13 +18,13 @@ enum Status { LOADING, UNKNOWN, SUCCESS, ERROR, OTHER, OTHER_LOADING, IDLE }
 
 enum OrderStatus { opened, pending, open, closed, paid, debt, deleted, none }
 
-enum ArchivesFilterType {All, Today, Week, month, date }
+enum ArchivesFilterType { All, Today, Week, month, date }
 
+enum GoodsCategoryType { all, category }
 
+enum PaymentType { cash, card, qr }
 
-enum PaymentType {cash, card, qr}
-
-enum DiscountType {money, percent}
+enum DiscountType { money, percent }
 
 class LangModel {
   final String code;

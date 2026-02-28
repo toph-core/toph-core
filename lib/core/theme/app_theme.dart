@@ -118,7 +118,7 @@ class AppTheme {
     bottomSheet: BorderRadius.vertical(top: Radius.circular(20)),
     topBar: BorderRadius.vertical(bottom: Radius.circular(24)),
     segmentedControl: BorderRadius.all(Radius.circular(100)),
-    infoRadius: BorderRadius.all(Radius.circular(59))
+    infoRadius: BorderRadius.all(Radius.circular(59)),
   );
 
   /// Light colors (JSON based)
@@ -165,7 +165,7 @@ class AppTheme {
     extraOrange: Color(0xFFCF8506),
 
     informationColor: Color(0xFFDF8A1B),
-    responseTextColor: Color(0xFF13AF1B)
+    responseTextColor: Color(0xFF13AF1B),
   );
 
   /// Light text styles
@@ -291,6 +291,6 @@ class AppTheme {
       fontSize: 14,
       fontWeight: FontWeight.normal,
       color: _lightColors.textDefault,
-    )
+    ),
   );
 }

@@ -11,7 +11,9 @@ bool isScrollbarThumbDragging = false;
 
 class BouncingScrollPhysicsModified extends ScrollPhysics {
   const BouncingScrollPhysicsModified({
-    super.parent = const BouncingScrollPhysics(parent: RangeMaintainingScrollPhysics()),
+    super.parent = const BouncingScrollPhysics(
+      parent: RangeMaintainingScrollPhysics(),
+    ),
     this.decelerationRate = ScrollDecelerationRate.normal,
   });
 
@@ -20,13 +22,22 @@ class BouncingScrollPhysicsModified extends ScrollPhysics {
 
   @override
   BouncingScrollPhysics applyTo(ScrollPhysics? ancestor) {
-    return BouncingScrollPhysics(parent: buildParent(ancestor), decelerationRate: decelerationRate);
+    return BouncingScrollPhysics(
+      parent: buildParent(ancestor),
+      decelerationRate: decelerationRate,
+    );
   }
 
   @override
-  bool recommendDeferredLoading(double velocity, ScrollMetrics metrics, BuildContext context) {
+  bool recommendDeferredLoading(
+    double velocity,
+    ScrollMetrics metrics,
+    BuildContext context,
+  ) {
     final double maxPhysicalPixels = View.of(context).physicalSize.longestSide;
-    final finalVelocity = isScrollbarThumbDragging ? velocity.abs() * 40 : velocity.abs() * 0.6;
+    final finalVelocity = isScrollbarThumbDragging
+        ? velocity.abs() * 40
+        : velocity.abs() * 0.6;
     return finalVelocity > maxPhysicalPixels;
   }
 
@@ -48,24 +59,43 @@ class BouncingScrollPhysicsModified extends ScrollPhysics {
       return offset;
     }
 
-    final double overscrollPastStart = math.max(position.minScrollExtent - position.pixels, 0.0);
-    final double overscrollPastEnd = math.max(position.pixels - position.maxScrollExtent, 0.0);
-    final double overscrollPast = math.max(overscrollPastStart, overscrollPastEnd);
-    final bool easing = (overscrollPastStart > 0.0 && offset < 0.0) || (overscrollPastEnd > 0.0 && offset > 0.0);
+    final double overscrollPastStart = math.max(
+      position.minScrollExtent - position.pixels,
+      0.0,
+    );
+    final double overscrollPastEnd = math.max(
+      position.pixels - position.maxScrollExtent,
+      0.0,
+    );
+    final double overscrollPast = math.max(
+      overscrollPastStart,
+      overscrollPastEnd,
+    );
+    final bool easing =
+        (overscrollPastStart > 0.0 && offset < 0.0) ||
+        (overscrollPastEnd > 0.0 && offset > 0.0);
 
     final double friction = easing
         // Apply less resistance when easing the overscroll vs tensioning.
-        ? frictionFactor((overscrollPast - offset.abs()) / position.viewportDimension)
+        ? frictionFactor(
+            (overscrollPast - offset.abs()) / position.viewportDimension,
+          )
         : frictionFactor(overscrollPast / position.viewportDimension);
     final double direction = offset.sign;
 
     if (easing && decelerationRate == ScrollDecelerationRate.fast) {
       return direction * offset.abs();
     }
-    return 0.4 * direction * _applyFriction(overscrollPast, offset.abs(), friction);
+    return 0.4 *
+        direction *
+        _applyFriction(overscrollPast, offset.abs(), friction);
   }
 
-  static double _applyFriction(double extentOutside, double absDelta, double gamma) {
+  static double _applyFriction(
+    double extentOutside,
+    double absDelta,
+    double gamma,
+  ) {
     assert(absDelta > 0);
     double total = 0.0;
     if (extentOutside > 0) {
@@ -80,7 +110,10 @@ class BouncingScrollPhysicsModified extends ScrollPhysics {
   }
 
   @override
-  Simulation? createBallisticSimulation(ScrollMetrics position, double velocity) {
+  Simulation? createBallisticSimulation(
+    ScrollMetrics position,
+    double velocity,
+  ) {
     final Tolerance tolerance = toleranceFor(position);
     if (velocity.abs() >= tolerance.velocity || position.outOfRange) {
       double constantDeceleration;
@@ -92,23 +125,34 @@ class BouncingScrollPhysicsModified extends ScrollPhysics {
       }
 
       // --- smoothes overscroll
-      final double overscrollPastStart = math.max(position.minScrollExtent - position.pixels, 0.0);
-      final double overscrollPastEnd = math.max(position.pixels - position.maxScrollExtent, 0.0);
-      final bool easing = (overscrollPastStart > 0.0 && position.pixels < 0.0) || (overscrollPastEnd > 0.0 && position.pixels > 0.0);
+      final double overscrollPastStart = math.max(
+        position.minScrollExtent - position.pixels,
+        0.0,
+      );
+      final double overscrollPastEnd = math.max(
+        position.pixels - position.maxScrollExtent,
+        0.0,
+      );
+      final bool easing =
+          (overscrollPastStart > 0.0 && position.pixels < 0.0) ||
+          (overscrollPastEnd > 0.0 && position.pixels > 0.0);
       if (easing) {
         double dampingFactor = 0.7; // Damping coefficient
-        double distance = (overscrollPastStart > 0.0) ? overscrollPastStart : overscrollPastEnd;
+        double distance = (overscrollPastStart > 0.0)
+            ? overscrollPastStart
+            : overscrollPastEnd;
         velocity *= math.exp(-dampingFactor * distance);
       }
 
       return BouncingScrollSimulation(
-          spring: spring,
-          position: position.pixels,
-          velocity: velocity,
-          leadingExtent: position.minScrollExtent,
-          trailingExtent: position.maxScrollExtent,
-          tolerance: tolerance,
-          constantDeceleration: constantDeceleration);
+        spring: spring,
+        position: position.pixels,
+        velocity: velocity,
+        leadingExtent: position.minScrollExtent,
+        trailingExtent: position.maxScrollExtent,
+        tolerance: tolerance,
+        constantDeceleration: constantDeceleration,
+      );
     }
     return null;
   }
@@ -121,7 +165,11 @@ class BouncingScrollPhysicsModified extends ScrollPhysics {
 
   @override
   double carriedMomentum(double existingVelocity) {
-    return existingVelocity.sign * math.min(0.000816 * math.pow(existingVelocity.abs(), 1.967).toDouble(), 40000.0);
+    return existingVelocity.sign *
+        math.min(
+          0.000816 * math.pow(existingVelocity.abs(), 1.967).toDouble(),
+          40000.0,
+        );
   }
 
   @override
@@ -153,7 +201,11 @@ class BouncingScrollPhysicsModified extends ScrollPhysics {
 }
 
 class ClampingScrollPhysicsModified extends ScrollPhysics {
-  const ClampingScrollPhysicsModified({super.parent = const ClampingScrollPhysics(parent: RangeMaintainingScrollPhysics())});
+  const ClampingScrollPhysicsModified({
+    super.parent = const ClampingScrollPhysics(
+      parent: RangeMaintainingScrollPhysics(),
+    ),
+  });
 
   @override
   ClampingScrollPhysicsModified applyTo(ScrollPhysics? ancestor) {
@@ -161,27 +213,37 @@ class ClampingScrollPhysicsModified extends ScrollPhysics {
   }
 
   @override
-  bool recommendDeferredLoading(double velocity, ScrollMetrics metrics, BuildContext context) {
+  bool recommendDeferredLoading(
+    double velocity,
+    ScrollMetrics metrics,
+    BuildContext context,
+  ) {
     final double maxPhysicalPixels = View.of(context).physicalSize.longestSide;
-    final finalVelocity = isScrollbarThumbDragging ? velocity.abs() * 20 : velocity.abs() * 0.6;
+    final finalVelocity = isScrollbarThumbDragging
+        ? velocity.abs() * 20
+        : velocity.abs() * 0.6;
     return finalVelocity > maxPhysicalPixels;
   }
 
   @override
   double applyBoundaryConditions(ScrollMetrics position, double value) {
-    if (value < position.pixels && position.pixels <= position.minScrollExtent) {
+    if (value < position.pixels &&
+        position.pixels <= position.minScrollExtent) {
       // Underscroll.
       return value - position.pixels;
     }
-    if (position.maxScrollExtent <= position.pixels && position.pixels < value) {
+    if (position.maxScrollExtent <= position.pixels &&
+        position.pixels < value) {
       // Overscroll.
       return value - position.pixels;
     }
-    if (value < position.minScrollExtent && position.minScrollExtent < position.pixels) {
+    if (value < position.minScrollExtent &&
+        position.minScrollExtent < position.pixels) {
       // Hit top edge.
       return value - position.minScrollExtent;
     }
-    if (position.pixels < position.maxScrollExtent && position.maxScrollExtent < value) {
+    if (position.pixels < position.maxScrollExtent &&
+        position.maxScrollExtent < value) {
       // Hit bottom edge.
       return value - position.maxScrollExtent;
     }
@@ -189,7 +251,10 @@ class ClampingScrollPhysicsModified extends ScrollPhysics {
   }
 
   @override
-  Simulation? createBallisticSimulation(ScrollMetrics position, double velocity) {
+  Simulation? createBallisticSimulation(
+    ScrollMetrics position,
+    double velocity,
+  ) {
     final Tolerance tolerance = toleranceFor(position);
     if (position.outOfRange) {
       double? end;

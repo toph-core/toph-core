@@ -5,8 +5,5 @@ abstract class SaveOrderEntity {
   final CafeTableModel cafeTable;
   final CreateOrderRequestModel createOrderRequest;
 
-  SaveOrderEntity({
-    required this.cafeTable,
-    required this.createOrderRequest,
-  });
+  SaveOrderEntity({required this.cafeTable, required this.createOrderRequest});
 }

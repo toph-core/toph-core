@@ -9,7 +9,7 @@ part of 'archives_filter_request_model.dart';
 _$ArchivesFilterRequestModelImpl _$$ArchivesFilterRequestModelImplFromJson(
         Map<String, dynamic> json) =>
     _$ArchivesFilterRequestModelImpl(
-      searchName: json['searchName'] as String?,
+      archiveNum: (json['archiveNum'] as num?)?.toInt(),
       filterType: $enumDecodeNullable(
               _$ArchivesFilterTypeEnumMap, json['filterType']) ??
           ArchivesFilterType.Today,
@@ -26,7 +26,7 @@ _$ArchivesFilterRequestModelImpl _$$ArchivesFilterRequestModelImplFromJson(
 Map<String, dynamic> _$$ArchivesFilterRequestModelImplToJson(
         _$ArchivesFilterRequestModelImpl instance) =>
     <String, dynamic>{
-      'searchName': instance.searchName,
+      'archiveNum': instance.archiveNum,
       'filterType': _$ArchivesFilterTypeEnumMap[instance.filterType]!,
       'startDate': instance.startDate?.toIso8601String(),
       'endDate': instance.endDate?.toIso8601String(),

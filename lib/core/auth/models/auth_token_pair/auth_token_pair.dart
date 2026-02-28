@@ -5,7 +5,6 @@ part 'auth_token_pair.g.dart';
 
 @freezed
 sealed class AuthTokenPair with _$AuthTokenPair {
-
   const factory AuthTokenPair({
     required String accessToken,
     required String refreshToken,

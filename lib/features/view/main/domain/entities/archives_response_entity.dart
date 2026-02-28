@@ -5,10 +5,7 @@ abstract class ArchivesResponseEntity {
   final List<ArchiveEntity> archives;
   final PaginationResponseEntity pagination;
 
-  ArchivesResponseEntity({
-    required this.archives,
-    required this.pagination,
-  });
+  ArchivesResponseEntity({required this.archives, required this.pagination});
 
   ArchivesResponseEntity updateModel(ArchivesResponseEntity newModel);
 }

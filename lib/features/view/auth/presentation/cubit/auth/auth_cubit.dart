@@ -17,7 +17,7 @@ class AuthCubit extends Cubit<AuthState> {
     this._logoutUseCase,
     this._loginWithBrandUsecase,
     this._logoutUsecase,
-    this._checkUserDataUsecase
+    this._checkUserDataUsecase,
   ) : super(const AuthState());
   final CheckUserAuthUseCase _checkUserAuthUseCase;
   final LogoutFromAppUseCase _logoutUseCase;
@@ -26,7 +26,9 @@ class AuthCubit extends Cubit<AuthState> {
   final CheckUserDataUsecase _checkUserDataUsecase;
 
   Future<bool> chechUserData() async {
-    return await _checkUserDataUsecase.call(NoParams()).then((value) => value.fold((l) => false, (r) => r));
+    return await _checkUserDataUsecase
+        .call(NoParams())
+        .then((value) => value.fold((l) => false, (r) => r));
   }
 
   Future<bool> checkUserToAuth() async {

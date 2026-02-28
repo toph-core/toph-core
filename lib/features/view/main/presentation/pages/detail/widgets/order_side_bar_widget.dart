@@ -14,13 +14,12 @@ import 'package:mary_ai_pos/di.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/cafe_tables/cafe_tables_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/food_additional/food_additional_model.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/create_order/create_order_bloc.dart';
-import 'package:mary_ai_pos/features/view/main/presentation/cubit/detail/detail_cubit.dart';
+import 'package:mary_ai_pos/features/view/main/presentation/cubit/detail/detail_bloc.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/main/main_cubit.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/detail/detail_screen_mixin.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/detail/widgets/clear_dialog.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/detail/widgets/send_to_kitchen_dialog.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/detail/widgets/show_food_additional.dart';
-import 'package:mary_ai_pos/features/view/main/presentation/pages/main/widgets/logout_dialog.dart';
 import 'package:mary_ai_pos/generated/l10n.dart';
 
 class OrderSidebar extends StatelessWidget with DetailScreenMixin {
@@ -33,12 +32,12 @@ class OrderSidebar extends StatelessWidget with DetailScreenMixin {
     this.tableId,
     required this.guestCount,
     required this.tableStatus,
-    this.orderId, 
+    this.orderId,
   });
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<DetailCubit, DetailState>(
+    return BlocBuilder<DetailBloc, DetailState>(
       buildWhen: (previous, current) =>
           previous.selectedGoods != current.selectedGoods,
       builder: (context, state) {
@@ -68,12 +67,15 @@ class OrderSidebar extends StatelessWidget with DetailScreenMixin {
                               context: context,
                               barrierDismissible: false,
                               builder: (context) => ClearDialog(
-                                onSuccess: () =>
-                                    context.read<DetailCubit>().clearGoods(),
+                                onSuccess: () => context.read<DetailBloc>().add(
+                                  const DetailEvent.clearGoods(),
+                                ),
                               ),
                             ).then(
                               (value) => value != null && value is bool && value
-                                  ? context.read<DetailCubit>().clearGoods()
+                                  ? context.read<DetailBloc>().add(
+                                      const DetailEvent.clearGoods(),
+                                    )
                                   : () {},
                             );
                           }
@@ -275,10 +277,12 @@ class _OrderCard extends StatelessWidget with DetailScreenMixin {
           ),
         ).then((value) {
           if (value != null && value is Map<String, dynamic>) {
-            context.read<DetailCubit>().addFoodAdditional(
-              value['additional'],
-              orderItem.uniqueId,
-              value['comment'],
+            context.read<DetailBloc>().add(
+              DetailEvent.addFoodAdditional(
+                additionals: value['additional'],
+                orderId: orderItem.uniqueId,
+                comment: value['comment'],
+              ),
             );
           }
         });
@@ -322,12 +326,12 @@ class _OrderCard extends StatelessWidget with DetailScreenMixin {
               children: [
                 _QuantitySelector(
                   quantity: orderItem.quantity,
-                  onDecrement: () => context
-                      .read<DetailCubit>()
-                      .decrementQuantity(orderItem.goods.id),
-                  onIncrement: () => context
-                      .read<DetailCubit>()
-                      .incrementQuantity(orderItem.goods.id),
+                  onDecrement: () => context.read<DetailBloc>().add(
+                    DetailEvent.decrementQuantity(goodsId: orderItem.goods.id),
+                  ),
+                  onIncrement: () => context.read<DetailBloc>().add(
+                    DetailEvent.incrementQuantity(goodsId: orderItem.goods.id),
+                  ),
                 ),
                 Text(
                   (orderItem.goods.additionals.isNotEmpty

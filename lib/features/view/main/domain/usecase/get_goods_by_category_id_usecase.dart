@@ -4,8 +4,7 @@ import 'package:mary_ai_pos/core/usecase/usecase.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/goods/goods_model.dart';
 import 'package:mary_ai_pos/features/view/main/domain/repository/main_repository.dart';
 
-class GetGoodsByCategoryIdUseCase
-    implements UseCase<List<GoodsModel>, String> {
+class GetGoodsByCategoryIdUseCase implements UseCase<List<GoodsModel>, String> {
   final MainRepository _repository;
 
   GetGoodsByCategoryIdUseCase(this._repository);

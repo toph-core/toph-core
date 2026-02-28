@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mary_ai_pos/features/view/order/presentation/cubit/order_cubit.dart';
 import 'package:mary_ai_pos/features/view/order/presentation/pages/widgets/order_list_item.dart';
-import 'package:mary_ai_pos/core/extension/for_context.dart'; 
+import 'package:mary_ai_pos/core/extension/for_context.dart';
 
 class OrderPanel extends StatelessWidget {
   const OrderPanel({super.key});
@@ -16,17 +16,17 @@ class OrderPanel extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-             color: Colors.black.withOpacity(0.05),
-             blurRadius: 12,
-             offset: const Offset(0, 4),
-          )
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
         ],
       ),
-      child: Column( 
+      child: Column(
         children: [
           _buildHeader(context),
           const Divider(height: 1),
-          
+
           // Order Items List
           Expanded(
             child: BlocBuilder<OrderCubit, OrderState>(
@@ -35,7 +35,9 @@ class OrderPanel extends StatelessWidget {
                   return Center(
                     child: Text(
                       "Buyurtma yo'q",
-                       style: context.textStyles.bodyMd.copyWith(color: Colors.grey),
+                      style: context.textStyles.bodyMd.copyWith(
+                        color: Colors.grey,
+                      ),
                     ),
                   );
                 }
@@ -51,9 +53,9 @@ class OrderPanel extends StatelessWidget {
               },
             ),
           ),
-          
+
           const Divider(height: 1),
-          
+
           // Totals and Actions
           _buildFooter(context),
         ],
@@ -82,7 +84,9 @@ class OrderPanel extends StatelessWidget {
               children: [
                 Text(
                   '16-stol', // Mock table
-                  style: context.textStyles.bodyLg.copyWith(fontWeight: FontWeight.bold),
+                  style: context.textStyles.bodyLg.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 Text(
                   'Sardor S.', // Mock waiter
@@ -91,10 +95,7 @@ class OrderPanel extends StatelessWidget {
               ],
             ),
           ),
-          IconButton(
-             onPressed: () {},
-             icon: const Icon(Icons.more_horiz),
-          ),
+          IconButton(onPressed: () {}, icon: const Icon(Icons.more_horiz)),
         ],
       ),
     );
@@ -110,22 +111,35 @@ class OrderPanel extends StatelessWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text('Jami:', style: context.textStyles.bodyLg.copyWith(fontWeight: FontWeight.w600)),
-                  Text('${state.total.toStringAsFixed(0)} UZS', style: context.textStyles.headingSm),
+                  Text(
+                    'Jami:',
+                    style: context.textStyles.bodyLg.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  Text(
+                    '${state.total.toStringAsFixed(0)} UZS',
+                    style: context.textStyles.headingSm,
+                  ),
                 ],
               ),
               const SizedBox(height: 16),
               ElevatedButton(
                 onPressed: () {},
                 style: ElevatedButton.styleFrom(
-                   backgroundColor: const Color(0xFFFB6633), // Brand color
-                   minimumSize: const Size(double.infinity, 50),
-                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                   elevation: 0,
+                  backgroundColor: const Color(0xFFFB6633), // Brand color
+                  minimumSize: const Size(double.infinity, 50),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  elevation: 0,
                 ),
                 child: Text(
                   'To\'lov qilish',
-                  style: context.textStyles.bodyLg.copyWith(color: Colors.white, fontWeight: FontWeight.bold),
+                  style: context.textStyles.bodyLg.copyWith(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
             ],

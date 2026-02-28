@@ -24,6 +24,7 @@ mixin _$ArchivesEvent {
     required TResult Function(ArchivesResponseEntity archives) archivesUpdated,
     required TResult Function(Failure? failure) failureChanged,
     required TResult Function(String value) searchChanged,
+    required TResult Function(String value) searchByArchiveNum,
     required TResult Function(String id) selectArchive,
     required TResult Function() getArchiveDetail,
     required TResult Function(ArchivesFilterType type) updateFilterType,
@@ -39,6 +40,7 @@ mixin _$ArchivesEvent {
     TResult? Function(ArchivesResponseEntity archives)? archivesUpdated,
     TResult? Function(Failure? failure)? failureChanged,
     TResult? Function(String value)? searchChanged,
+    TResult? Function(String value)? searchByArchiveNum,
     TResult? Function(String id)? selectArchive,
     TResult? Function()? getArchiveDetail,
     TResult? Function(ArchivesFilterType type)? updateFilterType,
@@ -54,6 +56,7 @@ mixin _$ArchivesEvent {
     TResult Function(ArchivesResponseEntity archives)? archivesUpdated,
     TResult Function(Failure? failure)? failureChanged,
     TResult Function(String value)? searchChanged,
+    TResult Function(String value)? searchByArchiveNum,
     TResult Function(String id)? selectArchive,
     TResult Function()? getArchiveDetail,
     TResult Function(ArchivesFilterType type)? updateFilterType,
@@ -70,6 +73,7 @@ mixin _$ArchivesEvent {
     required TResult Function(_ArchivesUpdated value) archivesUpdated,
     required TResult Function(_FailureChanged value) failureChanged,
     required TResult Function(_SearchChanged value) searchChanged,
+    required TResult Function(_SearchByArchiveNum value) searchByArchiveNum,
     required TResult Function(_SelectArchive value) selectArchive,
     required TResult Function(_GetArchiveDetail value) getArchiveDetail,
     required TResult Function(_UpdateFilterType value) updateFilterType,
@@ -85,6 +89,7 @@ mixin _$ArchivesEvent {
     TResult? Function(_ArchivesUpdated value)? archivesUpdated,
     TResult? Function(_FailureChanged value)? failureChanged,
     TResult? Function(_SearchChanged value)? searchChanged,
+    TResult? Function(_SearchByArchiveNum value)? searchByArchiveNum,
     TResult? Function(_SelectArchive value)? selectArchive,
     TResult? Function(_GetArchiveDetail value)? getArchiveDetail,
     TResult? Function(_UpdateFilterType value)? updateFilterType,
@@ -99,6 +104,7 @@ mixin _$ArchivesEvent {
     TResult Function(_ArchivesUpdated value)? archivesUpdated,
     TResult Function(_FailureChanged value)? failureChanged,
     TResult Function(_SearchChanged value)? searchChanged,
+    TResult Function(_SearchByArchiveNum value)? searchByArchiveNum,
     TResult Function(_SelectArchive value)? selectArchive,
     TResult Function(_GetArchiveDetail value)? getArchiveDetail,
     TResult Function(_UpdateFilterType value)? updateFilterType,
@@ -170,6 +176,7 @@ class _$StartedImpl implements _Started {
     required TResult Function(ArchivesResponseEntity archives) archivesUpdated,
     required TResult Function(Failure? failure) failureChanged,
     required TResult Function(String value) searchChanged,
+    required TResult Function(String value) searchByArchiveNum,
     required TResult Function(String id) selectArchive,
     required TResult Function() getArchiveDetail,
     required TResult Function(ArchivesFilterType type) updateFilterType,
@@ -188,6 +195,7 @@ class _$StartedImpl implements _Started {
     TResult? Function(ArchivesResponseEntity archives)? archivesUpdated,
     TResult? Function(Failure? failure)? failureChanged,
     TResult? Function(String value)? searchChanged,
+    TResult? Function(String value)? searchByArchiveNum,
     TResult? Function(String id)? selectArchive,
     TResult? Function()? getArchiveDetail,
     TResult? Function(ArchivesFilterType type)? updateFilterType,
@@ -206,6 +214,7 @@ class _$StartedImpl implements _Started {
     TResult Function(ArchivesResponseEntity archives)? archivesUpdated,
     TResult Function(Failure? failure)? failureChanged,
     TResult Function(String value)? searchChanged,
+    TResult Function(String value)? searchByArchiveNum,
     TResult Function(String id)? selectArchive,
     TResult Function()? getArchiveDetail,
     TResult Function(ArchivesFilterType type)? updateFilterType,
@@ -228,6 +237,7 @@ class _$StartedImpl implements _Started {
     required TResult Function(_ArchivesUpdated value) archivesUpdated,
     required TResult Function(_FailureChanged value) failureChanged,
     required TResult Function(_SearchChanged value) searchChanged,
+    required TResult Function(_SearchByArchiveNum value) searchByArchiveNum,
     required TResult Function(_SelectArchive value) selectArchive,
     required TResult Function(_GetArchiveDetail value) getArchiveDetail,
     required TResult Function(_UpdateFilterType value) updateFilterType,
@@ -246,6 +256,7 @@ class _$StartedImpl implements _Started {
     TResult? Function(_ArchivesUpdated value)? archivesUpdated,
     TResult? Function(_FailureChanged value)? failureChanged,
     TResult? Function(_SearchChanged value)? searchChanged,
+    TResult? Function(_SearchByArchiveNum value)? searchByArchiveNum,
     TResult? Function(_SelectArchive value)? selectArchive,
     TResult? Function(_GetArchiveDetail value)? getArchiveDetail,
     TResult? Function(_UpdateFilterType value)? updateFilterType,
@@ -263,6 +274,7 @@ class _$StartedImpl implements _Started {
     TResult Function(_ArchivesUpdated value)? archivesUpdated,
     TResult Function(_FailureChanged value)? failureChanged,
     TResult Function(_SearchChanged value)? searchChanged,
+    TResult Function(_SearchByArchiveNum value)? searchByArchiveNum,
     TResult Function(_SelectArchive value)? selectArchive,
     TResult Function(_GetArchiveDetail value)? getArchiveDetail,
     TResult Function(_UpdateFilterType value)? updateFilterType,
@@ -324,6 +336,7 @@ class _$GetArchivedImpl implements _GetArchived {
     required TResult Function(ArchivesResponseEntity archives) archivesUpdated,
     required TResult Function(Failure? failure) failureChanged,
     required TResult Function(String value) searchChanged,
+    required TResult Function(String value) searchByArchiveNum,
     required TResult Function(String id) selectArchive,
     required TResult Function() getArchiveDetail,
     required TResult Function(ArchivesFilterType type) updateFilterType,
@@ -342,6 +355,7 @@ class _$GetArchivedImpl implements _GetArchived {
     TResult? Function(ArchivesResponseEntity archives)? archivesUpdated,
     TResult? Function(Failure? failure)? failureChanged,
     TResult? Function(String value)? searchChanged,
+    TResult? Function(String value)? searchByArchiveNum,
     TResult? Function(String id)? selectArchive,
     TResult? Function()? getArchiveDetail,
     TResult? Function(ArchivesFilterType type)? updateFilterType,
@@ -360,6 +374,7 @@ class _$GetArchivedImpl implements _GetArchived {
     TResult Function(ArchivesResponseEntity archives)? archivesUpdated,
     TResult Function(Failure? failure)? failureChanged,
     TResult Function(String value)? searchChanged,
+    TResult Function(String value)? searchByArchiveNum,
     TResult Function(String id)? selectArchive,
     TResult Function()? getArchiveDetail,
     TResult Function(ArchivesFilterType type)? updateFilterType,
@@ -382,6 +397,7 @@ class _$GetArchivedImpl implements _GetArchived {
     required TResult Function(_ArchivesUpdated value) archivesUpdated,
     required TResult Function(_FailureChanged value) failureChanged,
     required TResult Function(_SearchChanged value) searchChanged,
+    required TResult Function(_SearchByArchiveNum value) searchByArchiveNum,
     required TResult Function(_SelectArchive value) selectArchive,
     required TResult Function(_GetArchiveDetail value) getArchiveDetail,
     required TResult Function(_UpdateFilterType value) updateFilterType,
@@ -400,6 +416,7 @@ class _$GetArchivedImpl implements _GetArchived {
     TResult? Function(_ArchivesUpdated value)? archivesUpdated,
     TResult? Function(_FailureChanged value)? failureChanged,
     TResult? Function(_SearchChanged value)? searchChanged,
+    TResult? Function(_SearchByArchiveNum value)? searchByArchiveNum,
     TResult? Function(_SelectArchive value)? selectArchive,
     TResult? Function(_GetArchiveDetail value)? getArchiveDetail,
     TResult? Function(_UpdateFilterType value)? updateFilterType,
@@ -417,6 +434,7 @@ class _$GetArchivedImpl implements _GetArchived {
     TResult Function(_ArchivesUpdated value)? archivesUpdated,
     TResult Function(_FailureChanged value)? failureChanged,
     TResult Function(_SearchChanged value)? searchChanged,
+    TResult Function(_SearchByArchiveNum value)? searchByArchiveNum,
     TResult Function(_SelectArchive value)? selectArchive,
     TResult Function(_GetArchiveDetail value)? getArchiveDetail,
     TResult Function(_UpdateFilterType value)? updateFilterType,
@@ -504,6 +522,7 @@ class _$StatusChangedImpl implements _StatusChanged {
     required TResult Function(ArchivesResponseEntity archives) archivesUpdated,
     required TResult Function(Failure? failure) failureChanged,
     required TResult Function(String value) searchChanged,
+    required TResult Function(String value) searchByArchiveNum,
     required TResult Function(String id) selectArchive,
     required TResult Function() getArchiveDetail,
     required TResult Function(ArchivesFilterType type) updateFilterType,
@@ -522,6 +541,7 @@ class _$StatusChangedImpl implements _StatusChanged {
     TResult? Function(ArchivesResponseEntity archives)? archivesUpdated,
     TResult? Function(Failure? failure)? failureChanged,
     TResult? Function(String value)? searchChanged,
+    TResult? Function(String value)? searchByArchiveNum,
     TResult? Function(String id)? selectArchive,
     TResult? Function()? getArchiveDetail,
     TResult? Function(ArchivesFilterType type)? updateFilterType,
@@ -540,6 +560,7 @@ class _$StatusChangedImpl implements _StatusChanged {
     TResult Function(ArchivesResponseEntity archives)? archivesUpdated,
     TResult Function(Failure? failure)? failureChanged,
     TResult Function(String value)? searchChanged,
+    TResult Function(String value)? searchByArchiveNum,
     TResult Function(String id)? selectArchive,
     TResult Function()? getArchiveDetail,
     TResult Function(ArchivesFilterType type)? updateFilterType,
@@ -562,6 +583,7 @@ class _$StatusChangedImpl implements _StatusChanged {
     required TResult Function(_ArchivesUpdated value) archivesUpdated,
     required TResult Function(_FailureChanged value) failureChanged,
     required TResult Function(_SearchChanged value) searchChanged,
+    required TResult Function(_SearchByArchiveNum value) searchByArchiveNum,
     required TResult Function(_SelectArchive value) selectArchive,
     required TResult Function(_GetArchiveDetail value) getArchiveDetail,
     required TResult Function(_UpdateFilterType value) updateFilterType,
@@ -580,6 +602,7 @@ class _$StatusChangedImpl implements _StatusChanged {
     TResult? Function(_ArchivesUpdated value)? archivesUpdated,
     TResult? Function(_FailureChanged value)? failureChanged,
     TResult? Function(_SearchChanged value)? searchChanged,
+    TResult? Function(_SearchByArchiveNum value)? searchByArchiveNum,
     TResult? Function(_SelectArchive value)? selectArchive,
     TResult? Function(_GetArchiveDetail value)? getArchiveDetail,
     TResult? Function(_UpdateFilterType value)? updateFilterType,
@@ -597,6 +620,7 @@ class _$StatusChangedImpl implements _StatusChanged {
     TResult Function(_ArchivesUpdated value)? archivesUpdated,
     TResult Function(_FailureChanged value)? failureChanged,
     TResult Function(_SearchChanged value)? searchChanged,
+    TResult Function(_SearchByArchiveNum value)? searchByArchiveNum,
     TResult Function(_SelectArchive value)? selectArchive,
     TResult Function(_GetArchiveDetail value)? getArchiveDetail,
     TResult Function(_UpdateFilterType value)? updateFilterType,
@@ -691,6 +715,7 @@ class _$ArchivesUpdatedImpl implements _ArchivesUpdated {
     required TResult Function(ArchivesResponseEntity archives) archivesUpdated,
     required TResult Function(Failure? failure) failureChanged,
     required TResult Function(String value) searchChanged,
+    required TResult Function(String value) searchByArchiveNum,
     required TResult Function(String id) selectArchive,
     required TResult Function() getArchiveDetail,
     required TResult Function(ArchivesFilterType type) updateFilterType,
@@ -709,6 +734,7 @@ class _$ArchivesUpdatedImpl implements _ArchivesUpdated {
     TResult? Function(ArchivesResponseEntity archives)? archivesUpdated,
     TResult? Function(Failure? failure)? failureChanged,
     TResult? Function(String value)? searchChanged,
+    TResult? Function(String value)? searchByArchiveNum,
     TResult? Function(String id)? selectArchive,
     TResult? Function()? getArchiveDetail,
     TResult? Function(ArchivesFilterType type)? updateFilterType,
@@ -727,6 +753,7 @@ class _$ArchivesUpdatedImpl implements _ArchivesUpdated {
     TResult Function(ArchivesResponseEntity archives)? archivesUpdated,
     TResult Function(Failure? failure)? failureChanged,
     TResult Function(String value)? searchChanged,
+    TResult Function(String value)? searchByArchiveNum,
     TResult Function(String id)? selectArchive,
     TResult Function()? getArchiveDetail,
     TResult Function(ArchivesFilterType type)? updateFilterType,
@@ -749,6 +776,7 @@ class _$ArchivesUpdatedImpl implements _ArchivesUpdated {
     required TResult Function(_ArchivesUpdated value) archivesUpdated,
     required TResult Function(_FailureChanged value) failureChanged,
     required TResult Function(_SearchChanged value) searchChanged,
+    required TResult Function(_SearchByArchiveNum value) searchByArchiveNum,
     required TResult Function(_SelectArchive value) selectArchive,
     required TResult Function(_GetArchiveDetail value) getArchiveDetail,
     required TResult Function(_UpdateFilterType value) updateFilterType,
@@ -767,6 +795,7 @@ class _$ArchivesUpdatedImpl implements _ArchivesUpdated {
     TResult? Function(_ArchivesUpdated value)? archivesUpdated,
     TResult? Function(_FailureChanged value)? failureChanged,
     TResult? Function(_SearchChanged value)? searchChanged,
+    TResult? Function(_SearchByArchiveNum value)? searchByArchiveNum,
     TResult? Function(_SelectArchive value)? selectArchive,
     TResult? Function(_GetArchiveDetail value)? getArchiveDetail,
     TResult? Function(_UpdateFilterType value)? updateFilterType,
@@ -784,6 +813,7 @@ class _$ArchivesUpdatedImpl implements _ArchivesUpdated {
     TResult Function(_ArchivesUpdated value)? archivesUpdated,
     TResult Function(_FailureChanged value)? failureChanged,
     TResult Function(_SearchChanged value)? searchChanged,
+    TResult Function(_SearchByArchiveNum value)? searchByArchiveNum,
     TResult Function(_SelectArchive value)? selectArchive,
     TResult Function(_GetArchiveDetail value)? getArchiveDetail,
     TResult Function(_UpdateFilterType value)? updateFilterType,
@@ -878,6 +908,7 @@ class _$FailureChangedImpl implements _FailureChanged {
     required TResult Function(ArchivesResponseEntity archives) archivesUpdated,
     required TResult Function(Failure? failure) failureChanged,
     required TResult Function(String value) searchChanged,
+    required TResult Function(String value) searchByArchiveNum,
     required TResult Function(String id) selectArchive,
     required TResult Function() getArchiveDetail,
     required TResult Function(ArchivesFilterType type) updateFilterType,
@@ -896,6 +927,7 @@ class _$FailureChangedImpl implements _FailureChanged {
     TResult? Function(ArchivesResponseEntity archives)? archivesUpdated,
     TResult? Function(Failure? failure)? failureChanged,
     TResult? Function(String value)? searchChanged,
+    TResult? Function(String value)? searchByArchiveNum,
     TResult? Function(String id)? selectArchive,
     TResult? Function()? getArchiveDetail,
     TResult? Function(ArchivesFilterType type)? updateFilterType,
@@ -914,6 +946,7 @@ class _$FailureChangedImpl implements _FailureChanged {
     TResult Function(ArchivesResponseEntity archives)? archivesUpdated,
     TResult Function(Failure? failure)? failureChanged,
     TResult Function(String value)? searchChanged,
+    TResult Function(String value)? searchByArchiveNum,
     TResult Function(String id)? selectArchive,
     TResult Function()? getArchiveDetail,
     TResult Function(ArchivesFilterType type)? updateFilterType,
@@ -936,6 +969,7 @@ class _$FailureChangedImpl implements _FailureChanged {
     required TResult Function(_ArchivesUpdated value) archivesUpdated,
     required TResult Function(_FailureChanged value) failureChanged,
     required TResult Function(_SearchChanged value) searchChanged,
+    required TResult Function(_SearchByArchiveNum value) searchByArchiveNum,
     required TResult Function(_SelectArchive value) selectArchive,
     required TResult Function(_GetArchiveDetail value) getArchiveDetail,
     required TResult Function(_UpdateFilterType value) updateFilterType,
@@ -954,6 +988,7 @@ class _$FailureChangedImpl implements _FailureChanged {
     TResult? Function(_ArchivesUpdated value)? archivesUpdated,
     TResult? Function(_FailureChanged value)? failureChanged,
     TResult? Function(_SearchChanged value)? searchChanged,
+    TResult? Function(_SearchByArchiveNum value)? searchByArchiveNum,
     TResult? Function(_SelectArchive value)? selectArchive,
     TResult? Function(_GetArchiveDetail value)? getArchiveDetail,
     TResult? Function(_UpdateFilterType value)? updateFilterType,
@@ -971,6 +1006,7 @@ class _$FailureChangedImpl implements _FailureChanged {
     TResult Function(_ArchivesUpdated value)? archivesUpdated,
     TResult Function(_FailureChanged value)? failureChanged,
     TResult Function(_SearchChanged value)? searchChanged,
+    TResult Function(_SearchByArchiveNum value)? searchByArchiveNum,
     TResult Function(_SelectArchive value)? selectArchive,
     TResult Function(_GetArchiveDetail value)? getArchiveDetail,
     TResult Function(_UpdateFilterType value)? updateFilterType,
@@ -1063,6 +1099,7 @@ class _$SearchChangedImpl implements _SearchChanged {
     required TResult Function(ArchivesResponseEntity archives) archivesUpdated,
     required TResult Function(Failure? failure) failureChanged,
     required TResult Function(String value) searchChanged,
+    required TResult Function(String value) searchByArchiveNum,
     required TResult Function(String id) selectArchive,
     required TResult Function() getArchiveDetail,
     required TResult Function(ArchivesFilterType type) updateFilterType,
@@ -1081,6 +1118,7 @@ class _$SearchChangedImpl implements _SearchChanged {
     TResult? Function(ArchivesResponseEntity archives)? archivesUpdated,
     TResult? Function(Failure? failure)? failureChanged,
     TResult? Function(String value)? searchChanged,
+    TResult? Function(String value)? searchByArchiveNum,
     TResult? Function(String id)? selectArchive,
     TResult? Function()? getArchiveDetail,
     TResult? Function(ArchivesFilterType type)? updateFilterType,
@@ -1099,6 +1137,7 @@ class _$SearchChangedImpl implements _SearchChanged {
     TResult Function(ArchivesResponseEntity archives)? archivesUpdated,
     TResult Function(Failure? failure)? failureChanged,
     TResult Function(String value)? searchChanged,
+    TResult Function(String value)? searchByArchiveNum,
     TResult Function(String id)? selectArchive,
     TResult Function()? getArchiveDetail,
     TResult Function(ArchivesFilterType type)? updateFilterType,
@@ -1121,6 +1160,7 @@ class _$SearchChangedImpl implements _SearchChanged {
     required TResult Function(_ArchivesUpdated value) archivesUpdated,
     required TResult Function(_FailureChanged value) failureChanged,
     required TResult Function(_SearchChanged value) searchChanged,
+    required TResult Function(_SearchByArchiveNum value) searchByArchiveNum,
     required TResult Function(_SelectArchive value) selectArchive,
     required TResult Function(_GetArchiveDetail value) getArchiveDetail,
     required TResult Function(_UpdateFilterType value) updateFilterType,
@@ -1139,6 +1179,7 @@ class _$SearchChangedImpl implements _SearchChanged {
     TResult? Function(_ArchivesUpdated value)? archivesUpdated,
     TResult? Function(_FailureChanged value)? failureChanged,
     TResult? Function(_SearchChanged value)? searchChanged,
+    TResult? Function(_SearchByArchiveNum value)? searchByArchiveNum,
     TResult? Function(_SelectArchive value)? selectArchive,
     TResult? Function(_GetArchiveDetail value)? getArchiveDetail,
     TResult? Function(_UpdateFilterType value)? updateFilterType,
@@ -1156,6 +1197,7 @@ class _$SearchChangedImpl implements _SearchChanged {
     TResult Function(_ArchivesUpdated value)? archivesUpdated,
     TResult Function(_FailureChanged value)? failureChanged,
     TResult Function(_SearchChanged value)? searchChanged,
+    TResult Function(_SearchByArchiveNum value)? searchByArchiveNum,
     TResult Function(_SelectArchive value)? selectArchive,
     TResult Function(_GetArchiveDetail value)? getArchiveDetail,
     TResult Function(_UpdateFilterType value)? updateFilterType,
@@ -1175,6 +1217,199 @@ abstract class _SearchChanged implements ArchivesEvent {
   String get value;
   @JsonKey(ignore: true)
   _$$SearchChangedImplCopyWith<_$SearchChangedImpl> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class _$$SearchByArchiveNumImplCopyWith<$Res> {
+  factory _$$SearchByArchiveNumImplCopyWith(_$SearchByArchiveNumImpl value,
+          $Res Function(_$SearchByArchiveNumImpl) then) =
+      __$$SearchByArchiveNumImplCopyWithImpl<$Res>;
+  @useResult
+  $Res call({String value});
+}
+
+/// @nodoc
+class __$$SearchByArchiveNumImplCopyWithImpl<$Res>
+    extends _$ArchivesEventCopyWithImpl<$Res, _$SearchByArchiveNumImpl>
+    implements _$$SearchByArchiveNumImplCopyWith<$Res> {
+  __$$SearchByArchiveNumImplCopyWithImpl(_$SearchByArchiveNumImpl _value,
+      $Res Function(_$SearchByArchiveNumImpl) _then)
+      : super(_value, _then);
+
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? value = null,
+  }) {
+    return _then(_$SearchByArchiveNumImpl(
+      null == value
+          ? _value.value
+          : value // ignore: cast_nullable_to_non_nullable
+              as String,
+    ));
+  }
+}
+
+/// @nodoc
+
+class _$SearchByArchiveNumImpl implements _SearchByArchiveNum {
+  const _$SearchByArchiveNumImpl(this.value);
+
+  @override
+  final String value;
+
+  @override
+  String toString() {
+    return 'ArchivesEvent.searchByArchiveNum(value: $value)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$SearchByArchiveNumImpl &&
+            (identical(other.value, value) || other.value == value));
+  }
+
+  @override
+  int get hashCode => Object.hash(runtimeType, value);
+
+  @JsonKey(ignore: true)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$SearchByArchiveNumImplCopyWith<_$SearchByArchiveNumImpl> get copyWith =>
+      __$$SearchByArchiveNumImplCopyWithImpl<_$SearchByArchiveNumImpl>(
+          this, _$identity);
+
+  @override
+  @optionalTypeArgs
+  TResult when<TResult extends Object?>({
+    required TResult Function() started,
+    required TResult Function() getArchived,
+    required TResult Function(Status status) statusChanged,
+    required TResult Function(ArchivesResponseEntity archives) archivesUpdated,
+    required TResult Function(Failure? failure) failureChanged,
+    required TResult Function(String value) searchChanged,
+    required TResult Function(String value) searchByArchiveNum,
+    required TResult Function(String id) selectArchive,
+    required TResult Function() getArchiveDetail,
+    required TResult Function(ArchivesFilterType type) updateFilterType,
+    required TResult Function(DateTime startDate, DateTime endDate)
+        updateFilterDateRange,
+  }) {
+    return searchByArchiveNum(value);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult? whenOrNull<TResult extends Object?>({
+    TResult? Function()? started,
+    TResult? Function()? getArchived,
+    TResult? Function(Status status)? statusChanged,
+    TResult? Function(ArchivesResponseEntity archives)? archivesUpdated,
+    TResult? Function(Failure? failure)? failureChanged,
+    TResult? Function(String value)? searchChanged,
+    TResult? Function(String value)? searchByArchiveNum,
+    TResult? Function(String id)? selectArchive,
+    TResult? Function()? getArchiveDetail,
+    TResult? Function(ArchivesFilterType type)? updateFilterType,
+    TResult? Function(DateTime startDate, DateTime endDate)?
+        updateFilterDateRange,
+  }) {
+    return searchByArchiveNum?.call(value);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult maybeWhen<TResult extends Object?>({
+    TResult Function()? started,
+    TResult Function()? getArchived,
+    TResult Function(Status status)? statusChanged,
+    TResult Function(ArchivesResponseEntity archives)? archivesUpdated,
+    TResult Function(Failure? failure)? failureChanged,
+    TResult Function(String value)? searchChanged,
+    TResult Function(String value)? searchByArchiveNum,
+    TResult Function(String id)? selectArchive,
+    TResult Function()? getArchiveDetail,
+    TResult Function(ArchivesFilterType type)? updateFilterType,
+    TResult Function(DateTime startDate, DateTime endDate)?
+        updateFilterDateRange,
+    required TResult orElse(),
+  }) {
+    if (searchByArchiveNum != null) {
+      return searchByArchiveNum(value);
+    }
+    return orElse();
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult map<TResult extends Object?>({
+    required TResult Function(_Started value) started,
+    required TResult Function(_GetArchived value) getArchived,
+    required TResult Function(_StatusChanged value) statusChanged,
+    required TResult Function(_ArchivesUpdated value) archivesUpdated,
+    required TResult Function(_FailureChanged value) failureChanged,
+    required TResult Function(_SearchChanged value) searchChanged,
+    required TResult Function(_SearchByArchiveNum value) searchByArchiveNum,
+    required TResult Function(_SelectArchive value) selectArchive,
+    required TResult Function(_GetArchiveDetail value) getArchiveDetail,
+    required TResult Function(_UpdateFilterType value) updateFilterType,
+    required TResult Function(_UpdateFilterDateRange value)
+        updateFilterDateRange,
+  }) {
+    return searchByArchiveNum(this);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult? mapOrNull<TResult extends Object?>({
+    TResult? Function(_Started value)? started,
+    TResult? Function(_GetArchived value)? getArchived,
+    TResult? Function(_StatusChanged value)? statusChanged,
+    TResult? Function(_ArchivesUpdated value)? archivesUpdated,
+    TResult? Function(_FailureChanged value)? failureChanged,
+    TResult? Function(_SearchChanged value)? searchChanged,
+    TResult? Function(_SearchByArchiveNum value)? searchByArchiveNum,
+    TResult? Function(_SelectArchive value)? selectArchive,
+    TResult? Function(_GetArchiveDetail value)? getArchiveDetail,
+    TResult? Function(_UpdateFilterType value)? updateFilterType,
+    TResult? Function(_UpdateFilterDateRange value)? updateFilterDateRange,
+  }) {
+    return searchByArchiveNum?.call(this);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult maybeMap<TResult extends Object?>({
+    TResult Function(_Started value)? started,
+    TResult Function(_GetArchived value)? getArchived,
+    TResult Function(_StatusChanged value)? statusChanged,
+    TResult Function(_ArchivesUpdated value)? archivesUpdated,
+    TResult Function(_FailureChanged value)? failureChanged,
+    TResult Function(_SearchChanged value)? searchChanged,
+    TResult Function(_SearchByArchiveNum value)? searchByArchiveNum,
+    TResult Function(_SelectArchive value)? selectArchive,
+    TResult Function(_GetArchiveDetail value)? getArchiveDetail,
+    TResult Function(_UpdateFilterType value)? updateFilterType,
+    TResult Function(_UpdateFilterDateRange value)? updateFilterDateRange,
+    required TResult orElse(),
+  }) {
+    if (searchByArchiveNum != null) {
+      return searchByArchiveNum(this);
+    }
+    return orElse();
+  }
+}
+
+abstract class _SearchByArchiveNum implements ArchivesEvent {
+  const factory _SearchByArchiveNum(final String value) =
+      _$SearchByArchiveNumImpl;
+
+  String get value;
+  @JsonKey(ignore: true)
+  _$$SearchByArchiveNumImplCopyWith<_$SearchByArchiveNumImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }
 
@@ -1248,6 +1483,7 @@ class _$SelectArchiveImpl implements _SelectArchive {
     required TResult Function(ArchivesResponseEntity archives) archivesUpdated,
     required TResult Function(Failure? failure) failureChanged,
     required TResult Function(String value) searchChanged,
+    required TResult Function(String value) searchByArchiveNum,
     required TResult Function(String id) selectArchive,
     required TResult Function() getArchiveDetail,
     required TResult Function(ArchivesFilterType type) updateFilterType,
@@ -1266,6 +1502,7 @@ class _$SelectArchiveImpl implements _SelectArchive {
     TResult? Function(ArchivesResponseEntity archives)? archivesUpdated,
     TResult? Function(Failure? failure)? failureChanged,
     TResult? Function(String value)? searchChanged,
+    TResult? Function(String value)? searchByArchiveNum,
     TResult? Function(String id)? selectArchive,
     TResult? Function()? getArchiveDetail,
     TResult? Function(ArchivesFilterType type)? updateFilterType,
@@ -1284,6 +1521,7 @@ class _$SelectArchiveImpl implements _SelectArchive {
     TResult Function(ArchivesResponseEntity archives)? archivesUpdated,
     TResult Function(Failure? failure)? failureChanged,
     TResult Function(String value)? searchChanged,
+    TResult Function(String value)? searchByArchiveNum,
     TResult Function(String id)? selectArchive,
     TResult Function()? getArchiveDetail,
     TResult Function(ArchivesFilterType type)? updateFilterType,
@@ -1306,6 +1544,7 @@ class _$SelectArchiveImpl implements _SelectArchive {
     required TResult Function(_ArchivesUpdated value) archivesUpdated,
     required TResult Function(_FailureChanged value) failureChanged,
     required TResult Function(_SearchChanged value) searchChanged,
+    required TResult Function(_SearchByArchiveNum value) searchByArchiveNum,
     required TResult Function(_SelectArchive value) selectArchive,
     required TResult Function(_GetArchiveDetail value) getArchiveDetail,
     required TResult Function(_UpdateFilterType value) updateFilterType,
@@ -1324,6 +1563,7 @@ class _$SelectArchiveImpl implements _SelectArchive {
     TResult? Function(_ArchivesUpdated value)? archivesUpdated,
     TResult? Function(_FailureChanged value)? failureChanged,
     TResult? Function(_SearchChanged value)? searchChanged,
+    TResult? Function(_SearchByArchiveNum value)? searchByArchiveNum,
     TResult? Function(_SelectArchive value)? selectArchive,
     TResult? Function(_GetArchiveDetail value)? getArchiveDetail,
     TResult? Function(_UpdateFilterType value)? updateFilterType,
@@ -1341,6 +1581,7 @@ class _$SelectArchiveImpl implements _SelectArchive {
     TResult Function(_ArchivesUpdated value)? archivesUpdated,
     TResult Function(_FailureChanged value)? failureChanged,
     TResult Function(_SearchChanged value)? searchChanged,
+    TResult Function(_SearchByArchiveNum value)? searchByArchiveNum,
     TResult Function(_SelectArchive value)? selectArchive,
     TResult Function(_GetArchiveDetail value)? getArchiveDetail,
     TResult Function(_UpdateFilterType value)? updateFilterType,
@@ -1408,6 +1649,7 @@ class _$GetArchiveDetailImpl implements _GetArchiveDetail {
     required TResult Function(ArchivesResponseEntity archives) archivesUpdated,
     required TResult Function(Failure? failure) failureChanged,
     required TResult Function(String value) searchChanged,
+    required TResult Function(String value) searchByArchiveNum,
     required TResult Function(String id) selectArchive,
     required TResult Function() getArchiveDetail,
     required TResult Function(ArchivesFilterType type) updateFilterType,
@@ -1426,6 +1668,7 @@ class _$GetArchiveDetailImpl implements _GetArchiveDetail {
     TResult? Function(ArchivesResponseEntity archives)? archivesUpdated,
     TResult? Function(Failure? failure)? failureChanged,
     TResult? Function(String value)? searchChanged,
+    TResult? Function(String value)? searchByArchiveNum,
     TResult? Function(String id)? selectArchive,
     TResult? Function()? getArchiveDetail,
     TResult? Function(ArchivesFilterType type)? updateFilterType,
@@ -1444,6 +1687,7 @@ class _$GetArchiveDetailImpl implements _GetArchiveDetail {
     TResult Function(ArchivesResponseEntity archives)? archivesUpdated,
     TResult Function(Failure? failure)? failureChanged,
     TResult Function(String value)? searchChanged,
+    TResult Function(String value)? searchByArchiveNum,
     TResult Function(String id)? selectArchive,
     TResult Function()? getArchiveDetail,
     TResult Function(ArchivesFilterType type)? updateFilterType,
@@ -1466,6 +1710,7 @@ class _$GetArchiveDetailImpl implements _GetArchiveDetail {
     required TResult Function(_ArchivesUpdated value) archivesUpdated,
     required TResult Function(_FailureChanged value) failureChanged,
     required TResult Function(_SearchChanged value) searchChanged,
+    required TResult Function(_SearchByArchiveNum value) searchByArchiveNum,
     required TResult Function(_SelectArchive value) selectArchive,
     required TResult Function(_GetArchiveDetail value) getArchiveDetail,
     required TResult Function(_UpdateFilterType value) updateFilterType,
@@ -1484,6 +1729,7 @@ class _$GetArchiveDetailImpl implements _GetArchiveDetail {
     TResult? Function(_ArchivesUpdated value)? archivesUpdated,
     TResult? Function(_FailureChanged value)? failureChanged,
     TResult? Function(_SearchChanged value)? searchChanged,
+    TResult? Function(_SearchByArchiveNum value)? searchByArchiveNum,
     TResult? Function(_SelectArchive value)? selectArchive,
     TResult? Function(_GetArchiveDetail value)? getArchiveDetail,
     TResult? Function(_UpdateFilterType value)? updateFilterType,
@@ -1501,6 +1747,7 @@ class _$GetArchiveDetailImpl implements _GetArchiveDetail {
     TResult Function(_ArchivesUpdated value)? archivesUpdated,
     TResult Function(_FailureChanged value)? failureChanged,
     TResult Function(_SearchChanged value)? searchChanged,
+    TResult Function(_SearchByArchiveNum value)? searchByArchiveNum,
     TResult Function(_SelectArchive value)? selectArchive,
     TResult Function(_GetArchiveDetail value)? getArchiveDetail,
     TResult Function(_UpdateFilterType value)? updateFilterType,
@@ -1589,6 +1836,7 @@ class _$UpdateFilterTypeImpl implements _UpdateFilterType {
     required TResult Function(ArchivesResponseEntity archives) archivesUpdated,
     required TResult Function(Failure? failure) failureChanged,
     required TResult Function(String value) searchChanged,
+    required TResult Function(String value) searchByArchiveNum,
     required TResult Function(String id) selectArchive,
     required TResult Function() getArchiveDetail,
     required TResult Function(ArchivesFilterType type) updateFilterType,
@@ -1607,6 +1855,7 @@ class _$UpdateFilterTypeImpl implements _UpdateFilterType {
     TResult? Function(ArchivesResponseEntity archives)? archivesUpdated,
     TResult? Function(Failure? failure)? failureChanged,
     TResult? Function(String value)? searchChanged,
+    TResult? Function(String value)? searchByArchiveNum,
     TResult? Function(String id)? selectArchive,
     TResult? Function()? getArchiveDetail,
     TResult? Function(ArchivesFilterType type)? updateFilterType,
@@ -1625,6 +1874,7 @@ class _$UpdateFilterTypeImpl implements _UpdateFilterType {
     TResult Function(ArchivesResponseEntity archives)? archivesUpdated,
     TResult Function(Failure? failure)? failureChanged,
     TResult Function(String value)? searchChanged,
+    TResult Function(String value)? searchByArchiveNum,
     TResult Function(String id)? selectArchive,
     TResult Function()? getArchiveDetail,
     TResult Function(ArchivesFilterType type)? updateFilterType,
@@ -1647,6 +1897,7 @@ class _$UpdateFilterTypeImpl implements _UpdateFilterType {
     required TResult Function(_ArchivesUpdated value) archivesUpdated,
     required TResult Function(_FailureChanged value) failureChanged,
     required TResult Function(_SearchChanged value) searchChanged,
+    required TResult Function(_SearchByArchiveNum value) searchByArchiveNum,
     required TResult Function(_SelectArchive value) selectArchive,
     required TResult Function(_GetArchiveDetail value) getArchiveDetail,
     required TResult Function(_UpdateFilterType value) updateFilterType,
@@ -1665,6 +1916,7 @@ class _$UpdateFilterTypeImpl implements _UpdateFilterType {
     TResult? Function(_ArchivesUpdated value)? archivesUpdated,
     TResult? Function(_FailureChanged value)? failureChanged,
     TResult? Function(_SearchChanged value)? searchChanged,
+    TResult? Function(_SearchByArchiveNum value)? searchByArchiveNum,
     TResult? Function(_SelectArchive value)? selectArchive,
     TResult? Function(_GetArchiveDetail value)? getArchiveDetail,
     TResult? Function(_UpdateFilterType value)? updateFilterType,
@@ -1682,6 +1934,7 @@ class _$UpdateFilterTypeImpl implements _UpdateFilterType {
     TResult Function(_ArchivesUpdated value)? archivesUpdated,
     TResult Function(_FailureChanged value)? failureChanged,
     TResult Function(_SearchChanged value)? searchChanged,
+    TResult Function(_SearchByArchiveNum value)? searchByArchiveNum,
     TResult Function(_SelectArchive value)? selectArchive,
     TResult Function(_GetArchiveDetail value)? getArchiveDetail,
     TResult Function(_UpdateFilterType value)? updateFilterType,
@@ -1787,6 +2040,7 @@ class _$UpdateFilterDateRangeImpl implements _UpdateFilterDateRange {
     required TResult Function(ArchivesResponseEntity archives) archivesUpdated,
     required TResult Function(Failure? failure) failureChanged,
     required TResult Function(String value) searchChanged,
+    required TResult Function(String value) searchByArchiveNum,
     required TResult Function(String id) selectArchive,
     required TResult Function() getArchiveDetail,
     required TResult Function(ArchivesFilterType type) updateFilterType,
@@ -1805,6 +2059,7 @@ class _$UpdateFilterDateRangeImpl implements _UpdateFilterDateRange {
     TResult? Function(ArchivesResponseEntity archives)? archivesUpdated,
     TResult? Function(Failure? failure)? failureChanged,
     TResult? Function(String value)? searchChanged,
+    TResult? Function(String value)? searchByArchiveNum,
     TResult? Function(String id)? selectArchive,
     TResult? Function()? getArchiveDetail,
     TResult? Function(ArchivesFilterType type)? updateFilterType,
@@ -1823,6 +2078,7 @@ class _$UpdateFilterDateRangeImpl implements _UpdateFilterDateRange {
     TResult Function(ArchivesResponseEntity archives)? archivesUpdated,
     TResult Function(Failure? failure)? failureChanged,
     TResult Function(String value)? searchChanged,
+    TResult Function(String value)? searchByArchiveNum,
     TResult Function(String id)? selectArchive,
     TResult Function()? getArchiveDetail,
     TResult Function(ArchivesFilterType type)? updateFilterType,
@@ -1845,6 +2101,7 @@ class _$UpdateFilterDateRangeImpl implements _UpdateFilterDateRange {
     required TResult Function(_ArchivesUpdated value) archivesUpdated,
     required TResult Function(_FailureChanged value) failureChanged,
     required TResult Function(_SearchChanged value) searchChanged,
+    required TResult Function(_SearchByArchiveNum value) searchByArchiveNum,
     required TResult Function(_SelectArchive value) selectArchive,
     required TResult Function(_GetArchiveDetail value) getArchiveDetail,
     required TResult Function(_UpdateFilterType value) updateFilterType,
@@ -1863,6 +2120,7 @@ class _$UpdateFilterDateRangeImpl implements _UpdateFilterDateRange {
     TResult? Function(_ArchivesUpdated value)? archivesUpdated,
     TResult? Function(_FailureChanged value)? failureChanged,
     TResult? Function(_SearchChanged value)? searchChanged,
+    TResult? Function(_SearchByArchiveNum value)? searchByArchiveNum,
     TResult? Function(_SelectArchive value)? selectArchive,
     TResult? Function(_GetArchiveDetail value)? getArchiveDetail,
     TResult? Function(_UpdateFilterType value)? updateFilterType,
@@ -1880,6 +2138,7 @@ class _$UpdateFilterDateRangeImpl implements _UpdateFilterDateRange {
     TResult Function(_ArchivesUpdated value)? archivesUpdated,
     TResult Function(_FailureChanged value)? failureChanged,
     TResult Function(_SearchChanged value)? searchChanged,
+    TResult Function(_SearchByArchiveNum value)? searchByArchiveNum,
     TResult Function(_SelectArchive value)? selectArchive,
     TResult Function(_GetArchiveDetail value)? getArchiveDetail,
     TResult Function(_UpdateFilterType value)? updateFilterType,

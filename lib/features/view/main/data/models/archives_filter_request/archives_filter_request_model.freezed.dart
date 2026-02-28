@@ -21,7 +21,7 @@ ArchivesFilterRequestModel _$ArchivesFilterRequestModelFromJson(
 
 /// @nodoc
 mixin _$ArchivesFilterRequestModel {
-  String? get searchName => throw _privateConstructorUsedError;
+  int? get archiveNum => throw _privateConstructorUsedError;
   ArchivesFilterType get filterType => throw _privateConstructorUsedError;
   DateTime? get startDate => throw _privateConstructorUsedError;
   DateTime? get endDate => throw _privateConstructorUsedError;
@@ -42,7 +42,7 @@ abstract class $ArchivesFilterRequestModelCopyWith<$Res> {
           ArchivesFilterRequestModel>;
   @useResult
   $Res call(
-      {String? searchName,
+      {int? archiveNum,
       ArchivesFilterType filterType,
       DateTime? startDate,
       DateTime? endDate,
@@ -63,17 +63,17 @@ class _$ArchivesFilterRequestModelCopyWithImpl<$Res,
   @pragma('vm:prefer-inline')
   @override
   $Res call({
-    Object? searchName = freezed,
+    Object? archiveNum = freezed,
     Object? filterType = null,
     Object? startDate = freezed,
     Object? endDate = freezed,
     Object? pagination = freezed,
   }) {
     return _then(_value.copyWith(
-      searchName: freezed == searchName
-          ? _value.searchName
-          : searchName // ignore: cast_nullable_to_non_nullable
-              as String?,
+      archiveNum: freezed == archiveNum
+          ? _value.archiveNum
+          : archiveNum // ignore: cast_nullable_to_non_nullable
+              as int?,
       filterType: null == filterType
           ? _value.filterType
           : filterType // ignore: cast_nullable_to_non_nullable
@@ -104,7 +104,7 @@ abstract class _$$ArchivesFilterRequestModelImplCopyWith<$Res>
   @override
   @useResult
   $Res call(
-      {String? searchName,
+      {int? archiveNum,
       ArchivesFilterType filterType,
       DateTime? startDate,
       DateTime? endDate,
@@ -124,17 +124,17 @@ class __$$ArchivesFilterRequestModelImplCopyWithImpl<$Res>
   @pragma('vm:prefer-inline')
   @override
   $Res call({
-    Object? searchName = freezed,
+    Object? archiveNum = freezed,
     Object? filterType = null,
     Object? startDate = freezed,
     Object? endDate = freezed,
     Object? pagination = freezed,
   }) {
     return _then(_$ArchivesFilterRequestModelImpl(
-      searchName: freezed == searchName
-          ? _value.searchName
-          : searchName // ignore: cast_nullable_to_non_nullable
-              as String?,
+      archiveNum: freezed == archiveNum
+          ? _value.archiveNum
+          : archiveNum // ignore: cast_nullable_to_non_nullable
+              as int?,
       filterType: null == filterType
           ? _value.filterType
           : filterType // ignore: cast_nullable_to_non_nullable
@@ -159,7 +159,7 @@ class __$$ArchivesFilterRequestModelImplCopyWithImpl<$Res>
 @JsonSerializable()
 class _$ArchivesFilterRequestModelImpl extends _ArchivesFilterRequestModel {
   const _$ArchivesFilterRequestModelImpl(
-      {this.searchName,
+      {this.archiveNum,
       this.filterType = ArchivesFilterType.Today,
       this.startDate,
       this.endDate,
@@ -171,7 +171,7 @@ class _$ArchivesFilterRequestModelImpl extends _ArchivesFilterRequestModel {
       _$$ArchivesFilterRequestModelImplFromJson(json);
 
   @override
-  final String? searchName;
+  final int? archiveNum;
   @override
   @JsonKey()
   final ArchivesFilterType filterType;
@@ -185,7 +185,7 @@ class _$ArchivesFilterRequestModelImpl extends _ArchivesFilterRequestModel {
 
   @override
   String toString() {
-    return 'ArchivesFilterRequestModel(searchName: $searchName, filterType: $filterType, startDate: $startDate, endDate: $endDate, pagination: $pagination)';
+    return 'ArchivesFilterRequestModel(archiveNum: $archiveNum, filterType: $filterType, startDate: $startDate, endDate: $endDate, pagination: $pagination)';
   }
 
   @override
@@ -193,8 +193,8 @@ class _$ArchivesFilterRequestModelImpl extends _ArchivesFilterRequestModel {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
             other is _$ArchivesFilterRequestModelImpl &&
-            (identical(other.searchName, searchName) ||
-                other.searchName == searchName) &&
+            (identical(other.archiveNum, archiveNum) ||
+                other.archiveNum == archiveNum) &&
             (identical(other.filterType, filterType) ||
                 other.filterType == filterType) &&
             (identical(other.startDate, startDate) ||
@@ -207,7 +207,7 @@ class _$ArchivesFilterRequestModelImpl extends _ArchivesFilterRequestModel {
   @JsonKey(ignore: true)
   @override
   int get hashCode => Object.hash(
-      runtimeType, searchName, filterType, startDate, endDate, pagination);
+      runtimeType, archiveNum, filterType, startDate, endDate, pagination);
 
   @JsonKey(ignore: true)
   @override
@@ -226,7 +226,7 @@ class _$ArchivesFilterRequestModelImpl extends _ArchivesFilterRequestModel {
 
 abstract class _ArchivesFilterRequestModel extends ArchivesFilterRequestModel {
   const factory _ArchivesFilterRequestModel(
-          {final String? searchName,
+          {final int? archiveNum,
           final ArchivesFilterType filterType,
           final DateTime? startDate,
           final DateTime? endDate,
@@ -239,7 +239,7 @@ abstract class _ArchivesFilterRequestModel extends ArchivesFilterRequestModel {
       _$ArchivesFilterRequestModelImpl.fromJson;
 
   @override
-  String? get searchName;
+  int? get archiveNum;
   @override
   ArchivesFilterType get filterType;
   @override

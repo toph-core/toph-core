@@ -70,7 +70,7 @@ class SendToKitchenDialog extends StatelessWidget {
                     child: CustomHoverEffectWidget(
                       bgColor: context.colors.bgBrand,
                       borderRadius: context.radius.card,
-                      onTap: () => Navigator.pop(context,true),
+                      onTap: () => Navigator.pop(context, true),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         mainAxisAlignment: MainAxisAlignment.center,

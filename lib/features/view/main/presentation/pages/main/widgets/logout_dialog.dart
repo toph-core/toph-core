@@ -74,7 +74,13 @@ class LogoutDialog extends StatelessWidget {
                       bgColor: const Color(0x19DB1F1F),
                       borderRadius: context.radius.card,
                       onTap: () {
-                        context.read<AuthCubit>().logout(onSuccess: () => Navigator.pushNamedAndRemoveUntil(context, AppRoutes.loginPinScreen,(route) => false ));
+                        context.read<AuthCubit>().logout(
+                          onSuccess: () => Navigator.pushNamedAndRemoveUntil(
+                            context,
+                            AppRoutes.loginPinScreen,
+                            (route) => false,
+                          ),
+                        );
                       },
                       child: const Row(
                         mainAxisSize: MainAxisSize.min,

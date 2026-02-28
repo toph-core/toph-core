@@ -33,7 +33,9 @@ class _MainScreenState extends State<MainScreen> {
     return Scaffold(
       backgroundColor: context.colors.bgSecondary,
       body: BlocProvider(
-        create: (context) => context.read<SavedOrdersBloc>()..add(const SavedOrdersEvent.started()),
+        create: (context) =>
+            context.read<SavedOrdersBloc>()
+              ..add(const SavedOrdersEvent.started()),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [

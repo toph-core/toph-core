@@ -14,6 +14,7 @@ import 'package:mary_ai_pos/features/view/main/domain/entities/archives_response
 import 'package:mary_ai_pos/features/view/main/domain/usecase/get_archive_with_id_usecase.dart';
 import 'package:mary_ai_pos/features/view/main/domain/usecase/get_archives_usecase.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/archive/archive_bloc.dart';
+import 'package:rxdart/rxdart.dart';
 
 part 'archives_event.dart';
 part 'archives_state.dart';
@@ -39,11 +40,24 @@ class ArchivesBloc extends Bloc<ArchivesEvent, ArchivesState> {
     on<_GetArchiveDetail>(_getArchiveDetail);
     on<_UpdateFilterType>(_updateFilterType);
     on<_UpdateFilterDateRange>(_updateFilterDateRange);
+    on<_SearchByArchiveNum>(
+      _onSearchByArchiveNum,
+      transformer: (events, mapper) => events
+          .debounceTime(const Duration(milliseconds: 600))
+          .switchMap(mapper),
+    );
   }
 
   void _updateFilterType(_UpdateFilterType event, emit) {
     if (state.filterType != event.type) {
-      emit(state.copyWith(filterType: event.type, archives: null,startFilterDate: null,endFilterDate: null));
+      emit(
+        state.copyWith(
+          filterType: event.type,
+          archives: null,
+          startFilterDate: null,
+          endFilterDate: null,
+        ),
+      );
       add(const _GetArchived());
     }
   }
@@ -104,6 +118,7 @@ class ArchivesBloc extends Bloc<ArchivesEvent, ArchivesState> {
     emit(state.copyWith(status: Status.LOADING));
     final response = await _getArchivesUsecase.call(
       ArchivesFilterRequestModel(
+        archiveNum: int.tryParse(state.textController?.text ?? ""),
         filterType: state.filterType,
         startDate: state.startFilterDate,
         endDate: state.endFilterDate,
@@ -158,6 +173,14 @@ class ArchivesBloc extends Bloc<ArchivesEvent, ArchivesState> {
       );
     }
     emit(state.copyWith(textController: controller));
+  }
+
+  void _onSearchByArchiveNum(
+    _SearchByArchiveNum event,
+    Emitter<ArchivesState> emit,
+  ) {
+    add(_SearchChanged(event.value));
+    add(const _GetArchived());
   }
 
   @override

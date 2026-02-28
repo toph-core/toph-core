@@ -10,4 +10,4 @@ class CheckUserDataUsecase extends UseCase<bool, NoParams> {
   @override
   Future<Either<Failure, bool>> call(NoParams params) async =>
       await _repository.haveUserData();
-} 
+}

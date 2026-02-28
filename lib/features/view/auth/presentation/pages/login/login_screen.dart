@@ -12,11 +12,14 @@ import 'package:mary_ai_pos/core/utils/validator.dart';
 import 'package:mary_ai_pos/core/values/app_assets.dart';
 import 'package:mary_ai_pos/core/values/app_colors.dart';
 import 'package:mary_ai_pos/core/values/app_strings.dart';
+import 'package:mary_ai_pos/di.dart';
 import 'package:mary_ai_pos/features/view/auth/presentation/cubit/auth/auth_cubit.dart';
 import 'package:mary_ai_pos/features/view/auth/presentation/cubit/auth/auth_state.dart';
+import 'package:mary_ai_pos/features/view/auth/presentation/cubit/settings/settings_cubit.dart';
 import 'package:mary_ai_pos/features/view/auth/presentation/pages/login/widgets/liquid_text_field.dart';
 import 'package:mary_ai_pos/features/view/auth/presentation/pages/login/widgets/obsecure_icon_button_widget.dart';
 import 'package:mary_ai_pos/generated/l10n.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:virtual_keyboard_multi_language/virtual_keyboard_multi_language.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -28,16 +31,25 @@ class LoginScreen extends StatefulWidget {
 
 class _OnlineOfflineStudentScreenState extends State<LoginScreen>
     with FormValidationMixin {
+  static const List<String> _languages = ['uz', 'en', 'ru'];
   final TextEditingController _brandIdController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final FocusNode _brandIdFocusNode = FocusNode();
   final FocusNode _passwordFocusNode = FocusNode();
+  late final SharedPreferences _prefs;
+  late final ValueNotifier<bool> _topSwitchNotifier;
   TextEditingController? _activeController;
   bool _shiftEnabled = false;
 
   @override
   void initState() {
     super.initState();
+    _prefs = inject<SharedPreferences>();
+    _topSwitchNotifier = ValueNotifier<bool>(_resolveInitialStagingValue());
+    inject<DioClient>().dio.options.baseUrl = _topSwitchNotifier.value
+        ? STAGING_BASE_URL
+        : PRODUCTION_BASE_URL;
+
     _brandIdFocusNode.addListener(() {
       if (_brandIdFocusNode.hasFocus) {
         _activeController = _brandIdController;
@@ -51,6 +63,25 @@ class _OnlineOfflineStudentScreenState extends State<LoginScreen>
       }
       setState(() {});
     });
+  }
+
+  bool _resolveInitialStagingValue() {
+    final bool? isStaging = _prefs.getBool(STAGING_PREF_KEY);
+    if (isStaging != null) return isStaging;
+
+    final String? legacyMode = _prefs.getString(LEGACY_DEV_MODE_PREF_KEY);
+    if (legacyMode == PRODUCTION_BASE_URL) return false;
+    if (legacyMode == STAGING_BASE_URL) return true;
+    return true;
+  }
+
+  Future<void> _onUpdateStagingMode(bool isStaging) async {
+    _topSwitchNotifier.value = isStaging;
+    await _prefs.setBool(STAGING_PREF_KEY, isStaging);
+    await _prefs.remove(LEGACY_DEV_MODE_PREF_KEY);
+    inject<DioClient>().dio.options.baseUrl = isStaging
+        ? STAGING_BASE_URL
+        : PRODUCTION_BASE_URL;
   }
 
   void _onKeyPress(VirtualKeyboardKey key) {
@@ -134,6 +165,7 @@ class _OnlineOfflineStudentScreenState extends State<LoginScreen>
     _passwordController.dispose();
     _brandIdFocusNode.dispose();
     _passwordFocusNode.dispose();
+    _topSwitchNotifier.dispose();
     super.dispose();
   }
 
@@ -269,6 +301,94 @@ class _OnlineOfflineStudentScreenState extends State<LoginScreen>
                           type: VirtualKeyboardType.Alphanumeric,
                           postKeyPress: _onKeyPress,
                         ),
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    top: 16,
+                    right: 16,
+                    child: SafeArea(
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Text(
+                            "DEV MODE",
+                            style: TextStyle(color: Colors.white),
+                          ),
+                          ValueListenableBuilder<bool>(
+                            valueListenable: _topSwitchNotifier,
+                            builder: (context, isStaging, _) {
+                              return Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 4,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.black.withOpacity(.35),
+                                  borderRadius: context.radius.buttonLg,
+                                  border: Border.all(
+                                    color: AppColors.white.withOpacity(.4),
+                                    width: 1,
+                                  ),
+                                ),
+                                child: Switch(
+                                  value: isStaging,
+                                  onChanged: _onUpdateStagingMode,
+                                  activeColor: AppColors.white,
+                                  inactiveThumbColor: Colors.white70,
+                                  inactiveTrackColor: Colors.white24,
+                                ),
+                              );
+                            },
+                          ),
+                          8.horizontalSpace,
+                          BlocBuilder<SettingsCubit, SettingsState>(
+                            builder: (context, settingsState) {
+                              return Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.black.withOpacity(.35),
+                                  borderRadius: context.radius.buttonLg,
+                                  border: Border.all(
+                                    color: AppColors.white.withOpacity(.4),
+                                    width: 1,
+                                  ),
+                                ),
+                                child: DropdownButtonHideUnderline(
+                                  child: DropdownButton<String>(
+                                    value: settingsState.language,
+                                    dropdownColor: AppColors.black,
+                                    borderRadius: context.radius.buttonLg,
+                                    iconEnabledColor: AppColors.white,
+                                    style: context.textStyles.bold16.copyWith(
+                                      color: AppColors.white,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                    items: _languages
+                                        .map(
+                                          (code) => DropdownMenuItem<String>(
+                                            value: code,
+                                            child: Text(code.toUpperCase()),
+                                          ),
+                                        )
+                                        .toList(),
+                                    onChanged: (value) {
+                                      if (value == null ||
+                                          value == settingsState.language) {
+                                        return;
+                                      }
+                                      context.read<SettingsCubit>().saveAppLang(
+                                        context,
+                                        languageCode: value,
+                                      );
+                                    },
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ],
                       ),
                     ),
                   ),

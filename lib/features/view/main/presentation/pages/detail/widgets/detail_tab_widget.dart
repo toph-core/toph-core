@@ -5,7 +5,7 @@ import 'package:mary_ai_pos/core/constants/constants.dart';
 import 'package:mary_ai_pos/core/extension/for_context.dart';
 import 'package:mary_ai_pos/core/extension/int_extension.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/category/category_model.dart';
-import 'package:mary_ai_pos/features/view/main/presentation/cubit/detail/detail_cubit.dart';
+import 'package:mary_ai_pos/features/view/main/presentation/cubit/detail/detail_bloc.dart';
 import 'package:mary_ai_pos/generated/l10n.dart';
 
 class DetailTabFilter extends StatelessWidget {
@@ -13,7 +13,7 @@ class DetailTabFilter extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<DetailCubit, DetailState>(
+    return BlocBuilder<DetailBloc, DetailState>(
       builder: (context, state) {
         if (state.status == Status.LOADING && state.categories == null) {
           return SizedBox(
@@ -116,8 +116,8 @@ class __TabButtonState extends State<_TabButton> {
       onExit: (_) => setState(() => _isHovered = false),
       cursor: SystemMouseCursors.click,
       child: GestureDetector(
-        onTap: () => context.read<DetailCubit>().setSelectedCategoryId(
-          widget.category.id,
+        onTap: () => context.read<DetailBloc>().add(
+          DetailEvent.setSelectedCategoryId(id: widget.category.id),
         ),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),

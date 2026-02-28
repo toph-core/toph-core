@@ -60,6 +60,8 @@ class AppFormatter {
     mask: '+### ## ### ## ##',
     filter: {"#": RegExp(r'\d')},
   );
+
+  static final numberOnlyFormatter = FilteringTextInputFormatter.digitsOnly;
 }
 
 class AtSignUsernameFormatter extends TextInputFormatter {

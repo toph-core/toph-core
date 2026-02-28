@@ -2,7 +2,7 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:mary_ai_pos/core/constants/constants.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/cafe_tables/cafe_tables_model.dart';
 
-import '../../../presentation/cubit/detail/detail_cubit.dart';
+import '../../../presentation/cubit/detail/detail_bloc.dart';
 
 part 'create_order_request_model.freezed.dart';
 
@@ -24,20 +24,26 @@ class CreateOrderRequestModel with _$CreateOrderRequestModel {
     "cashier_id": cashierId,
     "comment": comment,
     "guest_count": guestCount,
-    "items": List.generate(foods.length, (index) => {
+    "items": List.generate(
+      foods.length,
+      (index) => {
         "comment": comment,
         "good_id": foods[index].goods.id,
         "quantity": foods[index].quantity,
-      },),
+      },
+    ),
     "status": status.name.toLowerCase(),
     "table_id": tableId,
   };
 
   Map<String, dynamic> createOrder() => {
-    "items": List.generate(foods.length, (index) => {
+    "items": List.generate(
+      foods.length,
+      (index) => {
         "comment": comment,
         "good_id": foods[index].goods.id,
         "quantity": foods[index].quantity,
-      },),
+      },
+    ),
   };
 }

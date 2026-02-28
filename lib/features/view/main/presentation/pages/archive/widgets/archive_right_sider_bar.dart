@@ -186,7 +186,11 @@ class ArchiveRightSiderBar extends StatelessWidget {
                             Text("Berilgan", style: context.textStyles.bodySm),
                             const Spacer(),
                             Text(
-                              state.selectArchiveDetail?.customerPaidAmount.formatN ?? "--",
+                              state
+                                      .selectArchiveDetail
+                                      ?.customerPaidAmount
+                                      .formatN ??
+                                  "--",
                               style: context.textStyles.bold16.copyWith(
                                 fontWeight: FontWeight.w500,
                               ),
@@ -199,7 +203,8 @@ class ArchiveRightSiderBar extends StatelessWidget {
                             Text("Qaytim", style: context.textStyles.bodySm),
                             const Spacer(),
                             Text(
-                              state.selectArchiveDetail?.changeAmount.formatN ?? '--',
+                              state.selectArchiveDetail?.changeAmount.formatN ??
+                                  '--',
                               style: context.textStyles.bold16.copyWith(
                                 fontWeight: FontWeight.w500,
                               ),

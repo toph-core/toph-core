@@ -57,8 +57,6 @@ class _SplashScreenState extends State<SplashScreen> {
       } else {
         Navigator.pushReplacementNamed(context, AppRoutes.loginScreen);
       }
-
-      
     } catch (error) {
       showErrorMessage(
         context,

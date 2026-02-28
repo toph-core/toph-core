@@ -127,43 +127,48 @@ class _NotificationScreenState extends State<NotificationScreen> {
                         child: CustomHoverEffectWidget(
                           onTap: () async {
                             final pickedRange = await showDateRangePicker(
-                          context: context,
-                          initialDateRange: DateTimeRange(
-                            start: DateTime.now(),
-                            end: DateTime.now(),
-                          ),
-                          firstDate: DateTime(2000),
-                          lastDate: DateTime.now().add(
-                            const Duration(days: 365 * 10),
-                          ),
-                          initialEntryMode: DatePickerEntryMode.calendarOnly,
-                          builder: (context, child) {
-                            return Center(
-                              child: ConstrainedBox(
-                                constraints: const BoxConstraints(
-                                  maxWidth: 400.0,
-                                  maxHeight: 600.0,
-                                ),
-                                child: child,
+                              context: context,
+                              initialDateRange: DateTimeRange(
+                                start: DateTime.now(),
+                                end: DateTime.now(),
                               ),
+                              firstDate: DateTime(2000),
+                              lastDate: DateTime.now().add(
+                                const Duration(days: 365 * 10),
+                              ),
+                              initialEntryMode:
+                                  DatePickerEntryMode.calendarOnly,
+                              builder: (context, child) {
+                                return Center(
+                                  child: ConstrainedBox(
+                                    constraints: const BoxConstraints(
+                                      maxWidth: 400.0,
+                                      maxHeight: 600.0,
+                                    ),
+                                    child: child,
+                                  ),
+                                );
+                              },
                             );
+                            if (pickedRange != null) {
+                              context.read<NotificationBloc>().add(
+                                NotificationEvent.updateDateFilterEvent(
+                                  start: pickedRange.start,
+                                  end: pickedRange.end,
+                                ),
+                              );
+                            }
                           },
-                        );
-                        if (pickedRange != null) {
-                          context.read<NotificationBloc>().add(
-                            NotificationEvent.updateDateFilterEvent(
-                              start: pickedRange.start,
-                              end: pickedRange.end,
-                            ),
-                          );
-                        }
-                          },
-                          bgColor: state.filterType == ArchivesFilterType.date? context.colors.buttonBrand : context.colors.bgSecondary,
+                          bgColor: state.filterType == ArchivesFilterType.date
+                              ? context.colors.buttonBrand
+                              : context.colors.bgSecondary,
                           borderRadius: context.radius.buttonLg,
                           child: SvgPicture.asset(
                             AppIcons.icCalendar,
                             colorFilter: ColorFilter.mode(
-                              state.filterType == ArchivesFilterType.date? context.colors.buttonSecondary : context.colors.buttonBrand,
+                              state.filterType == ArchivesFilterType.date
+                                  ? context.colors.buttonSecondary
+                                  : context.colors.buttonBrand,
                               BlendMode.srcIn,
                             ),
                           ).paddingAll(12),
@@ -176,8 +181,14 @@ class _NotificationScreenState extends State<NotificationScreen> {
                           (index) => SizedBox(
                             height: 52,
                             child: CustomHoverEffectWidget(
-                              onTap: () => context.read<NotificationBloc>().add(NotificationEvent.updateFilterType(filterType: ArchivesFilterType.values[index])),
-                              bgColor: state.filterType == ArchivesFilterType.values[index]
+                              onTap: () => context.read<NotificationBloc>().add(
+                                NotificationEvent.updateFilterType(
+                                  filterType: ArchivesFilterType.values[index],
+                                ),
+                              ),
+                              bgColor:
+                                  state.filterType ==
+                                      ArchivesFilterType.values[index]
                                   ? context.colors.buttonBrand
                                   : context.colors.bgSecondary,
                               borderRadius: context.radius.buttonLg,
@@ -186,7 +197,9 @@ class _NotificationScreenState extends State<NotificationScreen> {
                                   names[index],
                                   style: context.textStyles.bold16.copyWith(
                                     fontWeight: FontWeight.w500,
-                                    color:  state.filterType == ArchivesFilterType.values[index]
+                                    color:
+                                        state.filterType ==
+                                            ArchivesFilterType.values[index]
                                         ? context.colors.textOnBrand
                                         : context.colors.textDefault,
                                   ),

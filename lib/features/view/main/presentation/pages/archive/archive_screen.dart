@@ -41,7 +41,7 @@ class ArchiveScreen extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                     ArchiveTopBar(),
+                      const ArchiveTopBar(),
                       16.hBox,
                       Expanded(
                         child: Container(

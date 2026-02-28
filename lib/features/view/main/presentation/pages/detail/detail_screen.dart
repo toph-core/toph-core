@@ -1,4 +1,3 @@
-import 'package:device_preview/device_preview.dart' hide VirtualKeyboard;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:keyboard_dismisser/keyboard_dismisser.dart';
@@ -6,10 +5,8 @@ import 'package:mary_ai_pos/core/extension/for_context.dart';
 import 'package:mary_ai_pos/core/extension/widget_extension.dart';
 import 'package:mary_ai_pos/di.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/cafe_tables/cafe_tables_model.dart';
-import 'package:mary_ai_pos/features/view/main/data/models/create_order/create_order_request_model.dart';
 import 'package:mary_ai_pos/features/view/main/domain/entities/save_order_entity.dart';
-import 'package:mary_ai_pos/features/view/main/presentation/cubit/create_order/create_order_bloc.dart';
-import 'package:mary_ai_pos/features/view/main/presentation/cubit/detail/detail_cubit.dart';
+import 'package:mary_ai_pos/features/view/main/presentation/cubit/detail/detail_bloc.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/detail/detail_screen_mixin.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/detail/widgets/order_side_bar_widget.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/detail/widgets/produc_grid_widget.dart';
@@ -36,7 +33,14 @@ class _DetailScreenState extends State<DetailScreen> with DetailScreenMixin {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (context) => inject<DetailCubit>()..getCategories()..initSavedGoods(savedOrders?.createOrderRequest.foods ?? []),
+      create: (context) => inject<DetailBloc>()
+        ..add(const DetailEvent.started())
+        ..add(const DetailEvent.getCategories())
+        ..add(
+          DetailEvent.initSavedGoods(
+            savedGoods: savedOrders?.createOrderRequest.foods ?? [],
+          ),
+        ),
       child: KeyboardDismisser(
         child: Scaffold(
           backgroundColor: context.colors.bgSecondary,

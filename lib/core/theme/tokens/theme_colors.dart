@@ -151,7 +151,7 @@ class ThemeColors extends ThemeExtension<ThemeColors> {
       extraOrange: extraOrange ?? this.extraOrange,
       emptyValueColor: emptyValueColor ?? this.emptyValueColor,
       informationColor: informationColor,
-      responseTextColor: responseTextColor
+      responseTextColor: responseTextColor,
     );
   }
 
@@ -221,7 +221,7 @@ class ThemeColors extends ThemeExtension<ThemeColors> {
       extraOrange: Color.lerp(extraOrange, other.extraOrange, t)!,
       emptyValueColor: this.emptyValueColor,
       informationColor: informationColor,
-      responseTextColor: responseTextColor
+      responseTextColor: responseTextColor,
     );
   }
 }

@@ -8,7 +8,7 @@ import 'package:mary_ai_pos/core/extension/number_formatter.dart';
 import 'package:mary_ai_pos/core/extension/widget_extension.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/food_additional/food_additional_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/goods/goods_model.dart';
-import 'package:mary_ai_pos/features/view/main/presentation/cubit/detail/detail_cubit.dart';
+import 'package:mary_ai_pos/features/view/main/presentation/cubit/detail/detail_bloc.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/detail/detail_screen_mixin.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/detail/widgets/show_food_additional.dart';
 import 'package:mary_ai_pos/generated/l10n.dart';
@@ -23,7 +23,7 @@ class ProductGridWidget extends StatelessWidget {
         color: context.colors.bgDefault,
         borderRadius: context.radius.card24,
       ),
-      child: BlocBuilder<DetailCubit, DetailState>(
+      child: BlocBuilder<DetailBloc, DetailState>(
         buildWhen: (previous, current) => previous.goods != current.goods,
         builder: (context, state) {
           final products = state.goods;
@@ -73,11 +73,11 @@ class _ProductCard extends StatelessWidget with DetailScreenMixin {
           color: context.colors.bgSecondary,
           borderRadius: context.radius.card,
           child: InkWell(
-            borderRadius: context.radius.card,
             onTap: () {
-              context.read<DetailCubit>().selectGood(product);
+              context.read<DetailBloc>().add(
+                DetailEvent.selectGood(good: product),
+              );
             },
-          
             child: Padding(
               padding: const EdgeInsets.all(10),
               child: Column(

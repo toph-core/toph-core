@@ -24,6 +24,7 @@ abstract class MainRepository {
   Future<Either<Failure, List<GoodsModel>>> getGoodsByCategoryId(
     String categoryId,
   );
+  Future<Either<Failure, List<GoodsModel>>> getGoodsWithName(String name);
   Future<Either<Failure, ArchivesResponseEntity>> getArchives(
     ArchivesFilterRequestEntity request,
   );

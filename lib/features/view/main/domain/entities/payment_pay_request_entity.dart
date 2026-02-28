@@ -18,7 +18,7 @@ abstract class PaymentPayRequestEntity {
     required this.discountAmount,
     required this.discountPercent,
     required this.paymentType,
-    required this.comment
+    required this.comment,
   });
 
   Map<String, dynamic> request();

@@ -5,7 +5,6 @@ part 'brand_id_token_pair.g.dart';
 
 @freezed
 sealed class BrandIdTokenPair with _$BrandIdTokenPair {
-
   const factory BrandIdTokenPair({
     required String brandId,
     required String password,

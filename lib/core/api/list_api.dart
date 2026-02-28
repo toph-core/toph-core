@@ -11,6 +11,8 @@ class ListAPI {
   static const String categories = "api/v1/categories";
   static String categoriesGoods(String categoryId) =>
       "api/v1/categories/$categoryId/goods";
+  static const String goods = "/api/v1/goods";
+  static const String goodsSearch = "/api/v1/goods/search";
 
   //! media
   static const String mediaAudio = "api/v1/media/audio/download";

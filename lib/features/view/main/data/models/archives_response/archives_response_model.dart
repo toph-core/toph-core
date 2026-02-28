@@ -15,8 +15,13 @@ class ArchivesResponseModel
   const ArchivesResponseModel._();
 
   const factory ArchivesResponseModel({
-    @JsonKey(name: "items") @ArchiveEntityListConverter() @Default([]) List<ArchiveEntity> archives,
-    @PaginationResponseEntityConverter() @Default(PaginationResponseModel()) PaginationResponseEntity pagination,
+    @JsonKey(name: "items")
+    @ArchiveEntityListConverter()
+    @Default([])
+    List<ArchiveEntity> archives,
+    @PaginationResponseEntityConverter()
+    @Default(PaginationResponseModel())
+    PaginationResponseEntity pagination,
   }) = _ArchivesResponseModel;
 
   factory ArchivesResponseModel.fromJson(Map<String, dynamic> json) =>

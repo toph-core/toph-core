@@ -1,4 +1,4 @@
-part of 'detail_cubit.dart';
+part of 'detail_bloc.dart';
 
 @freezed
 class OrderItem with _$OrderItem {
@@ -15,6 +15,7 @@ class DetailState with _$DetailState {
   const factory DetailState({
     @Default(Status.UNKNOWN) Status status,
     @Default(UnknownFailure()) Failure failure,
+    TextEditingController? textController,
     List<CategoryModel>? categories,
     List<GoodsModel>? goods,
     String? selectedCategoryId,

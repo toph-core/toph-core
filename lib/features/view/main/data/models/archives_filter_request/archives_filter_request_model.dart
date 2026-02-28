@@ -14,7 +14,7 @@ class ArchivesFilterRequestModel
   const ArchivesFilterRequestModel._();
 
   const factory ArchivesFilterRequestModel({
-    String? searchName,
+    int? archiveNum,
     @Default(ArchivesFilterType.Today) ArchivesFilterType filterType,
     DateTime? startDate,
     DateTime? endDate,
@@ -27,6 +27,9 @@ class ArchivesFilterRequestModel
   @override
   Map<String, dynamic> request() {
     Map<String, dynamic> req = {};
+    if (archiveNum != null) {
+      req.addAll({"bill_no": archiveNum});
+    }
     if (pagination != null) {
       req.addAll(pagination!.request());
     }

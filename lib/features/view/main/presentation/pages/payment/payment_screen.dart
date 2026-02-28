@@ -145,7 +145,13 @@ class _PaymentScreenState extends State<PaymentScreen> {
                                                             DiscountType.money
                                                         ? "so'm"
                                                         : "%",
-                                                      limit: state.discountType == DiscountType.money ? state.detail!.grandTotal : null
+                                                    limit:
+                                                        state.discountType ==
+                                                            DiscountType.money
+                                                        ? state
+                                                              .detail!
+                                                              .grandTotal
+                                                        : null,
                                                   ),
                                                 ],
                                                 onTap: () =>
@@ -361,6 +367,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
                             child: VirtualKeyboard(
                               textController: discountAmountController,
                               type: VirtualKeyboardType.Numeric,
+                              fontSize: 24,
                             ),
                           ),
                         ),

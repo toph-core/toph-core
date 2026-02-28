@@ -10,6 +10,8 @@ class ArchivesEvent with _$ArchivesEvent {
   const factory ArchivesEvent.failureChanged(Failure? failure) =
       _FailureChanged;
   const factory ArchivesEvent.searchChanged(String value) = _SearchChanged;
+  const factory ArchivesEvent.searchByArchiveNum(String value) =
+      _SearchByArchiveNum;
   const factory ArchivesEvent.selectArchive({required String id}) =
       _SelectArchive;
   const factory ArchivesEvent.getArchiveDetail() = _GetArchiveDetail;

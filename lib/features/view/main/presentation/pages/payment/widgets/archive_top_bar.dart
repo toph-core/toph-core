@@ -7,6 +7,7 @@ import 'package:mary_ai_pos/core/constants/constants.dart';
 import 'package:mary_ai_pos/core/extension/for_context.dart';
 import 'package:mary_ai_pos/core/extension/int_extension.dart';
 import 'package:mary_ai_pos/core/extension/widget_extension.dart';
+import 'package:mary_ai_pos/core/utils/app_formatter.dart';
 import 'package:mary_ai_pos/core/values/app_assets.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/archive/archive_bloc.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/archives/archives_bloc.dart';
@@ -14,11 +15,7 @@ import 'package:mary_ai_pos/gen/assets.gen.dart';
 import 'package:mary_ai_pos/generated/l10n.dart';
 
 class ArchiveTopBar extends StatelessWidget {
-  ArchiveTopBar({super.key});
-
-  TextStyle _increaseFontSize(TextStyle style) {
-    return style.copyWith(fontSize: (style.fontSize ?? 14) + 2);
-  }
+  const ArchiveTopBar({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -52,10 +49,8 @@ class ArchiveTopBar extends StatelessWidget {
 
                   Text(
                     "Arxiv",
-                    style: _increaseFontSize(
-                      context.textStyles.bold20.copyWith(
-                        fontWeight: FontWeight.w500,
-                      ),
+                    style: context.textStyles.bold20.copyWith(
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
                   67.wBox,
@@ -64,8 +59,13 @@ class ArchiveTopBar extends StatelessWidget {
                       width: context.w,
                       height: 52,
                       child: CustomTextField(
+                        textEditingController: state.textController,
                         hintText: "Chek raqami bo'yicha qidirish",
-                        textInputType: TextInputType.text,
+                        textInputType: TextInputType.number,
+                        formatter: [AppFormatter.numberOnlyFormatter],
+                        onChange: (value) => context.read<ArchivesBloc>().add(
+                          ArchivesEvent.searchByArchiveNum(value),
+                        ),
                         suffixIcon: SvgPicture.asset(
                           Assets.icons.icSearch.path,
                         ),
@@ -145,14 +145,11 @@ class ArchiveTopBar extends StatelessWidget {
                           child: Center(
                             child: Text(
                               names[index],
-                              style: _increaseFontSize(
-                                context.textStyles.bold16.copyWith(
-                                  fontWeight: FontWeight.w500,
-                                  color:
-                                      state.filterType == state.filters[index]
-                                      ? context.colors.bgDefault
-                                      : context.colors.textDefault,
-                                ),
+                              style: context.textStyles.bold16.copyWith(
+                                fontWeight: FontWeight.w500,
+                                color: state.filterType == state.filters[index]
+                                    ? context.colors.bgDefault
+                                    : context.colors.textDefault,
                               ),
                             ),
                           ).paddingSymmetric(horizontal: 20),
@@ -166,17 +163,12 @@ class ArchiveTopBar extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.end,
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text(
-                        "Jami:",
-                        style: _increaseFontSize(context.textStyles.bodyMd),
-                      ),
+                      Text("Jami:", style: context.textStyles.bodyMd),
                       Text(
                         "${state.archives?.pagination.total ?? 0} ta chek",
-                        style: _increaseFontSize(
-                          context.textStyles.bold20.copyWith(
-                            fontWeight: FontWeight.w500,
-                            color: context.colors.bgBrand,
-                          ),
+                        style: context.textStyles.bold20.copyWith(
+                          fontWeight: FontWeight.w500,
+                          color: context.colors.bgBrand,
                         ),
                       ),
                     ],

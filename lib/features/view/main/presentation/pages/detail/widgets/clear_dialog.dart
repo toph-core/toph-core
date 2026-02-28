@@ -72,7 +72,7 @@ class ClearDialog extends StatelessWidget {
                     child: CustomHoverEffectWidget(
                       bgColor: const Color(0x19DB1F1F),
                       borderRadius: context.radius.card,
-                      onTap: () => Navigator.pop(context,true),
+                      onTap: () => Navigator.pop(context, true),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         mainAxisAlignment: MainAxisAlignment.center,

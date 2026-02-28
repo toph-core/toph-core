@@ -27,6 +27,7 @@ abstract class MainDataSources {
   Future<Either<Failure, List<GoodsModel>>> getGoodsByCategoryId(
     String categoryId,
   );
+  Future<Either<Failure, List<GoodsModel>>> getGoodsWithName(String name);
   Future<Either<Failure, ArchivesResponseEntity>> getArchives(
     ArchivesFilterRequestEntity request,
   );
@@ -67,7 +68,10 @@ class MainDataSourcesImpl implements MainDataSources {
     required PaymentPayRequestEntity request,
   }) async {
     try {
-      await _client.post(ListAPI.payToOrder(request.orderId),data: request.request());
+      await _client.post(
+        ListAPI.payToOrder(request.orderId),
+        data: request.request(),
+      );
       return const Right(true);
     } on DioException catch (exception) {
       return Left(handleDioException(exception));
@@ -229,10 +233,53 @@ class MainDataSourcesImpl implements MainDataSources {
     String categoryId,
   ) async {
     try {
-      final response = await _client.get(ListAPI.categoriesGoods(categoryId));
+      if (categoryId == 'all') {
+        final response = await _client.get(ListAPI.goods);
+
+        return Right(
+          (response.data['data'] as List?)
+                  ?.map((e) => GoodsModel.fromJson(e))
+                  .toList() ??
+              [],
+        );
+      } else {
+        final response = await _client.get(ListAPI.categoriesGoods(categoryId));
+
+        return Right(
+          (response.data as List?)
+                  ?.map((e) => GoodsModel.fromJson(e))
+                  .toList() ??
+              [],
+        );
+      }
+    } on DioException catch (exception) {
+      return Left(handleDioException(exception));
+    } on FormatException catch (e, st) {
+      if (kDebugMode) print('ParsingError: $e\n$st');
+      return const Left(ParsingFailure());
+    } on TypeError catch (e, st) {
+      if (kDebugMode) print('ParsingError: $e\n$st');
+      return const Left(ParsingFailure());
+    } catch (e, st) {
+      if (kDebugMode) print('Unknown error: $e\n$st');
+      return const Left(UnknownFailure());
+    }
+  }
+
+  @override
+  Future<Either<Failure, List<GoodsModel>>> getGoodsWithName(
+    String name,
+  ) async {
+    try {
+      final response = await _client.dio.get(
+        ListAPI.goodsSearch,
+        queryParameters: {'query': name},
+      );
 
       return Right(
-        (response.data as List?)?.map((e) => GoodsModel.fromJson(e)).toList() ??
+        (response.data as List?)
+                ?.map((e) => GoodsModel.fromJson(e))
+                .toList() ??
             [],
       );
     } on DioException catch (exception) {

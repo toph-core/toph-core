@@ -18,8 +18,10 @@ class S {
   static S? _current;
 
   static S get current {
-    assert(_current != null,
-        'No instance of S was loaded. Try to initialize the S delegate before accessing S.current.');
+    assert(
+      _current != null,
+      'No instance of S was loaded. Try to initialize the S delegate before accessing S.current.',
+    );
     return _current!;
   }
 
@@ -41,8 +43,10 @@ class S {
 
   static S of(BuildContext context) {
     final instance = S.maybeOf(context);
-    assert(instance != null,
-        'No instance of S present in the widget tree. Did you add S.delegate in localizationsDelegates?');
+    assert(
+      instance != null,
+      'No instance of S present in the widget tree. Did you add S.delegate in localizationsDelegates?',
+    );
     return instance!;
   }
 
@@ -202,22 +206,12 @@ class S {
 
   /// `Ha`
   String get strYes {
-    return Intl.message(
-      'Ha',
-      name: 'strYes',
-      desc: '',
-      args: [],
-    );
+    return Intl.message('Ha', name: 'strYes', desc: '', args: []);
   }
 
   /// `Yo'q`
   String get strNo {
-    return Intl.message(
-      'Yo\'q',
-      name: 'strNo',
-      desc: '',
-      args: [],
-    );
+    return Intl.message('Yo\'q', name: 'strNo', desc: '', args: []);
   }
 
   /// `Ma'lumot topilmadi`
@@ -332,12 +326,7 @@ class S {
 
   /// `Davom etish`
   String get strContinue {
-    return Intl.message(
-      'Davom etish',
-      name: 'strContinue',
-      desc: '',
-      args: [],
-    );
+    return Intl.message('Davom etish', name: 'strContinue', desc: '', args: []);
   }
 
   /// `Ilova tili`
@@ -352,12 +341,7 @@ class S {
 
   /// `Chiqish`
   String get strLogout {
-    return Intl.message(
-      'Chiqish',
-      name: 'strLogout',
-      desc: '',
-      args: [],
-    );
+    return Intl.message('Chiqish', name: 'strLogout', desc: '', args: []);
   }
 
   /// `Ilovadan chiqishni xohlaysizmi?`
@@ -372,12 +356,7 @@ class S {
 
   /// `Profile`
   String get strProfile {
-    return Intl.message(
-      'Profile',
-      name: 'strProfile',
-      desc: '',
-      args: [],
-    );
+    return Intl.message('Profile', name: 'strProfile', desc: '', args: []);
   }
 
   /// `Invalid name`
@@ -442,12 +421,7 @@ class S {
 
   /// `Parol`
   String get strPassword {
-    return Intl.message(
-      'Parol',
-      name: 'strPassword',
-      desc: '',
-      args: [],
-    );
+    return Intl.message('Parol', name: 'strPassword', desc: '', args: []);
   }
 
   /// `Kodni yozing`
@@ -462,12 +436,7 @@ class S {
 
   /// `Kirish`
   String get strLogin {
-    return Intl.message(
-      'Kirish',
-      name: 'strLogin',
-      desc: '',
-      args: [],
-    );
+    return Intl.message('Kirish', name: 'strLogin', desc: '', args: []);
   }
 
   /// `Mahsulotlar topilmadi`
@@ -512,12 +481,7 @@ class S {
 
   /// `Bekor qilish`
   String get strCancel {
-    return Intl.message(
-      'Bekor qilish',
-      name: 'strCancel',
-      desc: '',
-      args: [],
-    );
+    return Intl.message('Bekor qilish', name: 'strCancel', desc: '', args: []);
   }
 
   /// `Orgaga qaytish`
@@ -542,12 +506,7 @@ class S {
 
   /// `Saqlash`
   String get strSave {
-    return Intl.message(
-      'Saqlash',
-      name: 'strSave',
-      desc: '',
-      args: [],
-    );
+    return Intl.message('Saqlash', name: 'strSave', desc: '', args: []);
   }
 
   /// `Siz rostdan ham buyurtmani oshxonaga yuborishni hohlaysizmi?`
@@ -572,12 +531,7 @@ class S {
 
   /// `Stol`
   String get strTable {
-    return Intl.message(
-      'Stol',
-      name: 'strTable',
-      desc: '',
-      args: [],
-    );
+    return Intl.message('Stol', name: 'strTable', desc: '', args: []);
   }
 
   /// `Mehmonlar sonini kiriting`
@@ -592,52 +546,27 @@ class S {
 
   /// `Qo'shish`
   String get strAdd {
-    return Intl.message(
-      'Qo\'shish',
-      name: 'strAdd',
-      desc: '',
-      args: [],
-    );
+    return Intl.message('Qo\'shish', name: 'strAdd', desc: '', args: []);
   }
 
   /// `All`
   String get all {
-    return Intl.message(
-      'All',
-      name: 'all',
-      desc: '',
-      args: [],
-    );
+    return Intl.message('All', name: 'all', desc: '', args: []);
   }
 
   /// `Today`
   String get today {
-    return Intl.message(
-      'Today',
-      name: 'today',
-      desc: '',
-      args: [],
-    );
+    return Intl.message('Today', name: 'today', desc: '', args: []);
   }
 
   /// `Week`
   String get week {
-    return Intl.message(
-      'Week',
-      name: 'week',
-      desc: '',
-      args: [],
-    );
+    return Intl.message('Week', name: 'week', desc: '', args: []);
   }
 
   /// `Month`
   String get month {
-    return Intl.message(
-      'Month',
-      name: 'month',
-      desc: '',
-      args: [],
-    );
+    return Intl.message('Month', name: 'month', desc: '', args: []);
   }
 }
 

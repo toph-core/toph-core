@@ -9,11 +9,12 @@ import 'package:mary_ai_pos/features/view/main/domain/usecase/get_archive_with_i
 import 'package:mary_ai_pos/features/view/main/domain/usecase/get_archives_usecase.dart';
 import 'package:mary_ai_pos/features/view/main/domain/usecase/get_categories_usecase.dart';
 import 'package:mary_ai_pos/features/view/main/domain/usecase/get_goods_by_category_id_usecase.dart';
+import 'package:mary_ai_pos/features/view/main/domain/usecase/get_goods_with_name_usecase.dart';
 import 'package:mary_ai_pos/features/view/main/domain/usecase/get_payment_detail_with_table_id_usecase.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/archive/archive_bloc.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/counter/counter_cubit.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/create_order/create_order_bloc.dart';
-import 'package:mary_ai_pos/features/view/main/presentation/cubit/detail/detail_cubit.dart';
+import 'package:mary_ai_pos/features/view/main/presentation/cubit/detail/detail_bloc.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/archives/archives_bloc.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/keyboard/keyboard_cubit.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/notification/notification_bloc.dart';
@@ -46,9 +47,10 @@ Future<void> initDi() async {
 
   final AppTokenStorage tokenStorage = AppTokenStorage(prefs);
 
+  inject.registerSingleton<SharedPreferences>(prefs);
   inject.registerSingleton<AppTokenStorage>(tokenStorage);
+  inject.registerSingleton<DioClient>(DioClient(tokenStorage, prefs));
   final MinioService minioService = MinioService.instance;
-  inject.registerSingleton<DioClient>(DioClient(tokenStorage));
   inject.registerLazySingleton(() => minioService);
 
   _dataSources();
@@ -86,6 +88,7 @@ void _useCase() {
   inject.registerLazySingleton(() => GetHallsUsecase(inject()));
   inject.registerLazySingleton(() => GetCategoriesUsecase(inject()));
   inject.registerLazySingleton(() => GetGoodsByCategoryIdUseCase(inject()));
+  inject.registerLazySingleton(() => GetGoodsWithNameUseCase(inject()));
   inject.registerLazySingleton(() => GetArchivesUsecase(inject()));
   inject.registerLazySingleton(() => GetArchiveWithIdUsecase(inject()));
   inject.registerLazySingleton(() => LogoutUsecase(inject()));
@@ -108,7 +111,7 @@ void _cubit() {
 
   //? factory
   inject.registerFactory(() => LoginPinCubit(inject(), inject(), inject()));
-  inject.registerFactory(() => DetailCubit(inject(), inject()));
+  inject.registerFactory(() => DetailBloc(inject(), inject(), inject()));
   inject.registerFactory(() => CreateOrderBloc(createOrderUsecase: inject()));
   inject.registerFactory(() => CounterCubit());
   inject.registerFactory(

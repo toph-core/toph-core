@@ -37,16 +37,15 @@ class OrderFoodEntityListConverter
   List<dynamic> toJson(List<OrderFoodEntity> object) {
     return object
         .map(
-          (item) =>
-              item is OrderFoodModel
-                  ? item.toJson()
-                  : {
-                    'id': item.id,
-                    'name': item.name,
-                    'quantity': item.quantity,
-                    'price': item.price,
-                    'comment': item.comment,
-                  },
+          (item) => item is OrderFoodModel
+              ? item.toJson()
+              : {
+                  'id': item.id,
+                  'name': item.name,
+                  'quantity': item.quantity,
+                  'price': item.price,
+                  'comment': item.comment,
+                },
         )
         .toList();
   }

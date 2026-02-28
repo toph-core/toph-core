@@ -4,12 +4,7 @@ import '../utils/app_formatter.dart';
 
 extension Log on Object? {
   void log(String s, {String name = '', Object? error}) {
-    dev.log(
-      toString(),
-      name: name,
-      error: error,
-      time: DateTime.now(),
-    );
+    dev.log(toString(), name: name, error: error, time: DateTime.now());
   }
 
   void printf({String name = '', bool isError = false}) {
@@ -23,7 +18,7 @@ extension Log on Object? {
   }
 
   String get _time => AppFormatter.formatTimeFromMills(
-        DateTime.now().millisecondsSinceEpoch,
-        hasSecond: true,
-      );
+    DateTime.now().millisecondsSinceEpoch,
+    hasSecond: true,
+  );
 }

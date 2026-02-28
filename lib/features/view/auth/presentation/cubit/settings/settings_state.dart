@@ -11,8 +11,4 @@ class SettingsState with _$SettingsState {
   }) = _SettingsState;
 }
 
-enum AppThemeMode {
-  light,
-  dark,
-  system,
-}
+enum AppThemeMode { light, dark, system }

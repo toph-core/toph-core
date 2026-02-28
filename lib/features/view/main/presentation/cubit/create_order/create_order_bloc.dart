@@ -7,7 +7,7 @@ import 'package:mary_ai_pos/core/utils/helper/helper_widget.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/cafe_tables/cafe_tables_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/create_order/create_order_request_model.dart';
 import 'package:mary_ai_pos/features/view/main/domain/usecase/create_order_usecase.dart';
-import 'package:mary_ai_pos/features/view/main/presentation/cubit/detail/detail_cubit.dart';
+import 'package:mary_ai_pos/features/view/main/presentation/cubit/detail/detail_bloc.dart';
 
 part 'create_order_event.dart';
 part 'create_order_state.dart';
@@ -17,10 +17,10 @@ class CreateOrderBloc extends Bloc<CreateOrderEvent, CreateOrderState> {
   late final CreateOrderUsecase _createOrderUsecase;
   //
   CreateOrderBloc({required CreateOrderUsecase createOrderUsecase})
-    : _createOrderUsecase = createOrderUsecase, 
+    : _createOrderUsecase = createOrderUsecase,
       super(const CreateOrderState()) {
     on<_Started>(_started);
-    on<_CreateOrder>(_createOrder); 
+    on<_CreateOrder>(_createOrder);
   }
 
   void _createOrder(_CreateOrder event, emit) async {
@@ -32,7 +32,7 @@ class CreateOrderBloc extends Bloc<CreateOrderEvent, CreateOrderState> {
         guestCount: state.guestCount,
         foods: event.orders,
         status: OrderStatus.open,
-        tableStatus: state.tableStatus
+        tableStatus: state.tableStatus,
       ),
     );
     response.fold((l) {
@@ -41,7 +41,11 @@ class CreateOrderBloc extends Bloc<CreateOrderEvent, CreateOrderState> {
     }, (r) => emit(state.copyWith(status: Status.SUCCESS, success: r)));
   }
 
-
-  void _started(_Started event, emit) =>
-      emit(CreateOrderState(tableId: event.tableId ?? '',guestCount: event.guestCount,tableStatus: event.tableStatus));
+  void _started(_Started event, emit) => emit(
+    CreateOrderState(
+      tableId: event.tableId ?? '',
+      guestCount: event.guestCount,
+      tableStatus: event.tableStatus,
+    ),
+  );
 }

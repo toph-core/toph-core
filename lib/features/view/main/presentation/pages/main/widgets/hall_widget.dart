@@ -81,7 +81,17 @@ class _HallWidgetState extends State<HallWidget> {
                                         barrierDismissible: false,
                                       ).then((value) {
                                         if (value != null && value is int) {
-                                          final index = context.read<SavedOrdersBloc>().state.order.indexWhere((v) => v.createOrderRequest.tableId == table.id);
+                                          final index = context
+                                              .read<SavedOrdersBloc>()
+                                              .state
+                                              .order
+                                              .indexWhere(
+                                                (v) =>
+                                                    v
+                                                        .createOrderRequest
+                                                        .tableId ==
+                                                    table.id,
+                                              );
                                           Future.delayed(
                                             const Duration(milliseconds: 300),
                                             () => Navigator.pushNamed(
@@ -92,14 +102,29 @@ class _HallWidgetState extends State<HallWidget> {
                                                 "guest_count": value,
                                                 // "table_status": table.status
                                                 "table_status": table.status,
-                                                "saved_orders": index != -1 ? context.read<SavedOrdersBloc>().state.order[index] : null
+                                                "saved_orders": index != -1
+                                                    ? context
+                                                          .read<
+                                                            SavedOrdersBloc
+                                                          >()
+                                                          .state
+                                                          .order[index]
+                                                    : null,
                                               },
                                             ),
                                           );
                                         }
                                       });
                                     } else {
-                                      final index = context.read<SavedOrdersBloc>().state.order.indexWhere((v) => v.createOrderRequest.tableId == table.id);
+                                      final index = context
+                                          .read<SavedOrdersBloc>()
+                                          .state
+                                          .order
+                                          .indexWhere(
+                                            (v) =>
+                                                v.createOrderRequest.tableId ==
+                                                table.id,
+                                          );
                                       Navigator.pushNamed(
                                         context,
                                         AppRoutes.detailScreen,
@@ -107,8 +132,12 @@ class _HallWidgetState extends State<HallWidget> {
                                           "table": table,
                                           // "table_status": table.status
                                           "table_status": TableStatus.busy,
-                                          "saved_orders": index != -1 ? context.read<SavedOrdersBloc>().state.order[index] : null
-
+                                          "saved_orders": index != -1
+                                              ? context
+                                                    .read<SavedOrdersBloc>()
+                                                    .state
+                                                    .order[index]
+                                              : null,
                                         },
                                       );
                                     }

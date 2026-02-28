@@ -16,12 +16,21 @@ class ArchiveModel with _$ArchiveModel implements ArchiveEntity {
     @JsonKey(name: "bill_status") @Default(OrderStatus.none) OrderStatus status,
     @JsonKey(name: "opened_at") DateTime? opened,
     @JsonKey(name: 'table_number', fromJson: parseInt)
-    @Default(0) int tableNumber,
-    @JsonKey(name: 'grand_total', fromJson: parseInt) @Default(0) int totalPrice,
-    @JsonKey(name: "food_total",fromJson: parseInt) @Default(0) int goodsTotal,
-    @JsonKey(name: "service_amount",fromJson: parseInt) @Default(0) int serviceAmount,
-    @JsonKey(name: "quantity",fromJson: parseInt) @Default(0) int goodsQuantity,
-    @JsonKey(name: "customer_paid_amount",fromJson: parseInt) @Default(0) int customerPaidAmount,
+    @Default(0)
+    int tableNumber,
+    @JsonKey(name: 'grand_total', fromJson: parseInt)
+    @Default(0)
+    int totalPrice,
+    @JsonKey(name: "food_total", fromJson: parseInt) @Default(0) int goodsTotal,
+    @JsonKey(name: "service_amount", fromJson: parseInt)
+    @Default(0)
+    int serviceAmount,
+    @JsonKey(name: "quantity", fromJson: parseInt)
+    @Default(0)
+    int goodsQuantity,
+    @JsonKey(name: "customer_paid_amount", fromJson: parseInt)
+    @Default(0)
+    int customerPaidAmount,
   }) = _ArchiveModel;
 
   factory ArchiveModel.fromJson(Map<String, dynamic> json) =>

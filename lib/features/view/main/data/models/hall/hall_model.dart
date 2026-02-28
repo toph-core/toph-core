@@ -14,5 +14,6 @@ class HallModel with _$HallModel {
     required double height,
   }) = _HallModel;
 
-  factory HallModel.fromJson(Map<String, dynamic> json) => _$HallModelFromJson(json);
+  factory HallModel.fromJson(Map<String, dynamic> json) =>
+      _$HallModelFromJson(json);
 }

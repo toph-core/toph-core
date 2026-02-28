@@ -7,7 +7,6 @@ import 'package:mary_ai_pos/core/extension/for_context.dart';
 class MyFunctions {
   MyFunctions._();
 
-
   // Makes default avatar name
   static String makeDefaultAvatarName(String fullname) {
     final parts = fullname.trim().split(' ');

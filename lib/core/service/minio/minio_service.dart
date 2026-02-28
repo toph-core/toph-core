@@ -9,7 +9,7 @@ class MinioService {
 
   static MinioService get instance => _instance;
 
-  final DioClient _client = DioClient(inject());
+  final DioClient _client = inject<DioClient>();
 
   Future<Uint8List?> getImageByObjectName(String objectName) async {
     try {

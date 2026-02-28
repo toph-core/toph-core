@@ -1,5 +1,3 @@
-
-
 import 'package:flutter/material.dart';
 
 int parseInt(dynamic value) {
@@ -10,11 +8,8 @@ int parseInt(dynamic value) {
   return 0;
 }
 
-
-extension IntExtension on int{
- 
+extension IntExtension on int {
   Widget get wBox => SizedBox(width: this.toDouble());
 
   Widget get hBox => SizedBox(height: this.toDouble());
-
 }

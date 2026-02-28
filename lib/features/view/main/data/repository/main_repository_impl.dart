@@ -48,6 +48,11 @@ class MainRepositoryImpl implements MainRepository {
   }
 
   @override
+  Future<Either<Failure, List<GoodsModel>>> getGoodsWithName(String name) {
+    return _dataSources.getGoodsWithName(name);
+  }
+
+  @override
   Future<Either<Failure, ArchivesResponseEntity>> getArchives(
     ArchivesFilterRequestEntity request,
   ) {

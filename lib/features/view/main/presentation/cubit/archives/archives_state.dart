@@ -6,7 +6,13 @@ class ArchivesState with _$ArchivesState {
     @Default(Status.UNKNOWN) Status status,
     @Default(Status.UNKNOWN) Status archiveStatus,
     @Default(ArchivesFilterType.Today) ArchivesFilterType filterType,
-    @Default([ArchivesFilterType.All,ArchivesFilterType.Today,ArchivesFilterType.Week,ArchivesFilterType.month]) List<ArchivesFilterType> filters,
+    @Default([
+      ArchivesFilterType.All,
+      ArchivesFilterType.Today,
+      ArchivesFilterType.Week,
+      ArchivesFilterType.month,
+    ])
+    List<ArchivesFilterType> filters,
     DateTime? startFilterDate,
     DateTime? endFilterDate,
     TextEditingController? textController,
