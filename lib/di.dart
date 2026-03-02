@@ -49,7 +49,7 @@ Future<void> initDi() async {
 
   inject.registerSingleton<SharedPreferences>(prefs);
   inject.registerSingleton<AppTokenStorage>(tokenStorage);
-  inject.registerSingleton<DioClient>(DioClient(tokenStorage, prefs));
+  inject.registerSingleton<DioClient>(DioClient(tokenStorage));
   final MinioService minioService = MinioService.instance;
   inject.registerLazySingleton(() => minioService);
 

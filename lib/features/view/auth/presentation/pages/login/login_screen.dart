@@ -46,9 +46,6 @@ class _OnlineOfflineStudentScreenState extends State<LoginScreen>
     super.initState();
     _prefs = inject<SharedPreferences>();
     _topSwitchNotifier = ValueNotifier<bool>(_resolveInitialStagingValue());
-    inject<DioClient>().dio.options.baseUrl = _topSwitchNotifier.value
-        ? STAGING_BASE_URL
-        : PRODUCTION_BASE_URL;
 
     _brandIdFocusNode.addListener(() {
       if (_brandIdFocusNode.hasFocus) {
