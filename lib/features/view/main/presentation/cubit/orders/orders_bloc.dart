@@ -6,6 +6,7 @@ part 'orders_event.dart';
 part 'orders_state.dart';
 part 'orders_bloc.freezed.dart';
 
+
 class SavedOrdersBloc extends Bloc<SavedOrdersEvent, SavedOrdersState> {
   SavedOrdersBloc() : super(const SavedOrdersState()) {
     on<_Started>(_onStarted);
