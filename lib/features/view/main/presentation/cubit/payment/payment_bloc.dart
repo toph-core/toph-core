@@ -13,6 +13,7 @@ import 'package:mary_ai_pos/features/view/main/domain/entities/archive_detail_en
 import 'package:mary_ai_pos/features/view/main/domain/entities/payment_pay_request_entity.dart';
 import 'package:mary_ai_pos/features/view/main/domain/usecase/create_payment_usecase.dart';
 import 'package:mary_ai_pos/features/view/main/domain/usecase/get_archive_with_id_usecase.dart';
+import 'package:mary_ai_pos/features/view/main/domain/usecase/get_payment_detail_with_id_usecase.dart';
 import 'package:mary_ai_pos/features/view/main/domain/usecase/get_payment_detail_with_table_id_usecase.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/main/main_cubit.dart';
 
@@ -23,13 +24,16 @@ part 'payment_bloc.freezed.dart';
 class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
   final GetPaymentDetailWithTableIdUsecase _getPaymentDetailWithTableIdUsecase;
   final CreatePaymentUsecase _createPaymentUsecase;
+  final GetPaymentDetailWithIdUsecase _getPaymentDetailWithIdUsecase;
   //
   PaymentBloc({
     required GetPaymentDetailWithTableIdUsecase
     getPaymentDetailWithTableIdUsecase,
     required CreatePaymentUsecase createPaymentUsecase,
+    required GetPaymentDetailWithIdUsecase getPaymentDetailWithId,
   }) : _getPaymentDetailWithTableIdUsecase = getPaymentDetailWithTableIdUsecase,
        _createPaymentUsecase = createPaymentUsecase,
+       _getPaymentDetailWithIdUsecase = getPaymentDetailWithId,
        super(const PaymentState()) {
     on<_Started>(_onStarted);
     on<_GetDetail>(_onGetDetail);
@@ -53,8 +57,8 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
       final response = await _createPaymentUsecase.call(
         PaymentPayRequestModel(
           orderId: state.detail!.id,
-          cashRegisterId: "eb3f6c37-0cf8-4eef-9ad1-d44128279e69",
-          cashierId: "cdb87107-cee1-40d6-aa54-615e900b1f2a",
+          cashRegisterId: "59162762-e728-49da-b652-6239a198f7ae",
+          cashierId: "1a9151ba-a4df-4b67-9281-82e7366e6752",
           customPaidAmount: state.paymentType == PaymentType.cash
               ? int.parse(state.enterSum)
               : state.detail!.grandTotal,
@@ -83,10 +87,12 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
             navigatorKey.currentContext!,
             "Buyurtma muvafaqqiyatli to'landi",
           );
-          navigatorKey.currentContext!.read<MainCubit>().updateTableStatus(
-            state.tableId,
-            TableStatus.free,
-          );
+          if (state.tableId != null) {
+            navigatorKey.currentContext!.read<MainCubit>().updateTableStatus(
+              state.tableId!,
+              TableStatus.free,
+            );
+          }
           Navigator.pushNamedAndRemoveUntil(
             navigatorKey.currentContext!,
             AppRoutes.mainScreen,
@@ -101,6 +107,7 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
     emit(
       PaymentState(
         tableId: event.tableId,
+        orderId: event.orderId,
         textController: TextEditingController(),
       ),
     );
@@ -111,35 +118,75 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
     _GetDetail event,
     Emitter<PaymentState> emit,
   ) async {
-    emit(
-      state.copyWith(detailStatus: Status.LOADING, failure: null, detail: null),
-    );
-    final response = await _getPaymentDetailWithTableIdUsecase.call(
-      state.tableId,
-    );
-    response.fold(
-      (failure) {
-        showErrorMessage(
-          navigatorKey.currentContext!,
-          failure.getLocalizedMessage(navigatorKey.currentContext!),
-        );
-        emit(
-          state.copyWith(
-            status: Status.ERROR,
-            detailStatus: Status.ERROR,
-            failure: failure,
-          ),
-        );
-      },
-      (detail) => emit(
+    if (state.tableId != null) {
+      emit(
         state.copyWith(
-          status: Status.SUCCESS,
-          detailStatus: Status.SUCCESS,
-          detail: detail,
+          detailStatus: Status.LOADING,
           failure: null,
+          detail: null,
         ),
-      ),
-    );
+      );
+      final response = await _getPaymentDetailWithTableIdUsecase.call(
+        state.tableId!,
+      );
+      response.fold(
+        (failure) {
+          showErrorMessage(
+            navigatorKey.currentContext!,
+            failure.getLocalizedMessage(navigatorKey.currentContext!),
+          );
+          emit(
+            state.copyWith(
+              status: Status.ERROR,
+              detailStatus: Status.ERROR,
+              failure: failure,
+            ),
+          );
+        },
+        (detail) => emit(
+          state.copyWith(
+            status: Status.SUCCESS,
+            detailStatus: Status.SUCCESS,
+            detail: detail,
+            failure: null,
+          ),
+        ),
+      );
+    } else if (state.orderId != null) {
+      emit(
+        state.copyWith(
+          detailStatus: Status.LOADING,
+          failure: null,
+          detail: null,
+        ),
+      );
+      final response = await _getPaymentDetailWithIdUsecase.call(
+        state.orderId!,
+      );
+      response.fold(
+        (failure) {
+          showErrorMessage(
+            navigatorKey.currentContext!,
+            failure.getLocalizedMessage(navigatorKey.currentContext!),
+          );
+          emit(
+            state.copyWith(
+              status: Status.ERROR,
+              detailStatus: Status.ERROR,
+              failure: failure,
+            ),
+          );
+        },
+        (detail) => emit(
+          state.copyWith(
+            status: Status.SUCCESS,
+            detailStatus: Status.SUCCESS,
+            detail: detail,
+            failure: null,
+          ),
+        ),
+      );
+    }
   }
 
   void _onUpdatePaymentType(

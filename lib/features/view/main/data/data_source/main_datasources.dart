@@ -4,7 +4,10 @@ import 'package:flutter/foundation.dart';
 import 'package:mary_ai_pos/core/api/dio_client.dart';
 import 'package:mary_ai_pos/core/api/dio_exception_handler.dart';
 import 'package:mary_ai_pos/core/api/list_api.dart';
+import 'package:mary_ai_pos/core/auth/storage/token_storage_impl.dart';
 import 'package:mary_ai_pos/core/error/failure.dart';
+import 'package:mary_ai_pos/di.dart';
+import 'package:mary_ai_pos/features/view/auth/data/models/user/user_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/archive_detail/archive_detail_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/archives_response/archives_response_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/cafe_tables/cafe_tables_model.dart';
@@ -12,6 +15,7 @@ import 'package:mary_ai_pos/features/view/main/data/models/category/category_mod
 import 'package:mary_ai_pos/features/view/main/data/models/create_order/create_order_request_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/goods/goods_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/hall/hall_model.dart';
+import 'package:mary_ai_pos/features/view/main/data/models/shift/shift_response_model.dart';
 import 'package:mary_ai_pos/features/view/main/domain/entities/archive_detail_entity.dart';
 import 'package:mary_ai_pos/features/view/main/domain/entities/archives_filter_request_entity.dart';
 import 'package:mary_ai_pos/features/view/main/domain/entities/archives_response_entity.dart';
@@ -37,6 +41,10 @@ abstract class MainDataSources {
     String id,
   );
 
+  Future<Either<Failure, ArchiveDetailEntity>> getPaymentDetailWithId(
+    String id,
+  );
+
   Future<Either<Failure, bool>> createPayment({
     required PaymentPayRequestEntity request,
   });
@@ -45,13 +53,57 @@ abstract class MainDataSources {
     required CreateOrderRequestModel request,
   });
 
+  Future<Either<Failure, String>> createTakewayOrder({
+    required CreateOrderRequestModel request,
+  });
+
   Future<String> getOrderIdWithTableId({required String tableId});
+
+  Future<Either<Failure, UserModel>> getUser();
+
+  Future<Either<Failure, ShiftResponseModel?>> checkShift({required String id});
 }
 
 class MainDataSourcesImpl implements MainDataSources {
   final DioClient _client;
 
   MainDataSourcesImpl(this._client);
+
+  @override
+  Future<Either<Failure, ShiftResponseModel?>> checkShift({
+    required String id,
+  }) async {
+    try {
+      final response = await _client.get(
+        ListAPI.activeShift,
+        queryParameters: {"cash_register_id": id},
+      );
+      return Right(ShiftResponseModel.fromJson(response.data['data']));
+    }catch (e) {
+      return const Right(null);
+    }
+  }
+
+  @override
+  Future<Either<Failure, UserModel>> getUser() async {
+    try {
+      final response = await _client.get(ListAPI.user);
+      return Right(UserModel.fromJson(response.data['data']));
+    } on DioException catch (exception) {
+      return Left(handleDioException(exception));
+    } on FormatException catch (e, st) {
+      if (kDebugMode) print('ParsingError: $e\n$st');
+      return const Left(ParsingFailure());
+    } on TypeError catch (e, st) {
+      if (kDebugMode) print('ParsingError: $e\n$st');
+      return const Left(ParsingFailure());
+    } on String catch (e) {
+      return Left(MessageFailure(e));
+    } catch (e, st) {
+      if (kDebugMode) print('Unknown error: $e\n$st');
+      return const Left(UnknownFailure());
+    }
+  }
 
   @override
   Future<String> getOrderIdWithTableId({required String tableId}) async {
@@ -83,6 +135,30 @@ class MainDataSourcesImpl implements MainDataSources {
       return const Left(ParsingFailure());
     } on String catch (e) {
       return Left(MessageFailure(e));
+    } catch (e, st) {
+      if (kDebugMode) print('Unknown error: $e\n$st');
+      return const Left(UnknownFailure());
+    }
+  }
+
+  @override
+  Future<Either<Failure, String>> createTakewayOrder({
+    required CreateOrderRequestModel request,
+  }) async {
+    try {
+      final response = await _client.post(
+        ListAPI.orders,
+        data: request.createOrder(),
+      );
+      return Right(response.data['data']['id']);
+    } on DioException catch (exception) {
+      return Left(handleDioException(exception));
+    } on FormatException catch (e, st) {
+      if (kDebugMode) print('ParsingError: $e\n$st');
+      return const Left(ParsingFailure());
+    } on TypeError catch (e, st) {
+      if (kDebugMode) print('ParsingError: $e\n$st');
+      return const Left(ParsingFailure());
     } catch (e, st) {
       if (kDebugMode) print('Unknown error: $e\n$st');
       return const Left(UnknownFailure());
@@ -202,6 +278,29 @@ class MainDataSourcesImpl implements MainDataSources {
   }
 
   @override
+  Future<Either<Failure, ArchiveDetailEntity>> getPaymentDetailWithId(
+    String id,
+  ) async {
+    try {
+      final response = await _client.dio.get(ListAPI.archiveWithId(id));
+      return Right(ArchiveDetailModel.fromJson(response.data['data']));
+    } on DioException catch (exception) {
+      return Left(handleDioException(exception));
+    } on FormatException catch (e, st) {
+      if (kDebugMode) print('ParsingError: $e\n$st');
+      return const Left(ParsingFailure());
+    } on TypeError catch (e, st) {
+      if (kDebugMode) print('ParsingError: $e\n$st');
+      return const Left(ParsingFailure());
+    } on String catch (e) {
+      return Left(MessageFailure(e));
+    } catch (e, st) {
+      if (kDebugMode) print('Unknown error: $e\n$st');
+      return const Left(UnknownFailure());
+    }
+  }
+
+  @override
   Future<Either<Failure, ArchiveDetailEntity>> getPaymentDetailWithTableId(
     String id,
   ) async {
@@ -277,9 +376,7 @@ class MainDataSourcesImpl implements MainDataSources {
       );
 
       return Right(
-        (response.data as List?)
-                ?.map((e) => GoodsModel.fromJson(e))
-                .toList() ??
+        (response.data as List?)?.map((e) => GoodsModel.fromJson(e)).toList() ??
             [],
       );
     } on DioException catch (exception) {

@@ -12,6 +12,7 @@ import 'package:mary_ai_pos/core/routes/app_routes.dart';
 import 'package:mary_ai_pos/core/values/app_colors.dart';
 import 'package:mary_ai_pos/di.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/cafe_tables/cafe_tables_model.dart';
+import 'package:mary_ai_pos/features/view/main/data/models/create_order/create_order_request_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/food_additional/food_additional_model.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/create_order/create_order_bloc.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/detail/detail_bloc.dart';
@@ -147,95 +148,135 @@ class OrderSidebar extends StatelessWidget with DetailScreenMixin {
                       spacing: 8,
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
+                        if (tableId != null)
+                          BlocProvider(
+                            create: (context) => inject<CreateOrderBloc>()
+                              ..add(
+                                CreateOrderEvent.started(
+                                  tableId: tableId,
+                                  guestCount: guestCount,
+                                  tableStatus: tableStatus,
+                                ),
+                              ),
+                            child:
+                                BlocConsumer<CreateOrderBloc, CreateOrderState>(
+                                  listener: (context, state) {
+                                    if (state.status != Status.LOADING &&
+                                        state.success) {
+                                      context
+                                          .read<MainCubit>()
+                                          .updateTableStatus(
+                                            state.tableId,
+                                            TableStatus.busy,
+                                          );
+
+                                      showSuccessMessage(
+                                        context,
+                                        S.current.strOrderSuccessCreated,
+                                      );
+                                      Navigator.pop(context);
+                                    }
+                                  },
+                                  builder: (context, createOrderState) {
+                                    return CustomHoverEffectWidget(
+                                      bgColor: context.colors.buttonBrand,
+                                      onTap: () async {
+                                        if (state.selectedGoods.isNotEmpty &&
+                                            createOrderState.status !=
+                                                Status.LOADING) {
+                                          await showDialog(
+                                            context: context,
+                                            barrierDismissible: false,
+                                            builder: (context) =>
+                                                const SendToKitchenDialog(),
+                                          ).then((value) {
+                                            if (value != null &&
+                                                value is bool &&
+                                                value) {
+                                              context
+                                                  .read<CreateOrderBloc>()
+                                                  .add(
+                                                    CreateOrderEvent.createOrder(
+                                                      orders:
+                                                          state.selectedGoods,
+                                                    ),
+                                                  );
+                                            }
+                                          });
+                                        }
+                                      },
+                                      borderRadius: context.radius.buttonLg,
+                                      child: state.status == Status.LOADING
+                                          ? CircularProgressIndicator.adaptive(
+                                              backgroundColor:
+                                                  context.colors.iconOnBrand,
+                                            ).paddingSymmetric(vertical: 12.5)
+                                          : Text(
+                                              "Oshxonaga yuborish",
+                                              textAlign: TextAlign.center,
+                                              style: context
+                                                  .textStyles
+                                                  .semibold16
+                                                  .copyWith(
+                                                    color: Colors.white,
+                                                  ),
+                                            ).paddingSymmetric(
+                                              horizontal: 16,
+                                              vertical: 12.5,
+                                            ),
+                                    );
+                                  },
+                                ),
+                          ),
                         BlocProvider(
                           create: (context) => inject<CreateOrderBloc>()
                             ..add(
                               CreateOrderEvent.started(
-                                tableId: tableId,
                                 guestCount: guestCount,
                                 tableStatus: tableStatus,
                               ),
                             ),
-                          child:
-                              BlocConsumer<CreateOrderBloc, CreateOrderState>(
-                                listener: (context, state) {
-                                  if (state.status != Status.LOADING &&
-                                      state.success) {
-                                    context.read<MainCubit>().updateTableStatus(
-                                      state.tableId,
-                                      TableStatus.busy,
-                                    );
-
-                                    showSuccessMessage(
-                                      context,
-                                      S.current.strOrderSuccessCreated,
-                                    );
-                                    Navigator.pop(context);
-                                  }
-                                },
-                                builder: (context, createOrderState) {
-                                  return CustomHoverEffectWidget(
-                                    bgColor: context.colors.buttonBrand,
-                                    onTap: () async {
-                                      if (state.selectedGoods.isNotEmpty &&
-                                          createOrderState.status !=
-                                              Status.LOADING) {
-                                        await showDialog(
-                                          context: context,
-                                          barrierDismissible: false,
-                                          builder: (context) =>
-                                              const SendToKitchenDialog(),
-                                        ).then((value) {
-                                          if (value != null &&
-                                              value is bool &&
-                                              value) {
-                                            context.read<CreateOrderBloc>().add(
-                                              CreateOrderEvent.createOrder(
-                                                orders: state.selectedGoods,
-                                              ),
-                                            );
-                                          }
-                                        });
+                          child: BlocBuilder<CreateOrderBloc, CreateOrderState>(
+                            builder: (context, createOrderState) {
+                              return SizedBox(
+                                height: 56,
+                                child: CustomHoverEffectWidget(
+                                  bgColor: AppColors.ffFB6633,
+                                  onTap: () {
+                                    if (tableId == null &&
+                                        state.selectedGoods.isNotEmpty) {
+                                      context.read<CreateOrderBloc>().add(
+                                        CreateOrderEvent.createOrder(
+                                          orders: state.selectedGoods,
+                                        ),
+                                      );
+                                    } else if (tableId != null) {
+                                      if (tableStatus != TableStatus.free) {
+                                        Navigator.pushNamed(
+                                          context,
+                                          AppRoutes.paymentScreen,
+                                          arguments: {"table_id": tableId},
+                                        );
                                       }
-                                    },
-                                    borderRadius: context.radius.buttonLg,
-                                    child: state.status == Status.LOADING
-                                        ? CircularProgressIndicator.adaptive(
-                                            backgroundColor:
-                                                context.colors.iconOnBrand,
-                                          ).paddingSymmetric(vertical: 12.5)
-                                        : Text(
-                                            "Oshxonaga yuborish",
-                                            textAlign: TextAlign.center,
-                                            style: context.textStyles.semibold16
-                                                .copyWith(color: Colors.white),
-                                          ).paddingSymmetric(
-                                            horizontal: 16,
-                                            vertical: 12.5,
-                                          ),
-                                  );
-                                },
-                              ),
-                        ),
-                        CustomHoverEffectWidget(
-                          bgColor: AppColors.ffFB6633,
-                          onTap: () {
-                            if (tableStatus != TableStatus.free) {
-                              Navigator.pushNamed(
-                                context,
-                                AppRoutes.paymentScreen,
-                                arguments: tableId,
+                                    }
+                                  },
+                                  borderRadius: context.radius.buttonLg,
+                                  child:
+                                      createOrderState.status == Status.LOADING
+                                      ? const CircularProgressIndicator.adaptive()
+                                      : Text(
+                                          "To’lovga o’tish",
+                                          textAlign: TextAlign.center,
+                                          style: context.textStyles.semibold16
+                                              .copyWith(color: Colors.white),
+                                        ).paddingSymmetric(
+                                          horizontal: 16,
+                                          vertical: 12.5,
+                                        ),
+                                ),
                               );
-                            }
-                          },
-                          borderRadius: context.radius.buttonLg,
-                          child: Text(
-                            "To’lovga o’tish",
-                            textAlign: TextAlign.center,
-                            style: context.textStyles.semibold16.copyWith(
-                              color: Colors.white,
-                            ),
-                          ).paddingSymmetric(horizontal: 16, vertical: 12.5),
+                            },
+                          ),
                         ),
                       ],
                     ),

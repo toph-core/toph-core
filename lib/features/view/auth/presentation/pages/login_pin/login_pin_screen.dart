@@ -42,7 +42,7 @@ class LoginPinScreen extends StatelessWidget {
                 ),
               ),
               child: SafeArea(
-                child: Column(
+                child: Column( 
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Align(

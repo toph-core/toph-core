@@ -1,7 +1,8 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:mary_ai_pos/core/auth/storage/token_storage_impl.dart';
-import 'package:mary_ai_pos/core/api//dio_interceptor.dart';
+import 'package:mary_ai_pos/core/constants/constants.dart';
+import 'package:mary_ai_pos/core/api/dio_interceptor.dart';
 import 'package:pretty_dio_logger/pretty_dio_logger.dart';
 
 class DioClient {
@@ -11,9 +12,7 @@ class DioClient {
   DioClient(this._tokenStorage) {
     _dio = Dio(
       BaseOptions(
-        // baseUrl: PRODUCTION_BASE_URL,
-        baseUrl: "https://back.maryai.yurtal.tech/",
-        // baseUrl: isStaging ? STAGING_BASE_URL : PRODUCTION_BASE_URL,
+        baseUrl: BASE_URL,
         connectTimeout: const Duration(seconds: 30),
         receiveTimeout: const Duration(seconds: 30),
         validateStatus: (status) => status != null && status < 400,

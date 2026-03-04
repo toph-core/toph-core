@@ -4,6 +4,7 @@ class ListAPI {
   static const String login = "api/v1/auth/login";
   static const String loginPinCode = "api/v1/auth/login-pincode";
   static const String refresh = "api/v1/auth/refresh";
+  static const String user = "api/v1/user/me";
 
   //! general
   static const String cafeTablesByHallId = "api/v1/cafe-tables/hall";
@@ -28,4 +29,7 @@ class ListAPI {
   static String orderWithTableId(String id) => "/api/v1/orders/table/$id";
   static const String createOrderItems = "/api/v1/order-items";
   static String payToOrder(String id) => "/api/v1/orders/$id/pay";
+
+  //! ChashRegisterShfit
+  static const String activeShift = "api/v1/cash-register-shifts/active";
 }

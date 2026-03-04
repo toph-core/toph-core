@@ -10,6 +10,7 @@ import 'package:mary_ai_pos/core/extension/widget_extension.dart';
 import 'package:mary_ai_pos/core/values/app_colors.dart';
 
 import 'package:mary_ai_pos/di.dart';
+import 'package:mary_ai_pos/features/view/main/data/models/create_order/create_order_request_model.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/payment/payment_bloc.dart';
 
 import 'package:mary_ai_pos/features/view/main/presentation/pages/payment/widgets/payment_right_side_bar.dart';
@@ -25,9 +26,10 @@ class PaymentScreen extends StatefulWidget {
 }
 
 class _PaymentScreenState extends State<PaymentScreen> {
-  // late final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>;
-  late final String tableId =
-      ModalRoute.of(context)?.settings.arguments as String? ?? '';
+  late final args =
+      ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>;
+  late final String? tableId = args['table_id'];
+  late final String? orderId = args['order_id'];
   late final ValueNotifier<bool> keyboardOpen = ValueNotifier<bool>(false);
   late final TextEditingController discountAmountController =
       TextEditingController(text: "0");
@@ -65,7 +67,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
       backgroundColor: context.colors.bgTritary,
       body: BlocProvider(
         create: (context) =>
-            inject<PaymentBloc>()..add(PaymentEvent.started(tableId: tableId)),
+            inject<PaymentBloc>()..add(PaymentEvent.started(tableId: tableId,orderId: orderId)),
         child: BlocBuilder<PaymentBloc, PaymentState>(
           builder: (context, state) {
             if (state.detail == null && state.status == Status.LOADING) {

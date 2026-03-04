@@ -21,6 +21,7 @@ import 'package:mary_ai_pos/core/values/app_assets.dart';
 import 'package:mary_ai_pos/di.dart';
 import 'package:mary_ai_pos/features/view/auth/presentation/cubit/auth/auth_cubit.dart';
 import 'package:mary_ai_pos/features/view/auth/presentation/cubit/auth/auth_state.dart';
+import 'package:mary_ai_pos/features/view/auth/presentation/cubit/bloc/user_bloc.dart';
 import 'package:mary_ai_pos/generated/l10n.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -52,7 +53,8 @@ class _SplashScreenState extends State<SplashScreen> {
         if (!unAuth) {
           Navigator.pushReplacementNamed(context, AppRoutes.loginPinScreen);
         } else {
-          Navigator.pushReplacementNamed(context, AppRoutes.mainScreen);
+          context.read<UserBloc>().add(const UserEvent.getUser());
+          // Navigator.pushReplacementNamed(context, AppRoutes.mainScreen);
         }
       } else {
         Navigator.pushReplacementNamed(context, AppRoutes.loginScreen);
@@ -80,32 +82,36 @@ class _SplashScreenState extends State<SplashScreen> {
       },
       child: Scaffold(
         resizeToAvoidBottomInset: false,
-        body: Column(
-          spacing: 12,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Spacer(flex: 3),
-            FadeInUp(
-              duration: const Duration(milliseconds: 600),
-              child: Center(
-                child: SvgPicture.asset(
-                  AppIcons.icLogo,
-                  height: 106,
-                ).paddingSymmetric(horizontal: (16)),
-              ),
-            ),
-            const Spacer(flex: 2),
-            const LoadingWidget(),
-            FadeIn(
-              delay: const Duration(milliseconds: 300),
-              child: Text(
-                textAlign: TextAlign.center,
-                "V.${AppUpdateService.appVersion}",
-                style: context.textStyles.caption,
-              ),
-            ),
-            SizedBox(height: customBottomPadding),
-          ],
+        body: BlocBuilder<UserBloc, UserState>(
+          builder: (context, state) {
+            return Column(
+              spacing: 12,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Spacer(flex: 3),
+                FadeInUp(
+                  duration: const Duration(milliseconds: 600),
+                  child: Center(
+                    child: SvgPicture.asset(
+                      AppIcons.icLogo,
+                      height: 106,
+                    ).paddingSymmetric(horizontal: (16)),
+                  ),
+                ),
+                const Spacer(flex: 2),
+                const LoadingWidget(),
+                FadeIn(
+                  delay: const Duration(milliseconds: 300),
+                  child: Text(
+                    textAlign: TextAlign.center,
+                    "V.${AppUpdateService.appVersion}",
+                    style: context.textStyles.caption,
+                  ),
+                ),
+                SizedBox(height: customBottomPadding),
+              ],
+            );
+          },
         ).paddingSymmetric(horizontal: 16),
       ),
     );

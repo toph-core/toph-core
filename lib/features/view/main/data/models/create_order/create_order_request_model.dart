@@ -16,12 +16,12 @@ class CreateOrderRequestModel with _$CreateOrderRequestModel {
     @Default(OrderStatus.none) OrderStatus status,
     @Default('') String tableId,
     @Default(TableStatus.none) TableStatus tableStatus,
+    @Default('') String orderType,
   }) = _CreateOrderRequestModel;
 
   const CreateOrderRequestModel._();
 
   Map<String, dynamic> request() => {
-    "cashier_id": cashierId,
     "comment": comment,
     "guest_count": guestCount,
     "items": List.generate(
@@ -37,6 +37,8 @@ class CreateOrderRequestModel with _$CreateOrderRequestModel {
   };
 
   Map<String, dynamic> createOrder() => {
+    "cashier_id": "1a9151ba-a4df-4b67-9281-82e7366e6752",
+    "order_type": "takeaway",
     "items": List.generate(
       foods.length,
       (index) => {
