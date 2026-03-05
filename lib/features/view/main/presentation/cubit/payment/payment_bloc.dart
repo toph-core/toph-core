@@ -57,8 +57,8 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
       final response = await _createPaymentUsecase.call(
         PaymentPayRequestModel(
           orderId: state.detail!.id,
-          cashRegisterId: "59162762-e728-49da-b652-6239a198f7ae",
-          cashierId: "1a9151ba-a4df-4b67-9281-82e7366e6752",
+          cashRegisterId: "a195f647-8cf0-4132-8464-fdaaa2d77a68",
+          cashierId: "4e25f6c1-68c0-43bd-bcb2-a130bde2e9e1",
           customPaidAmount: state.paymentType == PaymentType.cash
               ? int.parse(state.enterSum)
               : state.detail!.grandTotal,

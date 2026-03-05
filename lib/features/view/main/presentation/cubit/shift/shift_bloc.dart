@@ -57,10 +57,26 @@ class ShiftBloc extends Bloc<ShiftEvent, ShiftState> {
         );
         emit(state.copyWith(status: Status.ERROR, failure: l));
       },
-      (r) async{
-        navigatorKey.currentContext!.read<AuthCubit>().logout(onSuccess: () => Navigator.pushNamedAndRemoveUntil(navigatorKey.currentContext!, AppRoutes.loginPinScreen, (router) => true));
-        showSuccessMessage(navigatorKey.currentContext!,"Smena muvafaqqiyatli yopildi");
-        emit(state.copyWith(status: Status.SUCCESS, shift: null,cardSum: '0',cashSum: '0'));
+      (r) async {
+        navigatorKey.currentContext!.read<AuthCubit>().logout(
+          onSuccess: () => Navigator.pushNamedAndRemoveUntil(
+            navigatorKey.currentContext!,
+            AppRoutes.loginPinScreen,
+            (router) => true,
+          ),
+        );
+        showSuccessMessage(
+          navigatorKey.currentContext!,
+          "Smena muvafaqqiyatli yopildi",
+        );
+        emit(
+          state.copyWith(
+            status: Status.SUCCESS,
+            shift: null,
+            cardSum: '0',
+            cashSum: '0',
+          ),
+        );
       },
     );
   }
@@ -69,8 +85,8 @@ class ShiftBloc extends Bloc<ShiftEvent, ShiftState> {
     emit(state.copyWith(status: Status.LOADING));
     final response = await _openShiftUsecase.call(
       OpenShiftModel(
-        cashRegisterId: "59162762-e728-49da-b652-6239a198f7ae",
-        cashierId: "1a9151ba-a4df-4b67-9281-82e7366e6752",
+        cashRegisterId: "de9354d4-f7e4-4317-a3c6-3b06b6045fd1",
+        cashierId: "4e25f6c1-68c0-43bd-bcb2-a130bde2e9e1",
         openCardSum: int.parse(state.cardSum),
         openCashSum: int.parse(state.cashSum),
       ),
@@ -84,12 +100,23 @@ class ShiftBloc extends Bloc<ShiftEvent, ShiftState> {
         emit(state.copyWith(status: Status.ERROR, failure: l));
       },
       (r) {
-        Navigator.pushNamedAndRemoveUntil(navigatorKey.currentContext!, AppRoutes.mainScreen, (router) => true);
+        Navigator.pushNamedAndRemoveUntil(
+          navigatorKey.currentContext!,
+          AppRoutes.mainScreen,
+          (router) => true,
+        );
         showSuccessMessage(
           navigatorKey.currentContext!,
           "Smena muvafaqqiyatli ochildi",
         );
-        emit(state.copyWith(status: Status.SUCCESS, shift: r,cardSum: '0',cashSum: '0'));
+        emit(
+          state.copyWith(
+            status: Status.SUCCESS,
+            shift: r,
+            cardSum: '0',
+            cashSum: '0',
+          ),
+        );
       },
     );
   }
@@ -131,7 +158,7 @@ class ShiftBloc extends Bloc<ShiftEvent, ShiftState> {
   void _checkShift(_CheckShift event, emit) async {
     emit(state.copyWith(status: Status.LOADING));
     final response = await _checkShiftUsecase.call(
-      "59162762-e728-49da-b652-6239a198f7ae",
+      "de9354d4-f7e4-4317-a3c6-3b06b6045fd1",
     );
     response.fold(
       (l) {
