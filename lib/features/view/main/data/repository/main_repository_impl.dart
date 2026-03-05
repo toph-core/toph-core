@@ -4,9 +4,11 @@ import 'package:mary_ai_pos/features/view/auth/data/models/user/user_model.dart'
 import 'package:mary_ai_pos/features/view/main/data/data_source/main_datasources.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/cafe_tables/cafe_tables_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/category/category_model.dart';
+import 'package:mary_ai_pos/features/view/main/data/models/close_shift/close_shift_request_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/create_order/create_order_request_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/goods/goods_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/hall/hall_model.dart';
+import 'package:mary_ai_pos/features/view/main/data/models/open_shift/open_shift_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/shift/shift_response_model.dart';
 import 'package:mary_ai_pos/features/view/main/domain/entities/archive_detail_entity.dart';
 import 'package:mary_ai_pos/features/view/main/domain/entities/archives_filter_request_entity.dart';
@@ -19,6 +21,16 @@ class MainRepositoryImpl implements MainRepository {
   final MainDataSources _dataSources;
 
   MainRepositoryImpl(this._dataSources);
+
+  @override
+  Future<Either<Failure, bool>> closeShift({required CloseShiftRequestModel request}) async{
+    return await _dataSources.closeShift(request: request);
+  }
+
+  @override
+  Future<Either<Failure, ShiftResponseModel>> openShift({required OpenShiftModel request}) async{
+    return await _dataSources.openShift(request: request);
+  }
 
   @override
   Future<Either<Failure, ShiftResponseModel?>> checkShift({

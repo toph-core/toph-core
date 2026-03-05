@@ -13,6 +13,7 @@ const TECHNICAL_SUPPORT_URL = '';
 
 enum UserRole {admin, manager, cashier, waiter, kitchen, user, superadmin,none}
 
+
 enum CashStatus {open, close, none}
 
 enum ShiftSumType {cash,card}

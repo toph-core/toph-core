@@ -71,7 +71,7 @@ class LoginPinCubit extends Cubit<LoginPinState> {
         onSuccess: () {
           Navigator.pushNamedAndRemoveUntil(
             navigatorKey.currentContext!,
-            AppRoutes.mainScreen,
+            AppRoutes.splashScreen,
             (route) => false,
           );
         },

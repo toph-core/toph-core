@@ -10,8 +10,7 @@ class ListAPI {
   static const String cafeTablesByHallId = "api/v1/cafe-tables/hall";
   static const String halls = "api/v1/halls";
   static const String categories = "api/v1/categories";
-  static String categoriesGoods(String categoryId) =>
-      "api/v1/categories/$categoryId/goods";
+  static String categoriesGoods(String categoryId) => "api/v1/categories/$categoryId/goods";
   static const String goods = "/api/v1/goods";
   static const String goodsSearch = "/api/v1/goods/search";
 
@@ -32,4 +31,6 @@ class ListAPI {
 
   //! ChashRegisterShfit
   static const String activeShift = "api/v1/cash-register-shifts/active";
+  static String closeShift(String id) => "/api/v1/cash-register-shifts/$id/close";
+  static const String openShift = "/api/v1/cash-register-shifts";
 }

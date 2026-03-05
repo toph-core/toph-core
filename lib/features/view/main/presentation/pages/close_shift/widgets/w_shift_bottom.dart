@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:mary_ai_pos/core/common/custom_hover_effect_widget.dart';
+import 'package:mary_ai_pos/core/constants/constants.dart';
 import 'package:mary_ai_pos/core/extension/for_context.dart';
 import 'package:mary_ai_pos/core/extension/int_extension.dart';
 import 'package:mary_ai_pos/core/extension/widget_extension.dart';
@@ -48,17 +49,31 @@ class WShiftBottom extends StatelessWidget {
               child: SizedBox(
                 height: 56,
                 child: CustomHoverEffectWidget(
-                  onTap: () {},
+                  onTap: () {
+                    if (state.shift == null) {
+                      context.read<ShiftBloc>().add(
+                        const ShiftEvent.openShift(),
+                      );
+                    } else {
+                      context.read<ShiftBloc>().add(
+                        const ShiftEvent.closeShift(),
+                      );
+                    }
+                  },
                   bgColor: AppColors.ffFB6633,
                   borderRadius: context.radius.card,
                   child: Center(
-                    child: Text(
-                      state.shift == null ? "Smenani ochish" : "Smenani yopish va hisobot yaratish",
-                      style: context.textStyles.bold16.copyWith(
-                        color: AppColors.white,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
+                    child: state.status == Status.LOADING
+                        ? const CircularProgressIndicator.adaptive()
+                        : Text(
+                            state.shift == null
+                                ? "Smenani ochish"
+                                : "Smenani yopish va hisobot yaratish",
+                            style: context.textStyles.bold16.copyWith(
+                              color: AppColors.white,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
                   ),
                 ),
               ),

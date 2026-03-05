@@ -12,9 +12,11 @@ import 'package:mary_ai_pos/features/view/main/data/models/archive_detail/archiv
 import 'package:mary_ai_pos/features/view/main/data/models/archives_response/archives_response_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/cafe_tables/cafe_tables_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/category/category_model.dart';
+import 'package:mary_ai_pos/features/view/main/data/models/close_shift/close_shift_request_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/create_order/create_order_request_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/goods/goods_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/hall/hall_model.dart';
+import 'package:mary_ai_pos/features/view/main/data/models/open_shift/open_shift_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/shift/shift_response_model.dart';
 import 'package:mary_ai_pos/features/view/main/domain/entities/archive_detail_entity.dart';
 import 'package:mary_ai_pos/features/view/main/domain/entities/archives_filter_request_entity.dart';
@@ -62,12 +64,66 @@ abstract class MainDataSources {
   Future<Either<Failure, UserModel>> getUser();
 
   Future<Either<Failure, ShiftResponseModel?>> checkShift({required String id});
+
+  Future<Either<Failure, ShiftResponseModel>> openShift({
+    required OpenShiftModel request,
+  });
+
+  Future<Either<Failure, bool>> closeShift({
+    required CloseShiftRequestModel request,
+  });
 }
 
 class MainDataSourcesImpl implements MainDataSources {
   final DioClient _client;
 
   MainDataSourcesImpl(this._client);
+
+  @override
+  Future<Either<Failure, bool>> closeShift({
+    required CloseShiftRequestModel request,
+  }) async{
+    try {
+      await _client.post(ListAPI.closeShift(request.shiftId),data: request.toJson());
+      return const Right(true);
+    } on DioException catch (exception) {
+      return Left(handleDioException(exception));
+    } on FormatException catch (e, st) {
+      if (kDebugMode) print('ParsingError: $e\n$st');
+      return const Left(ParsingFailure());
+    } on TypeError catch (e, st) {
+      if (kDebugMode) print('ParsingError: $e\n$st');
+      return const Left(ParsingFailure());
+    } on String catch (e) {
+      return Left(MessageFailure(e));
+    } catch (e, st) {
+      if (kDebugMode) print('Unknown error: $e\n$st');
+      return const Left(UnknownFailure());
+    }
+  }
+
+  @override
+  Future<Either<Failure, ShiftResponseModel>> openShift({
+    required OpenShiftModel request,
+  }) async {
+    try {
+      final response = await _client.post(ListAPI.openShift,data: request.toJson());
+      return Right(ShiftResponseModel.fromJson(response.data['data']));
+    } on DioException catch (exception) {
+      return Left(handleDioException(exception));
+    } on FormatException catch (e, st) {
+      if (kDebugMode) print('ParsingError: $e\n$st');
+      return const Left(ParsingFailure());
+    } on TypeError catch (e, st) {
+      if (kDebugMode) print('ParsingError: $e\n$st');
+      return const Left(ParsingFailure());
+    } on String catch (e) {
+      return Left(MessageFailure(e));
+    } catch (e, st) {
+      if (kDebugMode) print('Unknown error: $e\n$st');
+      return const Left(UnknownFailure());
+    }
+  }
 
   @override
   Future<Either<Failure, ShiftResponseModel?>> checkShift({
@@ -79,7 +135,7 @@ class MainDataSourcesImpl implements MainDataSources {
         queryParameters: {"cash_register_id": id},
       );
       return Right(ShiftResponseModel.fromJson(response.data['data']));
-    }catch (e) {
+    } catch (e) {
       return const Right(null);
     }
   }

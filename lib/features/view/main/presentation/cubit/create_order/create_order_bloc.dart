@@ -35,8 +35,9 @@ class CreateOrderBloc extends Bloc<CreateOrderEvent, CreateOrderState> {
       final response = await _createTakeAwayOrderUsecase.call(
         CreateOrderRequestModel(
           orderType: "takeaway",
-          cashierId: "cashier_id",
+          cashierId: "1a9151ba-a4df-4b67-9281-82e7366e6752",
           foods: event.orders,
+          
         ),
       );
       response.fold(
@@ -63,6 +64,8 @@ class CreateOrderBloc extends Bloc<CreateOrderEvent, CreateOrderState> {
           foods: event.orders,
           status: OrderStatus.open,
           tableStatus: state.tableStatus,
+          cashierId: "3426b28b-6167-4bfa-8302-79835234e88b",
+          orderType: "dine_in"
         ),
       );
       response.fold(

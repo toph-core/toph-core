@@ -14,13 +14,22 @@ T _$identity<T>(T value) => value;
 final _privateConstructorUsedError = UnsupportedError(
     'It seems like you constructed your class using `MyClass._()`. This constructor is only meant to be used by freezed and you are not supposed to need it nor use it.\nPlease check the documentation here for more information: https://github.com/rrousselGit/freezed#adding-getters-and-methods-to-our-models');
 
+OpenShiftModel _$OpenShiftModelFromJson(Map<String, dynamic> json) {
+  return _OpenShiftModel.fromJson(json);
+}
+
 /// @nodoc
 mixin _$OpenShiftModel {
+  @JsonKey(name: "cash_register_id")
   String get cashRegisterId => throw _privateConstructorUsedError;
+  @JsonKey(name: "cashier_id")
   String get cashierId => throw _privateConstructorUsedError;
+  @JsonKey(name: "opening_card", toJson: _intToString)
   int get openCardSum => throw _privateConstructorUsedError;
+  @JsonKey(name: "opening_cash", toJson: _intToString)
   int get openCashSum => throw _privateConstructorUsedError;
 
+  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
   @JsonKey(ignore: true)
   $OpenShiftModelCopyWith<OpenShiftModel> get copyWith =>
       throw _privateConstructorUsedError;
@@ -33,10 +42,10 @@ abstract class $OpenShiftModelCopyWith<$Res> {
       _$OpenShiftModelCopyWithImpl<$Res, OpenShiftModel>;
   @useResult
   $Res call(
-      {String cashRegisterId,
-      String cashierId,
-      int openCardSum,
-      int openCashSum});
+      {@JsonKey(name: "cash_register_id") String cashRegisterId,
+      @JsonKey(name: "cashier_id") String cashierId,
+      @JsonKey(name: "opening_card", toJson: _intToString) int openCardSum,
+      @JsonKey(name: "opening_cash", toJson: _intToString) int openCashSum});
 }
 
 /// @nodoc
@@ -87,10 +96,10 @@ abstract class _$$OpenShiftModelImplCopyWith<$Res>
   @override
   @useResult
   $Res call(
-      {String cashRegisterId,
-      String cashierId,
-      int openCardSum,
-      int openCashSum});
+      {@JsonKey(name: "cash_register_id") String cashRegisterId,
+      @JsonKey(name: "cashier_id") String cashierId,
+      @JsonKey(name: "opening_card", toJson: _intToString) int openCardSum,
+      @JsonKey(name: "opening_cash", toJson: _intToString) int openCashSum});
 }
 
 /// @nodoc
@@ -131,26 +140,30 @@ class __$$OpenShiftModelImplCopyWithImpl<$Res>
 }
 
 /// @nodoc
-
+@JsonSerializable()
 class _$OpenShiftModelImpl extends _OpenShiftModel {
   const _$OpenShiftModelImpl(
-      {this.cashRegisterId = '',
-      this.cashierId = '',
-      this.openCardSum = 0,
+      {@JsonKey(name: "cash_register_id") this.cashRegisterId = '',
+      @JsonKey(name: "cashier_id") this.cashierId = '',
+      @JsonKey(name: "opening_card", toJson: _intToString) this.openCardSum = 0,
+      @JsonKey(name: "opening_cash", toJson: _intToString)
       this.openCashSum = 0})
       : super._();
 
+  factory _$OpenShiftModelImpl.fromJson(Map<String, dynamic> json) =>
+      _$$OpenShiftModelImplFromJson(json);
+
   @override
-  @JsonKey()
+  @JsonKey(name: "cash_register_id")
   final String cashRegisterId;
   @override
-  @JsonKey()
+  @JsonKey(name: "cashier_id")
   final String cashierId;
   @override
-  @JsonKey()
+  @JsonKey(name: "opening_card", toJson: _intToString)
   final int openCardSum;
   @override
-  @JsonKey()
+  @JsonKey(name: "opening_cash", toJson: _intToString)
   final int openCashSum;
 
   @override
@@ -173,6 +186,7 @@ class _$OpenShiftModelImpl extends _OpenShiftModel {
                 other.openCashSum == openCashSum));
   }
 
+  @JsonKey(ignore: true)
   @override
   int get hashCode => Object.hash(
       runtimeType, cashRegisterId, cashierId, openCardSum, openCashSum);
@@ -183,23 +197,39 @@ class _$OpenShiftModelImpl extends _OpenShiftModel {
   _$$OpenShiftModelImplCopyWith<_$OpenShiftModelImpl> get copyWith =>
       __$$OpenShiftModelImplCopyWithImpl<_$OpenShiftModelImpl>(
           this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$$OpenShiftModelImplToJson(
+      this,
+    );
+  }
 }
 
 abstract class _OpenShiftModel extends OpenShiftModel {
   const factory _OpenShiftModel(
-      {final String cashRegisterId,
-      final String cashierId,
+      {@JsonKey(name: "cash_register_id") final String cashRegisterId,
+      @JsonKey(name: "cashier_id") final String cashierId,
+      @JsonKey(name: "opening_card", toJson: _intToString)
       final int openCardSum,
+      @JsonKey(name: "opening_cash", toJson: _intToString)
       final int openCashSum}) = _$OpenShiftModelImpl;
   const _OpenShiftModel._() : super._();
 
+  factory _OpenShiftModel.fromJson(Map<String, dynamic> json) =
+      _$OpenShiftModelImpl.fromJson;
+
   @override
+  @JsonKey(name: "cash_register_id")
   String get cashRegisterId;
   @override
+  @JsonKey(name: "cashier_id")
   String get cashierId;
   @override
+  @JsonKey(name: "opening_card", toJson: _intToString)
   int get openCardSum;
   @override
+  @JsonKey(name: "opening_cash", toJson: _intToString)
   int get openCashSum;
   @override
   @JsonKey(ignore: true)

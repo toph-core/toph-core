@@ -5,6 +5,7 @@ import 'package:mary_ai_pos/core/common/custom_hover_effect_widget.dart';
 import 'package:mary_ai_pos/core/constants/constants.dart';
 import 'package:mary_ai_pos/core/extension/for_context.dart';
 import 'package:mary_ai_pos/core/extension/int_extension.dart';
+import 'package:mary_ai_pos/core/extension/number_formatter.dart';
 import 'package:mary_ai_pos/core/extension/widget_extension.dart';
 import 'package:mary_ai_pos/core/values/app_assets.dart';
 import 'package:mary_ai_pos/core/values/app_colors.dart';
@@ -102,7 +103,7 @@ class _CloseShiftScreenState extends State<CloseShiftScreen> {
                               onTap: () => context.read<ShiftBloc>().add(const ShiftEvent.updateSumType(type: ShiftSumType.cash)),
                               selected: state.sum == ShiftSumType.cash,
                               title: "Naqt summani kiriting",
-                              value: state.cashSum,
+                              value: int.parse(state.cashSum).formatN,
                             ),
                           ),
                           12.wBox,
@@ -111,7 +112,7 @@ class _CloseShiftScreenState extends State<CloseShiftScreen> {
                               onTap: () => context.read<ShiftBloc>().add(const ShiftEvent.updateSumType(type: ShiftSumType.card)),
                               selected: state.sum == ShiftSumType.card,
                               title: "Terminal summani kiriting",
-                              value: state.cardSum,
+                              value: int.parse(state.cardSum).formatN,
                             ),
                           ),
                         ],

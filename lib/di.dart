@@ -6,6 +6,7 @@ import 'package:mary_ai_pos/features/view/auth/domain/usecases/logout/logout_use
 import 'package:mary_ai_pos/features/view/auth/domain/usecases/user/get_user_usecase.dart';
 import 'package:mary_ai_pos/features/view/auth/presentation/cubit/bloc/user_bloc.dart';
 import 'package:mary_ai_pos/features/view/main/domain/usecase/check_shift_usecase.dart';
+import 'package:mary_ai_pos/features/view/main/domain/usecase/close_shift_usecase.dart';
 import 'package:mary_ai_pos/features/view/main/domain/usecase/create_order_usecase.dart';
 import 'package:mary_ai_pos/features/view/main/domain/usecase/create_payment_usecase.dart';
 import 'package:mary_ai_pos/features/view/main/domain/usecase/create_take_away_order_usecase.dart';
@@ -16,6 +17,7 @@ import 'package:mary_ai_pos/features/view/main/domain/usecase/get_goods_by_categ
 import 'package:mary_ai_pos/features/view/main/domain/usecase/get_goods_with_name_usecase.dart';
 import 'package:mary_ai_pos/features/view/main/domain/usecase/get_payment_detail_with_id_usecase.dart';
 import 'package:mary_ai_pos/features/view/main/domain/usecase/get_payment_detail_with_table_id_usecase.dart';
+import 'package:mary_ai_pos/features/view/main/domain/usecase/open_shift_usecase.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/archive/archive_bloc.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/counter/counter_cubit.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/create_order/create_order_bloc.dart';
@@ -110,6 +112,8 @@ void _useCase() {
   );
   inject.registerLazySingleton(() => GetUserUsecase(inject()));
   inject.registerLazySingleton(() => CheckShiftUsecase(inject()));
+  inject.registerFactory(() => OpenShiftUsecase(inject()));
+  inject.registerFactory(() => CloseShiftUsecase(inject()));
 }
 
 void _cubit() {
@@ -120,7 +124,7 @@ void _cubit() {
   inject.registerLazySingleton(() => SettingsCubit(inject(), inject()));
   inject.registerLazySingleton(() => MainCubit(inject(), inject()));
   inject.registerLazySingleton(() => KeyboardCubit());
-  inject.registerLazySingleton(() => ShiftBloc(checkShiftUsecase: inject()));
+  inject.registerLazySingleton(() => ShiftBloc(checkShiftUsecase: inject(),openShiftUsecase: inject(),closeShiftUsecase: inject()));
 
   //? factory
   inject.registerLazySingleton(() => UserBloc(getUserUsecase: inject()));

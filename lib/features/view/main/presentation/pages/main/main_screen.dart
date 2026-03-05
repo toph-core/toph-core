@@ -22,11 +22,11 @@ class MainScreen extends StatefulWidget {
 }
 
 class _MainScreenState extends State<MainScreen> {
-
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((v) {
+      print("bu user malumotlari ${context.read<UserBloc>().state.userMOdel?.toJson()}");
       if (context.read<UserBloc>().state.userMOdel != null &&
           context.read<UserBloc>().state.userMOdel!.role == UserRole.admin) {
         context.read<ShiftBloc>().add(const ShiftEvent.checkShift());
