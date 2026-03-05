@@ -42,7 +42,7 @@ class TopBarWidget extends StatelessWidget {
                 children: [
                   CustomHoverEffectWidget(
                     bgColor: context.colors.bgSecondary,
-                    onTap: state.selectedGoods.isNotEmpty
+                    onTap: state.selectedGoods.isNotEmpty && cafeTable != null
                         ? () async {
                             await showDialog(
                               context: context,
@@ -72,7 +72,12 @@ class TopBarWidget extends StatelessWidget {
                               }
                             });
                           }
-                        : () => Navigator.pop(context),
+                        : () {
+                            if(cafeTable != null){
+                              context.read<SavedOrdersBloc>().add(SavedOrdersEvent.removeOrder(tableId: cafeTable!.id));
+                            }
+                            Navigator.pop(context);
+                          },
                     borderRadius: context.radius.buttonLg,
                     child: SvgPicture.asset(
                       AppIcons.icArrowLeft,

@@ -38,82 +38,76 @@ class TableWidget extends StatelessWidget {
             InkWell(
               onTap: onTap,
               borderRadius: BorderRadius.circular(16),
-              child: Container(
-                width: width,
-                height:
-                    height +
-                    (context.read<SavedOrdersBloc>().state.order.indexWhere(
-                              (v) => v.cafeTable.id == table.id,
-                            ) !=
-                            -1
-                        ? 30
-                        : 20),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.08),
-                      blurRadius: 15,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(16),
-                  child: Stack(
-                    children: [
-                      Positioned(
-                        right: 0,
-                        top: 0,
-                        bottom: 0,
-                        child: Container(width: 12, color: statusColor),
-                      ),
-                      // Content
-                      Padding(
-                        padding: const EdgeInsets.only(left: 16, right: 20),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              '${table.number}',
-                              style: context.textStyles.bodyLg.copyWith(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 24,
-                                color: const Color(0xFF1A1A1A),
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              isFree ? "Bo'sh" : "To'lov kutilmoqda",
-                              style: context.textStyles.bodySm.copyWith(
-                                color: statusColor,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                            4.hBox,
-                            BlocBuilder<SavedOrdersBloc, SavedOrdersState>(
-                              builder: (context, state) {
-                                if (state.order.indexWhere(
-                                      (v) => v.cafeTable.id == table.id,
-                                    ) !=
-                                    -1) {
-                                  return Text(
-                                    "Saqlangan",
-                                    style: context.textStyles.bodyMd,
-                                  );
-                                }
-
-                                return const SizedBox();
-                              },
-                            ),
-                          ],
+              child: BlocBuilder<SavedOrdersBloc, SavedOrdersState>(
+                builder: (context, state) {
+                  return Container(
+                    width: width,
+                    height:
+                        height +
+                        (state.order.indexWhere(
+                                  (v) => v.cafeTable.id == table.id,
+                                ) !=
+                                -1
+                            ? 40
+                            : 20),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.08),
+                          blurRadius: 15,
+                          offset: const Offset(0, 4),
                         ),
+                      ],
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(16),
+                      child: Stack(
+                        children: [
+                          Positioned(
+                            right: 0,
+                            top: 0,
+                            bottom: 0,
+                            child: Container(width: 12, color: statusColor),
+                          ),
+                          // Content
+                          Padding(
+                            padding: const EdgeInsets.only(left: 16, right: 20),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  '${table.number}',
+                                  style: context.textStyles.bodyLg.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 24,
+                                    color: const Color(0xFF1A1A1A),
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  isFree ? "Bo'sh" : "To'lov kutilmoqda",
+                                  style: context.textStyles.bodySm.copyWith(
+                                    color: statusColor,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                                4.hBox,
+                                if(state.order.indexWhere((v) => v.cafeTable.id == table.id) != -1)
+                                 Text(
+                                  "Saqlangan",
+                                  style: context.textStyles.bodyMd,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
-                ),
+                    ),
+                  );
+                },
               ),
             ),
           ],

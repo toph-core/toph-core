@@ -58,7 +58,7 @@ class MyApp extends StatelessWidget {
         BlocProvider(create: (_) => inject<AuthCubit>()),
         BlocProvider(create: (_) => inject<SettingsCubit>()..loadAppLang()),
         BlocProvider(create: (_) => inject<MainCubit>()),
-        BlocProvider(create: (_) => inject<SavedOrdersBloc>()),
+        BlocProvider(create: (_) => inject<SavedOrdersBloc>()..add(const SavedOrdersEvent.started()),lazy: false,),
         BlocProvider(create: (_) => inject<UserBloc>()..add(const UserEvent.started())),
         BlocProvider(create: (_) => inject<ShiftBloc>()..add(const ShiftEvent.started()))
       ],

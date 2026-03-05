@@ -26,7 +26,6 @@ class _MainScreenState extends State<MainScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((v) {
-      print("bu user malumotlari ${context.read<UserBloc>().state.userMOdel?.toJson()}");
       if (context.read<UserBloc>().state.userMOdel != null &&
           context.read<UserBloc>().state.userMOdel!.role == UserRole.admin) {
         context.read<ShiftBloc>().add(const ShiftEvent.checkShift());
@@ -39,53 +38,49 @@ class _MainScreenState extends State<MainScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: context.colors.bgSecondary,
-      body: BlocProvider(
-        create: (context) =>
-            inject<SavedOrdersBloc>()..add(const SavedOrdersEvent.started()),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const MainHeader(),
-            Expanded(
-              child: Container(
-                clipBehavior: Clip.antiAlias,
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: context.radius.card24,
-                ),
-                child: BlocBuilder<MainCubit, MainState>(
-                  builder: (context, state) {
-                    if (state.isLoading) {
-                      return const Expanded(
-                        child: Center(child: LoadingWidget()),
-                      );
-                    }
-
-                    return Column(
-                      spacing: 16,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        TabFilter(
-                          halls: state.halls ?? [],
-                          selectedHallId: state.selectedHallId,
-                          isLoading: state.status == Status.OTHER_LOADING,
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const MainHeader(),
+          Expanded(
+            child: Container(
+              clipBehavior: Clip.antiAlias,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: context.radius.card24,
+              ),
+              child: BlocBuilder<MainCubit, MainState>(
+                builder: (context, state) {
+                  if (state.isLoading) {
+                    return const Expanded(
+                      child: Center(child: LoadingWidget()),
+                    );
+                  }
+      
+                  return Column(
+                    spacing: 16,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      TabFilter(
+                        halls: state.halls ?? [],
+                        selectedHallId: state.selectedHallId,
+                        isLoading: state.status == Status.OTHER_LOADING,
+                      ),
+                      HallWidget(
+                        isLoading: state.status == Status.LOADING,
+                        tables: state.tables ?? [],
+                        hall: state.halls?.firstWhereOrNull(
+                          (item) => item.id == state.selectedHallId,
                         ),
-                        HallWidget(
-                          isLoading: state.status == Status.LOADING,
-                          tables: state.tables ?? [],
-                          hall: state.halls?.firstWhereOrNull(
-                            (item) => item.id == state.selectedHallId,
-                          ),
-                        ),
-                      ],
-                    ).paddingAll(16);
-                  },
-                ),
+                      ),
+                    ],
+                  ).paddingAll(16);
+                },
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ).paddingSymmetric(vertical: 20, horizontal: 32),
     );
   }

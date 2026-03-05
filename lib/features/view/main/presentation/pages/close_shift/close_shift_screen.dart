@@ -78,9 +78,7 @@ class _CloseShiftScreenState extends State<CloseShiftScreen> {
                             value:
                                 state.shift != null &&
                                     state.shift!.openedAt != null
-                                ? state.shift == null
-                                      ? "${enterDate.hour}:${enterDate.minute}"
-                                      : "${state.shift!.openedAt!.hour}:${state.shift!.openedAt!.minute}"
+                                ? "${enterDate.hour}:${enterDate.minute}"
                                 : "--:--",
                           ),
                         ],
@@ -100,7 +98,11 @@ class _CloseShiftScreenState extends State<CloseShiftScreen> {
                         children: [
                           Expanded(
                             child: WShiftInputSumContainer(
-                              onTap: () => context.read<ShiftBloc>().add(const ShiftEvent.updateSumType(type: ShiftSumType.cash)),
+                              onTap: () => context.read<ShiftBloc>().add(
+                                const ShiftEvent.updateSumType(
+                                  type: ShiftSumType.cash,
+                                ),
+                              ),
                               selected: state.sum == ShiftSumType.cash,
                               title: "Naqt summani kiriting",
                               value: int.parse(state.cashSum).formatN,
@@ -109,7 +111,11 @@ class _CloseShiftScreenState extends State<CloseShiftScreen> {
                           12.wBox,
                           Expanded(
                             child: WShiftInputSumContainer(
-                              onTap: () => context.read<ShiftBloc>().add(const ShiftEvent.updateSumType(type: ShiftSumType.card)),
+                              onTap: () => context.read<ShiftBloc>().add(
+                                const ShiftEvent.updateSumType(
+                                  type: ShiftSumType.card,
+                                ),
+                              ),
                               selected: state.sum == ShiftSumType.card,
                               title: "Terminal summani kiriting",
                               value: int.parse(state.cardSum).formatN,
@@ -150,9 +156,9 @@ class _CloseShiftScreenState extends State<CloseShiftScreen> {
     final bool isDelete = key == 'delete';
     return CustomHoverEffectWidget(
       onTap: () {
-        if(type == ShiftSumType.card){
+        if (type == ShiftSumType.card) {
           context.read<ShiftBloc>().add(ShiftEvent.updateCardSum(value: key));
-        }else{
+        } else {
           context.read<ShiftBloc>().add(ShiftEvent.updateCashSum(value: key));
         }
       },

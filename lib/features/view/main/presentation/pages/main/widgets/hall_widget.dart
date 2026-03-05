@@ -192,14 +192,14 @@ class _HallWidgetState extends State<HallWidget> {
                         );
                       },
                     ),
-                    Positioned(
-                      left: 10,
-                      top: 10,
-                      child: Text(
-                        "Hall: ${hallWidth.round()}x${hallHeight.round()}",
-                        style: context.textStyles.bodyMd,
-                      ),
-                    ),
+                    // Positioned(
+                    //   left: 10,
+                    //   top: 10,
+                    //   child: Text(
+                    //     "Hall: ${hallWidth.round()}x${hallHeight.round()}",
+                    //     style: context.textStyles.bodyMd,
+                    //   ),
+                    // ),
                   ],
                 );
               },

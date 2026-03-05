@@ -152,5 +152,5 @@ void _cubit() {
     ),
   );
   inject.registerFactory(() => NotificationBloc());
-  inject.registerFactory(() => SavedOrdersBloc());
+  inject.registerLazySingleton(() => SavedOrdersBloc());
 }
