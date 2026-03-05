@@ -32,6 +32,7 @@ class _MainScreenState extends State<MainScreen> {
       }
     });
     context.read<MainCubit>().getHalls();
+    context.read<SavedOrdersBloc>().add(const SavedOrdersEvent.clear());
   }
 
   @override
@@ -57,7 +58,7 @@ class _MainScreenState extends State<MainScreen> {
                       child: Center(child: LoadingWidget()),
                     );
                   }
-      
+
                   return Column(
                     spacing: 16,
                     crossAxisAlignment: CrossAxisAlignment.start,

@@ -21,6 +21,7 @@ mixin _$SavedOrdersEvent {
     required TResult Function() started,
     required TResult Function(SaveOrderEntity order) addNewOrder,
     required TResult Function(String tableId) removeOrder,
+    required TResult Function() clear,
   }) =>
       throw _privateConstructorUsedError;
   @optionalTypeArgs
@@ -28,6 +29,7 @@ mixin _$SavedOrdersEvent {
     TResult? Function()? started,
     TResult? Function(SaveOrderEntity order)? addNewOrder,
     TResult? Function(String tableId)? removeOrder,
+    TResult? Function()? clear,
   }) =>
       throw _privateConstructorUsedError;
   @optionalTypeArgs
@@ -35,6 +37,7 @@ mixin _$SavedOrdersEvent {
     TResult Function()? started,
     TResult Function(SaveOrderEntity order)? addNewOrder,
     TResult Function(String tableId)? removeOrder,
+    TResult Function()? clear,
     required TResult orElse(),
   }) =>
       throw _privateConstructorUsedError;
@@ -43,6 +46,7 @@ mixin _$SavedOrdersEvent {
     required TResult Function(_Started value) started,
     required TResult Function(_AddNewOrder value) addNewOrder,
     required TResult Function(_RemoveOrder value) removeOrder,
+    required TResult Function(_Clear value) clear,
   }) =>
       throw _privateConstructorUsedError;
   @optionalTypeArgs
@@ -50,6 +54,7 @@ mixin _$SavedOrdersEvent {
     TResult? Function(_Started value)? started,
     TResult? Function(_AddNewOrder value)? addNewOrder,
     TResult? Function(_RemoveOrder value)? removeOrder,
+    TResult? Function(_Clear value)? clear,
   }) =>
       throw _privateConstructorUsedError;
   @optionalTypeArgs
@@ -57,6 +62,7 @@ mixin _$SavedOrdersEvent {
     TResult Function(_Started value)? started,
     TResult Function(_AddNewOrder value)? addNewOrder,
     TResult Function(_RemoveOrder value)? removeOrder,
+    TResult Function(_Clear value)? clear,
     required TResult orElse(),
   }) =>
       throw _privateConstructorUsedError;
@@ -121,6 +127,7 @@ class _$StartedImpl implements _Started {
     required TResult Function() started,
     required TResult Function(SaveOrderEntity order) addNewOrder,
     required TResult Function(String tableId) removeOrder,
+    required TResult Function() clear,
   }) {
     return started();
   }
@@ -131,6 +138,7 @@ class _$StartedImpl implements _Started {
     TResult? Function()? started,
     TResult? Function(SaveOrderEntity order)? addNewOrder,
     TResult? Function(String tableId)? removeOrder,
+    TResult? Function()? clear,
   }) {
     return started?.call();
   }
@@ -141,6 +149,7 @@ class _$StartedImpl implements _Started {
     TResult Function()? started,
     TResult Function(SaveOrderEntity order)? addNewOrder,
     TResult Function(String tableId)? removeOrder,
+    TResult Function()? clear,
     required TResult orElse(),
   }) {
     if (started != null) {
@@ -155,6 +164,7 @@ class _$StartedImpl implements _Started {
     required TResult Function(_Started value) started,
     required TResult Function(_AddNewOrder value) addNewOrder,
     required TResult Function(_RemoveOrder value) removeOrder,
+    required TResult Function(_Clear value) clear,
   }) {
     return started(this);
   }
@@ -165,6 +175,7 @@ class _$StartedImpl implements _Started {
     TResult? Function(_Started value)? started,
     TResult? Function(_AddNewOrder value)? addNewOrder,
     TResult? Function(_RemoveOrder value)? removeOrder,
+    TResult? Function(_Clear value)? clear,
   }) {
     return started?.call(this);
   }
@@ -175,6 +186,7 @@ class _$StartedImpl implements _Started {
     TResult Function(_Started value)? started,
     TResult Function(_AddNewOrder value)? addNewOrder,
     TResult Function(_RemoveOrder value)? removeOrder,
+    TResult Function(_Clear value)? clear,
     required TResult orElse(),
   }) {
     if (started != null) {
@@ -255,6 +267,7 @@ class _$AddNewOrderImpl implements _AddNewOrder {
     required TResult Function() started,
     required TResult Function(SaveOrderEntity order) addNewOrder,
     required TResult Function(String tableId) removeOrder,
+    required TResult Function() clear,
   }) {
     return addNewOrder(order);
   }
@@ -265,6 +278,7 @@ class _$AddNewOrderImpl implements _AddNewOrder {
     TResult? Function()? started,
     TResult? Function(SaveOrderEntity order)? addNewOrder,
     TResult? Function(String tableId)? removeOrder,
+    TResult? Function()? clear,
   }) {
     return addNewOrder?.call(order);
   }
@@ -275,6 +289,7 @@ class _$AddNewOrderImpl implements _AddNewOrder {
     TResult Function()? started,
     TResult Function(SaveOrderEntity order)? addNewOrder,
     TResult Function(String tableId)? removeOrder,
+    TResult Function()? clear,
     required TResult orElse(),
   }) {
     if (addNewOrder != null) {
@@ -289,6 +304,7 @@ class _$AddNewOrderImpl implements _AddNewOrder {
     required TResult Function(_Started value) started,
     required TResult Function(_AddNewOrder value) addNewOrder,
     required TResult Function(_RemoveOrder value) removeOrder,
+    required TResult Function(_Clear value) clear,
   }) {
     return addNewOrder(this);
   }
@@ -299,6 +315,7 @@ class _$AddNewOrderImpl implements _AddNewOrder {
     TResult? Function(_Started value)? started,
     TResult? Function(_AddNewOrder value)? addNewOrder,
     TResult? Function(_RemoveOrder value)? removeOrder,
+    TResult? Function(_Clear value)? clear,
   }) {
     return addNewOrder?.call(this);
   }
@@ -309,6 +326,7 @@ class _$AddNewOrderImpl implements _AddNewOrder {
     TResult Function(_Started value)? started,
     TResult Function(_AddNewOrder value)? addNewOrder,
     TResult Function(_RemoveOrder value)? removeOrder,
+    TResult Function(_Clear value)? clear,
     required TResult orElse(),
   }) {
     if (addNewOrder != null) {
@@ -395,6 +413,7 @@ class _$RemoveOrderImpl implements _RemoveOrder {
     required TResult Function() started,
     required TResult Function(SaveOrderEntity order) addNewOrder,
     required TResult Function(String tableId) removeOrder,
+    required TResult Function() clear,
   }) {
     return removeOrder(tableId);
   }
@@ -405,6 +424,7 @@ class _$RemoveOrderImpl implements _RemoveOrder {
     TResult? Function()? started,
     TResult? Function(SaveOrderEntity order)? addNewOrder,
     TResult? Function(String tableId)? removeOrder,
+    TResult? Function()? clear,
   }) {
     return removeOrder?.call(tableId);
   }
@@ -415,6 +435,7 @@ class _$RemoveOrderImpl implements _RemoveOrder {
     TResult Function()? started,
     TResult Function(SaveOrderEntity order)? addNewOrder,
     TResult Function(String tableId)? removeOrder,
+    TResult Function()? clear,
     required TResult orElse(),
   }) {
     if (removeOrder != null) {
@@ -429,6 +450,7 @@ class _$RemoveOrderImpl implements _RemoveOrder {
     required TResult Function(_Started value) started,
     required TResult Function(_AddNewOrder value) addNewOrder,
     required TResult Function(_RemoveOrder value) removeOrder,
+    required TResult Function(_Clear value) clear,
   }) {
     return removeOrder(this);
   }
@@ -439,6 +461,7 @@ class _$RemoveOrderImpl implements _RemoveOrder {
     TResult? Function(_Started value)? started,
     TResult? Function(_AddNewOrder value)? addNewOrder,
     TResult? Function(_RemoveOrder value)? removeOrder,
+    TResult? Function(_Clear value)? clear,
   }) {
     return removeOrder?.call(this);
   }
@@ -449,6 +472,7 @@ class _$RemoveOrderImpl implements _RemoveOrder {
     TResult Function(_Started value)? started,
     TResult Function(_AddNewOrder value)? addNewOrder,
     TResult Function(_RemoveOrder value)? removeOrder,
+    TResult Function(_Clear value)? clear,
     required TResult orElse(),
   }) {
     if (removeOrder != null) {
@@ -466,6 +490,120 @@ abstract class _RemoveOrder implements SavedOrdersEvent {
   @JsonKey(ignore: true)
   _$$RemoveOrderImplCopyWith<_$RemoveOrderImpl> get copyWith =>
       throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class _$$ClearImplCopyWith<$Res> {
+  factory _$$ClearImplCopyWith(
+          _$ClearImpl value, $Res Function(_$ClearImpl) then) =
+      __$$ClearImplCopyWithImpl<$Res>;
+}
+
+/// @nodoc
+class __$$ClearImplCopyWithImpl<$Res>
+    extends _$SavedOrdersEventCopyWithImpl<$Res, _$ClearImpl>
+    implements _$$ClearImplCopyWith<$Res> {
+  __$$ClearImplCopyWithImpl(
+      _$ClearImpl _value, $Res Function(_$ClearImpl) _then)
+      : super(_value, _then);
+}
+
+/// @nodoc
+
+class _$ClearImpl implements _Clear {
+  const _$ClearImpl();
+
+  @override
+  String toString() {
+    return 'SavedOrdersEvent.clear()';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType && other is _$ClearImpl);
+  }
+
+  @override
+  int get hashCode => runtimeType.hashCode;
+
+  @override
+  @optionalTypeArgs
+  TResult when<TResult extends Object?>({
+    required TResult Function() started,
+    required TResult Function(SaveOrderEntity order) addNewOrder,
+    required TResult Function(String tableId) removeOrder,
+    required TResult Function() clear,
+  }) {
+    return clear();
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult? whenOrNull<TResult extends Object?>({
+    TResult? Function()? started,
+    TResult? Function(SaveOrderEntity order)? addNewOrder,
+    TResult? Function(String tableId)? removeOrder,
+    TResult? Function()? clear,
+  }) {
+    return clear?.call();
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult maybeWhen<TResult extends Object?>({
+    TResult Function()? started,
+    TResult Function(SaveOrderEntity order)? addNewOrder,
+    TResult Function(String tableId)? removeOrder,
+    TResult Function()? clear,
+    required TResult orElse(),
+  }) {
+    if (clear != null) {
+      return clear();
+    }
+    return orElse();
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult map<TResult extends Object?>({
+    required TResult Function(_Started value) started,
+    required TResult Function(_AddNewOrder value) addNewOrder,
+    required TResult Function(_RemoveOrder value) removeOrder,
+    required TResult Function(_Clear value) clear,
+  }) {
+    return clear(this);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult? mapOrNull<TResult extends Object?>({
+    TResult? Function(_Started value)? started,
+    TResult? Function(_AddNewOrder value)? addNewOrder,
+    TResult? Function(_RemoveOrder value)? removeOrder,
+    TResult? Function(_Clear value)? clear,
+  }) {
+    return clear?.call(this);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult maybeMap<TResult extends Object?>({
+    TResult Function(_Started value)? started,
+    TResult Function(_AddNewOrder value)? addNewOrder,
+    TResult Function(_RemoveOrder value)? removeOrder,
+    TResult Function(_Clear value)? clear,
+    required TResult orElse(),
+  }) {
+    if (clear != null) {
+      return clear(this);
+    }
+    return orElse();
+  }
+}
+
+abstract class _Clear implements SavedOrdersEvent {
+  const factory _Clear() = _$ClearImpl;
 }
 
 /// @nodoc

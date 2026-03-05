@@ -6,13 +6,15 @@ part 'orders_event.dart';
 part 'orders_state.dart';
 part 'orders_bloc.freezed.dart';
 
-
 class SavedOrdersBloc extends Bloc<SavedOrdersEvent, SavedOrdersState> {
   SavedOrdersBloc() : super(const SavedOrdersState()) {
     on<_Started>(_onStarted);
     on<_AddNewOrder>(_onAddNewOrder);
     on<_RemoveOrder>(_onRemoveOrder);
+    on<_Clear>(_clear);
   }
+
+  void _clear(_Clear event, emit) => emit(state.copyWith(order: []));
 
   void _onStarted(_Started event, Emitter<SavedOrdersState> emit) {
     emit(state.copyWith(order: []));

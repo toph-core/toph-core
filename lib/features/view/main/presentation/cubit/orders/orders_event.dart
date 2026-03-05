@@ -7,4 +7,7 @@ class SavedOrdersEvent with _$SavedOrdersEvent {
       _AddNewOrder;
   const factory SavedOrdersEvent.removeOrder({required String tableId}) =
       _RemoveOrder;
+
+  const factory SavedOrdersEvent.clear() = _Clear;
+  
 }
