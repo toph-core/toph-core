@@ -1,6 +1,7 @@
 // ignore_for_file: constant_identifier_names
-const BASE_URL = 'https://back.maryai.yurtal.tech/';
+// const BASE_URL = 'https://back.maryai.yurtal.tech/';
 // const BASE_URL = 'https://back.staging.maryai.yurtal.tech/';
+const BASE_URL = 'http://localhost:8080';
 
 
 const ACCESS_TOKEN = 'access-token';
