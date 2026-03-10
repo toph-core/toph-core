@@ -2,7 +2,7 @@
 // const BASE_URL = 'https://back.maryai.yurtal.tech/';
 // const BASE_URL = 'https://back.staging.maryai.yurtal.tech/';
 // const BASE_URL = 'http://localhost:8080';
-const BASE_URL = 'http://192.168.0.125:8080';
+const BASE_URL = 'http://192.168.0.125:8080/';
 
 const ACCESS_TOKEN = 'access-token';
 const REFRESH_TOKEN = 'refresh-token';
