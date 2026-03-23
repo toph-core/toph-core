@@ -12,7 +12,7 @@ _$GoodsModelImpl _$$GoodsModelImplFromJson(Map<String, dynamic> json) =>
       colorCode: json['color_code'] as String?,
       cookTime: (json['cook_time'] as num).toInt(),
       costPrice: json['cost_price'] as String,
-      departmentId: json['department_id'] as String,
+      departmentId: json['department_id'] as String? ?? '',
       description: json['description'] as String,
       descriptionI18n: json['description_i18n'] as String?,
       id: json['id'] as String,

@@ -25,6 +25,7 @@ mixin _$PaymentEvent {
     required TResult Function(DiscountType dicountType) updateDiscountType,
     required TResult Function(String amount) updateDiscountAmount,
     required TResult Function(PaymentType paymentType) updatePaymentType,
+    required TResult Function(double hourPrice) upadeHourPrice,
   }) =>
       throw _privateConstructorUsedError;
   @optionalTypeArgs
@@ -36,6 +37,7 @@ mixin _$PaymentEvent {
     TResult? Function(DiscountType dicountType)? updateDiscountType,
     TResult? Function(String amount)? updateDiscountAmount,
     TResult? Function(PaymentType paymentType)? updatePaymentType,
+    TResult? Function(double hourPrice)? upadeHourPrice,
   }) =>
       throw _privateConstructorUsedError;
   @optionalTypeArgs
@@ -47,6 +49,7 @@ mixin _$PaymentEvent {
     TResult Function(DiscountType dicountType)? updateDiscountType,
     TResult Function(String amount)? updateDiscountAmount,
     TResult Function(PaymentType paymentType)? updatePaymentType,
+    TResult Function(double hourPrice)? upadeHourPrice,
     required TResult orElse(),
   }) =>
       throw _privateConstructorUsedError;
@@ -59,6 +62,7 @@ mixin _$PaymentEvent {
     required TResult Function(_DiscountType value) updateDiscountType,
     required TResult Function(_UpdateDiscountAmount value) updateDiscountAmount,
     required TResult Function(_UpdatePaymentType value) updatePaymentType,
+    required TResult Function(_UpdateHourPrice value) upadeHourPrice,
   }) =>
       throw _privateConstructorUsedError;
   @optionalTypeArgs
@@ -70,6 +74,7 @@ mixin _$PaymentEvent {
     TResult? Function(_DiscountType value)? updateDiscountType,
     TResult? Function(_UpdateDiscountAmount value)? updateDiscountAmount,
     TResult? Function(_UpdatePaymentType value)? updatePaymentType,
+    TResult? Function(_UpdateHourPrice value)? upadeHourPrice,
   }) =>
       throw _privateConstructorUsedError;
   @optionalTypeArgs
@@ -81,6 +86,7 @@ mixin _$PaymentEvent {
     TResult Function(_DiscountType value)? updateDiscountType,
     TResult Function(_UpdateDiscountAmount value)? updateDiscountAmount,
     TResult Function(_UpdatePaymentType value)? updatePaymentType,
+    TResult Function(_UpdateHourPrice value)? upadeHourPrice,
     required TResult orElse(),
   }) =>
       throw _privateConstructorUsedError;
@@ -183,6 +189,7 @@ class _$StartedImpl implements _Started {
     required TResult Function(DiscountType dicountType) updateDiscountType,
     required TResult Function(String amount) updateDiscountAmount,
     required TResult Function(PaymentType paymentType) updatePaymentType,
+    required TResult Function(double hourPrice) upadeHourPrice,
   }) {
     return started(tableId, orderId);
   }
@@ -197,6 +204,7 @@ class _$StartedImpl implements _Started {
     TResult? Function(DiscountType dicountType)? updateDiscountType,
     TResult? Function(String amount)? updateDiscountAmount,
     TResult? Function(PaymentType paymentType)? updatePaymentType,
+    TResult? Function(double hourPrice)? upadeHourPrice,
   }) {
     return started?.call(tableId, orderId);
   }
@@ -211,6 +219,7 @@ class _$StartedImpl implements _Started {
     TResult Function(DiscountType dicountType)? updateDiscountType,
     TResult Function(String amount)? updateDiscountAmount,
     TResult Function(PaymentType paymentType)? updatePaymentType,
+    TResult Function(double hourPrice)? upadeHourPrice,
     required TResult orElse(),
   }) {
     if (started != null) {
@@ -229,6 +238,7 @@ class _$StartedImpl implements _Started {
     required TResult Function(_DiscountType value) updateDiscountType,
     required TResult Function(_UpdateDiscountAmount value) updateDiscountAmount,
     required TResult Function(_UpdatePaymentType value) updatePaymentType,
+    required TResult Function(_UpdateHourPrice value) upadeHourPrice,
   }) {
     return started(this);
   }
@@ -243,6 +253,7 @@ class _$StartedImpl implements _Started {
     TResult? Function(_DiscountType value)? updateDiscountType,
     TResult? Function(_UpdateDiscountAmount value)? updateDiscountAmount,
     TResult? Function(_UpdatePaymentType value)? updatePaymentType,
+    TResult? Function(_UpdateHourPrice value)? upadeHourPrice,
   }) {
     return started?.call(this);
   }
@@ -257,6 +268,7 @@ class _$StartedImpl implements _Started {
     TResult Function(_DiscountType value)? updateDiscountType,
     TResult Function(_UpdateDiscountAmount value)? updateDiscountAmount,
     TResult Function(_UpdatePaymentType value)? updatePaymentType,
+    TResult Function(_UpdateHourPrice value)? upadeHourPrice,
     required TResult orElse(),
   }) {
     if (started != null) {
@@ -349,6 +361,7 @@ class _$UpdateEnterSumImpl implements _UpdateEnterSum {
     required TResult Function(DiscountType dicountType) updateDiscountType,
     required TResult Function(String amount) updateDiscountAmount,
     required TResult Function(PaymentType paymentType) updatePaymentType,
+    required TResult Function(double hourPrice) upadeHourPrice,
   }) {
     return updateEnterSum(symbol);
   }
@@ -363,6 +376,7 @@ class _$UpdateEnterSumImpl implements _UpdateEnterSum {
     TResult? Function(DiscountType dicountType)? updateDiscountType,
     TResult? Function(String amount)? updateDiscountAmount,
     TResult? Function(PaymentType paymentType)? updatePaymentType,
+    TResult? Function(double hourPrice)? upadeHourPrice,
   }) {
     return updateEnterSum?.call(symbol);
   }
@@ -377,6 +391,7 @@ class _$UpdateEnterSumImpl implements _UpdateEnterSum {
     TResult Function(DiscountType dicountType)? updateDiscountType,
     TResult Function(String amount)? updateDiscountAmount,
     TResult Function(PaymentType paymentType)? updatePaymentType,
+    TResult Function(double hourPrice)? upadeHourPrice,
     required TResult orElse(),
   }) {
     if (updateEnterSum != null) {
@@ -395,6 +410,7 @@ class _$UpdateEnterSumImpl implements _UpdateEnterSum {
     required TResult Function(_DiscountType value) updateDiscountType,
     required TResult Function(_UpdateDiscountAmount value) updateDiscountAmount,
     required TResult Function(_UpdatePaymentType value) updatePaymentType,
+    required TResult Function(_UpdateHourPrice value) upadeHourPrice,
   }) {
     return updateEnterSum(this);
   }
@@ -409,6 +425,7 @@ class _$UpdateEnterSumImpl implements _UpdateEnterSum {
     TResult? Function(_DiscountType value)? updateDiscountType,
     TResult? Function(_UpdateDiscountAmount value)? updateDiscountAmount,
     TResult? Function(_UpdatePaymentType value)? updatePaymentType,
+    TResult? Function(_UpdateHourPrice value)? upadeHourPrice,
   }) {
     return updateEnterSum?.call(this);
   }
@@ -423,6 +440,7 @@ class _$UpdateEnterSumImpl implements _UpdateEnterSum {
     TResult Function(_DiscountType value)? updateDiscountType,
     TResult Function(_UpdateDiscountAmount value)? updateDiscountAmount,
     TResult Function(_UpdatePaymentType value)? updatePaymentType,
+    TResult Function(_UpdateHourPrice value)? upadeHourPrice,
     required TResult orElse(),
   }) {
     if (updateEnterSum != null) {
@@ -487,6 +505,7 @@ class _$GetDetailImpl implements _GetDetail {
     required TResult Function(DiscountType dicountType) updateDiscountType,
     required TResult Function(String amount) updateDiscountAmount,
     required TResult Function(PaymentType paymentType) updatePaymentType,
+    required TResult Function(double hourPrice) upadeHourPrice,
   }) {
     return getDetail();
   }
@@ -501,6 +520,7 @@ class _$GetDetailImpl implements _GetDetail {
     TResult? Function(DiscountType dicountType)? updateDiscountType,
     TResult? Function(String amount)? updateDiscountAmount,
     TResult? Function(PaymentType paymentType)? updatePaymentType,
+    TResult? Function(double hourPrice)? upadeHourPrice,
   }) {
     return getDetail?.call();
   }
@@ -515,6 +535,7 @@ class _$GetDetailImpl implements _GetDetail {
     TResult Function(DiscountType dicountType)? updateDiscountType,
     TResult Function(String amount)? updateDiscountAmount,
     TResult Function(PaymentType paymentType)? updatePaymentType,
+    TResult Function(double hourPrice)? upadeHourPrice,
     required TResult orElse(),
   }) {
     if (getDetail != null) {
@@ -533,6 +554,7 @@ class _$GetDetailImpl implements _GetDetail {
     required TResult Function(_DiscountType value) updateDiscountType,
     required TResult Function(_UpdateDiscountAmount value) updateDiscountAmount,
     required TResult Function(_UpdatePaymentType value) updatePaymentType,
+    required TResult Function(_UpdateHourPrice value) upadeHourPrice,
   }) {
     return getDetail(this);
   }
@@ -547,6 +569,7 @@ class _$GetDetailImpl implements _GetDetail {
     TResult? Function(_DiscountType value)? updateDiscountType,
     TResult? Function(_UpdateDiscountAmount value)? updateDiscountAmount,
     TResult? Function(_UpdatePaymentType value)? updatePaymentType,
+    TResult? Function(_UpdateHourPrice value)? upadeHourPrice,
   }) {
     return getDetail?.call(this);
   }
@@ -561,6 +584,7 @@ class _$GetDetailImpl implements _GetDetail {
     TResult Function(_DiscountType value)? updateDiscountType,
     TResult Function(_UpdateDiscountAmount value)? updateDiscountAmount,
     TResult Function(_UpdatePaymentType value)? updatePaymentType,
+    TResult Function(_UpdateHourPrice value)? upadeHourPrice,
     required TResult orElse(),
   }) {
     if (getDetail != null) {
@@ -619,6 +643,7 @@ class _$PaymentImpl implements _Payment {
     required TResult Function(DiscountType dicountType) updateDiscountType,
     required TResult Function(String amount) updateDiscountAmount,
     required TResult Function(PaymentType paymentType) updatePaymentType,
+    required TResult Function(double hourPrice) upadeHourPrice,
   }) {
     return payment();
   }
@@ -633,6 +658,7 @@ class _$PaymentImpl implements _Payment {
     TResult? Function(DiscountType dicountType)? updateDiscountType,
     TResult? Function(String amount)? updateDiscountAmount,
     TResult? Function(PaymentType paymentType)? updatePaymentType,
+    TResult? Function(double hourPrice)? upadeHourPrice,
   }) {
     return payment?.call();
   }
@@ -647,6 +673,7 @@ class _$PaymentImpl implements _Payment {
     TResult Function(DiscountType dicountType)? updateDiscountType,
     TResult Function(String amount)? updateDiscountAmount,
     TResult Function(PaymentType paymentType)? updatePaymentType,
+    TResult Function(double hourPrice)? upadeHourPrice,
     required TResult orElse(),
   }) {
     if (payment != null) {
@@ -665,6 +692,7 @@ class _$PaymentImpl implements _Payment {
     required TResult Function(_DiscountType value) updateDiscountType,
     required TResult Function(_UpdateDiscountAmount value) updateDiscountAmount,
     required TResult Function(_UpdatePaymentType value) updatePaymentType,
+    required TResult Function(_UpdateHourPrice value) upadeHourPrice,
   }) {
     return payment(this);
   }
@@ -679,6 +707,7 @@ class _$PaymentImpl implements _Payment {
     TResult? Function(_DiscountType value)? updateDiscountType,
     TResult? Function(_UpdateDiscountAmount value)? updateDiscountAmount,
     TResult? Function(_UpdatePaymentType value)? updatePaymentType,
+    TResult? Function(_UpdateHourPrice value)? upadeHourPrice,
   }) {
     return payment?.call(this);
   }
@@ -693,6 +722,7 @@ class _$PaymentImpl implements _Payment {
     TResult Function(_DiscountType value)? updateDiscountType,
     TResult Function(_UpdateDiscountAmount value)? updateDiscountAmount,
     TResult Function(_UpdatePaymentType value)? updatePaymentType,
+    TResult Function(_UpdateHourPrice value)? upadeHourPrice,
     required TResult orElse(),
   }) {
     if (payment != null) {
@@ -778,6 +808,7 @@ class _$DiscountTypeImpl implements _DiscountType {
     required TResult Function(DiscountType dicountType) updateDiscountType,
     required TResult Function(String amount) updateDiscountAmount,
     required TResult Function(PaymentType paymentType) updatePaymentType,
+    required TResult Function(double hourPrice) upadeHourPrice,
   }) {
     return updateDiscountType(dicountType);
   }
@@ -792,6 +823,7 @@ class _$DiscountTypeImpl implements _DiscountType {
     TResult? Function(DiscountType dicountType)? updateDiscountType,
     TResult? Function(String amount)? updateDiscountAmount,
     TResult? Function(PaymentType paymentType)? updatePaymentType,
+    TResult? Function(double hourPrice)? upadeHourPrice,
   }) {
     return updateDiscountType?.call(dicountType);
   }
@@ -806,6 +838,7 @@ class _$DiscountTypeImpl implements _DiscountType {
     TResult Function(DiscountType dicountType)? updateDiscountType,
     TResult Function(String amount)? updateDiscountAmount,
     TResult Function(PaymentType paymentType)? updatePaymentType,
+    TResult Function(double hourPrice)? upadeHourPrice,
     required TResult orElse(),
   }) {
     if (updateDiscountType != null) {
@@ -824,6 +857,7 @@ class _$DiscountTypeImpl implements _DiscountType {
     required TResult Function(_DiscountType value) updateDiscountType,
     required TResult Function(_UpdateDiscountAmount value) updateDiscountAmount,
     required TResult Function(_UpdatePaymentType value) updatePaymentType,
+    required TResult Function(_UpdateHourPrice value) upadeHourPrice,
   }) {
     return updateDiscountType(this);
   }
@@ -838,6 +872,7 @@ class _$DiscountTypeImpl implements _DiscountType {
     TResult? Function(_DiscountType value)? updateDiscountType,
     TResult? Function(_UpdateDiscountAmount value)? updateDiscountAmount,
     TResult? Function(_UpdatePaymentType value)? updatePaymentType,
+    TResult? Function(_UpdateHourPrice value)? upadeHourPrice,
   }) {
     return updateDiscountType?.call(this);
   }
@@ -852,6 +887,7 @@ class _$DiscountTypeImpl implements _DiscountType {
     TResult Function(_DiscountType value)? updateDiscountType,
     TResult Function(_UpdateDiscountAmount value)? updateDiscountAmount,
     TResult Function(_UpdatePaymentType value)? updatePaymentType,
+    TResult Function(_UpdateHourPrice value)? upadeHourPrice,
     required TResult orElse(),
   }) {
     if (updateDiscountType != null) {
@@ -944,6 +980,7 @@ class _$UpdateDiscountAmountImpl implements _UpdateDiscountAmount {
     required TResult Function(DiscountType dicountType) updateDiscountType,
     required TResult Function(String amount) updateDiscountAmount,
     required TResult Function(PaymentType paymentType) updatePaymentType,
+    required TResult Function(double hourPrice) upadeHourPrice,
   }) {
     return updateDiscountAmount(amount);
   }
@@ -958,6 +995,7 @@ class _$UpdateDiscountAmountImpl implements _UpdateDiscountAmount {
     TResult? Function(DiscountType dicountType)? updateDiscountType,
     TResult? Function(String amount)? updateDiscountAmount,
     TResult? Function(PaymentType paymentType)? updatePaymentType,
+    TResult? Function(double hourPrice)? upadeHourPrice,
   }) {
     return updateDiscountAmount?.call(amount);
   }
@@ -972,6 +1010,7 @@ class _$UpdateDiscountAmountImpl implements _UpdateDiscountAmount {
     TResult Function(DiscountType dicountType)? updateDiscountType,
     TResult Function(String amount)? updateDiscountAmount,
     TResult Function(PaymentType paymentType)? updatePaymentType,
+    TResult Function(double hourPrice)? upadeHourPrice,
     required TResult orElse(),
   }) {
     if (updateDiscountAmount != null) {
@@ -990,6 +1029,7 @@ class _$UpdateDiscountAmountImpl implements _UpdateDiscountAmount {
     required TResult Function(_DiscountType value) updateDiscountType,
     required TResult Function(_UpdateDiscountAmount value) updateDiscountAmount,
     required TResult Function(_UpdatePaymentType value) updatePaymentType,
+    required TResult Function(_UpdateHourPrice value) upadeHourPrice,
   }) {
     return updateDiscountAmount(this);
   }
@@ -1004,6 +1044,7 @@ class _$UpdateDiscountAmountImpl implements _UpdateDiscountAmount {
     TResult? Function(_DiscountType value)? updateDiscountType,
     TResult? Function(_UpdateDiscountAmount value)? updateDiscountAmount,
     TResult? Function(_UpdatePaymentType value)? updatePaymentType,
+    TResult? Function(_UpdateHourPrice value)? upadeHourPrice,
   }) {
     return updateDiscountAmount?.call(this);
   }
@@ -1018,6 +1059,7 @@ class _$UpdateDiscountAmountImpl implements _UpdateDiscountAmount {
     TResult Function(_DiscountType value)? updateDiscountType,
     TResult Function(_UpdateDiscountAmount value)? updateDiscountAmount,
     TResult Function(_UpdatePaymentType value)? updatePaymentType,
+    TResult Function(_UpdateHourPrice value)? upadeHourPrice,
     required TResult orElse(),
   }) {
     if (updateDiscountAmount != null) {
@@ -1110,6 +1152,7 @@ class _$UpdatePaymentTypeImpl implements _UpdatePaymentType {
     required TResult Function(DiscountType dicountType) updateDiscountType,
     required TResult Function(String amount) updateDiscountAmount,
     required TResult Function(PaymentType paymentType) updatePaymentType,
+    required TResult Function(double hourPrice) upadeHourPrice,
   }) {
     return updatePaymentType(paymentType);
   }
@@ -1124,6 +1167,7 @@ class _$UpdatePaymentTypeImpl implements _UpdatePaymentType {
     TResult? Function(DiscountType dicountType)? updateDiscountType,
     TResult? Function(String amount)? updateDiscountAmount,
     TResult? Function(PaymentType paymentType)? updatePaymentType,
+    TResult? Function(double hourPrice)? upadeHourPrice,
   }) {
     return updatePaymentType?.call(paymentType);
   }
@@ -1138,6 +1182,7 @@ class _$UpdatePaymentTypeImpl implements _UpdatePaymentType {
     TResult Function(DiscountType dicountType)? updateDiscountType,
     TResult Function(String amount)? updateDiscountAmount,
     TResult Function(PaymentType paymentType)? updatePaymentType,
+    TResult Function(double hourPrice)? upadeHourPrice,
     required TResult orElse(),
   }) {
     if (updatePaymentType != null) {
@@ -1156,6 +1201,7 @@ class _$UpdatePaymentTypeImpl implements _UpdatePaymentType {
     required TResult Function(_DiscountType value) updateDiscountType,
     required TResult Function(_UpdateDiscountAmount value) updateDiscountAmount,
     required TResult Function(_UpdatePaymentType value) updatePaymentType,
+    required TResult Function(_UpdateHourPrice value) upadeHourPrice,
   }) {
     return updatePaymentType(this);
   }
@@ -1170,6 +1216,7 @@ class _$UpdatePaymentTypeImpl implements _UpdatePaymentType {
     TResult? Function(_DiscountType value)? updateDiscountType,
     TResult? Function(_UpdateDiscountAmount value)? updateDiscountAmount,
     TResult? Function(_UpdatePaymentType value)? updatePaymentType,
+    TResult? Function(_UpdateHourPrice value)? upadeHourPrice,
   }) {
     return updatePaymentType?.call(this);
   }
@@ -1184,6 +1231,7 @@ class _$UpdatePaymentTypeImpl implements _UpdatePaymentType {
     TResult Function(_DiscountType value)? updateDiscountType,
     TResult Function(_UpdateDiscountAmount value)? updateDiscountAmount,
     TResult Function(_UpdatePaymentType value)? updatePaymentType,
+    TResult Function(_UpdateHourPrice value)? upadeHourPrice,
     required TResult orElse(),
   }) {
     if (updatePaymentType != null) {
@@ -1204,6 +1252,178 @@ abstract class _UpdatePaymentType implements PaymentEvent {
 }
 
 /// @nodoc
+abstract class _$$UpdateHourPriceImplCopyWith<$Res> {
+  factory _$$UpdateHourPriceImplCopyWith(_$UpdateHourPriceImpl value,
+          $Res Function(_$UpdateHourPriceImpl) then) =
+      __$$UpdateHourPriceImplCopyWithImpl<$Res>;
+  @useResult
+  $Res call({double hourPrice});
+}
+
+/// @nodoc
+class __$$UpdateHourPriceImplCopyWithImpl<$Res>
+    extends _$PaymentEventCopyWithImpl<$Res, _$UpdateHourPriceImpl>
+    implements _$$UpdateHourPriceImplCopyWith<$Res> {
+  __$$UpdateHourPriceImplCopyWithImpl(
+      _$UpdateHourPriceImpl _value, $Res Function(_$UpdateHourPriceImpl) _then)
+      : super(_value, _then);
+
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? hourPrice = null,
+  }) {
+    return _then(_$UpdateHourPriceImpl(
+      hourPrice: null == hourPrice
+          ? _value.hourPrice
+          : hourPrice // ignore: cast_nullable_to_non_nullable
+              as double,
+    ));
+  }
+}
+
+/// @nodoc
+
+class _$UpdateHourPriceImpl implements _UpdateHourPrice {
+  const _$UpdateHourPriceImpl({required this.hourPrice});
+
+  @override
+  final double hourPrice;
+
+  @override
+  String toString() {
+    return 'PaymentEvent.upadeHourPrice(hourPrice: $hourPrice)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$UpdateHourPriceImpl &&
+            (identical(other.hourPrice, hourPrice) ||
+                other.hourPrice == hourPrice));
+  }
+
+  @override
+  int get hashCode => Object.hash(runtimeType, hourPrice);
+
+  @JsonKey(ignore: true)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$UpdateHourPriceImplCopyWith<_$UpdateHourPriceImpl> get copyWith =>
+      __$$UpdateHourPriceImplCopyWithImpl<_$UpdateHourPriceImpl>(
+          this, _$identity);
+
+  @override
+  @optionalTypeArgs
+  TResult when<TResult extends Object?>({
+    required TResult Function(String? tableId, String? orderId) started,
+    required TResult Function(String symbol) updateEnterSum,
+    required TResult Function() getDetail,
+    required TResult Function() payment,
+    required TResult Function(DiscountType dicountType) updateDiscountType,
+    required TResult Function(String amount) updateDiscountAmount,
+    required TResult Function(PaymentType paymentType) updatePaymentType,
+    required TResult Function(double hourPrice) upadeHourPrice,
+  }) {
+    return upadeHourPrice(hourPrice);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult? whenOrNull<TResult extends Object?>({
+    TResult? Function(String? tableId, String? orderId)? started,
+    TResult? Function(String symbol)? updateEnterSum,
+    TResult? Function()? getDetail,
+    TResult? Function()? payment,
+    TResult? Function(DiscountType dicountType)? updateDiscountType,
+    TResult? Function(String amount)? updateDiscountAmount,
+    TResult? Function(PaymentType paymentType)? updatePaymentType,
+    TResult? Function(double hourPrice)? upadeHourPrice,
+  }) {
+    return upadeHourPrice?.call(hourPrice);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult maybeWhen<TResult extends Object?>({
+    TResult Function(String? tableId, String? orderId)? started,
+    TResult Function(String symbol)? updateEnterSum,
+    TResult Function()? getDetail,
+    TResult Function()? payment,
+    TResult Function(DiscountType dicountType)? updateDiscountType,
+    TResult Function(String amount)? updateDiscountAmount,
+    TResult Function(PaymentType paymentType)? updatePaymentType,
+    TResult Function(double hourPrice)? upadeHourPrice,
+    required TResult orElse(),
+  }) {
+    if (upadeHourPrice != null) {
+      return upadeHourPrice(hourPrice);
+    }
+    return orElse();
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult map<TResult extends Object?>({
+    required TResult Function(_Started value) started,
+    required TResult Function(_UpdateEnterSum value) updateEnterSum,
+    required TResult Function(_GetDetail value) getDetail,
+    required TResult Function(_Payment value) payment,
+    required TResult Function(_DiscountType value) updateDiscountType,
+    required TResult Function(_UpdateDiscountAmount value) updateDiscountAmount,
+    required TResult Function(_UpdatePaymentType value) updatePaymentType,
+    required TResult Function(_UpdateHourPrice value) upadeHourPrice,
+  }) {
+    return upadeHourPrice(this);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult? mapOrNull<TResult extends Object?>({
+    TResult? Function(_Started value)? started,
+    TResult? Function(_UpdateEnterSum value)? updateEnterSum,
+    TResult? Function(_GetDetail value)? getDetail,
+    TResult? Function(_Payment value)? payment,
+    TResult? Function(_DiscountType value)? updateDiscountType,
+    TResult? Function(_UpdateDiscountAmount value)? updateDiscountAmount,
+    TResult? Function(_UpdatePaymentType value)? updatePaymentType,
+    TResult? Function(_UpdateHourPrice value)? upadeHourPrice,
+  }) {
+    return upadeHourPrice?.call(this);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult maybeMap<TResult extends Object?>({
+    TResult Function(_Started value)? started,
+    TResult Function(_UpdateEnterSum value)? updateEnterSum,
+    TResult Function(_GetDetail value)? getDetail,
+    TResult Function(_Payment value)? payment,
+    TResult Function(_DiscountType value)? updateDiscountType,
+    TResult Function(_UpdateDiscountAmount value)? updateDiscountAmount,
+    TResult Function(_UpdatePaymentType value)? updatePaymentType,
+    TResult Function(_UpdateHourPrice value)? upadeHourPrice,
+    required TResult orElse(),
+  }) {
+    if (upadeHourPrice != null) {
+      return upadeHourPrice(this);
+    }
+    return orElse();
+  }
+}
+
+abstract class _UpdateHourPrice implements PaymentEvent {
+  const factory _UpdateHourPrice({required final double hourPrice}) =
+      _$UpdateHourPriceImpl;
+
+  double get hourPrice;
+  @JsonKey(ignore: true)
+  _$$UpdateHourPriceImplCopyWith<_$UpdateHourPriceImpl> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+/// @nodoc
 mixin _$PaymentState {
   Status get status => throw _privateConstructorUsedError;
   Status get detailStatus => throw _privateConstructorUsedError;
@@ -1217,6 +1437,7 @@ mixin _$PaymentState {
   String get enterSum => throw _privateConstructorUsedError;
   int get returnAmount => throw _privateConstructorUsedError;
   DiscountType get discountType => throw _privateConstructorUsedError;
+  double get hourPrice => throw _privateConstructorUsedError;
   Failure? get failure => throw _privateConstructorUsedError;
 
   @JsonKey(ignore: true)
@@ -1242,6 +1463,7 @@ abstract class $PaymentStateCopyWith<$Res> {
       String enterSum,
       int returnAmount,
       DiscountType discountType,
+      double hourPrice,
       Failure? failure});
 }
 
@@ -1269,6 +1491,7 @@ class _$PaymentStateCopyWithImpl<$Res, $Val extends PaymentState>
     Object? enterSum = null,
     Object? returnAmount = null,
     Object? discountType = null,
+    Object? hourPrice = null,
     Object? failure = freezed,
   }) {
     return _then(_value.copyWith(
@@ -1316,6 +1539,10 @@ class _$PaymentStateCopyWithImpl<$Res, $Val extends PaymentState>
           ? _value.discountType
           : discountType // ignore: cast_nullable_to_non_nullable
               as DiscountType,
+      hourPrice: null == hourPrice
+          ? _value.hourPrice
+          : hourPrice // ignore: cast_nullable_to_non_nullable
+              as double,
       failure: freezed == failure
           ? _value.failure
           : failure // ignore: cast_nullable_to_non_nullable
@@ -1344,6 +1571,7 @@ abstract class _$$PaymentStateImplCopyWith<$Res>
       String enterSum,
       int returnAmount,
       DiscountType discountType,
+      double hourPrice,
       Failure? failure});
 }
 
@@ -1369,6 +1597,7 @@ class __$$PaymentStateImplCopyWithImpl<$Res>
     Object? enterSum = null,
     Object? returnAmount = null,
     Object? discountType = null,
+    Object? hourPrice = null,
     Object? failure = freezed,
   }) {
     return _then(_$PaymentStateImpl(
@@ -1416,6 +1645,10 @@ class __$$PaymentStateImplCopyWithImpl<$Res>
           ? _value.discountType
           : discountType // ignore: cast_nullable_to_non_nullable
               as DiscountType,
+      hourPrice: null == hourPrice
+          ? _value.hourPrice
+          : hourPrice // ignore: cast_nullable_to_non_nullable
+              as double,
       failure: freezed == failure
           ? _value.failure
           : failure // ignore: cast_nullable_to_non_nullable
@@ -1439,6 +1672,7 @@ class _$PaymentStateImpl implements _PaymentState {
       this.enterSum = '0',
       this.returnAmount = 0,
       this.discountType = DiscountType.money,
+      this.hourPrice = 0,
       this.failure});
 
   @override
@@ -1471,11 +1705,14 @@ class _$PaymentStateImpl implements _PaymentState {
   @JsonKey()
   final DiscountType discountType;
   @override
+  @JsonKey()
+  final double hourPrice;
+  @override
   final Failure? failure;
 
   @override
   String toString() {
-    return 'PaymentState(status: $status, detailStatus: $detailStatus, detail: $detail, tableId: $tableId, orderId: $orderId, textController: $textController, discountAmount: $discountAmount, paymentType: $paymentType, enterSum: $enterSum, returnAmount: $returnAmount, discountType: $discountType, failure: $failure)';
+    return 'PaymentState(status: $status, detailStatus: $detailStatus, detail: $detail, tableId: $tableId, orderId: $orderId, textController: $textController, discountAmount: $discountAmount, paymentType: $paymentType, enterSum: $enterSum, returnAmount: $returnAmount, discountType: $discountType, hourPrice: $hourPrice, failure: $failure)';
   }
 
   @override
@@ -1501,6 +1738,8 @@ class _$PaymentStateImpl implements _PaymentState {
                 other.returnAmount == returnAmount) &&
             (identical(other.discountType, discountType) ||
                 other.discountType == discountType) &&
+            (identical(other.hourPrice, hourPrice) ||
+                other.hourPrice == hourPrice) &&
             (identical(other.failure, failure) || other.failure == failure));
   }
 
@@ -1518,6 +1757,7 @@ class _$PaymentStateImpl implements _PaymentState {
       enterSum,
       returnAmount,
       discountType,
+      hourPrice,
       failure);
 
   @JsonKey(ignore: true)
@@ -1540,6 +1780,7 @@ abstract class _PaymentState implements PaymentState {
       final String enterSum,
       final int returnAmount,
       final DiscountType discountType,
+      final double hourPrice,
       final Failure? failure}) = _$PaymentStateImpl;
 
   @override
@@ -1564,6 +1805,8 @@ abstract class _PaymentState implements PaymentState {
   int get returnAmount;
   @override
   DiscountType get discountType;
+  @override
+  double get hourPrice;
   @override
   Failure? get failure;
   @override

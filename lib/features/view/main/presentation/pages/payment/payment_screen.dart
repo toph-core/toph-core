@@ -10,7 +10,7 @@ import 'package:mary_ai_pos/core/extension/widget_extension.dart';
 import 'package:mary_ai_pos/core/values/app_colors.dart';
 
 import 'package:mary_ai_pos/di.dart';
-import 'package:mary_ai_pos/features/view/main/data/models/create_order/create_order_request_model.dart';
+import 'package:mary_ai_pos/features/view/main/presentation/cubit/hour_price/hour_price_bloc.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/payment/payment_bloc.dart';
 
 import 'package:mary_ai_pos/features/view/main/presentation/pages/payment/widgets/payment_right_side_bar.dart';
@@ -65,9 +65,18 @@ class _PaymentScreenState extends State<PaymentScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: context.colors.bgTritary,
-      body: BlocProvider(
-        create: (context) =>
-            inject<PaymentBloc>()..add(PaymentEvent.started(tableId: tableId,orderId: orderId)),
+      body: MultiBlocProvider(
+        providers: [
+          BlocProvider(
+            create: (context) => inject<PaymentBloc>()
+              ..add(PaymentEvent.started(tableId: tableId, orderId: orderId)),
+          ),
+          BlocProvider(
+            create: (context) =>
+                inject<HourPriceBloc>()
+                  ..add(HourPriceEvent.started(orderId: tableId)),
+          ),
+        ],
         child: BlocBuilder<PaymentBloc, PaymentState>(
           builder: (context, state) {
             if (state.detail == null && state.status == Status.LOADING) {
@@ -153,6 +162,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
                                                         ? state
                                                               .detail!
                                                               .grandTotal
+                                                              .toInt()
                                                         : null,
                                                   ),
                                                 ],
@@ -307,7 +317,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
                                                           .detail!
                                                           .goods[index]
                                                           .name
-                                                    : "${state.detail!.goods[index].quantity}x ${state.detail!.goods[index].name}",
+                                                    : "//${state.detail!.goods[index].quantity}x ${state.detail!.goods[index].name}",
                                                 state
                                                     .detail!
                                                     .goods[index]
@@ -317,16 +327,39 @@ class _PaymentScreenState extends State<PaymentScreen> {
                                           ),
                                         12.hBox,
                                         const Divider(),
+                                        BlocConsumer<
+                                          HourPriceBloc,
+                                          HourPriceState
+                                        >(
+                                          listenWhen: (p, v) =>
+                                              p.price?.totalPrice !=
+                                              v.price?.totalPrice,
+                                          listener: (context, state) {
+                                            if (state.price != null) {
+                                              context.read<PaymentBloc>().add(PaymentEvent.upadeHourPrice(hourPrice: state.price!.totalPrice));
+                                            }
+                                          },
+                                          builder: (context, state) =>
+                                              _itemInfo(
+                                                context,
+                                                "Vaqt uchun to'lov",
+                                                state.price?.totalPrice
+                                                        .toInt() ??
+                                                    0,
+                                              ),
+                                        ),
                                         _itemInfo(
                                           context,
                                           "Jami",
-                                          state.detail!.grandTotal,
+                                          (state.detail!.grandTotal +
+                                                  state.hourPrice)
+                                              .toInt(),
                                         ),
                                         12.hBox,
                                         _itemInfo(
                                           context,
                                           "Xizmat haqqi(5%)",
-                                          state.detail!.serviceAmount,
+                                          state.detail!.serviceAmount.toInt(),
                                         ),
                                         12.hBox,
                                         Row(

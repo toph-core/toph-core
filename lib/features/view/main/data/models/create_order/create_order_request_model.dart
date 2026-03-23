@@ -22,7 +22,7 @@ class CreateOrderRequestModel with _$CreateOrderRequestModel {
   const CreateOrderRequestModel._();
 
   Map<String, dynamic> request() => {
-    "cashier_id": cashierId,
+    // "cashier_id": cashierId,
     "comment": comment,
     "guest_count": guestCount,
     "items": List.generate(
@@ -39,7 +39,7 @@ class CreateOrderRequestModel with _$CreateOrderRequestModel {
   };
 
   Map<String, dynamic> createOrder() => {
-    "cashier_id": cashierId,
+    // "cashier_id": cashierId,
     "order_type": "takeaway",
     "items": List.generate(
       foods.length,

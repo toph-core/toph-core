@@ -12,7 +12,7 @@ import 'package:mary_ai_pos/features/view/main/domain/usecase/create_take_away_o
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/detail/detail_bloc.dart';
 
 part 'create_order_event.dart';
-part 'create_order_state.dart';
+part 'create_order_state.dart'; 
 part 'create_order_bloc.freezed.dart';
 
 class CreateOrderBloc extends Bloc<CreateOrderEvent, CreateOrderState> {
@@ -35,7 +35,7 @@ class CreateOrderBloc extends Bloc<CreateOrderEvent, CreateOrderState> {
       final response = await _createTakeAwayOrderUsecase.call(
         CreateOrderRequestModel(
           orderType: "takeaway",
-          cashierId: "4e25f6c1-68c0-43bd-bcb2-a130bde2e9e1",
+          // cashierId: "4e25f6c1-68c0-43bd-bcb2-a130bde2e9e1",
           foods: event.orders,
           
         ),
@@ -64,7 +64,7 @@ class CreateOrderBloc extends Bloc<CreateOrderEvent, CreateOrderState> {
           foods: event.orders,
           status: OrderStatus.open,
           tableStatus: state.tableStatus,
-          cashierId: "4e25f6c1-68c0-43bd-bcb2-a130bde2e9e1",
+          // cashierId: "4e25f6c1-68c0-43bd-bcb2-a130bde2e9e1",
           orderType: "dine_in"
         ),
       );

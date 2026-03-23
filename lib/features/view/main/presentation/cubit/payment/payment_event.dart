@@ -15,4 +15,7 @@ class PaymentEvent with _$PaymentEvent {
   const factory PaymentEvent.updatePaymentType({
     required PaymentType paymentType,
   }) = _UpdatePaymentType;
+
+  const factory PaymentEvent.upadeHourPrice({required double hourPrice,}) =
+      _UpdateHourPrice;
 }

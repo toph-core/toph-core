@@ -3,7 +3,7 @@ import 'package:mary_ai_pos/features/view/main/data/models/food_additional/food_
 
 part 'goods_model.freezed.dart';
 part 'goods_model.g.dart';
-
+ 
 @freezed
 class GoodsModel with _$GoodsModel {
   const factory GoodsModel({
@@ -11,7 +11,7 @@ class GoodsModel with _$GoodsModel {
     @JsonKey(name: 'color_code') String? colorCode,
     @JsonKey(name: 'cook_time') required int cookTime,
     @JsonKey(name: 'cost_price') required String costPrice,
-    @JsonKey(name: 'department_id') required String departmentId,
+    @JsonKey(name: 'department_id') @Default('') String departmentId,
     required String description,
     @JsonKey(name: 'description_i18n') String? descriptionI18n,
     required String id,

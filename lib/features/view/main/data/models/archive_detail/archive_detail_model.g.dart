@@ -18,32 +18,38 @@ _$ArchiveDetailModelImpl _$$ArchiveDetailModelImplFromJson(
           : DateTime.parse(json['opened_at'] as String),
       paymentType: json['payment_type'] as String? ?? '',
       tableId: json['table_id'] as String? ?? '',
-      tableNumber: (json['table_number'] as num?)?.toInt() ?? 0,
+      tableNumber: json['table_number'] == null
+          ? 0.0
+          : _parseDouble(json['table_number']),
       hallName: json['hall_name'] as String? ?? '',
       cashierId: json['cashier_id'] as String? ?? '',
       cashierName: json['cashier_name'] as String? ?? '',
-      guestCount: (json['guest_count'] as num?)?.toInt() ?? 0,
-      foodCost: json['food_cost'] == null ? 0 : _parseInt(json['food_cost']),
-      foodTotal: json['food_total'] == null ? 0 : _parseInt(json['food_total']),
+      guestCount:
+          json['guest_count'] == null ? 0.0 : _parseDouble(json['guest_count']),
+      foodCost:
+          json['food_cost'] == null ? 0.0 : _parseDouble(json['food_cost']),
+      foodTotal:
+          json['food_total'] == null ? 0.0 : _parseDouble(json['food_total']),
       servicePercent: json['service_percent'] == null
-          ? 0
-          : _parseInt(json['service_percent']),
+          ? 0.0
+          : _parseDouble(json['service_percent']),
       serviceAmount: json['service_amount'] == null
-          ? 0
-          : _parseInt(json['service_amount']),
+          ? 0.0
+          : _parseDouble(json['service_amount']),
       discountPercent: json['discount_percent'] == null
-          ? 0
-          : _parseInt(json['discount_percent']),
+          ? 0.0
+          : _parseDouble(json['discount_percent']),
       discountAmount: json['discount_amount'] == null
-          ? 0
-          : _parseInt(json['discount_amount']),
+          ? 0.0
+          : _parseDouble(json['discount_amount']),
       grandTotal:
-          json['grand_total'] == null ? 0 : _parseInt(json['grand_total']),
+          json['grand_total'] == null ? 0.0 : _parseDouble(json['grand_total']),
       customerPaidAmount: json['customer_paid_amount'] == null
-          ? 0
-          : _parseInt(json['customer_paid_amount']),
-      changeAmount:
-          json['change_amount'] == null ? 0 : _parseInt(json['change_amount']),
+          ? 0.0
+          : _parseDouble(json['customer_paid_amount']),
+      changeAmount: json['change_amount'] == null
+          ? 0.0
+          : _parseDouble(json['change_amount']),
       comment: json['comment'] as String? ?? '',
       goods: json['items'] == null
           ? const []

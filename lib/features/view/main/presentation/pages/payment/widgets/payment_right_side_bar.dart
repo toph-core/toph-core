@@ -35,15 +35,17 @@ class PaymentRightSideBar extends StatelessWidget with PaymentScreenMixin {
                 Text("Jami to'lov", style: context.textStyles.bodyMd),
                 8.hBox,
                 Text(
-                  (detail.grandTotal -
-                          (state.discountType == DiscountType.money
-                              ? int.tryParse(state.discountAmount) != null
-                                    ? int.parse(state.discountAmount)
-                                    : 0
-                              : (state.detail!.grandTotal / 100) *
-                                    (int.tryParse(state.discountAmount) != null
+                  ((detail.grandTotal -
+                              (state.discountType == DiscountType.money
+                                  ? int.tryParse(state.discountAmount) != null
                                         ? int.parse(state.discountAmount)
-                                        : 0)))
+                                        : 0
+                                  : (state.detail!.grandTotal / 100) *
+                                        (int.tryParse(state.discountAmount) !=
+                                                null
+                                            ? int.parse(state.discountAmount)
+                                            : 0))) +
+                          state.hourPrice)
                       .formatN,
                   style: context.textStyles.bold24.copyWith(
                     fontWeight: FontWeight.w500,
@@ -64,7 +66,7 @@ class PaymentRightSideBar extends StatelessWidget with PaymentScreenMixin {
                           ),
                           child: SizedBox(
                             width: (constrants.maxWidth - 24) * 0.33,
-                            height: ((constrants.maxWidth - 24) * 0.33) * 0.6,
+                            height: ((constrants.maxWidth - 24) * 0.33) * 0.5,
                             child: DecoratedBox(
                               decoration: BoxDecoration(
                                 borderRadius: context.radius.buttonLg,
@@ -179,17 +181,14 @@ class PaymentRightSideBar extends StatelessWidget with PaymentScreenMixin {
                     );
                   },
                 ),
+                20.hBox,
+                Text("Berilayotgan summa", style: context.textStyles.bodySm),
+                8.hBox,
                 if (state.paymentType == PaymentType.cash)
                   Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                    child: ListView(
+                      // crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        20.hBox,
-                        Text(
-                          "Berilayotgan summa",
-                          style: context.textStyles.bodySm,
-                        ),
-                        8.hBox,
                         SizedBox(
                           width: context.w,
                           height: 60,
@@ -251,7 +250,6 @@ class PaymentRightSideBar extends StatelessWidget with PaymentScreenMixin {
                           itemCount: keyboardKeys.length,
                         ),
                         16.hBox,
-                        const Spacer(),
                       ],
                     ),
                   ),
@@ -310,7 +308,7 @@ class PaymentRightSideBar extends StatelessWidget with PaymentScreenMixin {
                               builder: (context) {
                                 int discountAmount =
                                     int.tryParse(state.discountAmount) ?? 0;
-                                int finalTotal = detail.grandTotal;
+                                int finalTotal = detail.grandTotal.toInt();
 
                                 if (state.discountType == DiscountType.money) {
                                   finalTotal -= discountAmount;

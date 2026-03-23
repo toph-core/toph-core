@@ -29,8 +29,8 @@ class PaymentPayRequestModel
 
   @override
   Map<String, dynamic> request() => {
-    "cash_register_id": cashRegisterId,
-    "cashier_id": cashierId,
+    // "cash_register_id": cashRegisterId,
+    // "cashier_id": cashierId,
     "customer_paid_amount": "$customPaidAmount",
     "discount_amount": "$discountAmount",
     "discount_comment": "",

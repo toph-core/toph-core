@@ -42,6 +42,11 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
     on<_Payment>(_payment);
     on<_DiscountType>(_updateDiscountType);
     on<_UpdateDiscountAmount>(_updateDiscountAmount);
+    on<_UpdateHourPrice>(_updateHourPrice);
+  }
+
+  void _updateHourPrice(_UpdateHourPrice event, emit) {
+    emit(state.copyWith(hourPrice: event.hourPrice));
   }
 
   void _updateDiscountAmount(_UpdateDiscountAmount event, emit) => emit(
@@ -61,7 +66,7 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
           // cashierId: "4e25f6c1-68c0-43bd-bcb2-a130bde2e9e1",
           customPaidAmount: state.paymentType == PaymentType.cash
               ? int.parse(state.enterSum)
-              : state.detail!.grandTotal,
+              : state.detail!.grandTotal.toInt(),
           discountAmount: state.discountType == DiscountType.money
               ? int.tryParse(state.discountAmount) != null
                     ? int.parse(state.discountAmount)

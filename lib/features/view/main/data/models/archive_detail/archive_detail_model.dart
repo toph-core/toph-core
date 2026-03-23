@@ -20,34 +20,34 @@ class ArchiveDetailModel
     @JsonKey(name: 'opened_at') DateTime? opened,
     @JsonKey(name: 'payment_type') @Default('') String paymentType,
     @JsonKey(name: 'table_id') @Default('') String tableId,
-    @JsonKey(name: 'table_number') @Default(0) int tableNumber,
+    @JsonKey(name: 'table_number', fromJson: _parseDouble) @Default(0.0) double tableNumber,
     @JsonKey(name: 'hall_name') @Default('') String hallName,
     @JsonKey(name: 'cashier_id') @Default('') String cashierId,
     @JsonKey(name: 'cashier_name') @Default('') String cashierName,
-    @JsonKey(name: 'guest_count') @Default(0) int guestCount,
-    @JsonKey(name: 'food_cost', fromJson: _parseInt) @Default(0) int foodCost,
-    @JsonKey(name: 'food_total', fromJson: _parseInt) @Default(0) int foodTotal,
-    @JsonKey(name: 'service_percent', fromJson: _parseInt)
-    @Default(0)
-    int servicePercent,
-    @JsonKey(name: 'service_amount', fromJson: _parseInt)
-    @Default(0)
-    int serviceAmount,
-    @JsonKey(name: 'discount_percent', fromJson: _parseInt)
-    @Default(0)
-    int discountPercent,
-    @JsonKey(name: 'discount_amount', fromJson: _parseInt)
-    @Default(0)
-    int discountAmount,
-    @JsonKey(name: 'grand_total', fromJson: _parseInt)
-    @Default(0)
-    int grandTotal,
-    @JsonKey(name: 'customer_paid_amount', fromJson: _parseInt)
-    @Default(0)
-    int customerPaidAmount,
-    @JsonKey(name: 'change_amount', fromJson: _parseInt)
-    @Default(0)
-    int changeAmount,
+    @JsonKey(name: 'guest_count', fromJson: _parseDouble) @Default(0.0) double guestCount,
+    @JsonKey(name: 'food_cost', fromJson: _parseDouble) @Default(0.0) double foodCost,
+    @JsonKey(name: 'food_total', fromJson: _parseDouble) @Default(0.0) double foodTotal,
+    @JsonKey(name: 'service_percent', fromJson: _parseDouble)
+    @Default(0.0)
+    double servicePercent,
+    @JsonKey(name: 'service_amount', fromJson: _parseDouble)
+    @Default(0.0)
+    double serviceAmount,
+    @JsonKey(name: 'discount_percent', fromJson: _parseDouble)
+    @Default(0.0)
+    double discountPercent,
+    @JsonKey(name: 'discount_amount', fromJson: _parseDouble)
+    @Default(0.0)
+    double discountAmount,
+    @JsonKey(name: 'grand_total', fromJson: _parseDouble)
+    @Default(0.0)
+    double grandTotal,
+    @JsonKey(name: 'customer_paid_amount', fromJson: _parseDouble)
+    @Default(0.0)
+    double customerPaidAmount,
+    @JsonKey(name: 'change_amount', fromJson: _parseDouble)
+    @Default(0.0)
+    double changeAmount,
     @JsonKey(name: 'comment') @Default('') String comment,
     @JsonKey(name: "items")
     @OrderFoodEntityListConverter()
@@ -59,6 +59,20 @@ class ArchiveDetailModel
       _$ArchiveDetailModelFromJson(json);
 }
 
+int _parseFromStringFromDoubleToInt(dynamic value) {
+  if (value == null) return 0;
+  if (value is int) return value;
+  if (value is String) {
+    if (value.isEmpty) return 0;
+
+    if (double.tryParse(value) != null) {
+      return double.parse(value).toInt();
+    }
+    return int.tryParse(value) ?? 0;
+  }
+  return 0;
+}
+
 int _parseInt(dynamic value) {
   if (value == null) return 0;
   if (value is int) return value;
@@ -67,4 +81,14 @@ int _parseInt(dynamic value) {
     return int.tryParse(value) ?? 0;
   }
   return 0;
+}
+
+double _parseDouble(dynamic value) {
+  if (value == null) return 0.0;
+  if (value is num) return value.toDouble();
+  if (value is String) {
+    if (value.isEmpty) return 0.0;
+    return double.tryParse(value) ?? 0.0;
+  }
+  return 0.0;
 }

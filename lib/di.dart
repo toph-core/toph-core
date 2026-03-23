@@ -15,6 +15,7 @@ import 'package:mary_ai_pos/features/view/main/domain/usecase/get_archives_useca
 import 'package:mary_ai_pos/features/view/main/domain/usecase/get_categories_usecase.dart';
 import 'package:mary_ai_pos/features/view/main/domain/usecase/get_goods_by_category_id_usecase.dart';
 import 'package:mary_ai_pos/features/view/main/domain/usecase/get_goods_with_name_usecase.dart';
+import 'package:mary_ai_pos/features/view/main/domain/usecase/get_hour_price_usecase.dart';
 import 'package:mary_ai_pos/features/view/main/domain/usecase/get_payment_detail_with_id_usecase.dart';
 import 'package:mary_ai_pos/features/view/main/domain/usecase/get_payment_detail_with_table_id_usecase.dart';
 import 'package:mary_ai_pos/features/view/main/domain/usecase/open_shift_usecase.dart';
@@ -23,6 +24,7 @@ import 'package:mary_ai_pos/features/view/main/presentation/cubit/counter/counte
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/create_order/create_order_bloc.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/detail/detail_bloc.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/archives/archives_bloc.dart';
+import 'package:mary_ai_pos/features/view/main/presentation/cubit/hour_price/hour_price_bloc.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/keyboard/keyboard_cubit.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/notification/notification_bloc.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/orders/orders_bloc.dart';
@@ -114,6 +116,7 @@ void _useCase() {
   inject.registerLazySingleton(() => CheckShiftUsecase(inject()));
   inject.registerFactory(() => OpenShiftUsecase(inject()));
   inject.registerFactory(() => CloseShiftUsecase(inject()));
+  inject.registerFactory(() => GetHourPriceUsecase(repository: inject()));
 }
 
 void _cubit() {
@@ -124,7 +127,13 @@ void _cubit() {
   inject.registerLazySingleton(() => SettingsCubit(inject(), inject()));
   inject.registerLazySingleton(() => MainCubit(inject(), inject()));
   inject.registerLazySingleton(() => KeyboardCubit());
-  inject.registerLazySingleton(() => ShiftBloc(checkShiftUsecase: inject(),openShiftUsecase: inject(),closeShiftUsecase: inject()));
+  inject.registerLazySingleton(
+    () => ShiftBloc(
+      checkShiftUsecase: inject(),
+      openShiftUsecase: inject(),
+      closeShiftUsecase: inject(),
+    ),
+  );
 
   //? factory
   inject.registerLazySingleton(() => UserBloc(getUserUsecase: inject()));
@@ -153,4 +162,5 @@ void _cubit() {
   );
   inject.registerFactory(() => NotificationBloc());
   inject.registerLazySingleton(() => SavedOrdersBloc());
+  inject.registerFactory(() => HourPriceBloc(getHourPriceUsecase: inject()));
 }

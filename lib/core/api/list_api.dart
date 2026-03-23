@@ -28,6 +28,7 @@ class ListAPI {
   static String orderWithTableId(String id) => "/api/v1/orders/table/$id";
   static const String createOrderItems = "/api/v1/order-items";
   static String payToOrder(String id) => "/api/v1/orders/$id/pay";
+  static String orderHourPrice(String id) => "/api/v1/orders/$id/table-price";
 
   //! ChashRegisterShfit
   static const String activeShift = "api/v1/cash-register-shifts/active";

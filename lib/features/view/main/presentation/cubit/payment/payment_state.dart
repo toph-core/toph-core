@@ -14,6 +14,7 @@ class PaymentState with _$PaymentState {
     @Default('0') String enterSum,
     @Default(0) int returnAmount,
     @Default(DiscountType.money) DiscountType discountType,
+    @Default(0) double hourPrice,
     Failure? failure,
   }) = _PaymentState;
 }
