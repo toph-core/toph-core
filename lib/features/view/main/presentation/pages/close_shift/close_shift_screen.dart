@@ -1,19 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_svg/svg.dart';
 import 'package:mary_ai_pos/core/common/custom_hover_effect_widget.dart';
 import 'package:mary_ai_pos/core/constants/constants.dart';
 import 'package:mary_ai_pos/core/extension/for_context.dart';
 import 'package:mary_ai_pos/core/extension/int_extension.dart';
 import 'package:mary_ai_pos/core/extension/number_formatter.dart';
 import 'package:mary_ai_pos/core/extension/widget_extension.dart';
-import 'package:mary_ai_pos/core/values/app_assets.dart';
+import 'package:mary_ai_pos/core/routes/app_routes.dart';
 import 'package:mary_ai_pos/core/values/app_colors.dart';
+import 'package:mary_ai_pos/core/widgets/app_scaffold.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/shift/shift_bloc.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/close_shift/widgets/w_shift_bottom.dart';
-import 'package:mary_ai_pos/features/view/main/presentation/pages/close_shift/widgets/w_shift_header.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/close_shift/widgets/w_shift_input_sum_container.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/close_shift/widgets/w_shift_time_card.dart';
+import 'package:mary_ai_pos/features/view/main/presentation/pages/main/widgets/main_header.dart';
 
 class CloseShiftScreen extends StatefulWidget {
   const CloseShiftScreen({super.key});
@@ -40,15 +40,19 @@ class _CloseShiftScreenState extends State<CloseShiftScreen> {
   ];
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: context.colors.bgTritary,
-      body: SafeArea(
-        child: BlocBuilder<ShiftBloc, ShiftState>(
-          builder: (context, state) {
-            return Column(
-              children: [
-                const WShiftHeader(),
-                16.hBox,
+    return AppScaffold(
+      activeRoute: AppRoutes.closeShiftScreen,
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const MainHeader(title: 'Smena'),
+          Expanded(
+            child: BlocBuilder<ShiftBloc, ShiftState>(
+              builder: (context, state) {
+                return SingleChildScrollView(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    children: [
                 DecoratedBox(
                   decoration: BoxDecoration(
                     color: context.colors.bgDefault,
@@ -143,11 +147,14 @@ class _CloseShiftScreenState extends State<CloseShiftScreen> {
                     ],
                   ).paddingAll(16),
                 ),
-                const WShiftBottom(),
-              ],
-            );
-          },
-        ).paddingAll(32),
+                    const WShiftBottom(),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
       ),
     );
   }

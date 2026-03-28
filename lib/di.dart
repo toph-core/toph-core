@@ -1,3 +1,5 @@
+import 'package:alice/alice.dart';
+import 'package:alice/model/alice_configuration.dart';
 import 'package:mary_ai_pos/core/api/dio_client.dart';
 import 'package:mary_ai_pos/core/auth/storage/token_storage_impl.dart';
 import 'package:mary_ai_pos/core/service/minio/minio_service.dart';
@@ -59,7 +61,18 @@ Future<void> initDi() async {
 
   inject.registerSingleton<SharedPreferences>(prefs);
   inject.registerSingleton<AppTokenStorage>(tokenStorage);
-  inject.registerSingleton<DioClient>(DioClient(tokenStorage));
+
+  final alice = Alice(
+    configuration: AliceConfiguration(
+      showNotification: false,
+      showInspectorOnShake: false,
+    ),
+  );
+  inject.registerSingleton<Alice>(alice);
+
+  final dioClient = DioClient(tokenStorage);
+  alice.addAdapter(dioClient.aliceDioAdapter);
+  inject.registerSingleton<DioClient>(dioClient);
   final MinioService minioService = MinioService.instance;
   inject.registerLazySingleton(() => minioService);
 

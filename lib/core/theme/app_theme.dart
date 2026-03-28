@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:mary_ai_pos/core/theme/tokens/theme_colors.dart';
 import 'package:mary_ai_pos/core/theme/tokens/theme_radius.dart';
 import 'package:mary_ai_pos/core/theme/tokens/theme_text_style.dart';
-import 'package:mary_ai_pos/core/values/app_colors.dart';
 
 class AppTheme {
   static ThemeData lightTheme = ThemeData(
@@ -13,7 +12,7 @@ class AppTheme {
 
     // 🔹 Main colors
     primaryColor: _lightColors.textBrand,
-    scaffoldBackgroundColor: _lightColors.bgDefault,
+    scaffoldBackgroundColor: _lightColors.bgSecondary,
 
     // 🔹 Material ColorScheme
     colorScheme: ColorScheme(
@@ -142,7 +141,7 @@ class AppTheme {
 
     bgBrand: Color(0xFFFB6633),
     bgDefault: Color(0xFFFFFFFF),
-    bgSecondary: Color(0xFFF8F9FA),
+    bgSecondary: Color(0xFFF5F4F2),
     bgTritary: Color(0xFFF6F7F9),
     bgDefaultTritary: Color(0xFFF5F5F5),
     bgSecondaryTritary: Color(0xFFFFFFFF),
@@ -157,7 +156,7 @@ class AppTheme {
     buttonDisabledBg: Color(0xFFF8F9FA),
 
     systemAccent: Color(0xFFF5A524),
-    systemSuccess: Color(0xFF17C964),
+    systemSuccess: Color(0xFF13AF1B),
     systemError: Color(0xFFEB295B),
 
     extraPurple: Color(0xFF9470DC),
@@ -166,6 +165,10 @@ class AppTheme {
 
     informationColor: Color(0xFFDF8A1B),
     responseTextColor: Color(0xFF13AF1B),
+    sidebarBg: Color(0xFF18171C),
+    sidebarActive: Color(0xFF2D2B32),
+    sidebarIcon: Color(0xFF6B6875),
+    systemInfo: Color(0xFF3B82F6),
   );
 
   /// Light text styles

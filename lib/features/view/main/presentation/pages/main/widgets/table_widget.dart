@@ -1,176 +1,175 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:mary_ai_pos/core/extension/color_extension.dart';
-import 'dart:math' as math;
 import 'package:mary_ai_pos/core/extension/for_context.dart';
-import 'package:mary_ai_pos/core/extension/int_extension.dart';
-import 'package:mary_ai_pos/core/values/app_colors.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/cafe_tables/cafe_tables_model.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/orders/orders_bloc.dart';
 
-class TableWidget extends StatelessWidget {
+class TableWidget extends StatefulWidget {
   final CafeTableModel table;
   final VoidCallback? onTap;
 
   const TableWidget({super.key, required this.table, this.onTap});
 
   @override
+  State<TableWidget> createState() => _TableWidgetState();
+}
+
+class _TableWidgetState extends State<TableWidget> {
+  bool _hovered = false;
+
+  @override
   Widget build(BuildContext context) {
-    final height = table.height
-        .clamp(60, table.height < 60 ? 60 : table.height)
-        .toDouble();
-    final width =
-        table.width.clamp(80, table.width < 80 ? 80 : table.width).toDouble() *
-        2;
-    final statusColor = _getStatusColor();
-    final isFree = table.status == TableStatus.free;
+    final colors = context.colors;
+    final status = widget.table.status;
 
-    return Positioned(
-      left: table.posX,
-      top: table.posY,
-      child: Transform.rotate(
-        angle: table.rotation * (math.pi / 180),
-        child: Stack(
-          clipBehavior: Clip.none,
-          children: [
-            ..._buildSeats(width, height),
+    Color borderColor;
+    Color bgColor;
+    Color statusTextColor;
+    String statusLabel;
 
-            InkWell(
-              onTap: onTap,
-              borderRadius: BorderRadius.circular(16),
-              child: BlocBuilder<SavedOrdersBloc, SavedOrdersState>(
-                builder: (context, state) {
-                  return Container(
-                    width: width,
-                    height:
-                        height +
-                        (state.order.indexWhere(
-                                  (v) => v.cafeTable.id == table.id,
-                                ) !=
-                                -1
-                            ? 40
-                            : 20),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(16),
-                      boxShadow: [
+    switch (status) {
+      case TableStatus.busy:
+        borderColor = colors.textBrand;
+        bgColor = const Color(0xFFFFF3EE);
+        statusTextColor = colors.textBrand;
+        statusLabel = "Band";
+        break;
+      case TableStatus.free:
+        borderColor = colors.border;
+        bgColor = colors.bgDefault;
+        statusTextColor = colors.systemSuccess;
+        statusLabel = "Bo'sh";
+        break;
+      default:
+        borderColor = colors.systemInfo;
+        bgColor = const Color(0xFFEEF2FF);
+        statusTextColor = colors.systemInfo;
+        statusLabel = "Bron";
+    }
+
+    return BlocBuilder<SavedOrdersBloc, SavedOrdersState>(
+      builder: (context, savedState) {
+        final hasSaved = savedState.order.any(
+          (v) => v.cafeTable.id == widget.table.id,
+        );
+
+        return MouseRegion(
+          onEnter: (_) => setState(() => _hovered = true),
+          onExit: (_) => setState(() => _hovered = false),
+          cursor: SystemMouseCursors.click,
+          child: GestureDetector(
+            onTap: widget.onTap,
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 150),
+              width: 160,
+              height: 110,
+              decoration: BoxDecoration(
+                color: _hovered ? bgColor.withOpacity(0.85) : bgColor,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(
+                  color: _hovered ? borderColor.withOpacity(0.7) : borderColor,
+                  width: 2,
+                ),
+                boxShadow: _hovered
+                    ? [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.08),
-                          blurRadius: 15,
+                          color: borderColor.withOpacity(0.15),
+                          blurRadius: 12,
                           offset: const Offset(0, 4),
                         ),
-                      ],
-                    ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(16),
-                      child: Stack(
-                        children: [
-                          Positioned(
-                            right: 0,
-                            top: 0,
-                            bottom: 0,
-                            child: Container(width: 12, color: statusColor),
+                      ]
+                    : null,
+              ),
+              padding: const EdgeInsets.all(14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        '${widget.table.number}-stol',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                          color: colors.textDefault,
+                          fontFamily: 'Inter',
+                        ),
+                      ),
+                      if (hasSaved)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 2,
                           ),
-                          // Content
-                          Padding(
-                            padding: const EdgeInsets.only(left: 16, right: 20),
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  '${table.number}',
-                                  style: context.textStyles.bodyLg.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 24,
-                                    color: const Color(0xFF1A1A1A),
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  isFree ? "Bo'sh" : "To'lov kutilmoqda",
-                                  style: context.textStyles.bodySm.copyWith(
-                                    color: statusColor,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                                4.hBox,
-                                if(state.order.indexWhere((v) => v.cafeTable.id == table.id) != -1)
-                                 Text(
-                                  "Saqlangan",
-                                  style: context.textStyles.bodyMd,
-                                ),
-                              ],
+                          decoration: BoxDecoration(
+                            color: colors.textBrand.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
+                            'Saqlan.',
+                            style: TextStyle(
+                              fontSize: 9,
+                              fontWeight: FontWeight.w600,
+                              color: colors.textBrand,
+                              fontFamily: 'Inter',
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                  const Spacer(),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 3,
+                        ),
+                        decoration: BoxDecoration(
+                          color: statusTextColor.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          statusLabel,
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: statusTextColor,
+                            fontFamily: 'Inter',
+                          ),
+                        ),
+                      ),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        spacing: 3,
+                        children: [
+                          Icon(
+                            Icons.people_outline,
+                            size: 13,
+                            color: colors.textTertiary,
+                          ),
+                          Text(
+                            '${widget.table.capacity}',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                              color: colors.textTertiary,
+                              fontFamily: 'Inter',
                             ),
                           ),
                         ],
                       ),
-                    ),
-                  );
-                },
+                    ],
+                  ),
+                ],
               ),
             ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  List<Widget> _buildSeats(double width, double height) {
-    final List<Widget> seats = [];
-    const seatSize = 35.0;
-    final seatColor = _getStatusColor().withOpacity(.4);
-
-    int seatsPerSide = (table.capacity / 2).ceil();
-
-    for (int i = 0; i < seatsPerSide; i++) {
-      double offsetX = (width / (seatsPerSide + 1)) * (i + 1) - (seatSize / 2);
-      seats.add(
-        Positioned(
-          top: -seatSize / 2,
-          left: offsetX,
-          child: _SeatCircle(size: seatSize, color: seatColor),
-        ),
-      );
-
-      if (i + seatsPerSide < table.capacity) {
-        seats.add(
-          Positioned(
-            bottom: -seatSize / 2,
-            left: offsetX,
-            child: _SeatCircle(size: seatSize, color: seatColor),
           ),
         );
-      }
-    }
-
-    return seats;
-  }
-
-  Color _getStatusColor() {
-    switch (table.status) {
-      case TableStatus.free:
-        return const Color(0xFF13AF1B);
-      case TableStatus.busy:
-        return const Color(0xFFFB6633);
-      default:
-        return Colors.black;
-    }
-  }
-}
-
-class _SeatCircle extends StatelessWidget {
-  final double size;
-  final Color color;
-
-  const _SeatCircle({required this.size, required this.color});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+      },
     );
   }
 }

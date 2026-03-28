@@ -1,3 +1,4 @@
+import 'package:alice_dio/alice_dio_adapter.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:mary_ai_pos/core/auth/storage/token_storage_impl.dart';
@@ -8,6 +9,7 @@ import 'package:pretty_dio_logger/pretty_dio_logger.dart';
 class DioClient {
   final AppTokenStorage _tokenStorage;
   late final Dio _dio;
+  final aliceDioAdapter = AliceDioAdapter();
 
   DioClient(this._tokenStorage) {
     _dio = Dio(
@@ -20,6 +22,7 @@ class DioClient {
     );
 
     _dio.interceptors.add(MySmartDioInterceptor(_dio, _tokenStorage));
+    _dio.interceptors.add(aliceDioAdapter);
 
     _dio.interceptors.add(
       PrettyDioLogger(

@@ -1,5 +1,6 @@
 import 'dart:ui';
 
+import 'package:alice/alice.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -43,6 +44,7 @@ Future<void> main() async {
   // });
 
   await initDi();
+  inject<Alice>().setNavigatorKey(navigatorKey);
   runApp(const MyApp());
 }
 
@@ -58,9 +60,17 @@ class MyApp extends StatelessWidget {
         BlocProvider(create: (_) => inject<AuthCubit>()),
         BlocProvider(create: (_) => inject<SettingsCubit>()..loadAppLang()),
         BlocProvider(create: (_) => inject<MainCubit>()),
-        BlocProvider(create: (_) => inject<SavedOrdersBloc>()..add(const SavedOrdersEvent.started()),lazy: false,),
-        BlocProvider(create: (_) => inject<UserBloc>()..add(const UserEvent.started())),
-        BlocProvider(create: (_) => inject<ShiftBloc>()..add(const ShiftEvent.started()))
+        BlocProvider(
+          create: (_) =>
+              inject<SavedOrdersBloc>()..add(const SavedOrdersEvent.started()),
+          lazy: false,
+        ),
+        BlocProvider(
+          create: (_) => inject<UserBloc>()..add(const UserEvent.started()),
+        ),
+        BlocProvider(
+          create: (_) => inject<ShiftBloc>()..add(const ShiftEvent.started()),
+        ),
       ],
       child: BlocSelector<SettingsCubit, SettingsState, String>(
         selector: (state) => state.language,
@@ -74,16 +84,20 @@ class MyApp extends StatelessWidget {
               GlobalWidgetsLocalizations.delegate,
               GlobalMaterialLocalizations.delegate,
               GlobalCupertinoLocalizations.delegate,
-              S.delegate, 
+              S.delegate,
             ],
             locale: Locale(language),
             supportedLocales: const [Locale('en'), Locale('uz'), Locale('ru')],
             themeMode: ThemeMode.light,
             theme: AppTheme.lightTheme,
             builder: (context, child) {
-              return ScrollConfiguration(
-                behavior: const ScrollBehaviorModified(),
-                child: child!,
+              return GestureDetector(
+                behavior: HitTestBehavior.translucent,
+                onLongPress: () => inject<Alice>().showInspector(),
+                child: ScrollConfiguration(
+                  behavior: const ScrollBehaviorModified(),
+                  child: child!,
+                ),
               );
             },
             initialRoute: AppRoutes.splashScreen,
@@ -91,7 +105,7 @@ class MyApp extends StatelessWidget {
               RouteGenerate().generate(
                 RouteSettings(
                   name: initialRoute,
-                  arguments: {
+                  arguments: const {
                     "table_id": "048aa68f-4c4d-490a-8fa6-83025519c3b5",
                   },
                 ),

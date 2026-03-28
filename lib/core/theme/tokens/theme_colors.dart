@@ -39,6 +39,12 @@ class ThemeColors extends ThemeExtension<ThemeColors> {
   final Color informationColor;
   final Color responseTextColor;
 
+  // Sidebar tokens
+  final Color sidebarBg;
+  final Color sidebarActive;
+  final Color sidebarIcon;
+  final Color systemInfo;
+
   const ThemeColors({
     required this.textBrand,
     required this.textDefault,
@@ -76,6 +82,10 @@ class ThemeColors extends ThemeExtension<ThemeColors> {
     required this.emptyValueColor,
     required this.informationColor,
     required this.responseTextColor,
+    required this.sidebarBg,
+    required this.sidebarActive,
+    required this.sidebarIcon,
+    required this.systemInfo,
   });
 
   @override
@@ -114,6 +124,10 @@ class ThemeColors extends ThemeExtension<ThemeColors> {
     Color? extraCyan,
     Color? extraOrange,
     Color? emptyValueColor,
+    Color? sidebarBg,
+    Color? sidebarActive,
+    Color? sidebarIcon,
+    Color? systemInfo,
   }) {
     return ThemeColors(
       textBrand: textBrand ?? this.textBrand,
@@ -152,6 +166,10 @@ class ThemeColors extends ThemeExtension<ThemeColors> {
       emptyValueColor: emptyValueColor ?? this.emptyValueColor,
       informationColor: informationColor,
       responseTextColor: responseTextColor,
+      sidebarBg: sidebarBg ?? this.sidebarBg,
+      sidebarActive: sidebarActive ?? this.sidebarActive,
+      sidebarIcon: sidebarIcon ?? this.sidebarIcon,
+      systemInfo: systemInfo ?? this.systemInfo,
     );
   }
 
@@ -219,9 +237,13 @@ class ThemeColors extends ThemeExtension<ThemeColors> {
       extraPurple: Color.lerp(extraPurple, other.extraPurple, t)!,
       extraCyan: Color.lerp(extraCyan, other.extraCyan, t)!,
       extraOrange: Color.lerp(extraOrange, other.extraOrange, t)!,
-      emptyValueColor: this.emptyValueColor,
+      emptyValueColor: emptyValueColor,
       informationColor: informationColor,
       responseTextColor: responseTextColor,
+      sidebarBg: Color.lerp(sidebarBg, other.sidebarBg, t)!,
+      sidebarActive: Color.lerp(sidebarActive, other.sidebarActive, t)!,
+      sidebarIcon: Color.lerp(sidebarIcon, other.sidebarIcon, t)!,
+      systemInfo: Color.lerp(systemInfo, other.systemInfo, t)!,
     );
   }
 }

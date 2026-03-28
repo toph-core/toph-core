@@ -1,22 +1,12 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mary_ai_pos/core/api/api.dart';
-import 'package:mary_ai_pos/core/common/custom_hover_effect_widget.dart';
-import 'package:mary_ai_pos/core/common/custom_text_field.dart';
-import 'package:mary_ai_pos/core/extension/color_extension.dart';
 import 'package:mary_ai_pos/core/extension/for_context.dart';
-import 'package:mary_ai_pos/core/extension/int_extension.dart';
 import 'package:mary_ai_pos/core/extension/number_formatter.dart';
-import 'package:mary_ai_pos/core/extension/widget_extension.dart';
-import 'package:mary_ai_pos/core/values/app_colors.dart';
-
 import 'package:mary_ai_pos/di.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/hour_price/hour_price_bloc.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/payment/payment_bloc.dart';
-
 import 'package:mary_ai_pos/features/view/main/presentation/pages/payment/widgets/payment_right_side_bar.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/payment/widgets/payment_top_bar.dart';
-import 'package:virtual_keyboard_multi_language/virtual_keyboard_multi_language.dart';
-import 'package:mary_ai_pos/core/utils/app_formatter.dart';
 
 class PaymentScreen extends StatefulWidget {
   const PaymentScreen({super.key});
@@ -30,390 +20,376 @@ class _PaymentScreenState extends State<PaymentScreen> {
       ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>;
   late final String? tableId = args['table_id'];
   late final String? orderId = args['order_id'];
-  late final ValueNotifier<bool> keyboardOpen = ValueNotifier<bool>(false);
-  late final TextEditingController discountAmountController =
-      TextEditingController(text: "0");
-
-  @override
-  void dispose() {
-    discountAmountController.dispose();
-    super.dispose();
-  }
-
-  Widget _itemInfo(
-    BuildContext context,
-    String title,
-    int sum, [
-    Color? textColor,
-  ]) {
-    return Row(
-      children: [
-        Text(title, style: context.textStyles.bodyMd),
-        const Spacer(),
-        Text(
-          sum.formatN,
-          style: context.textStyles.bold16.copyWith(
-            fontWeight: FontWeight.w500,
-            color: textColor,
-          ),
-        ),
-      ],
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.colors;
     return Scaffold(
-      backgroundColor: context.colors.bgTritary,
+      backgroundColor: colors.bgSecondary,
       body: MultiBlocProvider(
         providers: [
           BlocProvider(
-            create: (context) => inject<PaymentBloc>()
+            create: (_) => inject<PaymentBloc>()
               ..add(PaymentEvent.started(tableId: tableId, orderId: orderId)),
           ),
           BlocProvider(
-            create: (context) =>
-                inject<HourPriceBloc>()
-                  ..add(HourPriceEvent.started(orderId: tableId)),
+            create: (_) => inject<HourPriceBloc>()
+              ..add(HourPriceEvent.started(orderId: tableId)),
           ),
         ],
         child: BlocBuilder<PaymentBloc, PaymentState>(
           builder: (context, state) {
             if (state.detail == null && state.status == Status.LOADING) {
-              return Center(
-                child: CircularProgressIndicator.adaptive(
-                  backgroundColor: context.colors.bgBrand,
-                ),
+              return const Center(child: CircularProgressIndicator.adaptive());
+            }
+            if (state.detail == null) {
+              return const Center(
+                child: Text("To'lov ma'lumotlari topilmadi"),
               );
             }
 
-            if (state.detail == null) {
-              return const Center(child: Text("To'lov ma'lumotlari topilmadi"));
-            }
-
-            return GestureDetector(
-              onTap: () {
-                if (keyboardOpen.value) {
-                  keyboardOpen.value = false;
-                }
-              },
-              child: ValueListenableBuilder(
-                valueListenable: keyboardOpen,
-                builder: (context, value, child) {
-                  return Stack(
+            return Column(
+              children: [
+                const PaymentTopBar(),
+                Expanded(
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      Row(
-                        spacing: 16,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Expanded(
-                            flex: 2,
-                            child: Column(
-                              spacing: 12,
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const PaymentTopBar(),
-                                16.hBox,
-                                SizedBox(
-                                  width: context.w,
-                                  child: DecoratedBox(
-                                    decoration: BoxDecoration(
-                                      color: context.colors.bgDefault,
-                                      borderRadius: context.radius.card24,
-                                    ),
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          "% Chegirma",
-                                          style: context.textStyles.bold20
-                                              .copyWith(
-                                                fontWeight: FontWeight.w500,
-                                              ),
-                                        ),
-                                        Row(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.end,
-                                          children: [
-                                            Expanded(
-                                              flex: 3,
-                                              child: CustomTextField(
-                                                hintText: "",
-                                                style: context
-                                                    .textStyles
-                                                    .semibold20
-                                                    .copyWith(
-                                                      fontWeight:
-                                                          FontWeight.w500,
-                                                    ),
-                                                textInputType:
-                                                    TextInputType.number,
-                                                formatter: [
-                                                  PriceFormatter(
-                                                    additional:
-                                                        state.discountType ==
-                                                            DiscountType.money
-                                                        ? "so'm"
-                                                        : "%",
-                                                    limit:
-                                                        state.discountType ==
-                                                            DiscountType.money
-                                                        ? state
-                                                              .detail!
-                                                              .grandTotal
-                                                              .toInt()
-                                                        : null,
-                                                  ),
-                                                ],
-                                                onTap: () =>
-                                                    keyboardOpen.value = true,
-                                                textEditingController:
-                                                    discountAmountController,
-                                                onChange: (val) {
-                                                  final value = val.replaceAll(
-                                                    RegExp(r'\D'),
-                                                    '',
-                                                  );
-                                                  context.read<PaymentBloc>().add(
-                                                    PaymentEvent.updateDiscountAmount(
-                                                      amount: value,
-                                                    ),
-                                                  );
-                                                },
-                                              ),
-                                            ),
-                                            16.wBox,
-                                            SizedBox(
-                                              height: 52,
-                                              width: 143,
-                                              child: CustomHoverEffectWidget(
-                                                onTap: () => context
-                                                    .read<PaymentBloc>()
-                                                    .add(
-                                                      const PaymentEvent.updateDiscountType(
-                                                        dicountType:
-                                                            DiscountType
-                                                                .percent,
-                                                      ),
-                                                    ),
-                                                bgColor:
-                                                    state.discountType ==
-                                                        DiscountType.percent
-                                                    ? context.colors.bgBrand
-                                                    : context.colors.bgBrand
-                                                          .newWithOpacity(.15),
-                                                borderRadius:
-                                                    context.radius.buttonLg,
-                                                child: Center(
-                                                  child: Text(
-                                                    "Foiz",
-                                                    style: context
-                                                        .textStyles
-                                                        .bold16
-                                                        .copyWith(
-                                                          fontWeight:
-                                                              FontWeight.w500,
-                                                          color:
-                                                              state.discountType ==
-                                                                  DiscountType
-                                                                      .percent
-                                                              ? context
-                                                                    .colors
-                                                                    .textOnBrand
-                                                              : context
-                                                                    .colors
-                                                                    .bgBrand,
-                                                        ),
-                                                  ),
-                                                ),
-                                              ),
-                                            ),
-                                            8.wBox,
-                                            SizedBox(
-                                              width: 143,
-                                              height: 52,
-                                              child: CustomHoverEffectWidget(
-                                                onTap: () => context
-                                                    .read<PaymentBloc>()
-                                                    .add(
-                                                      const PaymentEvent.updateDiscountType(
-                                                        dicountType:
-                                                            DiscountType.money,
-                                                      ),
-                                                    ),
-                                                bgColor:
-                                                    state.discountType ==
-                                                        DiscountType.money
-                                                    ? context.colors.bgBrand
-                                                    : context.colors.bgBrand
-                                                          .newWithOpacity(.15),
-                                                borderRadius:
-                                                    context.radius.buttonLg,
-                                                child: Center(
-                                                  child: Text(
-                                                    "Summa",
-                                                    style: context
-                                                        .textStyles
-                                                        .bold16
-                                                        .copyWith(
-                                                          fontWeight:
-                                                              FontWeight.w500,
-                                                          color:
-                                                              state.discountType ==
-                                                                  DiscountType
-                                                                      .money
-                                                              ? context
-                                                                    .colors
-                                                                    .textOnBrand
-                                                              : context
-                                                                    .colors
-                                                                    .bgBrand,
-                                                        ),
-                                                  ),
-                                                ),
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ],
-                                    ).paddingAll(16),
+                      // Left: order summary
+                      SizedBox(
+                        width: 380,
+                        child: Container(
+                          color: Colors.white,
+                          child: Column(
+                            children: [
+                              // Header
+                              Container(
+                                height: 52,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                ),
+                                decoration: BoxDecoration(
+                                  border: Border(
+                                    bottom: BorderSide(color: colors.border),
                                   ),
                                 ),
-                                16.hBox,
-                                SizedBox(
-                                  width: context.w,
-                                  child: DecoratedBox(
-                                    decoration: BoxDecoration(
-                                      color: context.colors.bgDefault,
-                                      borderRadius: context.radius.card24,
-                                    ),
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          "Buyurtma tafsilotlari",
-                                          style: context.textStyles.bold20
-                                              .copyWith(
-                                                fontWeight: FontWeight.w500,
-                                              ),
-                                        ),
-                                        16.hBox,
-                                        if (state.detail != null)
-                                          Column(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                            children: List.generate(
-                                              state.detail!.goods.length,
-                                              (index) => _itemInfo(
-                                                context,
-                                                state
-                                                            .detail!
-                                                            .goods[index]
-                                                            .quantity ==
-                                                        1
-                                                    ? state
-                                                          .detail!
-                                                          .goods[index]
-                                                          .name
-                                                    : "//${state.detail!.goods[index].quantity}x ${state.detail!.goods[index].name}",
-                                                state
-                                                    .detail!
-                                                    .goods[index]
-                                                    .price,
+                                alignment: Alignment.centerLeft,
+                                child: const Text(
+                                  'Buyurtma',
+                                  style: TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w700,
+                                    color: Color(0xFF19160B),
+                                    fontFamily: 'Inter',
+                                  ),
+                                ),
+                              ),
+                              // Items
+                              Expanded(
+                                child: ListView.separated(
+                                  padding: const EdgeInsets.all(12),
+                                  itemCount: state.detail!.goods.length,
+                                  separatorBuilder: (context, i) =>
+                                      const Divider(height: 1),
+                                  itemBuilder: (_, i) {
+                                    final g = state.detail!.goods[i];
+                                    return Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 10,
+                                      ),
+                                      child: Row(
+                                        spacing: 10,
+                                        children: [
+                                          Container(
+                                            width: 36,
+                                            height: 36,
+                                            decoration: BoxDecoration(
+                                              color: const Color(0xFFF8F9FA),
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
+                                            ),
+                                            child: Center(
+                                              child: Text(
+                                                g.name.isNotEmpty
+                                                    ? g.name[0].toUpperCase()
+                                                    : '?',
+                                                style: const TextStyle(
+                                                  fontSize: 14,
+                                                  fontWeight: FontWeight.w700,
+                                                  color: Color(0xFF19160B),
+                                                ),
                                               ),
                                             ),
                                           ),
-                                        12.hBox,
-                                        const Divider(),
-                                        BlocConsumer<
-                                          HourPriceBloc,
-                                          HourPriceState
-                                        >(
-                                          listenWhen: (p, v) =>
-                                              p.price?.totalPrice !=
-                                              v.price?.totalPrice,
-                                          listener: (context, state) {
-                                            if (state.price != null) {
-                                              context.read<PaymentBloc>().add(PaymentEvent.upadeHourPrice(hourPrice: state.price!.totalPrice));
-                                            }
-                                          },
-                                          builder: (context, state) =>
-                                              _itemInfo(
-                                                context,
-                                                "Vaqt uchun to'lov",
-                                                state.price?.totalPrice
-                                                        .toInt() ??
-                                                    0,
-                                              ),
-                                        ),
-                                        _itemInfo(
-                                          context,
-                                          "Jami",
-                                          (state.detail!.grandTotal +
-                                                  state.hourPrice)
-                                              .toInt(),
-                                        ),
-                                        12.hBox,
-                                        _itemInfo(
-                                          context,
-                                          "Xizmat haqqi(5%)",
-                                          state.detail!.serviceAmount.toInt(),
-                                        ),
-                                        12.hBox,
-                                        Row(
-                                          children: [
-                                            Text(
-                                              "Chegirma",
-                                              style: context.textStyles.bodyMd,
-                                            ),
-                                            const Spacer(),
-                                            Text(
-                                              "${int.tryParse(state.discountAmount) != null ? int.parse(state.discountAmount) : ""} ${state.discountType == DiscountType.money ? "so'm" : '%'}",
-                                              style: context.textStyles.bold16
-                                                  .copyWith(
+                                          Expanded(
+                                            child: Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                Text(
+                                                  g.name,
+                                                  style: const TextStyle(
+                                                    fontSize: 13,
                                                     fontWeight: FontWeight.w500,
-                                                    color: AppColors.c13AF1B,
+                                                    color: Color(0xFF19160B),
+                                                    fontFamily: 'Inter',
                                                   ),
+                                                ),
+                                                Text(
+                                                  'x${g.quantity}',
+                                                  style: TextStyle(
+                                                    fontSize: 12,
+                                                    color:
+                                                        colors.textSecondary,
+                                                    fontFamily: 'Inter',
+                                                  ),
+                                                ),
+                                              ],
                                             ),
-                                          ],
-                                        ),
-                                      ],
-                                    ).paddingAll(16),
+                                          ),
+                                          Text(
+                                            g.price.formatN,
+                                            style: const TextStyle(
+                                              fontSize: 13,
+                                              fontWeight: FontWeight.w700,
+                                              color: Color(0xFF19160B),
+                                              fontFamily: 'Inter',
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ),
+                              // Totals
+                              Container(
+                                padding: const EdgeInsets.all(16),
+                                decoration: BoxDecoration(
+                                  border: Border(
+                                    top: BorderSide(color: colors.border),
                                   ),
                                 ),
-                              ],
-                            ),
-                          ),
-                          Expanded(
-                            flex: 1,
-                            child: PaymentRightSideBar(detail: state.detail!),
-                          ),
-                        ],
-                      ),
-                      if (value)
-                        Align(
-                          alignment: Alignment.bottomCenter,
-                          child: DecoratedBox(
-                            decoration: BoxDecoration(
-                              color: context.colors.bgDefault,
-                            ),
-                            child: VirtualKeyboard(
-                              textController: discountAmountController,
-                              type: VirtualKeyboardType.Numeric,
-                              fontSize: 24,
-                            ),
+                                child: BlocListener<HourPriceBloc,
+                                    HourPriceState>(
+                                  listenWhen: (p, v) =>
+                                      p.price?.totalPrice !=
+                                      v.price?.totalPrice,
+                                  listener: (context, hState) {
+                                    if (hState.price != null) {
+                                      context.read<PaymentBloc>().add(
+                                        PaymentEvent.upadeHourPrice(
+                                          hourPrice:
+                                              hState.price!.totalPrice,
+                                        ),
+                                      );
+                                    }
+                                  },
+                                  child: BlocBuilder<PaymentBloc,
+                                      PaymentState>(
+                                    builder: (context, state) {
+                                      int discountAmt =
+                                          int.tryParse(state.discountAmount) ??
+                                              0;
+                                      int total =
+                                          state.detail!.grandTotal.toInt();
+                                      if (state.discountType ==
+                                          DiscountType.money) {
+                                        total -= discountAmt;
+                                      } else {
+                                        total -=
+                                            (total * (discountAmt / 100))
+                                                .round();
+                                      }
+                                      if (total < 0) total = 0;
+
+                                      return Column(
+                                        spacing: 8,
+                                        children: [
+                                          _TotalRow(
+                                            label: 'Jami',
+                                            value: state
+                                                .detail!.grandTotal
+                                                .toInt()
+                                                .formatN,
+                                          ),
+                                          _TotalRow(
+                                            label: 'Xizmat (5%)',
+                                            value: state
+                                                .detail!.serviceAmount
+                                                .toInt()
+                                                .formatN,
+                                          ),
+                                          if (discountAmt > 0)
+                                            _TotalRow(
+                                              label: 'Chegirma',
+                                              value:
+                                                  '- $discountAmt ${state.discountType == DiscountType.money ? "so'm" : "%"}',
+                                              valueColor: const Color(
+                                                0xFF13AF1B,
+                                              ),
+                                            ),
+                                          Divider(
+                                            color: colors.border,
+                                            height: 1,
+                                          ),
+                                          _TotalRow(
+                                            label: "To'lov",
+                                            value: (total +
+                                                    state.hourPrice.toInt())
+                                                .formatN,
+                                            isBold: true,
+                                            valueColor:
+                                                const Color(0xFFFB6633),
+                                          ),
+                                          // Discount controls
+                                          const SizedBox(height: 4),
+                                          _DiscountRow(state: state),
+                                        ],
+                                      );
+                                    },
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
+                      ),
+                      // Right: payment panel
+                      Expanded(
+                        child: PaymentRightSideBar(detail: state.detail!),
+                      ),
                     ],
-                  );
-                },
-              ),
+                  ),
+                ),
+              ],
             );
           },
         ),
-      ).paddingAll(32),
+      ),
+    );
+  }
+}
+
+class _TotalRow extends StatelessWidget {
+  final String label;
+  final String value;
+  final bool isBold;
+  final Color? valueColor;
+
+  const _TotalRow({
+    required this.label,
+    required this.value,
+    this.isBold = false,
+    this.valueColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: isBold ? 16 : 13,
+            fontWeight: isBold ? FontWeight.w700 : FontWeight.w400,
+            color: const Color(0xFF888888),
+            fontFamily: 'Inter',
+          ),
+        ),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: isBold ? 16 : 13,
+            fontWeight: isBold ? FontWeight.w700 : FontWeight.w500,
+            color: valueColor ?? const Color(0xFF19160B),
+            fontFamily: 'Inter',
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _DiscountRow extends StatelessWidget {
+  final PaymentState state;
+  const _DiscountRow({required this.state});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      spacing: 8,
+      children: [
+        const Text(
+          'Chegirma:',
+          style: TextStyle(
+            fontSize: 13,
+            color: Color(0xFF888888),
+            fontFamily: 'Inter',
+          ),
+        ),
+        _DiscountTypeBtn(
+          label: '%',
+          isActive: state.discountType == DiscountType.percent,
+          onTap: () => context.read<PaymentBloc>().add(
+            const PaymentEvent.updateDiscountType(
+              dicountType: DiscountType.percent,
+            ),
+          ),
+        ),
+        _DiscountTypeBtn(
+          label: "so'm",
+          isActive: state.discountType == DiscountType.money,
+          onTap: () => context.read<PaymentBloc>().add(
+            const PaymentEvent.updateDiscountType(
+              dicountType: DiscountType.money,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _DiscountTypeBtn extends StatelessWidget {
+  final String label;
+  final bool isActive;
+  final VoidCallback onTap;
+
+  const _DiscountTypeBtn({
+    required this.label,
+    required this.isActive,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: isActive
+              ? const Color(0xFFFB6633)
+              : const Color(0xFFF8F9FA),
+          border: Border.all(
+            color: isActive
+                ? const Color(0xFFFB6633)
+                : const Color(0xFFEBEFF2),
+          ),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: isActive ? Colors.white : const Color(0xFF19160B),
+            fontFamily: 'Inter',
+          ),
+        ),
+      ),
     );
   }
 }

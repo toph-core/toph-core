@@ -1,14 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:mary_ai_pos/core/common/custom_hover_effect_widget.dart';
 import 'package:mary_ai_pos/core/constants/constants.dart';
-import 'package:mary_ai_pos/core/extension/color_extension.dart';
 import 'package:mary_ai_pos/core/extension/for_context.dart';
-import 'package:mary_ai_pos/core/extension/int_extension.dart';
 import 'package:mary_ai_pos/core/extension/number_formatter.dart';
-import 'package:mary_ai_pos/core/extension/widget_extension.dart';
-import 'package:mary_ai_pos/core/values/app_colors.dart';
 import 'package:mary_ai_pos/features/view/main/domain/entities/archive_detail_entity.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/payment/payment_bloc.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/payment/payment_screen_mixin.dart';
@@ -20,381 +15,415 @@ class PaymentRightSideBar extends StatelessWidget with PaymentScreenMixin {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: context.w,
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          color: context.colors.bgDefault,
-          borderRadius: context.radius.card24,
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border(
+          left: BorderSide(color: context.colors.border),
         ),
-        child: BlocBuilder<PaymentBloc, PaymentState>(
-          builder: (context, state) {
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text("Jami to'lov", style: context.textStyles.bodyMd),
-                8.hBox,
-                Text(
-                  ((detail.grandTotal -
-                              (state.discountType == DiscountType.money
-                                  ? int.tryParse(state.discountAmount) != null
-                                        ? int.parse(state.discountAmount)
-                                        : 0
-                                  : (state.detail!.grandTotal / 100) *
-                                        (int.tryParse(state.discountAmount) !=
-                                                null
-                                            ? int.parse(state.discountAmount)
-                                            : 0))) +
-                          state.hourPrice)
-                      .formatN,
-                  style: context.textStyles.bold24.copyWith(
-                    fontWeight: FontWeight.w500,
+      ),
+      child: BlocBuilder<PaymentBloc, PaymentState>(
+        builder: (context, state) {
+          final int discountAmt = int.tryParse(state.discountAmount) ?? 0;
+          int finalTotal = detail.grandTotal.toInt();
+          if (state.discountType == DiscountType.money) {
+            finalTotal -= discountAmt;
+          } else {
+            finalTotal -= (finalTotal * (discountAmt / 100)).round();
+          }
+          if (finalTotal < 0) finalTotal = 0;
+          finalTotal += state.hourPrice.toInt();
+
+          final int entered = int.tryParse(state.enterSum) ?? 0;
+          final int change = entered > finalTotal ? entered - finalTotal : 0;
+
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Total display
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  border: Border(
+                    bottom: BorderSide(color: context.colors.border),
                   ),
                 ),
-                16.hBox,
-                const Divider(),
-                20.hBox,
-                LayoutBuilder(
-                  builder: (context, constrants) {
-                    return Row(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  spacing: 4,
+                  children: [
+                    Text(
+                      "Jami to'lov",
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: context.colors.textSecondary,
+                        fontFamily: 'Inter',
+                      ),
+                    ),
+                    Text(
+                      finalTotal.formatN,
+                      style: const TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF19160B),
+                        fontFamily: 'Inter',
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // Payment method selector
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  spacing: 12,
+                  children: [
+                    const Text(
+                      "To'lov usuli",
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF19160B),
+                        fontFamily: 'Inter',
+                      ),
+                    ),
+                    Row(
+                      spacing: 10,
                       children: [
-                        GestureDetector(
+                        _PayMethod(
+                          label: 'Naqd',
+                          icon: SvgPicture.asset(
+                            Assets.icons.icCash.path,
+                            width: 24,
+                            height: 24,
+                          ),
+                          isActive: state.paymentType == PaymentType.cash,
                           onTap: () => context.read<PaymentBloc>().add(
                             const PaymentEvent.updatePaymentType(
                               paymentType: PaymentType.cash,
                             ),
                           ),
-                          child: SizedBox(
-                            width: (constrants.maxWidth - 24) * 0.33,
-                            height: ((constrants.maxWidth - 24) * 0.33) * 0.5,
-                            child: DecoratedBox(
-                              decoration: BoxDecoration(
-                                borderRadius: context.radius.buttonLg,
-                                color: context.colors.bgTritary,
-                                border: state.paymentType == PaymentType.cash
-                                    ? Border.all(
-                                        color: AppColors.ffFB6633,
-                                        width: 1,
-                                      )
-                                    : null,
-                              ),
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  SvgPicture.asset(
-                                    Assets.icons.icCash.path,
-                                    height: 24,
-                                    width: 24,
-                                  ),
-                                  Text(
-                                    "Naqd",
-                                    style: context.textStyles.title14.copyWith(
-                                      fontSize: 18,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
                         ),
-                        12.wBox,
-                        GestureDetector(
+                        _PayMethod(
+                          label: 'Karta',
+                          icon: SvgPicture.asset(
+                            Assets.icons.icCard.path,
+                            width: 24,
+                            height: 24,
+                          ),
+                          isActive: state.paymentType == PaymentType.card,
                           onTap: () => context.read<PaymentBloc>().add(
                             const PaymentEvent.updatePaymentType(
                               paymentType: PaymentType.card,
                             ),
                           ),
-                          child: SizedBox(
-                            width: (constrants.maxWidth - 24) * 0.33,
-                            height: ((constrants.maxWidth - 24) * 0.33) * 0.6,
-                            child: DecoratedBox(
-                              decoration: BoxDecoration(
-                                borderRadius: context.radius.buttonLg,
-                                color: context.colors.bgTritary,
-                                border: state.paymentType == PaymentType.card
-                                    ? Border.all(
-                                        color: AppColors.ffFB6633,
-                                        width: 1,
-                                      )
-                                    : null,
-                              ),
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  SvgPicture.asset(
-                                    Assets.icons.icCard.path,
-                                    height: 24,
-                                    width: 24,
-                                  ),
-                                  Text(
-                                    "Karta",
-                                    style: context.textStyles.title14.copyWith(
-                                      fontSize: 18,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
                         ),
-                        12.wBox,
-                        GestureDetector(
+                        _PayMethod(
+                          label: 'QR',
+                          icon: SvgPicture.asset(
+                            Assets.icons.icQr.path,
+                            width: 24,
+                            height: 24,
+                          ),
+                          isActive: state.paymentType == PaymentType.qr,
                           onTap: () => context.read<PaymentBloc>().add(
                             const PaymentEvent.updatePaymentType(
                               paymentType: PaymentType.qr,
                             ),
                           ),
-                          child: SizedBox(
-                            width: (constrants.maxWidth - 24) * 0.33,
-                            height: ((constrants.maxWidth - 24) * 0.33) * 0.6,
-                            child: DecoratedBox(
-                              decoration: BoxDecoration(
-                                borderRadius: context.radius.buttonLg,
-                                color: context.colors.bgTritary,
-                                border: state.paymentType == PaymentType.qr
-                                    ? Border.all(
-                                        color: AppColors.ffFB6633,
-                                        width: 1,
-                                      )
-                                    : null,
-                              ),
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  SvgPicture.asset(
-                                    Assets.icons.icQr.path,
-                                    height: 24,
-                                    width: 24,
-                                  ),
-                                  Text(
-                                    "QR",
-                                    style: context.textStyles.title14.copyWith(
-                                      fontSize: 18,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
                         ),
                       ],
-                    );
-                  },
+                    ),
+                  ],
                 ),
-                20.hBox,
-                Text("Berilayotgan summa", style: context.textStyles.bodySm),
-                8.hBox,
-                if (state.paymentType == PaymentType.cash)
-                  Expanded(
-                    child: ListView(
-                      // crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        SizedBox(
-                          width: context.w,
-                          height: 60,
-                          child: DecoratedBox(
-                            decoration: BoxDecoration(
-                              borderRadius: context.radius.buttonLg,
-                              color: context.colors.bgTritary,
-                            ),
-                            child: Center(
-                              child: Text(
-                                int.tryParse(state.enterSum) != null
-                                    ? int.parse(state.enterSum).formatN
-                                    : '',
-                                style: context.textStyles.bold20.copyWith(
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                        16.hBox,
-                        GridView.builder(
-                          shrinkWrap: true,
-                          physics: const BouncingScrollPhysics(),
-                          gridDelegate:
-                              const SliverGridDelegateWithFixedCrossAxisCount(
-                                crossAxisCount: 3,
-                                crossAxisSpacing: 8,
-                                mainAxisSpacing: 8,
-                                mainAxisExtent: 70,
-                              ),
-                          itemBuilder: (context, index) => GestureDetector(
-                            onTap: () {
-                              context.read<PaymentBloc>().add(
-                                PaymentEvent.updateEnterSum(
-                                  symbol: keyboardKeys[index],
-                                ),
-                              );
-                            },
-                            child: DecoratedBox(
-                              decoration: BoxDecoration(
-                                color: index == 9
-                                    ? AppColors.ffDB2020.newWithOpacity(.1)
-                                    : context.colors.bgTritary,
-                                borderRadius: context.radius.buttonLg,
-                              ),
-                              child: Center(
-                                child: Text(
-                                  keyboardKeys[index],
-                                  style: context.textStyles.headingMd.copyWith(
-                                    color: index == 9
-                                        ? AppColors.ffDB2020
-                                        : null,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                          itemCount: keyboardKeys.length,
-                        ),
-                        16.hBox,
-                      ],
-                    ),
-                  ),
-                if (state.paymentType == PaymentType.card)
-                  Expanded(
-                    child: Center(
-                      child: Text(
-                        "Mijoz to’lovni karta orqali amalga oshirganini tasdiqlang",
-                        style: context.textStyles.bodyMd,
-                        textAlign: TextAlign.center,
-                      ),
-                    ),
-                  ),
+              ),
 
-                if (state.paymentType == PaymentType.qr)
-                  Expanded(
-                    child: Center(
-                      child: Text(
-                        "Mijoz to’lovni qr kodni skaner qilib amalga oshirganini tasdiqlang",
-                        style: context.textStyles.bodyMd,
-                        textAlign: TextAlign.center,
-                      ),
-                    ).paddingSymmetric(horizontal: 20),
-                  ),
-                SizedBox(
-                  width: context.w,
-                  child: DecoratedBox(
+              // Amount display (cash only)
+              if (state.paymentType == PaymentType.cash) ...[
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: context.colors.bgDefault,
-                      border: const Border.symmetric(
-                        vertical: BorderSide(
-                          color: AppColors.ffC9C9C9,
-                          width: 0.33,
-                        ),
-                      ),
-                      // boxShadow: [
-                      //   BoxShadow(
-                      //     color: AppColors.black.newWithOpacity(.04),
-                      //     offset: const Offset(0, -4),
-                      //     spreadRadius: 12,
-                      //   ),
-                      // ],
+                      color: const Color(0xFFF8F9FA),
+                      border: Border.all(color: const Color(0xFFEBEFF2)),
+                      borderRadius: BorderRadius.circular(12),
                     ),
                     child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      spacing: 4,
                       children: [
-                        Row(
-                          children: [
-                            Text(
-                              "Qaytim",
-                              style: context.textStyles.bold16.copyWith(
-                                fontWeight: FontWeight.w400,
-                              ),
-                            ),
-                            const Spacer(),
-                            Builder(
-                              builder: (context) {
-                                int discountAmount =
-                                    int.tryParse(state.discountAmount) ?? 0;
-                                int finalTotal = detail.grandTotal.toInt();
-
-                                if (state.discountType == DiscountType.money) {
-                                  finalTotal -= discountAmount;
-                                } else if (state.discountType ==
-                                    DiscountType.percent) {
-                                  finalTotal -=
-                                      (finalTotal * (discountAmount / 100))
-                                          .round();
-                                }
-
-                                if (finalTotal < 0) finalTotal = 0;
-
-                                int parsedEnterSum =
-                                    int.tryParse(state.enterSum) ?? 0;
-                                int returnAmount = parsedEnterSum > finalTotal
-                                    ? parsedEnterSum - finalTotal
-                                    : 0;
-
-                                return Text(
-                                  returnAmount.formatN,
-                                  style: context.textStyles.bold20.copyWith(
-                                    color: AppColors.ff13AF1B,
-                                  ),
-                                );
-                              },
-                            ),
-                          ],
+                        Text(
+                          'Berilayotgan summa',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: context.colors.textSecondary,
+                            fontFamily: 'Inter',
+                          ),
                         ),
-                        16.hBox,
-                        Row(
-                          children: [
-                            SizedBox(
-                              width: 84,
-                              height: 56,
-                              child: DecoratedBox(
-                                decoration: BoxDecoration(
-                                  color: context.colors.bgTritary,
-                                  borderRadius: context.radius.buttonLg,
-                                ),
-                                child: SvgPicture.asset(
-                                  Assets.icons.icPrinter.path,
-                                ).paddingSymmetric(vertical: 15),
-                              ),
-                            ),
-                            12.wBox,
-                            Expanded(
-                              child: SizedBox(
-                                width: context.w,
-                                height: 56,
-                                child: CustomHoverEffectWidget(
-                                  onTap: () {
-                                    if (state.status != Status.LOADING) {
-                                      context.read<PaymentBloc>().add(
-                                        const PaymentEvent.payment(),
-                                      );
-                                    }
-                                  },
-                                  bgColor: context.colors.bgBrand,
-                                  borderRadius: context.radius.buttonLg,
-                                  child: Center(
-                                    child: state.status == Status.LOADING
-                                        ? const CircularProgressIndicator.adaptive()
-                                        : Text(
-                                            "Tasdiqlash",
-                                            style: context.textStyles.bold16
-                                                .copyWith(
-                                                  fontWeight: FontWeight.w500,
-                                                  color: context
-                                                      .colors
-                                                      .textOnBrand,
-                                                ),
-                                          ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
+                        Text(
+                          entered > 0 ? entered.formatN : '0',
+                          style: const TextStyle(
+                            fontSize: 28,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFF19160B),
+                            fontFamily: 'Inter',
+                          ),
                         ),
                       ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                // Numpad
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: GridView.builder(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      gridDelegate:
+                          const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 3,
+                            crossAxisSpacing: 8,
+                            mainAxisSpacing: 8,
+                            mainAxisExtent: 52,
+                          ),
+                      itemCount: keyboardKeys.length,
+                      itemBuilder: (context, index) {
+                        final key = keyboardKeys[index];
+                        final isDelete = key == 'delete';
+                        return GestureDetector(
+                          onTap: () => context.read<PaymentBloc>().add(
+                            PaymentEvent.updateEnterSum(symbol: key),
+                          ),
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: isDelete
+                                  ? const Color(0xFFFFF0F3)
+                                  : const Color(0xFFF8F9FA),
+                              border: Border.all(
+                                color: isDelete
+                                    ? const Color(0xFFFBCDD8)
+                                    : const Color(0xFFEBEFF2),
+                              ),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Center(
+                              child: isDelete
+                                  ? const Icon(
+                                      Icons.backspace_outlined,
+                                      size: 20,
+                                      color: Color(0xFFEB295B),
+                                    )
+                                  : Text(
+                                      key,
+                                      style: const TextStyle(
+                                        fontSize: 20,
+                                        fontWeight: FontWeight.w500,
+                                        color: Color(0xFF19160B),
+                                        fontFamily: 'Inter',
+                                      ),
+                                    ),
+                            ),
+                          ),
+                        );
+                      },
                     ),
                   ),
                 ),
               ],
-            );
-          },
-        ).paddingAll(16),
+
+              // Card / QR confirmation message
+              if (state.paymentType != PaymentType.cash)
+                Expanded(
+                  child: Center(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      child: Text(
+                        state.paymentType == PaymentType.card
+                            ? "Mijoz to'lovni karta orqali amalga oshirganini tasdiqlang"
+                            : "Mijoz to'lovni QR kod orqali amalga oshirganini tasdiqlang",
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: context.colors.textSecondary,
+                          fontFamily: 'Inter',
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+
+              // Change row (only when cash and entered > total)
+              if (state.paymentType == PaymentType.cash && change > 0)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF1FAF1),
+                      border: Border.all(color: const Color(0xFF13AF1B)),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'Qaytim',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                            color: Color(0xFF13AF1B),
+                            fontFamily: 'Inter',
+                          ),
+                        ),
+                        Text(
+                          change.formatN,
+                          style: const TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFF13AF1B),
+                            fontFamily: 'Inter',
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+
+              // Footer: print + confirm
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  border: Border(
+                    top: BorderSide(color: context.colors.border),
+                  ),
+                ),
+                child: Row(
+                  spacing: 12,
+                  children: [
+                    Container(
+                      width: 52,
+                      height: 52,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF8F9FA),
+                        border: Border.all(color: const Color(0xFFEBEFF2)),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Center(
+                        child: SvgPicture.asset(
+                          Assets.icons.icPrinter.path,
+                          width: 22,
+                          height: 22,
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () {
+                          if (state.status != Status.LOADING) {
+                            context.read<PaymentBloc>().add(
+                              const PaymentEvent.payment(),
+                            );
+                          }
+                        },
+                        child: Container(
+                          height: 52,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFB6633),
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                          child: Center(
+                            child: state.status == Status.LOADING
+                                ? const SizedBox(
+                                    width: 22,
+                                    height: 22,
+                                    child: CircularProgressIndicator.adaptive(
+                                      strokeWidth: 2,
+                                      backgroundColor: Colors.white,
+                                    ),
+                                  )
+                                : const Text(
+                                    'Tasdiqlash',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w700,
+                                      color: Colors.white,
+                                      fontFamily: 'Inter',
+                                    ),
+                                  ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _PayMethod extends StatelessWidget {
+  final String label;
+  final Widget icon;
+  final bool isActive;
+  final VoidCallback onTap;
+
+  const _PayMethod({
+    required this.label,
+    required this.icon,
+    required this.isActive,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: GestureDetector(
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          decoration: BoxDecoration(
+            color: isActive ? const Color(0xFFFFF3EE) : Colors.white,
+            border: Border.all(
+              color: isActive
+                  ? const Color(0xFFFB6633)
+                  : const Color(0xFFEBEFF2),
+              width: isActive ? 2 : 1,
+            ),
+            borderRadius: BorderRadius.circular(14),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            spacing: 6,
+            children: [
+              icon,
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                  color: isActive
+                      ? const Color(0xFFFB6633)
+                      : const Color(0xFF19160B),
+                  fontFamily: 'Inter',
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

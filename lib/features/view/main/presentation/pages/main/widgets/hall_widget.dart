@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mary_ai_pos/core/common/custom_loading_widget.dart';
-import 'package:mary_ai_pos/core/extension/for_context.dart';
 import 'package:mary_ai_pos/core/routes/app_routes.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/cafe_tables/cafe_tables_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/hall/hall_model.dart';
@@ -9,10 +8,11 @@ import 'package:mary_ai_pos/features/view/main/presentation/cubit/orders/orders_
 import 'package:mary_ai_pos/features/view/main/presentation/pages/main/widgets/show_table_guest_count.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/main/widgets/table_widget.dart';
 
-class HallWidget extends StatefulWidget {
+class HallWidget extends StatelessWidget {
   final HallModel? hall;
   final List<CafeTableModel> tables;
   final bool isLoading;
+
   const HallWidget({
     super.key,
     required this.tables,
@@ -21,226 +21,93 @@ class HallWidget extends StatefulWidget {
   });
 
   @override
-  State<HallWidget> createState() => _HallWidgetState();
-}
-
-class _HallWidgetState extends State<HallWidget> {
-  final TransformationController _controller = TransformationController();
-
-  @override
-  void didUpdateWidget(covariant HallWidget oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.hall?.id != widget.hall?.id) {
-      _controller.value = Matrix4.identity();
-    }
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    final hallWidth = widget.hall?.width ?? 2000.0;
-    final hallHeight = widget.hall?.height ?? 1500.0;
+    if (isLoading) {
+      return const Expanded(child: Center(child: LoadingWidget()));
+    }
+
+    if (tables.isEmpty) {
+      return Expanded(
+        child: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            spacing: 8,
+            children: [
+              Icon(Icons.table_restaurant_outlined, size: 48, color: Colors.grey.shade300),
+              Text(
+                'Stollar mavjud emas',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.grey.shade400,
+                  fontFamily: 'Inter',
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
 
     return Expanded(
-      child: widget.isLoading
-          ? const Center(child: LoadingWidget())
-          : LayoutBuilder(
-              builder: (context, constraints) {
-                return Stack(
-                  children: [
-                    InteractiveViewer(
-                      transformationController: _controller,
-                      minScale: 0.1,
-                      maxScale: 2.0,
-                      constrained: false,
-                      child: Container(
-                        width: hallWidth,
-                        height: hallHeight,
-                        decoration: BoxDecoration(
-                          color: context.colors.bgSecondary,
-                          borderRadius: context.radius.card20,
-                        ),
-                        child: Stack(
-                          children: widget.tables
-                              .map(
-                                (table) => TableWidget(
-                                  table: table,
-                                  onTap: () async {
-                                    if (table.status == TableStatus.free) {
-                                      await showDialog(
-                                        context: context,
-                                        builder: (context) =>
-                                            ShowTableGuestCount(
-                                              tableNumber: table.number,
-                                            ),
-                                        barrierDismissible: false,
-                                      ).then((value) {
-                                        if (value != null && value is int) {
-                                          final index = context
-                                              .read<SavedOrdersBloc>()
-                                              .state
-                                              .order
-                                              .indexWhere(
-                                                (v) =>
-                                                    v
-                                                        .createOrderRequest
-                                                        .tableId ==
-                                                    table.id,
-                                              );
-                                          Future.delayed(
-                                            const Duration(milliseconds: 300),
-                                            () => Navigator.pushNamed(
-                                              context,
-                                              AppRoutes.detailScreen,
-                                              arguments: {
-                                                "table": table,
-                                                "guest_count": value,
-                                                // "table_status": table.status
-                                                "table_status": table.status,
-                                                "saved_orders": index != -1
-                                                    ? context
-                                                          .read<
-                                                            SavedOrdersBloc
-                                                          >()
-                                                          .state
-                                                          .order[index]
-                                                    : null,
-                                              },
-                                            ),
-                                          );
-                                        }
-                                      });
-                                    } else {
-                                      final index = context
-                                          .read<SavedOrdersBloc>()
-                                          .state
-                                          .order
-                                          .indexWhere(
-                                            (v) =>
-                                                v.createOrderRequest.tableId ==
-                                                table.id,
-                                          );
-                                      Navigator.pushNamed(
-                                        context,
-                                        AppRoutes.detailScreen,
-                                        arguments: {
-                                          "table": table,
-                                          // "table_status": table.status
-                                          "table_status": TableStatus.busy,
-                                          "saved_orders": index != -1
-                                              ? context
-                                                    .read<SavedOrdersBloc>()
-                                                    .state
-                                                    .order[index]
-                                              : null,
-                                        },
-                                      );
-                                    }
-                                  },
-                                ),
-                              )
-                              .toList(),
-                        ),
-                      ),
-                    ),
-                    // Scrollbars
-                    ValueListenableBuilder<Matrix4>(
-                      valueListenable: _controller,
-                      builder: (context, matrix, _) {
-                        final scale = matrix.row0[0];
-                        final tx = -matrix.row0[3];
-                        final ty = -matrix.row1[3];
-
-                        final viewWidth = constraints.maxWidth;
-                        final viewHeight = constraints.maxHeight;
-
-                        final contentWidth = hallWidth * scale;
-                        final contentHeight = hallHeight * scale;
-
-                        return Stack(
-                          children: [
-                            if (contentWidth > viewWidth)
-                              Positioned(
-                                left: 4,
-                                right: 4,
-                                bottom: 4,
-                                child: _buildScrollbar(
-                                  isVertical: false,
-                                  viewSize: viewWidth,
-                                  contentSize: contentWidth,
-                                  offset: tx,
-                                ),
-                              ),
-                            if (contentHeight > viewHeight)
-                              Positioned(
-                                top: 4,
-                                bottom: 4,
-                                right: 4,
-                                child: _buildScrollbar(
-                                  isVertical: true,
-                                  viewSize: viewHeight,
-                                  contentSize: contentHeight,
-                                  offset: ty,
-                                ),
-                              ),
-                          ],
-                        );
-                      },
-                    ),
-                    // Positioned(
-                    //   left: 10,
-                    //   top: 10,
-                    //   child: Text(
-                    //     "Hall: ${hallWidth.round()}x${hallHeight.round()}",
-                    //     style: context.textStyles.bodyMd,
-                    //   ),
-                    // ),
-                  ],
-                );
-              },
-            ),
+      child: SingleChildScrollView(
+        child: Wrap(
+          spacing: 12,
+          runSpacing: 12,
+          children: tables
+              .map(
+                (table) => TableWidget(
+                  table: table,
+                  onTap: () => _handleTableTap(context, table),
+                ),
+              )
+              .toList(),
+        ),
+      ),
     );
   }
 
-  Widget _buildScrollbar({
-    required bool isVertical,
-    required double viewSize,
-    required double contentSize,
-    required double offset,
-  }) {
-    final thumbSize = (viewSize / contentSize) * viewSize;
-    final maxOffset = contentSize - viewSize;
-    final scrollRatio = maxOffset > 0 ? offset / maxOffset : 0.0;
-    final thumbOffset = scrollRatio * (viewSize - thumbSize - 8);
-
-    return Container(
-      width: isVertical ? 6 : null,
-      height: isVertical ? null : 6,
-      decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.05),
-        borderRadius: BorderRadius.circular(3),
-      ),
-      child: Stack(
-        children: [
-          Positioned(
-            top: isVertical ? thumbOffset : 0,
-            left: isVertical ? 0 : thumbOffset,
-            child: Container(
-              width: isVertical ? 6 : thumbSize,
-              height: isVertical ? thumbSize : 6,
-              decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.2),
-                borderRadius: BorderRadius.circular(3),
-              ),
-            ),
+  Future<void> _handleTableTap(BuildContext context, CafeTableModel table) async {
+    if (table.status == TableStatus.free) {
+      final savedOrdersBloc = context.read<SavedOrdersBloc>();
+      final navigator = Navigator.of(context);
+      final value = await showDialog<int>(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => ShowTableGuestCount(tableNumber: table.number),
+      );
+      if (value != null) {
+        final index = savedOrdersBloc.state.order
+            .indexWhere((v) => v.createOrderRequest.tableId == table.id);
+        Future.delayed(
+          const Duration(milliseconds: 300),
+          () => navigator.pushNamed(
+            AppRoutes.detailScreen,
+            arguments: {
+              "table": table,
+              "guest_count": value,
+              "table_status": table.status,
+              "saved_orders": index != -1
+                  ? savedOrdersBloc.state.order[index]
+                  : null,
+            },
           ),
-        ],
-      ),
-    );
+        );
+      }
+    } else {
+      final savedOrdersBloc = context.read<SavedOrdersBloc>();
+      final index = savedOrdersBloc.state.order
+          .indexWhere((v) => v.createOrderRequest.tableId == table.id);
+      Navigator.pushNamed(
+        context,
+        AppRoutes.detailScreen,
+        arguments: {
+          "table": table,
+          "table_status": TableStatus.busy,
+          "saved_orders": index != -1
+              ? savedOrdersBloc.state.order[index]
+              : null,
+        },
+      );
+    }
   }
 }

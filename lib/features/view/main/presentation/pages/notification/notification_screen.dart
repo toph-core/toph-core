@@ -1,38 +1,36 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_svg/svg.dart';
 import 'package:mary_ai_pos/core/api/api.dart';
-import 'package:mary_ai_pos/core/common/custom_hover_effect_widget.dart';
-import 'package:mary_ai_pos/core/common/custom_text_field.dart';
-import 'package:mary_ai_pos/core/extension/for_context.dart';
-import 'package:mary_ai_pos/core/extension/int_extension.dart';
-import 'package:mary_ai_pos/core/extension/widget_extension.dart';
-import 'package:mary_ai_pos/core/values/app_assets.dart';
+import 'package:mary_ai_pos/core/routes/app_routes.dart';
+import 'package:mary_ai_pos/core/widgets/app_scaffold.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/notification/notification_bloc.dart';
-import 'package:mary_ai_pos/gen/assets.gen.dart';
-import 'package:mary_ai_pos/generated/l10n.dart';
+import 'package:mary_ai_pos/features/view/main/presentation/pages/main/widgets/main_header.dart';
+import 'package:mary_ai_pos/core/extension/for_context.dart';
 
-enum NotificationFilterType { all, today, week, month }
-
-class NotificationScreen extends StatefulWidget {
+class NotificationScreen extends StatelessWidget {
   const NotificationScreen({super.key});
 
   @override
-  State<NotificationScreen> createState() => _NotificationScreenState();
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (_) =>
+          NotificationBloc()..add(const NotificationEvent.started()),
+      child: const AppScaffold(
+        activeRoute: AppRoutes.notificationsScreen,
+        body: _NotificationBody(),
+      ),
+    );
+  }
 }
 
-class _NotificationScreenState extends State<NotificationScreen> {
-  final TextEditingController _searchController = TextEditingController();
-  NotificationFilterType _selectedFilter = NotificationFilterType.today;
+class _NotificationBody extends StatefulWidget {
+  const _NotificationBody();
 
-  final List<_NotificationItem> _items = List.generate(
-    18,
-    (_) => const _NotificationItem(
-      orderNumber: '#1025',
-      tableName: '13-stol',
-      description: '16-stol buyurtmasi yetkazildi.',
-    ),
-  );
+  @override
+  State<_NotificationBody> createState() => _NotificationBodyState();
+}
+
+class _NotificationBodyState extends State<_NotificationBody> {
+  final TextEditingController _searchController = TextEditingController();
 
   @override
   void dispose() {
@@ -40,260 +38,354 @@ class _NotificationScreenState extends State<NotificationScreen> {
     super.dispose();
   }
 
-  int _getCrossAxisCount(double width) {
-    if (width < 820) return 1;
-    if (width < 1280) return 2;
-    return 3;
-  }
-
-  final List<String> names = [
-    S.current.all,
-    S.current.today,
-    S.current.week,
-    S.current.month,
-  ];
-
   @override
   Widget build(BuildContext context) {
-    final List<_FilterChipData> filters = [
-      const _FilterChipData(label: 'Hammasi', type: NotificationFilterType.all),
-      const _FilterChipData(label: 'Bugun', type: NotificationFilterType.today),
-      const _FilterChipData(label: 'Hafta', type: NotificationFilterType.week),
-      const _FilterChipData(label: 'Oy', type: NotificationFilterType.month),
-    ];
-
-    return Scaffold(
-      backgroundColor: context.colors.bgTritary,
-      body: BlocProvider(
-        create: (context) =>
-            NotificationBloc()..add(const NotificationEvent.started()),
-        child: BlocBuilder<NotificationBloc, NotificationState>(
-          builder: (context, state) {
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                DecoratedBox(
-                  decoration: BoxDecoration(
-                    color: context.colors.bgDefault,
-                    borderRadius: context.radius.card24,
-                  ),
-                  child: Row(
-                    children: [
-                      SizedBox(
-                        height: 52,
-                        width: 52,
-                        child: CustomHoverEffectWidget(
-                          bgColor: context.colors.bgSecondary,
-                          onTap: () => Navigator.pop(context),
-                          borderRadius: context.radius.buttonLg,
-                          child: SvgPicture.asset(
-                            AppIcons.icArrowLeft,
-                            colorFilter: ColorFilter.mode(
-                              context.colors.iconDefault,
-                              BlendMode.srcIn,
-                            ),
-                          ).paddingAll(14),
+    final colors = context.colors;
+    return BlocBuilder<NotificationBloc, NotificationState>(
+      builder: (context, state) {
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const MainHeader(title: 'Bildirishnomalar'),
+            // Filter bar
+            Container(
+              height: 56,
+              color: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Row(
+                spacing: 12,
+                children: [
+                  // Search field
+                  SizedBox(
+                    width: 260,
+                    height: 36,
+                    child: TextField(
+                      controller: _searchController,
+                      decoration: InputDecoration(
+                        hintText: 'Qidirish...',
+                        hintStyle: TextStyle(
+                          fontSize: 13,
+                          color: colors.textSecondary,
+                          fontFamily: 'Inter',
                         ),
-                      ),
-                      12.wBox,
-                      Text(
-                        'Bildirishnomalar',
-                        style: context.textStyles.bold24.copyWith(
-                          fontWeight: FontWeight.w500,
+                        prefixIcon: Icon(
+                          Icons.search_rounded,
+                          size: 18,
+                          color: colors.textSecondary,
                         ),
-                      ),
-                      24.wBox,
-                      Expanded(
-                        child: SizedBox(
-                          height: 52,
-                          child: CustomTextField(
-                            hintText: 'Qidirish',
-                            textInputType: TextInputType.text,
-                            textEditingController: _searchController,
-                            suffixIcon: SvgPicture.asset(
-                              AppIcons.icSearch,
-                              colorFilter: ColorFilter.mode(
-                                context.colors.iconSecondary,
-                                BlendMode.srcIn,
-                              ),
-                            ),
+                        filled: true,
+                        fillColor: const Color(0xFFF8F9FA),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 0,
+                        ),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: const BorderSide(
+                            color: Color(0xFFEBEFF2),
+                          ),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: const BorderSide(
+                            color: Color(0xFFEBEFF2),
+                          ),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: const BorderSide(
+                            color: Color(0xFFFB6633),
                           ),
                         ),
                       ),
-                      8.wBox,
-                      SizedBox(
-                        height: 52,
-                        width: 52,
-                        child: CustomHoverEffectWidget(
-                          onTap: () async {
-                            final pickedRange = await showDateRangePicker(
-                              context: context,
-                              initialDateRange: DateTimeRange(
-                                start: DateTime.now(),
-                                end: DateTime.now(),
-                              ),
-                              firstDate: DateTime(2000),
-                              lastDate: DateTime.now().add(
-                                const Duration(days: 365 * 10),
-                              ),
-                              initialEntryMode:
-                                  DatePickerEntryMode.calendarOnly,
-                              builder: (context, child) {
-                                return Center(
-                                  child: ConstrainedBox(
-                                    constraints: const BoxConstraints(
-                                      maxWidth: 400.0,
-                                      maxHeight: 600.0,
-                                    ),
-                                    child: child,
-                                  ),
-                                );
-                              },
-                            );
-                            if (pickedRange != null) {
-                              context.read<NotificationBloc>().add(
-                                NotificationEvent.updateDateFilterEvent(
-                                  start: pickedRange.start,
-                                  end: pickedRange.end,
-                                ),
-                              );
-                            }
-                          },
-                          bgColor: state.filterType == ArchivesFilterType.date
-                              ? context.colors.buttonBrand
-                              : context.colors.bgSecondary,
-                          borderRadius: context.radius.buttonLg,
-                          child: SvgPicture.asset(
-                            AppIcons.icCalendar,
-                            colorFilter: ColorFilter.mode(
-                              state.filterType == ArchivesFilterType.date
-                                  ? context.colors.buttonSecondary
-                                  : context.colors.buttonBrand,
-                              BlendMode.srcIn,
-                            ),
-                          ).paddingAll(12),
-                        ),
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontFamily: 'Inter',
+                        color: Color(0xFF19160B),
                       ),
-                      8.wBox,
-                      Row(
-                        children: List.generate(
-                          ArchivesFilterType.values.length - 1,
-                          (index) => SizedBox(
-                            height: 52,
-                            child: CustomHoverEffectWidget(
-                              onTap: () => context.read<NotificationBloc>().add(
-                                NotificationEvent.updateFilterType(
-                                  filterType: ArchivesFilterType.values[index],
-                                ),
-                              ),
-                              bgColor:
-                                  state.filterType ==
-                                      ArchivesFilterType.values[index]
-                                  ? context.colors.buttonBrand
-                                  : context.colors.bgSecondary,
-                              borderRadius: context.radius.buttonLg,
-                              child: Center(
-                                child: Text(
-                                  names[index],
-                                  style: context.textStyles.bold16.copyWith(
-                                    fontWeight: FontWeight.w500,
-                                    color:
-                                        state.filterType ==
-                                            ArchivesFilterType.values[index]
-                                        ? context.colors.textOnBrand
-                                        : context.colors.textDefault,
-                                  ),
-                                ).paddingSymmetric(horizontal: 20),
-                              ),
-                            ).paddingSymmetric(horizontal: 8),
-                          ).paddingOnly(),
-                        ),
-                      ),
-                    ],
-                  ).paddingAll(16),
-                ),
-                16.hBox,
-                Expanded(
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      color: context.colors.bgDefault,
-                      borderRadius: context.radius.card24,
-                    ),
-                    child: LayoutBuilder(
-                      builder: (context, constraints) {
-                        final crossAxisCount = _getCrossAxisCount(
-                          constraints.maxWidth,
-                        );
-
-                        return GridView.builder(
-                          padding: const EdgeInsets.all(16),
-                          itemCount: _items.length,
-                          gridDelegate:
-                              SliverGridDelegateWithFixedCrossAxisCount(
-                                crossAxisCount: crossAxisCount,
-                                crossAxisSpacing: 12,
-                                mainAxisSpacing: 12,
-                                mainAxisExtent: 120,
-                              ),
-                          itemBuilder: (context, index) =>
-                              _NotificationCard(item: _items[index]),
-                        );
-                      },
+                      onChanged: (_) => setState(() {}),
                     ),
                   ),
-                ),
-              ],
-            );
-          },
-        ),
-      ).paddingAll(32),
+                  const Spacer(),
+                  // Filter tabs
+                  Container(
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF8F9FA),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    padding: const EdgeInsets.all(4),
+                    child: Row(
+                      spacing: 4,
+                      children: [
+                        _FilterTab(
+                          label: 'Bugun',
+                          isActive:
+                              state.filterType == ArchivesFilterType.Today,
+                          onTap: () => context.read<NotificationBloc>().add(
+                            const NotificationEvent.updateFilterType(
+                              filterType: ArchivesFilterType.Today,
+                            ),
+                          ),
+                        ),
+                        _FilterTab(
+                          label: 'Hafta',
+                          isActive:
+                              state.filterType == ArchivesFilterType.Week,
+                          onTap: () => context.read<NotificationBloc>().add(
+                            const NotificationEvent.updateFilterType(
+                              filterType: ArchivesFilterType.Week,
+                            ),
+                          ),
+                        ),
+                        _FilterTab(
+                          label: 'Oy',
+                          isActive:
+                              state.filterType == ArchivesFilterType.month,
+                          onTap: () => context.read<NotificationBloc>().add(
+                            const NotificationEvent.updateFilterType(
+                              filterType: ArchivesFilterType.month,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  // Date range picker
+                  GestureDetector(
+                    onTap: () async {
+                      final notifBloc = context.read<NotificationBloc>();
+                      final picked = await showDateRangePicker(
+                        context: context,
+                        initialDateRange: DateTimeRange(
+                          start: state.start ?? DateTime.now(),
+                          end: state.end ?? DateTime.now(),
+                        ),
+                        firstDate: DateTime(2000),
+                        lastDate: DateTime.now().add(
+                          const Duration(days: 365),
+                        ),
+                        initialEntryMode: DatePickerEntryMode.calendarOnly,
+                        builder: (context, child) => Center(
+                          child: ConstrainedBox(
+                            constraints: const BoxConstraints(
+                              maxWidth: 400,
+                              maxHeight: 600,
+                            ),
+                            child: child,
+                          ),
+                        ),
+                      );
+                      if (picked != null) {
+                        notifBloc.add(
+                          NotificationEvent.updateDateFilterEvent(
+                            start: picked.start,
+                            end: picked.end,
+                          ),
+                        );
+                      }
+                    },
+                    child: Container(
+                      height: 36,
+                      width: 36,
+                      decoration: BoxDecoration(
+                        color: state.filterType == ArchivesFilterType.date
+                            ? const Color(0xFFFB6633)
+                            : const Color(0xFFF8F9FA),
+                        border: Border.all(color: const Color(0xFFEBEFF2)),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Icon(
+                        Icons.calendar_today_rounded,
+                        size: 16,
+                        color: state.filterType == ArchivesFilterType.date
+                            ? Colors.white
+                            : const Color(0xFF19160B),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Divider(height: 1, color: colors.border),
+            // Content
+            Expanded(
+              child: Container(
+                color: colors.bgSecondary,
+                child: state.status == Status.LOADING
+                    ? const Center(
+                        child: CircularProgressIndicator.adaptive(),
+                      )
+                    : _NotificationGrid(),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _NotificationGrid extends StatelessWidget {
+  // Dummy data for now
+  static final List<_NotificationItem> _items = List.generate(
+    18,
+    (i) => _NotificationItem(
+      orderNumber: '#${1020 + i}',
+      tableName: '${i + 1}-stol',
+      description: '${i + 1}-stol buyurtmasi yetkazildi.',
+      time: '${(8 + i % 14).toString().padLeft(2, '0')}:${(i * 3 % 60).toString().padLeft(2, '0')}',
+    ),
+  );
+
+  _NotificationGrid();
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final crossAxisCount = constraints.maxWidth < 820
+            ? 1
+            : constraints.maxWidth < 1280
+            ? 2
+            : 3;
+        return GridView.builder(
+          padding: const EdgeInsets.all(20),
+          itemCount: _items.length,
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: crossAxisCount,
+            crossAxisSpacing: 12,
+            mainAxisSpacing: 12,
+            mainAxisExtent: 100,
+          ),
+          itemBuilder: (context, index) =>
+              _NotificationCard(item: _items[index]),
+        );
+      },
     );
   }
 }
 
 class _NotificationCard extends StatelessWidget {
   final _NotificationItem item;
-
   const _NotificationCard({required this.item});
 
   @override
   Widget build(BuildContext context) {
-    return DecoratedBox(
+    return Container(
       decoration: BoxDecoration(
-        color: context.colors.bgSecondary,
-        borderRadius: context.radius.card,
+        color: Colors.white,
+        border: Border.all(color: const Color(0xFFEBEFF2)),
+        borderRadius: BorderRadius.circular(14),
       ),
-      child: Column(
+      padding: const EdgeInsets.all(16),
+      child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
+        spacing: 12,
         children: [
-          Row(
-            children: [
-              Text(
-                item.orderNumber,
-                style: context.textStyles.semibold24.copyWith(
-                  fontWeight: FontWeight.w500,
-                ),
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: const Color(0xFFFFF3EE),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: const Center(
+              child: Icon(
+                Icons.notifications_rounded,
+                size: 20,
+                color: Color(0xFFFB6633),
               ),
-              const Spacer(),
-              Text(
-                item.tableName,
-                style: context.textStyles.bold24.copyWith(
-                  fontWeight: FontWeight.w400,
-                ),
-              ),
-            ],
+            ),
           ),
-          8.hBox,
-          Text(
-            item.description,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: context.textStyles.bodyMd.copyWith(
-              color: context.colors.textSecondary,
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              spacing: 4,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      item.orderNumber,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF19160B),
+                        fontFamily: 'Inter',
+                      ),
+                    ),
+                    Text(
+                      item.time,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: Color(0xFF888888),
+                        fontFamily: 'Inter',
+                      ),
+                    ),
+                  ],
+                ),
+                Text(
+                  item.tableName,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                    color: Color(0xFFFB6633),
+                    fontFamily: 'Inter',
+                  ),
+                ),
+                Text(
+                  item.description,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: Color(0xFF888888),
+                    fontFamily: 'Inter',
+                  ),
+                ),
+              ],
             ),
           ),
         ],
-      ).paddingAll(16),
+      ),
+    );
+  }
+}
+
+class _FilterTab extends StatelessWidget {
+  final String label;
+  final bool isActive;
+  final VoidCallback onTap;
+
+  const _FilterTab({
+    required this.label,
+    required this.isActive,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+        decoration: BoxDecoration(
+          color: isActive ? const Color(0xFFFB6633) : Colors.transparent,
+          borderRadius: BorderRadius.circular(7),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w500,
+            color: isActive ? Colors.white : const Color(0xFF888888),
+            fontFamily: 'Inter',
+          ),
+        ),
+      ),
     );
   }
 }
@@ -302,17 +394,12 @@ class _NotificationItem {
   final String orderNumber;
   final String tableName;
   final String description;
+  final String time;
 
   const _NotificationItem({
     required this.orderNumber,
     required this.tableName,
     required this.description,
+    required this.time,
   });
-}
-
-class _FilterChipData {
-  final String label;
-  final NotificationFilterType type;
-
-  const _FilterChipData({required this.label, required this.type});
 }

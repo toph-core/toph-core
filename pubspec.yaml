@@ -81,6 +81,8 @@ dependencies:
   virtual_keyboard_multi_language: ^1.1.2
   window_manager: ^0.5.1
   flutter_acrylic: ^1.1.4
+  alice: ^1.0.0
+  alice_dio: ^1.0.7
 
 
 dev_dependencies:

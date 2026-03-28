@@ -9,7 +9,7 @@ int parseInt(dynamic value) {
 }
 
 extension IntExtension on int {
-  Widget get wBox => SizedBox(width: this.toDouble());
+  Widget get wBox => SizedBox(width: toDouble());
 
-  Widget get hBox => SizedBox(height: this.toDouble());
+  Widget get hBox => SizedBox(height: toDouble());
 }

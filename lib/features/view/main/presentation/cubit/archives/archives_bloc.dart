@@ -13,7 +13,6 @@ import 'package:mary_ai_pos/features/view/main/domain/entities/archive_entity.da
 import 'package:mary_ai_pos/features/view/main/domain/entities/archives_response_entity.dart';
 import 'package:mary_ai_pos/features/view/main/domain/usecase/get_archive_with_id_usecase.dart';
 import 'package:mary_ai_pos/features/view/main/domain/usecase/get_archives_usecase.dart';
-import 'package:mary_ai_pos/features/view/main/presentation/cubit/archive/archive_bloc.dart';
 import 'package:rxdart/rxdart.dart';
 
 part 'archives_event.dart';

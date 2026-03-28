@@ -7,23 +7,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:mary_ai_pos/core/auth/storage/token_storage_impl.dart';
 import 'package:mary_ai_pos/core/common/custom_loading_widget.dart';
 import 'package:mary_ai_pos/core/components/flush_bars.dart';
 import 'package:mary_ai_pos/core/constants/constants.dart';
 import 'package:mary_ai_pos/core/extension/for_context.dart';
-import 'package:mary_ai_pos/core/extension/log.dart';
 import 'package:mary_ai_pos/core/extension/widget_extension.dart';
 import 'package:mary_ai_pos/core/routes/app_routes.dart';
 import 'package:mary_ai_pos/core/service/app_version/app_update_service.dart';
 import 'package:mary_ai_pos/core/utils/helper/helper_widget.dart';
 import 'package:mary_ai_pos/core/values/app_assets.dart';
-import 'package:mary_ai_pos/di.dart';
 import 'package:mary_ai_pos/features/view/auth/presentation/cubit/auth/auth_cubit.dart';
 import 'package:mary_ai_pos/features/view/auth/presentation/cubit/auth/auth_state.dart';
 import 'package:mary_ai_pos/features/view/auth/presentation/cubit/bloc/user_bloc.dart';
 import 'package:mary_ai_pos/generated/l10n.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -38,7 +34,7 @@ class _SplashScreenState extends State<SplashScreen> {
     super.initState();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      Timer(const Duration(milliseconds: 2500), () {
+      Timer(const Duration(milliseconds: 500), () {
         _initializeAll();
       });
     });
@@ -53,8 +49,9 @@ class _SplashScreenState extends State<SplashScreen> {
         if (!unAuth) {
           Navigator.pushReplacementNamed(context, AppRoutes.loginPinScreen);
         } else {
+          // Navigate immediately — don't wait for getUser API call
+          Navigator.pushReplacementNamed(context, AppRoutes.mainScreen);
           context.read<UserBloc>().add(const UserEvent.getUser());
-          // Navigator.pushReplacementNamed(context, AppRoutes.mainScreen);
         }
       } else {
         Navigator.pushReplacementNamed(context, AppRoutes.loginScreen);

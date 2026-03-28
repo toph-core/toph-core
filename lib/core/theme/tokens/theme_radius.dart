@@ -59,7 +59,7 @@ class ThemeRadius extends ThemeExtension<ThemeRadius> {
       bottomSheet: bottomSheet ?? this.bottomSheet,
       topBar: topBar ?? this.topBar,
       segmentedControl: segmentedControl ?? this.segmentedControl,
-      infoRadius: this.infoRadius,
+      infoRadius: infoRadius,
     );
   }
 

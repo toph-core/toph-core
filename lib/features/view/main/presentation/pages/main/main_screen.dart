@@ -2,10 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mary_ai_pos/core/common/custom_loading_widget.dart';
 import 'package:mary_ai_pos/core/constants/constants.dart';
-import 'package:mary_ai_pos/core/extension/for_context.dart';
 import 'package:mary_ai_pos/core/extension/list_extension.dart';
-import 'package:mary_ai_pos/core/extension/widget_extension.dart';
-import 'package:mary_ai_pos/di.dart';
+import 'package:mary_ai_pos/core/routes/app_routes.dart';
+import 'package:mary_ai_pos/core/widgets/app_scaffold.dart';
 import 'package:mary_ai_pos/features/view/auth/presentation/cubit/bloc/user_bloc.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/main/main_cubit.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/orders/orders_bloc.dart';
@@ -25,64 +24,60 @@ class _MainScreenState extends State<MainScreen> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((v) {
-      if (context.read<UserBloc>().state.userMOdel != null &&
-          context.read<UserBloc>().state.userMOdel!.role == UserRole.admin) {
-        context.read<ShiftBloc>().add(const ShiftEvent.checkShift());
-      }
-    });
     context.read<MainCubit>().getHalls();
     context.read<SavedOrdersBloc>().add(const SavedOrdersEvent.clear());
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: context.colors.bgSecondary,
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const MainHeader(),
-          Expanded(
-            child: Container(
-              clipBehavior: Clip.antiAlias,
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: context.radius.card24,
-              ),
+    return BlocListener<UserBloc, UserState>(
+      listenWhen: (prev, curr) =>
+          prev.userMOdel == null && curr.userMOdel != null,
+      listener: (context, state) {
+        if (state.userMOdel?.role == UserRole.admin) {
+          context.read<ShiftBloc>().add(const ShiftEvent.checkShift());
+        }
+      },
+      child: AppScaffold(
+        activeRoute: AppRoutes.mainScreen,
+        body: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const MainHeader(title: 'Stollar'),
+            Expanded(
               child: BlocBuilder<MainCubit, MainState>(
                 builder: (context, state) {
                   if (state.isLoading) {
-                    return const Expanded(
-                      child: Center(child: LoadingWidget()),
-                    );
+                    return const Center(child: LoadingWidget());
                   }
 
-                  return Column(
-                    spacing: 16,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      TabFilter(
-                        halls: state.halls ?? [],
-                        selectedHallId: state.selectedHallId,
-                        isLoading: state.status == Status.OTHER_LOADING,
-                      ),
-                      HallWidget(
-                        isLoading: state.status == Status.LOADING,
-                        tables: state.tables ?? [],
-                        hall: state.halls?.firstWhereOrNull(
-                          (item) => item.id == state.selectedHallId,
+                  return Padding(
+                    padding: const EdgeInsets.all(20),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      spacing: 16,
+                      children: [
+                        TabFilter(
+                          halls: state.halls ?? [],
+                          selectedHallId: state.selectedHallId,
+                          isLoading: state.status == Status.OTHER_LOADING,
                         ),
-                      ),
-                    ],
-                  ).paddingAll(16);
+                        HallWidget(
+                          isLoading: state.status == Status.LOADING,
+                          tables: state.tables ?? [],
+                          hall: state.halls?.firstWhereOrNull(
+                            (item) => item.id == state.selectedHallId,
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
                 },
               ),
             ),
-          ),
-        ],
-      ).paddingSymmetric(vertical: 20, horizontal: 32),
+          ],
+        ),
+      ),
     );
   }
 }

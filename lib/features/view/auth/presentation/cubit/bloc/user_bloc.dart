@@ -1,7 +1,6 @@
 import 'package:bloc/bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:mary_ai_pos/core/api/api.dart';
-import 'package:mary_ai_pos/core/components/flush_bars.dart';
 import 'package:mary_ai_pos/core/error/failure.dart';
 import 'package:mary_ai_pos/core/routes/app_routes.dart';
 import 'package:mary_ai_pos/core/usecase/usecase.dart';
@@ -29,19 +28,16 @@ class UserBloc extends Bloc<UserEvent, UserState> {
     final response = await _getUserUsecase.call(NoParams());
     response.fold(
       (l) {
+        // Token invalid or expired — force back to login
         Navigator.pushNamedAndRemoveUntil(
           navigatorKey.currentContext!,
           AppRoutes.loginScreen,
-          (router) => true,
+          (route) => false,
         );
         emit(state.copyWith(status: Status.ERROR, failure: l));
       },
       (r) {
-        Navigator.pushNamedAndRemoveUntil(
-          navigatorKey.currentContext!,
-          AppRoutes.mainScreen,
-          (router) => true,
-        );
+        // Navigation already happened in splash screen — just emit user data
         emit(state.copyWith(status: Status.SUCCESS, userMOdel: r));
       },
     );

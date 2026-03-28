@@ -146,7 +146,7 @@ class ThemeTextStyle extends ThemeExtension<ThemeTextStyle> {
       semibold18: TextStyle.lerp(semibold18, other.semibold18, t)!,
       semibold20: TextStyle.lerp(semibold20, other.semibold20, t)!,
       semibold24: TextStyle.lerp(semibold24, other.semibold24, t)!,
-      title14: this.title14,
+      title14: title14,
     );
   }
 }

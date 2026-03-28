@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:keyboard_dismisser/keyboard_dismisser.dart';
 import 'package:mary_ai_pos/core/extension/for_context.dart';
-import 'package:mary_ai_pos/core/extension/widget_extension.dart';
 import 'package:mary_ai_pos/di.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/cafe_tables/cafe_tables_model.dart';
 import 'package:mary_ai_pos/features/view/main/domain/entities/save_order_entity.dart';
@@ -33,14 +32,12 @@ class _DetailScreenState extends State<DetailScreen> with DetailScreenMixin {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (context) => inject<DetailBloc>()
+      create: (_) => inject<DetailBloc>()
         ..add(const DetailEvent.started())
         ..add(const DetailEvent.getCategories())
-        ..add(
-          DetailEvent.initSavedGoods(
-            savedGoods: savedOrders?.createOrderRequest.foods ?? [],
-          ),
-        ),
+        ..add(DetailEvent.initSavedGoods(
+          savedGoods: savedOrders?.createOrderRequest.foods ?? [],
+        )),
       child: KeyboardDismisser(
         child: Scaffold(
           backgroundColor: context.colors.bgSecondary,
@@ -52,65 +49,62 @@ class _DetailScreenState extends State<DetailScreen> with DetailScreenMixin {
                     showVirtualKeyboard.value = false;
                   }
                 },
-                child: Row(
-                  spacing: 16,
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                child: Column(
                   children: [
+                    TopBarWidget(
+                      cafeTable: cafeTable,
+                      showKeyboard: showVirtualKeyboard,
+                      textEditingController: controller,
+                      guestCount: guestCount,
+                    ),
                     Expanded(
-                      flex: 2,
-                      child: Column(
-                        spacing: 12,
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          TopBarWidget(
-                            cafeTable: cafeTable,
-                            showKeyboard: showVirtualKeyboard,
-                            textEditingController: controller,
-                            guestCount: guestCount,
+                          // Right: product menu (flex 2)
+                          const Expanded(flex: 2, child: ProductGridWidget()),
+                          // Left: order sidebar (fixed feel via flex 1)
+                          SizedBox(
+                            width: 380,
+                            child: OrderSidebar(
+                              tableId: cafeTable?.id,
+                              guestCount: guestCount,
+                              tableStatus: tableStatus,
+                            ),
                           ),
-                          const Expanded(child: ProductGridWidget()),
                         ],
                       ),
                     ),
-                    Expanded(
-                      child: OrderSidebar(
-                        tableId: cafeTable?.id,
-                        guestCount: guestCount,
-                        tableStatus: tableStatus,
-                      ),
-                    ),
                   ],
-                ).paddingAll(32),
+                ),
               ),
+              // Virtual keyboard overlay
               ValueListenableBuilder(
                 valueListenable: showVirtualKeyboard,
-                builder: (context, value, child) {
-                  return value
-                      ? Positioned(
-                          bottom: 0,
-                          left: 0,
-                          right: 0,
-                          child: DecoratedBox(
-                            decoration: BoxDecoration(
-                              color: context.colors.bgSecondary,
-                            ),
-                            child: SafeArea(
-                              child: VirtualKeyboard(
-                                height: context.h * .3,
-                                customLayoutKeys:
-                                    VirtualKeyboardDefaultLayoutKeys([
-                                      VirtualKeyboardDefaultLayouts.English,
-                                    ]),
-                                textColor: Colors.black,
-                                fontSize: 24,
-                                textController: controller,
-                                type: VirtualKeyboardType.Alphanumeric,
-                                // postKeyPress: _onKeyPress,
-                              ),
-                            ),
-                          ),
-                        )
-                      : const SizedBox();
+                builder: (context, value, _) {
+                  if (!value) return const SizedBox.shrink();
+                  return Positioned(
+                    bottom: 0,
+                    left: 0,
+                    right: 0,
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        color: context.colors.bgSecondary,
+                      ),
+                      child: SafeArea(
+                        child: VirtualKeyboard(
+                          height: context.h * .3,
+                          customLayoutKeys: VirtualKeyboardDefaultLayoutKeys([
+                            VirtualKeyboardDefaultLayouts.English,
+                          ]),
+                          textColor: Colors.black,
+                          fontSize: 24,
+                          textController: controller,
+                          type: VirtualKeyboardType.Alphanumeric,
+                        ),
+                      ),
+                    ),
+                  );
                 },
               ),
             ],

@@ -27,7 +27,7 @@ class ArchiveBloc extends Bloc<ArchiveEvent, ArchiveState> {
       final response = await _getArchiveWithIdUsecase.call(event.id!);
       response.fold((l) {
         showErrorMessage(
-          navigatorKey!.currentContext!,
+          navigatorKey.currentContext!,
           l.getLocalizedMessage(navigatorKey.currentContext!),
         );
         emit(state.copyWith(status: Status.ERROR, failure: l));

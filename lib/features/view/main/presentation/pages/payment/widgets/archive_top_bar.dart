@@ -8,8 +8,6 @@ import 'package:mary_ai_pos/core/extension/for_context.dart';
 import 'package:mary_ai_pos/core/extension/int_extension.dart';
 import 'package:mary_ai_pos/core/extension/widget_extension.dart';
 import 'package:mary_ai_pos/core/utils/app_formatter.dart';
-import 'package:mary_ai_pos/core/values/app_assets.dart';
-import 'package:mary_ai_pos/features/view/main/presentation/cubit/archive/archive_bloc.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/archives/archives_bloc.dart';
 import 'package:mary_ai_pos/gen/assets.gen.dart';
 import 'package:mary_ai_pos/generated/l10n.dart';
@@ -37,27 +35,9 @@ class ArchiveTopBar extends StatelessWidget {
             children: [
               Row(
                 children: [
-                  CustomHoverEffectWidget(
-                    bgColor: context.colors.bgSecondary,
-                    onTap: () => Navigator.pop(context),
-                    borderRadius: context.radius.buttonLg,
-                    child: SvgPicture.asset(
-                      AppIcons.icArrowLeft,
-                    ).paddingAll(14),
-                  ),
-                  12.wBox,
-
-                  Text(
-                    "Arxiv",
-                    style: context.textStyles.bold20.copyWith(
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  67.wBox,
                   Expanded(
                     child: SizedBox(
-                      width: context.w,
-                      height: 52,
+                      height: 44,
                       child: CustomTextField(
                         textEditingController: state.textController,
                         hintText: "Chek raqami bo'yicha qidirish",
