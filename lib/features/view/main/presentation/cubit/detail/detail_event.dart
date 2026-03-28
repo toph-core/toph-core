@@ -23,4 +23,6 @@ class DetailEvent with _$DetailEvent {
   const factory DetailEvent.clearGoods() = _ClearGoods;
   const factory DetailEvent.searchTextChanged({required String text}) =
       _SearchTextChanged;
+  const factory DetailEvent.fetchBillOrders({required String billId}) =
+      _FetchBillOrders;
 }

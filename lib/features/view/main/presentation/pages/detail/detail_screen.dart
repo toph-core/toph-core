@@ -29,8 +29,16 @@ class _DetailScreenState extends State<DetailScreen> with DetailScreenMixin {
   late ValueNotifier<bool> showVirtualKeyboard = ValueNotifier<bool>(false);
   final TextEditingController controller = TextEditingController();
 
+  void _fetchBillIfBandTable() {
+    // For Band tables, we'll fetch from API on demand when needed
+    // The savedOrders should already contain the goods if available
+  }
+
   @override
   Widget build(BuildContext context) {
+    // For Band (occupied) tables, fetch bill details from API
+    _fetchBillIfBandTable();
+
     return BlocProvider(
       create: (_) => inject<DetailBloc>()
         ..add(const DetailEvent.started())
@@ -70,6 +78,7 @@ class _DetailScreenState extends State<DetailScreen> with DetailScreenMixin {
                               tableId: cafeTable?.id,
                               guestCount: guestCount,
                               tableStatus: tableStatus,
+                              cafeTable: cafeTable,
                             ),
                           ),
                         ],

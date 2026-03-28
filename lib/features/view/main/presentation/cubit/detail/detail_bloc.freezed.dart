@@ -30,6 +30,7 @@ mixin _$DetailEvent {
     required TResult Function(String goodsId) decrementQuantity,
     required TResult Function() clearGoods,
     required TResult Function(String text) searchTextChanged,
+    required TResult Function(String billId) fetchBillOrders,
   }) =>
       throw _privateConstructorUsedError;
   @optionalTypeArgs
@@ -46,6 +47,7 @@ mixin _$DetailEvent {
     TResult? Function(String goodsId)? decrementQuantity,
     TResult? Function()? clearGoods,
     TResult? Function(String text)? searchTextChanged,
+    TResult? Function(String billId)? fetchBillOrders,
   }) =>
       throw _privateConstructorUsedError;
   @optionalTypeArgs
@@ -62,6 +64,7 @@ mixin _$DetailEvent {
     TResult Function(String goodsId)? decrementQuantity,
     TResult Function()? clearGoods,
     TResult Function(String text)? searchTextChanged,
+    TResult Function(String billId)? fetchBillOrders,
     required TResult orElse(),
   }) =>
       throw _privateConstructorUsedError;
@@ -78,6 +81,7 @@ mixin _$DetailEvent {
     required TResult Function(_DecrementQuantity value) decrementQuantity,
     required TResult Function(_ClearGoods value) clearGoods,
     required TResult Function(_SearchTextChanged value) searchTextChanged,
+    required TResult Function(_FetchBillOrders value) fetchBillOrders,
   }) =>
       throw _privateConstructorUsedError;
   @optionalTypeArgs
@@ -92,6 +96,7 @@ mixin _$DetailEvent {
     TResult? Function(_DecrementQuantity value)? decrementQuantity,
     TResult? Function(_ClearGoods value)? clearGoods,
     TResult? Function(_SearchTextChanged value)? searchTextChanged,
+    TResult? Function(_FetchBillOrders value)? fetchBillOrders,
   }) =>
       throw _privateConstructorUsedError;
   @optionalTypeArgs
@@ -106,6 +111,7 @@ mixin _$DetailEvent {
     TResult Function(_DecrementQuantity value)? decrementQuantity,
     TResult Function(_ClearGoods value)? clearGoods,
     TResult Function(_SearchTextChanged value)? searchTextChanged,
+    TResult Function(_FetchBillOrders value)? fetchBillOrders,
     required TResult orElse(),
   }) =>
       throw _privateConstructorUsedError;
@@ -179,6 +185,7 @@ class _$StartedImpl implements _Started {
     required TResult Function(String goodsId) decrementQuantity,
     required TResult Function() clearGoods,
     required TResult Function(String text) searchTextChanged,
+    required TResult Function(String billId) fetchBillOrders,
   }) {
     return started();
   }
@@ -198,6 +205,7 @@ class _$StartedImpl implements _Started {
     TResult? Function(String goodsId)? decrementQuantity,
     TResult? Function()? clearGoods,
     TResult? Function(String text)? searchTextChanged,
+    TResult? Function(String billId)? fetchBillOrders,
   }) {
     return started?.call();
   }
@@ -217,6 +225,7 @@ class _$StartedImpl implements _Started {
     TResult Function(String goodsId)? decrementQuantity,
     TResult Function()? clearGoods,
     TResult Function(String text)? searchTextChanged,
+    TResult Function(String billId)? fetchBillOrders,
     required TResult orElse(),
   }) {
     if (started != null) {
@@ -239,6 +248,7 @@ class _$StartedImpl implements _Started {
     required TResult Function(_DecrementQuantity value) decrementQuantity,
     required TResult Function(_ClearGoods value) clearGoods,
     required TResult Function(_SearchTextChanged value) searchTextChanged,
+    required TResult Function(_FetchBillOrders value) fetchBillOrders,
   }) {
     return started(this);
   }
@@ -256,6 +266,7 @@ class _$StartedImpl implements _Started {
     TResult? Function(_DecrementQuantity value)? decrementQuantity,
     TResult? Function(_ClearGoods value)? clearGoods,
     TResult? Function(_SearchTextChanged value)? searchTextChanged,
+    TResult? Function(_FetchBillOrders value)? fetchBillOrders,
   }) {
     return started?.call(this);
   }
@@ -273,6 +284,7 @@ class _$StartedImpl implements _Started {
     TResult Function(_DecrementQuantity value)? decrementQuantity,
     TResult Function(_ClearGoods value)? clearGoods,
     TResult Function(_SearchTextChanged value)? searchTextChanged,
+    TResult Function(_FetchBillOrders value)? fetchBillOrders,
     required TResult orElse(),
   }) {
     if (started != null) {
@@ -336,6 +348,7 @@ class _$GetCategoriesImpl implements _GetCategories {
     required TResult Function(String goodsId) decrementQuantity,
     required TResult Function() clearGoods,
     required TResult Function(String text) searchTextChanged,
+    required TResult Function(String billId) fetchBillOrders,
   }) {
     return getCategories();
   }
@@ -355,6 +368,7 @@ class _$GetCategoriesImpl implements _GetCategories {
     TResult? Function(String goodsId)? decrementQuantity,
     TResult? Function()? clearGoods,
     TResult? Function(String text)? searchTextChanged,
+    TResult? Function(String billId)? fetchBillOrders,
   }) {
     return getCategories?.call();
   }
@@ -374,6 +388,7 @@ class _$GetCategoriesImpl implements _GetCategories {
     TResult Function(String goodsId)? decrementQuantity,
     TResult Function()? clearGoods,
     TResult Function(String text)? searchTextChanged,
+    TResult Function(String billId)? fetchBillOrders,
     required TResult orElse(),
   }) {
     if (getCategories != null) {
@@ -396,6 +411,7 @@ class _$GetCategoriesImpl implements _GetCategories {
     required TResult Function(_DecrementQuantity value) decrementQuantity,
     required TResult Function(_ClearGoods value) clearGoods,
     required TResult Function(_SearchTextChanged value) searchTextChanged,
+    required TResult Function(_FetchBillOrders value) fetchBillOrders,
   }) {
     return getCategories(this);
   }
@@ -413,6 +429,7 @@ class _$GetCategoriesImpl implements _GetCategories {
     TResult? Function(_DecrementQuantity value)? decrementQuantity,
     TResult? Function(_ClearGoods value)? clearGoods,
     TResult? Function(_SearchTextChanged value)? searchTextChanged,
+    TResult? Function(_FetchBillOrders value)? fetchBillOrders,
   }) {
     return getCategories?.call(this);
   }
@@ -430,6 +447,7 @@ class _$GetCategoriesImpl implements _GetCategories {
     TResult Function(_DecrementQuantity value)? decrementQuantity,
     TResult Function(_ClearGoods value)? clearGoods,
     TResult Function(_SearchTextChanged value)? searchTextChanged,
+    TResult Function(_FetchBillOrders value)? fetchBillOrders,
     required TResult orElse(),
   }) {
     if (getCategories != null) {
@@ -528,6 +546,7 @@ class _$InitSavedGoodsImpl implements _InitSavedGoods {
     required TResult Function(String goodsId) decrementQuantity,
     required TResult Function() clearGoods,
     required TResult Function(String text) searchTextChanged,
+    required TResult Function(String billId) fetchBillOrders,
   }) {
     return initSavedGoods(savedGoods);
   }
@@ -547,6 +566,7 @@ class _$InitSavedGoodsImpl implements _InitSavedGoods {
     TResult? Function(String goodsId)? decrementQuantity,
     TResult? Function()? clearGoods,
     TResult? Function(String text)? searchTextChanged,
+    TResult? Function(String billId)? fetchBillOrders,
   }) {
     return initSavedGoods?.call(savedGoods);
   }
@@ -566,6 +586,7 @@ class _$InitSavedGoodsImpl implements _InitSavedGoods {
     TResult Function(String goodsId)? decrementQuantity,
     TResult Function()? clearGoods,
     TResult Function(String text)? searchTextChanged,
+    TResult Function(String billId)? fetchBillOrders,
     required TResult orElse(),
   }) {
     if (initSavedGoods != null) {
@@ -588,6 +609,7 @@ class _$InitSavedGoodsImpl implements _InitSavedGoods {
     required TResult Function(_DecrementQuantity value) decrementQuantity,
     required TResult Function(_ClearGoods value) clearGoods,
     required TResult Function(_SearchTextChanged value) searchTextChanged,
+    required TResult Function(_FetchBillOrders value) fetchBillOrders,
   }) {
     return initSavedGoods(this);
   }
@@ -605,6 +627,7 @@ class _$InitSavedGoodsImpl implements _InitSavedGoods {
     TResult? Function(_DecrementQuantity value)? decrementQuantity,
     TResult? Function(_ClearGoods value)? clearGoods,
     TResult? Function(_SearchTextChanged value)? searchTextChanged,
+    TResult? Function(_FetchBillOrders value)? fetchBillOrders,
   }) {
     return initSavedGoods?.call(this);
   }
@@ -622,6 +645,7 @@ class _$InitSavedGoodsImpl implements _InitSavedGoods {
     TResult Function(_DecrementQuantity value)? decrementQuantity,
     TResult Function(_ClearGoods value)? clearGoods,
     TResult Function(_SearchTextChanged value)? searchTextChanged,
+    TResult Function(_FetchBillOrders value)? fetchBillOrders,
     required TResult orElse(),
   }) {
     if (initSavedGoods != null) {
@@ -719,6 +743,7 @@ class _$SetSelectedCategoryIdImpl implements _SetSelectedCategoryId {
     required TResult Function(String goodsId) decrementQuantity,
     required TResult Function() clearGoods,
     required TResult Function(String text) searchTextChanged,
+    required TResult Function(String billId) fetchBillOrders,
   }) {
     return setSelectedCategoryId(id);
   }
@@ -738,6 +763,7 @@ class _$SetSelectedCategoryIdImpl implements _SetSelectedCategoryId {
     TResult? Function(String goodsId)? decrementQuantity,
     TResult? Function()? clearGoods,
     TResult? Function(String text)? searchTextChanged,
+    TResult? Function(String billId)? fetchBillOrders,
   }) {
     return setSelectedCategoryId?.call(id);
   }
@@ -757,6 +783,7 @@ class _$SetSelectedCategoryIdImpl implements _SetSelectedCategoryId {
     TResult Function(String goodsId)? decrementQuantity,
     TResult Function()? clearGoods,
     TResult Function(String text)? searchTextChanged,
+    TResult Function(String billId)? fetchBillOrders,
     required TResult orElse(),
   }) {
     if (setSelectedCategoryId != null) {
@@ -779,6 +806,7 @@ class _$SetSelectedCategoryIdImpl implements _SetSelectedCategoryId {
     required TResult Function(_DecrementQuantity value) decrementQuantity,
     required TResult Function(_ClearGoods value) clearGoods,
     required TResult Function(_SearchTextChanged value) searchTextChanged,
+    required TResult Function(_FetchBillOrders value) fetchBillOrders,
   }) {
     return setSelectedCategoryId(this);
   }
@@ -796,6 +824,7 @@ class _$SetSelectedCategoryIdImpl implements _SetSelectedCategoryId {
     TResult? Function(_DecrementQuantity value)? decrementQuantity,
     TResult? Function(_ClearGoods value)? clearGoods,
     TResult? Function(_SearchTextChanged value)? searchTextChanged,
+    TResult? Function(_FetchBillOrders value)? fetchBillOrders,
   }) {
     return setSelectedCategoryId?.call(this);
   }
@@ -813,6 +842,7 @@ class _$SetSelectedCategoryIdImpl implements _SetSelectedCategoryId {
     TResult Function(_DecrementQuantity value)? decrementQuantity,
     TResult Function(_ClearGoods value)? clearGoods,
     TResult Function(_SearchTextChanged value)? searchTextChanged,
+    TResult Function(_FetchBillOrders value)? fetchBillOrders,
     required TResult orElse(),
   }) {
     if (setSelectedCategoryId != null) {
@@ -938,6 +968,7 @@ class _$AddFoodAdditionalImpl implements _AddFoodAdditional {
     required TResult Function(String goodsId) decrementQuantity,
     required TResult Function() clearGoods,
     required TResult Function(String text) searchTextChanged,
+    required TResult Function(String billId) fetchBillOrders,
   }) {
     return addFoodAdditional(additionals, orderId, comment);
   }
@@ -957,6 +988,7 @@ class _$AddFoodAdditionalImpl implements _AddFoodAdditional {
     TResult? Function(String goodsId)? decrementQuantity,
     TResult? Function()? clearGoods,
     TResult? Function(String text)? searchTextChanged,
+    TResult? Function(String billId)? fetchBillOrders,
   }) {
     return addFoodAdditional?.call(additionals, orderId, comment);
   }
@@ -976,6 +1008,7 @@ class _$AddFoodAdditionalImpl implements _AddFoodAdditional {
     TResult Function(String goodsId)? decrementQuantity,
     TResult Function()? clearGoods,
     TResult Function(String text)? searchTextChanged,
+    TResult Function(String billId)? fetchBillOrders,
     required TResult orElse(),
   }) {
     if (addFoodAdditional != null) {
@@ -998,6 +1031,7 @@ class _$AddFoodAdditionalImpl implements _AddFoodAdditional {
     required TResult Function(_DecrementQuantity value) decrementQuantity,
     required TResult Function(_ClearGoods value) clearGoods,
     required TResult Function(_SearchTextChanged value) searchTextChanged,
+    required TResult Function(_FetchBillOrders value) fetchBillOrders,
   }) {
     return addFoodAdditional(this);
   }
@@ -1015,6 +1049,7 @@ class _$AddFoodAdditionalImpl implements _AddFoodAdditional {
     TResult? Function(_DecrementQuantity value)? decrementQuantity,
     TResult? Function(_ClearGoods value)? clearGoods,
     TResult? Function(_SearchTextChanged value)? searchTextChanged,
+    TResult? Function(_FetchBillOrders value)? fetchBillOrders,
   }) {
     return addFoodAdditional?.call(this);
   }
@@ -1032,6 +1067,7 @@ class _$AddFoodAdditionalImpl implements _AddFoodAdditional {
     TResult Function(_DecrementQuantity value)? decrementQuantity,
     TResult Function(_ClearGoods value)? clearGoods,
     TResult Function(_SearchTextChanged value)? searchTextChanged,
+    TResult Function(_FetchBillOrders value)? fetchBillOrders,
     required TResult orElse(),
   }) {
     if (addFoodAdditional != null) {
@@ -1141,6 +1177,7 @@ class _$SelectGoodImpl implements _SelectGood {
     required TResult Function(String goodsId) decrementQuantity,
     required TResult Function() clearGoods,
     required TResult Function(String text) searchTextChanged,
+    required TResult Function(String billId) fetchBillOrders,
   }) {
     return selectGood(good);
   }
@@ -1160,6 +1197,7 @@ class _$SelectGoodImpl implements _SelectGood {
     TResult? Function(String goodsId)? decrementQuantity,
     TResult? Function()? clearGoods,
     TResult? Function(String text)? searchTextChanged,
+    TResult? Function(String billId)? fetchBillOrders,
   }) {
     return selectGood?.call(good);
   }
@@ -1179,6 +1217,7 @@ class _$SelectGoodImpl implements _SelectGood {
     TResult Function(String goodsId)? decrementQuantity,
     TResult Function()? clearGoods,
     TResult Function(String text)? searchTextChanged,
+    TResult Function(String billId)? fetchBillOrders,
     required TResult orElse(),
   }) {
     if (selectGood != null) {
@@ -1201,6 +1240,7 @@ class _$SelectGoodImpl implements _SelectGood {
     required TResult Function(_DecrementQuantity value) decrementQuantity,
     required TResult Function(_ClearGoods value) clearGoods,
     required TResult Function(_SearchTextChanged value) searchTextChanged,
+    required TResult Function(_FetchBillOrders value) fetchBillOrders,
   }) {
     return selectGood(this);
   }
@@ -1218,6 +1258,7 @@ class _$SelectGoodImpl implements _SelectGood {
     TResult? Function(_DecrementQuantity value)? decrementQuantity,
     TResult? Function(_ClearGoods value)? clearGoods,
     TResult? Function(_SearchTextChanged value)? searchTextChanged,
+    TResult? Function(_FetchBillOrders value)? fetchBillOrders,
   }) {
     return selectGood?.call(this);
   }
@@ -1235,6 +1276,7 @@ class _$SelectGoodImpl implements _SelectGood {
     TResult Function(_DecrementQuantity value)? decrementQuantity,
     TResult Function(_ClearGoods value)? clearGoods,
     TResult Function(_SearchTextChanged value)? searchTextChanged,
+    TResult Function(_FetchBillOrders value)? fetchBillOrders,
     required TResult orElse(),
   }) {
     if (selectGood != null) {
@@ -1331,6 +1373,7 @@ class _$IncrementQuantityImpl implements _IncrementQuantity {
     required TResult Function(String goodsId) decrementQuantity,
     required TResult Function() clearGoods,
     required TResult Function(String text) searchTextChanged,
+    required TResult Function(String billId) fetchBillOrders,
   }) {
     return incrementQuantity(goodsId);
   }
@@ -1350,6 +1393,7 @@ class _$IncrementQuantityImpl implements _IncrementQuantity {
     TResult? Function(String goodsId)? decrementQuantity,
     TResult? Function()? clearGoods,
     TResult? Function(String text)? searchTextChanged,
+    TResult? Function(String billId)? fetchBillOrders,
   }) {
     return incrementQuantity?.call(goodsId);
   }
@@ -1369,6 +1413,7 @@ class _$IncrementQuantityImpl implements _IncrementQuantity {
     TResult Function(String goodsId)? decrementQuantity,
     TResult Function()? clearGoods,
     TResult Function(String text)? searchTextChanged,
+    TResult Function(String billId)? fetchBillOrders,
     required TResult orElse(),
   }) {
     if (incrementQuantity != null) {
@@ -1391,6 +1436,7 @@ class _$IncrementQuantityImpl implements _IncrementQuantity {
     required TResult Function(_DecrementQuantity value) decrementQuantity,
     required TResult Function(_ClearGoods value) clearGoods,
     required TResult Function(_SearchTextChanged value) searchTextChanged,
+    required TResult Function(_FetchBillOrders value) fetchBillOrders,
   }) {
     return incrementQuantity(this);
   }
@@ -1408,6 +1454,7 @@ class _$IncrementQuantityImpl implements _IncrementQuantity {
     TResult? Function(_DecrementQuantity value)? decrementQuantity,
     TResult? Function(_ClearGoods value)? clearGoods,
     TResult? Function(_SearchTextChanged value)? searchTextChanged,
+    TResult? Function(_FetchBillOrders value)? fetchBillOrders,
   }) {
     return incrementQuantity?.call(this);
   }
@@ -1425,6 +1472,7 @@ class _$IncrementQuantityImpl implements _IncrementQuantity {
     TResult Function(_DecrementQuantity value)? decrementQuantity,
     TResult Function(_ClearGoods value)? clearGoods,
     TResult Function(_SearchTextChanged value)? searchTextChanged,
+    TResult Function(_FetchBillOrders value)? fetchBillOrders,
     required TResult orElse(),
   }) {
     if (incrementQuantity != null) {
@@ -1521,6 +1569,7 @@ class _$DecrementQuantityImpl implements _DecrementQuantity {
     required TResult Function(String goodsId) decrementQuantity,
     required TResult Function() clearGoods,
     required TResult Function(String text) searchTextChanged,
+    required TResult Function(String billId) fetchBillOrders,
   }) {
     return decrementQuantity(goodsId);
   }
@@ -1540,6 +1589,7 @@ class _$DecrementQuantityImpl implements _DecrementQuantity {
     TResult? Function(String goodsId)? decrementQuantity,
     TResult? Function()? clearGoods,
     TResult? Function(String text)? searchTextChanged,
+    TResult? Function(String billId)? fetchBillOrders,
   }) {
     return decrementQuantity?.call(goodsId);
   }
@@ -1559,6 +1609,7 @@ class _$DecrementQuantityImpl implements _DecrementQuantity {
     TResult Function(String goodsId)? decrementQuantity,
     TResult Function()? clearGoods,
     TResult Function(String text)? searchTextChanged,
+    TResult Function(String billId)? fetchBillOrders,
     required TResult orElse(),
   }) {
     if (decrementQuantity != null) {
@@ -1581,6 +1632,7 @@ class _$DecrementQuantityImpl implements _DecrementQuantity {
     required TResult Function(_DecrementQuantity value) decrementQuantity,
     required TResult Function(_ClearGoods value) clearGoods,
     required TResult Function(_SearchTextChanged value) searchTextChanged,
+    required TResult Function(_FetchBillOrders value) fetchBillOrders,
   }) {
     return decrementQuantity(this);
   }
@@ -1598,6 +1650,7 @@ class _$DecrementQuantityImpl implements _DecrementQuantity {
     TResult? Function(_DecrementQuantity value)? decrementQuantity,
     TResult? Function(_ClearGoods value)? clearGoods,
     TResult? Function(_SearchTextChanged value)? searchTextChanged,
+    TResult? Function(_FetchBillOrders value)? fetchBillOrders,
   }) {
     return decrementQuantity?.call(this);
   }
@@ -1615,6 +1668,7 @@ class _$DecrementQuantityImpl implements _DecrementQuantity {
     TResult Function(_DecrementQuantity value)? decrementQuantity,
     TResult Function(_ClearGoods value)? clearGoods,
     TResult Function(_SearchTextChanged value)? searchTextChanged,
+    TResult Function(_FetchBillOrders value)? fetchBillOrders,
     required TResult orElse(),
   }) {
     if (decrementQuantity != null) {
@@ -1684,6 +1738,7 @@ class _$ClearGoodsImpl implements _ClearGoods {
     required TResult Function(String goodsId) decrementQuantity,
     required TResult Function() clearGoods,
     required TResult Function(String text) searchTextChanged,
+    required TResult Function(String billId) fetchBillOrders,
   }) {
     return clearGoods();
   }
@@ -1703,6 +1758,7 @@ class _$ClearGoodsImpl implements _ClearGoods {
     TResult? Function(String goodsId)? decrementQuantity,
     TResult? Function()? clearGoods,
     TResult? Function(String text)? searchTextChanged,
+    TResult? Function(String billId)? fetchBillOrders,
   }) {
     return clearGoods?.call();
   }
@@ -1722,6 +1778,7 @@ class _$ClearGoodsImpl implements _ClearGoods {
     TResult Function(String goodsId)? decrementQuantity,
     TResult Function()? clearGoods,
     TResult Function(String text)? searchTextChanged,
+    TResult Function(String billId)? fetchBillOrders,
     required TResult orElse(),
   }) {
     if (clearGoods != null) {
@@ -1744,6 +1801,7 @@ class _$ClearGoodsImpl implements _ClearGoods {
     required TResult Function(_DecrementQuantity value) decrementQuantity,
     required TResult Function(_ClearGoods value) clearGoods,
     required TResult Function(_SearchTextChanged value) searchTextChanged,
+    required TResult Function(_FetchBillOrders value) fetchBillOrders,
   }) {
     return clearGoods(this);
   }
@@ -1761,6 +1819,7 @@ class _$ClearGoodsImpl implements _ClearGoods {
     TResult? Function(_DecrementQuantity value)? decrementQuantity,
     TResult? Function(_ClearGoods value)? clearGoods,
     TResult? Function(_SearchTextChanged value)? searchTextChanged,
+    TResult? Function(_FetchBillOrders value)? fetchBillOrders,
   }) {
     return clearGoods?.call(this);
   }
@@ -1778,6 +1837,7 @@ class _$ClearGoodsImpl implements _ClearGoods {
     TResult Function(_DecrementQuantity value)? decrementQuantity,
     TResult Function(_ClearGoods value)? clearGoods,
     TResult Function(_SearchTextChanged value)? searchTextChanged,
+    TResult Function(_FetchBillOrders value)? fetchBillOrders,
     required TResult orElse(),
   }) {
     if (clearGoods != null) {
@@ -1868,6 +1928,7 @@ class _$SearchTextChangedImpl implements _SearchTextChanged {
     required TResult Function(String goodsId) decrementQuantity,
     required TResult Function() clearGoods,
     required TResult Function(String text) searchTextChanged,
+    required TResult Function(String billId) fetchBillOrders,
   }) {
     return searchTextChanged(text);
   }
@@ -1887,6 +1948,7 @@ class _$SearchTextChangedImpl implements _SearchTextChanged {
     TResult? Function(String goodsId)? decrementQuantity,
     TResult? Function()? clearGoods,
     TResult? Function(String text)? searchTextChanged,
+    TResult? Function(String billId)? fetchBillOrders,
   }) {
     return searchTextChanged?.call(text);
   }
@@ -1906,6 +1968,7 @@ class _$SearchTextChangedImpl implements _SearchTextChanged {
     TResult Function(String goodsId)? decrementQuantity,
     TResult Function()? clearGoods,
     TResult Function(String text)? searchTextChanged,
+    TResult Function(String billId)? fetchBillOrders,
     required TResult orElse(),
   }) {
     if (searchTextChanged != null) {
@@ -1928,6 +1991,7 @@ class _$SearchTextChangedImpl implements _SearchTextChanged {
     required TResult Function(_DecrementQuantity value) decrementQuantity,
     required TResult Function(_ClearGoods value) clearGoods,
     required TResult Function(_SearchTextChanged value) searchTextChanged,
+    required TResult Function(_FetchBillOrders value) fetchBillOrders,
   }) {
     return searchTextChanged(this);
   }
@@ -1945,6 +2009,7 @@ class _$SearchTextChangedImpl implements _SearchTextChanged {
     TResult? Function(_DecrementQuantity value)? decrementQuantity,
     TResult? Function(_ClearGoods value)? clearGoods,
     TResult? Function(_SearchTextChanged value)? searchTextChanged,
+    TResult? Function(_FetchBillOrders value)? fetchBillOrders,
   }) {
     return searchTextChanged?.call(this);
   }
@@ -1962,6 +2027,7 @@ class _$SearchTextChangedImpl implements _SearchTextChanged {
     TResult Function(_DecrementQuantity value)? decrementQuantity,
     TResult Function(_ClearGoods value)? clearGoods,
     TResult Function(_SearchTextChanged value)? searchTextChanged,
+    TResult Function(_FetchBillOrders value)? fetchBillOrders,
     required TResult orElse(),
   }) {
     if (searchTextChanged != null) {
@@ -1978,6 +2044,202 @@ abstract class _SearchTextChanged implements DetailEvent {
   String get text;
   @JsonKey(ignore: true)
   _$$SearchTextChangedImplCopyWith<_$SearchTextChangedImpl> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class _$$FetchBillOrdersImplCopyWith<$Res> {
+  factory _$$FetchBillOrdersImplCopyWith(_$FetchBillOrdersImpl value,
+          $Res Function(_$FetchBillOrdersImpl) then) =
+      __$$FetchBillOrdersImplCopyWithImpl<$Res>;
+  @useResult
+  $Res call({String billId});
+}
+
+/// @nodoc
+class __$$FetchBillOrdersImplCopyWithImpl<$Res>
+    extends _$DetailEventCopyWithImpl<$Res, _$FetchBillOrdersImpl>
+    implements _$$FetchBillOrdersImplCopyWith<$Res> {
+  __$$FetchBillOrdersImplCopyWithImpl(
+      _$FetchBillOrdersImpl _value, $Res Function(_$FetchBillOrdersImpl) _then)
+      : super(_value, _then);
+
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? billId = null,
+  }) {
+    return _then(_$FetchBillOrdersImpl(
+      billId: null == billId
+          ? _value.billId
+          : billId // ignore: cast_nullable_to_non_nullable
+              as String,
+    ));
+  }
+}
+
+/// @nodoc
+
+class _$FetchBillOrdersImpl implements _FetchBillOrders {
+  const _$FetchBillOrdersImpl({required this.billId});
+
+  @override
+  final String billId;
+
+  @override
+  String toString() {
+    return 'DetailEvent.fetchBillOrders(billId: $billId)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$FetchBillOrdersImpl &&
+            (identical(other.billId, billId) || other.billId == billId));
+  }
+
+  @override
+  int get hashCode => Object.hash(runtimeType, billId);
+
+  @JsonKey(ignore: true)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$FetchBillOrdersImplCopyWith<_$FetchBillOrdersImpl> get copyWith =>
+      __$$FetchBillOrdersImplCopyWithImpl<_$FetchBillOrdersImpl>(
+          this, _$identity);
+
+  @override
+  @optionalTypeArgs
+  TResult when<TResult extends Object?>({
+    required TResult Function() started,
+    required TResult Function() getCategories,
+    required TResult Function(List<OrderItem> savedGoods) initSavedGoods,
+    required TResult Function(String id) setSelectedCategoryId,
+    required TResult Function(List<FoodAdditionalModel> additionals,
+            String orderId, String comment)
+        addFoodAdditional,
+    required TResult Function(GoodsModel good) selectGood,
+    required TResult Function(String goodsId) incrementQuantity,
+    required TResult Function(String goodsId) decrementQuantity,
+    required TResult Function() clearGoods,
+    required TResult Function(String text) searchTextChanged,
+    required TResult Function(String billId) fetchBillOrders,
+  }) {
+    return fetchBillOrders(billId);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult? whenOrNull<TResult extends Object?>({
+    TResult? Function()? started,
+    TResult? Function()? getCategories,
+    TResult? Function(List<OrderItem> savedGoods)? initSavedGoods,
+    TResult? Function(String id)? setSelectedCategoryId,
+    TResult? Function(List<FoodAdditionalModel> additionals, String orderId,
+            String comment)?
+        addFoodAdditional,
+    TResult? Function(GoodsModel good)? selectGood,
+    TResult? Function(String goodsId)? incrementQuantity,
+    TResult? Function(String goodsId)? decrementQuantity,
+    TResult? Function()? clearGoods,
+    TResult? Function(String text)? searchTextChanged,
+    TResult? Function(String billId)? fetchBillOrders,
+  }) {
+    return fetchBillOrders?.call(billId);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult maybeWhen<TResult extends Object?>({
+    TResult Function()? started,
+    TResult Function()? getCategories,
+    TResult Function(List<OrderItem> savedGoods)? initSavedGoods,
+    TResult Function(String id)? setSelectedCategoryId,
+    TResult Function(List<FoodAdditionalModel> additionals, String orderId,
+            String comment)?
+        addFoodAdditional,
+    TResult Function(GoodsModel good)? selectGood,
+    TResult Function(String goodsId)? incrementQuantity,
+    TResult Function(String goodsId)? decrementQuantity,
+    TResult Function()? clearGoods,
+    TResult Function(String text)? searchTextChanged,
+    TResult Function(String billId)? fetchBillOrders,
+    required TResult orElse(),
+  }) {
+    if (fetchBillOrders != null) {
+      return fetchBillOrders(billId);
+    }
+    return orElse();
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult map<TResult extends Object?>({
+    required TResult Function(_Started value) started,
+    required TResult Function(_GetCategories value) getCategories,
+    required TResult Function(_InitSavedGoods value) initSavedGoods,
+    required TResult Function(_SetSelectedCategoryId value)
+        setSelectedCategoryId,
+    required TResult Function(_AddFoodAdditional value) addFoodAdditional,
+    required TResult Function(_SelectGood value) selectGood,
+    required TResult Function(_IncrementQuantity value) incrementQuantity,
+    required TResult Function(_DecrementQuantity value) decrementQuantity,
+    required TResult Function(_ClearGoods value) clearGoods,
+    required TResult Function(_SearchTextChanged value) searchTextChanged,
+    required TResult Function(_FetchBillOrders value) fetchBillOrders,
+  }) {
+    return fetchBillOrders(this);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult? mapOrNull<TResult extends Object?>({
+    TResult? Function(_Started value)? started,
+    TResult? Function(_GetCategories value)? getCategories,
+    TResult? Function(_InitSavedGoods value)? initSavedGoods,
+    TResult? Function(_SetSelectedCategoryId value)? setSelectedCategoryId,
+    TResult? Function(_AddFoodAdditional value)? addFoodAdditional,
+    TResult? Function(_SelectGood value)? selectGood,
+    TResult? Function(_IncrementQuantity value)? incrementQuantity,
+    TResult? Function(_DecrementQuantity value)? decrementQuantity,
+    TResult? Function(_ClearGoods value)? clearGoods,
+    TResult? Function(_SearchTextChanged value)? searchTextChanged,
+    TResult? Function(_FetchBillOrders value)? fetchBillOrders,
+  }) {
+    return fetchBillOrders?.call(this);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult maybeMap<TResult extends Object?>({
+    TResult Function(_Started value)? started,
+    TResult Function(_GetCategories value)? getCategories,
+    TResult Function(_InitSavedGoods value)? initSavedGoods,
+    TResult Function(_SetSelectedCategoryId value)? setSelectedCategoryId,
+    TResult Function(_AddFoodAdditional value)? addFoodAdditional,
+    TResult Function(_SelectGood value)? selectGood,
+    TResult Function(_IncrementQuantity value)? incrementQuantity,
+    TResult Function(_DecrementQuantity value)? decrementQuantity,
+    TResult Function(_ClearGoods value)? clearGoods,
+    TResult Function(_SearchTextChanged value)? searchTextChanged,
+    TResult Function(_FetchBillOrders value)? fetchBillOrders,
+    required TResult orElse(),
+  }) {
+    if (fetchBillOrders != null) {
+      return fetchBillOrders(this);
+    }
+    return orElse();
+  }
+}
+
+abstract class _FetchBillOrders implements DetailEvent {
+  const factory _FetchBillOrders({required final String billId}) =
+      _$FetchBillOrdersImpl;
+
+  String get billId;
+  @JsonKey(ignore: true)
+  _$$FetchBillOrdersImplCopyWith<_$FetchBillOrdersImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }
 

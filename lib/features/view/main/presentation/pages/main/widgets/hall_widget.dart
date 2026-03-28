@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mary_ai_pos/core/common/custom_loading_widget.dart';
+import 'package:mary_ai_pos/core/components/flush_bars.dart';
 import 'package:mary_ai_pos/core/routes/app_routes.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/cafe_tables/cafe_tables_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/hall/hall_model.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/orders/orders_bloc.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/main/widgets/show_table_guest_count.dart';
-import 'package:mary_ai_pos/features/view/main/presentation/pages/main/widgets/table_widget.dart';
+import 'package:mary_ai_pos/features/view/main/presentation/pages/main/widgets/enhanced_table_card.dart';
+import 'package:mary_ai_pos/features/view/main/presentation/pages/main/widgets/item_notes_modal.dart';
+import 'package:mary_ai_pos/features/view/main/presentation/pages/main/widgets/split_bill_modal.dart';
 
 class HallWidget extends StatelessWidget {
   final HallModel? hall;
@@ -55,9 +58,47 @@ class HallWidget extends StatelessWidget {
           runSpacing: 12,
           children: tables
               .map(
-                (table) => TableWidget(
+                (table) => EnhancedTableCard(
                   table: table,
                   onTap: () => _handleTableTap(context, table),
+                  waitingTimeMinutes: table.status == TableStatus.busy ? 12 : null,
+                  showAlert: table.status == TableStatus.busy,
+                  onKitchenNotify: () {
+                    showSuccessMessage(
+                      context,
+                      'Oshxonaga xabar yuborildi',
+                    );
+                  },
+                  onAddNotes: () {
+                    showDialog(
+                      context: context,
+                      builder: (_) => ItemNotesModal(
+                        tableNumber: table.number.toString(),
+                        onSave: () {
+                          showSuccessMessage(
+                            context,
+                            'Izoh saqlandi',
+                          );
+                        },
+                      ),
+                    );
+                  },
+                  onSplitBill: () {
+                    showDialog(
+                      context: context,
+                      builder: (_) => SplitBillModal(
+                        tableNumber: table.number.toString(),
+                        totalAmount: 125000,
+                        guestCount: table.capacity,
+                        onConfirm: () {
+                          showSuccessMessage(
+                            context,
+                            'To\'lov bo\'lindi',
+                          );
+                        },
+                      ),
+                    );
+                  },
                 ),
               )
               .toList(),

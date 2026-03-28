@@ -7,10 +7,13 @@ import 'package:mary_ai_pos/core/extension/number_formatter.dart';
 import 'package:mary_ai_pos/core/routes/app_routes.dart';
 import 'package:mary_ai_pos/di.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/cafe_tables/cafe_tables_model.dart';
+import 'package:mary_ai_pos/features/view/main/data/models/create_order/create_order_request_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/food_additional/food_additional_model.dart';
+import 'package:mary_ai_pos/features/view/main/data/models/save_order/save_order_model.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/create_order/create_order_bloc.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/detail/detail_bloc.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/main/main_cubit.dart';
+import 'package:mary_ai_pos/features/view/main/presentation/cubit/orders/orders_bloc.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/detail/detail_screen_mixin.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/detail/widgets/clear_dialog.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/detail/widgets/send_to_kitchen_dialog.dart';
@@ -22,6 +25,7 @@ class OrderSidebar extends StatelessWidget with DetailScreenMixin {
   final int guestCount;
   final TableStatus tableStatus;
   final String? orderId;
+  final CafeTableModel? cafeTable;
 
   OrderSidebar({
     super.key,
@@ -29,6 +33,7 @@ class OrderSidebar extends StatelessWidget with DetailScreenMixin {
     required this.guestCount,
     required this.tableStatus,
     this.orderId,
+    this.cafeTable,
   });
 
   @override
@@ -175,8 +180,8 @@ class OrderSidebar extends StatelessWidget with DetailScreenMixin {
                       isTotal: true,
                     ),
                     const SizedBox(height: 4),
-                    // Send to kitchen
-                    if (tableId != null)
+                    // Save button (for free tables)
+                    if (tableId != null && tableStatus == TableStatus.free)
                       BlocProvider(
                         create: (_) => inject<CreateOrderBloc>()
                           ..add(CreateOrderEvent.started(
@@ -188,6 +193,27 @@ class OrderSidebar extends StatelessWidget with DetailScreenMixin {
                           listener: (context, createState) {
                             if (createState.status != Status.LOADING &&
                                 createState.success) {
+                              // Add order to SavedOrdersBloc
+                              print('DEBUG: Saving order - selectedGoods count: ${state.selectedGoods.length}');
+                              print('DEBUG: cafeTable: $cafeTable');
+                              print('DEBUG: createState.tableId: ${createState.tableId}');
+
+                              if (cafeTable != null) {
+                                context.read<SavedOrdersBloc>().add(
+                                  SavedOrdersEvent.addNewOrder(
+                                    order: SaveOrderModel(
+                                      cafeTable: cafeTable!,
+                                      createOrderRequest: CreateOrderRequestModel(
+                                        tableId: createState.tableId,
+                                        foods: state.selectedGoods,
+                                        guestCount: guestCount,
+                                        tableStatus: TableStatus.busy,
+                                      ),
+                                    ),
+                                  ),
+                                );
+                                print('DEBUG: Order added to SavedOrdersBloc');
+                              }
                               context.read<MainCubit>().updateTableStatus(
                                 createState.tableId,
                                 TableStatus.busy,
@@ -201,8 +227,8 @@ class OrderSidebar extends StatelessWidget with DetailScreenMixin {
                           },
                           builder: (context, createState) {
                             return _ActionButton(
-                              label: 'Oshxonaga yuborish',
-                              bgColor: const Color(0xFF2D2D2D),
+                              label: 'Saqlash',
+                              bgColor: const Color(0xFFFB6633),
                               textColor: Colors.white,
                               isLoading: createState.status == Status.LOADING,
                               onTap: state.selectedGoods.isNotEmpty
@@ -228,41 +254,33 @@ class OrderSidebar extends StatelessWidget with DetailScreenMixin {
                           },
                         ),
                       ),
-                    // Pay button
-                    BlocProvider(
-                      create: (_) => inject<CreateOrderBloc>()
-                        ..add(CreateOrderEvent.started(
-                          guestCount: guestCount,
-                          tableStatus: tableStatus,
-                        )),
-                      child: BlocBuilder<CreateOrderBloc, CreateOrderState>(
-                        builder: (context, createState) {
-                          return _ActionButton(
-                            label: 'To\'lovga o\'tish',
-                            bgColor: const Color(0xFFFB6633),
-                            textColor: Colors.white,
-                            isLoading: createState.status == Status.LOADING,
-                            onTap: () {
-                              if (tableId == null &&
-                                  state.selectedGoods.isNotEmpty) {
-                                context.read<CreateOrderBloc>().add(
-                                  CreateOrderEvent.createOrder(
-                                    orders: state.selectedGoods,
-                                  ),
-                                );
-                              } else if (tableId != null &&
-                                  tableStatus != TableStatus.free) {
+                    // Payment button (for occupied tables)
+                    if (tableId != null && tableStatus != TableStatus.free)
+                      BlocProvider(
+                        create: (_) => inject<CreateOrderBloc>()
+                          ..add(CreateOrderEvent.started(
+                            tableId: tableId,
+                            guestCount: guestCount,
+                            tableStatus: tableStatus,
+                          )),
+                        child: BlocBuilder<CreateOrderBloc, CreateOrderState>(
+                          builder: (context, createState) {
+                            return _ActionButton(
+                              label: 'To\'lov',
+                              bgColor: const Color(0xFFFB6633),
+                              textColor: Colors.white,
+                              isLoading: createState.status == Status.LOADING,
+                              onTap: () {
                                 Navigator.pushNamed(
                                   context,
                                   AppRoutes.paymentScreen,
                                   arguments: {'table_id': tableId},
                                 );
-                              }
-                            },
-                          );
-                        },
+                              },
+                            );
+                          },
+                        ),
                       ),
-                    ),
                   ],
                 ),
               ),

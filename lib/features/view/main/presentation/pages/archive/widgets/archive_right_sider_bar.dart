@@ -55,38 +55,38 @@ class ArchiveRightSiderBar extends StatelessWidget {
                   height: 52,
                   child: Row(
                     children: [
-                      Text(
-                        state.selectArchive!.totalPrice.formatN,
-                        style: context.textStyles.bold20.copyWith(
-                          fontWeight: FontWeight.w500,
+                      Flexible(
+                        child: Text(
+                          state.selectArchive!.totalPrice.formatN,
+                          style: context.textStyles.bold20.copyWith(
+                            fontWeight: FontWeight.w500,
+                          ),
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                      const Spacer(),
-                      SizedBox(
-                        height: 52,
-                        child: CustomHoverEffectWidget(
-                          onTap: () {},
-                          borderRadius: context.radius.buttonMd,
-                          bgColor: context.colors.bgBrand,
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              SvgPicture.asset(
-                                Assets.icons.icPrinter.path,
-                                color: AppColors.white,
+                      const SizedBox(width: 12),
+                      CustomHoverEffectWidget(
+                        onTap: () {},
+                        borderRadius: context.radius.buttonMd,
+                        bgColor: context.colors.bgBrand,
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            SvgPicture.asset(
+                              Assets.icons.icPrinter.path,
+                              color: AppColors.white,
+                            ),
+                            10.wBox,
+                            Text(
+                              "Chop",
+                              style: context.textStyles.title14.copyWith(
+                                fontSize: 14,
+                                color: context.colors.textOnBrand,
                               ),
-                              10.wBox,
-                              Text(
-                                "Chop etish",
-                                style: context.textStyles.title14.copyWith(
-                                  fontSize: 18,
-                                  color: context.colors.textOnBrand,
-                                ),
-                              ),
-                            ],
-                          ).paddingSymmetric(horizontal: 16),
-                        ),
+                            ),
+                          ],
+                        ).paddingSymmetric(horizontal: 12),
                       ),
                     ],
                   ),
