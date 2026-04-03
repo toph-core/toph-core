@@ -202,19 +202,92 @@ Border-radius: 14px
 Hover: border-color #FB6633 + shadow
 ```
 
+### CashierScreen Tab Bar
+```
+Container: bg transparent, gap 8px
+Each tab: padding 8px 14px, border-radius 12px
+Active tab: bg (color), text white, outline none
+Inactive tab: bg transparent, text #888888
+Tab colors: see Screens > CashierScreen Tabs
+```
+
+### Shift Info Card (CashierScreen Tab 2)
+```
+Background: white
+Border-radius: 16px
+Border: 1px solid #EBEBEB
+Padding: 16–24px
+Height: 80px
+Dividers: 1px vertical #EBEBEB between sections
+Content: Cashier name | Shift open time | Terminal status | Duration
+```
+
+### Action Button Card (CashierScreen Tab 2)
+```
+Grid: 2 columns, gap 12px
+Each: height 80px, border-radius 12px
+Background: (color) 10% opacity
+Border: 1px solid (color)
+Text: 13px 600, centered
+Colors:
+  Полнота: #00BCD4 (cyan)
+  Клиенты: #3B82F6 (blue)
+  Доставка: #FB6633 (orange)
+  Раздача: #13AF1B (green)
+  Оплата: #FB6633 (orange)
+```
+
+### Payment Breakdown Card (CashierScreen Tab 2)
+```
+Background: white
+Border-radius: 16px
+Border: 1px solid #EBEBEB
+Padding: 20px
+Content: Title + 2 payment type rows with progress bars
+Row: label (13px), percentage (12px #888), amount (13px 700)
+Progress bar: height 8px, border-radius 4px, (color) fill
+```
+
+### Bills List Row (CashierScreen Tab 3)
+```
+Height: 50px
+Padding: 12px 16px
+Border-bottom: 1px #F5F4F2
+Hover: bg #FAFAFA
+Columns: Bill# | Table/Type | Payment method | Amount (700) | Status badge | Time | Guests
+Font: 13px 400 (default), 700 for amount
+```
+
 ---
 
 ## Screens
 
+### Role-based Main Screens
+
+| Role | Screen | File | Description |
+|---|---|---|---|
+| Waiter | Столы | `waiter-main.html` | Table grid with status colors (current MainScreen) |
+| Cashier | CashierScreen | `cashier-main.html` | 4-tab dashboard: Dishes, Cash register, Bills, Settings |
+| Admin/Manager | AdminScreen | `admin-main.html` | Full admin dashboard (future) |
+
+### CashierScreen Tabs
+
+| Tab | Color | Accent | Purpose |
+|---|---|---|---|
+| **Блюда** (Dishes) | `#FFF3EE` bg, `#FB6633` text | Orange `#FB6633` | Menu/category management |
+| **Касса** (Cash) | `#FFF0F3` bg, `#EB295B` text | Red `#EB295B` | Shift + payment operations (DEFAULT) |
+| **Счета** (Bills) | `#FFF8E7` bg, `#F5A524` text | Gold `#F5A524` | Bills history and filtering |
+| **Настройки** (Settings) | `#FFF8E7` bg, `#F5A524` text | Gold `#F5A524` | Staff, halls, printer config |
+
+### Supporting Screens
+
 | Screen | File | Description |
 |---|---|---|
-| Столы | `index.html` | Table grid with status colors |
 | Stol detail | `table-detail.html` | Left: order, Right: menu grid |
 | To'lov | `payment.html` | Payment methods + numpad |
 | Zal | `hall.html` | Floor plan with table positions |
 | Bronlar | `reservations.html` | Calendar + reservation list |
 | Hisoblar | `bills.html` | Orders table with stats |
-| Kassa | `cashier.html` | Shift info + revenue charts |
 | Xodimlar | `staff.html` | Staff cards grid |
 | Mijozlar | `clients.html` | Clients table with loyalty |
 | Oshxona | `kitchen2.html` | Kitchen display cards |

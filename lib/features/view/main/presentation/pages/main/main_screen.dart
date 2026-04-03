@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mary_ai_pos/core/common/custom_loading_widget.dart';
 import 'package:mary_ai_pos/core/constants/constants.dart';
+import 'package:mary_ai_pos/core/extension/for_context.dart';
 import 'package:mary_ai_pos/core/extension/list_extension.dart';
 import 'package:mary_ai_pos/core/routes/app_routes.dart';
 import 'package:mary_ai_pos/core/widgets/app_scaffold.dart';
@@ -38,42 +39,116 @@ class _MainScreenState extends State<MainScreen> {
           context.read<ShiftBloc>().add(const ShiftEvent.checkShift());
         }
       },
-      child: AppScaffold(
-        activeRoute: AppRoutes.mainScreen,
-        body: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const MainHeader(title: 'Stollar'),
-            Expanded(
-              child: BlocBuilder<MainCubit, MainState>(
-                builder: (context, state) {
-                  if (state.isLoading) {
-                    return const Center(child: LoadingWidget());
-                  }
+      child: BlocBuilder<UserBloc, UserState>(
+        builder: (context, userState) {
+          final role = userState.userMOdel?.role;
 
-                  return Padding(
-                    padding: const EdgeInsets.all(20),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      spacing: 16,
-                      children: [
-                        TabFilter(
-                          halls: state.halls ?? [],
-                          selectedHallId: state.selectedHallId,
-                          isLoading: state.status == Status.OTHER_LOADING,
+          switch (role) {
+            case UserRole.cashier:
+              return const _CashierScreenPlaceholder();
+            case UserRole.admin:
+            case UserRole.manager:
+              return const _AdminScreenPlaceholder();
+            case UserRole.waiter:
+            case UserRole.kitchen:
+            default:
+              return _waiterScreen();
+          }
+        },
+      ),
+    );
+  }
+
+  Widget _waiterScreen() {
+    return AppScaffold(
+      activeRoute: AppRoutes.mainScreen,
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const MainHeader(title: 'Stollar'),
+          Expanded(
+            child: BlocBuilder<MainCubit, MainState>(
+              builder: (context, state) {
+                if (state.isLoading) {
+                  return const Center(child: LoadingWidget());
+                }
+
+                return Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    spacing: 16,
+                    children: [
+                      TabFilter(
+                        halls: state.halls ?? [],
+                        selectedHallId: state.selectedHallId,
+                        isLoading: state.status == Status.OTHER_LOADING,
+                      ),
+                      HallWidget(
+                        isLoading: state.status == Status.LOADING,
+                        tables: state.tables ?? [],
+                        hall: state.halls?.firstWhereOrNull(
+                          (item) => item.id == state.selectedHallId,
                         ),
-                        HallWidget(
-                          isLoading: state.status == Status.LOADING,
-                          tables: state.tables ?? [],
-                          hall: state.halls?.firstWhereOrNull(
-                            (item) => item.id == state.selectedHallId,
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                },
-              ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CashierScreenPlaceholder extends StatelessWidget {
+  const _CashierScreenPlaceholder();
+
+  @override
+  Widget build(BuildContext context) {
+    return AppScaffold(
+      activeRoute: AppRoutes.mainScreen,
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              'Kassir Dashboard',
+              style: context.textStyles.headingMd,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Keyinchalik qo\'shiladi',
+              style: context.textStyles.bodyMd,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _AdminScreenPlaceholder extends StatelessWidget {
+  const _AdminScreenPlaceholder();
+
+  @override
+  Widget build(BuildContext context) {
+    return AppScaffold(
+      activeRoute: AppRoutes.mainScreen,
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              'Admin Dashboard',
+              style: context.textStyles.headingMd,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Keyinchalik qo\'shiladi',
+              style: context.textStyles.bodyMd,
             ),
           ],
         ),

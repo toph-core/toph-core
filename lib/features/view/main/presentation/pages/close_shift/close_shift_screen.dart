@@ -43,10 +43,8 @@ class _CloseShiftScreenState extends State<CloseShiftScreen> {
           Expanded(
             child: BlocBuilder<ShiftBloc, ShiftState>(
               builder: (context, state) {
-                final cashAmount =
-                    int.tryParse(state.cashSum) ?? 0;
-                final cardAmount =
-                    int.tryParse(state.cardSum) ?? 0;
+                final cashAmount = int.tryParse(state.cashSum) ?? 0;
+                final cardAmount = int.tryParse(state.cardSum) ?? 0;
                 final totalAmount = cashAmount + cardAmount;
 
                 return Padding(
@@ -102,29 +100,22 @@ class _CloseShiftScreenState extends State<CloseShiftScreen> {
                                               type: ShiftSumType.cash,
                                             ),
                                           ),
-                                      selected: state.sum ==
-                                          ShiftSumType.cash,
-                                      title:
-                                          "Naqt summani kiriting",
-                                      value:
-                                          cashAmount.toString(),
+                                      selected: state.sum == ShiftSumType.cash,
+                                      title: "Naqt summani kiriting",
+                                      value: cashAmount.toString(),
                                     ),
                                   ),
                                   Expanded(
                                     child: WShiftInputSumContainer(
                                       onTap: () =>
                                           context.read<ShiftBloc>().add(
-                                            const ShiftEvent
-                                                .updateSumType(
+                                            const ShiftEvent.updateSumType(
                                               type: ShiftSumType.card,
                                             ),
                                           ),
-                                      selected: state.sum ==
-                                          ShiftSumType.card,
-                                      title:
-                                          "Terminal summani kiriting",
-                                      value:
-                                          cardAmount.toString(),
+                                      selected: state.sum == ShiftSumType.card,
+                                      title: "Terminal summani kiriting",
+                                      value: cardAmount.toString(),
                                     ),
                                   ),
                                 ],
@@ -145,13 +136,8 @@ class _CloseShiftScreenState extends State<CloseShiftScreen> {
                                     ),
                                 itemCount: keyboardKeys.length,
                                 itemBuilder: (context, index) {
-                                  final String key =
-                                      keyboardKeys[index];
-                                  return _keyboardKey(
-                                    context,
-                                    key,
-                                    state.sum,
-                                  );
+                                  final String key = keyboardKeys[index];
+                                  return _keyboardKey(context, key, state.sum);
                                 },
                               ),
                             ),
@@ -172,22 +158,14 @@ class _CloseShiftScreenState extends State<CloseShiftScreen> {
     );
   }
 
-  Widget _keyboardKey(
-    BuildContext context,
-    String key,
-    ShiftSumType type,
-  ) {
+  Widget _keyboardKey(BuildContext context, String key, ShiftSumType type) {
     final bool isDelete = key == 'delete';
     return CustomHoverEffectWidget(
       onTap: () {
         if (type == ShiftSumType.card) {
-          context.read<ShiftBloc>().add(
-            ShiftEvent.updateCardSum(value: key),
-          );
+          context.read<ShiftBloc>().add(ShiftEvent.updateCardSum(value: key));
         } else {
-          context.read<ShiftBloc>().add(
-            ShiftEvent.updateCashSum(value: key),
-          );
+          context.read<ShiftBloc>().add(ShiftEvent.updateCashSum(value: key));
         }
       },
       bgColor: isDelete
@@ -267,11 +245,7 @@ class _ShiftInfoCard extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 32),
-          Container(
-            width: 1,
-            height: 36,
-            color: const Color(0xFFEBEBEB),
-          ),
+          Container(width: 1, height: 36, color: const Color(0xFFEBEBEB)),
           const SizedBox(width: 32),
           Expanded(
             flex: 0,
@@ -303,19 +277,15 @@ class _ShiftInfoCard extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 32),
-          Container(
-            width: 1,
-            height: 36,
-            color: const Color(0xFFEBEBEB),
-          ),
+          Container(width: 1, height: 36, color: const Color(0xFFEBEBEB)),
           const SizedBox(width: 32),
-          Expanded(
+          const Expanded(
             flex: 0,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               spacing: 3,
               children: [
-                const Text(
+                Text(
                   'Terminal',
                   style: TextStyle(
                     fontSize: 11,
@@ -324,14 +294,10 @@ class _ShiftInfoCard extends StatelessWidget {
                     fontFamily: 'Inter',
                   ),
                 ),
-                const Row(
+                Row(
                   spacing: 4,
                   children: [
-                    Icon(
-                      Icons.circle,
-                      size: 6,
-                      color: Color(0xFF13AF1B),
-                    ),
+                    Icon(Icons.circle, size: 6, color: Color(0xFF13AF1B)),
                     Text(
                       'Ulangan',
                       style: TextStyle(
@@ -420,12 +386,12 @@ class _StatsRow extends StatelessWidget {
           bgColor: const Color(0xFFFFF3EE),
           valueColor: const Color(0xFFFB6633),
         ),
-        _StatCard(
+        const _StatCard(
           label: 'Smena raqami',
           value: 'Smena #',
           sub: 'joriy',
-          bgColor: const Color(0xFFF5F4F2),
-          valueColor: const Color(0xFF19160B),
+          bgColor: Color(0xFFF5F4F2),
+          valueColor: Color(0xFF19160B),
         ),
       ],
     );
@@ -515,10 +481,12 @@ class _PaymentBreakdownCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cashPct =
-        totalAmount > 0 ? (cashAmount / totalAmount * 100).toInt() : 0;
-    final cardPct =
-        totalAmount > 0 ? (cardAmount / totalAmount * 100).toInt() : 0;
+    final cashPct = totalAmount > 0
+        ? (cashAmount / totalAmount * 100).toInt()
+        : 0;
+    final cardPct = totalAmount > 0
+        ? (cardAmount / totalAmount * 100).toInt()
+        : 0;
 
     return Container(
       padding: const EdgeInsets.all(20),

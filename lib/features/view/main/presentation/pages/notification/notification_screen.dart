@@ -12,8 +12,7 @@ class NotificationScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (_) =>
-          NotificationBloc()..add(const NotificationEvent.started()),
+      create: (_) => NotificationBloc()..add(const NotificationEvent.started()),
       child: const AppScaffold(
         activeRoute: AppRoutes.notificationsScreen,
         body: _NotificationBody(),
@@ -130,8 +129,7 @@ class _NotificationBodyState extends State<_NotificationBody> {
                         ),
                         _FilterTab(
                           label: 'Hafta',
-                          isActive:
-                              state.filterType == ArchivesFilterType.Week,
+                          isActive: state.filterType == ArchivesFilterType.Week,
                           onTap: () => context.read<NotificationBloc>().add(
                             const NotificationEvent.updateFilterType(
                               filterType: ArchivesFilterType.Week,
@@ -162,9 +160,7 @@ class _NotificationBodyState extends State<_NotificationBody> {
                           end: state.end ?? DateTime.now(),
                         ),
                         firstDate: DateTime(2000),
-                        lastDate: DateTime.now().add(
-                          const Duration(days: 365),
-                        ),
+                        lastDate: DateTime.now().add(const Duration(days: 365)),
                         initialEntryMode: DatePickerEntryMode.calendarOnly,
                         builder: (context, child) => Center(
                           child: ConstrainedBox(
@@ -213,10 +209,8 @@ class _NotificationBodyState extends State<_NotificationBody> {
               child: Container(
                 color: colors.bgSecondary,
                 child: state.status == Status.LOADING
-                    ? const Center(
-                        child: CircularProgressIndicator.adaptive(),
-                      )
-                    : _NotificationGrid(),
+                    ? const Center(child: CircularProgressIndicator.adaptive())
+                    : const _NotificationGrid(),
               ),
             ),
           ],
@@ -234,11 +228,12 @@ class _NotificationGrid extends StatelessWidget {
       orderNumber: '#${1020 + i}',
       tableName: '${i + 1}-stol',
       description: '${i + 1}-stol buyurtmasi yetkazildi.',
-      time: '${(8 + i % 14).toString().padLeft(2, '0')}:${(i * 3 % 60).toString().padLeft(2, '0')}',
+      time:
+          '${(8 + i % 14).toString().padLeft(2, '0')}:${(i * 3 % 60).toString().padLeft(2, '0')}',
     ),
   );
 
-  _NotificationGrid();
+  const _NotificationGrid();
 
   @override
   Widget build(BuildContext context) {

@@ -47,10 +47,7 @@ class _EnhancedTableCardState extends State<EnhancedTableCard> {
         const PopupMenuItem(
           child: Row(
             spacing: 8,
-            children: [
-              Icon(Icons.edit, size: 16),
-              Text('Buyurtma qo\'shish'),
-            ],
+            children: [Icon(Icons.edit, size: 16), Text('Buyurtma qo\'shish')],
           ),
         ),
         const PopupMenuItem(
@@ -65,10 +62,7 @@ class _EnhancedTableCardState extends State<EnhancedTableCard> {
         const PopupMenuItem(
           child: Row(
             spacing: 8,
-            children: [
-              Icon(Icons.warning, size: 16),
-              Text('Diqqat kerak'),
-            ],
+            children: [Icon(Icons.warning, size: 16), Text('Diqqat kerak')],
           ),
         ),
         const PopupMenuItem(
@@ -238,10 +232,10 @@ class _EnhancedTableCardState extends State<EnhancedTableCard> {
                   if (widget.waitingTimeMinutes != null)
                     Text(
                       '⏱️ ${widget.waitingTimeMinutes} min',
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w500,
-                        color: const Color(0xFFFB6633),
+                        color: Color(0xFFFB6633),
                         fontFamily: 'Inter',
                       ),
                     )
@@ -283,11 +277,8 @@ class _EnhancedTableCardState extends State<EnhancedTableCard> {
                               color: const Color(0xFFFB6633).withOpacity(0.1),
                               borderRadius: BorderRadius.circular(6),
                             ),
-                            child: Center(
-                              child: Text(
-                                '🔔',
-                                style: TextStyle(fontSize: 12),
-                              ),
+                            child: const Center(
+                              child: Text('🔔', style: TextStyle(fontSize: 12)),
                             ),
                           ),
                         ),
@@ -302,11 +293,8 @@ class _EnhancedTableCardState extends State<EnhancedTableCard> {
                               color: const Color(0xFF3B82F6).withOpacity(0.1),
                               borderRadius: BorderRadius.circular(6),
                             ),
-                            child: Center(
-                              child: Text(
-                                '📝',
-                                style: TextStyle(fontSize: 12),
-                              ),
+                            child: const Center(
+                              child: Text('📝', style: TextStyle(fontSize: 12)),
                             ),
                           ),
                         ),
@@ -321,11 +309,8 @@ class _EnhancedTableCardState extends State<EnhancedTableCard> {
                               color: const Color(0xFF13AF1B).withOpacity(0.1),
                               borderRadius: BorderRadius.circular(6),
                             ),
-                            child: Center(
-                              child: Text(
-                                '💳',
-                                style: TextStyle(fontSize: 12),
-                              ),
+                            child: const Center(
+                              child: Text('💳', style: TextStyle(fontSize: 12)),
                             ),
                           ),
                         ),
