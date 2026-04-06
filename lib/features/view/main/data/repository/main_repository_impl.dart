@@ -52,6 +52,10 @@ class MainRepositoryImpl implements MainRepository {
       await _dataSources.getUser();
 
   @override
+  Future<Either<Failure, List<UserModel>>> getUsers() async =>
+      await _dataSources.getUsers();
+
+  @override
   Future<Either<Failure, ArchiveDetailEntity>> getPaymentDetailWithId(
     String id,
   ) async => await _dataSources.getPaymentDetailWithId(id);

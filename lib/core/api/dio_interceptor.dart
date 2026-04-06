@@ -125,12 +125,13 @@ class MySmartDioInterceptor extends Interceptor {
   }
 
   Future<void> _logoutAndRedirectToLogin() async {
-    await _tokenStorage.deleteAuthToken();
+    // Only clear auth session, keep POS setup (brand_id, pos_password)
+    await _tokenStorage.deleteUserSession();
 
     Navigator.pushNamedAndRemoveUntil(
       // ignore: use_build_context_synchronously
       navigatorKey.currentState!.context,
-      AppRoutes.loginScreen,
+      AppRoutes.loginPinScreen,
       (route) => false,
     );
   }

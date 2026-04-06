@@ -1,7 +1,8 @@
 // ignore_for_file: constant_identifier_names
+const BASE_URL = 'https://api.maryai.uz/';
 // const BASE_URL = 'https://back.maryai.yurtal.tech/';
-const BASE_URL = 'https://back.staging.maryai.yurtal.tech/';
-// const BASE_URL = 'http://localhost:8080';
+// const BASE_URL = 'https://back.staging.maryai.yurtal.tech/';
+// const BASE_URL = 'http://localhost:8080/';
 // const BASE_URL = 'http://192.168.0.125:8080/';
 
 const ACCESS_TOKEN = 'access-token';
@@ -11,6 +12,9 @@ const APP_LANGUAGE = 'app-lang';
 const APP_THEME = 'app-theme';
 
 const TECHNICAL_SUPPORT_URL = '';
+
+/// Vaqtincha: ochiq buyurtma yopish ekranida xizmat 0% — jami faqat faol qatorlar yig‘indisi (API `total_amount` xizmatni e’tiborsiz qiladi).
+const bool kOpenOrderServiceFeeZeroPercent = true;
 
 enum UserRole {admin, manager, cashier, waiter, kitchen, user, superadmin,none}
 

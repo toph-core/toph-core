@@ -73,7 +73,10 @@ class ArchivesBloc extends Bloc<ArchivesEvent, ArchivesState> {
     add(const _GetArchived());
   }
 
-  void _getArchiveDetail(_GetArchiveDetail event, emit) async {
+  Future<void> _getArchiveDetail(
+    _GetArchiveDetail event,
+    Emitter<ArchivesState> emit,
+  ) async {
     if (state.selectArchive != null) {
       emit(
         state.copyWith(
@@ -84,16 +87,24 @@ class ArchivesBloc extends Bloc<ArchivesEvent, ArchivesState> {
       final response = await _getArchiveWithIdUsecase.call(
         state.selectArchive!.id,
       );
+      if (isClosed) return;
       response.fold(
         (l) {
+          if (isClosed) return;
           showErrorMessage(
             navigatorKey.currentContext!,
             l.getLocalizedMessage(navigatorKey.currentContext!),
           );
         },
-        (r) => emit(
-          state.copyWith(archiveStatus: Status.SUCCESS, selectArchiveDetail: r),
-        ),
+        (r) {
+          if (isClosed) return;
+          emit(
+            state.copyWith(
+              archiveStatus: Status.SUCCESS,
+              selectArchiveDetail: r,
+            ),
+          );
+        },
       );
     }
   }
@@ -113,7 +124,10 @@ class ArchivesBloc extends Bloc<ArchivesEvent, ArchivesState> {
     }
   }
 
-  void _getArchived(_GetArchived event, emit) async {
+  Future<void> _getArchived(
+    _GetArchived event,
+    Emitter<ArchivesState> emit,
+  ) async {
     emit(state.copyWith(status: Status.LOADING));
     final response = await _getArchivesUsecase.call(
       ArchivesFilterRequestModel(
@@ -127,8 +141,10 @@ class ArchivesBloc extends Bloc<ArchivesEvent, ArchivesState> {
         ),
       ),
     );
+    if (isClosed) return;
     response.fold(
       (l) {
+        if (isClosed) return;
         showErrorMessage(
           navigatorKey.currentContext!,
           l.getLocalizedMessage(navigatorKey.currentContext!),
@@ -136,9 +152,12 @@ class ArchivesBloc extends Bloc<ArchivesEvent, ArchivesState> {
         emit(state.copyWith(status: Status.ERROR, failure: l));
       },
       (r) {
+        if (isClosed) return;
         emit(state.copyWith(archives: r));
         if (r.archives.isNotEmpty && state.selectArchive == null) {
-          add(_SelectArchive(id: r.archives[0].id));
+          if (!isClosed) {
+            add(_SelectArchive(id: r.archives[0].id));
+          }
         }
       },
     );

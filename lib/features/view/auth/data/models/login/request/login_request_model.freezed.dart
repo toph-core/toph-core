@@ -23,6 +23,7 @@ mixin _$LoginRequestModel {
   @JsonKey(name: 'brand_id')
   String get brandId =>
       throw _privateConstructorUsedError; // @JsonKey(name: 'fcm_token') required String fcmToken,
+  @JsonKey(name: 'pos_password')
   String get password => throw _privateConstructorUsedError;
   String get pincode => throw _privateConstructorUsedError;
 
@@ -40,7 +41,7 @@ abstract class $LoginRequestModelCopyWith<$Res> {
   @useResult
   $Res call(
       {@JsonKey(name: 'brand_id') String brandId,
-      String password,
+      @JsonKey(name: 'pos_password') String password,
       String pincode});
 }
 
@@ -88,7 +89,7 @@ abstract class _$$LoginRequestModelImplCopyWith<$Res>
   @useResult
   $Res call(
       {@JsonKey(name: 'brand_id') String brandId,
-      String password,
+      @JsonKey(name: 'pos_password') String password,
       String pincode});
 }
 
@@ -129,7 +130,7 @@ class __$$LoginRequestModelImplCopyWithImpl<$Res>
 class _$LoginRequestModelImpl implements _LoginRequestModel {
   const _$LoginRequestModelImpl(
       {@JsonKey(name: 'brand_id') required this.brandId,
-      required this.password,
+      @JsonKey(name: 'pos_password') required this.password,
       required this.pincode});
 
   factory _$LoginRequestModelImpl.fromJson(Map<String, dynamic> json) =>
@@ -140,6 +141,7 @@ class _$LoginRequestModelImpl implements _LoginRequestModel {
   final String brandId;
 // @JsonKey(name: 'fcm_token') required String fcmToken,
   @override
+  @JsonKey(name: 'pos_password')
   final String password;
   @override
   final String pincode;
@@ -182,7 +184,7 @@ class _$LoginRequestModelImpl implements _LoginRequestModel {
 abstract class _LoginRequestModel implements LoginRequestModel {
   const factory _LoginRequestModel(
       {@JsonKey(name: 'brand_id') required final String brandId,
-      required final String password,
+      @JsonKey(name: 'pos_password') required final String password,
       required final String pincode}) = _$LoginRequestModelImpl;
 
   factory _LoginRequestModel.fromJson(Map<String, dynamic> json) =
@@ -192,6 +194,7 @@ abstract class _LoginRequestModel implements LoginRequestModel {
   @JsonKey(name: 'brand_id')
   String get brandId;
   @override // @JsonKey(name: 'fcm_token') required String fcmToken,
+  @JsonKey(name: 'pos_password')
   String get password;
   @override
   String get pincode;

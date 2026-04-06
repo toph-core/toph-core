@@ -70,12 +70,14 @@ class DioClient {
     String url, {
     dynamic data,
     Map<String, dynamic>? headers,
+    Map<String, dynamic>? queryParameters,
     Options? options,
   }) async {
     try {
       final response = await _dio.post(
         url,
         data: data,
+        queryParameters: queryParameters,
         options: options ?? Options(headers: headers),
       );
       if (response.statusCode == 200 ||

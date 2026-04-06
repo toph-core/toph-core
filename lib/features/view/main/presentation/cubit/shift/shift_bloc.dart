@@ -6,6 +6,7 @@ import 'package:mary_ai_pos/core/error/failure.dart';
 import 'package:mary_ai_pos/core/routes/app_routes.dart';
 import 'package:mary_ai_pos/core/utils/helper/helper_widget.dart';
 import 'package:mary_ai_pos/features/view/auth/presentation/cubit/auth/auth_cubit.dart';
+import 'package:mary_ai_pos/features/view/auth/presentation/cubit/bloc/user_bloc.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/close_shift/close_shift_request_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/open_shift/open_shift_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/shift/shift_response_model.dart';
@@ -165,10 +166,14 @@ class ShiftBloc extends Bloc<ShiftEvent, ShiftState> {
       },
       (r) {
         if (r == null) {
-          Navigator.pushNamed(
-            navigatorKey.currentContext!,
-            AppRoutes.closeShiftScreen,
-          );
+          final ctx = navigatorKey.currentContext;
+          if (ctx != null && ctx.mounted) {
+            final role = ctx.read<UserBloc>().state.userMOdel?.role;
+            // Kassir avval Stollar (asosiy) ekranida bo‘lsin; smenani sidebar orqali ochadi.
+            if (role != UserRole.cashier) {
+              Navigator.pushNamed(ctx, AppRoutes.closeShiftScreen);
+            }
+          }
         }
         emit(state.copyWith(status: Status.SUCCESS, shift: r));
       },

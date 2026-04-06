@@ -50,8 +50,11 @@ import 'package:mary_ai_pos/features/view/main/data/data_source/main_datasources
 import 'package:mary_ai_pos/features/view/main/data/repository/main_repository_impl.dart';
 import 'package:mary_ai_pos/features/view/main/domain/repository/main_repository.dart';
 import 'package:mary_ai_pos/features/view/main/domain/usecase/get_halls_usecase.dart';
+import 'package:mary_ai_pos/features/view/main/domain/usecase/get_staff_waiters_usecase.dart';
 import 'package:mary_ai_pos/features/view/main/domain/usecase/get_tables_by_hall_id_usecase.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/main/main_cubit.dart';
+import 'package:mary_ai_pos/features/view/main/presentation/cubit/table_timer/table_timer_cubit.dart';
+import 'package:mary_ai_pos/features/view/main/presentation/cubit/waiter/waiter_cubit.dart';
 
 final inject = GetIt.instance;
 Future<void> initDi() async {
@@ -126,6 +129,7 @@ void _useCase() {
     () => GetPaymentDetailWithIdUsecase(repository: inject()),
   );
   inject.registerLazySingleton(() => GetUserUsecase(inject()));
+  inject.registerLazySingleton(() => GetStaffWaitersUsecase(inject()));
   inject.registerLazySingleton(() => CheckShiftUsecase(inject()));
   inject.registerFactory(() => OpenShiftUsecase(inject()));
   inject.registerFactory(() => CloseShiftUsecase(inject()));
@@ -176,4 +180,6 @@ void _cubit() {
   inject.registerFactory(() => NotificationBloc());
   inject.registerLazySingleton(() => SavedOrdersBloc());
   inject.registerFactory(() => HourPriceBloc(getHourPriceUsecase: inject()));
+  inject.registerFactory(() => WaiterCubit(inject(), inject()));
+  inject.registerFactory(() => TableTimerCubit(inject()));
 }

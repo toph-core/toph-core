@@ -8,7 +8,7 @@ class LoginRequestModel with _$LoginRequestModel {
   const factory LoginRequestModel({
     @JsonKey(name: 'brand_id') required String brandId,
     // @JsonKey(name: 'fcm_token') required String fcmToken,
-    required String password,
+    @JsonKey(name: 'pos_password') required String password,
     required String pincode,
   }) = _LoginRequestModel;
 

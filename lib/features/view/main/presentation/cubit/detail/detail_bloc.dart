@@ -61,9 +61,15 @@ class DetailBloc extends Bloc<DetailEvent, DetailState> {
   ) async {
     emit(state.copyWith(status: Status.OTHER_LOADING));
     final result = await _getCategoriesUsecase(NoParams());
+    if (isClosed) return;
     result.fold(
-      (failure) => emit(state.copyWith(status: Status.ERROR, failure: failure)),
+      (failure) {
+        if (!isClosed) {
+          emit(state.copyWith(status: Status.ERROR, failure: failure));
+        }
+      },
       (categories) {
+        if (isClosed) return;
         categories.insert(0, const CategoryModel(id: "all", name: "Hammasi"));
         emit(state.copyWith(status: Status.SUCCESS, categories: categories));
         if (categories.isNotEmpty) {
@@ -84,9 +90,18 @@ class DetailBloc extends Bloc<DetailEvent, DetailState> {
     emit(state.copyWith(selectedCategoryId: event.id));
     emit(state.copyWith(status: Status.LOADING));
     final result = await _getGoodsByCategoryIdUseCase(event.id);
+    if (isClosed) return;
     result.fold(
-      (failure) => emit(state.copyWith(status: Status.ERROR, failure: failure)),
-      (goods) => emit(state.copyWith(status: Status.SUCCESS, goods: goods)),
+      (failure) {
+        if (!isClosed) {
+          emit(state.copyWith(status: Status.ERROR, failure: failure));
+        }
+      },
+      (goods) {
+        if (!isClosed) {
+          emit(state.copyWith(status: Status.SUCCESS, goods: goods));
+        }
+      },
     );
   }
 
@@ -172,16 +187,25 @@ class DetailBloc extends Bloc<DetailEvent, DetailState> {
     Emitter<DetailState> emit,
   ) async {
     if (event.text.isEmpty) {
-      if (state.selectedCategoryId != null) {
+      if (state.selectedCategoryId != null && !isClosed) {
         add(DetailEvent.setSelectedCategoryId(id: state.selectedCategoryId!));
       }
       return;
     }
-    emit(state.copyWith(status: Status.LOADING,selectedCategoryId: "all"));
+    emit(state.copyWith(status: Status.LOADING, selectedCategoryId: "all"));
     final result = await _getGoodsWithNameUseCase(event.text);
+    if (isClosed) return;
     result.fold(
-      (failure) => emit(state.copyWith(status: Status.ERROR, failure: failure)),
-      (goods) => emit(state.copyWith(status: Status.SUCCESS, goods: goods)),
+      (failure) {
+        if (!isClosed) {
+          emit(state.copyWith(status: Status.ERROR, failure: failure));
+        }
+      },
+      (goods) {
+        if (!isClosed) {
+          emit(state.copyWith(status: Status.SUCCESS, goods: goods));
+        }
+      },
     );
   }
 

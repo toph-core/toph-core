@@ -11,8 +11,14 @@ enum TokensStorageKeys {
   /// Key for app language preference
   appLanguage('app_language'),
 
-  /// Key for brand ID tokens
-  brandId('app_brand_id_token');
+  /// Key for brand ID tokens (brand_id + pos_password)
+  brandId('app_brand_id_token'),
+
+  /// Key for POS is initialized flag
+  posIsInitialized('pos_is_initialized'),
+
+  /// Key for cached user data
+  posUser('pos_user');
 
   /// Key name
   final String keyName;
@@ -123,10 +129,25 @@ class AppTokenStorage {
     }
   }
 
-  /// Delete all tokens from secure storage
+  /// Delete auth tokens from secure storage
   Future<void> deleteAuthToken() async {
     await _prefs.remove(TokensStorageKeys.authToken.keyName);
   }
+
+  /// Delete only user session (keep POS setup: brand_id, pos_password, pos_is_initialized)
+  Future<void> deleteUserSession() async {
+    await _prefs.remove(TokensStorageKeys.authToken.keyName);
+    await _prefs.remove(TokensStorageKeys.posUser.keyName);
+  }
+
+  /// Mark POS as initialized
+  Future<void> setPosInitialized(bool value) async {
+    await _prefs.setBool(TokensStorageKeys.posIsInitialized.keyName, value);
+  }
+
+  /// Check if POS is initialized
+  bool get isPosInitialized =>
+      _prefs.getBool(TokensStorageKeys.posIsInitialized.keyName) ?? false;
 
   /// Read string value from secure storage
   Future<String?> readString(TokensStorageKeys key) async {

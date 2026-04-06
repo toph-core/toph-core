@@ -36,7 +36,9 @@ abstract class MainRepository {
     required CreateOrderRequestModel request,
   });
 
-  Future<Either<Failure,UserModel>> getUser();
+  Future<Either<Failure, UserModel>> getUser();
+
+  Future<Either<Failure, List<UserModel>>> getUsers();
 
   Future<Either<Failure, String>> createTakewayOrder({
     required CreateOrderRequestModel request,

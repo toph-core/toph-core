@@ -63,6 +63,8 @@ abstract class MainDataSources {
 
   Future<Either<Failure, UserModel>> getUser();
 
+  Future<Either<Failure, List<UserModel>>> getUsers();
+
   Future<Either<Failure, ShiftResponseModel?>> checkShift({required String id});
 
   Future<Either<Failure, ShiftResponseModel>> openShift({
@@ -175,6 +177,38 @@ class MainDataSourcesImpl implements MainDataSources {
   }
 
   @override
+  Future<Either<Failure, List<UserModel>>> getUsers() async {
+    try {
+      final response = await _client.get(ListAPI.users);
+      final raw = response.data['data'];
+      List<dynamic> list;
+      if (raw is List) {
+        list = raw;
+      } else if (raw is Map && raw['data'] is List) {
+        list = raw['data'] as List;
+      } else {
+        list = [];
+      }
+      return Right(
+        list
+            .map((e) => UserModel.fromJson(e as Map<String, dynamic>))
+            .toList(),
+      );
+    } on DioException catch (exception) {
+      return Left(handleDioException(exception));
+    } on FormatException catch (e, st) {
+      if (kDebugMode) print('ParsingError: $e\n$st');
+      return const Left(ParsingFailure());
+    } on TypeError catch (e, st) {
+      if (kDebugMode) print('ParsingError: $e\n$st');
+      return const Left(ParsingFailure());
+    } catch (e, st) {
+      if (kDebugMode) print('Unknown error: $e\n$st');
+      return const Left(UnknownFailure());
+    }
+  }
+
+  @override
   Future<Either<Failure, UserModel>> getUser() async {
     try {
       final response = await _client.get(ListAPI.user);
@@ -261,12 +295,16 @@ class MainDataSourcesImpl implements MainDataSources {
   }) async {
     try {
       if (request.tableStatus == TableStatus.busy) {
-        Map<String, dynamic> requestJson = request.request();
-        requestJson['order_id'] = await getOrderIdWithTableId(
+        final orderId = await getOrderIdWithTableId(
           tableId: request.tableId,
         );
-        if (requestJson['order_id'] != null) {
-          await _client.dio.post(ListAPI.createOrderItems, data: requestJson);
+        if (orderId.isNotEmpty) {
+          final req = request.request();
+          await _client.post(
+            ListAPI.orderItems(orderId),
+            queryParameters: {'lang': 'uz'},
+            data: {'items': req['items']},
+          );
         }
       } else if (request.tableStatus == TableStatus.away) {
         await _client.post(ListAPI.orders, data: request.request());

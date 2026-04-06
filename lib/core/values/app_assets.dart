@@ -33,4 +33,7 @@ class AppImages {
 
   //! General
   static const String imgLoginBg = 'assets/images/img_login_bg.png';
+
+  /// Brand mark — prefer [AppAssets.brandLogo] from `core/app_assets/app_assets.dart`.
+  static const String imgBrandLogo = 'assets/images/mary_logo.png';
 }

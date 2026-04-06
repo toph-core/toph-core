@@ -6,7 +6,6 @@ import 'package:animate_do/animate_do.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:mary_ai_pos/core/common/custom_loading_widget.dart';
 import 'package:mary_ai_pos/core/components/flush_bars.dart';
 import 'package:mary_ai_pos/core/constants/constants.dart';
@@ -15,7 +14,7 @@ import 'package:mary_ai_pos/core/extension/widget_extension.dart';
 import 'package:mary_ai_pos/core/routes/app_routes.dart';
 import 'package:mary_ai_pos/core/service/app_version/app_update_service.dart';
 import 'package:mary_ai_pos/core/utils/helper/helper_widget.dart';
-import 'package:mary_ai_pos/core/values/app_assets.dart';
+import 'package:mary_ai_pos/core/app_assets/app_assets.dart';
 import 'package:mary_ai_pos/features/view/auth/presentation/cubit/auth/auth_cubit.dart';
 import 'package:mary_ai_pos/features/view/auth/presentation/cubit/auth/auth_state.dart';
 import 'package:mary_ai_pos/features/view/auth/presentation/cubit/bloc/user_bloc.dart';
@@ -89,9 +88,11 @@ class _SplashScreenState extends State<SplashScreen> {
                 FadeInUp(
                   duration: const Duration(milliseconds: 600),
                   child: Center(
-                    child: SvgPicture.asset(
-                      AppIcons.icLogo,
+                    child: Image.asset(
+                      AppAssets.brandLogo,
                       height: 106,
+                      fit: BoxFit.contain,
+                      filterQuality: FilterQuality.high,
                     ).paddingSymmetric(horizontal: (16)),
                   ),
                 ),

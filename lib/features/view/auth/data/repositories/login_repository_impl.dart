@@ -37,6 +37,7 @@ class AuthRepositoryImpl implements AuthRepository {
   Future<Either<Failure, bool>> loginWithBrandId(BrandIdTokenPair req) async {
     try {
       await _tokenStorage.writeBrandIdToken(req);
+      await _tokenStorage.setPosInitialized(true);
       return const Right(true);
     } catch (e) {
       return const Left(CacheFailure());
@@ -53,10 +54,12 @@ class AuthRepositoryImpl implements AuthRepository {
     }
   }
 
+  /// User logout: clears session (accessToken, refreshToken, user)
+  /// Keeps POS setup data: brand_id, pos_password, pos_is_initialized
   @override
   Future<Either<Failure, bool>> logout() async {
     try {
-      await _tokenStorage.deleteAuthToken();
+      await _tokenStorage.deleteUserSession();
       return const Right(true);
     } catch (e) {
       return const Left(CacheFailure());

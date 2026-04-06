@@ -124,12 +124,17 @@ class $AssetsImagesGen {
   AssetGenImage get imgNoImage =>
       const AssetGenImage('assets/images/img_no_image.png');
 
+  /// File path: assets/images/mary_logo.png
+  AssetGenImage get maryLogo =>
+      const AssetGenImage('assets/images/mary_logo.png');
+
   /// File path: assets/images/splash_screen.png
   AssetGenImage get splashScreen =>
       const AssetGenImage('assets/images/splash_screen.png');
 
   /// List of all assets
-  List<AssetGenImage> get values => [imgLoginBg, imgNoImage, splashScreen];
+  List<AssetGenImage> get values =>
+      [imgLoginBg, imgNoImage, maryLogo, splashScreen];
 }
 
 class Assets {

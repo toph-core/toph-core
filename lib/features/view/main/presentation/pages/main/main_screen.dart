@@ -13,6 +13,7 @@ import 'package:mary_ai_pos/features/view/main/presentation/cubit/shift/shift_bl
 import 'package:mary_ai_pos/features/view/main/presentation/pages/main/widgets/hall_widget.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/main/widgets/main_header.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/main/widgets/tab_filter.dart';
+import 'package:mary_ai_pos/features/view/main/presentation/pages/waiter/waiter_screen.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -35,7 +36,10 @@ class _MainScreenState extends State<MainScreen> {
       listenWhen: (prev, curr) =>
           prev.userMOdel == null && curr.userMOdel != null,
       listener: (context, state) {
-        if (state.userMOdel?.role == UserRole.admin) {
+        final role = state.userMOdel?.role;
+        if (role == UserRole.admin ||
+            role == UserRole.manager ||
+            role == UserRole.cashier) {
           context.read<ShiftBloc>().add(const ShiftEvent.checkShift());
         }
       },
@@ -44,12 +48,12 @@ class _MainScreenState extends State<MainScreen> {
           final role = userState.userMOdel?.role;
 
           switch (role) {
-            case UserRole.cashier:
-              return const _CashierScreenPlaceholder();
             case UserRole.admin:
-            case UserRole.manager:
               return const _AdminScreenPlaceholder();
+            case UserRole.cashier:
+            case UserRole.manager:
             case UserRole.waiter:
+              return const WaiterScreen();
             case UserRole.kitchen:
             default:
               return _waiterScreen();
@@ -98,33 +102,6 @@ class _MainScreenState extends State<MainScreen> {
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _CashierScreenPlaceholder extends StatelessWidget {
-  const _CashierScreenPlaceholder();
-
-  @override
-  Widget build(BuildContext context) {
-    return AppScaffold(
-      activeRoute: AppRoutes.mainScreen,
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              'Kassir Dashboard',
-              style: context.textStyles.headingMd,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Keyinchalik qo\'shiladi',
-              style: context.textStyles.bodyMd,
-            ),
-          ],
-        ),
       ),
     );
   }

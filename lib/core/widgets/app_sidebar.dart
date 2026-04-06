@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mary_ai_pos/core/app_assets/app_assets.dart';
 import 'package:mary_ai_pos/core/extension/for_context.dart';
 import 'package:mary_ai_pos/core/routes/app_routes.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/main/widgets/logout_dialog.dart';
@@ -15,32 +16,22 @@ class AppSidebar extends StatelessWidget {
       color: colors.sidebarBg,
       child: Column(
         children: [
-          const SizedBox(height: 16),
-          // Logo
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [Color(0xFFFB6633), Color(0xFFFF8C5A)],
-              ),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: const Center(
-              child: Text(
-                'M',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                  fontFamily: 'Inter',
-                ),
+          const SizedBox(height: 12),
+          // Logo: full wordmark must fit — narrow sidebar, use contain (not cover).
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4),
+            child: SizedBox(
+              width: 64,
+              height: 56,
+              child: Image.asset(
+                AppAssets.brandLogo,
+                fit: BoxFit.contain,
+                alignment: Alignment.center,
+                filterQuality: FilterQuality.high,
               ),
             ),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 12),
           Expanded(
             child: Column(
               children: [

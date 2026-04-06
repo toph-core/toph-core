@@ -10,7 +10,7 @@ _$LoginRequestModelImpl _$$LoginRequestModelImplFromJson(
         Map<String, dynamic> json) =>
     _$LoginRequestModelImpl(
       brandId: json['brand_id'] as String,
-      password: json['password'] as String,
+      password: json['pos_password'] as String,
       pincode: json['pincode'] as String,
     );
 
@@ -18,6 +18,6 @@ Map<String, dynamic> _$$LoginRequestModelImplToJson(
         _$LoginRequestModelImpl instance) =>
     <String, dynamic>{
       'brand_id': instance.brandId,
-      'password': instance.password,
+      'pos_password': instance.password,
       'pincode': instance.pincode,
     };
