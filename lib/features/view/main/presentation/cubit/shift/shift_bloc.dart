@@ -1,6 +1,9 @@
+import 'dart:convert';
+
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:mary_ai_pos/core/api/api.dart';
+import 'package:mary_ai_pos/core/auth/storage/token_storage_impl.dart';
 import 'package:mary_ai_pos/core/components/flush_bars.dart';
 import 'package:mary_ai_pos/core/error/failure.dart';
 import 'package:mary_ai_pos/core/routes/app_routes.dart';
@@ -13,6 +16,7 @@ import 'package:mary_ai_pos/features/view/main/data/models/shift/shift_response_
 import 'package:mary_ai_pos/features/view/main/domain/usecase/check_shift_usecase.dart';
 import 'package:mary_ai_pos/features/view/main/domain/usecase/close_shift_usecase.dart';
 import 'package:mary_ai_pos/features/view/main/domain/usecase/open_shift_usecase.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 part 'shift_event.dart';
 part 'shift_state.dart';
@@ -22,14 +26,20 @@ class ShiftBloc extends Bloc<ShiftEvent, ShiftState> {
   late final CheckShiftUsecase _checkShiftUsecase;
   late final OpenShiftUsecase _openShiftUsecase;
   late final CloseShiftUsecase _closeShiftUsecase;
+  final SharedPreferences _prefs;
+  final AppTokenStorage _tokenStorage;
   //
   ShiftBloc({
     required CheckShiftUsecase checkShiftUsecase,
     required OpenShiftUsecase openShiftUsecase,
     required CloseShiftUsecase closeShiftUsecase,
+    required SharedPreferences prefs,
+    required AppTokenStorage tokenStorage,
   }) : _checkShiftUsecase = checkShiftUsecase,
        _openShiftUsecase = openShiftUsecase,
        _closeShiftUsecase = closeShiftUsecase,
+       _prefs = prefs,
+       _tokenStorage = tokenStorage,
        super(const ShiftState()) {
     on<_Started>(_started);
     on<_CheckShift>(_checkShift);
@@ -40,15 +50,117 @@ class ShiftBloc extends Bloc<ShiftEvent, ShiftState> {
     on<_CloseShift>(_closeShift);
   }
 
-  void _closeShift(_CloseShift event, emit) async {
+  static const String _kLocalShiftKey = 'pos_local_active_shift';
+
+  ShiftResponseModel? _readLocalShift() {
+    try {
+      final raw = _prefs.getString(_kLocalShiftKey);
+      if (raw == null || raw.isEmpty) return null;
+      final json = jsonDecode(raw);
+      if (json is! Map<String, dynamic>) return null;
+      return ShiftResponseModel.fromJson(json);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<void> _writeLocalShift(ShiftResponseModel shift) async {
+    try {
+      await _prefs.setString(_kLocalShiftKey, jsonEncode(shift.toJson()));
+    } catch (_) {}
+  }
+
+  Future<void> _clearLocalShift() async {
+    try {
+      await _prefs.remove(_kLocalShiftKey);
+    } catch (_) {}
+  }
+
+  static String? _jwtClaim(String jwt, String key) {
+    try {
+      final parts = jwt.split('.');
+      if (parts.length < 2) return null;
+      final payload = parts[1];
+      final normalized = base64Url.normalize(payload);
+      final decoded = utf8.decode(base64Url.decode(normalized));
+      final obj = jsonDecode(decoded);
+      if (obj is! Map) return null;
+      final v = obj[key];
+      if (v == null) return null;
+      return v.toString();
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<String> _resolveCashRegisterId() async {
+    final token = await _tokenStorage.readAccessToken();
+    if (token == null || token.isEmpty) return '';
+    return _jwtClaim(token, 'cash_register_id') ?? '';
+  }
+
+  String _resolveCashierId() {
+    final ctx = navigatorKey.currentContext;
+    final id = ctx?.read<UserBloc>().state.userMOdel?.id ?? '';
+    return id;
+  }
+
+  Future<void> _closeShift(_CloseShift event, Emitter<ShiftState> emit) async {
     emit(state.copyWith(status: Status.LOADING));
     final response = await _closeShiftUsecase.call(
       CloseShiftRequestModel(
         shiftId: state.shift?.id ?? '',
-        closingCard: int.parse(state.cardSum),
-        closingCash: int.parse(state.cashSum),
+        closingCard: int.tryParse(state.cardSum) ?? 0,
+        closingCash: int.tryParse(state.cashSum) ?? 0,
       ),
     );
+    if (emit.isDone) return;
+
+    // Success path
+    if (response.isRight()) {
+      navigatorKey.currentContext!.read<AuthCubit>().logout(
+        onSuccess: () => Navigator.pushNamedAndRemoveUntil(
+          navigatorKey.currentContext!,
+          AppRoutes.loginPinScreen,
+          (router) => true,
+        ),
+      );
+      showSuccessMessage(
+        navigatorKey.currentContext!,
+        "Smena muvafaqqiyatli yopildi",
+      );
+      emit(
+        state.copyWith(
+          status: Status.SUCCESS,
+          shift: null,
+          cardSum: '0',
+          cashSum: '0',
+        ),
+      );
+      await _clearLocalShift();
+      return;
+    }
+
+    // Failure path (offline-friendly fallback)
+    final local = _readLocalShift();
+    if (local != null && (state.shift?.id == local.id)) {
+      await _clearLocalShift();
+      if (emit.isDone) return;
+      showSuccessMessage(
+        navigatorKey.currentContext!,
+        "Smena yopildi (offline).",
+      );
+      emit(
+        state.copyWith(
+          status: Status.SUCCESS,
+          shift: null,
+          cardSum: '0',
+          cashSum: '0',
+        ),
+      );
+      return;
+    }
+
     response.fold(
       (l) {
         showErrorMessage(
@@ -57,67 +169,83 @@ class ShiftBloc extends Bloc<ShiftEvent, ShiftState> {
         );
         emit(state.copyWith(status: Status.ERROR, failure: l));
       },
-      (r) async {
-        navigatorKey.currentContext!.read<AuthCubit>().logout(
-          onSuccess: () => Navigator.pushNamedAndRemoveUntil(
-            navigatorKey.currentContext!,
-            AppRoutes.loginPinScreen,
-            (router) => true,
-          ),
-        );
-        showSuccessMessage(
-          navigatorKey.currentContext!,
-          "Smena muvafaqqiyatli yopildi",
-        );
-        emit(
-          state.copyWith(
-            status: Status.SUCCESS,
-            shift: null,
-            cardSum: '0',
-            cashSum: '0',
-          ),
-        );
-      },
+      (_) => emit(state.copyWith(status: Status.ERROR)),
     );
   }
 
-  void _openShift(_OpenShift evente, emit) async {
+  Future<void> _openShift(_OpenShift evente, Emitter<ShiftState> emit) async {
     emit(state.copyWith(status: Status.LOADING));
+    final cashRegisterId = await _resolveCashRegisterId();
+    final cashierId = _resolveCashierId();
+    final openCash = int.tryParse(state.cashSum) ?? 0;
+    final openCard = int.tryParse(state.cardSum) ?? 0;
+
     final response = await _openShiftUsecase.call(
       OpenShiftModel(
-        cashRegisterId: "de9354d4-f7e4-4317-a3c6-3b06b6045fd1",
-        cashierId: "4e25f6c1-68c0-43bd-bcb2-a130bde2e9e1",
-        openCardSum: int.parse(state.cardSum),
-        openCashSum: int.parse(state.cashSum),
+        cashRegisterId: cashRegisterId,
+        cashierId: cashierId,
+        openCardSum: openCard,
+        openCashSum: openCash,
       ),
     );
-    response.fold(
-      (l) {
-        showErrorMessage(
-          navigatorKey.currentContext!,
-          l.getLocalizedMessage(navigatorKey.currentContext!),
-        );
-        emit(state.copyWith(status: Status.ERROR, failure: l));
-      },
-      (r) {
-        Navigator.pushNamedAndRemoveUntil(
-          navigatorKey.currentContext!,
-          AppRoutes.mainScreen,
-          (router) => true,
-        );
-        showSuccessMessage(
-          navigatorKey.currentContext!,
-          "Smena muvafaqqiyatli ochildi",
-        );
-        emit(
-          state.copyWith(
-            status: Status.SUCCESS,
-            shift: r,
-            cardSum: '0',
-            cashSum: '0',
-          ),
-        );
-      },
+    if (emit.isDone) return;
+
+    // Success path
+    if (response.isRight()) {
+      final r = response.getOrElse(
+        () => const ShiftResponseModel(),
+      );
+      await _writeLocalShift(r);
+      Navigator.pushNamedAndRemoveUntil(
+        navigatorKey.currentContext!,
+        AppRoutes.mainScreen,
+        (router) => true,
+      );
+      showSuccessMessage(
+        navigatorKey.currentContext!,
+        "Smena muvafaqqiyatli ochildi",
+      );
+      emit(
+        state.copyWith(
+          status: Status.SUCCESS,
+          shift: r,
+          cardSum: '0',
+          cashSum: '0',
+        ),
+      );
+      return;
+    }
+
+    // Failure path → offline-friendly local shift
+    final now = DateTime.now();
+    final local = ShiftResponseModel(
+      id: 'local_${now.millisecondsSinceEpoch}',
+      cashRegisterId: cashRegisterId,
+      cashierId: cashierId,
+      openedAt: now,
+      openingCash: openCash,
+      openinCard: openCard,
+      createdAt: now,
+      updatedAt: now,
+    );
+    await _writeLocalShift(local);
+    if (emit.isDone) return;
+    Navigator.pushNamedAndRemoveUntil(
+      navigatorKey.currentContext!,
+      AppRoutes.mainScreen,
+      (router) => true,
+    );
+    showSuccessMessage(
+      navigatorKey.currentContext!,
+      "Smena ochildi (offline).",
+    );
+    emit(
+      state.copyWith(
+        status: Status.SUCCESS,
+        shift: local,
+        cardSum: '0',
+        cashSum: '0',
+      ),
     );
   }
 
@@ -155,32 +283,47 @@ class ShiftBloc extends Bloc<ShiftEvent, ShiftState> {
     }
   }
 
-  void _checkShift(_CheckShift event, emit) async {
+  Future<void> _checkShift(_CheckShift event, Emitter<ShiftState> emit) async {
     emit(state.copyWith(status: Status.LOADING));
-    final response = await _checkShiftUsecase.call(
-      "de9354d4-f7e4-4317-a3c6-3b06b6045fd1",
-    );
+    final cashRegisterId = await _resolveCashRegisterId();
+    if (emit.isDone) return;
+    if (cashRegisterId.isEmpty) {
+      final local = _readLocalShift();
+      emit(state.copyWith(status: Status.SUCCESS, shift: local));
+      return;
+    }
+
+    final response = await _checkShiftUsecase.call(cashRegisterId);
+    if (emit.isDone) return;
+
+    ShiftResponseModel? resolved;
+    Failure? failure;
+
     response.fold(
-      (l) {
-        emit(state.copyWith(status: Status.ERROR, failure: l));
-      },
-      (r) {
-        if (r == null) {
-          final ctx = navigatorKey.currentContext;
-          if (ctx != null && ctx.mounted) {
-            final role = ctx.read<UserBloc>().state.userMOdel?.role;
-            // Kassir avval Stollar (asosiy) ekranida bo‘lsin; smenani sidebar orqali ochadi.
-            if (role != UserRole.cashier) {
-              Navigator.pushNamed(ctx, AppRoutes.closeShiftScreen);
-            }
-          }
-        }
-        emit(state.copyWith(status: Status.SUCCESS, shift: r));
-      },
+      (l) => failure = l,
+      (r) => resolved = r,
     );
+
+    resolved ??= _readLocalShift();
+    if (resolved == null) {
+      final ctx = navigatorKey.currentContext;
+      if (ctx != null && ctx.mounted) {
+        final role = ctx.read<UserBloc>().state.userMOdel?.role;
+        if (role != UserRole.cashier) {
+          Navigator.pushNamed(ctx, AppRoutes.closeShiftScreen);
+        }
+      }
+      await _clearLocalShift();
+    } else {
+      await _writeLocalShift(resolved!);
+    }
+
+    if (emit.isDone) return;
+    emit(state.copyWith(status: Status.SUCCESS, shift: resolved, failure: failure));
   }
 
-  void _started(_Started event, emit) {
-    emit(const ShiftState());
+  void _started(_Started event, Emitter<ShiftState> emit) {
+    final local = _readLocalShift();
+    emit(ShiftState(shift: local));
   }
 }

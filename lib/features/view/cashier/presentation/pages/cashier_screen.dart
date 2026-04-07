@@ -1,9 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:mary_ai_pos/core/extension/for_context.dart';
 import 'package:mary_ai_pos/core/routes/app_routes.dart';
 import 'package:mary_ai_pos/core/widgets/app_scaffold.dart';
-import 'package:mary_ai_pos/features/view/auth/presentation/cubit/bloc/user_bloc.dart';
 import 'package:mary_ai_pos/features/view/cashier/presentation/pages/widgets/cashier_bottom_bar.dart';
 import 'package:mary_ai_pos/features/view/cashier/presentation/pages/widgets/cashier_tab_bar.dart';
 import 'package:mary_ai_pos/features/view/cashier/presentation/pages/widgets/tab_kassa/kassa_tab.dart';

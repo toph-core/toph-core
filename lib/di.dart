@@ -149,6 +149,8 @@ void _cubit() {
       checkShiftUsecase: inject(),
       openShiftUsecase: inject(),
       closeShiftUsecase: inject(),
+      prefs: inject(),
+      tokenStorage: inject(),
     ),
   );
 

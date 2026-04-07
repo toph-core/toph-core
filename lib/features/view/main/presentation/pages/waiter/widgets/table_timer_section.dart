@@ -38,6 +38,7 @@ class _TableTimerSectionState extends State<TableTimerSection> {
             p.isLoading != c.isLoading ||
             p.isMutating != c.isMutating ||
             p.timer != c.timer ||
+            p.displayActiveSec != c.displayActiveSec ||
             p.errorMessage != c.errorMessage,
         builder: (context, s) {
           if (!s.shouldShow && !s.isLoading) {
@@ -74,6 +75,7 @@ class _TableTimerSectionState extends State<TableTimerSection> {
           final canPause = st == 'running';
           final canResume = st == 'paused';
           final closed = st == 'closed' || t.isClosed;
+          final displaySec = s.displayActiveSec ?? t.totalActiveSec;
 
           return Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
@@ -125,7 +127,7 @@ class _TableTimerSectionState extends State<TableTimerSection> {
                     ),
                   const SizedBox(height: 4),
                   Text(
-                    'Faol vaqt: ${_formatDuration(t.totalActiveSec)}',
+                    'Faol vaqt: ${_formatDuration(displaySec)}',
                     style: TextStyle(fontSize: 12, color: colors.textDefault),
                   ),
                   if (t.currentAmount != null &&

@@ -13,30 +13,69 @@ class TableTimerCubit extends Cubit<TableTimerState> {
   TableTimerCubit(this._client) : super(const TableTimerState());
 
   final DioClient _client;
-  Timer? _pollTimer;
+  Timer? _serverSyncTimer;
+  Timer? _uiTickTimer;
   String? _activeOrderId;
+  int _baseTotalActiveSec = 0;
+  DateTime? _lastSyncAt;
 
-  void _cancelPoll() {
-    _pollTimer?.cancel();
-    _pollTimer = null;
+  static const Duration _serverSyncInterval = Duration(seconds: 60);
+
+  void _cancelTimers() {
+    _serverSyncTimer?.cancel();
+    _serverSyncTimer = null;
+    _uiTickTimer?.cancel();
+    _uiTickTimer = null;
   }
 
-  void _schedulePollIfRunning(TableTimerResponse? t) {
-    _cancelPoll();
-    if (t == null) return;
-    if (t.stateNormalized != 'running') return;
-    _pollTimer = Timer.periodic(const Duration(seconds: 8), (_) {
-      final id = _activeOrderId;
-      if (id != null) {
-        fetchTimer(orderId: id);
+  void _ensureServerSync() {
+    final id = _activeOrderId;
+    if (id == null) return;
+    _serverSyncTimer ??= Timer.periodic(_serverSyncInterval, (_) {
+      final oid = _activeOrderId;
+      if (oid != null) {
+        fetchTimer(orderId: oid);
       }
     });
   }
 
+  void _startUiTickIfRunning(TableTimerResponse? t) {
+    _uiTickTimer?.cancel();
+    _uiTickTimer = null;
+    if (t == null) return;
+    if (t.stateNormalized != 'running') return;
+
+    _uiTickTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      final syncAt = _lastSyncAt;
+      if (syncAt == null) return;
+      final elapsed = DateTime.now().difference(syncAt).inSeconds;
+      final display = _baseTotalActiveSec + (elapsed < 0 ? 0 : elapsed);
+      if (!isClosed) {
+        emit(state.copyWith(displayActiveSec: display));
+      }
+    });
+  }
+
+  void _applyTimer(TableTimerResponse t) {
+    _lastSyncAt = DateTime.now();
+    _baseTotalActiveSec = t.totalActiveSec;
+    emit(state.copyWith(
+      isLoading: false,
+      shouldShow: true,
+      timer: t,
+      displayActiveSec: t.totalActiveSec,
+      errorMessage: null,
+    ));
+    _ensureServerSync();
+    _startUiTickIfRunning(t);
+  }
+
   /// Buyurtma almashganda chaqiriladi. Timer faqat `dine_in` (yoki tur noma’lum) uchun so‘raladi.
   Future<void> bindOrder(OpenOrderModel? order) async {
-    _cancelPoll();
+    _cancelTimers();
     _activeOrderId = null;
+    _lastSyncAt = null;
+    _baseTotalActiveSec = 0;
 
     if (order == null || order.id.isEmpty) {
       emit(const TableTimerState());
@@ -50,6 +89,14 @@ class TableTimerCubit extends Cubit<TableTimerState> {
 
     final ot = order.orderType?.trim().toLowerCase();
     if (ot != null && ot.isNotEmpty && ot != 'dine_in') {
+      emit(const TableTimerState(shouldShow: false));
+      return;
+    }
+
+    // Backend contract: timer endpoint faqat `table_type == time_based` bo‘lsa ishlaydi.
+    // Agar tableType ma’lum bo‘lib, time_based bo‘lmasa — umuman so‘rov yubormaymiz.
+    final tableType = order.tableType?.trim().toLowerCase();
+    if (tableType != null && tableType.isNotEmpty && tableType != 'time_based') {
       emit(const TableTimerState(shouldShow: false));
       return;
     }
@@ -74,6 +121,7 @@ class TableTimerCubit extends Cubit<TableTimerState> {
           isLoading: false,
           shouldShow: false,
           clearTimer: true,
+          clearDisplayActiveSec: true,
         ));
         return;
       }
@@ -83,17 +131,12 @@ class TableTimerCubit extends Cubit<TableTimerState> {
           isLoading: false,
           shouldShow: false,
           clearTimer: true,
+          clearDisplayActiveSec: true,
         ));
-        _cancelPoll();
+        _cancelTimers();
         return;
       }
-      emit(state.copyWith(
-        isLoading: false,
-        shouldShow: true,
-        timer: t,
-        errorMessage: null,
-      ));
-      _schedulePollIfRunning(t);
+      _applyTimer(t);
     } on DioException catch (e) {
       if (isClosed) return;
       if (e.response?.statusCode == 400 || e.response?.statusCode == 404) {
@@ -101,8 +144,9 @@ class TableTimerCubit extends Cubit<TableTimerState> {
           isLoading: false,
           shouldShow: false,
           clearTimer: true,
+          clearDisplayActiveSec: true,
         ));
-        _cancelPoll();
+        _cancelTimers();
         return;
       }
       emit(state.copyWith(
@@ -115,6 +159,7 @@ class TableTimerCubit extends Cubit<TableTimerState> {
         isLoading: false,
         shouldShow: false,
         clearTimer: true,
+        clearDisplayActiveSec: true,
         errorMessage: e.toString(),
       ));
     }
@@ -130,8 +175,8 @@ class TableTimerCubit extends Cubit<TableTimerState> {
       final raw = res.data['data'];
       if (raw is Map<String, dynamic>) {
         final t = TableTimerResponse.fromJson(raw);
-        emit(state.copyWith(isMutating: false, timer: t, shouldShow: true));
-        _schedulePollIfRunning(t);
+        emit(state.copyWith(isMutating: false));
+        _applyTimer(t);
       } else {
         await fetchTimer(orderId: id);
       }
@@ -159,8 +204,8 @@ class TableTimerCubit extends Cubit<TableTimerState> {
       final raw = res.data['data'];
       if (raw is Map<String, dynamic>) {
         final t = TableTimerResponse.fromJson(raw);
-        emit(state.copyWith(isMutating: false, timer: t));
-        _schedulePollIfRunning(t);
+        emit(state.copyWith(isMutating: false));
+        _applyTimer(t);
       } else {
         await fetchTimer(orderId: id);
       }
@@ -188,8 +233,8 @@ class TableTimerCubit extends Cubit<TableTimerState> {
       final raw = res.data['data'];
       if (raw is Map<String, dynamic>) {
         final t = TableTimerResponse.fromJson(raw);
-        emit(state.copyWith(isMutating: false, timer: t));
-        _schedulePollIfRunning(t);
+        emit(state.copyWith(isMutating: false));
+        _applyTimer(t);
       } else {
         await fetchTimer(orderId: id);
       }
@@ -209,7 +254,7 @@ class TableTimerCubit extends Cubit<TableTimerState> {
 
   @override
   Future<void> close() {
-    _cancelPoll();
+    _cancelTimers();
     return super.close();
   }
 }

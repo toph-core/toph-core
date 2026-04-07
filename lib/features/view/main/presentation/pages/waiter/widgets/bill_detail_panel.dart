@@ -15,7 +15,7 @@ import 'package:mary_ai_pos/features/view/main/presentation/pages/waiter/widgets
 import 'package:mary_ai_pos/features/view/main/presentation/pages/waiter/widgets/order_status_badge.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/waiter/widgets/table_timer_section.dart';
 
-enum _OrderStatusTab { waiting, cooking, ready }
+enum _OrderStatusTab { pending, cooking, ready, cancelled }
 
 class BillDetailPanel extends StatefulWidget {
   const BillDetailPanel({super.key});
@@ -25,7 +25,7 @@ class BillDetailPanel extends StatefulWidget {
 }
 
 class _BillDetailPanelState extends State<BillDetailPanel> {
-  _OrderStatusTab _activeTab = _OrderStatusTab.waiting;
+  _OrderStatusTab _activeTab = _OrderStatusTab.pending;
 
   @override
   Widget build(BuildContext context) {
@@ -137,6 +137,8 @@ class _BillDetailView extends StatelessWidget {
                   buildWhen: (p, c) => p.selectedGoods != c.selectedGoods,
                   builder: (context, detailState) {
                     final server = waiterState.orderLineItems;
+                    final filteredServer =
+                        _filterItemsByTab(server, activeTab);
                     final loading = waiterState.isLoadingOrderItems;
                     final editMode =
                         readOnly ? false : waiterState.orderItemsEditMode;
@@ -144,7 +146,7 @@ class _BillDetailView extends StatelessWidget {
                         ? <OrderItem>[]
                         : detailState.selectedGoods;
                     final showEmpty =
-                        !loading && server.isEmpty && cart.isEmpty;
+                        !loading && filteredServer.isEmpty && cart.isEmpty;
 
                     if (showEmpty && readOnly) {
                       return Expanded(
@@ -160,7 +162,7 @@ class _BillDetailView extends StatelessWidget {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 16, vertical: 8),
                         children: [
-                          if (loading && server.isEmpty)
+                          if (loading && filteredServer.isEmpty)
                             const Padding(
                               padding: EdgeInsets.symmetric(vertical: 24),
                               child: Center(
@@ -178,7 +180,7 @@ class _BillDetailView extends StatelessWidget {
                             ),
                             const SizedBox(height: 10),
                           ],
-                          ...server.asMap().entries.map((e) {
+                          ...filteredServer.asMap().entries.map((e) {
                             final i = e.key;
                             final line = e.value;
                             return Column(
@@ -254,6 +256,30 @@ class _BillDetailView extends StatelessWidget {
       },
     );
   }
+}
+
+List<OrderLineItemModel> _filterItemsByTab(
+  List<OrderLineItemModel> items,
+  _OrderStatusTab tab,
+) {
+  bool match(OrderLineItemModel it) {
+    final s = (it.status ?? '').trim().toLowerCase();
+    switch (tab) {
+      case _OrderStatusTab.pending:
+        return s == 'pending';
+      case _OrderStatusTab.cooking:
+        return s == 'cooking';
+      case _OrderStatusTab.ready:
+        return s == 'ready';
+      case _OrderStatusTab.cancelled:
+        return s == 'cancelled';
+    }
+  }
+
+  final out = items.where(match).toList();
+  // Agar statuslar hali backenddan kelmasa, UX uchun hammasini pending’da ko‘rsatamiz.
+  if (out.isEmpty && tab == _OrderStatusTab.pending) return items;
+  return out;
 }
 
 class _DetailHeader extends StatelessWidget {
@@ -510,26 +536,38 @@ class _StatusTabs extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      child: Row(
-        children: [
-          _TabBtn(
-            label: 'Ожидание',
-            isActive: activeTab == _OrderStatusTab.waiting,
-            onTap: () => onTabChanged(_OrderStatusTab.waiting),
+      child: SizedBox(
+        height: 40,
+        child: SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: [
+              _TabBtn(
+                label: 'Ожидание',
+                isActive: activeTab == _OrderStatusTab.pending,
+                onTap: () => onTabChanged(_OrderStatusTab.pending),
+              ),
+              const SizedBox(width: 6),
+              _TabBtn(
+                label: 'Готовится',
+                isActive: activeTab == _OrderStatusTab.cooking,
+                onTap: () => onTabChanged(_OrderStatusTab.cooking),
+              ),
+              const SizedBox(width: 6),
+              _TabBtn(
+                label: 'Получено',
+                isActive: activeTab == _OrderStatusTab.ready,
+                onTap: () => onTabChanged(_OrderStatusTab.ready),
+              ),
+              const SizedBox(width: 6),
+              _TabBtn(
+                label: 'Отменено',
+                isActive: activeTab == _OrderStatusTab.cancelled,
+                onTap: () => onTabChanged(_OrderStatusTab.cancelled),
+              ),
+            ],
           ),
-          const SizedBox(width: 6),
-          _TabBtn(
-            label: 'Готовится',
-            isActive: activeTab == _OrderStatusTab.cooking,
-            onTap: () => onTabChanged(_OrderStatusTab.cooking),
-          ),
-          const SizedBox(width: 6),
-          _TabBtn(
-            label: 'Получено',
-            isActive: activeTab == _OrderStatusTab.ready,
-            onTap: () => onTabChanged(_OrderStatusTab.ready),
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -1458,7 +1496,7 @@ class _CloseOrderViewState extends State<_CloseOrderView> {
                                       ),
                                     )
                                   : Text(
-                                      'Закрыть ✓',
+                                      'Oplatit ✓',
                                       style: TextStyle(
                                         fontSize: 14,
                                         fontWeight: FontWeight.w600,

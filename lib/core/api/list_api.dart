@@ -24,6 +24,7 @@ class ListAPI {
 
   //! Orders
   static const String orders = "/api/v1/orders";
+  static String orderById(String orderId) => "/api/v1/orders/$orderId";
   /// Current user's orders (Bearer token). Query: lang, scope, limit, offset.
   static const String ordersMy = "api/v1/orders/my";
   /// Orders assigned to / history for a waiter.

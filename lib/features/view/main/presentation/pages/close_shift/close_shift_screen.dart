@@ -18,6 +18,7 @@ class CloseShiftScreen extends StatefulWidget {
 
 class _CloseShiftScreenState extends State<CloseShiftScreen> {
   late final DateTime enterDate = DateTime.now();
+  Timer? _ticker;
   final List<String> keyboardKeys = [
     '1',
     '2',
@@ -32,6 +33,22 @@ class _CloseShiftScreenState extends State<CloseShiftScreen> {
     '0',
     '00',
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    // Make the UI (duration, time) update even without backend.
+    _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (mounted) setState(() {});
+    });
+  }
+
+  @override
+  void dispose() {
+    _ticker?.cancel();
+    _ticker = null;
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {

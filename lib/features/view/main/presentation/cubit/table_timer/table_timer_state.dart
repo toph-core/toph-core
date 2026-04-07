@@ -7,6 +7,8 @@ class TableTimerState {
   final String? errorMessage;
   /// UI blokini ko‘rsatish: faqat `time_based` + muvaffaqiyatli javobdan keyin.
   final bool shouldShow;
+  /// UI uchun lokal hisoblangan faol vaqt (sekund). `null` bo‘lsa `timer.totalActiveSec` ishlatiladi.
+  final int? displayActiveSec;
 
   const TableTimerState({
     this.timer,
@@ -14,6 +16,7 @@ class TableTimerState {
     this.isMutating = false,
     this.errorMessage,
     this.shouldShow = false,
+    this.displayActiveSec,
   });
 
   TableTimerState copyWith({
@@ -23,6 +26,8 @@ class TableTimerState {
     bool? isMutating,
     Object? errorMessage = _sentinel,
     bool? shouldShow,
+    int? displayActiveSec,
+    bool clearDisplayActiveSec = false,
   }) {
     return TableTimerState(
       timer: clearTimer ? null : (timer ?? this.timer),
@@ -32,6 +37,9 @@ class TableTimerState {
           ? this.errorMessage
           : errorMessage as String?,
       shouldShow: shouldShow ?? this.shouldShow,
+      displayActiveSec: clearDisplayActiveSec
+          ? null
+          : (displayActiveSec ?? this.displayActiveSec),
     );
   }
 }

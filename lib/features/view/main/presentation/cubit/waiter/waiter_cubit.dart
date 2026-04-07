@@ -120,7 +120,76 @@ class WaiterCubit extends Cubit<WaiterState> {
       orderItemsEditMode: false,
       cancellingOrderItemId: null,
     ));
+    // Fresh order detail (total_amount) is important for time_based tables:
+    // order items can be empty but total is still payable.
+    loadOrderDetail(id);
     loadOrderItems(id);
+  }
+
+  Future<void> loadOrderDetail(String orderId) async {
+    if (orderId.isEmpty) return;
+    try {
+      final response = await _client.get(
+        ListAPI.orderById(orderId),
+        queryParameters: {'lang': 'uz'},
+      );
+      if (isClosed) return;
+      final raw = response.data['data'];
+      if (raw is! Map<String, dynamic>) return;
+      final fresh = OpenOrderModel.fromJson(raw);
+
+      final idx = state.openOrders.indexWhere((o) => o.id == orderId);
+      if (idx < 0) return;
+      final prev = state.openOrders[idx];
+      final merged = _mergeOrder(prev, fresh);
+      final nextOrders = [...state.openOrders];
+      nextOrders[idx] = merged;
+      if (!isClosed) {
+        emit(state.copyWith(openOrders: nextOrders));
+      }
+    } on DioException catch (e) {
+      if (kDebugMode) print('WaiterCubit.loadOrderDetail error: $e');
+    } catch (e) {
+      if (kDebugMode) print('WaiterCubit.loadOrderDetail error: $e');
+    }
+  }
+
+  OpenOrderModel _mergeOrder(OpenOrderModel prev, OpenOrderModel fresh) {
+    return prev.copyWith(
+      name: (fresh.name != null && fresh.name!.trim().isNotEmpty)
+          ? fresh.name
+          : prev.name,
+      tableId: (fresh.tableId != null && fresh.tableId!.isNotEmpty)
+          ? fresh.tableId
+          : prev.tableId,
+      orderType: (fresh.orderType != null && fresh.orderType!.isNotEmpty)
+          ? fresh.orderType
+          : prev.orderType,
+      tableType: (fresh.tableType != null && fresh.tableType!.isNotEmpty)
+          ? fresh.tableType
+          : prev.tableType,
+      tableStartedAt: fresh.tableStartedAt ?? prev.tableStartedAt,
+      status: (fresh.status != null && fresh.status!.isNotEmpty)
+          ? fresh.status
+          : prev.status,
+      // Prefer API total if present and > 0.
+      totalAmount:
+          (fresh.totalAmountValue > 0) ? fresh.totalAmount : prev.totalAmount,
+      displayTotalAmount: (fresh.displayTotalAmountValue > 0)
+          ? fresh.displayTotalAmount
+          : prev.displayTotalAmount,
+      serviceAmount: (fresh.serviceAmount != null &&
+              fresh.serviceAmount!.trim().isNotEmpty)
+          ? fresh.serviceAmount
+          : prev.serviceAmount,
+      servicePercent: fresh.servicePercent ?? prev.servicePercent,
+      guestCount: fresh.guestCount != 0 ? fresh.guestCount : prev.guestCount,
+      // Keep UI-friendly hall/tableNumber if detail endpoint doesn't send them.
+      hallName: fresh.hallName.isNotEmpty ? fresh.hallName : prev.hallName,
+      tableNumber:
+          fresh.tableNumber != 0 ? fresh.tableNumber : prev.tableNumber,
+      openedAt: fresh.openedAt ?? prev.openedAt,
+    );
   }
 
   void showCreateForm() {
@@ -257,11 +326,15 @@ class WaiterCubit extends Cubit<WaiterState> {
   void showCloseForm() {
     final o = state.selectedOrder;
     if (o != null && o.isTerminalOrderStatus) return;
+    final id = state.selectedOrderId;
+    if (id != null) {
+      // Make sure total_amount is fresh before closing.
+      loadOrderDetail(id);
+    }
     emit(state.copyWith(
       panelMode: WaiterPanelMode.closeForm,
       orderItemsEditMode: false,
     ));
-    final id = state.selectedOrderId;
     if (id != null) {
       loadOrderItems(id);
     }
