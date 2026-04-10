@@ -54,6 +54,7 @@ import 'package:mary_ai_pos/features/view/main/domain/repository/main_repository
 import 'package:mary_ai_pos/features/view/main/domain/usecase/get_halls_usecase.dart';
 import 'package:mary_ai_pos/features/view/main/domain/usecase/get_staff_waiters_usecase.dart';
 import 'package:mary_ai_pos/features/view/main/domain/usecase/get_tables_by_hall_id_usecase.dart';
+import 'package:mary_ai_pos/features/view/main/domain/usecase/sync_printer_settings_usecase.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/main/main_cubit.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/table_timer/table_timer_cubit.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/waiter/waiter_cubit.dart';
@@ -134,6 +135,9 @@ void _useCase() {
     () => GetPaymentDetailWithIdUsecase(repository: inject()),
   );
   inject.registerLazySingleton(() => GetUserUsecase(inject()));
+  inject.registerLazySingleton(
+    () => SyncPrinterSettingsUsecase(inject(), inject()),
+  );
   inject.registerLazySingleton(() => GetStaffWaitersUsecase(inject()));
   inject.registerLazySingleton(() => CheckShiftUsecase(inject()));
   inject.registerFactory(() => OpenShiftUsecase(inject()));
@@ -160,7 +164,12 @@ void _cubit() {
   );
 
   //? factory
-  inject.registerLazySingleton(() => UserBloc(getUserUsecase: inject()));
+  inject.registerLazySingleton(
+    () => UserBloc(
+      getUserUsecase: inject(),
+      syncPrinterSettingsUsecase: inject(),
+    ),
+  );
   inject.registerFactory(() => LoginPinCubit(inject(), inject(), inject()));
   inject.registerFactory(() => DetailBloc(inject(), inject(), inject()));
   inject.registerFactory(

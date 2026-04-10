@@ -55,4 +55,8 @@ class ListAPI {
   static const String activeShift = "/api/v1/cash-register-shifts/active";
   static String closeShift(String id) => "/api/v1/cash-register-shifts/$id/close";
   static const String openShift = "/api/v1/cash-register-shifts";
+
+  //! POS printers (ESC/POS TCP) — branch/cafe sozlamalari
+  /// GET/PUT — `{ data: { cashier_printer_ip, kitchen_printer_ip, printer_port } }`
+  static const String printerSettings = "api/v1/settings/printer";
 }

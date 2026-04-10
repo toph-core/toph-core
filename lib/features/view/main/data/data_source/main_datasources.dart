@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:mary_ai_pos/core/api/dio_client.dart';
 import 'package:mary_ai_pos/core/api/dio_exception_handler.dart';
 import 'package:mary_ai_pos/core/api/list_api.dart';
+import 'package:mary_ai_pos/core/service/printer/printer_settings_model.dart';
 import 'package:mary_ai_pos/core/error/failure.dart';
 import 'package:mary_ai_pos/features/view/auth/data/models/user/user_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/archive_detail/archive_detail_model.dart';
@@ -78,12 +79,46 @@ abstract class MainDataSources {
   Future<Either<Failure, HourPriceResponseEntity>> getHourPrice({
     required String orderId,
   });
+
+  Future<Either<Failure, PrinterSettingsModel>> getPrinterSettings();
 }
 
 class MainDataSourcesImpl implements MainDataSources {
   final DioClient _client;
 
   MainDataSourcesImpl(this._client);
+
+  @override
+  Future<Either<Failure, PrinterSettingsModel>> getPrinterSettings() async {
+    try {
+      final response = await _client.get(ListAPI.printerSettings);
+      final root = response.data;
+      Map<String, dynamic>? map;
+      if (root is Map<String, dynamic>) {
+        final data = root['data'];
+        if (data is Map<String, dynamic>) {
+          map = data;
+        } else {
+          map = root;
+        }
+      }
+      if (map == null) {
+        return const Left(ParsingFailure());
+      }
+      return Right(PrinterSettingsModel.fromJson(map));
+    } on DioException catch (exception) {
+      return Left(handleDioException(exception));
+    } on FormatException catch (e, st) {
+      if (kDebugMode) print('ParsingError: $e\n$st');
+      return const Left(ParsingFailure());
+    } on TypeError catch (e, st) {
+      if (kDebugMode) print('ParsingError: $e\n$st');
+      return const Left(ParsingFailure());
+    } catch (e, st) {
+      if (kDebugMode) print('Unknown error: $e\n$st');
+      return const Left(UnknownFailure());
+    }
+  }
 
   @override
   Future<Either<Failure, HourPriceResponseEntity>> getHourPrice({

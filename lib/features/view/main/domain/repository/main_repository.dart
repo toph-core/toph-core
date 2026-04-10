@@ -1,5 +1,6 @@
 import 'package:dartz/dartz.dart';
 import 'package:mary_ai_pos/core/error/failure.dart';
+import 'package:mary_ai_pos/core/service/printer/printer_settings_model.dart';
 import 'package:mary_ai_pos/features/view/auth/data/models/user/user_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/cafe_tables/cafe_tables_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/category/category_model.dart';
@@ -66,4 +67,6 @@ abstract class MainRepository {
   Future<Either<Failure, bool>> createPayment({
     required PaymentPayRequestEntity request,
   });
+
+  Future<Either<Failure, PrinterSettingsModel>> getPrinterSettings();
 }

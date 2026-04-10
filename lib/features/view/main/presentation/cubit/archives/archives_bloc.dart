@@ -153,7 +153,13 @@ class ArchivesBloc extends Bloc<ArchivesEvent, ArchivesState> {
       },
       (r) {
         if (isClosed) return;
-        emit(state.copyWith(archives: r));
+        emit(
+          state.copyWith(
+            archives: r,
+            status: Status.SUCCESS,
+            failure: null,
+          ),
+        );
         if (r.archives.isNotEmpty && state.selectArchive == null) {
           if (!isClosed) {
             add(_SelectArchive(id: r.archives[0].id));

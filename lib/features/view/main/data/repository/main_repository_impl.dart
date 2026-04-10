@@ -1,5 +1,6 @@
 import 'package:dartz/dartz.dart';
 import 'package:mary_ai_pos/core/error/failure.dart';
+import 'package:mary_ai_pos/core/service/printer/printer_settings_model.dart';
 import 'package:mary_ai_pos/features/view/auth/data/models/user/user_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/data_source/main_datasources.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/cafe_tables/cafe_tables_model.dart';
@@ -122,4 +123,8 @@ class MainRepositoryImpl implements MainRepository {
   Future<Either<Failure, bool>> createPayment({
     required PaymentPayRequestEntity request,
   }) async => await _dataSources.createPayment(request: request);
+
+  @override
+  Future<Either<Failure, PrinterSettingsModel>> getPrinterSettings() =>
+      _dataSources.getPrinterSettings();
 }

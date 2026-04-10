@@ -1,6 +1,7 @@
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'printer_config.dart';
+import 'printer_settings_model.dart';
 
 class PrinterConfigStorage {
   final SharedPreferences _prefs;
@@ -11,8 +12,8 @@ class PrinterConfigStorage {
   static const _kitchenIpKey = 'kitchen_printer_ip';
   static const _portKey = 'printer_port';
 
-  static const defaultCashierIp = '192.168.1.100';
-  static const defaultKitchenIp = '192.168.1.101';
+  static const defaultCashierIp = '192.168.123.100';
+  static const defaultKitchenIp = '192.168.1.222';
   static const defaultPort = 9100;
 
   PrinterConfig getCashierConfig() => PrinterConfig(
@@ -32,4 +33,14 @@ class PrinterConfigStorage {
       _prefs.setString(_kitchenIpKey, ip);
 
   Future<void> savePort(int port) => _prefs.setInt(_portKey, port);
+
+  /// API dan kelgan qiymatlar bilan faqat to‘ldirilgan maydonlarni yangilaydi.
+  Future<void> applyFromApi(PrinterSettingsModel settings) async {
+    final c = settings.cashierIp;
+    if (c != null && c.isNotEmpty) await saveCashierIp(c);
+    final k = settings.kitchenIp;
+    if (k != null && k.isNotEmpty) await saveKitchenIp(k);
+    final p = settings.port;
+    if (p != null && p > 0) await savePort(p);
+  }
 }
