@@ -17,7 +17,6 @@ class CloseShiftScreen extends StatefulWidget {
 }
 
 class _CloseShiftScreenState extends State<CloseShiftScreen> {
-  late final DateTime enterDate = DateTime.now();
   Timer? _ticker;
   final List<String> keyboardKeys = [
     '1',
@@ -62,13 +61,12 @@ class _CloseShiftScreenState extends State<CloseShiftScreen> {
               builder: (context, state) {
                 final cashAmount = int.tryParse(state.cashSum) ?? 0;
                 final cardAmount = int.tryParse(state.cardSum) ?? 0;
-                final totalAmount = cashAmount + cardAmount;
+                final closing = state.shift != null;
 
                 return LayoutBuilder(
                   builder: (context, constraints) {
                     final maxW = constraints.maxWidth;
                     final maxH = constraints.maxHeight;
-                    // ~1024×768 POS: chap panel uchun joy saqlash
                     final compactW = maxW < 1100;
                     final shortH = maxH < 720;
                     final edge = compactW ? 12.0 : 20.0;
@@ -77,12 +75,62 @@ class _CloseShiftScreenState extends State<CloseShiftScreen> {
                     final keyExtent = shortH ? 48.0 : 56.0;
                     final keyGap = shortH ? 6.0 : 8.0;
 
+                    if (closing) {
+                      return Padding(
+                        padding: EdgeInsets.all(edge),
+                        child: Row(
+                          spacing: gap,
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Expanded(
+                              child: Column(
+                                spacing: compactW ? 12 : 16,
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  _ShiftInfoCard(state: state),
+                                  Expanded(
+                                    child: Center(
+                                      child: SingleChildScrollView(
+                                        child: Padding(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 24,
+                                            vertical: 16,
+                                          ),
+                                          child: Text(
+                                            'Smenani yopish uchun pastdagi tugmani bosing.\n\n'
+                                            'Yakuniy naqd/terminal summasini kiritish shart emas.',
+                                            textAlign: TextAlign.center,
+                                            style: TextStyle(
+                                              fontSize: compactW ? 14 : 15,
+                                              height: 1.5,
+                                              color: const Color(0xFF666666),
+                                              fontFamily: 'Inter',
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            SizedBox(
+                              width: rightW,
+                              child: const Align(
+                                alignment: Alignment.bottomCenter,
+                                child: WShiftBottom(),
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }
+
                     return Padding(
                       padding: EdgeInsets.all(edge),
                       child: Row(
                         spacing: gap,
                         children: [
-                          // LEFT PANEL — Dashboard
                           Expanded(
                             flex: 3,
                             child: Column(
@@ -92,82 +140,84 @@ class _CloseShiftScreenState extends State<CloseShiftScreen> {
                                 _StatsRow(
                                   cashAmount: cashAmount,
                                   cardAmount: cardAmount,
-                                  totalAmount: totalAmount,
                                 ),
                                 Expanded(
-                                  child: _PaymentBreakdownCard(
-                                    cashAmount: cashAmount,
-                                    cardAmount: cardAmount,
-                                    totalAmount: totalAmount,
+                                  child: SingleChildScrollView(
+                                    child: _PaymentBreakdownCard(
+                                      cashAmount: cashAmount,
+                                      cardAmount: cardAmount,
+                                    ),
                                   ),
                                 ),
                               ],
                             ),
                           ),
-
-                          // RIGHT PANEL — Numpad
                           SizedBox(
                             width: rightW,
                             child: Column(
                               spacing: compactW ? 12 : 16,
                               children: [
-                                Expanded(
-                                  flex: 0,
-                                  child: Row(
-                                    spacing: compactW ? 8 : 12,
-                                    children: [
-                                      Expanded(
-                                        child: WShiftInputSumContainer(
-                                          onTap: () => context
-                                              .read<ShiftBloc>()
-                                              .add(
-                                                const ShiftEvent.updateSumType(
-                                                  type: ShiftSumType.cash,
-                                                ),
+                                Row(
+                                  spacing: compactW ? 8 : 12,
+                                  children: [
+                                    Expanded(
+                                      child: WShiftInputSumContainer(
+                                        onTap: () => context
+                                            .read<ShiftBloc>()
+                                            .add(
+                                              const ShiftEvent.updateSumType(
+                                                type: ShiftSumType.cash,
                                               ),
-                                          selected:
-                                              state.sum == ShiftSumType.cash,
-                                          title: "Naqt summani kiriting",
-                                          value: cashAmount.toString(),
-                                        ),
+                                            ),
+                                        selected:
+                                            state.sum == ShiftSumType.cash,
+                                        title: "Naqd (boshlang'ich)",
+                                        value: state.cashSum,
                                       ),
-                                      Expanded(
-                                        child: WShiftInputSumContainer(
-                                          onTap: () => context
-                                              .read<ShiftBloc>()
-                                              .add(
-                                                const ShiftEvent.updateSumType(
-                                                  type: ShiftSumType.card,
-                                                ),
+                                    ),
+                                    Expanded(
+                                      child: WShiftInputSumContainer(
+                                        onTap: () => context
+                                            .read<ShiftBloc>()
+                                            .add(
+                                              const ShiftEvent.updateSumType(
+                                                type: ShiftSumType.card,
                                               ),
-                                          selected:
-                                              state.sum == ShiftSumType.card,
-                                          title: "Terminal summani kiriting",
-                                          value: cardAmount.toString(),
-                                        ),
+                                            ),
+                                        selected:
+                                            state.sum == ShiftSumType.card,
+                                        title: "Terminal (boshlang'ich)",
+                                        value: cardAmount.toString(),
                                       ),
-                                    ],
-                                  ),
+                                    ),
+                                  ],
                                 ),
                                 Expanded(
-                                  child: GridView.builder(
-                                    shrinkWrap: true,
-                                    physics:
-                                        const NeverScrollableScrollPhysics(),
-                                    gridDelegate:
-                                        SliverGridDelegateWithFixedCrossAxisCount(
-                                      crossAxisCount: 3,
-                                      crossAxisSpacing: keyGap,
-                                      mainAxisSpacing: keyGap,
-                                      mainAxisExtent: keyExtent,
-                                    ),
-                                    itemCount: keyboardKeys.length,
-                                    itemBuilder: (context, index) {
-                                      final String key = keyboardKeys[index];
-                                      return _keyboardKey(
-                                        context,
-                                        key,
-                                        state.sum,
+                                  child: LayoutBuilder(
+                                    builder: (context, g) {
+                                      final cellW =
+                                          (g.maxWidth - 2 * keyGap) / 3;
+                                      final ar = cellW / keyExtent;
+                                      return GridView.builder(
+                                        physics:
+                                            const NeverScrollableScrollPhysics(),
+                                        gridDelegate:
+                                            SliverGridDelegateWithFixedCrossAxisCount(
+                                          crossAxisCount: 3,
+                                          crossAxisSpacing: keyGap,
+                                          mainAxisSpacing: keyGap,
+                                          childAspectRatio: ar > 0 ? ar : 1,
+                                        ),
+                                        itemCount: keyboardKeys.length,
+                                        itemBuilder: (context, index) {
+                                          final String key =
+                                              keyboardKeys[index];
+                                          return _keyboardKey(
+                                            context,
+                                            key,
+                                            state.sum,
+                                          );
+                                        },
                                       );
                                     },
                                   ),
@@ -246,104 +296,97 @@ class _ShiftInfoCard extends StatelessWidget {
         border: Border.all(color: const Color(0xFFEBEBEB)),
         borderRadius: BorderRadius.circular(16),
       ),
-      child: Row(
-        children: [
-          Expanded(
-            flex: 0,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              spacing: 3,
-              children: [
-                const Text(
-                  'Kasir',
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w500,
-                    color: Color(0xFF888888),
-                    fontFamily: 'Inter',
-                  ),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: [
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            spacing: 3,
+            children: [
+              const Text(
+                'Kasir',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w500,
+                  color: Color(0xFF888888),
+                  fontFamily: 'Inter',
                 ),
-                Text(
-                  state.shift?.cashierId ?? 'N/A',
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                    color: Color(0xFF19160B),
-                    fontFamily: 'Inter',
-                  ),
+              ),
+              Text(
+                state.shift?.cashierId ?? 'N/A',
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF19160B),
+                  fontFamily: 'Inter',
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
           const SizedBox(width: 32),
           Container(width: 1, height: 36, color: const Color(0xFFEBEBEB)),
           const SizedBox(width: 32),
-          Expanded(
-            flex: 0,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              spacing: 3,
-              children: [
-                const Text(
-                  'Smena ochildi',
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w500,
-                    color: Color(0xFF888888),
-                    fontFamily: 'Inter',
-                  ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            spacing: 3,
+            children: [
+              const Text(
+                'Smena ochildi',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w500,
+                  color: Color(0xFF888888),
+                  fontFamily: 'Inter',
                 ),
-                Text(
-                  openTime != null
-                      ? '${openTime.hour.toString().padLeft(2, '0')}:${openTime.minute.toString().padLeft(2, '0')}'
-                      : '--:--',
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                    color: Color(0xFF19160B),
-                    fontFamily: 'Inter',
-                  ),
+              ),
+              Text(
+                openTime != null
+                    ? '${openTime.hour.toString().padLeft(2, '0')}:${openTime.minute.toString().padLeft(2, '0')}'
+                    : '--:--',
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF19160B),
+                  fontFamily: 'Inter',
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
           const SizedBox(width: 32),
           Container(width: 1, height: 36, color: const Color(0xFFEBEBEB)),
           const SizedBox(width: 32),
-          const Expanded(
-            flex: 0,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              spacing: 3,
-              children: [
-                Text(
-                  'Terminal',
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w500,
-                    color: Color(0xFF888888),
-                    fontFamily: 'Inter',
-                  ),
+          const Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            spacing: 3,
+            children: [
+              Text(
+                'Terminal',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w500,
+                  color: Color(0xFF888888),
+                  fontFamily: 'Inter',
                 ),
-                Row(
-                  spacing: 4,
-                  children: [
-                    Icon(Icons.circle, size: 6, color: Color(0xFF13AF1B)),
-                    Text(
-                      'Ulangan',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xFF13AF1B),
-                        fontFamily: 'Inter',
-                      ),
+              ),
+              Row(
+                spacing: 4,
+                children: [
+                  Icon(Icons.circle, size: 6, color: Color(0xFF13AF1B)),
+                  Text(
+                    'Ulangan',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF13AF1B),
+                      fontFamily: 'Inter',
                     ),
-                  ],
-                ),
-              ],
-            ),
+                  ),
+                ],
+              ),
+            ],
           ),
-          const Spacer(),
+          const SizedBox(width: 24),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             decoration: BoxDecoration(
@@ -375,6 +418,7 @@ class _ShiftInfoCard extends StatelessWidget {
             ),
           ),
         ],
+        ),
       ),
     );
   }
@@ -383,48 +427,52 @@ class _ShiftInfoCard extends StatelessWidget {
 class _StatsRow extends StatelessWidget {
   final int cashAmount;
   final int cardAmount;
-  final int totalAmount;
 
   const _StatsRow({
     required this.cashAmount,
     required this.cardAmount,
-    required this.totalAmount,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      spacing: 16,
-      children: [
-        _StatCard(
-          label: 'Kassadagi naqd',
-          value: cashAmount.toString(),
-          sub: "so'm",
-          bgColor: const Color(0xFFE8F9E9),
-          valueColor: const Color(0xFF13AF1B),
-        ),
-        _StatCard(
-          label: "Karta bo'yicha",
-          value: cardAmount.toString(),
-          sub: "so'm",
-          bgColor: const Color(0xFFEEF2FF),
-          valueColor: const Color(0xFF3B82F6),
-        ),
-        _StatCard(
-          label: 'Umumiy tushum',
-          value: totalAmount.toString(),
-          sub: "so'm",
-          bgColor: const Color(0xFFFFF3EE),
-          valueColor: const Color(0xFFFB6633),
-        ),
-        const _StatCard(
-          label: 'Smena raqami',
-          value: 'Smena #',
-          sub: 'joriy',
-          bgColor: Color(0xFFF5F4F2),
-          valueColor: Color(0xFF19160B),
-        ),
-      ],
+    const w = 168.0;
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        spacing: 12,
+        children: [
+          SizedBox(
+            width: w,
+            child: _StatCard(
+              label: "Kassa (boshlang'ich)",
+              value: cashAmount.toString(),
+              sub: "so'm",
+              bgColor: const Color(0xFFE8F9E9),
+              valueColor: const Color(0xFF13AF1B),
+            ),
+          ),
+          SizedBox(
+            width: w,
+            child: _StatCard(
+              label: "Terminal (boshlang'ich)",
+              value: cardAmount.toString(),
+              sub: "so'm",
+              bgColor: const Color(0xFFEEF2FF),
+              valueColor: const Color(0xFF3B82F6),
+            ),
+          ),
+          const SizedBox(
+            width: w,
+            child: _StatCard(
+              label: 'Smena',
+              value: '#',
+              sub: 'joriy',
+              bgColor: Color(0xFFF5F4F2),
+              valueColor: Color(0xFF19160B),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -446,54 +494,54 @@ class _StatCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          border: Border.all(color: const Color(0xFFEBEBEB)),
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          spacing: 6,
-          children: [
-            Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                color: bgColor,
-                borderRadius: BorderRadius.circular(10),
-              ),
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border.all(color: const Color(0xFFEBEBEB)),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        spacing: 6,
+        children: [
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: bgColor,
+              borderRadius: BorderRadius.circular(10),
             ),
-            Text(
-              label,
-              style: const TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
-                color: Color(0xFF888888),
-                fontFamily: 'Inter',
-              ),
+          ),
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              color: Color(0xFF888888),
+              fontFamily: 'Inter',
             ),
-            Text(
-              value,
-              style: TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.w700,
-                color: valueColor,
-                fontFamily: 'Inter',
-              ),
+          ),
+          Text(
+            value,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.w700,
+              color: valueColor,
+              fontFamily: 'Inter',
             ),
-            Text(
-              sub,
-              style: const TextStyle(
-                fontSize: 11,
-                color: Color(0xFFAAAAAA),
-                fontFamily: 'Inter',
-              ),
+          ),
+          Text(
+            sub,
+            style: const TextStyle(
+              fontSize: 11,
+              color: Color(0xFFAAAAAA),
+              fontFamily: 'Inter',
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -502,23 +550,14 @@ class _StatCard extends StatelessWidget {
 class _PaymentBreakdownCard extends StatelessWidget {
   final int cashAmount;
   final int cardAmount;
-  final int totalAmount;
 
   const _PaymentBreakdownCard({
     required this.cashAmount,
     required this.cardAmount,
-    required this.totalAmount,
   });
 
   @override
   Widget build(BuildContext context) {
-    final cashPct = totalAmount > 0
-        ? (cashAmount / totalAmount * 100).toInt()
-        : 0;
-    final cardPct = totalAmount > 0
-        ? (cardAmount / totalAmount * 100).toInt()
-        : 0;
-
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -531,7 +570,7 @@ class _PaymentBreakdownCard extends StatelessWidget {
         spacing: 14,
         children: [
           const Text(
-            'To\'lov usullari',
+            "Boshlang'ich qoldiq",
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w700,
@@ -539,73 +578,39 @@ class _PaymentBreakdownCard extends StatelessWidget {
               fontFamily: 'Inter',
             ),
           ),
-          // Naqd
-          Column(
-            spacing: 6,
+          Row(
             children: [
-              Row(
-                children: [
-                  Row(
-                    spacing: 8,
-                    children: [
-                      Container(
-                        width: 10,
-                        height: 10,
-                        decoration: const BoxDecoration(
-                          color: Color(0xFF13AF1B),
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                      const Text(
-                        'Naqd',
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w500,
-                          color: Color(0xFF19160B),
-                          fontFamily: 'Inter',
-                        ),
-                      ),
-                    ],
-                  ),
-                  const Spacer(),
-                  Row(
-                    spacing: 8,
-                    children: [
-                      Text(
-                        '$cashPct%',
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: Color(0xFF888888),
-                          fontFamily: 'Inter',
-                        ),
-                      ),
-                      Text(
-                        '$cashAmount so\'m',
-                        style: const TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w700,
-                          color: Color(0xFF19160B),
-                          fontFamily: 'Inter',
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
+              Container(
+                width: 10,
+                height: 10,
+                decoration: const BoxDecoration(
+                  color: Color(0xFF13AF1B),
+                  shape: BoxShape.circle,
+                ),
               ),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(4),
-                child: LinearProgressIndicator(
-                  value: totalAmount > 0 ? cashAmount / totalAmount : 0,
-                  minHeight: 8,
-                  backgroundColor: const Color(0xFFF5F4F2),
-                  valueColor: const AlwaysStoppedAnimation<Color>(
-                    Color(0xFF13AF1B),
+              const SizedBox(width: 8),
+              const Expanded(
+                child: Text(
+                  'Naqd',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                    color: Color(0xFF19160B),
+                    fontFamily: 'Inter',
                   ),
+                ),
+              ),
+              Text(
+                '$cashAmount so\'m',
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF19160B),
+                  fontFamily: 'Inter',
                 ),
               ),
             ],
           ),
-          // Karta
           Column(
             spacing: 6,
             children: [
@@ -623,7 +628,7 @@ class _PaymentBreakdownCard extends StatelessWidget {
                         ),
                       ),
                       const Text(
-                        'Karta',
+                        'Terminal',
                         style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w500,
@@ -634,37 +639,24 @@ class _PaymentBreakdownCard extends StatelessWidget {
                     ],
                   ),
                   const Spacer(),
-                  Row(
-                    spacing: 8,
-                    children: [
-                      Text(
-                        '$cardPct%',
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: Color(0xFF888888),
-                          fontFamily: 'Inter',
-                        ),
-                      ),
-                      Text(
-                        '$cardAmount so\'m',
-                        style: const TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w700,
-                          color: Color(0xFF19160B),
-                          fontFamily: 'Inter',
-                        ),
-                      ),
-                    ],
+                  Text(
+                    '$cardAmount so\'m',
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF19160B),
+                      fontFamily: 'Inter',
+                    ),
                   ),
                 ],
               ),
               ClipRRect(
                 borderRadius: BorderRadius.circular(4),
-                child: LinearProgressIndicator(
-                  value: totalAmount > 0 ? cardAmount / totalAmount : 0,
+                child: const LinearProgressIndicator(
+                  value: 1,
                   minHeight: 8,
-                  backgroundColor: const Color(0xFFF5F4F2),
-                  valueColor: const AlwaysStoppedAnimation<Color>(
+                  backgroundColor: Color(0xFFF5F4F2),
+                  valueColor: AlwaysStoppedAnimation<Color>(
                     Color(0xFF3B82F6),
                   ),
                 ),

@@ -9,6 +9,7 @@ import 'printer_config.dart';
 import 'printer_config_storage.dart';
 import 'receipt/cashier_receipt_builder.dart';
 import 'receipt/kitchen_receipt_builder.dart';
+import 'receipt/shift_close_receipt_builder.dart';
 
 class PrinterService {
   final PrinterConfigStorage _storage;
@@ -39,6 +40,28 @@ class PrinterService {
 
   /// Oshxona printeriga soddalashtirilgan chek (narxsiz) chiqaradi.
   /// [sendItems] chaqirilgandan keyin ishlatiladi.
+  /// Smena yopilganda kassir printeriga — naqd summasiz (faqat terminal).
+  Future<void> printShiftCloseReceipt({
+    required String shiftId,
+    required DateTime? openedAt,
+    required int closingCard,
+    required String cashierLabel,
+  }) async {
+    try {
+      final config = _storage.getCashierConfig();
+      final bytes = await ShiftCloseReceiptBuilder.build(
+        shiftId: shiftId,
+        openedAt: openedAt,
+        closingCard: closingCard,
+        cashierLabel: cashierLabel,
+        paperSize: config.paperSize,
+      );
+      await _connectAndPrint(config, bytes);
+    } catch (e) {
+      debugPrint('[PrinterService] Smena yopilish cheki: $e');
+    }
+  }
+
   Future<void> printKitchenReceipt({
     required OpenOrderModel order,
     required List<OrderItem> items,

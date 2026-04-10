@@ -22,7 +22,13 @@ class WShiftBottom extends StatelessWidget {
             SizedBox(
               height: 56,
               child: CustomHoverEffectWidget(
-                onTap: () {},
+                onTap: () {
+                  if (state.shift != null) {
+                    context.read<ShiftBloc>().add(
+                      const ShiftEvent.printShiftReport(),
+                    );
+                  }
+                },
                 bgColor: context.colors.bgDefault,
                 borderRadius: context.radius.card,
                 child: Row(
@@ -68,7 +74,7 @@ class WShiftBottom extends StatelessWidget {
                         : Text(
                             state.shift == null
                                 ? "Smenani ochish"
-                                : "Smenani yopish va hisobot yaratish",
+                                : "Smenani yopish",
                             style: context.textStyles.bold16.copyWith(
                               color: AppColors.white,
                               fontWeight: FontWeight.w500,

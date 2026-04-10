@@ -25,6 +25,7 @@ mixin _$ShiftEvent {
     required TResult Function(ShiftSumType type) updateSumType,
     required TResult Function() openShift,
     required TResult Function() closeShift,
+    required TResult Function() printShiftReport,
   }) =>
       throw _privateConstructorUsedError;
   @optionalTypeArgs
@@ -36,6 +37,7 @@ mixin _$ShiftEvent {
     TResult? Function(ShiftSumType type)? updateSumType,
     TResult? Function()? openShift,
     TResult? Function()? closeShift,
+    TResult? Function()? printShiftReport,
   }) =>
       throw _privateConstructorUsedError;
   @optionalTypeArgs
@@ -47,6 +49,7 @@ mixin _$ShiftEvent {
     TResult Function(ShiftSumType type)? updateSumType,
     TResult Function()? openShift,
     TResult Function()? closeShift,
+    TResult Function()? printShiftReport,
     required TResult orElse(),
   }) =>
       throw _privateConstructorUsedError;
@@ -59,6 +62,7 @@ mixin _$ShiftEvent {
     required TResult Function(_UpdateSumType value) updateSumType,
     required TResult Function(_OpenShift value) openShift,
     required TResult Function(_CloseShift value) closeShift,
+    required TResult Function(_PrintShiftReport value) printShiftReport,
   }) =>
       throw _privateConstructorUsedError;
   @optionalTypeArgs
@@ -70,6 +74,7 @@ mixin _$ShiftEvent {
     TResult? Function(_UpdateSumType value)? updateSumType,
     TResult? Function(_OpenShift value)? openShift,
     TResult? Function(_CloseShift value)? closeShift,
+    TResult? Function(_PrintShiftReport value)? printShiftReport,
   }) =>
       throw _privateConstructorUsedError;
   @optionalTypeArgs
@@ -81,6 +86,7 @@ mixin _$ShiftEvent {
     TResult Function(_UpdateSumType value)? updateSumType,
     TResult Function(_OpenShift value)? openShift,
     TResult Function(_CloseShift value)? closeShift,
+    TResult Function(_PrintShiftReport value)? printShiftReport,
     required TResult orElse(),
   }) =>
       throw _privateConstructorUsedError;
@@ -149,6 +155,7 @@ class _$StartedImpl implements _Started {
     required TResult Function(ShiftSumType type) updateSumType,
     required TResult Function() openShift,
     required TResult Function() closeShift,
+    required TResult Function() printShiftReport,
   }) {
     return started();
   }
@@ -163,6 +170,7 @@ class _$StartedImpl implements _Started {
     TResult? Function(ShiftSumType type)? updateSumType,
     TResult? Function()? openShift,
     TResult? Function()? closeShift,
+    TResult? Function()? printShiftReport,
   }) {
     return started?.call();
   }
@@ -177,6 +185,7 @@ class _$StartedImpl implements _Started {
     TResult Function(ShiftSumType type)? updateSumType,
     TResult Function()? openShift,
     TResult Function()? closeShift,
+    TResult Function()? printShiftReport,
     required TResult orElse(),
   }) {
     if (started != null) {
@@ -195,6 +204,7 @@ class _$StartedImpl implements _Started {
     required TResult Function(_UpdateSumType value) updateSumType,
     required TResult Function(_OpenShift value) openShift,
     required TResult Function(_CloseShift value) closeShift,
+    required TResult Function(_PrintShiftReport value) printShiftReport,
   }) {
     return started(this);
   }
@@ -209,6 +219,7 @@ class _$StartedImpl implements _Started {
     TResult? Function(_UpdateSumType value)? updateSumType,
     TResult? Function(_OpenShift value)? openShift,
     TResult? Function(_CloseShift value)? closeShift,
+    TResult? Function(_PrintShiftReport value)? printShiftReport,
   }) {
     return started?.call(this);
   }
@@ -223,6 +234,7 @@ class _$StartedImpl implements _Started {
     TResult Function(_UpdateSumType value)? updateSumType,
     TResult Function(_OpenShift value)? openShift,
     TResult Function(_CloseShift value)? closeShift,
+    TResult Function(_PrintShiftReport value)? printShiftReport,
     required TResult orElse(),
   }) {
     if (started != null) {
@@ -281,6 +293,7 @@ class _$CheckShiftImpl implements _CheckShift {
     required TResult Function(ShiftSumType type) updateSumType,
     required TResult Function() openShift,
     required TResult Function() closeShift,
+    required TResult Function() printShiftReport,
   }) {
     return checkShift();
   }
@@ -295,6 +308,7 @@ class _$CheckShiftImpl implements _CheckShift {
     TResult? Function(ShiftSumType type)? updateSumType,
     TResult? Function()? openShift,
     TResult? Function()? closeShift,
+    TResult? Function()? printShiftReport,
   }) {
     return checkShift?.call();
   }
@@ -309,6 +323,7 @@ class _$CheckShiftImpl implements _CheckShift {
     TResult Function(ShiftSumType type)? updateSumType,
     TResult Function()? openShift,
     TResult Function()? closeShift,
+    TResult Function()? printShiftReport,
     required TResult orElse(),
   }) {
     if (checkShift != null) {
@@ -327,6 +342,7 @@ class _$CheckShiftImpl implements _CheckShift {
     required TResult Function(_UpdateSumType value) updateSumType,
     required TResult Function(_OpenShift value) openShift,
     required TResult Function(_CloseShift value) closeShift,
+    required TResult Function(_PrintShiftReport value) printShiftReport,
   }) {
     return checkShift(this);
   }
@@ -341,6 +357,7 @@ class _$CheckShiftImpl implements _CheckShift {
     TResult? Function(_UpdateSumType value)? updateSumType,
     TResult? Function(_OpenShift value)? openShift,
     TResult? Function(_CloseShift value)? closeShift,
+    TResult? Function(_PrintShiftReport value)? printShiftReport,
   }) {
     return checkShift?.call(this);
   }
@@ -355,6 +372,7 @@ class _$CheckShiftImpl implements _CheckShift {
     TResult Function(_UpdateSumType value)? updateSumType,
     TResult Function(_OpenShift value)? openShift,
     TResult Function(_CloseShift value)? closeShift,
+    TResult Function(_PrintShiftReport value)? printShiftReport,
     required TResult orElse(),
   }) {
     if (checkShift != null) {
@@ -439,6 +457,7 @@ class _$UpdateCashSumImpl implements _UpdateCashSum {
     required TResult Function(ShiftSumType type) updateSumType,
     required TResult Function() openShift,
     required TResult Function() closeShift,
+    required TResult Function() printShiftReport,
   }) {
     return updateCashSum(value);
   }
@@ -453,6 +472,7 @@ class _$UpdateCashSumImpl implements _UpdateCashSum {
     TResult? Function(ShiftSumType type)? updateSumType,
     TResult? Function()? openShift,
     TResult? Function()? closeShift,
+    TResult? Function()? printShiftReport,
   }) {
     return updateCashSum?.call(value);
   }
@@ -467,6 +487,7 @@ class _$UpdateCashSumImpl implements _UpdateCashSum {
     TResult Function(ShiftSumType type)? updateSumType,
     TResult Function()? openShift,
     TResult Function()? closeShift,
+    TResult Function()? printShiftReport,
     required TResult orElse(),
   }) {
     if (updateCashSum != null) {
@@ -485,6 +506,7 @@ class _$UpdateCashSumImpl implements _UpdateCashSum {
     required TResult Function(_UpdateSumType value) updateSumType,
     required TResult Function(_OpenShift value) openShift,
     required TResult Function(_CloseShift value) closeShift,
+    required TResult Function(_PrintShiftReport value) printShiftReport,
   }) {
     return updateCashSum(this);
   }
@@ -499,6 +521,7 @@ class _$UpdateCashSumImpl implements _UpdateCashSum {
     TResult? Function(_UpdateSumType value)? updateSumType,
     TResult? Function(_OpenShift value)? openShift,
     TResult? Function(_CloseShift value)? closeShift,
+    TResult? Function(_PrintShiftReport value)? printShiftReport,
   }) {
     return updateCashSum?.call(this);
   }
@@ -513,6 +536,7 @@ class _$UpdateCashSumImpl implements _UpdateCashSum {
     TResult Function(_UpdateSumType value)? updateSumType,
     TResult Function(_OpenShift value)? openShift,
     TResult Function(_CloseShift value)? closeShift,
+    TResult Function(_PrintShiftReport value)? printShiftReport,
     required TResult orElse(),
   }) {
     if (updateCashSum != null) {
@@ -603,6 +627,7 @@ class _$UpdateCardSumImpl implements _UpdateCardSum {
     required TResult Function(ShiftSumType type) updateSumType,
     required TResult Function() openShift,
     required TResult Function() closeShift,
+    required TResult Function() printShiftReport,
   }) {
     return updateCardSum(value);
   }
@@ -617,6 +642,7 @@ class _$UpdateCardSumImpl implements _UpdateCardSum {
     TResult? Function(ShiftSumType type)? updateSumType,
     TResult? Function()? openShift,
     TResult? Function()? closeShift,
+    TResult? Function()? printShiftReport,
   }) {
     return updateCardSum?.call(value);
   }
@@ -631,6 +657,7 @@ class _$UpdateCardSumImpl implements _UpdateCardSum {
     TResult Function(ShiftSumType type)? updateSumType,
     TResult Function()? openShift,
     TResult Function()? closeShift,
+    TResult Function()? printShiftReport,
     required TResult orElse(),
   }) {
     if (updateCardSum != null) {
@@ -649,6 +676,7 @@ class _$UpdateCardSumImpl implements _UpdateCardSum {
     required TResult Function(_UpdateSumType value) updateSumType,
     required TResult Function(_OpenShift value) openShift,
     required TResult Function(_CloseShift value) closeShift,
+    required TResult Function(_PrintShiftReport value) printShiftReport,
   }) {
     return updateCardSum(this);
   }
@@ -663,6 +691,7 @@ class _$UpdateCardSumImpl implements _UpdateCardSum {
     TResult? Function(_UpdateSumType value)? updateSumType,
     TResult? Function(_OpenShift value)? openShift,
     TResult? Function(_CloseShift value)? closeShift,
+    TResult? Function(_PrintShiftReport value)? printShiftReport,
   }) {
     return updateCardSum?.call(this);
   }
@@ -677,6 +706,7 @@ class _$UpdateCardSumImpl implements _UpdateCardSum {
     TResult Function(_UpdateSumType value)? updateSumType,
     TResult Function(_OpenShift value)? openShift,
     TResult Function(_CloseShift value)? closeShift,
+    TResult Function(_PrintShiftReport value)? printShiftReport,
     required TResult orElse(),
   }) {
     if (updateCardSum != null) {
@@ -767,6 +797,7 @@ class _$UpdateSumTypeImpl implements _UpdateSumType {
     required TResult Function(ShiftSumType type) updateSumType,
     required TResult Function() openShift,
     required TResult Function() closeShift,
+    required TResult Function() printShiftReport,
   }) {
     return updateSumType(type);
   }
@@ -781,6 +812,7 @@ class _$UpdateSumTypeImpl implements _UpdateSumType {
     TResult? Function(ShiftSumType type)? updateSumType,
     TResult? Function()? openShift,
     TResult? Function()? closeShift,
+    TResult? Function()? printShiftReport,
   }) {
     return updateSumType?.call(type);
   }
@@ -795,6 +827,7 @@ class _$UpdateSumTypeImpl implements _UpdateSumType {
     TResult Function(ShiftSumType type)? updateSumType,
     TResult Function()? openShift,
     TResult Function()? closeShift,
+    TResult Function()? printShiftReport,
     required TResult orElse(),
   }) {
     if (updateSumType != null) {
@@ -813,6 +846,7 @@ class _$UpdateSumTypeImpl implements _UpdateSumType {
     required TResult Function(_UpdateSumType value) updateSumType,
     required TResult Function(_OpenShift value) openShift,
     required TResult Function(_CloseShift value) closeShift,
+    required TResult Function(_PrintShiftReport value) printShiftReport,
   }) {
     return updateSumType(this);
   }
@@ -827,6 +861,7 @@ class _$UpdateSumTypeImpl implements _UpdateSumType {
     TResult? Function(_UpdateSumType value)? updateSumType,
     TResult? Function(_OpenShift value)? openShift,
     TResult? Function(_CloseShift value)? closeShift,
+    TResult? Function(_PrintShiftReport value)? printShiftReport,
   }) {
     return updateSumType?.call(this);
   }
@@ -841,6 +876,7 @@ class _$UpdateSumTypeImpl implements _UpdateSumType {
     TResult Function(_UpdateSumType value)? updateSumType,
     TResult Function(_OpenShift value)? openShift,
     TResult Function(_CloseShift value)? closeShift,
+    TResult Function(_PrintShiftReport value)? printShiftReport,
     required TResult orElse(),
   }) {
     if (updateSumType != null) {
@@ -905,6 +941,7 @@ class _$OpenShiftImpl implements _OpenShift {
     required TResult Function(ShiftSumType type) updateSumType,
     required TResult Function() openShift,
     required TResult Function() closeShift,
+    required TResult Function() printShiftReport,
   }) {
     return openShift();
   }
@@ -919,6 +956,7 @@ class _$OpenShiftImpl implements _OpenShift {
     TResult? Function(ShiftSumType type)? updateSumType,
     TResult? Function()? openShift,
     TResult? Function()? closeShift,
+    TResult? Function()? printShiftReport,
   }) {
     return openShift?.call();
   }
@@ -933,6 +971,7 @@ class _$OpenShiftImpl implements _OpenShift {
     TResult Function(ShiftSumType type)? updateSumType,
     TResult Function()? openShift,
     TResult Function()? closeShift,
+    TResult Function()? printShiftReport,
     required TResult orElse(),
   }) {
     if (openShift != null) {
@@ -951,6 +990,7 @@ class _$OpenShiftImpl implements _OpenShift {
     required TResult Function(_UpdateSumType value) updateSumType,
     required TResult Function(_OpenShift value) openShift,
     required TResult Function(_CloseShift value) closeShift,
+    required TResult Function(_PrintShiftReport value) printShiftReport,
   }) {
     return openShift(this);
   }
@@ -965,6 +1005,7 @@ class _$OpenShiftImpl implements _OpenShift {
     TResult? Function(_UpdateSumType value)? updateSumType,
     TResult? Function(_OpenShift value)? openShift,
     TResult? Function(_CloseShift value)? closeShift,
+    TResult? Function(_PrintShiftReport value)? printShiftReport,
   }) {
     return openShift?.call(this);
   }
@@ -979,6 +1020,7 @@ class _$OpenShiftImpl implements _OpenShift {
     TResult Function(_UpdateSumType value)? updateSumType,
     TResult Function(_OpenShift value)? openShift,
     TResult Function(_CloseShift value)? closeShift,
+    TResult Function(_PrintShiftReport value)? printShiftReport,
     required TResult orElse(),
   }) {
     if (openShift != null) {
@@ -1037,6 +1079,7 @@ class _$CloseShiftImpl implements _CloseShift {
     required TResult Function(ShiftSumType type) updateSumType,
     required TResult Function() openShift,
     required TResult Function() closeShift,
+    required TResult Function() printShiftReport,
   }) {
     return closeShift();
   }
@@ -1051,6 +1094,7 @@ class _$CloseShiftImpl implements _CloseShift {
     TResult? Function(ShiftSumType type)? updateSumType,
     TResult? Function()? openShift,
     TResult? Function()? closeShift,
+    TResult? Function()? printShiftReport,
   }) {
     return closeShift?.call();
   }
@@ -1065,6 +1109,7 @@ class _$CloseShiftImpl implements _CloseShift {
     TResult Function(ShiftSumType type)? updateSumType,
     TResult Function()? openShift,
     TResult Function()? closeShift,
+    TResult Function()? printShiftReport,
     required TResult orElse(),
   }) {
     if (closeShift != null) {
@@ -1083,6 +1128,7 @@ class _$CloseShiftImpl implements _CloseShift {
     required TResult Function(_UpdateSumType value) updateSumType,
     required TResult Function(_OpenShift value) openShift,
     required TResult Function(_CloseShift value) closeShift,
+    required TResult Function(_PrintShiftReport value) printShiftReport,
   }) {
     return closeShift(this);
   }
@@ -1097,6 +1143,7 @@ class _$CloseShiftImpl implements _CloseShift {
     TResult? Function(_UpdateSumType value)? updateSumType,
     TResult? Function(_OpenShift value)? openShift,
     TResult? Function(_CloseShift value)? closeShift,
+    TResult? Function(_PrintShiftReport value)? printShiftReport,
   }) {
     return closeShift?.call(this);
   }
@@ -1111,6 +1158,7 @@ class _$CloseShiftImpl implements _CloseShift {
     TResult Function(_UpdateSumType value)? updateSumType,
     TResult Function(_OpenShift value)? openShift,
     TResult Function(_CloseShift value)? closeShift,
+    TResult Function(_PrintShiftReport value)? printShiftReport,
     required TResult orElse(),
   }) {
     if (closeShift != null) {
@@ -1122,6 +1170,144 @@ class _$CloseShiftImpl implements _CloseShift {
 
 abstract class _CloseShift implements ShiftEvent {
   const factory _CloseShift() = _$CloseShiftImpl;
+}
+
+/// @nodoc
+abstract class _$$PrintShiftReportImplCopyWith<$Res> {
+  factory _$$PrintShiftReportImplCopyWith(_$PrintShiftReportImpl value,
+          $Res Function(_$PrintShiftReportImpl) then) =
+      __$$PrintShiftReportImplCopyWithImpl<$Res>;
+}
+
+/// @nodoc
+class __$$PrintShiftReportImplCopyWithImpl<$Res>
+    extends _$ShiftEventCopyWithImpl<$Res, _$PrintShiftReportImpl>
+    implements _$$PrintShiftReportImplCopyWith<$Res> {
+  __$$PrintShiftReportImplCopyWithImpl(_$PrintShiftReportImpl _value,
+      $Res Function(_$PrintShiftReportImpl) _then)
+      : super(_value, _then);
+}
+
+/// @nodoc
+
+class _$PrintShiftReportImpl implements _PrintShiftReport {
+  const _$PrintShiftReportImpl();
+
+  @override
+  String toString() {
+    return 'ShiftEvent.printShiftReport()';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType && other is _$PrintShiftReportImpl);
+  }
+
+  @override
+  int get hashCode => runtimeType.hashCode;
+
+  @override
+  @optionalTypeArgs
+  TResult when<TResult extends Object?>({
+    required TResult Function() started,
+    required TResult Function() checkShift,
+    required TResult Function(String value) updateCashSum,
+    required TResult Function(String value) updateCardSum,
+    required TResult Function(ShiftSumType type) updateSumType,
+    required TResult Function() openShift,
+    required TResult Function() closeShift,
+    required TResult Function() printShiftReport,
+  }) {
+    return printShiftReport();
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult? whenOrNull<TResult extends Object?>({
+    TResult? Function()? started,
+    TResult? Function()? checkShift,
+    TResult? Function(String value)? updateCashSum,
+    TResult? Function(String value)? updateCardSum,
+    TResult? Function(ShiftSumType type)? updateSumType,
+    TResult? Function()? openShift,
+    TResult? Function()? closeShift,
+    TResult? Function()? printShiftReport,
+  }) {
+    return printShiftReport?.call();
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult maybeWhen<TResult extends Object?>({
+    TResult Function()? started,
+    TResult Function()? checkShift,
+    TResult Function(String value)? updateCashSum,
+    TResult Function(String value)? updateCardSum,
+    TResult Function(ShiftSumType type)? updateSumType,
+    TResult Function()? openShift,
+    TResult Function()? closeShift,
+    TResult Function()? printShiftReport,
+    required TResult orElse(),
+  }) {
+    if (printShiftReport != null) {
+      return printShiftReport();
+    }
+    return orElse();
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult map<TResult extends Object?>({
+    required TResult Function(_Started value) started,
+    required TResult Function(_CheckShift value) checkShift,
+    required TResult Function(_UpdateCashSum value) updateCashSum,
+    required TResult Function(_UpdateCardSum value) updateCardSum,
+    required TResult Function(_UpdateSumType value) updateSumType,
+    required TResult Function(_OpenShift value) openShift,
+    required TResult Function(_CloseShift value) closeShift,
+    required TResult Function(_PrintShiftReport value) printShiftReport,
+  }) {
+    return printShiftReport(this);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult? mapOrNull<TResult extends Object?>({
+    TResult? Function(_Started value)? started,
+    TResult? Function(_CheckShift value)? checkShift,
+    TResult? Function(_UpdateCashSum value)? updateCashSum,
+    TResult? Function(_UpdateCardSum value)? updateCardSum,
+    TResult? Function(_UpdateSumType value)? updateSumType,
+    TResult? Function(_OpenShift value)? openShift,
+    TResult? Function(_CloseShift value)? closeShift,
+    TResult? Function(_PrintShiftReport value)? printShiftReport,
+  }) {
+    return printShiftReport?.call(this);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult maybeMap<TResult extends Object?>({
+    TResult Function(_Started value)? started,
+    TResult Function(_CheckShift value)? checkShift,
+    TResult Function(_UpdateCashSum value)? updateCashSum,
+    TResult Function(_UpdateCardSum value)? updateCardSum,
+    TResult Function(_UpdateSumType value)? updateSumType,
+    TResult Function(_OpenShift value)? openShift,
+    TResult Function(_CloseShift value)? closeShift,
+    TResult Function(_PrintShiftReport value)? printShiftReport,
+    required TResult orElse(),
+  }) {
+    if (printShiftReport != null) {
+      return printShiftReport(this);
+    }
+    return orElse();
+  }
+}
+
+abstract class _PrintShiftReport implements ShiftEvent {
+  const factory _PrintShiftReport() = _$PrintShiftReportImpl;
 }
 
 /// @nodoc

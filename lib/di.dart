@@ -160,6 +160,7 @@ void _cubit() {
       closeShiftUsecase: inject(),
       prefs: inject(),
       tokenStorage: inject(),
+      printerService: inject(),
     ),
   );
 

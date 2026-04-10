@@ -9,9 +9,6 @@ class ShiftEvent with _$ShiftEvent {
   const factory ShiftEvent.updateSumType({required ShiftSumType type}) = _UpdateSumType;
   const factory ShiftEvent.openShift() = _OpenShift;
   const factory ShiftEvent.closeShift() = _CloseShift;
-
-
-
-
-
+  /// Joriy smena bo‘yicha hisobotni kassir printeriga (naqdsiz).
+  const factory ShiftEvent.printShiftReport() = _PrintShiftReport;
 }

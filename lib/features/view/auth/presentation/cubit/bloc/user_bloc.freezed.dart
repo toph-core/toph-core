@@ -91,12 +91,18 @@ class __$$StartedImplCopyWithImpl<$Res>
 
 /// @nodoc
 
-class _$StartedImpl implements _Started {
+class _$StartedImpl with DiagnosticableTreeMixin implements _Started {
   const _$StartedImpl();
 
   @override
-  String toString() {
+  String toString({DiagnosticLevel minLevel = DiagnosticLevel.info}) {
     return 'UserEvent.started()';
+  }
+
+  @override
+  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+    super.debugFillProperties(properties);
+    properties.add(DiagnosticsProperty('type', 'UserEvent.started'));
   }
 
   @override
@@ -193,12 +199,18 @@ class __$$GetUserImplCopyWithImpl<$Res>
 
 /// @nodoc
 
-class _$GetUserImpl implements _GetUser {
+class _$GetUserImpl with DiagnosticableTreeMixin implements _GetUser {
   const _$GetUserImpl();
 
   @override
-  String toString() {
+  String toString({DiagnosticLevel minLevel = DiagnosticLevel.info}) {
     return 'UserEvent.getUser()';
+  }
+
+  @override
+  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+    super.debugFillProperties(properties);
+    properties.add(DiagnosticsProperty('type', 'UserEvent.getUser'));
   }
 
   @override
@@ -392,7 +404,7 @@ class __$$UserStateImplCopyWithImpl<$Res>
 
 /// @nodoc
 
-class _$UserStateImpl implements _UserState {
+class _$UserStateImpl with DiagnosticableTreeMixin implements _UserState {
   const _$UserStateImpl(
       {this.status = Status.UNKNOWN, this.userMOdel, this.failure});
 
@@ -405,8 +417,18 @@ class _$UserStateImpl implements _UserState {
   final Failure? failure;
 
   @override
-  String toString() {
+  String toString({DiagnosticLevel minLevel = DiagnosticLevel.info}) {
     return 'UserState(status: $status, userMOdel: $userMOdel, failure: $failure)';
+  }
+
+  @override
+  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+    super.debugFillProperties(properties);
+    properties
+      ..add(DiagnosticsProperty('type', 'UserState'))
+      ..add(DiagnosticsProperty('status', status))
+      ..add(DiagnosticsProperty('userMOdel', userMOdel))
+      ..add(DiagnosticsProperty('failure', failure));
   }
 
   @override

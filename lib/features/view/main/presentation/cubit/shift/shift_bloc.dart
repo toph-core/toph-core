@@ -15,6 +15,7 @@ import 'package:mary_ai_pos/features/view/main/data/models/open_shift/open_shift
 import 'package:mary_ai_pos/features/view/main/data/models/shift/shift_response_model.dart';
 import 'package:mary_ai_pos/features/view/main/domain/usecase/check_shift_usecase.dart';
 import 'package:mary_ai_pos/features/view/main/domain/usecase/close_shift_usecase.dart';
+import 'package:mary_ai_pos/core/service/printer/printer_service.dart';
 import 'package:mary_ai_pos/features/view/main/domain/usecase/open_shift_usecase.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -28,6 +29,7 @@ class ShiftBloc extends Bloc<ShiftEvent, ShiftState> {
   late final CloseShiftUsecase _closeShiftUsecase;
   final SharedPreferences _prefs;
   final AppTokenStorage _tokenStorage;
+  final PrinterService _printerService;
   //
   ShiftBloc({
     required CheckShiftUsecase checkShiftUsecase,
@@ -35,11 +37,13 @@ class ShiftBloc extends Bloc<ShiftEvent, ShiftState> {
     required CloseShiftUsecase closeShiftUsecase,
     required SharedPreferences prefs,
     required AppTokenStorage tokenStorage,
+    required PrinterService printerService,
   }) : _checkShiftUsecase = checkShiftUsecase,
        _openShiftUsecase = openShiftUsecase,
        _closeShiftUsecase = closeShiftUsecase,
        _prefs = prefs,
        _tokenStorage = tokenStorage,
+       _printerService = printerService,
        super(const ShiftState()) {
     on<_Started>(_started);
     on<_CheckShift>(_checkShift);
@@ -48,6 +52,7 @@ class ShiftBloc extends Bloc<ShiftEvent, ShiftState> {
     on<_UpdateSumType>(_updateSumType);
     on<_OpenShift>(_openShift);
     on<_CloseShift>(_closeShift);
+    on<_PrintShiftReport>(_printShiftReport);
   }
 
   static const String _kLocalShiftKey = 'pos_local_active_shift';
@@ -105,19 +110,65 @@ class ShiftBloc extends Bloc<ShiftEvent, ShiftState> {
     return id;
   }
 
+  Future<void> _printShiftCloseFromState(ShiftState s) async {
+    final shift = s.shift;
+    if (shift == null) return;
+    final ctx = navigatorKey.currentContext;
+    final name = ctx?.read<UserBloc>().state.userMOdel?.fullName ?? '';
+    await _printerService.printShiftCloseReceipt(
+      shiftId: shift.id,
+      openedAt: shift.openedAt,
+      closingCard: 0,
+      cashierLabel: name.isEmpty ? shift.cashierId : name,
+    );
+  }
+
+  Future<void> _printShiftReport(
+    _PrintShiftReport event,
+    Emitter<ShiftState> emit,
+  ) async {
+    await _printShiftCloseFromState(state);
+  }
+
   Future<void> _closeShift(_CloseShift event, Emitter<ShiftState> emit) async {
+    final shift = state.shift;
+    if (shift == null) return;
+
+    /// Offline rejimda ochilgan smena — `local_...` ID serverda yo'q, UUID emas.
+    /// Yopishda API chaqirsak 500 (invalid UUID) beradi.
+    if (shift.id.startsWith('local_')) {
+      emit(state.copyWith(status: Status.LOADING));
+      await _printShiftCloseFromState(state);
+      await _clearLocalShift();
+      if (emit.isDone) return;
+      showSuccessMessage(
+        navigatorKey.currentContext!,
+        'Smena yopildi (offline ochilgan, serverga yuborilmaydi).',
+      );
+      emit(
+        state.copyWith(
+          status: Status.SUCCESS,
+          shift: null,
+          cardSum: '0',
+          cashSum: '0',
+        ),
+      );
+      return;
+    }
+
     emit(state.copyWith(status: Status.LOADING));
     final response = await _closeShiftUsecase.call(
       CloseShiftRequestModel(
-        shiftId: state.shift?.id ?? '',
-        closingCard: int.tryParse(state.cardSum) ?? 0,
-        closingCash: int.tryParse(state.cashSum) ?? 0,
+        shiftId: shift.id,
+        closingCard: 0,
+        closingCash: 0,
       ),
     );
     if (emit.isDone) return;
 
     // Success path
     if (response.isRight()) {
+      await _printShiftCloseFromState(state);
       navigatorKey.currentContext!.read<AuthCubit>().logout(
         onSuccess: () => Navigator.pushNamedAndRemoveUntil(
           navigatorKey.currentContext!,

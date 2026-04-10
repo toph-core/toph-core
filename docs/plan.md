@@ -335,3 +335,17 @@ PendingOperation turlari:
 - [ ] EnhancedTableCard'dagi waiting time real data bilan bog'lash
 - [ ] Split bill modal'da real total amount uzatish
 - [ ] Freezed files regenerate (`build_runner build`)
+
+---
+
+## 6. Smena / Shift — Mebel House uslubi (kelajak reja)
+
+**Hozir:** Mary AI backend kontraktiga mos: `POST /api/v1/cash-register-shifts/{id}/close` body bilan (`closing_cash`, `closing_card`), ochish/yopish to‘g‘ridan-to‘g‘ri tugma orqali (ekranda tasdiqlash dialogisiz).
+
+**Keyin (Mebel House desktop ga yaqinlashish):**
+
+1. **UX** — ochish va yopishdan oldin ixchoq dialog: matn + **Ha / Yo‘q** (alohida `ShiftConfirmDialog` yoki shunga o‘xshash vidjet).
+2. **Sidebar** — «Smena» punktini faqat smena bilan ishlaydigan rollarga ko‘rsatish (masalan `admin` / `manager` / `cashier`; ofitsiant/oshxonada yashirish) — `AppSidebar` ichida `UserBloc` roli bo‘yicha shart.
+3. **Backend farqi** — Mebelda `POST close-shift/{id}` **tanasiz**; Mary AIda yopishda **body majburiy**. Kelajakda agar backend Mebelga o‘xshatilsa, clientda ham soddalashtirish mumkin; hozircha API o‘zgarmaguncha body bilan qolish.
+
+Bu bandlar implement qilinmaguncha `ShiftBloc` va `list_api` dagi mavjud endpointlar o‘zgarishsiz qoladi.
