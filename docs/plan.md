@@ -267,6 +267,68 @@ POST /api/v1/orders/{id}/pay
 
 ---
 
+## 8. Offline Buyurtma Navbati (Rejali feature)
+
+### Muammo
+
+```
+Internet yo'q → createOrder() → DioException → "Xato" xabari → hech narsa saqlanmaydi
+```
+
+Hozirgi holat:
+- **Smena** — offline ishlaydi ✅ (`ShiftBloc` → `SharedPreferences` lokal smena)
+- **Zakazlar** — offline ishlamaydi ❌ (`WaiterCubit.createOrder/sendItems/closeOrder` faqat API, fallback yo'q)
+
+### Kerakli paketlar (kelajakda qo'shiladi)
+
+| Paket | Maqsad |
+|-------|--------|
+| `connectivity_plus` | Internet holati real-time kuzatish |
+| `shared_preferences` | JSON queue saqlash (mavjud, qo'shimcha paket shart emas) |
+| `sqflite` yoki `drift` | Murakkab sync kerak bo'lsa lokal DB (ixtiyoriy) |
+
+### Arxitektura
+
+```
+OfflineQueueService
+  ├── enqueue(PendingOperation)   — operatsiyani navbatga qo'shish
+  ├── processQueue()              — internet kelganda navbatni jo'natish
+  └── clear()                    — muvaffaqiyatdan keyin tozalash
+
+PendingOperation turlari:
+  - createOrder   {tableId, guestCount, hallName, tableNumber, waiterId, ...}
+  - sendItems     {localOrderId, items: [{goodId, quantity, comment}]}
+  - closeOrder    {orderId, paymentType, discountPercent, discountAmount}
+```
+
+### Asosiy murakkabliklar
+
+1. **Lokal ID muammosi** — `createOrder` offline bo'lsa server ID yo'q, lekin `sendItems` shu ID ga bog'liq
+   - Yechim: lokal UUID yaratish (`local_<timestamp>`), sync vaqtida server ID bilan almashtirish
+
+2. **Operatsiyalar tartibi** — ketma-ket bajarilishi shart
+   - `createOrder` → server ID qaytaradi → `sendItems(serverId)` → `closeOrder(serverId)`
+
+3. **Conflict resolution** — server va lokal holat farq qilishi mumkin
+   - Yechim: optimistic approach, sync vaqtida server holati ustun
+
+### Implement qilish tartibi (kelajak sprint)
+
+1. `lib/core/service/offline/offline_queue_service.dart` — enqueue/processQueue
+2. `lib/core/service/offline/connectivity_service.dart` — internet stream
+3. `WaiterCubit` — API xatosida: `enqueue()`, internet kelganda: `processQueue()`
+4. UI — offline indicator badge, "N ta amal sync kutmoqda" xabari
+5. `di.dart` — yangi servicelarni register
+
+### Verification (implement qilingandan keyin)
+
+1. WiFi o'chir → order qo'sh → lokal saqlanganini tekshir (UI badge ko'rinishi)
+2. WiFi yoq → sync avtomatik boshlanishini tekshir
+3. Bir nechta pending operation: tartib saqlanganini tekshir
+4. Server qaytargan ID lokal ID ni almashtirganini tekshir
+
+---
+
 ## 5. Texnik qarzlar (Technical Debt)
 
 - [ ] Debug `print()` statementlarini olib tashlash (order_side_bar_widget.dart)
