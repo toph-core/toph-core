@@ -14,7 +14,7 @@ import 'package:mary_ai_pos/core/extension/widget_extension.dart';
 import 'package:mary_ai_pos/core/routes/app_routes.dart';
 import 'package:mary_ai_pos/core/service/app_version/app_update_service.dart';
 import 'package:mary_ai_pos/core/utils/helper/helper_widget.dart';
-import 'package:mary_ai_pos/core/app_assets/app_assets.dart';
+import 'package:mary_ai_pos/core/widgets/brand_logo.dart';
 import 'package:mary_ai_pos/features/view/auth/presentation/cubit/auth/auth_cubit.dart';
 import 'package:mary_ai_pos/features/view/auth/presentation/cubit/auth/auth_state.dart';
 import 'package:mary_ai_pos/features/view/auth/presentation/cubit/bloc/user_bloc.dart';
@@ -88,11 +88,9 @@ class _SplashScreenState extends State<SplashScreen> {
                 FadeInUp(
                   duration: const Duration(milliseconds: 600),
                   child: Center(
-                    child: Image.asset(
-                      AppAssets.brandLogo,
+                    child: const BrandLogo(
                       height: 106,
                       fit: BoxFit.contain,
-                      filterQuality: FilterQuality.high,
                     ).paddingSymmetric(horizontal: (16)),
                   ),
                 ),

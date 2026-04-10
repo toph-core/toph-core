@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:mary_ai_pos/core/app_assets/app_assets.dart';
+import 'package:mary_ai_pos/core/widgets/brand_logo.dart';
 import 'package:mary_ai_pos/core/extension/for_context.dart';
 import 'package:mary_ai_pos/core/routes/app_routes.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/main/widgets/logout_dialog.dart';
@@ -18,16 +18,14 @@ class AppSidebar extends StatelessWidget {
         children: [
           const SizedBox(height: 12),
           // Logo: full wordmark must fit — narrow sidebar, use contain (not cover).
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4),
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 4),
             child: SizedBox(
               width: 64,
               height: 56,
-              child: Image.asset(
-                AppAssets.brandLogo,
+              child: BrandLogo(
                 fit: BoxFit.contain,
                 alignment: Alignment.center,
-                filterQuality: FilterQuality.high,
               ),
             ),
           ),

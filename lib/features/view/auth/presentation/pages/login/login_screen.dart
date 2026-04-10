@@ -9,8 +9,8 @@ import 'package:mary_ai_pos/core/extension/widget_extension.dart';
 import 'package:mary_ai_pos/core/mixins/form_validation_mixin.dart';
 import 'package:mary_ai_pos/core/routes/app_routes.dart';
 import 'package:mary_ai_pos/core/utils/validator.dart';
-import 'package:mary_ai_pos/core/app_assets/app_assets.dart';
 import 'package:mary_ai_pos/core/values/app_assets.dart';
+import 'package:mary_ai_pos/core/widgets/brand_logo.dart';
 import 'package:mary_ai_pos/core/values/app_colors.dart';
 import 'package:mary_ai_pos/core/values/app_strings.dart';
 import 'package:mary_ai_pos/features/view/auth/presentation/cubit/auth/auth_cubit.dart';
@@ -181,12 +181,10 @@ class _OnlineOfflineStudentScreenState extends State<LoginScreen>
                           crossAxisAlignment: CrossAxisAlignment.start,
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Center(
-                              child: Image.asset(
-                                AppAssets.brandLogo,
+                            const Center(
+                              child: BrandLogo(
                                 height: 72,
                                 fit: BoxFit.contain,
-                                filterQuality: FilterQuality.high,
                               ),
                             ),
                             24.verticalSpace,
