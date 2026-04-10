@@ -1,8 +1,10 @@
+import 'dart:io';
 import 'dart:ui';
 
 import 'package:alice/alice.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:window_manager/window_manager.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:mary_ai_pos/core/routes/app_pages.dart';
@@ -22,26 +24,26 @@ import 'package:mary_ai_pos/features/view/main/presentation/cubit/shift/shift_bl
 import 'package:mary_ai_pos/generated/l10n.dart';
 
 Future<void> main() async {
-  // await flutter_acrylic.Window.initialize();
   WidgetsFlutterBinding.ensureInitialized();
   await AppUpdateService.getCloudVersion();
   await SystemChrome.setPreferredOrientations([
     DeviceOrientation.landscapeLeft,
     DeviceOrientation.landscapeRight,
   ]);
-  // await flutter_acrylic.Window.hideWindowControls();
-  // await WindowManager.instance.ensureInitialized();
-  // windowManager.waitUntilReadyToShow().then((_) async {
-  //   await windowManager.setTitleBarStyle(
-  //     TitleBarStyle.hidden,
-  //     windowButtonVisibility: false,
-  //   );
-  //   await windowManager.setMinimumSize(const Size(1000, 600));
-  //   await windowManager.show();
-  //   await windowManager.setPreventClose(true);
-  //   await windowManager.setSkipTaskbar(false);
-  //   await windowManager.setFullScreen(true);
-  // });
+  if (Platform.isWindows || Platform.isMacOS || Platform.isLinux) {
+    await WindowManager.instance.ensureInitialized();
+    windowManager.waitUntilReadyToShow().then((_) async {
+      await windowManager.setTitleBarStyle(
+        TitleBarStyle.hidden,
+        windowButtonVisibility: false,
+      );
+      await windowManager.setMinimumSize(const Size(1000, 600));
+      await windowManager.show();
+      await windowManager.setPreventClose(true);
+      await windowManager.setSkipTaskbar(false);
+      await windowManager.setFullScreen(true);
+    });
+  }
 
   await initDi();
   inject<Alice>().setNavigatorKey(navigatorKey);

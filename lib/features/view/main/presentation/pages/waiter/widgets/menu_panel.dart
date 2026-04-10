@@ -216,28 +216,33 @@ class _CategoriesView extends StatelessWidget {
             );
           }
 
-          return ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
-              const _SectionHeader('Меню'),
-              const SizedBox(height: 12),
-              GridView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                gridDelegate:
-                    const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 3,
-                  crossAxisSpacing: 12,
-                  mainAxisSpacing: 12,
-                  childAspectRatio: 1.1,
-                ),
-                itemCount: categories.length,
-                itemBuilder: (context, index) => _CategoryCard(
-                  category: categories[index],
-                  onTap: () => onSelect(categories[index]),
-                ),
-              ),
-            ],
+          return LayoutBuilder(
+            builder: (context, constraints) {
+              final compact = constraints.maxWidth < 400;
+              final pad = compact ? 8.0 : 12.0;
+              return ListView(
+                padding: EdgeInsets.all(pad),
+                children: [
+                  const _SectionHeader('Меню'),
+                  SizedBox(height: compact ? 8 : 10),
+                  GridView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: compact ? 2 : 3,
+                      crossAxisSpacing: compact ? 6 : 8,
+                      mainAxisSpacing: compact ? 6 : 8,
+                      childAspectRatio: 1.05,
+                    ),
+                    itemCount: categories.length,
+                    itemBuilder: (context, index) => _CategoryCard(
+                      category: categories[index],
+                      onTap: () => onSelect(categories[index]),
+                    ),
+                  ),
+                ],
+              );
+            },
           );
         },
       ),
@@ -299,13 +304,13 @@ class _CategoryCardState extends State<_CategoryCard> {
               color: _hovered ? colors.borderBrand : colors.border,
             ),
           ),
-          padding: const EdgeInsets.all(14),
+          padding: const EdgeInsets.all(10),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
-                width: 36,
-                height: 36,
+                width: 30,
+                height: 30,
                 decoration: BoxDecoration(
                   color: _cardColor.withOpacity(0.15),
                   shape: BoxShape.circle,
@@ -314,8 +319,8 @@ class _CategoryCardState extends State<_CategoryCard> {
                     ? ClipOval(
                         child: CustomCachedNetworkImage(
                           minioObjectName: widget.category.pictureUrl,
-                          width: 36,
-                          height: 36,
+                          width: 30,
+                          height: 30,
                           fit: BoxFit.cover,
                         ),
                       )
@@ -325,7 +330,7 @@ class _CategoryCardState extends State<_CategoryCard> {
                               ? widget.category.name[0].toUpperCase()
                               : '?',
                           style: TextStyle(
-                            fontSize: 16,
+                            fontSize: 14,
                             fontWeight: FontWeight.w700,
                             color: _cardColor,
                           ),
@@ -336,34 +341,28 @@ class _CategoryCardState extends State<_CategoryCard> {
               Text(
                 widget.category.name,
                 style: TextStyle(
-                  fontSize: 13,
+                  fontSize: 12,
                   fontWeight: FontWeight.w500,
                   color: colors.textDefault,
                 ),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
               ),
-              const SizedBox(height: 6),
+              const SizedBox(height: 2),
               Row(
                 children: [
-                  Icon(
-                    Icons.restaurant_menu,
-                    size: 11,
-                    color: colors.textSecondary,
-                  ),
-                  const SizedBox(width: 4),
                   Expanded(
                     child: Text(
                       'блюда',
                       style: TextStyle(
-                        fontSize: 11,
+                        fontSize: 10,
                         color: colors.textSecondary,
                       ),
                     ),
                   ),
                   Icon(
                     Icons.chevron_right,
-                    size: 14,
+                    size: 12,
                     color: colors.textSecondary,
                   ),
                 ],
@@ -420,26 +419,31 @@ class _FoodsView extends StatelessWidget {
             );
           }
 
-          return ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
-              _SectionHeader(category.name),
-              const SizedBox(height: 12),
-              GridView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                gridDelegate:
-                    const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 3,
-                  crossAxisSpacing: 12,
-                  mainAxisSpacing: 12,
-                  childAspectRatio: 0.78,
-                ),
-                itemCount: products.length,
-                itemBuilder: (context, index) =>
-                    _FoodCard(product: products[index]),
-              ),
-            ],
+          return LayoutBuilder(
+            builder: (context, constraints) {
+              final compact = constraints.maxWidth < 400;
+              final pad = compact ? 8.0 : 12.0;
+              return ListView(
+                padding: EdgeInsets.all(pad),
+                children: [
+                  _SectionHeader(category.name),
+                  SizedBox(height: compact ? 8 : 10),
+                  GridView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: compact ? 2 : 3,
+                      crossAxisSpacing: compact ? 6 : 8,
+                      mainAxisSpacing: compact ? 6 : 8,
+                      childAspectRatio: 0.82,
+                    ),
+                    itemCount: products.length,
+                    itemBuilder: (context, index) =>
+                        _FoodCard(product: products[index]),
+                  ),
+                ],
+              );
+            },
           );
         },
       ),

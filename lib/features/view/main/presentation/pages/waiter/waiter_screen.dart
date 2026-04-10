@@ -80,20 +80,38 @@ class _WaiterOrdersBootstrapState extends State<_WaiterOrdersBootstrap> {
       },
       child: const Scaffold(
         backgroundColor: Color(0xFFF5F4F2),
-        body: Row(
+        body: _WaiterLayout(),
+      ),
+    );
+  }
+}
+
+class _WaiterLayout extends StatelessWidget {
+  const _WaiterLayout();
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final w = constraints.maxWidth;
+        // 1024px → bills=230, detail=270; 1280px+ → bills=280, detail=320
+        final billsW = w < 1100 ? 230.0 : 280.0;
+        final detailW = w < 1100 ? 270.0 : 320.0;
+        final menuVPad = w < 1100 ? 8.0 : 16.0;
+        return Row(
           children: [
-            AppSidebar(activeRoute: AppRoutes.mainScreen),
-            SizedBox(width: 280, child: BillsPanel()),
+            const AppSidebar(activeRoute: AppRoutes.mainScreen),
+            SizedBox(width: billsW, child: const BillsPanel()),
             Expanded(
               child: Padding(
-                padding: EdgeInsets.symmetric(vertical: 16),
-                child: MenuPanel(),
+                padding: EdgeInsets.symmetric(vertical: menuVPad),
+                child: const MenuPanel(),
               ),
             ),
-            SizedBox(width: 320, child: BillDetailPanel()),
+            SizedBox(width: detailW, child: const BillDetailPanel()),
           ],
-        ),
-      ),
+        );
+      },
     );
   }
 }
