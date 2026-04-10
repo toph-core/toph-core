@@ -131,3 +131,6 @@ flutter_launcher_icons:
   ios: true
   macos:
     generate: true
+  windows:
+    generate: true
+    image_path: assets/images/mary_logo.png
