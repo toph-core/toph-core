@@ -114,9 +114,13 @@ class MainDataSourcesImpl implements MainDataSources {
     required CloseShiftRequestModel request,
   }) async {
     try {
+      // shiftId is in the URL path only; body must not include it
       await _client.post(
         ListAPI.closeShift(request.shiftId),
-        data: request.toJson(),
+        data: {
+          'closing_cash': request.closingCash.toString(),
+          'closing_card': request.closingCard.toString(),
+        },
       );
       return const Right(true);
     } on DioException catch (exception) {
@@ -140,9 +144,14 @@ class MainDataSourcesImpl implements MainDataSources {
     required OpenShiftModel request,
   }) async {
     try {
+      // README: cashier_id is taken from JWT token — do NOT send it
       final response = await _client.post(
         ListAPI.openShift,
-        data: request.toJson(),
+        data: {
+          'cash_register_id': request.cashRegisterId,
+          'opening_cash': request.openCashSum.toString(),
+          'opening_card': request.openCardSum.toString(),
+        },
       );
       return Right(ShiftResponseModel.fromJson(response.data['data']));
     } on DioException catch (exception) {

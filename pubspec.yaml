@@ -84,6 +84,9 @@ dependencies:
   alice: ^1.0.0
   alice_dio: ^1.0.7
 
+  # Thermal printer (ESC/POS over TCP/IP)
+  esc_pos_utils_plus: ^2.0.4
+
 
 dev_dependencies:
   flutter_test:

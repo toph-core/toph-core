@@ -4,8 +4,10 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mary_ai_pos/core/api/dio_client.dart';
 import 'package:mary_ai_pos/core/api/list_api.dart';
 import 'package:mary_ai_pos/core/constants/constants.dart';
+import 'package:mary_ai_pos/core/service/printer/printer_service.dart';
 import 'package:mary_ai_pos/core/usecase/usecase.dart';
 import 'package:mary_ai_pos/features/view/auth/data/models/user/user_model.dart';
+import 'package:mary_ai_pos/features/view/main/data/models/goods/goods_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/open_order/open_order_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/order_line_item/order_line_item_model.dart';
 import 'package:mary_ai_pos/features/view/main/domain/usecase/get_staff_waiters_usecase.dart';
@@ -19,10 +21,11 @@ enum OrdersListMode { myOrders, branchOrders }
 class WaiterCubit extends Cubit<WaiterState> {
   final DioClient _client;
   final GetStaffWaitersUsecase _getStaffWaitersUsecase;
+  final PrinterService _printerService;
 
   OrdersListMode _ordersListMode = OrdersListMode.myOrders;
 
-  WaiterCubit(this._client, this._getStaffWaitersUsecase)
+  WaiterCubit(this._client, this._getStaffWaitersUsecase, this._printerService)
       : super(const WaiterState());
 
   void setOrdersListModeForRole(UserRole role) {
@@ -366,6 +369,11 @@ class WaiterCubit extends Cubit<WaiterState> {
       );
       if (!isClosed) {
         emit(state.copyWith(isSendingItems: false));
+        // Fire-and-forget: printer offline olsa order jarayonini to'xtatmasin
+        final order = state.openOrders.where((o) => o.id == orderId).firstOrNull;
+        if (order != null) {
+          _printerService.printKitchenReceipt(order: order, items: items);
+        }
         await loadOrderItems(orderId);
         await loadOpenOrders();
       }
@@ -398,12 +406,17 @@ class WaiterCubit extends Cubit<WaiterState> {
     return sumLines.round();
   }
 
-  Future<void> closeOrder(PaymentType paymentType) async {
+  Future<void> closeOrder(
+    PaymentType paymentType, {
+    double discountPercent = 0,
+    double discountAmount = 0,
+  }) async {
     final orderId = state.selectedOrderId;
     final order = state.selectedOrder;
     if (orderId == null || order == null) return;
-    final amount = _payAmountSom(order, state.orderLineItems);
-    if (amount <= 0) {
+    final lineItems = state.orderLineItems;
+    final base = _payAmountSom(order, lineItems).toDouble();
+    if (base <= 0) {
       if (!isClosed) {
         emit(state.copyWith(
           errorMessage: 'To\'lov summasi 0 — schyotni yopib bo\'lmaydi',
@@ -411,16 +424,46 @@ class WaiterCubit extends Cubit<WaiterState> {
       }
       return;
     }
+
+    // Chegirmani qo'llaymiz: yo foiz, yo summa
+    double finalAmount = base;
+    if (discountPercent > 0 && discountPercent <= 100) {
+      finalAmount = base * (1 - discountPercent / 100);
+    } else if (discountAmount > 0) {
+      finalAmount = (base - discountAmount).clamp(0, double.infinity);
+    }
+    final amount = finalAmount.round();
+
     emit(state.copyWith(isClosingOrder: true, errorMessage: null));
     try {
       await _client.post(ListAPI.payToOrder(orderId), data: {
         'payment_type': paymentType.name,
         'customer_paid_amount': '$amount',
-        'discount_amount': '0',
+        'discount_percent': discountPercent > 0 ? discountPercent.toStringAsFixed(0) : '0',
+        'discount_amount': discountAmount > 0 ? discountAmount.round().toString() : '0',
         'discount_comment': '',
-        'discount_percent': '0',
       });
       if (isClosed) return;
+      // Fire-and-forget kassir cheki: state tozalanishidan oldin print qilamiz
+      final receiptItems = lineItems
+          .where((l) => !l.isCancelled)
+          .map((l) => OrderItem(
+                goods: GoodsModel(
+                  categoryId: '',
+                  cookTime: 0,
+                  costPrice: l.price,
+                  description: '',
+                  id: l.goodId,
+                  name: l.displayName,
+                  price: l.price,
+                  profit: '0',
+                  profitMargin: '0',
+                ),
+                quantity: l.quantity,
+                commet: l.comment ?? '',
+              ))
+          .toList();
+      _printerService.printCashierReceipt(order: order, items: receiptItems);
       final updatedOrders =
           state.openOrders.where((o) => o.id != orderId).toList();
       emit(state.copyWith(

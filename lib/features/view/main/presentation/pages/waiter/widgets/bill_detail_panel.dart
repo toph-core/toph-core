@@ -1094,8 +1094,37 @@ class _CloseOrderView extends StatefulWidget {
   State<_CloseOrderView> createState() => _CloseOrderViewState();
 }
 
+enum _DiscountType { percent, amount }
+
 class _CloseOrderViewState extends State<_CloseOrderView> {
   PaymentType _paymentType = PaymentType.cash;
+  _DiscountType _discountType = _DiscountType.percent;
+  final _discountCtrl = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _discountCtrl.addListener(() => setState(() {}));
+  }
+
+  @override
+  void dispose() {
+    _discountCtrl.dispose();
+    super.dispose();
+  }
+
+  double _discountedTotal(double grandTotal) {
+    final val = double.tryParse(_discountCtrl.text.replaceAll(' ', '')) ?? 0;
+    if (val <= 0) return grandTotal;
+    if (_discountType == _DiscountType.percent) {
+      return grandTotal * (1 - val.clamp(0, 100) / 100);
+    } else {
+      return (grandTotal - val).clamp(0, double.infinity);
+    }
+  }
+
+  double _discountVal() =>
+      double.tryParse(_discountCtrl.text.replaceAll(' ', '')) ?? 0;
 
   @override
   Widget build(BuildContext context) {
@@ -1378,6 +1407,121 @@ class _CloseOrderViewState extends State<_CloseOrderView> {
                 },
               ),
             ),
+            // ── Chegirma bo'limi ──────────────────────────────────────────────
+            Container(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+              decoration: BoxDecoration(
+                border: Border(top: BorderSide(color: colors.border)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Text(
+                        'Chegirma',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: colors.textTertiary,
+                        ),
+                      ),
+                      const Spacer(),
+                      _DiscountTypeToggle(
+                        selected: _discountType,
+                        colors: colors,
+                        onChanged: (t) => setState(() {
+                          _discountType = t;
+                          _discountCtrl.clear();
+                        }),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  SizedBox(
+                    height: 40,
+                    child: TextField(
+                      controller: _discountCtrl,
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
+                      style:
+                          TextStyle(fontSize: 14, color: colors.textDefault),
+                      decoration: InputDecoration(
+                        isDense: true,
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 10,
+                        ),
+                        hintText: _discountType == _DiscountType.percent
+                            ? '0 – 100'
+                            : '0',
+                        hintStyle: TextStyle(
+                          fontSize: 13,
+                          color: colors.textSecondary,
+                        ),
+                        suffixText: _discountType == _DiscountType.percent
+                            ? '%'
+                            : 'sum',
+                        suffixStyle: TextStyle(
+                          fontSize: 13,
+                          color: colors.textSecondary,
+                        ),
+                        filled: true,
+                        fillColor: colors.bgSecondary,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: BorderSide(color: colors.border),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: BorderSide(color: colors.border),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: BorderSide(color: colors.borderBrand),
+                        ),
+                      ),
+                    ),
+                  ),
+                  if (_discountVal() > 0) ...[
+                    const SizedBox(height: 8),
+                    Builder(
+                      builder: (_) {
+                        final sumLines =
+                            _sumActiveLines(waiterState.orderLineItems);
+                        final apiTotal = order.totalAmountValue;
+                        final grandTotal = kOpenOrderServiceFeeZeroPercent
+                            ? sumLines
+                            : (apiTotal > 0 ? apiTotal : sumLines);
+                        final finalAmt = _discountedTotal(grandTotal);
+                        final saved = grandTotal - finalAmt;
+                        return Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              '– ${saved.formatN} chegirma',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: colors.systemError,
+                              ),
+                            ),
+                            Text(
+                              'To\'lov: ${finalAmt.formatN}',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                                color: colors.textBrand,
+                              ),
+                            ),
+                          ],
+                        );
+                      },
+                    ),
+                  ],
+                ],
+              ),
+            ),
             Container(
               width: double.infinity,
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
@@ -1475,7 +1619,17 @@ class _CloseOrderViewState extends State<_CloseOrderView> {
                               ? null
                               : () => context
                                   .read<WaiterCubit>()
-                                  .closeOrder(_paymentType),
+                                  .closeOrder(
+                                    _paymentType,
+                                    discountPercent:
+                                        _discountType == _DiscountType.percent
+                                            ? _discountVal()
+                                            : 0,
+                                    discountAmount:
+                                        _discountType == _DiscountType.amount
+                                            ? _discountVal()
+                                            : 0,
+                                  ),
                           child: Container(
                             height: 44,
                             decoration: BoxDecoration(
@@ -1515,6 +1669,88 @@ class _CloseOrderViewState extends State<_CloseOrderView> {
           ],
         );
       },
+    );
+  }
+}
+
+// ─── Chegirma turi toggle (% | Sum) ──────────────────────────────────────────
+
+class _DiscountTypeToggle extends StatelessWidget {
+  final _DiscountType selected;
+  final ThemeColors colors;
+  final ValueChanged<_DiscountType> onChanged;
+
+  const _DiscountTypeToggle({
+    required this.selected,
+    required this.colors,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 32,
+      decoration: BoxDecoration(
+        color: colors.bgSecondary,
+        border: Border.all(color: colors.border),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _DiscountTab(
+            label: '%',
+            active: selected == _DiscountType.percent,
+            colors: colors,
+            onTap: () => onChanged(_DiscountType.percent),
+          ),
+          _DiscountTab(
+            label: 'Sum',
+            active: selected == _DiscountType.amount,
+            colors: colors,
+            onTap: () => onChanged(_DiscountType.amount),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _DiscountTab extends StatelessWidget {
+  final String label;
+  final bool active;
+  final ThemeColors colors;
+  final VoidCallback onTap;
+
+  const _DiscountTab({
+    required this.label,
+    required this.active,
+    required this.colors,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        padding: const EdgeInsets.symmetric(horizontal: 14),
+        decoration: BoxDecoration(
+          color: active ? colors.buttonBrand : Colors.transparent,
+          borderRadius: BorderRadius.circular(7),
+        ),
+        child: Center(
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: active ? colors.textOnBrand : colors.textDefault,
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

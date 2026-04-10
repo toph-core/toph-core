@@ -52,7 +52,7 @@ class ListAPI {
       "/api/v1/orders/$orderId/table-timer/resume";
 
   //! ChashRegisterShfit
-  static const String activeShift = "api/v1/cash-register-shifts/active";
+  static const String activeShift = "/api/v1/cash-register-shifts/active";
   static String closeShift(String id) => "/api/v1/cash-register-shifts/$id/close";
   static const String openShift = "/api/v1/cash-register-shifts";
 }

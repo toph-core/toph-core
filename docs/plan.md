@@ -187,6 +187,86 @@ Band stol ustiga bosilganda avvalgi tanlangan menu itemlari ko'rinmaydi.
 
 ---
 
+## 6. Cash Register Shift API (`/api/v1/cash-register-shifts`)
+
+> Hujjat: `README_CASH_REGISTER_SHIFT.md`
+
+### Endpointlar
+
+| Method | URL | Maqsad |
+|--------|-----|--------|
+| `POST` | `/api/v1/cash-register-shifts` | Smena ochish |
+| `GET` | `/api/v1/cash-register-shifts/active?cash_register_id=` | Faol smena tekshirish |
+| `POST` | `/api/v1/cash-register-shifts/{id}/close` | Smena yopish |
+| `GET` | `/api/v1/cash-register-shifts/{id}` | Smena by ID |
+| `GET` | `/api/v1/cash-register-shifts` | Smena ro'yxati |
+
+### Muhim qoidalar
+- `cashier_id` — **jo'natilmaydi**, backend JWT tokendan oladi
+- `cash_register_id` — JWT'dan `_resolveCashRegisterId()` orqali olinadi
+- Bir kassa uchun bir vaqtda faqat bitta faol smena bo'lishi mumkin
+- 404 javob = faol smena yo'q → smena ochish ekrani ko'rsatiladi
+
+### Request: Smena ochish
+```json
+{
+  "cash_register_id": "...",
+  "opening_cash": "100000",
+  "opening_card": "0"
+}
+```
+
+### Request: Smena yopish
+```json
+{
+  "closing_cash": "250000",
+  "closing_card": "80000"
+}
+```
+> `shiftId` faqat URL path'da: `POST /api/v1/cash-register-shifts/{id}/close`
+
+### Flutter integratsiyasi
+- **`ShiftBloc`** — smena holati boshqaradi, JWT'dan `cash_register_id` chiqaradi
+- **`main_datasources.dart`** — request body qo'lda yig'iladi (model.toJson() emas)
+- **Offline fallback** — network xatosida `SharedPreferences`'ga lokal smena saqlanadi
+
+---
+
+## 7. To'lov API — Chegirma (Discount)
+
+### Endpoint
+```
+POST /api/v1/orders/{id}/pay
+```
+
+### Request body
+```json
+{
+  "payment_type": "cash | card | qr",
+  "customer_paid_amount": "54000",
+  "discount_percent": "10",
+  "discount_amount": "0",
+  "discount_comment": ""
+}
+```
+
+### Qoidalar
+- `discount_percent` — foiz chegirma (0-100). `"10"` = 10%
+- `discount_amount` — summa chegirma (so'm). `"200000"` = 200,000 so'm
+- Faqat bittasi ishlatiladi: yo foiz, yo summa (ikkinchisi `"0"` bo'ladi)
+- `customer_paid_amount` — chegirmadan keyin to'lanadigan haqiqiy summa
+
+### Flutter integratsiyasi
+- **`WaiterCubit.closeOrder(paymentType, {discountPercent, discountAmount})`**
+  - Chegirma qo'llanilgach `customer_paid_amount` avtomatik hisoblanadi
+  - `discountPercent > 0` → `base * (1 - percent/100)` formula
+  - `discountAmount > 0` → `base - amount` formula
+- **`_CloseOrderView`** (bill_detail_panel.dart)
+  - Chegirma input: foiz (%) yoki summa (Sum) toggle
+  - Kiritilganda: chegirma summasi va yangi to'lov miqdori ko'rsatiladi
+
+---
+
 ## 5. Texnik qarzlar (Technical Debt)
 
 - [ ] Debug `print()` statementlarini olib tashlash (order_side_bar_widget.dart)

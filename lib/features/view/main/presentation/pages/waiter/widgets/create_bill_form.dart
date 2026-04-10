@@ -231,7 +231,7 @@ class _CreateBillFormState extends State<CreateBillForm> {
                                     p.staffWaiters != c.staffWaiters,
                                 builder: (context, state) {
                                   if (state.isLoadingStaff) {
-                                    return SizedBox(
+                                    return const SizedBox(
                                       height: 42,
                                       child: Center(
                                         child: SizedBox(

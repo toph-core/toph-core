@@ -3,6 +3,8 @@ import 'package:alice/model/alice_configuration.dart';
 import 'package:mary_ai_pos/core/api/dio_client.dart';
 import 'package:mary_ai_pos/core/auth/storage/token_storage_impl.dart';
 import 'package:mary_ai_pos/core/service/minio/minio_service.dart';
+import 'package:mary_ai_pos/core/service/printer/printer_config_storage.dart';
+import 'package:mary_ai_pos/core/service/printer/printer_service.dart';
 import 'package:mary_ai_pos/features/view/auth/domain/usecases/check_user_auth/check_user_data_usecase.dart';
 import 'package:mary_ai_pos/features/view/auth/domain/usecases/logout/logout_usecase.dart';
 import 'package:mary_ai_pos/features/view/auth/domain/usecases/user/get_user_usecase.dart';
@@ -78,6 +80,9 @@ Future<void> initDi() async {
   inject.registerSingleton<DioClient>(dioClient);
   final MinioService minioService = MinioService.instance;
   inject.registerLazySingleton(() => minioService);
+
+  inject.registerLazySingleton(() => PrinterConfigStorage(inject<SharedPreferences>()));
+  inject.registerLazySingleton(() => PrinterService(inject<PrinterConfigStorage>()));
 
   _dataSources();
   _repositories();
@@ -182,6 +187,6 @@ void _cubit() {
   inject.registerFactory(() => NotificationBloc());
   inject.registerLazySingleton(() => SavedOrdersBloc());
   inject.registerFactory(() => HourPriceBloc(getHourPriceUsecase: inject()));
-  inject.registerFactory(() => WaiterCubit(inject(), inject()));
+  inject.registerFactory(() => WaiterCubit(inject(), inject(), inject()));
   inject.registerFactory(() => TableTimerCubit(inject()));
 }
