@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:mary_ai_pos/core/constants/constants.dart';
+import 'package:mary_ai_pos/core/utils/app_formatter.dart';
 import 'package:mary_ai_pos/core/extension/for_context.dart';
 import 'package:mary_ai_pos/core/extension/number_formatter.dart';
 import 'package:mary_ai_pos/core/theme/tokens/theme_colors.dart';
@@ -1087,6 +1088,25 @@ double _servicePartForOrder(
   return 0;
 }
 
+/// Yopish oynasidagi «Jami» va chegirma bazasi.
+///
+/// [kOpenOrderServiceFeeZeroPercent] yoqilganda odatda faqat qatorlar yig‘indisi
+/// ishlatiladi (xizmatni ikki marta qo‘shmaslik). Vaqt bo‘yicha stolda esa
+/// vaqt summasi qatorlarda yo‘q — API [OpenOrderModel.totalAmountValue] kerak.
+double _grandTotalForCloseOrder(
+  OpenOrderModel order,
+  double sumLines,
+  double totalFromOrder,
+) {
+  if (kOpenOrderServiceFeeZeroPercent) {
+    if (order.isTimeBasedTable && totalFromOrder > 0) {
+      return totalFromOrder;
+    }
+    return sumLines;
+  }
+  return totalFromOrder > 0 ? totalFromOrder : sumLines;
+}
+
 class _CloseOrderView extends StatefulWidget {
   const _CloseOrderView();
 
@@ -1113,8 +1133,12 @@ class _CloseOrderViewState extends State<_CloseOrderView> {
     super.dispose();
   }
 
+  /// Bo'shliq / NBSP — formatlangan summa / foiz uchun.
+  String get _discountRawDigits =>
+      _discountCtrl.text.replaceAll(RegExp(r'\s'), '');
+
   double _discountedTotal(double grandTotal) {
-    final val = double.tryParse(_discountCtrl.text.replaceAll(' ', '')) ?? 0;
+    final val = double.tryParse(_discountRawDigits) ?? 0;
     if (val <= 0) return grandTotal;
     if (_discountType == _DiscountType.percent) {
       return grandTotal * (1 - val.clamp(0, 100) / 100);
@@ -1124,7 +1148,7 @@ class _CloseOrderViewState extends State<_CloseOrderView> {
   }
 
   double _discountVal() =>
-      double.tryParse(_discountCtrl.text.replaceAll(' ', '')) ?? 0;
+      double.tryParse(_discountRawDigits) ?? 0;
 
   @override
   Widget build(BuildContext context) {
@@ -1181,11 +1205,11 @@ class _CloseOrderViewState extends State<_CloseOrderView> {
                       final lines = ws.orderLineItems;
                       final sumLines = _sumActiveLines(lines);
                       final totalFromOrder = order.totalAmountValue;
-                      final grandTotal = kOpenOrderServiceFeeZeroPercent
-                          ? sumLines
-                          : (totalFromOrder > 0
-                              ? totalFromOrder
-                              : sumLines);
+                      final grandTotal = _grandTotalForCloseOrder(
+                        order,
+                        sumLines,
+                        totalFromOrder,
+                      );
                       final servicePart = _servicePartForOrder(
                         order,
                         sumLines,
@@ -1445,6 +1469,9 @@ class _CloseOrderViewState extends State<_CloseOrderView> {
                       keyboardType: const TextInputType.numberWithOptions(
                         decimal: true,
                       ),
+                      inputFormatters: _discountType == _DiscountType.amount
+                          ? [SumThousandsInputFormatter()]
+                          : null,
                       style:
                           TextStyle(fontSize: 14, color: colors.textDefault),
                       decoration: InputDecoration(
@@ -1491,13 +1518,17 @@ class _CloseOrderViewState extends State<_CloseOrderView> {
                         final sumLines =
                             _sumActiveLines(waiterState.orderLineItems);
                         final apiTotal = order.totalAmountValue;
-                        final grandTotal = kOpenOrderServiceFeeZeroPercent
-                            ? sumLines
-                            : (apiTotal > 0 ? apiTotal : sumLines);
+                        final grandTotal = _grandTotalForCloseOrder(
+                          order,
+                          sumLines,
+                          apiTotal,
+                        );
                         final finalAmt = _discountedTotal(grandTotal);
                         final saved = grandTotal - finalAmt;
-                        return Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        return Column(
+                          mainAxisAlignment: MainAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
                               '– ${saved.formatN} chegirma',
@@ -1505,7 +1536,9 @@ class _CloseOrderViewState extends State<_CloseOrderView> {
                                 fontSize: 12,
                                 color: colors.systemError,
                               ),
+                              softWrap: true,
                             ),
+                            const SizedBox(height: 4),
                             Text(
                               'To\'lov: ${finalAmt.formatN}',
                               style: TextStyle(
@@ -1513,6 +1546,7 @@ class _CloseOrderViewState extends State<_CloseOrderView> {
                                 fontWeight: FontWeight.w700,
                                 color: colors.textBrand,
                               ),
+                              softWrap: true,
                             ),
                           ],
                         );

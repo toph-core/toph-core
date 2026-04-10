@@ -28,13 +28,21 @@ class PaymentPayRequestModel
       _$PaymentPayRequestModelFromJson(json);
 
   @override
-  Map<String, dynamic> request() => {
-    // "cash_register_id": cashRegisterId,
-    // "cashier_id": cashierId,
-    "customer_paid_amount": "$customPaidAmount",
-    "discount_amount": "$discountAmount",
-    "discount_comment": "",
-    "discount_percent": "$discountPercent",
-    "payment_type": paymentType.name,
-  };
+  Map<String, dynamic> request() {
+    final map = <String, dynamic>{
+      'customer_paid_amount': '$customPaidAmount',
+      'payment_type': paymentType.name,
+    };
+    final hasDiscount = discountAmount > 0 || discountPercent > 0;
+    if (hasDiscount) {
+      if (discountAmount > 0) {
+        map['discount_amount'] = '$discountAmount';
+      }
+      if (discountPercent > 0) {
+        map['discount_percent'] = '$discountPercent';
+      }
+      map['discount_comment'] = comment;
+    }
+    return map;
+  }
 }

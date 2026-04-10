@@ -425,24 +425,27 @@ class WaiterCubit extends Cubit<WaiterState> {
       return;
     }
 
-    // Chegirmani qo'llaymiz: yo foiz, yo summa
-    double finalAmount = base;
-    if (discountPercent > 0 && discountPercent <= 100) {
-      finalAmount = base * (1 - discountPercent / 100);
-    } else if (discountAmount > 0) {
-      finalAmount = (base - discountAmount).clamp(0, double.infinity);
-    }
-    final amount = finalAmount.round();
+    // Backend: customer_paid_amount — chegirmadan oldingi to'liq summa;
+    // chegirma alohida discount_* maydonlarida.
+    final customerPaidAmount = base.round();
 
     emit(state.copyWith(isClosingOrder: true, errorMessage: null));
     try {
-      await _client.post(ListAPI.payToOrder(orderId), data: {
+      final payBody = <String, dynamic>{
         'payment_type': paymentType.name,
-        'customer_paid_amount': '$amount',
-        'discount_percent': discountPercent > 0 ? discountPercent.toStringAsFixed(0) : '0',
-        'discount_amount': discountAmount > 0 ? discountAmount.round().toString() : '0',
-        'discount_comment': '',
-      });
+        'customer_paid_amount': '$customerPaidAmount',
+      };
+      final hasDiscount = discountPercent > 0 || discountAmount > 0;
+      if (hasDiscount) {
+        if (discountPercent > 0) {
+          payBody['discount_percent'] = discountPercent.toStringAsFixed(0);
+        }
+        if (discountAmount > 0) {
+          payBody['discount_amount'] = discountAmount.round().toString();
+        }
+        payBody['discount_comment'] = '';
+      }
+      await _client.post(ListAPI.payToOrder(orderId), data: payBody);
       if (isClosed) return;
       // Fire-and-forget kassir cheki: state tozalanishidan oldin print qilamiz
       final receiptItems = lineItems

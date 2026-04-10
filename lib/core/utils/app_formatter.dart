@@ -1,4 +1,5 @@
 import 'package:flutter/services.dart';
+import 'package:intl/intl.dart';
 import 'package:mask_text_input_formatter/mask_text_input_formatter.dart';
 
 class AppFormatter {
@@ -62,6 +63,32 @@ class AppFormatter {
   );
 
   static final numberOnlyFormatter = FilteringTextInputFormatter.digitsOnly;
+}
+
+/// Summa kiritish: `10000` → `10 000` (locale `uz`, boshqa joydagi `formatN` bilan bir xil).
+class SumThousandsInputFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    final raw =
+        newValue.text.replaceAll(RegExp(r'\s'), '').replaceAll(RegExp(r'\D'), '');
+    if (raw.isEmpty) {
+      return const TextEditingValue(text: '');
+    }
+    final n = int.tryParse(raw) ?? 0;
+    final formatted = NumberFormat.currency(
+      symbol: '',
+      locale: 'uz',
+      decimalDigits: 0,
+    ).format(n).trim();
+
+    return TextEditingValue(
+      text: formatted,
+      selection: TextSelection.collapsed(offset: formatted.length),
+    );
+  }
 }
 
 class AtSignUsernameFormatter extends TextInputFormatter {

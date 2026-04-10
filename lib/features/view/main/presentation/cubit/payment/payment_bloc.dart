@@ -62,9 +62,9 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
           orderId: state.detail!.id,
           // cashRegisterId: "a195f647-8cf0-4132-8464-fdaaa2d77a68",
           // cashierId: "4e25f6c1-68c0-43bd-bcb2-a130bde2e9e1",
-          customPaidAmount: state.paymentType == PaymentType.cash
-              ? int.parse(state.enterSum)
-              : state.detail!.grandTotal.toInt(),
+          // Chegirmadan oldingi jami (discount_* alohida); naqd kiritilgan sum qayta emas.
+          customPaidAmount: state.detail!.grandTotal.toInt() +
+              state.hourPrice.toInt(),
           discountAmount: state.discountType == DiscountType.money
               ? int.tryParse(state.discountAmount) != null
                     ? int.parse(state.discountAmount)

@@ -58,6 +58,20 @@ class _CreateBillFormState extends State<CreateBillForm> {
     setState(() => _selectedWaiter = pick ?? waiters.first);
   }
 
+  /// Bir xil id bilan takroriy stollar (API) — Dropdown faqat bitta [value] qabul qiladi.
+  List<CafeTableModel> _dedupeTablesById(List<CafeTableModel> raw) {
+    final seen = <String>{};
+    return raw.where((t) => seen.add(t.id)).toList();
+  }
+
+  /// Tanlangan stol joriy [tables] ro‘yxatidagi obyekt bilan moslashtiriladi
+  /// (status yangilanganda copyWith tufayli [==] buzilmasligi uchun).
+  CafeTableModel? _resolvedSelectedTable(List<CafeTableModel> tables) {
+    final s = _selectedTable;
+    if (s == null) return null;
+    return tables.firstWhereOrNull((t) => t.id == s.id);
+  }
+
   @override
   void dispose() {
     _nameCtrl.dispose();
@@ -199,9 +213,30 @@ class _CreateBillFormState extends State<CreateBillForm> {
                                     p.tables != c.tables ||
                                     p.status != c.status,
                                 builder: (context, state) {
-                                  final tables = state.tables ?? [];
+                                  final tables = _dedupeTablesById(
+                                    state.tables ?? [],
+                                  );
+                                  final tableValue =
+                                      _resolvedSelectedTable(tables);
+                                  if (_selectedTable != tableValue) {
+                                    WidgetsBinding.instance
+                                        .addPostFrameCallback((_) {
+                                      if (!mounted) return;
+                                      final fresh =
+                                          context.read<MainCubit>().state.tables ??
+                                              [];
+                                      final deduped = _dedupeTablesById(fresh);
+                                      final synced =
+                                          _resolvedSelectedTable(deduped);
+                                      if (_selectedTable != synced) {
+                                        setState(
+                                          () => _selectedTable = synced,
+                                        );
+                                      }
+                                    });
+                                  }
                                   return _DropdownField<CafeTableModel>(
-                                    value: _selectedTable,
+                                    value: tableValue,
                                     items: tables,
                                     labelOf: (t) => '${t.number}',
                                     onChanged: (t) =>
