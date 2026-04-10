@@ -64,108 +64,122 @@ class _CloseShiftScreenState extends State<CloseShiftScreen> {
                 final cardAmount = int.tryParse(state.cardSum) ?? 0;
                 final totalAmount = cashAmount + cardAmount;
 
-                return Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: Row(
-                    spacing: 20,
-                    children: [
-                      // LEFT PANEL — Dashboard
-                      Expanded(
-                        flex: 3,
-                        child: Column(
-                          spacing: 16,
-                          children: [
-                            // Shift info card
-                            _ShiftInfoCard(state: state),
+                return LayoutBuilder(
+                  builder: (context, constraints) {
+                    final maxW = constraints.maxWidth;
+                    final maxH = constraints.maxHeight;
+                    // ~1024×768 POS: chap panel uchun joy saqlash
+                    final compactW = maxW < 1100;
+                    final shortH = maxH < 720;
+                    final edge = compactW ? 12.0 : 20.0;
+                    final gap = compactW ? 12.0 : 20.0;
+                    final rightW = compactW ? 300.0 : 380.0;
+                    final keyExtent = shortH ? 48.0 : 56.0;
+                    final keyGap = shortH ? 6.0 : 8.0;
 
-                            // Stats row
-                            _StatsRow(
-                              cashAmount: cashAmount,
-                              cardAmount: cardAmount,
-                              totalAmount: totalAmount,
-                            ),
-
-                            // Payment breakdown card
-                            Expanded(
-                              child: _PaymentBreakdownCard(
-                                cashAmount: cashAmount,
-                                cardAmount: cardAmount,
-                                totalAmount: totalAmount,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-
-                      // RIGHT PANEL — Numpad
-                      SizedBox(
-                        width: 380,
-                        child: Column(
-                          spacing: 16,
-                          children: [
-                            // Cash/Card input containers
-                            Expanded(
-                              flex: 0,
-                              child: Row(
-                                spacing: 12,
-                                children: [
-                                  Expanded(
-                                    child: WShiftInputSumContainer(
-                                      onTap: () =>
-                                          context.read<ShiftBloc>().add(
-                                            const ShiftEvent.updateSumType(
-                                              type: ShiftSumType.cash,
-                                            ),
-                                          ),
-                                      selected: state.sum == ShiftSumType.cash,
-                                      title: "Naqt summani kiriting",
-                                      value: cashAmount.toString(),
-                                    ),
+                    return Padding(
+                      padding: EdgeInsets.all(edge),
+                      child: Row(
+                        spacing: gap,
+                        children: [
+                          // LEFT PANEL — Dashboard
+                          Expanded(
+                            flex: 3,
+                            child: Column(
+                              spacing: compactW ? 12 : 16,
+                              children: [
+                                _ShiftInfoCard(state: state),
+                                _StatsRow(
+                                  cashAmount: cashAmount,
+                                  cardAmount: cardAmount,
+                                  totalAmount: totalAmount,
+                                ),
+                                Expanded(
+                                  child: _PaymentBreakdownCard(
+                                    cashAmount: cashAmount,
+                                    cardAmount: cardAmount,
+                                    totalAmount: totalAmount,
                                   ),
-                                  Expanded(
-                                    child: WShiftInputSumContainer(
-                                      onTap: () =>
-                                          context.read<ShiftBloc>().add(
-                                            const ShiftEvent.updateSumType(
-                                              type: ShiftSumType.card,
-                                            ),
-                                          ),
-                                      selected: state.sum == ShiftSumType.card,
-                                      title: "Terminal summani kiriting",
-                                      value: cardAmount.toString(),
-                                    ),
-                                  ),
-                                ],
-                              ),
+                                ),
+                              ],
                             ),
+                          ),
 
-                            // Numpad
-                            Expanded(
-                              child: GridView.builder(
-                                shrinkWrap: true,
-                                physics: const NeverScrollableScrollPhysics(),
-                                gridDelegate:
-                                    const SliverGridDelegateWithFixedCrossAxisCount(
+                          // RIGHT PANEL — Numpad
+                          SizedBox(
+                            width: rightW,
+                            child: Column(
+                              spacing: compactW ? 12 : 16,
+                              children: [
+                                Expanded(
+                                  flex: 0,
+                                  child: Row(
+                                    spacing: compactW ? 8 : 12,
+                                    children: [
+                                      Expanded(
+                                        child: WShiftInputSumContainer(
+                                          onTap: () => context
+                                              .read<ShiftBloc>()
+                                              .add(
+                                                const ShiftEvent.updateSumType(
+                                                  type: ShiftSumType.cash,
+                                                ),
+                                              ),
+                                          selected:
+                                              state.sum == ShiftSumType.cash,
+                                          title: "Naqt summani kiriting",
+                                          value: cashAmount.toString(),
+                                        ),
+                                      ),
+                                      Expanded(
+                                        child: WShiftInputSumContainer(
+                                          onTap: () => context
+                                              .read<ShiftBloc>()
+                                              .add(
+                                                const ShiftEvent.updateSumType(
+                                                  type: ShiftSumType.card,
+                                                ),
+                                              ),
+                                          selected:
+                                              state.sum == ShiftSumType.card,
+                                          title: "Terminal summani kiriting",
+                                          value: cardAmount.toString(),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                Expanded(
+                                  child: GridView.builder(
+                                    shrinkWrap: true,
+                                    physics:
+                                        const NeverScrollableScrollPhysics(),
+                                    gridDelegate:
+                                        SliverGridDelegateWithFixedCrossAxisCount(
                                       crossAxisCount: 3,
-                                      crossAxisSpacing: 8,
-                                      mainAxisSpacing: 8,
-                                      mainAxisExtent: 56,
+                                      crossAxisSpacing: keyGap,
+                                      mainAxisSpacing: keyGap,
+                                      mainAxisExtent: keyExtent,
                                     ),
-                                itemCount: keyboardKeys.length,
-                                itemBuilder: (context, index) {
-                                  final String key = keyboardKeys[index];
-                                  return _keyboardKey(context, key, state.sum);
-                                },
-                              ),
+                                    itemCount: keyboardKeys.length,
+                                    itemBuilder: (context, index) {
+                                      final String key = keyboardKeys[index];
+                                      return _keyboardKey(
+                                        context,
+                                        key,
+                                        state.sum,
+                                      );
+                                    },
+                                  ),
+                                ),
+                                const WShiftBottom(),
+                              ],
                             ),
-
-                            // Action buttons
-                            const WShiftBottom(),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
+                    );
+                  },
                 );
               },
             ),
