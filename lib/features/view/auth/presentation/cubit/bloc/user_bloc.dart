@@ -9,7 +9,6 @@ import 'package:mary_ai_pos/core/utils/helper/helper_widget.dart';
 import 'package:mary_ai_pos/features/view/auth/data/models/user/user_model.dart';
 import 'package:mary_ai_pos/features/view/auth/domain/usecases/user/get_user_usecase.dart';
 import 'package:mary_ai_pos/features/view/main/domain/usecase/sync_printer_settings_usecase.dart';
-
 part 'user_event.dart';
 part 'user_state.dart';
 part 'user_bloc.freezed.dart';
@@ -17,7 +16,6 @@ part 'user_bloc.freezed.dart';
 class UserBloc extends Bloc<UserEvent, UserState> {
   late final GetUserUsecase _getUserUsecase;
   late final SyncPrinterSettingsUsecase _syncPrinterSettingsUsecase;
-  //
 
   UserBloc({
     required GetUserUsecase getUserUsecase,

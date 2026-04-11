@@ -89,7 +89,7 @@ class AuthRepositoryImpl implements AuthRepository {
   Future<Either<Failure, String>> getAppLang() async {
     try {
       String lang =
-          await _tokenStorage.readString(TokensStorageKeys.appLanguage) ?? 'uz';
+          await _tokenStorage.readString(TokensStorageKeys.appLanguage) ?? 'ru';
       return Right(lang);
     } catch (e) {
       return const Left(CacheFailure());

@@ -1,3 +1,4 @@
+import 'package:mary_ai_pos/core/api/api_error_overlay.dart';
 import 'package:mary_ai_pos/core/auth/models/auth_token_pair/auth_token_pair.dart';
 import 'package:mary_ai_pos/core/auth/storage/token_storage_impl.dart';
 import 'package:mary_ai_pos/core/routes/app_routes.dart';
@@ -85,6 +86,20 @@ class MySmartDioInterceptor extends Interceptor {
         return handler.next(err);
       } finally {
         _refreshFuture = null;
+      }
+    }
+
+    // API javobidagi xabar — overlay (401 refresh / token yo‘qligi bundan tashqari).
+    final resp = err.response;
+    final sc = resp?.statusCode;
+    if (resp != null &&
+        sc != null &&
+        sc >= 400 &&
+        sc != 401 &&
+        !err.requestOptions.path.endsWith(ListAPI.refresh)) {
+      final msg = messageFromDioErrorData(resp.data);
+      if (msg.isNotEmpty) {
+        showApiErrorOverlayIfPossible(msg);
       }
     }
 

@@ -20,6 +20,7 @@ import 'package:mary_ai_pos/features/view/main/domain/usecase/get_categories_use
 import 'package:mary_ai_pos/features/view/main/domain/usecase/get_goods_by_category_id_usecase.dart';
 import 'package:mary_ai_pos/features/view/main/domain/usecase/get_goods_with_name_usecase.dart';
 import 'package:mary_ai_pos/features/view/main/domain/usecase/get_hour_price_usecase.dart';
+import 'package:mary_ai_pos/features/view/main/domain/usecase/sync_printer_settings_usecase.dart';
 import 'package:mary_ai_pos/features/view/main/domain/usecase/get_payment_detail_with_id_usecase.dart';
 import 'package:mary_ai_pos/features/view/main/domain/usecase/get_payment_detail_with_table_id_usecase.dart';
 import 'package:mary_ai_pos/features/view/main/domain/usecase/open_shift_usecase.dart';
@@ -54,7 +55,6 @@ import 'package:mary_ai_pos/features/view/main/domain/repository/main_repository
 import 'package:mary_ai_pos/features/view/main/domain/usecase/get_halls_usecase.dart';
 import 'package:mary_ai_pos/features/view/main/domain/usecase/get_staff_waiters_usecase.dart';
 import 'package:mary_ai_pos/features/view/main/domain/usecase/get_tables_by_hall_id_usecase.dart';
-import 'package:mary_ai_pos/features/view/main/domain/usecase/sync_printer_settings_usecase.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/main/main_cubit.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/table_timer/table_timer_cubit.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/waiter/waiter_cubit.dart';
@@ -82,7 +82,7 @@ Future<void> initDi() async {
   final MinioService minioService = MinioService.instance;
   inject.registerLazySingleton(() => minioService);
 
-  inject.registerLazySingleton(() => PrinterConfigStorage(inject<SharedPreferences>()));
+  inject.registerLazySingleton(() => PrinterConfigStorage(inject()));
   inject.registerLazySingleton(() => PrinterService(inject<PrinterConfigStorage>()));
 
   _dataSources();

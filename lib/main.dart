@@ -35,7 +35,7 @@ Future<void> main() async {
     windowManager.waitUntilReadyToShow().then((_) async {
       await windowManager.setTitleBarStyle(
         TitleBarStyle.hidden,
-        windowButtonVisibility: false,
+        windowButtonVisibility: true,
       );
       await windowManager.setMinimumSize(const Size(1000, 600));
       await windowManager.show();

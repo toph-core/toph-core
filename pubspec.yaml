@@ -86,6 +86,8 @@ dependencies:
 
   # Thermal printer (ESC/POS over TCP/IP)
   esc_pos_utils_plus: ^2.0.4
+  windows1251: ^2.0.1
+  charset: ^2.0.1
 
 
 dev_dependencies:

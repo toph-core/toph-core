@@ -4,7 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:mary_ai_pos/core/api/dio_client.dart';
 import 'package:mary_ai_pos/core/api/dio_exception_handler.dart';
 import 'package:mary_ai_pos/core/api/list_api.dart';
-import 'package:mary_ai_pos/core/service/printer/printer_settings_model.dart';
+import 'package:mary_ai_pos/core/service/printer/printer_setting_entry.dart';
 import 'package:mary_ai_pos/core/error/failure.dart';
 import 'package:mary_ai_pos/features/view/auth/data/models/user/user_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/archive_detail/archive_detail_model.dart';
@@ -80,7 +80,7 @@ abstract class MainDataSources {
     required String orderId,
   });
 
-  Future<Either<Failure, PrinterSettingsModel>> getPrinterSettings();
+  Future<Either<Failure, List<PrinterSettingEntry>>> getPrinterSettings();
 }
 
 class MainDataSourcesImpl implements MainDataSources {
@@ -89,23 +89,21 @@ class MainDataSourcesImpl implements MainDataSources {
   MainDataSourcesImpl(this._client);
 
   @override
-  Future<Either<Failure, PrinterSettingsModel>> getPrinterSettings() async {
+  Future<Either<Failure, List<PrinterSettingEntry>>> getPrinterSettings() async {
     try {
       final response = await _client.get(ListAPI.printerSettings);
       final root = response.data;
-      Map<String, dynamic>? map;
+      List<dynamic>? dataList;
       if (root is Map<String, dynamic>) {
         final data = root['data'];
-        if (data is Map<String, dynamic>) {
-          map = data;
-        } else {
-          map = root;
-        }
+        if (data is List) dataList = data;
+      } else if (root is List) {
+        dataList = root;
       }
-      if (map == null) {
+      if (dataList == null) {
         return const Left(ParsingFailure());
       }
-      return Right(PrinterSettingsModel.fromJson(map));
+      return Right(PrinterSettingEntry.listFromJsonList(dataList));
     } on DioException catch (exception) {
       return Left(handleDioException(exception));
     } on FormatException catch (e, st) {
@@ -222,6 +220,10 @@ class MainDataSourcesImpl implements MainDataSources {
 
   @override
   Future<Either<Failure, List<UserModel>>> getUsers() async {
+    // Vaqtincha: `GET /api/v1/users` — ba’zi rollarda 403; chaqiruv o‘chirilgan.
+    return const Right(<UserModel>[]);
+
+    /* Qayta yoqish:
     try {
       final response = await _client.get(ListAPI.users);
       final raw = response.data['data'];
@@ -250,6 +252,7 @@ class MainDataSourcesImpl implements MainDataSources {
       if (kDebugMode) print('Unknown error: $e\n$st');
       return const Left(UnknownFailure());
     }
+    */
   }
 
   @override

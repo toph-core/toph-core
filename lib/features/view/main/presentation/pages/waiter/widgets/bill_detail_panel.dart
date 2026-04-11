@@ -69,7 +69,7 @@ class _EmptyPanel extends StatelessWidget {
               size: 48, color: colors.emptyValueColor),
           const SizedBox(height: 12),
           Text(
-            'Schyot tanlang yoki\nyangi schyot oching',
+            'Выберите счёт или\nоткройте новый',
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 13,
@@ -1443,7 +1443,7 @@ class _CloseOrderViewState extends State<_CloseOrderView> {
                   Row(
                     children: [
                       Text(
-                        'Chegirma',
+                        'Скидка',
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
@@ -1489,7 +1489,7 @@ class _CloseOrderViewState extends State<_CloseOrderView> {
                         ),
                         suffixText: _discountType == _DiscountType.percent
                             ? '%'
-                            : 'sum',
+                            : 'сум',
                         suffixStyle: TextStyle(
                           fontSize: 13,
                           color: colors.textSecondary,
@@ -1531,7 +1531,7 @@ class _CloseOrderViewState extends State<_CloseOrderView> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              '– ${saved.formatN} chegirma',
+                              '– ${saved.formatN} скидка',
                               style: TextStyle(
                                 fontSize: 12,
                                 color: colors.systemError,
@@ -1540,7 +1540,7 @@ class _CloseOrderViewState extends State<_CloseOrderView> {
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              'To\'lov: ${finalAmt.formatN}',
+                              'К оплате: ${finalAmt.formatN}',
                               style: TextStyle(
                                 fontSize: 13,
                                 fontWeight: FontWeight.w700,
@@ -1684,7 +1684,7 @@ class _CloseOrderViewState extends State<_CloseOrderView> {
                                       ),
                                     )
                                   : Text(
-                                      'Oplatit ✓',
+                                      'Оплатить ✓',
                                       style: TextStyle(
                                         fontSize: 14,
                                         fontWeight: FontWeight.w600,
@@ -1739,7 +1739,7 @@ class _DiscountTypeToggle extends StatelessWidget {
             onTap: () => onChanged(_DiscountType.percent),
           ),
           _DiscountTab(
-            label: 'Sum',
+            label: 'Сумма',
             active: selected == _DiscountType.amount,
             colors: colors,
             onTap: () => onChanged(_DiscountType.amount),

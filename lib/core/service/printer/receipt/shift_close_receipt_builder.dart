@@ -1,12 +1,13 @@
 import 'package:esc_pos_utils_plus/esc_pos_utils_plus.dart';
 import 'package:intl/intl.dart';
+import 'package:mary_ai_pos/core/service/printer/receipt/receipt_esc_pos_helper.dart';
+import 'package:mary_ai_pos/core/service/printer/receipt/receipt_som_format.dart';
 
 /// Smena yopilishi — faqat terminal (karta) summasi; naqd chekda ko‘rsatilmaydi.
 class ShiftCloseReceiptBuilder {
   ShiftCloseReceiptBuilder._();
 
-  static final _numFmt = NumberFormat('#,##0', 'uz');
-  static String _fmt(int v) => _numFmt.format(v);
+  static String _fmt(int v) => ReceiptSomFormat.formatInt(v);
 
   static Future<List<int>> build({
     required String shiftId,
@@ -16,24 +17,21 @@ class ShiftCloseReceiptBuilder {
     PaperSize paperSize = PaperSize.mm80,
   }) async {
     final profile = await CapabilityProfile.load();
-    final gen = Generator(paperSize, profile);
+    final gen = receiptGenerator(paperSize, profile);
     final df = DateFormat('dd.MM.yyyy  HH:mm');
     final now = DateTime.now();
 
     List<int> bytes = [];
+    bytes += receiptEncodingPreamble(gen);
 
     bytes += gen.text(
-      'MARY AI POS',
+      'ЗАКРЫТИЕ СМЕНЫ',
       styles: const PosStyles(
         align: PosAlign.center,
         bold: true,
         height: PosTextSize.size2,
-        width: PosTextSize.size2,
+        width: PosTextSize.size1,
       ),
-    );
-    bytes += gen.text(
-      'SMENA YOPILISHI',
-      styles: const PosStyles(align: PosAlign.center, bold: true),
       linesAfter: 1,
     );
 
@@ -42,7 +40,7 @@ class ShiftCloseReceiptBuilder {
 
     bytes += gen.row([
       PosColumn(
-        text: 'Kassir:',
+        text: 'Кассир:',
         width: 4,
         styles: const PosStyles(bold: true),
       ),
@@ -50,7 +48,7 @@ class ShiftCloseReceiptBuilder {
     ]);
     bytes += gen.row([
       PosColumn(
-        text: 'Smena ID:',
+        text: 'Смена ID:',
         width: 4,
         styles: const PosStyles(bold: true),
       ),
@@ -62,7 +60,7 @@ class ShiftCloseReceiptBuilder {
     if (openedAt != null) {
       bytes += gen.row([
         PosColumn(
-          text: 'Ochildi:',
+          text: 'Открыта:',
           width: 4,
           styles: const PosStyles(bold: true),
         ),
@@ -73,7 +71,7 @@ class ShiftCloseReceiptBuilder {
       final m = mins % 60;
       bytes += gen.row([
         PosColumn(
-          text: 'Davomiylik:',
+          text: 'Длительность:',
           width: 4,
           styles: const PosStyles(bold: true),
         ),
@@ -86,26 +84,26 @@ class ShiftCloseReceiptBuilder {
 
     bytes += gen.hr();
     bytes += gen.text(
-      'Terminal (yakuniy)',
+      'Терминал (итог)',
       styles: const PosStyles(bold: true),
     );
     bytes += gen.row([
-      PosColumn(text: 'Karta:', width: 6),
+      PosColumn(text: 'Карта:', width: 6),
       PosColumn(
-        text: '${_fmt(closingCard)} so\'m',
+        text: '${_fmt(closingCard)} сум',
         width: 6,
         styles: const PosStyles(bold: true, align: PosAlign.right),
       ),
     ]);
     bytes += gen.text(
-      'Naqd summa chekda ko‘rsatilmaydi.',
+      'Наличные на чеке не отображаются.',
       styles: const PosStyles(align: PosAlign.center),
       linesAfter: 1,
     );
 
     bytes += gen.feed(1);
     bytes += gen.text(
-      'Rahmat!',
+      'Спасибо!',
       styles: const PosStyles(align: PosAlign.center),
       linesAfter: 1,
     );

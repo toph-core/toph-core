@@ -93,10 +93,9 @@ class TableTimerCubit extends Cubit<TableTimerState> {
       return;
     }
 
-    // Backend contract: timer endpoint faqat `table_type == time_based` bo‘lsa ishlaydi.
-    // Agar tableType ma’lum bo‘lib, time_based bo‘lmasa — umuman so‘rov yubormaymiz.
-    final tableType = order.tableType?.trim().toLowerCase();
-    if (tableType != null && tableType.isNotEmpty && tableType != 'time_based') {
+    // `GET/POST .../table-timer` faqat `table_type == time_based` uchun.
+    // `table_type` kelmasa yoki boshqa qiymat bo‘lsa — hech qanday murojaat qilinmaydi.
+    if (!order.isTimeBasedTable) {
       emit(const TableTimerState(shouldShow: false));
       return;
     }

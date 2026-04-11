@@ -185,6 +185,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.4.0"
+  charset:
+    dependency: "direct main"
+    description:
+      name: charset
+      sha256: "27802032a581e01ac565904ece8c8962564b1070690794f0072f6865958ce8b9"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.0.1"
   checked_yaml:
     dependency: transitive
     description:
@@ -1586,6 +1594,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.5.1"
+  windows1251:
+    dependency: "direct main"
+    description:
+      name: windows1251
+      sha256: "83d239e55f7df8333ac4d1bda4495c9184cb20c790633a1735176eaebde84fe9"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.0.1"
   xdg_directories:
     dependency: transitive
     description:

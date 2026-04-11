@@ -149,7 +149,7 @@ class _$SettingsStateImpl implements _SettingsState {
   const _$SettingsStateImpl(
       {this.status = Status.UNKNOWN,
       this.failure = const UnknownFailure(),
-      this.language = 'uz',
+      this.language = 'ru',
       this.hasDark = false,
       this.themeMode = AppThemeMode.system});
 

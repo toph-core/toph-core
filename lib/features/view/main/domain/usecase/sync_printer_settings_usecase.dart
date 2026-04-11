@@ -13,10 +13,10 @@ class SyncPrinterSettingsUsecase extends UseCase<Unit, NoParams> {
   @override
   Future<Either<Failure, Unit>> call(NoParams params) async {
     final result = await _repository.getPrinterSettings();
-    return await result.fold(
+    return result.fold(
       (l) async => Left<Failure, Unit>(l),
-      (settings) async {
-        await _storage.applyFromApi(settings);
+      (list) async {
+        await _storage.applyPrinterSettingsList(list);
         return const Right(unit);
       },
     );

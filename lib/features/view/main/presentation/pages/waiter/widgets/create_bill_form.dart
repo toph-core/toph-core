@@ -7,6 +7,7 @@ import 'package:mary_ai_pos/features/view/auth/data/models/user/user_model.dart'
 import 'package:mary_ai_pos/features/view/auth/presentation/cubit/bloc/user_bloc.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/cafe_tables/cafe_tables_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/hall/hall_model.dart';
+import 'package:mary_ai_pos/features/view/main/data/models/open_order/open_order_model.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/main/main_cubit.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/waiter/waiter_cubit.dart';
 
@@ -62,6 +63,46 @@ class _CreateBillFormState extends State<CreateBillForm> {
   List<CafeTableModel> _dedupeTablesById(List<CafeTableModel> raw) {
     final seen = <String>{};
     return raw.where((t) => seen.add(t.id)).toList();
+  }
+
+  /// Ochiq schyoti bor stollar — yangi schyot uchun tanlanmaydi.
+  List<CafeTableModel> _availableTablesForNewOrder(
+    List<CafeTableModel> rawTables,
+    List<HallModel>? halls,
+    List<OpenOrderModel> openOrders,
+  ) {
+    final deduped = _dedupeTablesById(rawTables);
+    final busyIds = <String>{};
+    final busyByHallNumber = <String, Set<int>>{};
+    for (final o in openOrders) {
+      if (o.isTerminalOrderStatus) continue;
+      final tid = o.tableId?.trim();
+      if (tid != null && tid.isNotEmpty) {
+        busyIds.add(tid);
+        continue;
+      }
+      final hn = o.hallName.trim();
+      busyByHallNumber.putIfAbsent(hn, () => <int>{}).add(o.tableNumber);
+    }
+
+    String hallNameForTable(CafeTableModel t) {
+      final h = halls?.firstWhereOrNull((x) => x.id == t.hallId);
+      return (h?.name ?? '').trim();
+    }
+
+    return deduped.where((t) {
+      if (busyIds.contains(t.id)) return false;
+      final hName = hallNameForTable(t);
+      final nums = busyByHallNumber[hName];
+      if (nums != null && nums.contains(t.number)) return false;
+      final emptyHallNums = busyByHallNumber[''];
+      if (emptyHallNums != null &&
+          hName.isEmpty &&
+          emptyHallNums.contains(t.number)) {
+        return false;
+      }
+      return true;
+    }).toList();
   }
 
   /// Tanlangan stol joriy [tables] ro‘yxatidagi obyekt bilan moslashtiriladi
@@ -208,39 +249,57 @@ class _CreateBillFormState extends State<CreateBillForm> {
                             children: [
                               const _Label('Стол'),
                               const SizedBox(height: 6),
-                              BlocBuilder<MainCubit, MainState>(
-                                buildWhen: (p, c) =>
-                                    p.tables != c.tables ||
-                                    p.status != c.status,
-                                builder: (context, state) {
-                                  final tables = _dedupeTablesById(
-                                    state.tables ?? [],
-                                  );
-                                  final tableValue =
-                                      _resolvedSelectedTable(tables);
-                                  if (_selectedTable != tableValue) {
-                                    WidgetsBinding.instance
-                                        .addPostFrameCallback((_) {
-                                      if (!mounted) return;
-                                      final fresh =
-                                          context.read<MainCubit>().state.tables ??
-                                              [];
-                                      final deduped = _dedupeTablesById(fresh);
-                                      final synced =
-                                          _resolvedSelectedTable(deduped);
-                                      if (_selectedTable != synced) {
-                                        setState(
-                                          () => _selectedTable = synced,
-                                        );
+                              BlocBuilder<WaiterCubit, WaiterState>(
+                                buildWhen: (p, c) => p.openOrders != c.openOrders,
+                                builder: (context, wState) {
+                                  return BlocBuilder<MainCubit, MainState>(
+                                    buildWhen: (p, c) =>
+                                        p.tables != c.tables ||
+                                        p.status != c.status ||
+                                        p.halls != c.halls,
+                                    builder: (context, state) {
+                                      final tables =
+                                          _availableTablesForNewOrder(
+                                        state.tables ?? [],
+                                        state.halls,
+                                        wState.openOrders,
+                                      );
+                                      final tableValue =
+                                          _resolvedSelectedTable(tables);
+                                      if (_selectedTable != tableValue) {
+                                        WidgetsBinding.instance
+                                            .addPostFrameCallback((_) {
+                                          if (!mounted) return;
+                                          final main = context
+                                              .read<MainCubit>()
+                                              .state;
+                                          final waiter = context
+                                              .read<WaiterCubit>()
+                                              .state;
+                                          final fresh =
+                                              _availableTablesForNewOrder(
+                                            main.tables ?? [],
+                                            main.halls,
+                                            waiter.openOrders,
+                                          );
+                                          final synced =
+                                              _resolvedSelectedTable(fresh);
+                                          if (_selectedTable != synced) {
+                                            setState(
+                                              () => _selectedTable = synced,
+                                            );
+                                          }
+                                        });
                                       }
-                                    });
-                                  }
-                                  return _DropdownField<CafeTableModel>(
-                                    value: tableValue,
-                                    items: tables,
-                                    labelOf: (t) => '${t.number}',
-                                    onChanged: (t) =>
-                                        setState(() => _selectedTable = t),
+                                      return _DropdownField<CafeTableModel>(
+                                        value: tableValue,
+                                        items: tables,
+                                        labelOf: (t) => '${t.number}',
+                                        onChanged: (t) => setState(
+                                          () => _selectedTable = t,
+                                        ),
+                                      );
+                                    },
                                   );
                                 },
                               ),

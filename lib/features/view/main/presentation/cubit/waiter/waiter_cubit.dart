@@ -1,3 +1,5 @@
+import 'dart:async' show unawaited;
+
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -369,10 +371,10 @@ class WaiterCubit extends Cubit<WaiterState> {
       );
       if (!isClosed) {
         emit(state.copyWith(isSendingItems: false));
-        // Fire-and-forget: printer offline olsa order jarayonini to'xtatmasin
+        // Fire-and-forget: faqat oshxona cheklari (kategoriya printerlari). Kassa cheki faqat to'lovdan keyin (closeOrder).
         final order = state.openOrders.where((o) => o.id == orderId).firstOrNull;
         if (order != null) {
-          _printerService.printKitchenReceipt(order: order, items: items);
+          unawaited(_printerService.printKitchenReceipt(order: order, items: items));
         }
         await loadOrderItems(orderId);
         await loadOpenOrders();
@@ -416,18 +418,18 @@ class WaiterCubit extends Cubit<WaiterState> {
     if (orderId == null || order == null) return;
     final lineItems = state.orderLineItems;
     final base = _payAmountSom(order, lineItems).toDouble();
-    if (base <= 0) {
+    // Barcha pozitsiyalar bekor / summa 0 — schyotni yopish kerak (mahsulot qo‘shmasdan).
+    if (base < 0) {
       if (!isClosed) {
         emit(state.copyWith(
-          errorMessage: 'To\'lov summasi 0 — schyotni yopib bo\'lmaydi',
+          errorMessage: 'Некорректная сумма счёта',
         ));
       }
       return;
     }
 
-    // Backend: customer_paid_amount — chegirmadan oldingi to'liq summa;
-    // chegirma alohida discount_* maydonlarida.
-    final customerPaidAmount = base.round();
+    // Backend: customer_paid_amount — chegirmadan oldingi summa; 0 qabul qilinadi.
+    final customerPaidAmount = base.round().clamp(0, 1 << 30);
 
     emit(state.copyWith(isClosingOrder: true, errorMessage: null));
     try {
@@ -466,7 +468,12 @@ class WaiterCubit extends Cubit<WaiterState> {
                 commet: l.comment ?? '',
               ))
           .toList();
-      _printerService.printCashierReceipt(order: order, items: receiptItems);
+      _printerService.printCashierReceipt(
+        order: order,
+        items: receiptItems,
+        discountPercent: discountPercent,
+        discountAmount: discountAmount,
+      );
       final updatedOrders =
           state.openOrders.where((o) => o.id != orderId).toList();
       emit(state.copyWith(

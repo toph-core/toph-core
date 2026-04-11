@@ -1,46 +1,105 @@
+import 'dart:convert';
+
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'printer_config.dart';
-import 'printer_settings_model.dart';
+import 'printer_setting_entry.dart';
 
+/// Backend `GET /api/v1/settings/printer-settings` ro‘yxati; [SyncPrinterSettingsUsecase] yozadi.
 class PrinterConfigStorage {
-  final SharedPreferences _prefs;
-
   PrinterConfigStorage(this._prefs);
 
-  static const _cashierIpKey = 'cashier_printer_ip';
-  static const _kitchenIpKey = 'kitchen_printer_ip';
-  static const _portKey = 'printer_port';
+  final SharedPreferences _prefs;
 
-  static const defaultCashierIp = '192.168.123.100';
-  static const defaultKitchenIp = '192.168.1.222';
+  static const _jsonKey = 'printer_settings_entries_v2_json';
+
   static const defaultPort = 9100;
+  static const fallbackCloseCheckIp = '192.168.1.222';
 
-  PrinterConfig getCashierConfig() => PrinterConfig(
-        ip: _prefs.getString(_cashierIpKey) ?? defaultCashierIp,
-        port: _prefs.getInt(_portKey) ?? defaultPort,
-      );
-
-  PrinterConfig getKitchenConfig() => PrinterConfig(
-        ip: _prefs.getString(_kitchenIpKey) ?? defaultKitchenIp,
-        port: _prefs.getInt(_portKey) ?? defaultPort,
-      );
-
-  Future<void> saveCashierIp(String ip) =>
-      _prefs.setString(_cashierIpKey, ip);
-
-  Future<void> saveKitchenIp(String ip) =>
-      _prefs.setString(_kitchenIpKey, ip);
-
-  Future<void> savePort(int port) => _prefs.setInt(_portKey, port);
-
-  /// API dan kelgan qiymatlar bilan faqat to‘ldirilgan maydonlarni yangilaydi.
-  Future<void> applyFromApi(PrinterSettingsModel settings) async {
-    final c = settings.cashierIp;
-    if (c != null && c.isNotEmpty) await saveCashierIp(c);
-    final k = settings.kitchenIp;
-    if (k != null && k.isNotEmpty) await saveKitchenIp(k);
-    final p = settings.port;
-    if (p != null && p > 0) await savePort(p);
+  Future<void> applyPrinterSettingsList(List<PrinterSettingEntry> list) async {
+    await _prefs.setString(_jsonKey, PrinterSettingEntry.encodeList(list));
   }
+
+  List<PrinterSettingEntry> _entries() {
+    final s = _prefs.getString(_jsonKey);
+    if (s == null || s.isEmpty) return [];
+    try {
+      final decoded = jsonDecode(s) as List<dynamic>;
+      return decoded
+          .map(
+            (e) => PrinterSettingEntry.fromJson(
+              Map<String, dynamic>.from(e as Map),
+            ),
+          )
+          .toList();
+    } catch (_) {
+      return [];
+    }
+  }
+
+  /// `GET printer-settings` muvaffaqiyatli yozilgan bo‘lsa `true` (bo‘sh ro‘yxat ham `true`).
+  bool get hasPrinterSettingsEntries => _entries().isNotEmpty;
+
+  /// `type: close_check` — to‘lov / smena yopish cheklari.
+  PrinterConfig? getCloseCheckPrinter() {
+    for (final e in _entries()) {
+      if (e.isCloseCheck && e.ip.isNotEmpty && e.port > 0) {
+        return PrinterConfig(
+          ip: e.ip,
+          port: e.port,
+          connectionType: e.connectionType,
+        );
+      }
+    }
+    return null;
+  }
+
+  PrinterConfig closeCheckConfigOrFallback() =>
+      getCloseCheckPrinter() ??
+      const PrinterConfig(ip: fallbackCloseCheckIp, port: defaultPort);
+
+  /// Oshxona: `type=category` va `connected_entity_ids` ichida [categoryId] yoki [goodId] mos kelganda.
+  /// Mos yozuv yo‘q bo‘lsa `null` — boshqa printerga «tushirish» qilinmaydi.
+  PrinterConfig? categoryPrinterForOrNull(
+    String categoryId, {
+    String? goodId,
+  }) {
+    final wantCat = categoryId.trim();
+    final wantGood = goodId?.trim() ?? '';
+    if (wantCat.isEmpty && wantGood.isEmpty) return null;
+
+    final list = _entries();
+    if (wantCat.isNotEmpty) {
+      for (final e in list) {
+        if (!e.isCategory || e.ip.isEmpty || e.port <= 0) continue;
+        for (final cid in e.connectedEntityIds) {
+          if (_idEq(cid, wantCat)) {
+            return PrinterConfig(
+              ip: e.ip,
+              port: e.port,
+              connectionType: e.connectionType,
+            );
+          }
+        }
+      }
+    }
+    if (wantGood.isNotEmpty) {
+      for (final e in list) {
+        if (!e.isCategory || e.ip.isEmpty || e.port <= 0) continue;
+        for (final cid in e.connectedEntityIds) {
+          if (_idEq(cid, wantGood)) {
+            return PrinterConfig(
+              ip: e.ip,
+              port: e.port,
+              connectionType: e.connectionType,
+            );
+          }
+        }
+      }
+    }
+    return null;
+  }
+
+  bool _idEq(String a, String b) =>
+      a.trim().toLowerCase() == b.trim().toLowerCase();
 }
