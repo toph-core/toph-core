@@ -11,8 +11,17 @@ class ListAPI {
   static const String cafeTablesByHallId = "api/v1/cafe-tables/hall";
   static const String halls = "api/v1/halls";
   static const String categories = "api/v1/categories";
-  static String categoriesGoods(String categoryId) => "api/v1/categories/$categoryId/goods";
+  static String categoriesGoods(String categoryId) =>
+      "api/v1/categories/$categoryId/goods";
   static const String goods = "/api/v1/goods";
+  static const String goodsWithCalculations = "/api/v1/goods/with-calculations";
+  static String goodById(String id) => "/api/v1/goods/$id";
+  static String goodWithCalculationsById(String id) =>
+      "/api/v1/goods/$id/with-calculations";
+  static String translations({int limit = 1000, int offset = 0}) =>
+      "/api/v1/translations?limit=$limit&offset=$offset";
+  static const String createTranslation = "/api/v1/translations";
+  static String translationById(String id) => "/api/v1/translations/$id";
   static const String goodsSearch = "/api/v1/goods/search";
 
   //! media
@@ -25,8 +34,10 @@ class ListAPI {
   //! Orders
   static const String orders = "/api/v1/orders";
   static String orderById(String orderId) => "/api/v1/orders/$orderId";
+
   /// Current user's orders (Bearer token). Query: lang, scope, limit, offset.
   static const String ordersMy = "api/v1/orders/my";
+
   /// Orders assigned to / history for a waiter.
   static String ordersByWaiter(String waiterId) =>
       "api/v1/orders/waiter/$waiterId";
@@ -53,7 +64,8 @@ class ListAPI {
 
   //! ChashRegisterShfit
   static const String activeShift = "/api/v1/cash-register-shifts/active";
-  static String closeShift(String id) => "/api/v1/cash-register-shifts/$id/close";
+  static String closeShift(String id) =>
+      "/api/v1/cash-register-shifts/$id/close";
   static const String openShift = "/api/v1/cash-register-shifts";
 
   //! POS printers (ESC/POS TCP) — `data`: printer yozuvlari massivi

@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:mary_ai_pos/core/constants/constants.dart';
 import 'package:mary_ai_pos/core/widgets/brand_logo.dart';
 import 'package:mary_ai_pos/core/extension/for_context.dart';
 import 'package:mary_ai_pos/core/routes/app_routes.dart';
+import 'package:mary_ai_pos/features/view/auth/presentation/cubit/bloc/user_bloc.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/main/widgets/logout_dialog.dart';
 
 class AppSidebar extends StatelessWidget {
@@ -10,6 +13,9 @@ class AppSidebar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final role = context.select((UserBloc b) => b.state.userMOdel?.role);
+    final canManageMenu =
+        role == UserRole.admin || role == UserRole.manager;
     final colors = context.colors;
     return Container(
       width: 72,
@@ -58,6 +64,14 @@ class AppSidebar extends StatelessWidget {
                   isActive: activeRoute == AppRoutes.closeShiftScreen,
                   onTap: () => _navigate(context, AppRoutes.closeShiftScreen),
                 ),
+                if (canManageMenu)
+                  _NavItem(
+                    icon: Icons.restaurant_menu_rounded,
+                    label: 'Menu',
+                    isActive: activeRoute == AppRoutes.menuMealsScreen ||
+                        activeRoute == AppRoutes.menuManageScreen,
+                    onTap: () => _navigate(context, AppRoutes.menuMealsScreen),
+                  ),
               ],
             ),
           ),

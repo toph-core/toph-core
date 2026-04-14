@@ -5,7 +5,9 @@ import 'package:mary_ai_pos/features/view/auth/presentation/cubit/bloc/user_bloc
 
 class MainHeader extends StatelessWidget {
   final String title;
-  const MainHeader({super.key, this.title = 'Stollar'});
+  /// Masalan: orqaga (Navigator.pop).
+  final Widget? leading;
+  const MainHeader({super.key, this.title = 'Stollar', this.leading});
 
   @override
   Widget build(BuildContext context) {
@@ -19,6 +21,10 @@ class MainHeader extends StatelessWidget {
       ),
       child: Row(
         children: [
+          if (leading != null) ...[
+            leading!,
+            const SizedBox(width: 4),
+          ],
           Text(
             title,
             style: TextStyle(

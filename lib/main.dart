@@ -25,24 +25,29 @@ import 'package:mary_ai_pos/generated/l10n.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await AppUpdateService.getCloudVersion();
+  AppUpdateService.getCloudVersion();
   await SystemChrome.setPreferredOrientations([
     DeviceOrientation.landscapeLeft,
     DeviceOrientation.landscapeRight,
   ]);
   if (Platform.isWindows || Platform.isMacOS || Platform.isLinux) {
     await WindowManager.instance.ensureInitialized();
-    windowManager.waitUntilReadyToShow().then((_) async {
-      await windowManager.setTitleBarStyle(
-        TitleBarStyle.hidden,
-        windowButtonVisibility: true,
-      );
-      await windowManager.setMinimumSize(const Size(1000, 600));
-      await windowManager.show();
-      await windowManager.setPreventClose(true);
-      await windowManager.setSkipTaskbar(false);
+    await windowManager.waitUntilReadyToShow();
+    await windowManager.setTitleBarStyle(
+      TitleBarStyle.hidden,
+      windowButtonVisibility: true,
+    );
+    await windowManager.setMinimumSize(const Size(1000, 600));
+    await windowManager.show();
+    await windowManager.setPreventClose(true);
+    await windowManager.setSkipTaskbar(false);
+    if (Platform.isMacOS) {
+      // macOS full-screen alohida Space (tab) ochib yuborishi mumkin.
+      await windowManager.maximize();
+    } else {
       await windowManager.setFullScreen(true);
-    });
+    }
+    await windowManager.focus();
   }
 
   await initDi();
@@ -103,16 +108,6 @@ class MyApp extends StatelessWidget {
               );
             },
             initialRoute: AppRoutes.splashScreen,
-            onGenerateInitialRoutes: (initialRoute) => [
-              RouteGenerate().generate(
-                RouteSettings(
-                  name: initialRoute,
-                  arguments: const {
-                    "table_id": "048aa68f-4c4d-490a-8fa6-83025519c3b5",
-                  },
-                ),
-              ),
-            ],
           );
         },
       ),

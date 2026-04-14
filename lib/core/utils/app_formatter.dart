@@ -5,6 +5,32 @@ import 'package:mask_text_input_formatter/mask_text_input_formatter.dart';
 class AppFormatter {
   const AppFormatter._();
 
+  /// Narx maydoni (faqat butun son + bo‘shliq): `1000000` / `10000.7` → `1 000 000` / `10 001`.
+  static String formatPriceIntegerSpaces(String? raw) {
+    if (raw == null || raw.isEmpty) return '';
+    final n = double.tryParse(raw.toString().replaceAll(' ', '').replaceAll(',', '.'));
+    if (n == null) return '';
+    return NumberFormat.currency(
+      symbol: '',
+      locale: 'uz',
+      decimalDigits: 0,
+    ).format(n.round()).trim();
+  }
+
+  /// Ko‘rinish: `1000000` → `1 000 000`, `10000.5` → `10 000,5` (locale `uz`).
+  static String formatAmountWithSpaces(String? raw) {
+    if (raw == null || raw.isEmpty) return '';
+    final clean = raw.replaceAll(' ', '').replaceAll(',', '.');
+    final n = double.tryParse(clean);
+    if (n == null) return '';
+    final whole = n == n.roundToDouble();
+    return NumberFormat.currency(
+      symbol: '',
+      locale: 'uz',
+      decimalDigits: whole ? 0 : 2,
+    ).format(n).trim();
+  }
+
   static String formatDate(DateTime date) {
     int year = date.year;
     String month = date.month.toString().padLeft(2, '0');

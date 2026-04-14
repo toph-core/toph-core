@@ -74,7 +74,7 @@ Quyidagilar loyihada amalga oshirildi (fayllar / mantiq).
   Oldin `base <= 0` bo‘lsa xato va return. Keyin: faqat `base < 0` xato; `customer_paid_amount` **`'0'`** yuborilishi mumkin (`clamp` bilan musbat chegarasi).
 - **`printer_service.dart` — `printCashierReceipt`**  
   Avval `items.isEmpty` bo‘lsa return; olib tashlandi — barcha qatorlar bekor bo‘lsa ham chek oqimi ishlaydi (agar printer konfiguratsiyasi ruxsat bersa).
-
+ 
 ### B5. API xatoliklari — overlay
 
 - **Yangi fayl:** `lib/core/api/api_error_overlay.dart`  
