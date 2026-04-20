@@ -18,6 +18,8 @@ import 'package:mary_ai_pos/core/services/connectivity/connectivity_cubit.dart';
 import 'package:mary_ai_pos/core/services/offline_queue/offline_queue_service.dart';
 import 'package:mary_ai_pos/core/services/offline_queue/pending_operation.dart';
 import 'package:mary_ai_pos/core/services/cache/cache_service.dart';
+import 'package:mary_ai_pos/core/api/dio_client.dart';
+import 'package:mary_ai_pos/core/api/list_api.dart';
 import 'package:mary_ai_pos/di.dart' show inject;
 import 'package:mary_ai_pos/features/view/main/data/models/archive_detail/archive_detail_model.dart';
 import 'package:mary_ai_pos/features/view/main/domain/usecase/create_payment_usecase.dart';
@@ -91,6 +93,24 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
     final cashNeedsAmount = state.paymentType == PaymentType.cash && enteredAmt <= 0 && effectiveTot > 0;
     if (state.detail != null && !cashNeedsAmount) {
       emit(state.copyWith(status: Status.LOADING));
+
+      // Total 0 bo'lsa — /pay emas /cancel
+      if (effectiveTot <= 0) {
+        try {
+          await inject<DioClient>().dio.post(
+            ListAPI.cancelOrder(state.detail!.id),
+          );
+          _onPaymentSuccess();
+        } catch (e) {
+          if (!isClosed) emit(state.copyWith(status: Status.ERROR));
+          showErrorMessage(
+            navigatorKey.currentContext!,
+            e.toString(),
+          );
+        }
+        return;
+      }
+
       final response = await _createPaymentUsecase.call(
         PaymentPayRequestModel(
           orderId: state.detail!.id,

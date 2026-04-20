@@ -59,6 +59,7 @@ class ListAPI {
   static String orderItems(String orderId) => "/api/v1/orders/$orderId/items";
   static const String orderItemsCreate = "/api/v1/order-items";
   static String payToOrder(String id) => "/api/v1/orders/$id/pay";
+  static String cancelOrder(String id) => "/api/v1/orders/$id/cancel";
   static String orderHourPrice(String id) => "/api/v1/orders/$id/table-price";
 
   /// Vaqt bo‘yicha stol (time_based) — faqat `dine_in` + tegishli stol.
