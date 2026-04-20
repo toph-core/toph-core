@@ -85,7 +85,10 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
 
   void _payment(_Payment event, Emitter<PaymentState> emit) async {
     final enteredAmt = int.tryParse(state.enterSum) ?? 0;
-    final cashNeedsAmount = state.paymentType == PaymentType.cash && enteredAmt <= 0;
+    final effectiveTot = state.detail != null
+        ? effectiveTotal(state.detail!) + state.hourPrice.toInt() + pendingOfflineExtra(state.tableId)
+        : 1;
+    final cashNeedsAmount = state.paymentType == PaymentType.cash && enteredAmt <= 0 && effectiveTot > 0;
     if (state.detail != null && !cashNeedsAmount) {
       emit(state.copyWith(status: Status.LOADING));
       final response = await _createPaymentUsecase.call(
