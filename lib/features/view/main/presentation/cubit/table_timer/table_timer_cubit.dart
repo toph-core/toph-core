@@ -101,7 +101,9 @@ class TableTimerCubit extends Cubit<TableTimerState> {
     }
 
     _activeOrderId = order.id;
-    await fetchTimer(orderId: order.id, showLoading: true);
+    // Darhol 0:00 ko'rsat — API javobini kutmasdan
+    emit(state.copyWith(shouldShow: true, displayActiveSec: 0));
+    await fetchTimer(orderId: order.id, showLoading: false);
   }
 
   Future<void> fetchTimer({
@@ -140,17 +142,14 @@ class TableTimerCubit extends Cubit<TableTimerState> {
     } on DioException catch (e) {
       if (isClosed) return;
       if (e.response?.statusCode == 400 || e.response?.statusCode == 404) {
-        // Timer resource doesn't exist yet — auto-start for time-based table
-        if (_activeOrderId != null) {
-          await startTimer();
-        } else {
+        // Timer hali boshlanmagan — 0:00 + Resume tugmani ko'rsat
+        if (!isClosed) {
           emit(state.copyWith(
             isLoading: false,
-            shouldShow: false,
+            shouldShow: true,
             clearTimer: true,
-            clearDisplayActiveSec: true,
+            displayActiveSec: 0,
           ));
-          _cancelTimers();
         }
         return;
       }
@@ -231,6 +230,11 @@ class TableTimerCubit extends Cubit<TableTimerState> {
   Future<void> resumeTimer() async {
     final id = _activeOrderId;
     if (id == null) return;
+    // Timer hali boshlanmagan → /start chaqiramiz
+    if (state.timer == null || state.timer!.stateNormalized == 'none') {
+      await startTimer();
+      return;
+    }
     emit(state.copyWith(isMutating: true, errorMessage: null));
     try {
       final res = await _client.post(ListAPI.orderTableTimerResume(id));

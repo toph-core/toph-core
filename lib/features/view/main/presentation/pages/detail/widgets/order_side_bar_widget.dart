@@ -67,381 +67,408 @@ class _OrderSidebarState extends State<OrderSidebar> with DetailScreenMixin {
             p.selectedGoods != c.selectedGoods ||
             p.existingGoods != c.existingGoods,
         builder: (context, state) {
-        return Container(
-          decoration: BoxDecoration(
-            color: Colors.white,
-            border: Border(left: BorderSide(color: colors.border)),
-          ),
-          child: Column(
-            children: [
-              // Header
-              Container(
-                height: 52,
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                decoration: BoxDecoration(
-                  border: Border(bottom: BorderSide(color: colors.border)),
-                ),
-                child: Row(
-                  children: [
-                    Text(
-                      S.current.strOrders,
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xFF19160B),
-                        fontFamily: 'Inter',
+          return Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              border: Border(left: BorderSide(color: colors.border)),
+            ),
+            child: Column(
+              children: [
+                // Header
+                Container(
+                  height: 52,
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  decoration: BoxDecoration(
+                    border: Border(bottom: BorderSide(color: colors.border)),
+                  ),
+                  child: Row(
+                    children: [
+                      Text(
+                        S.current.strOrders,
+                        style: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF19160B),
+                          fontFamily: 'Inter',
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 8),
-                    if (state.selectedGoods.isNotEmpty)
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 2,
-                        ),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFF8F9FA),
-                          border: Border.all(color: colors.border),
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Text(
-                          '${state.selectedGoods.length}',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: colors.textSecondary,
-                            fontFamily: 'Inter',
+                      const SizedBox(width: 8),
+                      if (state.selectedGoods.isNotEmpty)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 2,
                           ),
-                        ),
-                      ),
-                    const Spacer(),
-                    if (state.selectedGoods.isNotEmpty)
-                      GestureDetector(
-                        onTap: () async {
-                          await showDialog(
-                            context: context,
-                            barrierDismissible: false,
-                            builder: (_) => ClearDialog(
-                              onSuccess: () => context
-                                  .read<DetailBloc>()
-                                  .add(const DetailEvent.clearGoods()),
-                            ),
-                          );
-                        },
-                        child: Text(
-                          S.current.strClear,
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w500,
-                            color: Color(0xFFEB295B),
-                            fontFamily: 'Inter',
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF8F9FA),
+                            border: Border.all(color: colors.border),
+                            borderRadius: BorderRadius.circular(6),
                           ),
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-
-              // Items list
-              Expanded(
-                child: (state.existingGoods.isEmpty &&
-                        state.selectedGoods.isEmpty)
-                    ? Center(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          spacing: 8,
-                          children: [
-                            Icon(
-                              Icons.receipt_long_outlined,
-                              size: 40,
-                              color: colors.border,
-                            ),
-                            Text(
-                              S.current.strSelectFoodsNotFound,
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                fontSize: 13,
-                                color: colors.textSecondary,
-                                fontFamily: 'Inter',
-                              ),
-                            ),
-                          ],
-                        ),
-                      )
-                    : ListView(
-                        padding: const EdgeInsets.all(12),
-                        children: [
-                          if (state.existingGoods.isNotEmpty) ...[
-                            _SectionLabel(
-                              label: S.current.strExistingOrders,
+                          child: Text(
+                            '${state.selectedGoods.length}',
+                            style: TextStyle(
+                              fontSize: 12,
                               color: colors.textSecondary,
+                              fontFamily: 'Inter',
                             ),
-                            const SizedBox(height: 6),
-                            ...state.existingGoods.map(
-                              (item) => Padding(
-                                padding: const EdgeInsets.only(bottom: 8),
-                                child: _ReadonlyOrderItem(
-                                  item: item,
-                                  tableId: cafeTable?.id,
+                          ),
+                        ),
+                      const Spacer(),
+                      if (state.selectedGoods.isNotEmpty)
+                        GestureDetector(
+                          onTap: () async {
+                            await showDialog(
+                              context: context,
+                              barrierDismissible: false,
+                              builder: (_) => ClearDialog(
+                                onSuccess: () => context.read<DetailBloc>().add(
+                                  const DetailEvent.clearGoods(),
                                 ),
                               ),
-                            ),
-                            if (state.selectedGoods.isNotEmpty)
-                              const SizedBox(height: 4),
-                          ],
-                          if (state.selectedGoods.isNotEmpty) ...[
-                            if (state.existingGoods.isNotEmpty)
-                              _SectionLabel(
-                                label: S.current.strExtras,
-                                color: Color(0xFFFB6633),
-                              ),
-                            if (state.existingGoods.isNotEmpty)
-                              const SizedBox(height: 6),
-                            ...state.selectedGoods.asMap().entries.map(
-                              (e) => Padding(
-                                padding: EdgeInsets.only(
-                                  bottom:
-                                      e.key < state.selectedGoods.length - 1
-                                          ? 8
-                                          : 0,
-                                ),
-                                child: _OrderItem(item: e.value),
-                              ),
-                            ),
-                          ],
-                        ],
-                      ),
-              ),
-
-              // Footer
-              Container(
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  border: Border(top: BorderSide(color: colors.border)),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.04),
-                      offset: const Offset(0, -4),
-                      blurRadius: 12,
-                    ),
-                  ],
-                ),
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  spacing: 8,
-                  children: [
-                    BlocBuilder<TableTimerCubit, TableTimerState>(
-                      builder: (ctx, timerState) {
-                        final existingTotal = calculateTotalPrice(
-                            state.existingGoods
-                                .where((g) => g.commet != 'cancelled')
-                                .toList());
-                        final foodTotal = existingTotal +
-                            calculateTotalPrice(state.selectedGoods);
-                        final rawAmt =
-                            timerState.timer?.currentAmount ?? '';
-                        final timerAmt = int.tryParse(
-                              rawAmt.replaceAll(RegExp(r'[^0-9]'), ''),
-                            ) ??
-                            0;
-                        final detail = context.read<DetailBloc>().lastDetail;
-                        final servicePercent = detail?.servicePercent ?? 0;
-                        final serviceAmt = _includeService && servicePercent > 0
-                            ? (foodTotal * servicePercent / 100).round()
-                            : 0;
-                        final total = foodTotal + timerAmt + serviceAmt;
-                        return Column(
-                          spacing: 8,
-                          children: [
-                            _SummaryRow(
-                              label: S.current.strTotalLabel,
-                              value: foodTotal.formatN,
-                              isTotal: false,
-                            ),
-                            if (servicePercent > 0)
-                              _ServiceRow(
-                                percent: servicePercent,
-                                amount: serviceAmt,
-                                included: _includeService,
-                                onToggle: (v) => setState(() => _includeService = v),
-                              ),
-                            if (timerState.shouldShow)
-                              _TimerBadgeRow(timerState: timerState),
-                            Divider(color: colors.border, height: 1),
-                            _SummaryRow(
-                              label: S.current.strPaymentLabel,
-                              value: total.formatN,
-                              isTotal: true,
-                            ),
-                          ],
-                        );
-                      },
-                    ),
-                    const SizedBox(height: 4),
-                    // Takeaway: create order → payment directly
-                    if (tableId == null)
-                      BlocProvider(
-                        create: (_) => inject<CreateOrderBloc>()
-                          ..add(CreateOrderEvent.started(
-                            tableId: null,
-                            guestCount: 1,
-                            tableStatus: TableStatus.free,
-                          )),
-                        child: BlocBuilder<CreateOrderBloc, CreateOrderState>(
-                          builder: (context, createState) {
-                            return _ActionButton(
-                              label: S.current.strPayment,
-                              bgColor: const Color(0xFFFB6633),
-                              textColor: Colors.white,
-                              isLoading: createState.status == Status.LOADING,
-                              onTap: state.selectedGoods.isNotEmpty
-                                  ? () => context
-                                      .read<CreateOrderBloc>()
-                                      .add(CreateOrderEvent.createOrder(
-                                        orders: state.selectedGoods,
-                                      ))
-                                  : null,
                             );
                           },
+                          child: Text(
+                            S.current.strClear,
+                            style: const TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500,
+                              color: Color(0xFFEB295B),
+                              fontFamily: 'Inter',
+                            ),
+                          ),
                         ),
-                      ),
-                    // Save button (for free tables)
-                    if (tableId != null && tableStatus == TableStatus.free)
-                      BlocProvider(
-                        create: (_) => inject<CreateOrderBloc>()
-                          ..add(CreateOrderEvent.started(
-                            tableId: tableId,
-                            guestCount: guestCount,
-                            tableStatus: tableStatus,
-                          )),
-                        child: BlocConsumer<CreateOrderBloc, CreateOrderState>(
-                          listener: (context, createState) {
-                            if (createState.status != Status.LOADING &&
-                                createState.success) {
-                              if (cafeTable != null) {
-                                context.read<SavedOrdersBloc>().add(
-                                  SavedOrdersEvent.addNewOrder(
-                                    order: SaveOrderModel(
-                                      cafeTable: cafeTable!,
-                                      createOrderRequest: CreateOrderRequestModel(
-                                        tableId: createState.tableId,
-                                        foods: state.selectedGoods,
-                                        guestCount: guestCount,
-                                        tableStatus: TableStatus.busy,
-                                      ),
-                                    ),
+                    ],
+                  ),
+                ),
+
+                // Items list
+                Expanded(
+                  child:
+                      (state.existingGoods.isEmpty &&
+                          state.selectedGoods.isEmpty)
+                      ? Center(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            spacing: 8,
+                            children: [
+                              Icon(
+                                Icons.receipt_long_outlined,
+                                size: 40,
+                                color: colors.border,
+                              ),
+                              Text(
+                                S.current.strSelectFoodsNotFound,
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: colors.textSecondary,
+                                  fontFamily: 'Inter',
+                                ),
+                              ),
+                            ],
+                          ),
+                        )
+                      : ListView(
+                          padding: const EdgeInsets.all(12),
+                          children: [
+                            if (state.existingGoods.isNotEmpty) ...[
+                              _SectionLabel(
+                                label: S.current.strExistingOrders,
+                                color: colors.textSecondary,
+                              ),
+                              const SizedBox(height: 6),
+                              ...state.existingGoods.map(
+                                (item) => Padding(
+                                  padding: const EdgeInsets.only(bottom: 8),
+                                  child: _ReadonlyOrderItem(
+                                    item: item,
+                                    tableId: cafeTable?.id,
                                   ),
-                                );
-                              }
-                              context.read<MainCubit>().updateTableStatus(
-                                createState.tableId,
-                                TableStatus.busy,
-                              );
-                              showSuccessMessage(
-                                context,
-                                S.current.strOrderSuccessCreated,
-                              );
-                              Navigator.pop(context);
-                            }
-                          },
-                          builder: (context, createState) {
-                            return _ActionButton(
-                              label: S.current.strSave,
-                              bgColor: const Color(0xFFFB6633),
-                              textColor: Colors.white,
-                              isLoading: createState.status == Status.LOADING,
-                              onTap: state.selectedGoods.isNotEmpty
-                                  ? () {
-                                      context.read<CreateOrderBloc>().add(
+                                ),
+                              ),
+                              if (state.selectedGoods.isNotEmpty)
+                                const SizedBox(height: 4),
+                            ],
+                            if (state.selectedGoods.isNotEmpty) ...[
+                              if (state.existingGoods.isNotEmpty)
+                                _SectionLabel(
+                                  label: S.current.strExtras,
+                                  color: const Color(0xFFFB6633),
+                                ),
+                              if (state.existingGoods.isNotEmpty)
+                                const SizedBox(height: 6),
+                              ...state.selectedGoods.asMap().entries.map(
+                                (e) => Padding(
+                                  padding: EdgeInsets.only(
+                                    bottom:
+                                        e.key < state.selectedGoods.length - 1
+                                        ? 8
+                                        : 0,
+                                  ),
+                                  child: _OrderItem(item: e.value),
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                ),
+
+                // Footer
+                Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    border: Border(top: BorderSide(color: colors.border)),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.04),
+                        offset: const Offset(0, -4),
+                        blurRadius: 12,
+                      ),
+                    ],
+                  ),
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    spacing: 8,
+                    children: [
+                      BlocBuilder<TableTimerCubit, TableTimerState>(
+                        builder: (ctx, timerState) {
+                          final existingTotal = calculateTotalPrice(
+                            state.existingGoods
+                                .where((g) => g.commet != 'cancelled')
+                                .toList(),
+                          );
+                          final foodTotal =
+                              existingTotal +
+                              calculateTotalPrice(state.selectedGoods);
+                          final rawAmt = timerState.timer?.currentAmount ?? '';
+                          final timerAmt =
+                              int.tryParse(
+                                rawAmt.replaceAll(RegExp(r'[^0-9]'), ''),
+                              ) ??
+                              0;
+                          final detail = context.read<DetailBloc>().lastDetail;
+                          final servicePercent = detail?.servicePercent ?? 0;
+                          final serviceAmt =
+                              _includeService && servicePercent > 0
+                              ? (foodTotal * servicePercent / 100).round()
+                              : 0;
+                          final total = foodTotal + timerAmt + serviceAmt;
+                          return Column(
+                            spacing: 8,
+                            children: [
+                              _SummaryRow(
+                                label: S.current.strTotalLabel,
+                                value: foodTotal.formatN,
+                                isTotal: false,
+                              ),
+                              if (servicePercent > 0)
+                                _ServiceRow(
+                                  percent: servicePercent,
+                                  amount: serviceAmt,
+                                  included: _includeService,
+                                  onToggle: (v) =>
+                                      setState(() => _includeService = v),
+                                ),
+                              if (timerState.shouldShow)
+                                _TimerBadgeRow(timerState: timerState),
+                              Divider(color: colors.border, height: 1),
+                              _SummaryRow(
+                                label: S.current.strPaymentLabel,
+                                value: total.formatN,
+                                isTotal: true,
+                              ),
+                            ],
+                          );
+                        },
+                      ),
+                      const SizedBox(height: 4),
+                      // Takeaway: create order → payment directly
+                      if (tableId == null)
+                        BlocProvider(
+                          create: (_) => inject<CreateOrderBloc>()
+                            ..add(
+                              const CreateOrderEvent.started(
+                                tableId: null,
+                                guestCount: 1,
+                                tableStatus: TableStatus.free,
+                              ),
+                            ),
+                          child: BlocBuilder<CreateOrderBloc, CreateOrderState>(
+                            builder: (context, createState) {
+                              return _ActionButton(
+                                label: S.current.strPayment,
+                                bgColor: const Color(0xFFFB6633),
+                                textColor: Colors.white,
+                                isLoading: createState.status == Status.LOADING,
+                                onTap: state.selectedGoods.isNotEmpty
+                                    ? () => context.read<CreateOrderBloc>().add(
                                         CreateOrderEvent.createOrder(
                                           orders: state.selectedGoods,
                                         ),
+                                      )
+                                    : null,
+                              );
+                            },
+                          ),
+                        ),
+                      // Save button (for free tables)
+                      if (tableId != null && tableStatus == TableStatus.free)
+                        BlocProvider(
+                          create: (_) => inject<CreateOrderBloc>()
+                            ..add(
+                              CreateOrderEvent.started(
+                                tableId: tableId,
+                                guestCount: guestCount,
+                                tableStatus: tableStatus,
+                              ),
+                            ),
+                          child:
+                              BlocConsumer<CreateOrderBloc, CreateOrderState>(
+                                listener: (context, createState) {
+                                  if (createState.status != Status.LOADING &&
+                                      createState.success) {
+                                    if (cafeTable != null) {
+                                      context.read<SavedOrdersBloc>().add(
+                                        SavedOrdersEvent.addNewOrder(
+                                          order: SaveOrderModel(
+                                            cafeTable: cafeTable!,
+                                            createOrderRequest:
+                                                CreateOrderRequestModel(
+                                                  tableId: createState.tableId,
+                                                  foods: state.selectedGoods,
+                                                  guestCount: guestCount,
+                                                  tableStatus: TableStatus.busy,
+                                                ),
+                                          ),
+                                        ),
                                       );
                                     }
-                                  : null,
-                            );
-                          },
-                        ),
-                      ),
-                    // Busy table: add items + payment buttons
-                    if (tableId != null && tableStatus != TableStatus.free)
-                      BlocProvider(
-                        create: (_) => inject<CreateOrderBloc>()
-                          ..add(CreateOrderEvent.started(
-                            tableId: tableId,
-                            guestCount: guestCount,
-                            tableStatus: tableStatus,
-                          )),
-                        child: BlocConsumer<CreateOrderBloc, CreateOrderState>(
-                          listener: (context, createState) {
-                            if (createState.status != Status.LOADING &&
-                                createState.success) {
-                              showSuccessMessage(
-                                context,
-                                S.current.strOrderSuccessCreated,
-                              );
-                              context
-                                  .read<DetailBloc>()
-                                  .add(DetailEvent.fetchBillOrders(
-                                    billId: cafeTable!.id,
-                                  ));
-                              context
-                                  .read<DetailBloc>()
-                                  .add(const DetailEvent.clearGoods());
-                            }
-                          },
-                          builder: (context, createState) {
-                            return Column(
-                              spacing: 8,
-                              children: [
-                                if (state.selectedGoods.isNotEmpty)
-                                  _ActionButton(
-                                    label: S.current.strAddItems,
-                                    bgColor: const Color(0xFF13AF1B),
+                                    context.read<MainCubit>().updateTableStatus(
+                                      createState.tableId,
+                                      TableStatus.busy,
+                                    );
+                                    showSuccessMessage(
+                                      context,
+                                      S.current.strOrderSuccessCreated,
+                                    );
+                                    Navigator.pop(context);
+                                  }
+                                },
+                                builder: (context, createState) {
+                                  return _ActionButton(
+                                    label: S.current.strSave,
+                                    bgColor: const Color(0xFFFB6633),
                                     textColor: Colors.white,
                                     isLoading:
                                         createState.status == Status.LOADING,
-                                    onTap: () {
-                                      context.read<CreateOrderBloc>().add(
-                                        CreateOrderEvent.createOrder(
-                                          orders: state.selectedGoods,
-                                        ),
-                                      );
-                                    },
-                                  ),
-                                _ActionButton(
-                                  label: S.current.strPayment,
-                                  bgColor: const Color(0xFFFB6633),
-                                  textColor: Colors.white,
-                                  isLoading: false,
-                                  onTap: () {
-                                    final timerCubit = context.read<TableTimerCubit>();
-                                    final currentAmt = timerCubit.state.timer?.currentAmount;
-                                    if (cafeTable?.tableType == 'time_based' &&
-                                        timerCubit.state.timer?.isRunning == true) {
-                                      timerCubit.pauseTimer();
-                                    }
-                                    Navigator.pushNamed(
-                                      context,
-                                      AppRoutes.paymentScreen,
-                                      arguments: {
-                                        'table_id': tableId,
-                                        'table_type': cafeTable?.tableType ?? 'simple',
-                                        'hour_amount': currentAmt,
-                                      },
-                                    );
-                                  },
-                                ),
-                              ],
-                            );
-                          },
+                                    onTap: state.selectedGoods.isNotEmpty
+                                        ? () {
+                                            context.read<CreateOrderBloc>().add(
+                                              CreateOrderEvent.createOrder(
+                                                orders: state.selectedGoods,
+                                              ),
+                                            );
+                                          }
+                                        : null,
+                                  );
+                                },
+                              ),
                         ),
-                      ),
-                  ],
+                      // Busy table: add items + payment buttons
+                      if (tableId != null && tableStatus != TableStatus.free)
+                        BlocProvider(
+                          create: (_) => inject<CreateOrderBloc>()
+                            ..add(
+                              CreateOrderEvent.started(
+                                tableId: tableId,
+                                guestCount: guestCount,
+                                tableStatus: tableStatus,
+                              ),
+                            ),
+                          child:
+                              BlocConsumer<CreateOrderBloc, CreateOrderState>(
+                                listener: (context, createState) {
+                                  if (createState.status != Status.LOADING &&
+                                      createState.success) {
+                                    showSuccessMessage(
+                                      context,
+                                      S.current.strOrderSuccessCreated,
+                                    );
+                                    context.read<DetailBloc>().add(
+                                      DetailEvent.fetchBillOrders(
+                                        billId: cafeTable!.id,
+                                      ),
+                                    );
+                                    context.read<DetailBloc>().add(
+                                      const DetailEvent.clearGoods(),
+                                    );
+                                  }
+                                },
+                                builder: (context, createState) {
+                                  return Column(
+                                    spacing: 8,
+                                    children: [
+                                      if (state.selectedGoods.isNotEmpty)
+                                        _ActionButton(
+                                          label: S.current.strAddItems,
+                                          bgColor: const Color(0xFF13AF1B),
+                                          textColor: Colors.white,
+                                          isLoading:
+                                              createState.status ==
+                                              Status.LOADING,
+                                          onTap: () {
+                                            context.read<CreateOrderBloc>().add(
+                                              CreateOrderEvent.createOrder(
+                                                orders: state.selectedGoods,
+                                              ),
+                                            );
+                                          },
+                                        ),
+                                      _ActionButton(
+                                        label: S.current.strPayment,
+                                        bgColor: const Color(0xFFFB6633),
+                                        textColor: Colors.white,
+                                        isLoading: false,
+                                        onTap: () {
+                                          final timerCubit = context
+                                              .read<TableTimerCubit>();
+                                          final currentAmt = timerCubit
+                                              .state
+                                              .timer
+                                              ?.currentAmount;
+                                          if (cafeTable?.tableType ==
+                                                  'time_based' &&
+                                              timerCubit
+                                                      .state
+                                                      .timer
+                                                      ?.isRunning ==
+                                                  true) {
+                                            timerCubit.pauseTimer();
+                                          }
+                                          Navigator.pushNamed(
+                                            context,
+                                            AppRoutes.paymentScreen,
+                                            arguments: {
+                                              'table_id': tableId,
+                                              'table_type':
+                                                  cafeTable?.tableType ??
+                                                  'simple',
+                                              'hour_amount': currentAmt,
+                                            },
+                                          );
+                                        },
+                                      ),
+                                    ],
+                                  );
+                                },
+                              ),
+                        ),
+                    ],
+                  ),
                 ),
-              ),
-            ],
-          ),
-        );
+              ],
+            ),
+          );
         },
       ),
     );
@@ -463,7 +490,9 @@ class _OrderItem extends StatelessWidget with DetailScreenMixin {
         List<FoodAdditionalModel> selectedAdditional = List.from(additionals);
         for (int i = 0; i < additionals.length; i++) {
           if (item.goods.additionals.any(
-            (v) => v.price == additionals[i].price && v.title == additionals[i].title,
+            (v) =>
+                v.price == additionals[i].price &&
+                v.title == additionals[i].title,
           )) {
             selectedAdditional[i].selected = true;
           }
@@ -564,10 +593,10 @@ class _OrderItem extends StatelessWidget with DetailScreenMixin {
               child: Text(
                 (item.goods.additionals.isNotEmpty
                         ? (item.goods.additionals
-                                    .map((v) => v.price)
-                                    .reduce((a, b) => a + b) +
-                                double.parse(item.goods.price)) *
-                            item.quantity
+                                      .map((v) => v.price)
+                                      .reduce((a, b) => a + b) +
+                                  double.parse(item.goods.price)) *
+                              item.quantity
                         : double.parse(item.goods.price) * item.quantity)
                     .formatN,
                 textAlign: TextAlign.right,
@@ -645,9 +674,7 @@ class _QtyBtnState extends State<_QtyBtn> {
         decoration: BoxDecoration(
           color: _pressed ? const Color(0xFFFB6633) : Colors.white,
           border: Border.all(
-            color: _pressed
-                ? const Color(0xFFFB6633)
-                : const Color(0xFFEBEFF2),
+            color: _pressed ? const Color(0xFFFB6633) : const Color(0xFFEBEFF2),
           ),
           borderRadius: BorderRadius.circular(8),
         ),
@@ -682,9 +709,7 @@ class _SummaryRow extends StatelessWidget {
           style: TextStyle(
             fontSize: isTotal ? 16 : 13,
             fontWeight: isTotal ? FontWeight.w700 : FontWeight.w400,
-            color: isTotal
-                ? const Color(0xFF19160B)
-                : const Color(0xFF888888),
+            color: isTotal ? const Color(0xFF19160B) : const Color(0xFF888888),
             fontFamily: 'Inter',
           ),
         ),
@@ -693,9 +718,7 @@ class _SummaryRow extends StatelessWidget {
           style: TextStyle(
             fontSize: isTotal ? 16 : 13,
             fontWeight: isTotal ? FontWeight.w700 : FontWeight.w500,
-            color: isTotal
-                ? const Color(0xFFFB6633)
-                : const Color(0xFF19160B),
+            color: isTotal ? const Color(0xFFFB6633) : const Color(0xFF19160B),
             fontFamily: 'Inter',
           ),
         ),
@@ -784,169 +807,183 @@ class _ReadonlyOrderItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final isCancelled = item.commet == 'cancelled';
     final isOfflinePending = item.commet == 'pending_offline';
-    final textColor = isCancelled ? const Color(0xFFBBBBBB) : const Color(0xFF19160B);
+    final textColor = isCancelled
+        ? const Color(0xFFBBBBBB)
+        : const Color(0xFF19160B);
     Color bgColor = const Color(0xFFF5F4F2);
     if (isCancelled) bgColor = const Color(0xFFFFF0F0);
     if (isOfflinePending) bgColor = const Color(0xFFFFF8F0);
     return Opacity(
       opacity: isCancelled ? 0.6 : 1.0,
       child: Container(
-      padding: const EdgeInsets.all(10),
-      decoration: BoxDecoration(
-        color: bgColor,
-        borderRadius: BorderRadius.circular(10),
-        border: isOfflinePending
-            ? Border.all(color: const Color(0xFFFB6633).withOpacity(0.4))
-            : null,
-      ),
-      child: Row(
-        spacing: 10,
-        children: [
-          Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Center(
-              child: Text(
-                item.goods.name.isNotEmpty
-                    ? item.goods.name[0].toUpperCase()
-                    : '?',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w700,
-                  color: isCancelled ? const Color(0xFFBBBBBB) : const Color(0xFF888888),
-                  fontFamily: 'Inter',
+        padding: const EdgeInsets.all(10),
+        decoration: BoxDecoration(
+          color: bgColor,
+          borderRadius: BorderRadius.circular(10),
+          border: isOfflinePending
+              ? Border.all(color: const Color(0xFFFB6633).withOpacity(0.4))
+              : null,
+        ),
+        child: Row(
+          spacing: 10,
+          children: [
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Center(
+                child: Text(
+                  item.goods.name.isNotEmpty
+                      ? item.goods.name[0].toUpperCase()
+                      : '?',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: isCancelled
+                        ? const Color(0xFFBBBBBB)
+                        : const Color(0xFF888888),
+                    fontFamily: 'Inter',
+                  ),
                 ),
               ),
             ),
-          ),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  item.goods.name,
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                    color: textColor,
-                    fontFamily: 'Inter',
-                    decoration: isCancelled ? TextDecoration.lineThrough : null,
-                    decorationColor: const Color(0xFFBBBBBB),
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 2),
-                if (isCancelled)
-                  const Text(
-                    'Bekor qilindi',
-                    style: TextStyle(
-                      fontSize: 10,
-                      color: Color(0xFFEB295B),
-                      fontFamily: 'Inter',
-                    ),
-                  )
-                else if (isOfflinePending)
-                  const Text(
-                    '⏳ Yuborilmoqda...',
-                    style: TextStyle(
-                      fontSize: 10,
-                      color: Color(0xFFFB6633),
-                      fontFamily: 'Inter',
-                    ),
-                  )
-                else
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
                   Text(
-                    (double.tryParse(item.goods.price) ?? 0).formatN,
-                    style: const TextStyle(
-                      fontSize: 11,
+                    item.goods.name,
+                    style: TextStyle(
+                      fontSize: 13,
                       fontWeight: FontWeight.w500,
-                      color: Color(0xFF888888),
+                      color: textColor,
                       fontFamily: 'Inter',
+                      decoration: isCancelled
+                          ? TextDecoration.lineThrough
+                          : null,
+                      decorationColor: const Color(0xFFBBBBBB),
                     ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
-              ],
-            ),
-          ),
-          Text(
-            'x${item.quantity}',
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: isCancelled ? const Color(0xFFBBBBBB) : const Color(0xFF888888),
-              fontFamily: 'Inter',
-              decoration: isCancelled ? TextDecoration.lineThrough : null,
-              decorationColor: const Color(0xFFBBBBBB),
-            ),
-          ),
-          Text(
-            ((double.tryParse(item.goods.price) ?? 0) * item.quantity).formatN,
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w700,
-              color: textColor,
-              fontFamily: 'Inter',
-              decoration: isCancelled ? TextDecoration.lineThrough : null,
-              decorationColor: const Color(0xFFBBBBBB),
-            ),
-          ),
-          if (tableId != null && !isOfflinePending && !isCancelled)
-            GestureDetector(
-              onTap: () async {
-                final bloc = context.read<DetailBloc>();
-                final confirmed = await showDialog<bool>(
-                  context: context,
-                  builder: (_) => AlertDialog(
-                    title: const Text(
-                      "O'chirishni tasdiqlang",
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
-                    ),
-                    content: Text(
-                      "'${item.goods.name}' ni o'chirmoqchimisiz?",
-                      style: const TextStyle(fontSize: 14),
-                    ),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.pop(context, false),
-                        child: const Text("Yo'q"),
+                  const SizedBox(height: 2),
+                  if (isCancelled)
+                    const Text(
+                      'Bekor qilindi',
+                      style: TextStyle(
+                        fontSize: 10,
+                        color: Color(0xFFEB295B),
+                        fontFamily: 'Inter',
                       ),
-                      TextButton(
-                        onPressed: () => Navigator.pop(context, true),
-                        child: const Text(
-                          'Ha',
-                          style: TextStyle(color: Color(0xFFEB295B)),
+                    )
+                  else if (isOfflinePending)
+                    const Text(
+                      '⏳ Yuborilmoqda...',
+                      style: TextStyle(
+                        fontSize: 10,
+                        color: Color(0xFFFB6633),
+                        fontFamily: 'Inter',
+                      ),
+                    )
+                  else
+                    Text(
+                      (double.tryParse(item.goods.price) ?? 0).formatN,
+                      style: const TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w500,
+                        color: Color(0xFF888888),
+                        fontFamily: 'Inter',
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            Text(
+              'x${item.quantity}',
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: isCancelled
+                    ? const Color(0xFFBBBBBB)
+                    : const Color(0xFF888888),
+                fontFamily: 'Inter',
+                decoration: isCancelled ? TextDecoration.lineThrough : null,
+                decorationColor: const Color(0xFFBBBBBB),
+              ),
+            ),
+            Text(
+              ((double.tryParse(item.goods.price) ?? 0) * item.quantity)
+                  .formatN,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+                color: textColor,
+                fontFamily: 'Inter',
+                decoration: isCancelled ? TextDecoration.lineThrough : null,
+                decorationColor: const Color(0xFFBBBBBB),
+              ),
+            ),
+            if (tableId != null && !isOfflinePending && !isCancelled)
+              GestureDetector(
+                onTap: () async {
+                  final bloc = context.read<DetailBloc>();
+                  final confirmed = await showDialog<bool>(
+                    context: context,
+                    builder: (_) => AlertDialog(
+                      title: const Text(
+                        "O'chirishni tasdiqlang",
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
                         ),
                       ),
-                    ],
+                      content: Text(
+                        "'${item.goods.name}' ni o'chirmoqchimisiz?",
+                        style: const TextStyle(fontSize: 14),
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(context, false),
+                          child: const Text("Yo'q"),
+                        ),
+                        TextButton(
+                          onPressed: () => Navigator.pop(context, true),
+                          child: const Text(
+                            'Ha',
+                            style: TextStyle(color: Color(0xFFEB295B)),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                  if (confirmed == true) {
+                    bloc.add(
+                      DetailEvent.cancelOrderItem(
+                        itemId: item.uniqueId,
+                        tableId: tableId!,
+                      ),
+                    );
+                  }
+                },
+                child: Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFFF0F3),
+                    borderRadius: BorderRadius.circular(6),
                   ),
-                );
-                if (confirmed == true) {
-                  bloc.add(DetailEvent.cancelOrderItem(
-                    itemId: item.uniqueId,
-                    tableId: tableId!,
-                  ));
-                }
-              },
-              child: Container(
-                padding: const EdgeInsets.all(6),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFFFF0F3),
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: const Icon(
-                  Icons.close,
-                  size: 14,
-                  color: Color(0xFFEB295B),
+                  child: const Icon(
+                    Icons.close,
+                    size: 14,
+                    color: Color(0xFFEB295B),
+                  ),
                 ),
               ),
-            ),
-        ],
+          ],
+        ),
       ),
-    ),
     );
   }
 }
@@ -957,23 +994,19 @@ class _TimerBadgeRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final t = timerState.timer!;
-    final displaySec = timerState.displayActiveSec ?? t.totalActiveSec;
-    final isRunning = t.stateNormalized == 'running';
-    final isPaused = t.stateNormalized == 'paused';
-    final rawAmt = t.currentAmount ?? '';
-    final amountStr = rawAmt.isNotEmpty
-        ? '${_fmtAmount(rawAmt)} so\'m'
-        : '';
+    final t = timerState.timer;
+    final displaySec = timerState.displayActiveSec ?? t?.totalActiveSec ?? 0;
+    final isRunning = t?.stateNormalized == 'running';
+    final isPaused = t?.stateNormalized == 'paused';
+    final isNone = t == null || t.stateNormalized == 'none';
+    final rawAmt = t?.currentAmount ?? '';
+    final amountStr = rawAmt.isNotEmpty ? '${_fmtAmount(rawAmt)} so\'m' : '';
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [
-            _indigo.withOpacity(0.15),
-            _indigo.withOpacity(0.08),
-          ],
+          colors: [_indigo.withOpacity(0.15), _indigo.withOpacity(0.08)],
         ),
         borderRadius: BorderRadius.circular(10),
         border: Border.all(color: _indigo.withOpacity(0.30)),
@@ -983,7 +1016,7 @@ class _TimerBadgeRow extends StatelessWidget {
           Icon(
             isRunning ? Icons.play_arrow_rounded : Icons.pause_rounded,
             size: 13,
-            color: _indigo,
+            color: isNone ? _indigo.withOpacity(0.5) : _indigo,
           ),
           const SizedBox(width: 5),
           Text(
@@ -1012,14 +1045,14 @@ class _TimerBadgeRow extends StatelessWidget {
             ),
           ] else
             const Spacer(),
-          if (isRunning || isPaused) ...[
+          if (isRunning || isPaused || isNone) ...[
             const SizedBox(width: 6),
             GestureDetector(
               onTap: timerState.isMutating
                   ? null
                   : () => isRunning
-                      ? context.read<TableTimerCubit>().pauseTimer()
-                      : context.read<TableTimerCubit>().resumeTimer(),
+                        ? context.read<TableTimerCubit>().pauseTimer()
+                        : context.read<TableTimerCubit>().resumeTimer(),
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 150),
                 width: 30,
@@ -1073,9 +1106,10 @@ class _TimerBadgeRow extends StatelessWidget {
   static String _fmtAmount(String raw) {
     final n = int.tryParse(raw.replaceAll(RegExp(r'[^0-9]'), ''));
     if (n == null) return raw;
-    return n
-        .toString()
-        .replaceAllMapped(RegExp(r'(\d)(?=(\d{3})+(?!\d))'), (m) => '${m[1]} ');
+    return n.toString().replaceAllMapped(
+      RegExp(r'(\d)(?=(\d{3})+(?!\d))'),
+      (m) => '${m[1]} ',
+    );
   }
 }
 
