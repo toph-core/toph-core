@@ -7,9 +7,7 @@ import 'package:mary_ai_pos/core/extension/number_formatter.dart';
 import 'package:mary_ai_pos/core/routes/app_routes.dart';
 import 'package:mary_ai_pos/di.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/cafe_tables/cafe_tables_model.dart';
-import 'package:mary_ai_pos/features/view/main/data/models/create_order/create_order_request_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/food_additional/food_additional_model.dart';
-import 'package:mary_ai_pos/features/view/main/data/models/save_order/save_order_model.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/create_order/create_order_bloc.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/detail/detail_bloc.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/main/main_cubit.dart';
@@ -328,19 +326,10 @@ class _OrderSidebarState extends State<OrderSidebar> with DetailScreenMixin {
                                 listener: (context, createState) {
                                   if (createState.status != Status.LOADING &&
                                       createState.success) {
-                                    if (cafeTable != null) {
+                                    if (createState.tableId.isNotEmpty) {
                                       context.read<SavedOrdersBloc>().add(
-                                        SavedOrdersEvent.addNewOrder(
-                                          order: SaveOrderModel(
-                                            cafeTable: cafeTable!,
-                                            createOrderRequest:
-                                                CreateOrderRequestModel(
-                                                  tableId: createState.tableId,
-                                                  foods: state.selectedGoods,
-                                                  guestCount: guestCount,
-                                                  tableStatus: TableStatus.busy,
-                                                ),
-                                          ),
+                                        SavedOrdersEvent.removeOrder(
+                                          tableId: createState.tableId,
                                         ),
                                       );
                                     }
@@ -697,8 +686,8 @@ class _QtyBtnState extends State<_QtyBtn> {
       onTapCancel: () => setState(() => _pressed = false),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 100),
-        width: 28,
-        height: 28,
+        width: 38,
+        height: 38,
         decoration: BoxDecoration(
           color: _pressed ? const Color(0xFFFB6633) : Colors.white,
           border: Border.all(
@@ -708,7 +697,7 @@ class _QtyBtnState extends State<_QtyBtn> {
         ),
         child: Icon(
           widget.icon,
-          size: 14,
+          size: 18,
           color: _pressed ? Colors.white : const Color(0xFF19160B),
         ),
       ),
