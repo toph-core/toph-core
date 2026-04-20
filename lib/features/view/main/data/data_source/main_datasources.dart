@@ -546,13 +546,14 @@ class MainDataSourcesImpl implements MainDataSources {
   ) async {
     try {
       final response = await _client.dio.get(
-        ListAPI.goodsSearch,
-        queryParameters: {'query': name},
+        ListAPI.goods,
+        queryParameters: {'search': name, 'limit': 100},
       );
 
+      final list = response.data['data'] as List? ??
+          (response.data is List ? response.data as List : []);
       return Right(
-        (response.data as List?)?.map((e) => GoodsModel.fromJson(e)).toList() ??
-            [],
+        list.map((e) => GoodsModel.fromJson(e)).toList(),
       );
     } on DioException catch (exception) {
       return Left(handleDioException(exception));
