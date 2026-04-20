@@ -25,4 +25,8 @@ class DetailEvent with _$DetailEvent {
       _SearchTextChanged;
   const factory DetailEvent.fetchBillOrders({required String billId}) =
       _FetchBillOrders;
+  const factory DetailEvent.cancelOrderItem({
+    required String itemId,
+    required String tableId,
+  }) = _CancelOrderItem;
 }

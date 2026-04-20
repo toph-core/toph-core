@@ -173,7 +173,7 @@ class ShiftBloc extends Bloc<ShiftEvent, ShiftState> {
         onSuccess: () => Navigator.pushNamedAndRemoveUntil(
           navigatorKey.currentContext!,
           AppRoutes.loginPinScreen,
-          (router) => true,
+          (route) => false,
         ),
       );
       showSuccessMessage(
@@ -359,10 +359,7 @@ class ShiftBloc extends Bloc<ShiftEvent, ShiftState> {
     if (resolved == null) {
       final ctx = navigatorKey.currentContext;
       if (ctx != null && ctx.mounted) {
-        final role = ctx.read<UserBloc>().state.userMOdel?.role;
-        if (role != UserRole.cashier) {
-          Navigator.pushNamed(ctx, AppRoutes.closeShiftScreen);
-        }
+        Navigator.pushNamed(ctx, AppRoutes.closeShiftScreen);
       }
       await _clearLocalShift();
     } else {

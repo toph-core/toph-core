@@ -1,6 +1,12 @@
 import 'package:alice/alice.dart';
 import 'package:alice/model/alice_configuration.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:mary_ai_pos/core/api/dio_client.dart';
+import 'package:mary_ai_pos/core/services/auth/offline_auth_cache.dart';
+import 'package:mary_ai_pos/core/services/cache/cache_service.dart';
+import 'package:mary_ai_pos/core/services/connectivity/connectivity_cubit.dart';
+import 'package:mary_ai_pos/core/services/lan_hub/lan_hub_service.dart';
+import 'package:mary_ai_pos/core/services/offline_queue/offline_queue_service.dart';
 import 'package:mary_ai_pos/core/auth/storage/token_storage_impl.dart';
 import 'package:mary_ai_pos/core/service/minio/minio_service.dart';
 import 'package:mary_ai_pos/core/service/printer/printer_config_storage.dart';
@@ -58,6 +64,7 @@ import 'package:mary_ai_pos/features/view/main/domain/usecase/get_tables_by_hall
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/main/main_cubit.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/table_timer/table_timer_cubit.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/waiter/waiter_cubit.dart';
+import 'package:mary_ai_pos/features/view/main/presentation/cubit/ui_prefs/ui_prefs_cubit.dart';
 
 final inject = GetIt.instance;
 Future<void> initDi() async {
@@ -67,6 +74,7 @@ Future<void> initDi() async {
 
   inject.registerSingleton<SharedPreferences>(prefs);
   inject.registerSingleton<AppTokenStorage>(tokenStorage);
+  inject.registerSingleton<OfflineAuthCache>(OfflineAuthCache(prefs));
 
   final alice = Alice(
     configuration: AliceConfiguration(
@@ -76,9 +84,24 @@ Future<void> initDi() async {
   );
   inject.registerSingleton<Alice>(alice);
 
-  final dioClient = DioClient(tokenStorage);
+  final connectivity = Connectivity();
+  final connectivityCubit = ConnectivityCubit(connectivity);
+  inject.registerSingleton<ConnectivityCubit>(connectivityCubit);
+
+  final cacheService = await CacheService.init();
+  inject.registerSingleton<CacheService>(cacheService);
+
+  final offlineQueue = await OfflineQueueService.init();
+  inject.registerSingleton<OfflineQueueService>(offlineQueue);
+
+  final dioClient = DioClient(tokenStorage, connectivityCubit);
   alice.addAdapter(dioClient.aliceDioAdapter);
   inject.registerSingleton<DioClient>(dioClient);
+
+  final lanHubService = LanHubService(prefs);
+  await lanHubService.init();
+  inject.registerSingleton<LanHubService>(lanHubService);
+
   final MinioService minioService = MinioService.instance;
   inject.registerLazySingleton(() => minioService);
 
@@ -148,10 +171,13 @@ void _useCase() {
 void _cubit() {
   //? lazy singleton
   inject.registerLazySingleton(
-    () => AuthCubit(inject(), inject(), inject(), inject(), inject()),
+    () => AuthCubit(inject(), inject(), inject(), inject(), inject(), inject(), inject()),
   );
   inject.registerLazySingleton(() => SettingsCubit(inject(), inject()));
-  inject.registerLazySingleton(() => MainCubit(inject(), inject()));
+  inject.registerLazySingleton(() => UiPrefsCubit(inject()));
+  inject.registerLazySingleton(
+    () => MainCubit(inject(), inject(), inject(), inject(), inject()),
+  );
   inject.registerLazySingleton(() => KeyboardCubit());
   inject.registerLazySingleton(
     () => ShiftBloc(
@@ -171,12 +197,15 @@ void _cubit() {
       syncPrinterSettingsUsecase: inject(),
     ),
   );
-  inject.registerFactory(() => LoginPinCubit(inject(), inject(), inject()));
-  inject.registerFactory(() => DetailBloc(inject(), inject(), inject()));
+  inject.registerFactory(() => LoginPinCubit(inject(), inject(), inject(), inject(), inject()));
+  inject.registerFactory(() => DetailBloc(inject(), inject(), inject(), inject(), inject()));
   inject.registerFactory(
     () => CreateOrderBloc(
       createOrderUsecase: inject(),
       createTakeAwayOrderUsecase: inject(),
+      connectivity: inject(),
+      queue: inject(),
+      lanHub: inject(),
     ),
   );
   inject.registerFactory(() => CounterCubit());
@@ -192,6 +221,7 @@ void _cubit() {
       getPaymentDetailWithTableIdUsecase: inject(),
       createPaymentUsecase: inject(),
       getPaymentDetailWithId: inject(),
+      printerService: inject(),
     ),
   );
   inject.registerFactory(() => NotificationBloc());

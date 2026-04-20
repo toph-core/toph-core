@@ -9,6 +9,7 @@ import 'package:mary_ai_pos/core/extension/widget_extension.dart';
 import 'package:mary_ai_pos/core/values/app_assets.dart';
 import 'package:mary_ai_pos/core/values/app_colors.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/shift/shift_bloc.dart';
+import 'package:mary_ai_pos/generated/l10n.dart';
 
 class WShiftBottom extends StatelessWidget {
   const WShiftBottom({super.key});
@@ -43,7 +44,7 @@ class WShiftBottom extends StatelessWidget {
                     ),
                     10.wBox,
                     Text(
-                      "Chop etish",
+                      S.current.strPrint,
                       style: context.textStyles.title14.copyWith(fontSize: 16),
                     ),
                   ],
@@ -73,8 +74,8 @@ class WShiftBottom extends StatelessWidget {
                         ? const CircularProgressIndicator.adaptive()
                         : Text(
                             state.shift == null
-                                ? "Smenani ochish"
-                                : "Smenani yopish",
+                                ? S.current.strOpenShift
+                                : S.current.strCloseShift,
                             style: context.textStyles.bold16.copyWith(
                               color: AppColors.white,
                               fontWeight: FontWeight.w500,

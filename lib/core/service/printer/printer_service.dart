@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:mary_ai_pos/core/components/flush_bars.dart';
 import 'package:mary_ai_pos/core/utils/helper/helper_widget.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/open_order/open_order_model.dart';
+import 'package:mary_ai_pos/features/view/main/domain/entities/archive_detail_entity.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/detail/detail_bloc.dart';
 
 import 'printer_config.dart';
@@ -37,8 +38,9 @@ class PrinterService {
     required List<OrderItem> items,
     double discountPercent = 0,
     double discountAmount = 0,
+    double hourAmount = 0,
   }) async {
-    // Summa 0 / barcha pozitsiyalar bekor — yopilgan schyot uchun bo‘sh chek ham chop etiladi.
+    // Summa 0 / barcha pozitsiyalar bekor — yopilgan schyot uchun bo’sh chek ham chop etiladi.
     try {
       final config = _storage.closeCheckConfigOrFallback();
       final bytes = await CashierReceiptBuilder.build(
@@ -47,6 +49,7 @@ class PrinterService {
         paperSize: config.paperSize,
         discountPercent: discountPercent,
         discountAmount: discountAmount,
+        hourAmount: hourAmount,
       );
       final r = await _connectAndPrint(config, bytes);
       if (!r.ok) {
@@ -64,6 +67,43 @@ class PrinterService {
         config,
         title: 'Kassir cheki tayyorlashda xato',
         printerRole: 'close_check printer (backend)',
+        detail: e.toString(),
+      );
+    }
+  }
+
+  /// To'lov ekranidan keyin chek — [ArchiveDetailEntity] asosida.
+  Future<void> printCashierReceiptFromDetail({
+    required ArchiveDetailEntity detail,
+    double hourAmount = 0,
+    double discountPercent = 0,
+    double discountAmount = 0,
+  }) async {
+    try {
+      final config = _storage.closeCheckConfigOrFallback();
+      final bytes = await CashierReceiptBuilder.buildFromDetail(
+        detail: detail,
+        paperSize: config.paperSize,
+        hourAmount: hourAmount,
+        discountPercent: discountPercent,
+        discountAmount: discountAmount,
+      );
+      final r = await _connectAndPrint(config, bytes);
+      if (!r.ok) {
+        _notifyPrinterFailed(
+          config,
+          title: 'Kassir cheki chop etilmadi',
+          printerRole: 'close_check printer',
+          detail: r.error,
+        );
+      }
+    } catch (e, st) {
+      debugPrint('[PrinterService] Kassir cheki xatosi: $e\n$st');
+      final config = _storage.closeCheckConfigOrFallback();
+      _notifyPrinterFailed(
+        config,
+        title: 'Kassir cheki tayyorlashda xato',
+        printerRole: 'close_check printer',
         detail: e.toString(),
       );
     }

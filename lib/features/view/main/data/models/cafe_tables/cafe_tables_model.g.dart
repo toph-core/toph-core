@@ -19,6 +19,10 @@ _$CafeTableModelImpl _$$CafeTableModelImplFromJson(Map<String, dynamic> json) =>
       capacity: (json['capacity'] as num).toInt(),
       status: $enumDecodeNullable(_$TableStatusEnumMap, json['status']) ??
           TableStatus.free,
+      shape: $enumDecodeNullable(_$TableShapeEnumMap, json['shape'],
+              unknownValue: TableShape.rectangle) ??
+          TableShape.rectangle,
+      tableType: json['table_type'] as String?,
     );
 
 Map<String, dynamic> _$$CafeTableModelImplToJson(
@@ -34,6 +38,8 @@ Map<String, dynamic> _$$CafeTableModelImplToJson(
       'rotation': instance.rotation,
       'capacity': instance.capacity,
       'status': _$TableStatusEnumMap[instance.status]!,
+      'shape': _$TableShapeEnumMap[instance.shape]!,
+      'table_type': instance.tableType,
     };
 
 const _$TableStatusEnumMap = {
@@ -41,4 +47,10 @@ const _$TableStatusEnumMap = {
   TableStatus.busy: 'busy',
   TableStatus.away: 'away',
   TableStatus.none: 'none',
+};
+
+const _$TableShapeEnumMap = {
+  TableShape.rectangle: 'rectangle',
+  TableShape.circle: 'circle',
+  TableShape.square: 'square',
 };

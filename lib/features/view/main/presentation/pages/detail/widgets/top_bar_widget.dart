@@ -5,6 +5,7 @@ import 'package:mary_ai_pos/features/view/main/data/models/cafe_tables/cafe_tabl
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/detail/detail_bloc.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/orders/orders_bloc.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/detail/widgets/leave_from_detail_screen_dialog.dart';
+import 'package:mary_ai_pos/generated/l10n.dart';
 
 class TopBarWidget extends StatelessWidget {
   final CafeTableModel? cafeTable;
@@ -96,7 +97,7 @@ class TopBarWidget extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      '${cafeTable!.number}-stol',
+                      '${S.current.strTable} ${cafeTable!.number}',
                       style: const TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w700,
@@ -105,7 +106,7 @@ class TopBarWidget extends StatelessWidget {
                       ),
                     ),
                     Text(
-                      '$guestCount mehmon',
+                      '$guestCount ${S.current.strGuestsSuffix}',
                       style: TextStyle(
                         fontSize: 12,
                         color: colors.textSecondary,
@@ -113,50 +114,72 @@ class TopBarWidget extends StatelessWidget {
                       ),
                     ),
                   ],
+                )
+              else
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  spacing: 8,
+                  children: [
+                    Icon(Icons.shopping_bag_outlined,
+                        size: 20, color: colors.textDefault),
+                    Text(
+                      S.current.strTakeaway,
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF19160B),
+                        fontFamily: 'Inter',
+                      ),
+                    ),
+                  ],
                 ),
               const Spacer(),
               // Search field
-              Container(
-                width: 220,
-                height: 36,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF8F9FA),
-                  border: Border.all(color: colors.border),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: TextField(
-                  controller: textEditingController,
-                  onTap: () => showKeyboard.value = true,
-                  onChanged: (v) => context.read<DetailBloc>().add(
-                    DetailEvent.searchTextChanged(text: v),
-                  ),
-                  style: const TextStyle(
-                    fontSize: 13,
-                    color: Color(0xFF19160B),
-                    fontFamily: 'Inter',
-                  ),
-                  decoration: InputDecoration(
-                    hintText: 'Qidirish...',
-                    hintStyle: TextStyle(
-                      fontSize: 13,
-                      color: colors.textSecondary,
-                      fontFamily: 'Inter',
+              Flexible(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(minWidth: 140, maxWidth: 280),
+                  child: Container(
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF8F9FA),
+                      border: Border.all(color: colors.border),
+                      borderRadius: BorderRadius.circular(10),
                     ),
-                    prefixIcon: Icon(
-                      Icons.search,
-                      size: 18,
-                      color: colors.textSecondary,
+                    child: TextField(
+                      controller: textEditingController,
+                      onTap: () => showKeyboard.value = true,
+                      onChanged: (v) => context.read<DetailBloc>().add(
+                        DetailEvent.searchTextChanged(text: v),
+                      ),
+                      style: const TextStyle(
+                        fontSize: 13,
+                        color: Color(0xFF19160B),
+                        fontFamily: 'Inter',
+                      ),
+                      decoration: InputDecoration(
+                        hintText: S.current.strSearchHint,
+                        hintStyle: TextStyle(
+                          fontSize: 13,
+                          color: colors.textSecondary,
+                          fontFamily: 'Inter',
+                        ),
+                        prefixIcon: Icon(
+                          Icons.search,
+                          size: 18,
+                          color: colors.textSecondary,
+                        ),
+                        border: InputBorder.none,
+                        contentPadding: const EdgeInsets.symmetric(vertical: 8),
+                        isDense: true,
+                      ),
                     ),
-                    border: InputBorder.none,
-                    contentPadding: const EdgeInsets.symmetric(vertical: 8),
-                    isDense: true,
                   ),
                 ),
               ),
               // Clear button
               if (state.selectedGoods.isNotEmpty)
                 _HeaderButton(
-                  label: 'Tozalash',
+                  label: S.current.strClear,
                   color: const Color(0xFFEB295B),
                   bgColor: const Color(0xFFFFF0F3),
                   borderColor: const Color(0xFFFBCDD8),

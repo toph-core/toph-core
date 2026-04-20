@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:mary_ai_pos/core/constants/constants.dart';
 import 'package:mary_ai_pos/core/extension/for_context.dart';
 import 'package:mary_ai_pos/features/view/auth/presentation/cubit/bloc/user_bloc.dart';
+import 'package:mary_ai_pos/features/view/auth/presentation/cubit/settings/settings_cubit.dart';
+import 'package:mary_ai_pos/generated/l10n.dart';
 
 class MainHeader extends StatelessWidget {
   final String title;
-  /// Masalan: orqaga (Navigator.pop).
   final Widget? leading;
-  const MainHeader({super.key, this.title = 'Stollar', this.leading});
+  final Widget? trailing;
+  const MainHeader({super.key, this.title = 'Stollar', this.leading, this.trailing});
 
   @override
   Widget build(BuildContext context) {
@@ -35,50 +38,37 @@ class MainHeader extends StatelessWidget {
             ),
           ),
           const Spacer(),
+          if (trailing != null) ...[
+            trailing!,
+            const SizedBox(width: 12),
+          ],
+          const _LangToggle(),
+          const SizedBox(width: 12),
           BlocBuilder<UserBloc, UserState>(
             builder: (context, state) {
               final name = state.userMOdel?.fullName ?? '';
               final role = _roleLabel(state.userMOdel?.role);
-              return Row(
-                mainAxisSize: MainAxisSize.min,
-                spacing: 10,
+              if (name.isEmpty) return const SizedBox.shrink();
+              return Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  if (name.isNotEmpty)
-                    Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Text(
-                          name,
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                            color: colors.textDefault,
-                            fontFamily: 'Inter',
-                          ),
-                        ),
-                        Text(
-                          role,
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w400,
-                            color: colors.textSecondary,
-                            fontFamily: 'Inter',
-                          ),
-                        ),
-                      ],
+                  Text(
+                    name,
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: colors.textDefault,
+                      fontFamily: 'Inter',
                     ),
-                  Container(
-                    width: 32,
-                    height: 32,
-                    decoration: BoxDecoration(
-                      color: colors.bgSecondary,
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(
-                      Icons.person_outline,
-                      size: 18,
+                  ),
+                  Text(
+                    role,
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w400,
                       color: colors.textSecondary,
+                      fontFamily: 'Inter',
                     ),
                   ),
                 ],
@@ -90,13 +80,63 @@ class MainHeader extends StatelessWidget {
     );
   }
 
-  String _roleLabel(dynamic role) {
-    if (role == null) return '';
-    final s = role.toString();
-    if (s.contains('admin')) return 'Admin';
-    if (s.contains('waiter')) return 'Ofitsiant';
-    if (s.contains('cashier')) return 'Kassir';
-    if (s.contains('kitchen')) return 'Oshpaz';
-    return s;
+  String _roleLabel(UserRole? role) {
+    if (role == null || role == UserRole.none) return '';
+    return switch (role) {
+      UserRole.admin => S.current.strRoleAdmin,
+      UserRole.superadmin => S.current.strRoleSuperadmin,
+      UserRole.manager => S.current.strRoleManager,
+      UserRole.cashier => S.current.strRoleCashier,
+      UserRole.waiter => S.current.strRoleWaiter,
+      UserRole.kitchen => S.current.strRoleChef,
+      UserRole.user => S.current.strRoleUser,
+      UserRole.none => '',
+    };
+  }
+}
+
+class _LangToggle extends StatelessWidget {
+  const _LangToggle();
+
+  @override
+  Widget build(BuildContext context) {
+    final lang = context.select((SettingsCubit c) => c.state.language);
+    final c = context.colors;
+    return Container(
+      padding: const EdgeInsets.all(3),
+      decoration: BoxDecoration(
+        color: c.bgSecondary,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: c.border),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: ['uz', 'ru'].map((code) {
+          final selected = lang == code;
+          return GestureDetector(
+            onTap: () => context
+                .read<SettingsCubit>()
+                .saveAppLang(context, languageCode: code),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 150),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(
+                color: selected ? c.textBrand : Colors.transparent,
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Text(
+                code.toUpperCase(),
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  color: selected ? Colors.white : c.textSecondary,
+                  fontFamily: 'Inter',
+                ),
+              ),
+            ),
+          );
+        }).toList(),
+      ),
+    );
   }
 }

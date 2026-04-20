@@ -4,6 +4,7 @@ abstract class OrderFoodEntity {
   final int quantity;
   final int price;
   final String comment;
+  final String status;
 
   OrderFoodEntity({
     required this.id,
@@ -11,5 +12,6 @@ abstract class OrderFoodEntity {
     required this.quantity,
     required this.price,
     required this.comment,
+    this.status = 'pending',
   });
 }

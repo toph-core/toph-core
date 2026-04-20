@@ -1,13 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/svg.dart';
 import 'package:mary_ai_pos/core/common/custom_shimmer_container.dart';
 import 'package:mary_ai_pos/core/extension/for_context.dart';
-import 'package:mary_ai_pos/core/routes/app_routes.dart';
 import 'package:mary_ai_pos/di.dart';
-import 'package:mary_ai_pos/features/view/main/data/models/cafe_tables/cafe_tables_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/hall/hall_model.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/main/main_cubit.dart';
-import 'package:mary_ai_pos/gen/assets.gen.dart';
 
 class TabFilter extends StatelessWidget {
   final String? selectedHallId;
@@ -54,34 +50,6 @@ class TabFilter extends StatelessWidget {
                         )
                         .toList(),
             ),
-          ),
-        ),
-        const SizedBox(width: 12),
-        GestureDetector(
-          onTap: () {
-            Navigator.pushNamed(
-              context,
-              AppRoutes.detailScreen,
-              arguments: {
-                "guest_count": 1,
-                "table_status": TableStatus.away,
-              },
-            );
-          },
-          child: Container(
-            height: 44,
-            width: 44,
-            decoration: BoxDecoration(
-              color: colors.textBrand,
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: SvgPicture.asset(
-              Assets.icons.icAddCircle.path,
-              colorFilter: const ColorFilter.mode(
-                Colors.white,
-                BlendMode.srcIn,
-              ),
-            ).paddingAll(11),
           ),
         ),
       ],
@@ -146,7 +114,3 @@ class _TabButtonState extends State<_TabButton> {
   }
 }
 
-extension on Widget {
-  Widget paddingAll(double value) =>
-      Padding(padding: EdgeInsets.all(value), child: this);
-}

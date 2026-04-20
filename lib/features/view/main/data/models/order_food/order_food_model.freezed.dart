@@ -27,6 +27,7 @@ mixin _$OrderFoodModel {
   @JsonKey(fromJson: parseInt)
   int get price => throw _privateConstructorUsedError;
   String get comment => throw _privateConstructorUsedError;
+  String get status => throw _privateConstructorUsedError;
 
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
   @JsonKey(ignore: true)
@@ -45,7 +46,8 @@ abstract class $OrderFoodModelCopyWith<$Res> {
       @JsonKey(name: "good_name") String name,
       int quantity,
       @JsonKey(fromJson: parseInt) int price,
-      String comment});
+      String comment,
+      String status});
 }
 
 /// @nodoc
@@ -66,28 +68,15 @@ class _$OrderFoodModelCopyWithImpl<$Res, $Val extends OrderFoodModel>
     Object? quantity = null,
     Object? price = null,
     Object? comment = null,
+    Object? status = null,
   }) {
     return _then(_value.copyWith(
-      id: null == id
-          ? _value.id
-          : id // ignore: cast_nullable_to_non_nullable
-              as String,
-      name: null == name
-          ? _value.name
-          : name // ignore: cast_nullable_to_non_nullable
-              as String,
-      quantity: null == quantity
-          ? _value.quantity
-          : quantity // ignore: cast_nullable_to_non_nullable
-              as int,
-      price: null == price
-          ? _value.price
-          : price // ignore: cast_nullable_to_non_nullable
-              as int,
-      comment: null == comment
-          ? _value.comment
-          : comment // ignore: cast_nullable_to_non_nullable
-              as String,
+      id: null == id ? _value.id : id as String,
+      name: null == name ? _value.name : name as String,
+      quantity: null == quantity ? _value.quantity : quantity as int,
+      price: null == price ? _value.price : price as int,
+      comment: null == comment ? _value.comment : comment as String,
+      status: null == status ? _value.status : status as String,
     ) as $Val);
   }
 }
@@ -105,7 +94,8 @@ abstract class _$$OrderFoodModelImplCopyWith<$Res>
       @JsonKey(name: "good_name") String name,
       int quantity,
       @JsonKey(fromJson: parseInt) int price,
-      String comment});
+      String comment,
+      String status});
 }
 
 /// @nodoc
@@ -124,28 +114,15 @@ class __$$OrderFoodModelImplCopyWithImpl<$Res>
     Object? quantity = null,
     Object? price = null,
     Object? comment = null,
+    Object? status = null,
   }) {
     return _then(_$OrderFoodModelImpl(
-      id: null == id
-          ? _value.id
-          : id // ignore: cast_nullable_to_non_nullable
-              as String,
-      name: null == name
-          ? _value.name
-          : name // ignore: cast_nullable_to_non_nullable
-              as String,
-      quantity: null == quantity
-          ? _value.quantity
-          : quantity // ignore: cast_nullable_to_non_nullable
-              as int,
-      price: null == price
-          ? _value.price
-          : price // ignore: cast_nullable_to_non_nullable
-              as int,
-      comment: null == comment
-          ? _value.comment
-          : comment // ignore: cast_nullable_to_non_nullable
-              as String,
+      id: null == id ? _value.id : id as String,
+      name: null == name ? _value.name : name as String,
+      quantity: null == quantity ? _value.quantity : quantity as int,
+      price: null == price ? _value.price : price as int,
+      comment: null == comment ? _value.comment : comment as String,
+      status: null == status ? _value.status : status as String,
     ));
   }
 }
@@ -158,7 +135,8 @@ class _$OrderFoodModelImpl extends _OrderFoodModel {
       @JsonKey(name: "good_name") this.name = '',
       this.quantity = 0,
       @JsonKey(fromJson: parseInt) this.price = 0,
-      this.comment = ''})
+      this.comment = '',
+      this.status = 'pending'})
       : super._();
 
   factory _$OrderFoodModelImpl.fromJson(Map<String, dynamic> json) =>
@@ -179,10 +157,13 @@ class _$OrderFoodModelImpl extends _OrderFoodModel {
   @override
   @JsonKey()
   final String comment;
+  @override
+  @JsonKey()
+  final String status;
 
   @override
   String toString() {
-    return 'OrderFoodModel(id: $id, name: $name, quantity: $quantity, price: $price, comment: $comment)';
+    return 'OrderFoodModel(id: $id, name: $name, quantity: $quantity, price: $price, comment: $comment, status: $status)';
   }
 
   @override
@@ -192,16 +173,16 @@ class _$OrderFoodModelImpl extends _OrderFoodModel {
             other is _$OrderFoodModelImpl &&
             (identical(other.id, id) || other.id == id) &&
             (identical(other.name, name) || other.name == name) &&
-            (identical(other.quantity, quantity) ||
-                other.quantity == quantity) &&
+            (identical(other.quantity, quantity) || other.quantity == quantity) &&
             (identical(other.price, price) || other.price == price) &&
-            (identical(other.comment, comment) || other.comment == comment));
+            (identical(other.comment, comment) || other.comment == comment) &&
+            (identical(other.status, status) || other.status == status));
   }
 
   @JsonKey(ignore: true)
   @override
   int get hashCode =>
-      Object.hash(runtimeType, id, name, quantity, price, comment);
+      Object.hash(runtimeType, id, name, quantity, price, comment, status);
 
   @JsonKey(ignore: true)
   @override
@@ -224,7 +205,8 @@ abstract class _OrderFoodModel extends OrderFoodModel {
       @JsonKey(name: "good_name") final String name,
       final int quantity,
       @JsonKey(fromJson: parseInt) final int price,
-      final String comment}) = _$OrderFoodModelImpl;
+      final String comment,
+      final String status}) = _$OrderFoodModelImpl;
   const _OrderFoodModel._() : super._();
 
   factory _OrderFoodModel.fromJson(Map<String, dynamic> json) =
@@ -242,6 +224,8 @@ abstract class _OrderFoodModel extends OrderFoodModel {
   int get price;
   @override
   String get comment;
+  @override
+  String get status;
   @override
   @JsonKey(ignore: true)
   _$$OrderFoodModelImplCopyWith<_$OrderFoodModelImpl> get copyWith =>

@@ -11,4 +11,5 @@ sealed class AppRoutes {
   static const String notificationsScreen = "notificationsScreen";
   static const String menuMealsScreen = "menuMealsScreen";
   static const String menuManageScreen = "menuManageScreen";
+  static const String settingsScreen = "settingsScreen";
 }

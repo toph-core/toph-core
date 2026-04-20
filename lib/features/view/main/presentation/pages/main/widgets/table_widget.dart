@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mary_ai_pos/core/extension/for_context.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/cafe_tables/cafe_tables_model.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/orders/orders_bloc.dart';
+import 'package:mary_ai_pos/features/view/main/presentation/pages/main/widgets/time_based_table_badge.dart';
 
 class TableWidget extends StatefulWidget {
   final CafeTableModel table;
@@ -119,51 +120,54 @@ class _TableWidgetState extends State<TableWidget> {
                     ],
                   ),
                   const Spacer(),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 3,
-                        ),
-                        decoration: BoxDecoration(
-                          color: statusTextColor.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Text(
-                          statusLabel,
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                            color: statusTextColor,
-                            fontFamily: 'Inter',
+                  if (widget.table.tableType == 'time_based')
+                    TimeBasedTableBadge(table: widget.table)
+                  else
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 3,
                           ),
-                        ),
-                      ),
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        spacing: 3,
-                        children: [
-                          Icon(
-                            Icons.people_outline,
-                            size: 13,
-                            color: colors.textTertiary,
+                          decoration: BoxDecoration(
+                            color: statusTextColor.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(6),
                           ),
-                          Text(
-                            '${widget.table.capacity}',
+                          child: Text(
+                            statusLabel,
                             style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
-                              color: colors.textTertiary,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: statusTextColor,
                               fontFamily: 'Inter',
                             ),
                           ),
-                        ],
-                      ),
-                    ],
-                  ),
+                        ),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          spacing: 3,
+                          children: [
+                            Icon(
+                              Icons.people_outline,
+                              size: 13,
+                              color: colors.textTertiary,
+                            ),
+                            Text(
+                              '${widget.table.capacity}',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                                color: colors.textTertiary,
+                                fontFamily: 'Inter',
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
                 ],
               ),
             ),

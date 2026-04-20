@@ -15,6 +15,7 @@ class OrderFoodModel with _$OrderFoodModel implements OrderFoodEntity {
     @Default(0) int quantity,
     @JsonKey(fromJson: parseInt) @Default(0) int price,
     @Default('') String comment,
+    @Default('pending') String status,
   }) = _OrderFoodModel;
 
   factory OrderFoodModel.fromJson(Map<String, dynamic> json) =>

@@ -8,13 +8,13 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mary_ai_pos/core/api/dio_client.dart';
 import 'package:mary_ai_pos/core/api/list_api.dart';
-import 'package:mary_ai_pos/core/constants/constants.dart';
 import 'package:mary_ai_pos/core/extension/for_context.dart';
 import 'package:mary_ai_pos/core/extension/list_extension.dart';
 import 'package:mary_ai_pos/core/theme/tokens/theme_colors.dart';
 import 'package:mary_ai_pos/core/routes/app_routes.dart';
 import 'package:mary_ai_pos/core/service/minio/minio_service.dart';
 import 'package:mary_ai_pos/core/utils/app_formatter.dart';
+import 'package:mary_ai_pos/core/utils/user_role_permissions.dart';
 import 'package:mary_ai_pos/core/utils/helper/helper_widget.dart';
 import 'package:mary_ai_pos/core/widgets/app_scaffold.dart';
 import 'package:mary_ai_pos/di.dart';
@@ -816,7 +816,7 @@ class _MenuManageScreenState extends State<MenuManageScreen> {
   @override
   Widget build(BuildContext context) {
     final role = context.select((UserBloc b) => b.state.userMOdel?.role);
-    final allowed = role == UserRole.admin || role == UserRole.manager;
+    final allowed = role.canManageMenu;
     final colors = context.colors;
     final canPop = Navigator.canPop(context);
     return AppScaffold(
@@ -862,7 +862,7 @@ class _MenuManageScreenState extends State<MenuManageScreen> {
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Text(
-                            'Доступ только для администратора и менеджера',
+                            'Доступ только для администратора, менеджера и суперадмина',
                             style: TextStyle(
                               fontSize: 14,
                               color: colors.textDefault,

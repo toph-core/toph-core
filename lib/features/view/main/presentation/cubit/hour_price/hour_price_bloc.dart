@@ -1,9 +1,7 @@
 import 'package:bloc/bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:mary_ai_pos/core/api/api.dart';
-import 'package:mary_ai_pos/core/components/flush_bars.dart';
 import 'package:mary_ai_pos/core/error/failure.dart';
-import 'package:mary_ai_pos/core/utils/helper/helper_widget.dart';
 import 'package:mary_ai_pos/features/view/main/domain/entities/hour_price_response_entity.dart';
 import 'package:mary_ai_pos/features/view/main/domain/usecase/get_hour_price_usecase.dart';
 
@@ -30,10 +28,7 @@ class HourPriceBloc extends Bloc<HourPriceEvent, HourPriceState> {
       emit(state.copyWith(status: Status.LOADING));
       final response = await _getHourPriceUsecase.call(state.orderId!);
       response.fold(
-        (l) => showErrorMessage(
-          navigatorKey.currentContext!,
-          l.getLocalizedMessage(navigatorKey.currentContext!),
-        ),
+        (l) => emit(state.copyWith(status: Status.ERROR)),
         (r) => emit(state.copyWith(status: Status.SUCCESS, price: r)),
       );
     }

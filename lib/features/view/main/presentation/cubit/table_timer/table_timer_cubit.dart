@@ -108,6 +108,7 @@ class TableTimerCubit extends Cubit<TableTimerState> {
     required String orderId,
     bool showLoading = false,
   }) async {
+    _activeOrderId = orderId;
     if (showLoading) {
       emit(state.copyWith(isLoading: true, errorMessage: null));
     }
@@ -139,13 +140,18 @@ class TableTimerCubit extends Cubit<TableTimerState> {
     } on DioException catch (e) {
       if (isClosed) return;
       if (e.response?.statusCode == 400 || e.response?.statusCode == 404) {
-        emit(state.copyWith(
-          isLoading: false,
-          shouldShow: false,
-          clearTimer: true,
-          clearDisplayActiveSec: true,
-        ));
-        _cancelTimers();
+        // Timer resource doesn't exist yet — auto-start for time-based table
+        if (_activeOrderId != null) {
+          await startTimer();
+        } else {
+          emit(state.copyWith(
+            isLoading: false,
+            shouldShow: false,
+            clearTimer: true,
+            clearDisplayActiveSec: true,
+          ));
+          _cancelTimers();
+        }
         return;
       }
       emit(state.copyWith(

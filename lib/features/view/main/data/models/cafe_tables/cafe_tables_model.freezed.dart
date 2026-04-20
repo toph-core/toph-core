@@ -33,6 +33,10 @@ mixin _$CafeTableModel {
   double get rotation => throw _privateConstructorUsedError;
   int get capacity => throw _privateConstructorUsedError;
   TableStatus get status => throw _privateConstructorUsedError;
+  @JsonKey(name: 'shape', unknownEnumValue: TableShape.rectangle)
+  TableShape get shape => throw _privateConstructorUsedError;
+  @JsonKey(name: 'table_type')
+  String? get tableType => throw _privateConstructorUsedError;
 
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
   @JsonKey(ignore: true)
@@ -56,7 +60,10 @@ abstract class $CafeTableModelCopyWith<$Res> {
       double height,
       double rotation,
       int capacity,
-      TableStatus status});
+      TableStatus status,
+      @JsonKey(name: 'shape', unknownEnumValue: TableShape.rectangle)
+      TableShape shape,
+      @JsonKey(name: 'table_type') String? tableType});
 }
 
 /// @nodoc
@@ -82,6 +89,8 @@ class _$CafeTableModelCopyWithImpl<$Res, $Val extends CafeTableModel>
     Object? rotation = null,
     Object? capacity = null,
     Object? status = null,
+    Object? shape = null,
+    Object? tableType = freezed,
   }) {
     return _then(_value.copyWith(
       id: null == id
@@ -124,6 +133,14 @@ class _$CafeTableModelCopyWithImpl<$Res, $Val extends CafeTableModel>
           ? _value.status
           : status // ignore: cast_nullable_to_non_nullable
               as TableStatus,
+      shape: null == shape
+          ? _value.shape
+          : shape // ignore: cast_nullable_to_non_nullable
+              as TableShape,
+      tableType: freezed == tableType
+          ? _value.tableType
+          : tableType // ignore: cast_nullable_to_non_nullable
+              as String?,
     ) as $Val);
   }
 }
@@ -146,7 +163,10 @@ abstract class _$$CafeTableModelImplCopyWith<$Res>
       double height,
       double rotation,
       int capacity,
-      TableStatus status});
+      TableStatus status,
+      @JsonKey(name: 'shape', unknownEnumValue: TableShape.rectangle)
+      TableShape shape,
+      @JsonKey(name: 'table_type') String? tableType});
 }
 
 /// @nodoc
@@ -170,6 +190,8 @@ class __$$CafeTableModelImplCopyWithImpl<$Res>
     Object? rotation = null,
     Object? capacity = null,
     Object? status = null,
+    Object? shape = null,
+    Object? tableType = freezed,
   }) {
     return _then(_$CafeTableModelImpl(
       id: null == id
@@ -212,6 +234,14 @@ class __$$CafeTableModelImplCopyWithImpl<$Res>
           ? _value.status
           : status // ignore: cast_nullable_to_non_nullable
               as TableStatus,
+      shape: null == shape
+          ? _value.shape
+          : shape // ignore: cast_nullable_to_non_nullable
+              as TableShape,
+      tableType: freezed == tableType
+          ? _value.tableType
+          : tableType // ignore: cast_nullable_to_non_nullable
+              as String?,
     ));
   }
 }
@@ -229,7 +259,10 @@ class _$CafeTableModelImpl implements _CafeTableModel {
       required this.height,
       required this.rotation,
       required this.capacity,
-      this.status = TableStatus.free});
+      this.status = TableStatus.free,
+      @JsonKey(name: 'shape', unknownEnumValue: TableShape.rectangle)
+      this.shape = TableShape.rectangle,
+      @JsonKey(name: 'table_type') this.tableType});
 
   factory _$CafeTableModelImpl.fromJson(Map<String, dynamic> json) =>
       _$$CafeTableModelImplFromJson(json);
@@ -258,10 +291,16 @@ class _$CafeTableModelImpl implements _CafeTableModel {
   @override
   @JsonKey()
   final TableStatus status;
+  @override
+  @JsonKey(name: 'shape', unknownEnumValue: TableShape.rectangle)
+  final TableShape shape;
+  @override
+  @JsonKey(name: 'table_type')
+  final String? tableType;
 
   @override
   String toString() {
-    return 'CafeTableModel(id: $id, hallId: $hallId, number: $number, posX: $posX, posY: $posY, width: $width, height: $height, rotation: $rotation, capacity: $capacity, status: $status)';
+    return 'CafeTableModel(id: $id, hallId: $hallId, number: $number, posX: $posX, posY: $posY, width: $width, height: $height, rotation: $rotation, capacity: $capacity, status: $status, shape: $shape, tableType: $tableType)';
   }
 
   @override
@@ -280,13 +319,16 @@ class _$CafeTableModelImpl implements _CafeTableModel {
                 other.rotation == rotation) &&
             (identical(other.capacity, capacity) ||
                 other.capacity == capacity) &&
-            (identical(other.status, status) || other.status == status));
+            (identical(other.status, status) || other.status == status) &&
+            (identical(other.shape, shape) || other.shape == shape) &&
+            (identical(other.tableType, tableType) ||
+                other.tableType == tableType));
   }
 
   @JsonKey(ignore: true)
   @override
   int get hashCode => Object.hash(runtimeType, id, hallId, number, posX, posY,
-      width, height, rotation, capacity, status);
+      width, height, rotation, capacity, status, shape, tableType);
 
   @JsonKey(ignore: true)
   @override
@@ -305,16 +347,20 @@ class _$CafeTableModelImpl implements _CafeTableModel {
 
 abstract class _CafeTableModel implements CafeTableModel {
   const factory _CafeTableModel(
-      {required final String id,
-      @JsonKey(name: 'hall_id') required final String hallId,
-      required final int number,
-      @JsonKey(name: 'pos_x') required final double posX,
-      @JsonKey(name: 'pos_y') required final double posY,
-      required final double width,
-      required final double height,
-      required final double rotation,
-      required final int capacity,
-      final TableStatus status}) = _$CafeTableModelImpl;
+          {required final String id,
+          @JsonKey(name: 'hall_id') required final String hallId,
+          required final int number,
+          @JsonKey(name: 'pos_x') required final double posX,
+          @JsonKey(name: 'pos_y') required final double posY,
+          required final double width,
+          required final double height,
+          required final double rotation,
+          required final int capacity,
+          final TableStatus status,
+          @JsonKey(name: 'shape', unknownEnumValue: TableShape.rectangle)
+          final TableShape shape,
+          @JsonKey(name: 'table_type') final String? tableType}) =
+      _$CafeTableModelImpl;
 
   factory _CafeTableModel.fromJson(Map<String, dynamic> json) =
       _$CafeTableModelImpl.fromJson;
@@ -342,6 +388,12 @@ abstract class _CafeTableModel implements CafeTableModel {
   int get capacity;
   @override
   TableStatus get status;
+  @override
+  @JsonKey(name: 'shape', unknownEnumValue: TableShape.rectangle)
+  TableShape get shape;
+  @override
+  @JsonKey(name: 'table_type')
+  String? get tableType;
   @override
   @JsonKey(ignore: true)
   _$$CafeTableModelImplCopyWith<_$CafeTableModelImpl> get copyWith =>

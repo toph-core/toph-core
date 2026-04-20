@@ -104,6 +104,41 @@ class AppTheme {
     ],
   );
 
+  static ThemeData darkTheme = ThemeData(
+    useMaterial3: true,
+    brightness: Brightness.dark,
+    fontFamily: 'Inter',
+    primaryColor: _darkColors.textBrand,
+    scaffoldBackgroundColor: _darkColors.bgSecondary,
+    colorScheme: ColorScheme(
+      brightness: Brightness.dark,
+      primary: _darkColors.textBrand,
+      onPrimary: _darkColors.textOnBrand,
+      secondary: _darkColors.bgSecondary,
+      onSecondary: _darkColors.textDefault,
+      error: _darkColors.systemError,
+      onError: _darkColors.textOnBrand,
+      background: _darkColors.bgDefault,
+      onBackground: _darkColors.textDefault,
+      surface: _darkColors.bgSecondary,
+      onSurface: _darkColors.textDefault,
+    ),
+    appBarTheme: AppBarTheme(
+      backgroundColor: _darkColors.bgDefault,
+      foregroundColor: _darkColors.textDefault,
+      elevation: 0,
+      centerTitle: true,
+      iconTheme: IconThemeData(color: _darkColors.iconDefault),
+      titleTextStyle: _darkTextStyles.headingMd,
+    ),
+    dividerTheme: DividerThemeData(color: _darkColors.border, thickness: 1),
+    extensions: <ThemeExtension<dynamic>>[
+      _darkColors,
+      _darkTextStyles,
+      _radius,
+    ],
+  );
+
   /// Radiuses
   static const _radius = ThemeRadius(
     buttonSm: BorderRadius.all(Radius.circular(9)),
@@ -294,6 +329,182 @@ class AppTheme {
       fontSize: 14,
       fontWeight: FontWeight.normal,
       color: _lightColors.textDefault,
+    ),
+  );
+
+  /// Dark colors — light palette'dan aynan o'xshash struktura, teskari ranglarda.
+  static const _darkColors = ThemeColors(
+    textBrand: Color(0xFFFB6633),
+    textDefault: Color(0xFFF5F5F5),
+    textButtonSecondary: Color(0xFFF5F5F5),
+    textSecondary: Color(0xFFB5B5B5),
+    textTertiary: Color(0xFF9A9A9A),
+    textOnBrand: Color(0xFFFFFFFF),
+    textOnBrandDark: Color(0xFF09131A),
+    emptyValueColor: Color(0xFF4A4A4A),
+
+    iconBrand: Color(0xFFFB6633),
+    iconDefault: Color(0xFFF5F5F5),
+    iconSecondary: Color(0xFFB5B5B5),
+    iconButtonSecondary: Color(0xFFF5F5F5),
+    iconTertiary: Color(0xFF9A9A9A),
+    iconOnBrand: Color(0xFFFFFFFF),
+    iconOnBrandDark: Color(0xFF09131A),
+
+    bgBrand: Color(0xFFFB6633),
+    bgDefault: Color(0xFF16181C),
+    bgSecondary: Color(0xFF1E2024),
+    bgTritary: Color(0xFF25272B),
+    bgDefaultTritary: Color(0xFF1A1C20),
+    bgSecondaryTritary: Color(0xFF16181C),
+    bgBottomSheet: Color(0x99000000),
+
+    borderBrand: Color(0xFFFB6633),
+    border: Color(0xFF2B2F36),
+
+    buttonBrand: Color(0xFFFB6633),
+    buttonBrandSecondary: Color(0xFF2B2F36),
+    buttonSecondary: Color(0xFF25272B),
+    buttonDisabledBg: Color(0xFF2B2F36),
+
+    systemAccent: Color(0xFFF5A524),
+    systemSuccess: Color(0xFF13AF1B),
+    systemError: Color(0xFFEB295B),
+
+    extraPurple: Color(0xFF9470DC),
+    extraCyan: Color(0xFF32AACF),
+    extraOrange: Color(0xFFCF8506),
+
+    informationColor: Color(0xFFDF8A1B),
+    responseTextColor: Color(0xFF13AF1B),
+    sidebarBg: Color(0xFF0F1014),
+    sidebarActive: Color(0xFF25272B),
+    sidebarIcon: Color(0xFF8A8A8A),
+    systemInfo: Color(0xFF3B82F6),
+  );
+
+  static final _darkTextStyles = ThemeTextStyle(
+    fontFamily: "Inter",
+    displayXl: TextStyle(
+      fontSize: 32,
+      fontWeight: FontWeight.bold,
+      height: 40 / 32,
+      color: _darkColors.textDefault,
+    ),
+    displayLg: TextStyle(
+      fontSize: 28,
+      fontWeight: FontWeight.bold,
+      height: 36 / 28,
+      color: _darkColors.textDefault,
+    ),
+    headingMd: TextStyle(
+      fontSize: 24,
+      fontWeight: FontWeight.w600,
+      height: 32 / 24,
+      color: _darkColors.textDefault,
+    ),
+    headingSm: TextStyle(
+      fontSize: 20,
+      fontWeight: FontWeight.w600,
+      height: 28 / 20,
+      color: _darkColors.textDefault,
+    ),
+    bodyLg: TextStyle(
+      fontSize: 18,
+      fontWeight: FontWeight.normal,
+      height: 26 / 18,
+      color: _darkColors.textSecondary,
+    ),
+    bodyMd: TextStyle(
+      fontSize: 16,
+      fontWeight: FontWeight.normal,
+      height: 24 / 16,
+      color: _darkColors.textTertiary,
+    ),
+    bodySm: TextStyle(
+      fontSize: 14,
+      fontWeight: FontWeight.normal,
+      height: 20 / 14,
+      color: _darkColors.textSecondary,
+    ),
+    caption: TextStyle(
+      fontSize: 12,
+      fontWeight: FontWeight.normal,
+      height: 16 / 12,
+      color: _darkColors.textTertiary,
+    ),
+    badgeText: TextStyle(
+      fontSize: 12,
+      fontWeight: FontWeight.normal,
+      height: 16 / 12,
+      color: _darkColors.textOnBrand,
+    ),
+    buttonText: TextStyle(
+      fontSize: 16,
+      fontWeight: FontWeight.w600,
+      height: 20 / 16,
+      color: _darkColors.textOnBrand,
+    ),
+    linkText: TextStyle(
+      fontSize: 14,
+      fontWeight: FontWeight.w600,
+      height: 20 / 14,
+      color: _darkColors.textBrand,
+    ),
+    bold14: TextStyle(
+      fontSize: 14,
+      fontWeight: FontWeight.bold,
+      color: _darkColors.textDefault,
+    ),
+    bold16: TextStyle(
+      fontSize: 16,
+      fontWeight: FontWeight.bold,
+      color: _darkColors.textDefault,
+    ),
+    bold18: TextStyle(
+      fontSize: 18,
+      fontWeight: FontWeight.bold,
+      color: _darkColors.textDefault,
+    ),
+    bold20: TextStyle(
+      fontSize: 20,
+      fontWeight: FontWeight.bold,
+      color: _darkColors.textDefault,
+    ),
+    bold24: TextStyle(
+      fontSize: 24,
+      fontWeight: FontWeight.bold,
+      color: _darkColors.textDefault,
+    ),
+    semibold14: TextStyle(
+      fontSize: 14,
+      fontWeight: FontWeight.w600,
+      color: _darkColors.textDefault,
+    ),
+    semibold16: TextStyle(
+      fontSize: 16,
+      fontWeight: FontWeight.w600,
+      color: _darkColors.textDefault,
+    ),
+    semibold18: TextStyle(
+      fontSize: 18,
+      fontWeight: FontWeight.w600,
+      color: _darkColors.textDefault,
+    ),
+    semibold20: TextStyle(
+      fontSize: 20,
+      fontWeight: FontWeight.w600,
+      color: _darkColors.textDefault,
+    ),
+    semibold24: TextStyle(
+      fontSize: 24,
+      fontWeight: FontWeight.w600,
+      color: _darkColors.textDefault,
+    ),
+    title14: TextStyle(
+      fontSize: 14,
+      fontWeight: FontWeight.normal,
+      color: _darkColors.textDefault,
     ),
   );
 }

@@ -25,7 +25,8 @@ class PaymentRightSideBar extends StatelessWidget with PaymentScreenMixin {
       child: BlocBuilder<PaymentBloc, PaymentState>(
         builder: (context, state) {
           final int discountAmt = int.tryParse(state.discountAmount) ?? 0;
-          int finalTotal = detail.grandTotal.toInt();
+          final int offlineExtra = PaymentBloc.pendingOfflineExtra(state.tableId);
+          int finalTotal = PaymentBloc.effectiveTotal(detail) + offlineExtra;
           if (state.discountType == DiscountType.money) {
             finalTotal -= discountAmt;
           } else {
@@ -120,20 +121,6 @@ class PaymentRightSideBar extends StatelessWidget with PaymentScreenMixin {
                             ),
                           ),
                         ),
-                        _PayMethod(
-                          label: 'QR',
-                          icon: SvgPicture.asset(
-                            Assets.icons.icQr.path,
-                            width: 24,
-                            height: 24,
-                          ),
-                          isActive: state.paymentType == PaymentType.qr,
-                          onTap: () => context.read<PaymentBloc>().add(
-                            const PaymentEvent.updatePaymentType(
-                              paymentType: PaymentType.qr,
-                            ),
-                          ),
-                        ),
                       ],
                     ),
                   ],
@@ -152,25 +139,59 @@ class PaymentRightSideBar extends StatelessWidget with PaymentScreenMixin {
                       border: Border.all(color: const Color(0xFFEBEFF2)),
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      spacing: 4,
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        Text(
-                          'Berilayotgan summa',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: context.colors.textSecondary,
-                            fontFamily: 'Inter',
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            spacing: 4,
+                            children: [
+                              Text(
+                                'Berilayotgan summa',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: context.colors.textSecondary,
+                                  fontFamily: 'Inter',
+                                ),
+                              ),
+                              Text(
+                                entered > 0 ? entered.formatN : '0',
+                                style: const TextStyle(
+                                  fontSize: 28,
+                                  fontWeight: FontWeight.w700,
+                                  color: Color(0xFF19160B),
+                                  fontFamily: 'Inter',
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                        Text(
-                          entered > 0 ? entered.formatN : '0',
-                          style: const TextStyle(
-                            fontSize: 28,
-                            fontWeight: FontWeight.w700,
-                            color: Color(0xFF19160B),
-                            fontFamily: 'Inter',
+                        GestureDetector(
+                          onTap: () => context.read<PaymentBloc>().add(
+                            PaymentEvent.updateEnterSum(
+                              symbol: 'set:$finalTotal',
+                            ),
+                          ),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 8,
+                            ),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFFFF3EE),
+                              border: Border.all(color: const Color(0xFFFB6633)),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Text(
+                              finalTotal.formatN,
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w700,
+                                color: Color(0xFFFB6633),
+                                fontFamily: 'Inter',
+                              ),
+                            ),
                           ),
                         ),
                       ],
@@ -237,16 +258,14 @@ class PaymentRightSideBar extends StatelessWidget with PaymentScreenMixin {
                 ),
               ],
 
-              // Card / QR confirmation message
-              if (state.paymentType != PaymentType.cash)
+              // Card confirmation message
+              if (state.paymentType == PaymentType.card)
                 Expanded(
                   child: Center(
                     child: Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 24),
                       child: Text(
-                        state.paymentType == PaymentType.card
-                            ? "Mijoz to'lovni karta orqali amalga oshirganini tasdiqlang"
-                            : "Mijoz to'lovni QR kod orqali amalga oshirganini tasdiqlang",
+                        "Mijoz to'lovni karta orqali amalga oshirganini tasdiqlang",
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontSize: 14,
@@ -326,18 +345,21 @@ class PaymentRightSideBar extends StatelessWidget with PaymentScreenMixin {
                       ),
                     ),
                     Expanded(
-                      child: GestureDetector(
-                        onTap: () {
-                          if (state.status != Status.LOADING) {
-                            context.read<PaymentBloc>().add(
-                              const PaymentEvent.payment(),
-                            );
-                          }
-                        },
+                      child: Builder(builder: (context) {
+                        final enteredAmt = int.tryParse(state.enterSum) ?? 0;
+                        final cashOk = state.paymentType != PaymentType.cash ||
+                            (enteredAmt > 0 && enteredAmt >= finalTotal);
+                        final canConfirm = state.status != Status.LOADING && cashOk;
+                        return GestureDetector(
+                        onTap: canConfirm
+                            ? () => context.read<PaymentBloc>().add(const PaymentEvent.payment())
+                            : null,
                         child: Container(
                           height: 52,
                           decoration: BoxDecoration(
-                            color: const Color(0xFFFB6633),
+                            color: canConfirm
+                                ? const Color(0xFFFB6633)
+                                : const Color(0xFFFB6633).withOpacity(0.4),
                             borderRadius: BorderRadius.circular(14),
                           ),
                           child: Center(
@@ -361,7 +383,8 @@ class PaymentRightSideBar extends StatelessWidget with PaymentScreenMixin {
                                   ),
                           ),
                         ),
-                      ),
+                      );
+                      }),
                     ),
                   ],
                 ),

@@ -6,11 +6,17 @@ class ListAPI {
   static const String refresh = "api/v1/auth/refresh";
   static const String user = "api/v1/user/me";
   static const String users = "api/v1/users";
+  static String userById(String id) => "api/v1/users/$id";
+  static const String authRegister = "api/v1/auth/register";
+  static const String passwordUpdate = "api/v1/user/password-update";
 
   //! general
+  static const String cafeTables = "api/v1/cafe-tables";
   static const String cafeTablesByHallId = "api/v1/cafe-tables/hall";
+  static String cafeTableById(String id) => "api/v1/cafe-tables/$id";
   static const String halls = "api/v1/halls";
   static const String categories = "api/v1/categories";
+  static String categoryById(String id) => "api/v1/categories/$id";
   static String categoriesGoods(String categoryId) =>
       "api/v1/categories/$categoryId/goods";
   static const String goods = "/api/v1/goods";
@@ -23,6 +29,8 @@ class ListAPI {
   static const String createTranslation = "/api/v1/translations";
   static String translationById(String id) => "/api/v1/translations/$id";
   static const String goodsSearch = "/api/v1/goods/search";
+  static String goodsPaginated({int limit = 100, int offset = 0}) =>
+      "/api/v1/goods?limit=$limit&offset=$offset";
 
   //! media
   static const String mediaAudio = "api/v1/media/audio/download";

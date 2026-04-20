@@ -1,7 +1,10 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mary_ai_pos/core/api/api.dart';
+import 'package:mary_ai_pos/core/auth/models/auth_token_pair/auth_token_pair.dart';
 import 'package:mary_ai_pos/core/auth/models/brand_id_token_pair/brand_id_token_pair.dart';
+import 'package:mary_ai_pos/core/auth/storage/token_storage_impl.dart';
 import 'package:mary_ai_pos/core/error/failure.dart';
+import 'package:mary_ai_pos/core/services/auth/offline_auth_cache.dart';
 import 'package:mary_ai_pos/core/usecase/usecase.dart';
 import 'package:mary_ai_pos/features/view/auth/domain/usecases/check_user_auth/check_user_auth.dart';
 import 'package:mary_ai_pos/features/view/auth/domain/usecases/check_user_auth/check_user_data_usecase.dart';
@@ -17,12 +20,16 @@ class AuthCubit extends Cubit<AuthState> {
     this._loginWithBrandUsecase,
     this._logoutUsecase,
     this._checkUserDataUsecase,
+    this._offlineAuthCache,
+    this._tokenStorage,
   ) : super(const AuthState());
   final CheckUserAuthUseCase _checkUserAuthUseCase;
   final LogoutFromAppUseCase _logoutUseCase;
   final LoginWithBrandUsecase _loginWithBrandUsecase;
   final LogoutUsecase _logoutUsecase;
   final CheckUserDataUsecase _checkUserDataUsecase;
+  final OfflineAuthCache _offlineAuthCache;
+  final AppTokenStorage _tokenStorage;
 
   Future<bool> chechUserData() async {
     return await _checkUserDataUsecase
@@ -64,7 +71,25 @@ class AuthCubit extends Cubit<AuthState> {
     var result = await _loginWithBrandUsecase.call(req);
 
     result.fold(
-      (failure) {
+      (failure) async {
+        if (failure is ConnectionFailure) {
+          final cached = _offlineAuthCache.validateAndGetUser(
+            req.brandId,
+            req.password,
+          );
+          if (cached != null) {
+            await _tokenStorage.writeAuthToken(
+              AuthTokenPair(
+                accessToken: cached.accessToken,
+                refreshToken: cached.refreshToken,
+              ),
+            );
+            await _tokenStorage.writeBrandIdToken(req);
+            emit(state.copyWith(status: Status.SUCCESS));
+            onSuccess();
+            return;
+          }
+        }
         emit(state.copyWith(failure: failure, status: Status.ERROR));
       },
       (response) {

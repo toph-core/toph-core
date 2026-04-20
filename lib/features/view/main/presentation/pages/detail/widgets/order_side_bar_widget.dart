@@ -16,18 +16,20 @@ import 'package:mary_ai_pos/features/view/main/presentation/cubit/main/main_cubi
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/orders/orders_bloc.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/detail/detail_screen_mixin.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/detail/widgets/clear_dialog.dart';
-import 'package:mary_ai_pos/features/view/main/presentation/pages/detail/widgets/send_to_kitchen_dialog.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/detail/widgets/show_food_additional.dart';
+import 'package:mary_ai_pos/features/view/main/presentation/cubit/table_timer/table_timer_cubit.dart';
 import 'package:mary_ai_pos/generated/l10n.dart';
 
-class OrderSidebar extends StatelessWidget with DetailScreenMixin {
+const _indigo = Color(0xFF6366F1);
+
+class OrderSidebar extends StatefulWidget {
   final String? tableId;
   final int guestCount;
   final TableStatus tableStatus;
   final String? orderId;
   final CafeTableModel? cafeTable;
 
-  OrderSidebar({
+  const OrderSidebar({
     super.key,
     this.tableId,
     required this.guestCount,
@@ -37,11 +39,34 @@ class OrderSidebar extends StatelessWidget with DetailScreenMixin {
   });
 
   @override
+  State<OrderSidebar> createState() => _OrderSidebarState();
+}
+
+class _OrderSidebarState extends State<OrderSidebar> with DetailScreenMixin {
+  bool _includeService = true;
+
+  String? get tableId => widget.tableId;
+  int get guestCount => widget.guestCount;
+  TableStatus get tableStatus => widget.tableStatus;
+  String? get orderId => widget.orderId;
+  CafeTableModel? get cafeTable => widget.cafeTable;
+
+  @override
   Widget build(BuildContext context) {
     final colors = context.colors;
-    return BlocBuilder<DetailBloc, DetailState>(
-      buildWhen: (p, c) => p.selectedGoods != c.selectedGoods,
-      builder: (context, state) {
+    return BlocListener<DetailBloc, DetailState>(
+      listenWhen: (p, c) =>
+          p.activeOrderId != c.activeOrderId && c.activeOrderId != null,
+      listener: (ctx, s) {
+        if (cafeTable?.tableType == 'time_based') {
+          ctx.read<TableTimerCubit>().fetchTimer(orderId: s.activeOrderId!);
+        }
+      },
+      child: BlocBuilder<DetailBloc, DetailState>(
+        buildWhen: (p, c) =>
+            p.selectedGoods != c.selectedGoods ||
+            p.existingGoods != c.existingGoods,
+        builder: (context, state) {
         return Container(
           decoration: BoxDecoration(
             color: Colors.white,
@@ -58,8 +83,8 @@ class OrderSidebar extends StatelessWidget with DetailScreenMixin {
                 ),
                 child: Row(
                   children: [
-                    const Text(
-                      'Buyurtmalar',
+                    Text(
+                      S.current.strOrders,
                       style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w700,
@@ -102,8 +127,8 @@ class OrderSidebar extends StatelessWidget with DetailScreenMixin {
                             ),
                           );
                         },
-                        child: const Text(
-                          'Tozalash',
+                        child: Text(
+                          S.current.strClear,
                           style: TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.w500,
@@ -118,7 +143,8 @@ class OrderSidebar extends StatelessWidget with DetailScreenMixin {
 
               // Items list
               Expanded(
-                child: state.selectedGoods.isEmpty
+                child: (state.existingGoods.isEmpty &&
+                        state.selectedGoods.isEmpty)
                     ? Center(
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
@@ -141,13 +167,48 @@ class OrderSidebar extends StatelessWidget with DetailScreenMixin {
                           ],
                         ),
                       )
-                    : ListView.separated(
+                    : ListView(
                         padding: const EdgeInsets.all(12),
-                        itemCount: state.selectedGoods.length,
-                        separatorBuilder: (context, index) =>
-                            const SizedBox(height: 8),
-                        itemBuilder: (_, i) =>
-                            _OrderItem(item: state.selectedGoods[i]),
+                        children: [
+                          if (state.existingGoods.isNotEmpty) ...[
+                            _SectionLabel(
+                              label: S.current.strExistingOrders,
+                              color: colors.textSecondary,
+                            ),
+                            const SizedBox(height: 6),
+                            ...state.existingGoods.map(
+                              (item) => Padding(
+                                padding: const EdgeInsets.only(bottom: 8),
+                                child: _ReadonlyOrderItem(
+                                  item: item,
+                                  tableId: cafeTable?.id,
+                                ),
+                              ),
+                            ),
+                            if (state.selectedGoods.isNotEmpty)
+                              const SizedBox(height: 4),
+                          ],
+                          if (state.selectedGoods.isNotEmpty) ...[
+                            if (state.existingGoods.isNotEmpty)
+                              _SectionLabel(
+                                label: S.current.strExtras,
+                                color: Color(0xFFFB6633),
+                              ),
+                            if (state.existingGoods.isNotEmpty)
+                              const SizedBox(height: 6),
+                            ...state.selectedGoods.asMap().entries.map(
+                              (e) => Padding(
+                                padding: EdgeInsets.only(
+                                  bottom:
+                                      e.key < state.selectedGoods.length - 1
+                                          ? 8
+                                          : 0,
+                                ),
+                                child: _OrderItem(item: e.value),
+                              ),
+                            ),
+                          ],
+                        ],
                       ),
               ),
 
@@ -168,18 +229,81 @@ class OrderSidebar extends StatelessWidget with DetailScreenMixin {
                 child: Column(
                   spacing: 8,
                   children: [
-                    _SummaryRow(
-                      label: 'Jami:',
-                      value: calculateTotalPrice(state.selectedGoods).formatN,
-                      isTotal: false,
-                    ),
-                    Divider(color: colors.border, height: 1),
-                    _SummaryRow(
-                      label: 'To\'lov:',
-                      value: calculateTotalPrice(state.selectedGoods).formatN,
-                      isTotal: true,
+                    BlocBuilder<TableTimerCubit, TableTimerState>(
+                      builder: (ctx, timerState) {
+                        final existingTotal = calculateTotalPrice(
+                            state.existingGoods
+                                .where((g) => g.commet != 'cancelled')
+                                .toList());
+                        final foodTotal = existingTotal +
+                            calculateTotalPrice(state.selectedGoods);
+                        final rawAmt =
+                            timerState.timer?.currentAmount ?? '';
+                        final timerAmt = int.tryParse(
+                              rawAmt.replaceAll(RegExp(r'[^0-9]'), ''),
+                            ) ??
+                            0;
+                        final detail = context.read<DetailBloc>().lastDetail;
+                        final servicePercent = detail?.servicePercent ?? 0;
+                        final serviceAmt = _includeService && servicePercent > 0
+                            ? (foodTotal * servicePercent / 100).round()
+                            : 0;
+                        final total = foodTotal + timerAmt + serviceAmt;
+                        return Column(
+                          spacing: 8,
+                          children: [
+                            _SummaryRow(
+                              label: S.current.strTotalLabel,
+                              value: foodTotal.formatN,
+                              isTotal: false,
+                            ),
+                            if (servicePercent > 0)
+                              _ServiceRow(
+                                percent: servicePercent,
+                                amount: serviceAmt,
+                                included: _includeService,
+                                onToggle: (v) => setState(() => _includeService = v),
+                              ),
+                            if (timerState.shouldShow)
+                              _TimerBadgeRow(timerState: timerState),
+                            Divider(color: colors.border, height: 1),
+                            _SummaryRow(
+                              label: S.current.strPaymentLabel,
+                              value: total.formatN,
+                              isTotal: true,
+                            ),
+                          ],
+                        );
+                      },
                     ),
                     const SizedBox(height: 4),
+                    // Takeaway: create order → payment directly
+                    if (tableId == null)
+                      BlocProvider(
+                        create: (_) => inject<CreateOrderBloc>()
+                          ..add(CreateOrderEvent.started(
+                            tableId: null,
+                            guestCount: 1,
+                            tableStatus: TableStatus.free,
+                          )),
+                        child: BlocBuilder<CreateOrderBloc, CreateOrderState>(
+                          builder: (context, createState) {
+                            return _ActionButton(
+                              label: S.current.strPayment,
+                              bgColor: const Color(0xFFFB6633),
+                              textColor: Colors.white,
+                              isLoading: createState.status == Status.LOADING,
+                              onTap: state.selectedGoods.isNotEmpty
+                                  ? () => context
+                                      .read<CreateOrderBloc>()
+                                      .add(CreateOrderEvent.createOrder(
+                                        orders: state.selectedGoods,
+                                      ))
+                                  : null,
+                            );
+                          },
+                        ),
+                      ),
                     // Save button (for free tables)
                     if (tableId != null && tableStatus == TableStatus.free)
                       BlocProvider(
@@ -193,11 +317,6 @@ class OrderSidebar extends StatelessWidget with DetailScreenMixin {
                           listener: (context, createState) {
                             if (createState.status != Status.LOADING &&
                                 createState.success) {
-                              // Add order to SavedOrdersBloc
-                              print('DEBUG: Saving order - selectedGoods count: ${state.selectedGoods.length}');
-                              print('DEBUG: cafeTable: $cafeTable');
-                              print('DEBUG: createState.tableId: ${createState.tableId}');
-
                               if (cafeTable != null) {
                                 context.read<SavedOrdersBloc>().add(
                                   SavedOrdersEvent.addNewOrder(
@@ -212,7 +331,6 @@ class OrderSidebar extends StatelessWidget with DetailScreenMixin {
                                     ),
                                   ),
                                 );
-                                print('DEBUG: Order added to SavedOrdersBloc');
                               }
                               context.read<MainCubit>().updateTableStatus(
                                 createState.tableId,
@@ -227,34 +345,24 @@ class OrderSidebar extends StatelessWidget with DetailScreenMixin {
                           },
                           builder: (context, createState) {
                             return _ActionButton(
-                              label: 'Saqlash',
+                              label: S.current.strSave,
                               bgColor: const Color(0xFFFB6633),
                               textColor: Colors.white,
                               isLoading: createState.status == Status.LOADING,
                               onTap: state.selectedGoods.isNotEmpty
-                                  ? () async {
-                                      final bloc = context.read<CreateOrderBloc>();
-                                      final goods = state.selectedGoods;
-                                      final result = await showDialog<bool>(
-                                        context: context,
-                                        barrierDismissible: false,
-                                        builder: (_) =>
-                                            const SendToKitchenDialog(),
+                                  ? () {
+                                      context.read<CreateOrderBloc>().add(
+                                        CreateOrderEvent.createOrder(
+                                          orders: state.selectedGoods,
+                                        ),
                                       );
-                                      if (result == true) {
-                                        bloc.add(
-                                          CreateOrderEvent.createOrder(
-                                            orders: goods,
-                                          ),
-                                        );
-                                      }
                                     }
                                   : null,
                             );
                           },
                         ),
                       ),
-                    // Payment button (for occupied tables)
+                    // Busy table: add items + payment buttons
                     if (tableId != null && tableStatus != TableStatus.free)
                       BlocProvider(
                         create: (_) => inject<CreateOrderBloc>()
@@ -263,20 +371,67 @@ class OrderSidebar extends StatelessWidget with DetailScreenMixin {
                             guestCount: guestCount,
                             tableStatus: tableStatus,
                           )),
-                        child: BlocBuilder<CreateOrderBloc, CreateOrderState>(
+                        child: BlocConsumer<CreateOrderBloc, CreateOrderState>(
+                          listener: (context, createState) {
+                            if (createState.status != Status.LOADING &&
+                                createState.success) {
+                              showSuccessMessage(
+                                context,
+                                S.current.strOrderSuccessCreated,
+                              );
+                              context
+                                  .read<DetailBloc>()
+                                  .add(DetailEvent.fetchBillOrders(
+                                    billId: cafeTable!.id,
+                                  ));
+                              context
+                                  .read<DetailBloc>()
+                                  .add(const DetailEvent.clearGoods());
+                            }
+                          },
                           builder: (context, createState) {
-                            return _ActionButton(
-                              label: 'To\'lov',
-                              bgColor: const Color(0xFFFB6633),
-                              textColor: Colors.white,
-                              isLoading: createState.status == Status.LOADING,
-                              onTap: () {
-                                Navigator.pushNamed(
-                                  context,
-                                  AppRoutes.paymentScreen,
-                                  arguments: {'table_id': tableId},
-                                );
-                              },
+                            return Column(
+                              spacing: 8,
+                              children: [
+                                if (state.selectedGoods.isNotEmpty)
+                                  _ActionButton(
+                                    label: S.current.strAddItems,
+                                    bgColor: const Color(0xFF13AF1B),
+                                    textColor: Colors.white,
+                                    isLoading:
+                                        createState.status == Status.LOADING,
+                                    onTap: () {
+                                      context.read<CreateOrderBloc>().add(
+                                        CreateOrderEvent.createOrder(
+                                          orders: state.selectedGoods,
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                _ActionButton(
+                                  label: S.current.strPayment,
+                                  bgColor: const Color(0xFFFB6633),
+                                  textColor: Colors.white,
+                                  isLoading: false,
+                                  onTap: () {
+                                    final timerCubit = context.read<TableTimerCubit>();
+                                    final currentAmt = timerCubit.state.timer?.currentAmount;
+                                    if (cafeTable?.tableType == 'time_based' &&
+                                        timerCubit.state.timer?.isRunning == true) {
+                                      timerCubit.pauseTimer();
+                                    }
+                                    Navigator.pushNamed(
+                                      context,
+                                      AppRoutes.paymentScreen,
+                                      arguments: {
+                                        'table_id': tableId,
+                                        'table_type': cafeTable?.tableType ?? 'simple',
+                                        'hour_amount': currentAmt,
+                                      },
+                                    );
+                                  },
+                                ),
+                              ],
                             );
                           },
                         ),
@@ -287,7 +442,8 @@ class OrderSidebar extends StatelessWidget with DetailScreenMixin {
             ],
           ),
         );
-      },
+        },
+      ),
     );
   }
 }
@@ -595,6 +751,378 @@ class _ActionButton extends StatelessWidget {
                 ),
         ),
       ),
+    );
+  }
+}
+
+class _SectionLabel extends StatelessWidget {
+  final String label;
+  final Color color;
+  const _SectionLabel({required this.label, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      label,
+      style: TextStyle(
+        fontSize: 11,
+        fontWeight: FontWeight.w600,
+        color: color,
+        fontFamily: 'Inter',
+        letterSpacing: 0.3,
+      ),
+    );
+  }
+}
+
+class _ReadonlyOrderItem extends StatelessWidget {
+  final OrderItem item;
+  final String? tableId;
+  const _ReadonlyOrderItem({required this.item, this.tableId});
+
+  @override
+  Widget build(BuildContext context) {
+    final isCancelled = item.commet == 'cancelled';
+    final isOfflinePending = item.commet == 'pending_offline';
+    final textColor = isCancelled ? const Color(0xFFBBBBBB) : const Color(0xFF19160B);
+    Color bgColor = const Color(0xFFF5F4F2);
+    if (isCancelled) bgColor = const Color(0xFFFFF0F0);
+    if (isOfflinePending) bgColor = const Color(0xFFFFF8F0);
+    return Opacity(
+      opacity: isCancelled ? 0.6 : 1.0,
+      child: Container(
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(10),
+        border: isOfflinePending
+            ? Border.all(color: const Color(0xFFFB6633).withOpacity(0.4))
+            : null,
+      ),
+      child: Row(
+        spacing: 10,
+        children: [
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Center(
+              child: Text(
+                item.goods.name.isNotEmpty
+                    ? item.goods.name[0].toUpperCase()
+                    : '?',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  color: isCancelled ? const Color(0xFFBBBBBB) : const Color(0xFF888888),
+                  fontFamily: 'Inter',
+                ),
+              ),
+            ),
+          ),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  item.goods.name,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                    color: textColor,
+                    fontFamily: 'Inter',
+                    decoration: isCancelled ? TextDecoration.lineThrough : null,
+                    decorationColor: const Color(0xFFBBBBBB),
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 2),
+                if (isCancelled)
+                  const Text(
+                    'Bekor qilindi',
+                    style: TextStyle(
+                      fontSize: 10,
+                      color: Color(0xFFEB295B),
+                      fontFamily: 'Inter',
+                    ),
+                  )
+                else if (isOfflinePending)
+                  const Text(
+                    '⏳ Yuborilmoqda...',
+                    style: TextStyle(
+                      fontSize: 10,
+                      color: Color(0xFFFB6633),
+                      fontFamily: 'Inter',
+                    ),
+                  )
+                else
+                  Text(
+                    (double.tryParse(item.goods.price) ?? 0).formatN,
+                    style: const TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w500,
+                      color: Color(0xFF888888),
+                      fontFamily: 'Inter',
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          Text(
+            'x${item.quantity}',
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: isCancelled ? const Color(0xFFBBBBBB) : const Color(0xFF888888),
+              fontFamily: 'Inter',
+              decoration: isCancelled ? TextDecoration.lineThrough : null,
+              decorationColor: const Color(0xFFBBBBBB),
+            ),
+          ),
+          Text(
+            ((double.tryParse(item.goods.price) ?? 0) * item.quantity).formatN,
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+              color: textColor,
+              fontFamily: 'Inter',
+              decoration: isCancelled ? TextDecoration.lineThrough : null,
+              decorationColor: const Color(0xFFBBBBBB),
+            ),
+          ),
+          if (tableId != null && !isOfflinePending && !isCancelled)
+            GestureDetector(
+              onTap: () async {
+                final bloc = context.read<DetailBloc>();
+                final confirmed = await showDialog<bool>(
+                  context: context,
+                  builder: (_) => AlertDialog(
+                    title: const Text(
+                      "O'chirishni tasdiqlang",
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                    ),
+                    content: Text(
+                      "'${item.goods.name}' ni o'chirmoqchimisiz?",
+                      style: const TextStyle(fontSize: 14),
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(context, false),
+                        child: const Text("Yo'q"),
+                      ),
+                      TextButton(
+                        onPressed: () => Navigator.pop(context, true),
+                        child: const Text(
+                          'Ha',
+                          style: TextStyle(color: Color(0xFFEB295B)),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+                if (confirmed == true) {
+                  bloc.add(DetailEvent.cancelOrderItem(
+                    itemId: item.uniqueId,
+                    tableId: tableId!,
+                  ));
+                }
+              },
+              child: Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFF0F3),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: const Icon(
+                  Icons.close,
+                  size: 14,
+                  color: Color(0xFFEB295B),
+                ),
+              ),
+            ),
+        ],
+      ),
+    ),
+    );
+  }
+}
+
+class _TimerBadgeRow extends StatelessWidget {
+  final TableTimerState timerState;
+  const _TimerBadgeRow({required this.timerState});
+
+  @override
+  Widget build(BuildContext context) {
+    final t = timerState.timer!;
+    final displaySec = timerState.displayActiveSec ?? t.totalActiveSec;
+    final isRunning = t.stateNormalized == 'running';
+    final isPaused = t.stateNormalized == 'paused';
+    final rawAmt = t.currentAmount ?? '';
+    final amountStr = rawAmt.isNotEmpty
+        ? '${_fmtAmount(rawAmt)} so\'m'
+        : '';
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            _indigo.withOpacity(0.15),
+            _indigo.withOpacity(0.08),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: _indigo.withOpacity(0.30)),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            isRunning ? Icons.play_arrow_rounded : Icons.pause_rounded,
+            size: 13,
+            color: _indigo,
+          ),
+          const SizedBox(width: 5),
+          Text(
+            _fmtTime(displaySec),
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w800,
+              color: _indigo,
+              fontFamily: 'Inter',
+              letterSpacing: 0.5,
+            ),
+          ),
+          if (amountStr.isNotEmpty) ...[
+            const SizedBox(width: 6),
+            Expanded(
+              child: Text(
+                amountStr,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: _indigo.withOpacity(0.80),
+                  fontFamily: 'Inter',
+                ),
+              ),
+            ),
+          ] else
+            const Spacer(),
+          if (isRunning || isPaused) ...[
+            const SizedBox(width: 6),
+            GestureDetector(
+              onTap: timerState.isMutating
+                  ? null
+                  : () => isRunning
+                      ? context.read<TableTimerCubit>().pauseTimer()
+                      : context.read<TableTimerCubit>().resumeTimer(),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 150),
+                width: 30,
+                height: 30,
+                decoration: BoxDecoration(
+                  color: isRunning
+                      ? const Color(0xFFFB6633).withOpacity(0.12)
+                      : const Color(0xFF13AF1B).withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Center(
+                  child: timerState.isMutating
+                      ? SizedBox(
+                          width: 14,
+                          height: 14,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: isRunning
+                                ? const Color(0xFFFB6633)
+                                : const Color(0xFF13AF1B),
+                          ),
+                        )
+                      : Icon(
+                          isRunning
+                              ? Icons.pause_rounded
+                              : Icons.play_arrow_rounded,
+                          size: 18,
+                          color: isRunning
+                              ? const Color(0xFFFB6633)
+                              : const Color(0xFF13AF1B),
+                        ),
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  static String _fmtTime(int sec) {
+    final h = sec ~/ 3600;
+    final m = (sec % 3600) ~/ 60;
+    final s = sec % 60;
+    final mm = m.toString().padLeft(2, '0');
+    final ss = s.toString().padLeft(2, '0');
+    if (h > 0) return '${h.toString().padLeft(2, '0')}:$mm:$ss';
+    return '$mm:$ss';
+  }
+
+  static String _fmtAmount(String raw) {
+    final n = int.tryParse(raw.replaceAll(RegExp(r'[^0-9]'), ''));
+    if (n == null) return raw;
+    return n
+        .toString()
+        .replaceAllMapped(RegExp(r'(\d)(?=(\d{3})+(?!\d))'), (m) => '${m[1]} ');
+  }
+}
+
+class _ServiceRow extends StatelessWidget {
+  final double percent;
+  final int amount;
+  final bool included;
+  final ValueChanged<bool> onToggle;
+
+  const _ServiceRow({
+    required this.percent,
+    required this.amount,
+    required this.included,
+    required this.onToggle,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Checkbox(
+          value: included,
+          onChanged: (v) => onToggle(v ?? false),
+          activeColor: const Color(0xFFFB6633),
+          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          visualDensity: VisualDensity.compact,
+        ),
+        Expanded(
+          child: Text(
+            'Xizmat (${percent.toInt()}%)',
+            style: const TextStyle(
+              fontSize: 13,
+              color: Color(0xFF888888),
+              fontFamily: 'Inter',
+            ),
+          ),
+        ),
+        Text(
+          included ? amount.formatN : '0',
+          style: const TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w500,
+            color: Color(0xFF19160B),
+            fontFamily: 'Inter',
+          ),
+        ),
+      ],
     );
   }
 }

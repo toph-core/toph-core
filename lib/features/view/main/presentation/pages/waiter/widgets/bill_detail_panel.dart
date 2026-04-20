@@ -1599,18 +1599,6 @@ class _CloseOrderViewState extends State<_CloseOrderView> {
                           ),
                         ),
                       ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: _PaymentTypeChip(
-                          label: 'QR',
-                          icon: Icons.qr_code_2_outlined,
-                          selected: _paymentType == PaymentType.qr,
-                          colors: colors,
-                          onTap: () => setState(
-                            () => _paymentType = PaymentType.qr,
-                          ),
-                        ),
-                      ),
                     ],
                   ),
                 ],

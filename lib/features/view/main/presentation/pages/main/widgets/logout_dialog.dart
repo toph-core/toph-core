@@ -5,6 +5,7 @@ import 'package:mary_ai_pos/core/extension/for_context.dart';
 import 'package:mary_ai_pos/core/extension/widget_extension.dart';
 import 'package:mary_ai_pos/core/routes/app_routes.dart';
 import 'package:mary_ai_pos/features/view/auth/presentation/cubit/auth/auth_cubit.dart';
+import 'package:mary_ai_pos/generated/l10n.dart';
 
 class LogoutDialog extends StatelessWidget {
   final String routeName;
@@ -29,10 +30,10 @@ class LogoutDialog extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.center,
           spacing: 24,
           children: [
-            const SizedBox(
+            SizedBox(
               width: 252,
               child: Text(
-                'Rostdan ham akauntdan chiqmoqchimisiz?',
+                S.current.strLogoutConfirm,
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   color: Color(0xFF2D2D2D),
@@ -56,8 +57,8 @@ class LogoutDialog extends StatelessWidget {
                       onTap: () => Navigator.pop(context),
                       bgColor: const Color(0xFFF6F7F9),
                       borderRadius: BorderRadius.circular(16),
-                      child: const Text(
-                        'Bekor qilish',
+                      child: Text(
+                        S.current.strCancel,
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           color: Color(0xFF2D2D2D),
@@ -81,14 +82,14 @@ class LogoutDialog extends StatelessWidget {
                           ),
                         );
                       },
-                      child: const Row(
+                      child: Row(
                         mainAxisSize: MainAxisSize.min,
                         mainAxisAlignment: MainAxisAlignment.center,
                         crossAxisAlignment: CrossAxisAlignment.center,
                         spacing: 10,
                         children: [
                           Text(
-                            'Chiqish',
+                            S.current.strLogout,
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               color: Color(0xFFDB2020),

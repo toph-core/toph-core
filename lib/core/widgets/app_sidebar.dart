@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:mary_ai_pos/core/constants/constants.dart';
 import 'package:mary_ai_pos/core/widgets/brand_logo.dart';
 import 'package:mary_ai_pos/core/extension/for_context.dart';
 import 'package:mary_ai_pos/core/routes/app_routes.dart';
+import 'package:mary_ai_pos/core/constants/constants.dart';
+import 'package:mary_ai_pos/core/utils/user_role_permissions.dart';
 import 'package:mary_ai_pos/features/view/auth/presentation/cubit/bloc/user_bloc.dart';
+import 'package:mary_ai_pos/generated/l10n.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/main/widgets/logout_dialog.dart';
 
 class AppSidebar extends StatelessWidget {
@@ -14,8 +16,8 @@ class AppSidebar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final role = context.select((UserBloc b) => b.state.userMOdel?.role);
-    final canManageMenu =
-        role == UserRole.admin || role == UserRole.manager;
+    final canManageMenu = role.canManageMenu;
+    final canAccessSettings = role.canAccessSettings;
     final colors = context.colors;
     return Container(
       width: 72,
@@ -41,36 +43,37 @@ class AppSidebar extends StatelessWidget {
               children: [
                 _NavItem(
                   icon: Icons.grid_view_rounded,
-                  label: 'Stollar',
+                  label: S.current.strTables,
                   isActive: activeRoute == AppRoutes.mainScreen,
                   onTap: () => _navigate(context, AppRoutes.mainScreen),
                 ),
                 _NavItem(
                   icon: Icons.receipt_long_rounded,
-                  label: 'Arxiv',
+                  label: S.current.strArchive,
                   isActive: activeRoute == AppRoutes.archiveScreen,
                   onTap: () => _navigate(context, AppRoutes.archiveScreen),
                 ),
-                _NavItem(
-                  icon: Icons.notifications_outlined,
-                  label: 'Xabarlar',
-                  isActive: activeRoute == AppRoutes.notificationsScreen,
-                  onTap: () =>
-                      _navigate(context, AppRoutes.notificationsScreen),
-                ),
-                _NavItem(
-                  icon: Icons.lock_clock_outlined,
-                  label: 'Smena',
-                  isActive: activeRoute == AppRoutes.closeShiftScreen,
-                  onTap: () => _navigate(context, AppRoutes.closeShiftScreen),
-                ),
+                if (role == UserRole.cashier)
+                  _NavItem(
+                    icon: Icons.lock_clock_outlined,
+                    label: S.current.strShift,
+                    isActive: activeRoute == AppRoutes.closeShiftScreen,
+                    onTap: () => _navigate(context, AppRoutes.closeShiftScreen),
+                  ),
                 if (canManageMenu)
                   _NavItem(
                     icon: Icons.restaurant_menu_rounded,
-                    label: 'Menu',
+                    label: S.current.strMenu,
                     isActive: activeRoute == AppRoutes.menuMealsScreen ||
                         activeRoute == AppRoutes.menuManageScreen,
                     onTap: () => _navigate(context, AppRoutes.menuMealsScreen),
+                  ),
+                if (canAccessSettings)
+                  _NavItem(
+                    icon: Icons.settings_outlined,
+                    label: S.current.strSettings,
+                    isActive: activeRoute == AppRoutes.settingsScreen,
+                    onTap: () => _navigate(context, AppRoutes.settingsScreen),
                   ),
               ],
             ),
@@ -80,7 +83,7 @@ class AppSidebar extends StatelessWidget {
             padding: const EdgeInsets.only(bottom: 16),
             child: _NavItem(
               icon: Icons.logout_rounded,
-              label: 'Chiqish',
+              label: S.current.strLogout,
               isActive: false,
               isDestructive: true,
               onTap: () {

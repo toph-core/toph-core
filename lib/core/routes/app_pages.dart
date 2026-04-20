@@ -12,6 +12,7 @@ import 'package:mary_ai_pos/features/view/main/presentation/pages/menu/menu_mana
 import 'package:mary_ai_pos/features/view/main/presentation/pages/menu/menu_meals_list_screen.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/notification/notification_screen.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/payment/payment_screen.dart';
+import 'package:mary_ai_pos/features/view/main/presentation/pages/settings/settings_screen.dart';
 
 class RouteGenerate {
   Route generate(RouteSettings settings) {
@@ -61,6 +62,9 @@ class RouteGenerate {
           args: args,
           name: settings.name,
         );
+
+      case AppRoutes.settingsScreen:
+        return simpleRoute(const SettingsScreen(), name: settings.name);
     }
     return throw UnimplementedError();
   }

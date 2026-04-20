@@ -57,8 +57,8 @@ class LeaveFromDetailScreenDialog extends StatelessWidget {
                       onTap: () => Navigator.pop(context),
                       bgColor: const Color(0xFFF6F7F9),
                       borderRadius: BorderRadius.circular(16),
-                      child: const Text(
-                        'Bekor qilish',
+                      child: Text(
+                        S.current.strCancel,
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           color: Color(0xFF2D2D2D),
@@ -81,7 +81,7 @@ class LeaveFromDetailScreenDialog extends StatelessWidget {
                         spacing: 10,
                         children: [
                           Text(
-                            'Saqlash',
+                            S.current.strSave,
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               color: context.colors.textOnBrand,
@@ -99,16 +99,16 @@ class LeaveFromDetailScreenDialog extends StatelessWidget {
                       bgColor: const Color(0x19DB1F1F),
                       borderRadius: context.radius.card,
                       onTap: () => Navigator.pop(context, false),
-                      child: const Row(
+                      child: Row(
                         mainAxisSize: MainAxisSize.min,
                         mainAxisAlignment: MainAxisAlignment.center,
                         crossAxisAlignment: CrossAxisAlignment.center,
                         spacing: 10,
                         children: [
                           Text(
-                            'Chiqish',
+                            S.current.strLogout,
                             textAlign: TextAlign.center,
-                            style: TextStyle(
+                            style: const TextStyle(
                               color: Color(0xFFDB2020),
                               fontSize: 16,
                               fontFamily: 'Inter',

@@ -20,5 +20,7 @@ class DetailState with _$DetailState {
     List<GoodsModel>? goods,
     String? selectedCategoryId,
     @Default([]) List<OrderItem> selectedGoods,
+    @Default([]) List<OrderItem> existingGoods,
+    String? activeOrderId,
   }) = _DetailState;
 }

@@ -13,6 +13,7 @@ _$OrderFoodModelImpl _$$OrderFoodModelImplFromJson(Map<String, dynamic> json) =>
       quantity: (json['quantity'] as num?)?.toInt() ?? 0,
       price: json['price'] == null ? 0 : parseInt(json['price']),
       comment: json['comment'] as String? ?? '',
+      status: json['status'] as String? ?? 'pending',
     );
 
 Map<String, dynamic> _$$OrderFoodModelImplToJson(
@@ -23,4 +24,5 @@ Map<String, dynamic> _$$OrderFoodModelImplToJson(
       'quantity': instance.quantity,
       'price': instance.price,
       'comment': instance.comment,
+      'status': instance.status,
     };

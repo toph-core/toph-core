@@ -468,11 +468,18 @@ class WaiterCubit extends Cubit<WaiterState> {
                 commet: l.comment ?? '',
               ))
           .toList();
+      final sumLines = lineItems
+          .where((l) => !l.isCancelled)
+          .fold<double>(0, (s, l) => s + (double.tryParse(l.price) ?? 0) * l.quantity);
+      final hourAmountForReceipt = (order.tableType == 'time_based' && base > sumLines)
+          ? (base - sumLines).toDouble()
+          : 0.0;
       _printerService.printCashierReceipt(
         order: order,
         items: receiptItems,
         discountPercent: discountPercent,
         discountAmount: discountAmount,
+        hourAmount: hourAmountForReceipt,
       );
       final updatedOrders =
           state.openOrders.where((o) => o.id != orderId).toList();

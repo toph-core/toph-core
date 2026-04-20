@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mary_ai_pos/core/extension/for_context.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/cafe_tables/cafe_tables_model.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/orders/orders_bloc.dart';
+import 'package:mary_ai_pos/features/view/main/presentation/pages/main/widgets/time_based_table_badge.dart';
 
 class EnhancedTableCard extends StatefulWidget {
   final CafeTableModel table;
@@ -228,17 +229,9 @@ class _EnhancedTableCardState extends State<EnhancedTableCard> {
                   ),
                   const SizedBox(height: 8),
 
-                  // Waiting time + Capacity
-                  if (widget.waitingTimeMinutes != null)
-                    Text(
-                      '⏱️ ${widget.waitingTimeMinutes} min',
-                      style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                        color: Color(0xFFFB6633),
-                        fontFamily: 'Inter',
-                      ),
-                    )
+                  // Timer (time_based) yoki capacity
+                  if (widget.table.tableType == 'time_based')
+                    TimeBasedTableBadge(table: widget.table)
                   else
                     Row(
                       mainAxisSize: MainAxisSize.min,

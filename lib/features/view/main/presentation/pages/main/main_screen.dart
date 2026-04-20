@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mary_ai_pos/core/common/custom_loading_widget.dart';
 import 'package:mary_ai_pos/core/constants/constants.dart';
-import 'package:mary_ai_pos/core/extension/for_context.dart';
 import 'package:mary_ai_pos/core/extension/list_extension.dart';
 import 'package:mary_ai_pos/core/routes/app_routes.dart';
 import 'package:mary_ai_pos/core/widgets/app_scaffold.dart';
@@ -13,7 +12,8 @@ import 'package:mary_ai_pos/features/view/main/presentation/cubit/shift/shift_bl
 import 'package:mary_ai_pos/features/view/main/presentation/pages/main/widgets/hall_widget.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/main/widgets/main_header.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/main/widgets/tab_filter.dart';
-import 'package:mary_ai_pos/features/view/main/presentation/pages/waiter/waiter_screen.dart';
+import 'package:mary_ai_pos/features/view/main/presentation/pages/main/admin_floor_plan_screen.dart';
+import 'package:mary_ai_pos/features/view/main/presentation/pages/main/waiter_floor_plan_screen.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -37,8 +37,8 @@ class _MainScreenState extends State<MainScreen> {
           prev.userMOdel == null && curr.userMOdel != null,
       listener: (context, state) {
         final role = state.userMOdel?.role;
-        if (role == UserRole.admin ||
-            role == UserRole.manager ||
+        // admin smena ochmaydi hozircha
+        if (role == UserRole.manager ||
             role == UserRole.cashier) {
           context.read<ShiftBloc>().add(const ShiftEvent.checkShift());
         }
@@ -47,13 +47,18 @@ class _MainScreenState extends State<MainScreen> {
         builder: (context, userState) {
           final role = userState.userMOdel?.role;
 
+          if (role == null) {
+            return const Scaffold(
+              body: Center(child: LoadingWidget()),
+            );
+          }
           switch (role) {
             case UserRole.admin:
-              return const _AdminScreenPlaceholder();
-            case UserRole.cashier:
             case UserRole.manager:
+              return const AdminFloorPlanScreen();
+            case UserRole.cashier:
             case UserRole.waiter:
-              return const WaiterScreen();
+              return const WaiterFloorPlanScreen();
             case UserRole.kitchen:
             default:
               return _waiterScreen();
@@ -102,33 +107,6 @@ class _MainScreenState extends State<MainScreen> {
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _AdminScreenPlaceholder extends StatelessWidget {
-  const _AdminScreenPlaceholder();
-
-  @override
-  Widget build(BuildContext context) {
-    return AppScaffold(
-      activeRoute: AppRoutes.mainScreen,
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              'Admin Dashboard',
-              style: context.textStyles.headingMd,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Keyinchalik qo\'shiladi',
-              style: context.textStyles.bodyMd,
-            ),
-          ],
-        ),
       ),
     );
   }

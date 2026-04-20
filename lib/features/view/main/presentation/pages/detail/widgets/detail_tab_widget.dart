@@ -42,7 +42,7 @@ class DetailTabFilter extends StatelessWidget {
           children: [
             Expanded(
               child: SizedBox(
-                height: 55,
+                height: 44,
                 child: ListView.separated(
                   scrollDirection: Axis.horizontal,
                   physics: const BouncingScrollPhysics(),
@@ -51,7 +51,7 @@ class DetailTabFilter extends StatelessWidget {
                     isActive:
                         state.categories![index].id == state.selectedCategoryId,
                   ),
-                  separatorBuilder: (context, index) => 8.wBox,
+                  separatorBuilder: (context, index) => 6.wBox,
                   itemCount: state.categories?.length ?? 0,
                 ),
               ),
@@ -120,17 +120,17 @@ class __TabButtonState extends State<_TabButton> {
           DetailEvent.setSelectedCategoryId(id: widget.category.id),
         ),
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16.50),
+          duration: const Duration(milliseconds: 150),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
           decoration: BoxDecoration(
             color: backgroundColor,
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(10),
           ),
           child: Text(
             widget.category.name,
             style: TextStyle(
               color: widget.isActive ? Colors.white : const Color(0xFF2D2D2D),
-              fontSize: 16,
+              fontSize: 13,
               fontFamily: 'Inter',
               fontWeight: FontWeight.w500,
             ),

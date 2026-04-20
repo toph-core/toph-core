@@ -18,7 +18,10 @@ enum TokensStorageKeys {
   posIsInitialized('pos_is_initialized'),
 
   /// Key for cached user data
-  posUser('pos_user');
+  posUser('pos_user'),
+
+  /// Last successfully used pincode (for offline PIN login)
+  lastPincode('pos_last_pincode');
 
   /// Key name
   final String keyName;
@@ -167,6 +170,12 @@ class AppTokenStorage {
   Future<void> delete(TokensStorageKeys key) async {
     await _prefs.remove(key.keyName);
   }
+
+  Future<void> writeLastPincode(String pincode) async =>
+      _prefs.setString(TokensStorageKeys.lastPincode.keyName, pincode);
+
+  Future<String?> readLastPincode() async =>
+      _prefs.getString(TokensStorageKeys.lastPincode.keyName);
 
   /// Clear all stored data
   Future<void> deleteAll() async {

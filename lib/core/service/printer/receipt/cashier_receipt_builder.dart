@@ -6,6 +6,7 @@ import 'package:mary_ai_pos/core/service/printer/receipt/receipt_esc_pos_helper.
 import 'package:mary_ai_pos/core/service/printer/receipt/receipt_notice_lines.dart';
 import 'package:mary_ai_pos/core/service/printer/receipt/receipt_som_format.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/open_order/open_order_model.dart';
+import 'package:mary_ai_pos/features/view/main/domain/entities/archive_detail_entity.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/detail/detail_bloc.dart';
 
 /// Kassir cheki — narxlar, jami summa, xizmat to'lovi bilan to'liq chek.
@@ -44,7 +45,7 @@ class CashierReceiptBuilder {
     return 'Обслужение:';
   }
 
-  /// Chegirma faqat `> 0` bo‘lsa chiqariladi; foiz — xizmat + mahsulot jami ustidan.
+  /// Chegirma faqat `> 0` bo'lsa chiqariladi; foiz — xizmat + mahsulot jami ustidan.
   static double _discountValue(
     double preDiscount,
     double discountPercent,
@@ -61,12 +62,14 @@ class CashierReceiptBuilder {
   }
 
   /// [paperSize] odatda `PaperSize.mm80` — 80mm qog'oz (48 belgi kenglik).
+  /// [hourAmount] — soatlik jadval uchun qo'shimcha haq (0 bo'lsa chiqarilmaydi).
   static Future<List<int>> build({
     required OpenOrderModel order,
     required List<OrderItem> items,
     PaperSize paperSize = PaperSize.mm80,
     double discountPercent = 0,
     double discountAmount = 0,
+    double hourAmount = 0,
   }) async {
     final profile = await CapabilityProfile.load();
     final gen = receiptGenerator(paperSize, profile);
@@ -164,7 +167,7 @@ class CashierReceiptBuilder {
 
     bytes += gen.hr();
 
-    // ── Totals: mahsulot, xizmat (>0), chegirma (>0), to‘lov ─────────────────
+    // ── Totals: mahsulot, soatlik (>0), xizmat (>0), chegirma (>0), to'lov ────
     bytes += gen.row([
       PosColumn(
         text: 'Итого:',
@@ -177,6 +180,17 @@ class CashierReceiptBuilder {
         styles: const PosStyles(bold: true, align: PosAlign.right),
       ),
     ]);
+
+    if (hourAmount > 0.0001) {
+      bytes += gen.row([
+        PosColumn(text: 'Pochasovaya:', width: 8),
+        PosColumn(
+          text: _fmt(hourAmount),
+          width: 4,
+          styles: const PosStyles(align: PosAlign.right),
+        ),
+      ]);
+    }
 
     final serviceRaw = _servicePart(order, subtotal);
     final serviceAmt = serviceRaw > 0.0001 ? serviceRaw : 0.0;
@@ -194,7 +208,7 @@ class CashierReceiptBuilder {
       ]);
     }
 
-    final preDiscount = subtotal + serviceAmt;
+    final preDiscount = subtotal + hourAmount + serviceAmt;
     final discountVal = _discountValue(
       preDiscount,
       discountPercent,
@@ -248,6 +262,120 @@ class CashierReceiptBuilder {
       styles: const PosStyles(align: PosAlign.center, bold: true),
       linesAfter: 1,
     );
+    bytes += gen.cut();
+
+    return bytes;
+  }
+
+  /// To'lov ekranidan keyin chek — [ArchiveDetailEntity] asosida.
+  static Future<List<int>> buildFromDetail({
+    required ArchiveDetailEntity detail,
+    PaperSize paperSize = PaperSize.mm80,
+    double hourAmount = 0,
+    double discountPercent = 0,
+    double discountAmount = 0,
+  }) async {
+    final profile = await CapabilityProfile.load();
+    final gen = receiptGenerator(paperSize, profile);
+    final now = DateTime.now();
+    final timeFmt = DateFormat('dd.MM.yyyy  HH:mm');
+
+    List<int> bytes = [];
+    bytes += receiptEncodingPreamble(gen);
+
+    bytes += gen.text(
+      'КАССИРСКИЙ ЧЕК',
+      styles: const PosStyles(
+        align: PosAlign.center,
+        bold: true,
+        height: PosTextSize.size2,
+        width: PosTextSize.size1,
+      ),
+      linesAfter: 1,
+    );
+
+    bytes += gen.text(timeFmt.format(now));
+    bytes += gen.row([
+      PosColumn(text: 'Зал:', width: 4),
+      PosColumn(text: detail.hallName, width: 8),
+    ]);
+    bytes += gen.row([
+      PosColumn(text: 'Стол:', width: 4),
+      PosColumn(text: '${detail.tableNumber.toInt()}', width: 8),
+    ]);
+    bytes += gen.row([
+      PosColumn(text: 'Гости:', width: 4),
+      PosColumn(text: '${detail.guestCount.toInt()}', width: 8),
+    ]);
+
+    bytes += gen.hr();
+
+    bytes += gen.row([
+      PosColumn(text: 'Блюдо', width: 6, styles: const PosStyles(bold: true, underline: true)),
+      PosColumn(text: 'Кол', width: 2, styles: const PosStyles(bold: true, align: PosAlign.center)),
+      PosColumn(text: 'Сумма', width: 4, styles: const PosStyles(bold: true, align: PosAlign.right)),
+    ]);
+
+    double subtotal = 0;
+    for (final g in detail.goods.where((g) => g.status != 'cancelled')) {
+      final lineTotal = g.price * g.quantity;
+      subtotal += lineTotal;
+      final name = g.name.length > 22 ? '${g.name.substring(0, 20)}..' : g.name;
+      bytes += gen.row([
+        PosColumn(text: name, width: 6),
+        PosColumn(text: 'x${g.quantity}', width: 2, styles: const PosStyles(align: PosAlign.center)),
+        PosColumn(text: _fmt(lineTotal), width: 4, styles: const PosStyles(align: PosAlign.right)),
+      ]);
+    }
+
+    bytes += gen.hr();
+
+    bytes += gen.row([
+      PosColumn(text: 'Итого:', width: 8, styles: const PosStyles(bold: true)),
+      PosColumn(text: _fmt(subtotal), width: 4, styles: const PosStyles(bold: true, align: PosAlign.right)),
+    ]);
+
+    if (hourAmount > 0.0001) {
+      bytes += gen.row([
+        PosColumn(text: 'Pochasovaya:', width: 8),
+        PosColumn(text: _fmt(hourAmount), width: 4, styles: const PosStyles(align: PosAlign.right)),
+      ]);
+    }
+
+    final serviceAmt = detail.serviceAmount > 0.0001
+        ? detail.serviceAmount
+        : (detail.servicePercent > 0 ? subtotal * detail.servicePercent / 100 : 0.0);
+    if (serviceAmt > 0.0001) {
+      final label = detail.servicePercent > 0
+          ? 'Обслужение (${detail.servicePercent.toInt()}%):'
+          : 'Обслужение:';
+      bytes += gen.row([
+        PosColumn(text: label, width: 8),
+        PosColumn(text: _fmt(serviceAmt), width: 4, styles: const PosStyles(align: PosAlign.right)),
+      ]);
+    }
+
+    final preDiscount = subtotal + hourAmount + serviceAmt;
+    final discVal = _discountValue(preDiscount, discountPercent, discountAmount);
+    if (discVal > 0.0001) {
+      final discLabel = discountPercent > 0 ? 'Скидка (${discountPercent.toInt()}%):' : 'Скидка:';
+      bytes += gen.row([
+        PosColumn(text: discLabel, width: 8),
+        PosColumn(text: _fmt(discVal), width: 4, styles: const PosStyles(align: PosAlign.right)),
+      ]);
+    }
+
+    final toPay = (preDiscount - discVal).clamp(0.0, double.infinity);
+
+    bytes += gen.hr();
+    bytes += gen.row([
+      PosColumn(text: 'К ОПЛАТЕ:', width: 8, styles: const PosStyles(bold: true, height: PosTextSize.size2, width: PosTextSize.size1)),
+      PosColumn(text: _fmt(toPay.round()), width: 4, styles: const PosStyles(bold: true, align: PosAlign.right, height: PosTextSize.size2, width: PosTextSize.size1)),
+    ]);
+
+    appendReceiptNoReprepNotice(gen, bytes);
+    bytes += gen.feed(1);
+    bytes += gen.text('Спасибо за покупку!', styles: const PosStyles(align: PosAlign.center, bold: true), linesAfter: 1);
     bytes += gen.cut();
 
     return bytes;

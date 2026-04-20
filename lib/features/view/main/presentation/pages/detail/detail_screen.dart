@@ -6,6 +6,7 @@ import 'package:mary_ai_pos/di.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/cafe_tables/cafe_tables_model.dart';
 import 'package:mary_ai_pos/features/view/main/domain/entities/save_order_entity.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/detail/detail_bloc.dart';
+import 'package:mary_ai_pos/features/view/main/presentation/cubit/table_timer/table_timer_cubit.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/detail/detail_screen_mixin.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/detail/widgets/order_side_bar_widget.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/detail/widgets/produc_grid_widget.dart';
@@ -29,23 +30,31 @@ class _DetailScreenState extends State<DetailScreen> with DetailScreenMixin {
   late ValueNotifier<bool> showVirtualKeyboard = ValueNotifier<bool>(false);
   final TextEditingController controller = TextEditingController();
 
-  void _fetchBillIfBandTable() {
-    // For Band tables, we'll fetch from API on demand when needed
-    // The savedOrders should already contain the goods if available
-  }
-
   @override
   Widget build(BuildContext context) {
-    // For Band (occupied) tables, fetch bill details from API
-    _fetchBillIfBandTable();
-
-    return BlocProvider(
-      create: (_) => inject<DetailBloc>()
-        ..add(const DetailEvent.started())
-        ..add(const DetailEvent.getCategories())
-        ..add(DetailEvent.initSavedGoods(
-          savedGoods: savedOrders?.createOrderRequest.foods ?? [],
-        )),
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider(
+          create: (_) {
+            final hasSavedGoods =
+                savedOrders != null &&
+                savedOrders!.createOrderRequest.foods.isNotEmpty;
+            final bloc = inject<DetailBloc>()
+              ..add(const DetailEvent.started())
+              ..add(const DetailEvent.getCategories())
+              ..add(DetailEvent.initSavedGoods(
+                savedGoods: savedOrders?.createOrderRequest.foods ?? [],
+              ));
+            if (tableStatus == TableStatus.busy &&
+                cafeTable != null &&
+                !hasSavedGoods) {
+              bloc.add(DetailEvent.fetchBillOrders(billId: cafeTable!.id));
+            }
+            return bloc;
+          },
+        ),
+        BlocProvider(create: (_) => inject<TableTimerCubit>()),
+      ],
       child: KeyboardDismisser(
         child: Scaffold(
           backgroundColor: context.colors.bgSecondary,
@@ -66,22 +75,32 @@ class _DetailScreenState extends State<DetailScreen> with DetailScreenMixin {
                       guestCount: guestCount,
                     ),
                     Expanded(
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          // Right: product menu (flex 2)
-                          const Expanded(flex: 2, child: ProductGridWidget()),
-                          // Left: order sidebar (fixed feel via flex 1)
-                          SizedBox(
-                            width: 380,
-                            child: OrderSidebar(
-                              tableId: cafeTable?.id,
-                              guestCount: guestCount,
-                              tableStatus: tableStatus,
-                              cafeTable: cafeTable,
-                            ),
-                          ),
-                        ],
+                      child: LayoutBuilder(
+                        builder: (context, constraints) {
+                          final w = constraints.maxWidth;
+                          final sidebarW = w >= 1200
+                              ? 360.0
+                              : w >= 1000
+                              ? 320.0
+                              : 280.0;
+                          return Row(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              // Product grid (fills remaining space)
+                              const Expanded(child: ProductGridWidget()),
+                              // Order sidebar (responsive width)
+                              SizedBox(
+                                width: sidebarW,
+                                child: OrderSidebar(
+                                  tableId: cafeTable?.id,
+                                  guestCount: guestCount,
+                                  tableStatus: tableStatus,
+                                  cafeTable: cafeTable,
+                                ),
+                              ),
+                            ],
+                          );
+                        },
                       ),
                     ),
                   ],

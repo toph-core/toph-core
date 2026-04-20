@@ -1,10 +1,13 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:mary_ai_pos/core/api/api.dart';
+import 'package:mary_ai_pos/core/auth/models/auth_token_pair/auth_token_pair.dart';
 import 'package:mary_ai_pos/core/auth/models/brand_id_token_pair/brand_id_token_pair.dart';
 import 'package:mary_ai_pos/core/auth/storage/token_storage_impl.dart';
 import 'package:mary_ai_pos/core/error/failure.dart';
 import 'package:mary_ai_pos/core/routes/app_routes.dart';
+import 'package:mary_ai_pos/core/services/auth/offline_auth_cache.dart';
+import 'package:mary_ai_pos/core/services/connectivity/connectivity_cubit.dart';
 import 'package:mary_ai_pos/core/usecase/usecase.dart';
 import 'package:mary_ai_pos/core/utils/helper/helper_widget.dart';
 import 'package:mary_ai_pos/features/view/auth/data/models/login/request/login_request_model.dart';
@@ -18,38 +21,66 @@ class LoginPinCubit extends Cubit<LoginPinState> {
   final LoginUsecase _loginUsecase;
   final LogoutFromAppUseCase _logoutUseCase;
   final AppTokenStorage _secureStorage;
-  LoginPinCubit(this._loginUsecase, this._logoutUseCase, this._secureStorage)
-    : super(const LoginPinState());
+  final OfflineAuthCache _offlineCache;
+  final ConnectivityCubit _connectivity;
+
+  LoginPinCubit(
+    this._loginUsecase,
+    this._logoutUseCase,
+    this._secureStorage,
+    this._offlineCache,
+    this._connectivity,
+  ) : super(const LoginPinState());
 
   void login({required String pincode, required Function() onSuccess}) async {
     emit(state.copyWith(status: Status.LOADING));
 
-    // const String fcmToken = "await FirebaseMessaging.instance.getToken()";
-    final BrandIdTokenPair? brandIdTokenPair = await _secureStorage
-        .readBrandIdToken();
-
-    if (brandIdTokenPair != null) {
-      var result = await _loginUsecase.call(
-        LoginRequestModel(
-          // fcmToken: fcmToken,
-          brandId: brandIdTokenPair.brandId,
-          password: brandIdTokenPair.password,
-          pincode: pincode,
-        ),
-      );
-
-      result.fold(
-        (failure) {
-          emit(state.copyWith(failure: failure, status: Status.ERROR));
-        },
-        (response) {
-          onSuccess();
-          emit(state.copyWith(status: Status.SUCCESS));
-        },
-      );
-    } else {
+    final BrandIdTokenPair? brandIdTokenPair =
+        await _secureStorage.readBrandIdToken();
+    if (brandIdTokenPair == null) {
       emit(state.copyWith(status: Status.UNKNOWN));
+      return;
     }
+
+    // Offline-first: internet yo'q bo'lsa darhol cache dan
+    if (!_connectivity.isOnline) {
+      final cached = _offlineCache.getForPin(brandIdTokenPair.brandId, pincode);
+      if (cached != null) {
+        await _secureStorage.writeAuthToken(
+          AuthTokenPair(
+            accessToken: cached.accessToken,
+            refreshToken: cached.refreshToken,
+          ),
+        );
+        emit(state.copyWith(status: Status.SUCCESS));
+        onSuccess();
+      } else {
+        emit(state.copyWith(
+          failure: const ConnectionFailure(),
+          status: Status.ERROR,
+        ));
+      }
+      return;
+    }
+
+    // Online: API ga murojaat
+    final result = await _loginUsecase.call(
+      LoginRequestModel(
+        brandId: brandIdTokenPair.brandId,
+        password: brandIdTokenPair.password,
+        pincode: pincode,
+      ),
+    );
+
+    result.fold(
+      (failure) => emit(state.copyWith(failure: failure, status: Status.ERROR)),
+      (_) async {
+        // Keyingi offline login uchun pincode ni saqla
+        await _secureStorage.writeLastPincode(pincode);
+        emit(state.copyWith(status: Status.SUCCESS));
+        onSuccess();
+      },
+    );
   }
 
   void setPin(String value) {

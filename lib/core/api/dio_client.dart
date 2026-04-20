@@ -4,14 +4,16 @@ import 'package:flutter/foundation.dart';
 import 'package:mary_ai_pos/core/auth/storage/token_storage_impl.dart';
 import 'package:mary_ai_pos/core/constants/constants.dart';
 import 'package:mary_ai_pos/core/api/dio_interceptor.dart';
+import 'package:mary_ai_pos/core/services/connectivity/connectivity_cubit.dart';
 import 'package:pretty_dio_logger/pretty_dio_logger.dart';
 
 class DioClient {
   final AppTokenStorage _tokenStorage;
+  final ConnectivityCubit _connectivity;
   late final Dio _dio;
   final aliceDioAdapter = AliceDioAdapter();
 
-  DioClient(this._tokenStorage) {
+  DioClient(this._tokenStorage, this._connectivity) {
     _dio = Dio(
       BaseOptions(
         baseUrl: BASE_URL,
@@ -21,6 +23,7 @@ class DioClient {
       ),
     );
 
+    _dio.interceptors.add(_OfflineInterceptor(_connectivity));
     _dio.interceptors.add(MySmartDioInterceptor(_dio, _tokenStorage));
     _dio.interceptors.add(aliceDioAdapter);
 
@@ -32,19 +35,10 @@ class DioClient {
         enabled: kDebugMode,
       ),
     );
-
-    // if (kDebugMode) {
-    //   _dio.interceptors.add(
-    //     LogInterceptor(
-    //       responseBody: true,
-    //       requestBody: true,
-    //       requestHeader: true,
-    //     ),
-    //   );
-    // }
   }
 
   Dio get dio => _dio;
+  bool get isOnline => _connectivity.isOnline;
 
   // ==== HTTP Methods ====
 
@@ -161,5 +155,29 @@ class DioClient {
     } on DioException {
       rethrow;
     }
+  }
+}
+
+class _OfflineInterceptor extends Interceptor {
+  final ConnectivityCubit _connectivity;
+  _OfflineInterceptor(this._connectivity);
+
+  static const _readMethods = {'GET', 'HEAD'};
+
+  @override
+  void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
+    if (!_connectivity.isOnline &&
+        !_readMethods.contains(options.method.toUpperCase())) {
+      handler.reject(
+        DioException(
+          requestOptions: options,
+          type: DioExceptionType.connectionError,
+          message: 'offline',
+        ),
+        true,
+      );
+      return;
+    }
+    handler.next(options);
   }
 }

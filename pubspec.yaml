@@ -89,6 +89,9 @@ dependencies:
   windows1251: ^2.0.1
   charset: ^2.0.1
   file_selector: ^1.1.0
+  number_paginator: ^1.1.2
+  hive_flutter: ^1.1.0
+  connectivity_plus: ^6.1.4
 
 
 dev_dependencies:
@@ -119,6 +122,7 @@ flutter:
     - assets/fonts/
     - assets/images/
     - assets/icons/
+    - shorebird.yaml
 
 fonts:
   - family: Inter
