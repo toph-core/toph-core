@@ -13,6 +13,7 @@ import 'package:mary_ai_pos/features/view/main/data/models/cafe_tables/cafe_tabl
 import 'package:mary_ai_pos/features/view/main/data/models/payment_pay_request/payment_pay_request_model.dart';
 import 'package:mary_ai_pos/features/view/main/domain/entities/archive_detail_entity.dart';
 import 'package:mary_ai_pos/core/service/printer/printer_service.dart';
+import 'package:mary_ai_pos/features/view/main/data/models/table_timer/table_timer_response_model.dart';
 import 'package:mary_ai_pos/core/services/connectivity/connectivity_cubit.dart';
 import 'package:mary_ai_pos/core/services/offline_queue/offline_queue_service.dart';
 import 'package:mary_ai_pos/core/services/offline_queue/pending_operation.dart';
@@ -33,6 +34,23 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
   final CreatePaymentUsecase _createPaymentUsecase;
   final GetPaymentDetailWithIdUsecase _getPaymentDetailWithIdUsecase;
   final PrinterService _printerService;
+
+  DateTime? _timerStartedAt;
+  List<PauseInterval> _timerPauses = const [];
+  int _timerTotalSec = 0;
+  String? _timerPricePerHour;
+
+  void setTimerInfo({
+    DateTime? startedAt,
+    List<PauseInterval> pauses = const [],
+    int totalSec = 0,
+    String? pricePerHour,
+  }) {
+    _timerStartedAt = startedAt;
+    _timerPauses = pauses;
+    _timerTotalSec = totalSec;
+    _timerPricePerHour = pricePerHour;
+  }
 
   PaymentBloc({
     required GetPaymentDetailWithTableIdUsecase getPaymentDetailWithTableIdUsecase,
@@ -130,6 +148,10 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
       hourAmount: state.hourPrice,
       discountPercent: discPct,
       discountAmount: discAmt,
+      timerStartedAt: _timerStartedAt,
+      timerPauses: _timerPauses,
+      timerTotalSec: _timerTotalSec,
+      timerPricePerHour: _timerPricePerHour,
     );
     if (state.tableId != null) {
       navigatorKey.currentContext!.read<MainCubit>().updateTableStatus(

@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:mary_ai_pos/core/components/flush_bars.dart';
 import 'package:mary_ai_pos/core/utils/helper/helper_widget.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/open_order/open_order_model.dart';
+import 'package:mary_ai_pos/features/view/main/data/models/table_timer/table_timer_response_model.dart';
 import 'package:mary_ai_pos/features/view/main/domain/entities/archive_detail_entity.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/detail/detail_bloc.dart';
 
@@ -32,13 +33,17 @@ class PrinterService {
 
   // ── Public API ────────────────────────────────────────────────────────────
 
-  /// `type: close_check` printer — to‘liq kassir cheki.
+  /// `type: close_check` printer — to’liq kassir cheki.
   Future<void> printCashierReceipt({
     required OpenOrderModel order,
     required List<OrderItem> items,
     double discountPercent = 0,
     double discountAmount = 0,
     double hourAmount = 0,
+    DateTime? timerStartedAt,
+    List<PauseInterval> timerPauses = const [],
+    int timerTotalSec = 0,
+    String? timerPricePerHour,
   }) async {
     // Summa 0 / barcha pozitsiyalar bekor — yopilgan schyot uchun bo’sh chek ham chop etiladi.
     try {
@@ -50,6 +55,10 @@ class PrinterService {
         discountPercent: discountPercent,
         discountAmount: discountAmount,
         hourAmount: hourAmount,
+        timerStartedAt: timerStartedAt,
+        timerPauses: timerPauses,
+        timerTotalSec: timerTotalSec,
+        timerPricePerHour: timerPricePerHour,
       );
       final r = await _connectAndPrint(config, bytes);
       if (!r.ok) {
@@ -78,6 +87,10 @@ class PrinterService {
     double hourAmount = 0,
     double discountPercent = 0,
     double discountAmount = 0,
+    DateTime? timerStartedAt,
+    List<PauseInterval> timerPauses = const [],
+    int timerTotalSec = 0,
+    String? timerPricePerHour,
   }) async {
     try {
       final config = _storage.closeCheckConfigOrFallback();
@@ -87,6 +100,10 @@ class PrinterService {
         hourAmount: hourAmount,
         discountPercent: discountPercent,
         discountAmount: discountAmount,
+        timerStartedAt: timerStartedAt,
+        timerPauses: timerPauses,
+        timerTotalSec: timerTotalSec,
+        timerPricePerHour: timerPricePerHour,
       );
       final r = await _connectAndPrint(config, bytes);
       if (!r.ok) {

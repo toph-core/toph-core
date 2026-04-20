@@ -17,6 +17,7 @@ import 'package:mary_ai_pos/features/view/main/presentation/cubit/orders/orders_
 import 'package:mary_ai_pos/features/view/main/presentation/pages/detail/detail_screen_mixin.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/detail/widgets/clear_dialog.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/detail/widgets/show_food_additional.dart';
+import 'package:mary_ai_pos/features/view/main/data/models/table_timer/table_timer_response_model.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/table_timer/table_timer_cubit.dart';
 import 'package:mary_ai_pos/generated/l10n.dart';
 
@@ -466,6 +467,7 @@ class _OrderSidebarState extends State<OrderSidebar> with DetailScreenMixin {
                                                   true) {
                                             timerCubit.pauseTimer();
                                           }
+                                          final timerData = timerCubit.state.timer;
                                           Navigator.pushNamed(
                                             context,
                                             AppRoutes.paymentScreen,
@@ -475,6 +477,10 @@ class _OrderSidebarState extends State<OrderSidebar> with DetailScreenMixin {
                                                   cafeTable?.tableType ??
                                                   'simple',
                                               'hour_amount': currentAmt,
+                                              'timer_started_at': timerData?.startedAt,
+                                              'timer_pauses': timerData?.pauses ?? const <PauseInterval>[],
+                                              'timer_total_sec': timerData?.totalActiveSec ?? 0,
+                                              'timer_price_per_hour': timerData?.pricePerHour,
                                             },
                                           );
                                         },
@@ -1024,6 +1030,8 @@ class _TimerBadgeRow extends StatelessWidget {
     final rawAmt = t?.currentAmount ?? '';
     final amountStr = rawAmt.isNotEmpty ? '${_fmtAmount(rawAmt)} so\'m' : '';
 
+    final startedAtStr = t?.startedAt != null ? _fmtClock(t!.startedAt!) : null;
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       decoration: BoxDecoration(
@@ -1033,83 +1041,107 @@ class _TimerBadgeRow extends StatelessWidget {
         borderRadius: BorderRadius.circular(10),
         border: Border.all(color: _indigo.withOpacity(0.30)),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        spacing: 4,
         children: [
-          Icon(
-            isRunning ? Icons.play_arrow_rounded : Icons.pause_rounded,
-            size: 13,
-            color: isNone ? _indigo.withOpacity(0.5) : _indigo,
-          ),
-          const SizedBox(width: 5),
-          Text(
-            _fmtTime(displaySec),
-            style: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w800,
-              color: _indigo,
-              fontFamily: 'Inter',
-              letterSpacing: 0.5,
-            ),
-          ),
-          if (amountStr.isNotEmpty) ...[
-            const SizedBox(width: 6),
-            Expanded(
-              child: Text(
-                amountStr,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                  color: _indigo.withOpacity(0.80),
+          Row(
+            children: [
+              Icon(
+                isRunning ? Icons.play_arrow_rounded : Icons.pause_rounded,
+                size: 13,
+                color: isNone ? _indigo.withOpacity(0.5) : _indigo,
+              ),
+              const SizedBox(width: 5),
+              Text(
+                _fmtTime(displaySec),
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w800,
+                  color: _indigo,
                   fontFamily: 'Inter',
+                  letterSpacing: 0.5,
                 ),
               ),
-            ),
-          ] else
-            const Spacer(),
-          if (isRunning || isPaused || isNone) ...[
-            const SizedBox(width: 6),
-            GestureDetector(
-              onTap: timerState.isMutating
-                  ? null
-                  : () => isRunning
-                        ? context.read<TableTimerCubit>().pauseTimer()
-                        : context.read<TableTimerCubit>().resumeTimer(),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 150),
-                width: 30,
-                height: 30,
-                decoration: BoxDecoration(
-                  color: isRunning
-                      ? const Color(0xFFFB6633).withOpacity(0.12)
-                      : const Color(0xFF13AF1B).withOpacity(0.12),
-                  borderRadius: BorderRadius.circular(8),
+              if (amountStr.isNotEmpty) ...[
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    amountStr,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: _indigo.withOpacity(0.80),
+                      fontFamily: 'Inter',
+                    ),
+                  ),
                 ),
-                child: Center(
-                  child: timerState.isMutating
-                      ? SizedBox(
-                          width: 14,
-                          height: 14,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: isRunning
-                                ? const Color(0xFFFB6633)
-                                : const Color(0xFF13AF1B),
-                          ),
-                        )
-                      : Icon(
-                          isRunning
-                              ? Icons.pause_rounded
-                              : Icons.play_arrow_rounded,
-                          size: 18,
-                          color: isRunning
-                              ? const Color(0xFFFB6633)
-                              : const Color(0xFF13AF1B),
-                        ),
+              ] else
+                const Spacer(),
+              if (isRunning || isPaused || isNone) ...[
+                const SizedBox(width: 6),
+                GestureDetector(
+                  onTap: timerState.isMutating
+                      ? null
+                      : () => isRunning
+                            ? context.read<TableTimerCubit>().pauseTimer()
+                            : context.read<TableTimerCubit>().resumeTimer(),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 150),
+                    width: 30,
+                    height: 30,
+                    decoration: BoxDecoration(
+                      color: isRunning
+                          ? const Color(0xFFFB6633).withOpacity(0.12)
+                          : const Color(0xFF13AF1B).withOpacity(0.12),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Center(
+                      child: timerState.isMutating
+                          ? SizedBox(
+                              width: 14,
+                              height: 14,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: isRunning
+                                    ? const Color(0xFFFB6633)
+                                    : const Color(0xFF13AF1B),
+                              ),
+                            )
+                          : Icon(
+                              isRunning
+                                  ? Icons.pause_rounded
+                                  : Icons.play_arrow_rounded,
+                              size: 18,
+                              color: isRunning
+                                  ? const Color(0xFFFB6633)
+                                  : const Color(0xFF13AF1B),
+                            ),
+                    ),
+                  ),
                 ),
-              ),
+              ],
+            ],
+          ),
+          if (startedAtStr != null || (t?.pauses.isNotEmpty == true))
+            Row(
+              spacing: 12,
+              children: [
+                if (startedAtStr != null)
+                  _TimerInfoChip(
+                    label: 'Ochildi',
+                    value: startedAtStr,
+                    color: _indigo.withOpacity(0.65),
+                  ),
+                if (t != null && t.pauses.isNotEmpty)
+                  _TimerInfoChip(
+                    label: 'Pause',
+                    value: '${t.pauses.length}x  •  ${_fmtTime(t.totalPauseSec)}',
+                    color: const Color(0xFFFB6633).withOpacity(0.80),
+                  ),
+              ],
             ),
-          ],
         ],
       ),
     );
@@ -1125,12 +1157,49 @@ class _TimerBadgeRow extends StatelessWidget {
     return '$mm:$ss';
   }
 
+  static String _fmtClock(DateTime dt) {
+    final local = dt.toLocal();
+    final h = local.hour.toString().padLeft(2, '0');
+    final m = local.minute.toString().padLeft(2, '0');
+    return '$h:$m';
+  }
+
   static String _fmtAmount(String raw) {
     final n = int.tryParse(raw.replaceAll(RegExp(r'[^0-9]'), ''));
     if (n == null) return raw;
     return n.toString().replaceAllMapped(
       RegExp(r'(\d)(?=(\d{3})+(?!\d))'),
       (m) => '${m[1]} ',
+    );
+  }
+}
+
+class _TimerInfoChip extends StatelessWidget {
+  final String label;
+  final String value;
+  final Color color;
+  const _TimerInfoChip({required this.label, required this.value, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      spacing: 3,
+      children: [
+        Text(
+          '$label:',
+          style: TextStyle(fontSize: 10, color: color, fontFamily: 'Inter'),
+        ),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 10,
+            color: color,
+            fontFamily: 'Inter',
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ],
     );
   }
 }

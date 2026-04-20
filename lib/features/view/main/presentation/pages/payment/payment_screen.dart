@@ -9,6 +9,7 @@ import 'package:mary_ai_pos/core/extension/for_context.dart';
 import 'package:mary_ai_pos/core/extension/number_formatter.dart';
 import 'package:mary_ai_pos/di.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/hour_price/hour_price_bloc.dart';
+import 'package:mary_ai_pos/features/view/main/data/models/table_timer/table_timer_response_model.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/payment/payment_bloc.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/payment/widgets/payment_right_side_bar.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/payment/widgets/payment_top_bar.dart';
@@ -31,6 +32,11 @@ class _PaymentScreenState extends State<PaymentScreen> {
     // Strip decimal point too — backend sends e.g. "530.28" meaning 53028 so'm
     return double.tryParse(raw.replaceAll(RegExp(r'[^0-9]'), '')) ?? 0.0;
   }();
+  late final DateTime? _timerStartedAt = args['timer_started_at'] as DateTime?;
+  late final List<PauseInterval> _timerPauses =
+      (args['timer_pauses'] as List<PauseInterval>?) ?? const [];
+  late final int _timerTotalSec = (args['timer_total_sec'] as int?) ?? 0;
+  late final String? _timerPricePerHour = args['timer_price_per_hour'] as String?;
 
   @override
   Widget build(BuildContext context) {
@@ -45,6 +51,14 @@ class _PaymentScreenState extends State<PaymentScreen> {
                 ..add(PaymentEvent.started(tableId: tableId, orderId: orderId));
               if (_passedHourAmount > 0) {
                 bloc.add(PaymentEvent.upadeHourPrice(hourPrice: _passedHourAmount));
+              }
+              if (_timerStartedAt != null || _timerTotalSec > 0 || _timerPauses.isNotEmpty) {
+                bloc.setTimerInfo(
+                  startedAt: _timerStartedAt,
+                  pauses: _timerPauses,
+                  totalSec: _timerTotalSec,
+                  pricePerHour: _timerPricePerHour,
+                );
               }
               return bloc;
             },
