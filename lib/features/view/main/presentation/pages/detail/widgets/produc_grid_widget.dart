@@ -25,10 +25,12 @@ class _ProductGridWidgetState extends State<ProductGridWidget> {
   int _page = 1;
   final NumberPaginatorController _paginatorController =
       NumberPaginatorController();
+  final ScrollController _scrollCtrl = ScrollController();
 
   @override
   void dispose() {
     _paginatorController.dispose();
+    _scrollCtrl.dispose();
     super.dispose();
   }
 
@@ -86,30 +88,26 @@ class _ProductGridWidgetState extends State<ProductGridWidget> {
               return Column(
                 children: [
                   Expanded(
-                    child: LayoutBuilder(
-                      builder: (context, constraints) {
-                        final w = constraints.maxWidth;
-                        final cols = w >= 1300
-                            ? 5
-                            : w >= 1000
-                            ? 4
-                            : w >= 750
-                            ? 3
-                            : 2;
-                        return GridView.builder(
-                          padding: const EdgeInsets.all(16),
-                          gridDelegate:
-                              SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: cols,
-                            crossAxisSpacing: 12,
-                            mainAxisSpacing: 12,
-                            childAspectRatio: 0.92,
-                          ),
-                          itemCount: pageItems.length,
-                          itemBuilder: (context, index) =>
-                              _ProductCard(product: pageItems[index]),
-                        );
-                      },
+                    child: Scrollbar(
+                      controller: _scrollCtrl,
+                      thumbVisibility: true,
+                      trackVisibility: true,
+                      thickness: 6,
+                      radius: const Radius.circular(4),
+                      child: GridView.builder(
+                        controller: _scrollCtrl,
+                        padding: const EdgeInsets.fromLTRB(12, 12, 16, 12),
+                        gridDelegate:
+                            const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 4,
+                          crossAxisSpacing: 10,
+                          mainAxisSpacing: 10,
+                          childAspectRatio: 1.1,
+                        ),
+                        itemCount: pageItems.length,
+                        itemBuilder: (context, index) =>
+                            _ProductCard(product: pageItems[index]),
+                      ),
                     ),
                   ),
                   _buildPaginationBar(colors, products.length, totalPages),
@@ -125,7 +123,7 @@ class _ProductGridWidgetState extends State<ProductGridWidget> {
   Widget _buildPaginationBar(
       ThemeColors colors, int totalItems, int totalPages) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+      padding: const EdgeInsets.fromLTRB(12, 0, 12, 10),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
@@ -137,8 +135,8 @@ class _ProductGridWidgetState extends State<ProductGridWidget> {
                   ),
             ),
             child: SizedBox(
-              width: 372,
-              height: 44,
+              width: 280,
+              height: 36,
               child: NumberPaginator(
                 key: ValueKey('paginator-$totalPages-$_pageSize'),
                 controller: _paginatorController,
@@ -146,9 +144,12 @@ class _ProductGridWidgetState extends State<ProductGridWidget> {
                 initialPage: (_page - 1).clamp(0, totalPages - 1),
                 onPageChange: (pageIndex) {
                   setState(() => _page = pageIndex + 1);
+                  if (_scrollCtrl.hasClients) {
+                    _scrollCtrl.jumpTo(0);
+                  }
                 },
                 child: const SizedBox(
-                  height: 40,
+                  height: 36,
                   child: Row(
                     children: [
                       PrevButton(),
@@ -161,7 +162,7 @@ class _ProductGridWidgetState extends State<ProductGridWidget> {
             ),
           ),
           Container(
-            height: 40,
+            height: 36,
             padding: const EdgeInsets.symmetric(horizontal: 10),
             decoration: BoxDecoration(
               color: colors.bgSecondary,
