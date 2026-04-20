@@ -94,19 +94,24 @@ class _ProductGridWidgetState extends State<ProductGridWidget> {
                       trackVisibility: true,
                       thickness: 6,
                       radius: const Radius.circular(4),
-                      child: GridView.builder(
-                        controller: _scrollCtrl,
-                        padding: const EdgeInsets.fromLTRB(12, 12, 16, 12),
-                        gridDelegate:
-                            const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 4,
-                          crossAxisSpacing: 10,
-                          mainAxisSpacing: 10,
-                          childAspectRatio: 1.1,
+                      child: BlocBuilder<UiPrefsCubit, UiPrefsState>(
+                        buildWhen: (p, c) =>
+                            p.menuShowImages != c.menuShowImages,
+                        builder: (context, uiState) => GridView.builder(
+                          controller: _scrollCtrl,
+                          padding: const EdgeInsets.fromLTRB(12, 12, 16, 12),
+                          gridDelegate:
+                              SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 4,
+                            crossAxisSpacing: 10,
+                            mainAxisSpacing: 10,
+                            childAspectRatio:
+                                uiState.menuShowImages ? 0.82 : 1.1,
+                          ),
+                          itemCount: pageItems.length,
+                          itemBuilder: (context, index) =>
+                              _ProductCard(product: pageItems[index]),
                         ),
-                        itemCount: pageItems.length,
-                        itemBuilder: (context, index) =>
-                            _ProductCard(product: pageItems[index]),
                       ),
                     ),
                   ),
@@ -253,37 +258,44 @@ class _ProductCardState extends State<_ProductCard> {
                     borderRadius: const BorderRadius.vertical(
                       top: Radius.circular(11),
                     ),
-                    child: widget.product.pictureUrl == null
-                        ? Container(
-                            color: statusColor.withOpacity(0.08),
-                            child: Row(
-                              children: [
-                                Container(width: 3, color: statusColor),
-                                Expanded(
-                                  child: Center(
-                                    child: Text(
-                                      widget.product.name.isNotEmpty
-                                          ? widget.product.name[0]
-                                              .toUpperCase()
-                                          : '?',
-                                      style: TextStyle(
-                                        fontSize: 22,
-                                        fontWeight: FontWeight.w700,
-                                        color: statusColor.withOpacity(0.6),
-                                        fontFamily: 'Inter',
+                    child: () {
+                            final pic = widget.product.pictureUrl;
+                            final isMinioName = pic != null &&
+                                !pic.startsWith('http') &&
+                                (pic.contains('/') || pic.contains('.'));
+                            if (isMinioName) {
+                              return CustomCachedNetworkImage(
+                                height: double.infinity,
+                                width: double.infinity,
+                                minioObjectName: pic,
+                                fit: BoxFit.cover,
+                              );
+                            }
+                            return Container(
+                              color: statusColor.withOpacity(0.08),
+                              child: Row(
+                                children: [
+                                  Container(width: 3, color: statusColor),
+                                  Expanded(
+                                    child: Center(
+                                      child: Text(
+                                        widget.product.name.isNotEmpty
+                                            ? widget.product.name[0]
+                                                .toUpperCase()
+                                            : '?',
+                                        style: TextStyle(
+                                          fontSize: 22,
+                                          fontWeight: FontWeight.w700,
+                                          color: statusColor.withOpacity(0.6),
+                                          fontFamily: 'Inter',
+                                        ),
                                       ),
                                     ),
                                   ),
-                                ),
-                              ],
-                            ),
-                          )
-                        : CustomCachedNetworkImage(
-                            height: double.infinity,
-                            width: double.infinity,
-                            minioObjectName: widget.product.pictureUrl,
-                            fit: BoxFit.cover,
-                          ),
+                                ],
+                              ),
+                            );
+                          }(),
                   ),
                 ),
               // Info
@@ -291,7 +303,7 @@ class _ProductCardState extends State<_ProductCard> {
                 child: Padding(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 8,
-                    vertical: 6,
+                    vertical: 4,
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -307,7 +319,6 @@ class _ProductCardState extends State<_ProductCard> {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      const SizedBox(height: 2),
                       Text(
                         num.parse(widget.product.price).formatN,
                         style: const TextStyle(
