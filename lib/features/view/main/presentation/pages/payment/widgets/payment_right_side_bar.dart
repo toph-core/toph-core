@@ -348,6 +348,7 @@ class PaymentRightSideBar extends StatelessWidget with PaymentScreenMixin {
                       child: Builder(builder: (context) {
                         final enteredAmt = int.tryParse(state.enterSum) ?? 0;
                         final cashOk = state.paymentType != PaymentType.cash ||
+                            finalTotal <= 0 ||
                             (enteredAmt > 0 && enteredAmt >= finalTotal);
                         final canConfirm = state.status != Status.LOADING && cashOk;
                         return GestureDetector(
