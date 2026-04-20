@@ -43,10 +43,25 @@ class OrderSidebar extends StatefulWidget {
 
 class _OrderSidebarState extends State<OrderSidebar> with DetailScreenMixin {
   bool _includeService = true;
+  late TableStatus _tableStatus;
+
+  @override
+  void initState() {
+    super.initState();
+    _tableStatus = widget.tableStatus;
+  }
+
+  @override
+  void didUpdateWidget(OrderSidebar old) {
+    super.didUpdateWidget(old);
+    if (old.tableStatus != widget.tableStatus) {
+      _tableStatus = widget.tableStatus;
+    }
+  }
 
   String? get tableId => widget.tableId;
   int get guestCount => widget.guestCount;
-  TableStatus get tableStatus => widget.tableStatus;
+  TableStatus get tableStatus => _tableStatus;
   String? get orderId => widget.orderId;
   CafeTableModel? get cafeTable => widget.cafeTable;
 
@@ -341,7 +356,15 @@ class _OrderSidebarState extends State<OrderSidebar> with DetailScreenMixin {
                                       context,
                                       S.current.strOrderSuccessCreated,
                                     );
-                                    Navigator.pop(context);
+                                    setState(() => _tableStatus = TableStatus.busy);
+                                    if (cafeTable != null) {
+                                      context.read<DetailBloc>().add(
+                                        DetailEvent.fetchBillOrders(billId: cafeTable!.id),
+                                      );
+                                    }
+                                    context.read<DetailBloc>().add(
+                                      const DetailEvent.clearGoods(),
+                                    );
                                   }
                                 },
                                 builder: (context, createState) {
