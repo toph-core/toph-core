@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mary_ai_pos/core/components/flush_bars.dart';
 import 'package:mary_ai_pos/core/constants/constants.dart';
+import 'package:mary_ai_pos/core/utils/helper/helper_widget.dart';
 import 'package:mary_ai_pos/core/extension/for_context.dart';
 import 'package:mary_ai_pos/core/extension/number_formatter.dart';
 import 'package:mary_ai_pos/core/routes/app_routes.dart';
@@ -352,11 +353,6 @@ class _OrderSidebarState extends State<OrderSidebar> with DetailScreenMixin {
                                       createState.tableId,
                                       TableStatus.busy,
                                     );
-                                    showSuccessMessage(
-                                      context,
-                                      S.current.strOrderSuccessCreated,
-                                    );
-                                    setState(() => _tableStatus = TableStatus.busy);
                                     if (cafeTable != null) {
                                       context.read<DetailBloc>().add(
                                         DetailEvent.fetchBillOrders(billId: cafeTable!.id),
@@ -365,6 +361,11 @@ class _OrderSidebarState extends State<OrderSidebar> with DetailScreenMixin {
                                     context.read<DetailBloc>().add(
                                       const DetailEvent.clearGoods(),
                                     );
+                                    showSuccessMessage(
+                                      navigatorKey.currentContext!,
+                                      S.current.strOrderSuccessCreated,
+                                    );
+                                    setState(() => _tableStatus = TableStatus.busy);
                                   }
                                 },
                                 builder: (context, createState) {
