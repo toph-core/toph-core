@@ -79,20 +79,12 @@ Future<void> main() async {
   if (Platform.isWindows || Platform.isMacOS || Platform.isLinux) {
     await WindowManager.instance.ensureInitialized();
     await windowManager.waitUntilReadyToShow();
-    await windowManager.setTitleBarStyle(
-      TitleBarStyle.hidden,
-      windowButtonVisibility: true,
-    );
+    await windowManager.setTitleBarStyle(TitleBarStyle.normal);
     await windowManager.setMinimumSize(const Size(1000, 600));
     await windowManager.show();
     await windowManager.setPreventClose(true);
     await windowManager.setSkipTaskbar(false);
-    if (Platform.isMacOS) {
-      // macOS full-screen alohida Space (tab) ochib yuborishi mumkin.
-      await windowManager.maximize();
-    } else {
-      await windowManager.setFullScreen(true);
-    }
+    await windowManager.maximize();
     await windowManager.focus();
   }
 
