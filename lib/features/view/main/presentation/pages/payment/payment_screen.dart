@@ -158,7 +158,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
                                       return Opacity(
                                         opacity: g.isCancelled ? 0.6 : 1.0,
                                         child: Padding(
-                                          padding: const EdgeInsets.symmetric(vertical: 10),
+                                          padding: const EdgeInsets.symmetric(vertical: 7),
                                           child: Row(
                                             spacing: 10,
                                             children: [

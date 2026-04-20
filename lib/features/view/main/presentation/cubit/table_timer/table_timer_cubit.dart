@@ -111,6 +111,10 @@ class TableTimerCubit extends Cubit<TableTimerState> {
     bool showLoading = false,
   }) async {
     _activeOrderId = orderId;
+    // Pre-emit 0:00 immediately so UI shows something while waiting for API
+    if (!state.shouldShow) {
+      emit(state.copyWith(shouldShow: true, displayActiveSec: 0));
+    }
     if (showLoading) {
       emit(state.copyWith(isLoading: true, errorMessage: null));
     }
@@ -166,6 +170,59 @@ class TableTimerCubit extends Cubit<TableTimerState> {
         clearDisplayActiveSec: true,
         errorMessage: e.toString(),
       ));
+    }
+  }
+
+  /// Bo'sh order yaratadi va timerni boshlaydi (time-based free stol uchun).
+  /// Returns orderId on success, null on failure.
+  Future<String?> createTimedOrderAndStart({
+    required String tableId,
+    required int guestCount,
+  }) async {
+    _cancelTimers();
+    _activeOrderId = null;
+    _lastSyncAt = null;
+    _baseTotalActiveSec = 0;
+    emit(state.copyWith(shouldShow: true, isLoading: true, displayActiveSec: 0));
+    try {
+      final orderRes = await _client.post(ListAPI.orders, data: {
+        'table_id': tableId,
+        'guest_count': guestCount,
+        'items': <dynamic>[],
+        'status': 'open',
+        'order_type': 'dine_in',
+        'comment': '',
+      });
+      final data = orderRes.data['data'];
+      final orderId = (data is Map<String, dynamic>)
+          ? (data['id'] as String? ?? data['order_id'] as String?)
+          : null;
+      if (orderId == null || orderId.isEmpty) {
+        if (!isClosed) emit(state.copyWith(isLoading: false, shouldShow: false));
+        return null;
+      }
+      _activeOrderId = orderId;
+      emit(state.copyWith(isLoading: false));
+      await startTimer();
+      return orderId;
+    } on DioException catch (e) {
+      if (!isClosed) {
+        emit(state.copyWith(
+          isLoading: false,
+          shouldShow: false,
+          errorMessage: e.message ?? 'Order yaratishda xato',
+        ));
+      }
+      return null;
+    } catch (e) {
+      if (!isClosed) {
+        emit(state.copyWith(
+          isLoading: false,
+          shouldShow: false,
+          errorMessage: e.toString(),
+        ));
+      }
+      return null;
     }
   }
 

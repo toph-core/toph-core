@@ -377,15 +377,36 @@ class _OrderSidebarState extends State<OrderSidebar> with DetailScreenMixin {
                       // Busy table: add items + payment buttons
                       if (tableId != null && tableStatus != TableStatus.free)
                         BlocProvider(
-                          create: (_) => inject<CreateOrderBloc>()
-                            ..add(
-                              CreateOrderEvent.started(
-                                tableId: tableId,
-                                guestCount: guestCount,
-                                tableStatus: tableStatus,
+                          create: (ctx) {
+                            final bloc = inject<CreateOrderBloc>()
+                              ..add(
+                                CreateOrderEvent.started(
+                                  tableId: tableId,
+                                  guestCount: guestCount,
+                                  tableStatus: tableStatus,
+                                ),
+                              );
+                            // Bind active order immediately if already known
+                            final activeId =
+                                ctx.read<DetailBloc>().state.activeOrderId;
+                            if (activeId != null) bloc.bindActiveOrder(activeId);
+                            return bloc;
+                          },
+                          child: MultiBlocListener(
+                            listeners: [
+                              // Keep activeOrderId in sync when DetailBloc updates it
+                              BlocListener<DetailBloc, DetailState>(
+                                listenWhen: (p, c) =>
+                                    p.activeOrderId != c.activeOrderId &&
+                                    c.activeOrderId != null,
+                                listener: (ctx, s) {
+                                  ctx
+                                      .read<CreateOrderBloc>()
+                                      .bindActiveOrder(s.activeOrderId!);
+                                },
                               ),
-                            ),
-                          child:
+                            ],
+                            child:
                               BlocConsumer<CreateOrderBloc, CreateOrderState>(
                                 listener: (context, createState) {
                                   if (createState.status != Status.LOADING &&
@@ -462,6 +483,7 @@ class _OrderSidebarState extends State<OrderSidebar> with DetailScreenMixin {
                                   );
                                 },
                               ),
+                          ),
                         ),
                     ],
                   ),

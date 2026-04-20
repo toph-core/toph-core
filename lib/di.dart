@@ -206,6 +206,7 @@ void _cubit() {
       connectivity: inject(),
       queue: inject(),
       lanHub: inject(),
+      client: inject(),
     ),
   );
   inject.registerFactory(() => CounterCubit());

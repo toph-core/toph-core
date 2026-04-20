@@ -43,7 +43,7 @@ class PaymentRightSideBar extends StatelessWidget with PaymentScreenMixin {
             children: [
               // Total display
               Container(
-                padding: const EdgeInsets.all(20),
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
                 decoration: BoxDecoration(
                   border: Border(
                     bottom: BorderSide(color: context.colors.border),
@@ -51,12 +51,12 @@ class PaymentRightSideBar extends StatelessWidget with PaymentScreenMixin {
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  spacing: 4,
+                  spacing: 2,
                   children: [
                     Text(
                       "Jami to'lov",
                       style: TextStyle(
-                        fontSize: 13,
+                        fontSize: 12,
                         color: context.colors.textSecondary,
                         fontFamily: 'Inter',
                       ),
@@ -64,7 +64,7 @@ class PaymentRightSideBar extends StatelessWidget with PaymentScreenMixin {
                     Text(
                       finalTotal.formatN,
                       style: const TextStyle(
-                        fontSize: 28,
+                        fontSize: 22,
                         fontWeight: FontWeight.w700,
                         color: Color(0xFF19160B),
                         fontFamily: 'Inter',
@@ -76,15 +76,15 @@ class PaymentRightSideBar extends StatelessWidget with PaymentScreenMixin {
 
               // Payment method selector
               Padding(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.fromLTRB(16, 10, 16, 8),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  spacing: 12,
+                  spacing: 8,
                   children: [
                     const Text(
                       "To'lov usuli",
                       style: TextStyle(
-                        fontSize: 14,
+                        fontSize: 13,
                         fontWeight: FontWeight.w700,
                         color: Color(0xFF19160B),
                         fontFamily: 'Inter',
@@ -133,7 +133,7 @@ class PaymentRightSideBar extends StatelessWidget with PaymentScreenMixin {
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: Container(
                     width: double.infinity,
-                    padding: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
                     decoration: BoxDecoration(
                       color: const Color(0xFFF8F9FA),
                       border: Border.all(color: const Color(0xFFEBEFF2)),
@@ -145,12 +145,12 @@ class PaymentRightSideBar extends StatelessWidget with PaymentScreenMixin {
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
-                            spacing: 4,
+                            spacing: 2,
                             children: [
                               Text(
                                 'Berilayotgan summa',
                                 style: TextStyle(
-                                  fontSize: 12,
+                                  fontSize: 11,
                                   color: context.colors.textSecondary,
                                   fontFamily: 'Inter',
                                 ),
@@ -158,7 +158,7 @@ class PaymentRightSideBar extends StatelessWidget with PaymentScreenMixin {
                               Text(
                                 entered > 0 ? entered.formatN : '0',
                                 style: const TextStyle(
-                                  fontSize: 28,
+                                  fontSize: 22,
                                   fontWeight: FontWeight.w700,
                                   color: Color(0xFF19160B),
                                   fontFamily: 'Inter',
@@ -198,7 +198,7 @@ class PaymentRightSideBar extends StatelessWidget with PaymentScreenMixin {
                     ),
                   ),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 8),
                 // Numpad
                 Expanded(
                   child: Padding(
@@ -209,9 +209,9 @@ class PaymentRightSideBar extends StatelessWidget with PaymentScreenMixin {
                       gridDelegate:
                           const SliverGridDelegateWithFixedCrossAxisCount(
                             crossAxisCount: 3,
-                            crossAxisSpacing: 8,
-                            mainAxisSpacing: 8,
-                            mainAxisExtent: 52,
+                            crossAxisSpacing: 6,
+                            mainAxisSpacing: 6,
+                            mainAxisExtent: 46,
                           ),
                       itemCount: keyboardKeys.length,
                       itemBuilder: (context, index) {
@@ -319,7 +319,7 @@ class PaymentRightSideBar extends StatelessWidget with PaymentScreenMixin {
 
               // Footer: print + confirm
               Container(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
                 decoration: BoxDecoration(
                   border: Border(
                     top: BorderSide(color: context.colors.border),
@@ -329,8 +329,8 @@ class PaymentRightSideBar extends StatelessWidget with PaymentScreenMixin {
                   spacing: 12,
                   children: [
                     Container(
-                      width: 52,
-                      height: 52,
+                      width: 46,
+                      height: 46,
                       decoration: BoxDecoration(
                         color: const Color(0xFFF8F9FA),
                         border: Border.all(color: const Color(0xFFEBEFF2)),
@@ -355,7 +355,7 @@ class PaymentRightSideBar extends StatelessWidget with PaymentScreenMixin {
                             ? () => context.read<PaymentBloc>().add(const PaymentEvent.payment())
                             : null,
                         child: Container(
-                          height: 52,
+                          height: 46,
                           decoration: BoxDecoration(
                             color: canConfirm
                                 ? const Color(0xFFFB6633)
@@ -417,7 +417,7 @@ class _PayMethod extends StatelessWidget {
         onTap: onTap,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 150),
-          padding: const EdgeInsets.symmetric(vertical: 14),
+          padding: const EdgeInsets.symmetric(vertical: 8),
           decoration: BoxDecoration(
             color: isActive ? const Color(0xFFFFF3EE) : Colors.white,
             border: Border.all(

@@ -6,6 +6,7 @@ import 'package:mary_ai_pos/di.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/cafe_tables/cafe_tables_model.dart';
 import 'package:mary_ai_pos/features/view/main/domain/entities/save_order_entity.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/detail/detail_bloc.dart';
+import 'package:mary_ai_pos/features/view/main/presentation/cubit/main/main_cubit.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/table_timer/table_timer_cubit.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/detail/detail_screen_mixin.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/detail/widgets/order_side_bar_widget.dart';
@@ -25,35 +26,77 @@ class _DetailScreenState extends State<DetailScreen> with DetailScreenMixin {
       ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>;
   late final CafeTableModel? cafeTable = args['table'];
   late final int guestCount = args['guest_count'] ?? 0;
-  late final TableStatus tableStatus = args['table_status'];
   late final SaveOrderEntity? savedOrders = args['saved_orders'];
+
   late ValueNotifier<bool> showVirtualKeyboard = ValueNotifier<bool>(false);
   final TextEditingController controller = TextEditingController();
+
+  // Hold blocs directly so _autoStartTimedOrder can call them without
+  // needing a child BuildContext (MultiBlocProvider is a descendant)
+  late final TableTimerCubit _timerCubit = inject<TableTimerCubit>();
+  late DetailBloc _detailBloc;
+
+  // Mutable: free → busy after timer auto-starts
+  TableStatus tableStatus = TableStatus.none;
+  bool _initDone = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_initDone) return;
+    _initDone = true;
+
+    tableStatus = args['table_status'] as TableStatus;
+
+    final hasSavedGoods =
+        savedOrders != null &&
+        savedOrders!.createOrderRequest.foods.isNotEmpty;
+
+    _detailBloc = inject<DetailBloc>()
+      ..add(const DetailEvent.started())
+      ..add(const DetailEvent.getCategories())
+      ..add(DetailEvent.initSavedGoods(
+        savedGoods: savedOrders?.createOrderRequest.foods ?? [],
+      ));
+
+    if (tableStatus == TableStatus.busy && cafeTable != null && !hasSavedGoods) {
+      _detailBloc.add(DetailEvent.fetchBillOrders(billId: cafeTable!.id));
+    }
+
+    if (cafeTable?.tableType == 'time_based' &&
+        tableStatus == TableStatus.free) {
+      WidgetsBinding.instance
+          .addPostFrameCallback((_) => _autoStartTimedOrder());
+    }
+  }
+
+  @override
+  void dispose() {
+    _timerCubit.close();
+    _detailBloc.close();
+    showVirtualKeyboard.dispose();
+    controller.dispose();
+    super.dispose();
+  }
+
+  Future<void> _autoStartTimedOrder() async {
+    if (!mounted || cafeTable == null) return;
+    final orderId = await _timerCubit.createTimedOrderAndStart(
+      tableId: cafeTable!.id,
+      guestCount: guestCount,
+    );
+    if (!mounted || orderId == null) return;
+    setState(() => tableStatus = TableStatus.busy);
+    context.read<MainCubit>().updateTableStatus(cafeTable!.id, TableStatus.busy);
+    _detailBloc.add(DetailEvent.fetchBillOrders(billId: cafeTable!.id));
+  }
 
   @override
   Widget build(BuildContext context) {
     return MultiBlocProvider(
       providers: [
-        BlocProvider(
-          create: (_) {
-            final hasSavedGoods =
-                savedOrders != null &&
-                savedOrders!.createOrderRequest.foods.isNotEmpty;
-            final bloc = inject<DetailBloc>()
-              ..add(const DetailEvent.started())
-              ..add(const DetailEvent.getCategories())
-              ..add(DetailEvent.initSavedGoods(
-                savedGoods: savedOrders?.createOrderRequest.foods ?? [],
-              ));
-            if (tableStatus == TableStatus.busy &&
-                cafeTable != null &&
-                !hasSavedGoods) {
-              bloc.add(DetailEvent.fetchBillOrders(billId: cafeTable!.id));
-            }
-            return bloc;
-          },
-        ),
-        BlocProvider(create: (_) => inject<TableTimerCubit>()),
+        BlocProvider.value(value: _detailBloc),
+        BlocProvider.value(value: _timerCubit),
       ],
       child: KeyboardDismisser(
         child: Scaffold(
@@ -86,9 +129,7 @@ class _DetailScreenState extends State<DetailScreen> with DetailScreenMixin {
                           return Row(
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
-                              // Product grid (fills remaining space)
                               const Expanded(child: ProductGridWidget()),
-                              // Order sidebar (responsive width)
                               SizedBox(
                                 width: sidebarW,
                                 child: OrderSidebar(

@@ -57,6 +57,7 @@ class ListAPI {
   static String orderItemCancel(String orderItemId) =>
       "/api/v1/order-items/$orderItemId/cancel";
   static String orderItems(String orderId) => "/api/v1/orders/$orderId/items";
+  static const String orderItemsCreate = "/api/v1/order-items";
   static String payToOrder(String id) => "/api/v1/orders/$id/pay";
   static String orderHourPrice(String id) => "/api/v1/orders/$id/table-price";
 

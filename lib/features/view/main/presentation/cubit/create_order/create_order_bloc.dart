@@ -27,6 +27,12 @@ class CreateOrderBloc extends Bloc<CreateOrderEvent, CreateOrderState> {
   final ConnectivityCubit _connectivity;
   final OfflineQueueService _queue;
   final LanHubService _lanHub;
+  final DioClient _client;
+
+  // Active order ID for busy tables — set via bindActiveOrder()
+  String? _activeOrderId;
+
+  void bindActiveOrder(String orderId) => _activeOrderId = orderId;
 
   CreateOrderBloc({
     required CreateOrderUsecase createOrderUsecase,
@@ -34,11 +40,13 @@ class CreateOrderBloc extends Bloc<CreateOrderEvent, CreateOrderState> {
     required ConnectivityCubit connectivity,
     required OfflineQueueService queue,
     required LanHubService lanHub,
+    required DioClient client,
   })  : _createOrderUsecase = createOrderUsecase,
         _createTakeAwayOrderUsecase = createTakeAwayOrderUsecase,
         _connectivity = connectivity,
         _queue = queue,
         _lanHub = lanHub,
+        _client = client,
         super(const CreateOrderState()) {
     on<_Started>(_started);
     on<_CreateOrder>(_createOrder);
@@ -78,6 +86,40 @@ class CreateOrderBloc extends Bloc<CreateOrderEvent, CreateOrderState> {
     // ── Dine-in ────────────────────────────────────────────────
     if (!_connectivity.isOnline) {
       await _handleOfflineOrder(event.orders, emit);
+      return;
+    }
+
+    // Busy table: add items to existing order (POST /api/v1/order-items)
+    if (state.tableStatus == TableStatus.busy && _activeOrderId != null) {
+      try {
+        await _client.post(
+          ListAPI.orderItemsCreate,
+          data: {
+            'order_id': _activeOrderId,
+            'items': event.orders
+                .map((o) => {
+                      'comment': '',
+                      'good_id': o.goods.id,
+                      'quantity': o.quantity,
+                    })
+                .toList(),
+          },
+        );
+        _lanHub.tableStatusChanged(state.tableId, TableStatus.busy.name);
+        emit(state.copyWith(status: Status.SUCCESS, success: true));
+      } on DioException catch (e) {
+        if (e.type == DioExceptionType.connectionError ||
+            e.type == DioExceptionType.sendTimeout ||
+            e.type == DioExceptionType.receiveTimeout) {
+          await _handleOfflineOrder(event.orders, emit);
+          return;
+        }
+        showErrorMessage(
+          navigatorKey.currentContext!,
+          e.message ?? 'Xato yuz berdi',
+        );
+        emit(state.copyWith(status: Status.ERROR));
+      }
       return;
     }
 
