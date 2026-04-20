@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(shorebird --version)",
+      "Bash(shorebird account *)",
+      "Bash(shorebird whoami *)",
+      "Bash(shorebird doctor *)",
+      "Bash(shorebird init *)",
+      "Bash(curl -sL \"https://raw.githubusercontent.com/gradle/gradle/v8.14.0/gradle/wrapper/gradle-wrapper.jar\" -o \"/Users/ali/StudioProjects/Mary Ai/pos/android/gradle/wrapper/gradle-wrapper.jar\")"
+    ]
+  }
+}
