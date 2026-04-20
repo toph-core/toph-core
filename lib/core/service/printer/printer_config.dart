@@ -18,11 +18,12 @@ class PrinterConfig {
   /// **`cable`** (LAN) va **`wlan`** (Wi‑Fi); default `cable`.
   final String connectionType;
 
-  /// Hozirgi chop etish — faqat IP:port orqali (RAW TCP). `cable` va `wlan` bir xil TCP.
-  /// `wifi` / `lan` / `ethernet` — eski yoki boshqa klientlar uchun sinonim.
+  /// `cable` — USB kabel orqali Windows printer API ishlatiladi (IP kerak emas).
+  bool get usesWindowsPrinter => connectionType.toLowerCase() == 'cable';
+
+  /// Wi-Fi / LAN orqali RAW TCP (IP:port). `cable` bu yerga kirmaydi.
   bool get usesNetworkTcp {
     switch (connectionType.toLowerCase()) {
-      case 'cable':
       case 'wlan':
       case 'wifi':
       case 'lan':

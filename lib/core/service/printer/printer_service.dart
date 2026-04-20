@@ -1,8 +1,11 @@
+import 'dart:ffi';
 import 'dart:io';
 
 import 'package:esc_pos_utils_plus/esc_pos_utils_plus.dart';
+import 'package:ffi/ffi.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:win32/win32.dart';
 
 import 'package:mary_ai_pos/core/components/flush_bars.dart';
 import 'package:mary_ai_pos/core/utils/helper/helper_widget.dart';
@@ -286,22 +289,23 @@ class PrinterService {
     );
   }
 
-  /// TCP socket orqali printer'ga ulanib bytes yuboradi.
-  /// Printer offline bo'lsa [maxRetries] marta qayta urinadi.
+  /// Printer’ga ulanib bytes yuboradi: cable → Windows USB API, wlan/wifi → TCP.
   Future<({bool ok, String? error})> _connectAndPrint(
     PrinterConfig config,
     List<int> bytes, {
     int maxRetries = 2,
   }) async {
+    if (config.usesWindowsPrinter) {
+      if (!Platform.isWindows) {
+        return (ok: false, error: "USB printer faqat Windows da ishlaydi.");
+      }
+      return _printViaWindowsRaw(bytes);
+    }
+
     if (!config.usesNetworkTcp) {
-      debugPrint(
-        '[PrinterService] connection_type=${config.connectionType} — TCP chop qo‘llab-quvvatlanmaydi.',
-      );
       return (
         ok: false,
-        error:
-            'Printer ulanish turi «${config.connectionType}» hozircha qo‘llab-quvvatlanmaydi. '
-            'Ilova faqat tarmoq printerlari (API: cable, wlan) uchun IP:port orqali chop etadi.',
+        error: "Printer ulanish turi [${config.connectionType}] qo’llab-quvvatlanmaydi.",
       );
     }
 
@@ -357,5 +361,123 @@ class PrinterService {
     }
     if (m.isNotEmpty) return m;
     return e.toString();
+  }
+
+  // ── Windows USB printing ──────────────────────────────────────────────────
+
+  /// USB kabel orqali ulangan printerga raw ESC/POS bytes yuboradi.
+  /// Windows printer API: OpenPrinter → WritePrinter → ClosePrinter.
+  Future<({bool ok, String? error})> _printViaWindowsRaw(List<int> bytes) async {
+    try {
+      final printerName = _findUsbPrinterName();
+      if (printerName == null) {
+        return (
+          ok: false,
+          error: "USB printer topilmadi.\n"
+              "Windows: Sozlamalar → Bluetooth va qurilmalar → Printerlar da "
+              "USB printer o'rnatilganini tekshiring.",
+        );
+      }
+      return _writeRawToPrinter(printerName, bytes);
+    } catch (e, st) {
+      debugPrint('[PrinterService] USB print xatosi: $e\n$st');
+      return (ok: false, error: "USB printer xatosi: $e");
+    }
+  }
+
+  /// O'rnatilgan local printerlar orasidan USB portga ulangani topiladi.
+  String? _findUsbPrinterName() {
+    final cbNeeded = calloc<DWORD>();
+    final cReturned = calloc<DWORD>();
+
+    // Birinchi chaqiriq — bufer hajmini aniqlash
+    EnumPrinters(PRINTER_ENUM_LOCAL, nullptr, 2, nullptr, 0, cbNeeded, cReturned);
+
+    final size = cbNeeded.value;
+    if (size == 0) {
+      calloc.free(cbNeeded);
+      calloc.free(cReturned);
+      return null;
+    }
+
+    final buf = calloc<Uint8>(size);
+    final ok = EnumPrinters(
+      PRINTER_ENUM_LOCAL,
+      nullptr,
+      2,
+      buf,
+      size,
+      cbNeeded,
+      cReturned,
+    );
+
+    String? found;
+    if (ok != 0) {
+      final count = cReturned.value;
+      for (int i = 0; i < count; i++) {
+        final pInfo = Pointer<PRINTER_INFO_2>.fromAddress(
+          buf.address + i * sizeOf<PRINTER_INFO_2>(),
+        );
+        final portName = pInfo.ref.pPortName.toDartString().toUpperCase();
+        if (portName.startsWith('USB')) {
+          found = pInfo.ref.pPrinterName.toDartString();
+          break;
+        }
+      }
+    }
+
+    calloc.free(buf);
+    calloc.free(cbNeeded);
+    calloc.free(cReturned);
+    return found;
+  }
+
+  /// Win32 API orqali raw bytes yuboradi.
+  ({bool ok, String? error}) _writeRawToPrinter(String name, List<int> bytes) {
+    final pName = name.toNativeUtf16();
+    final phPrinter = calloc<HANDLE>();
+
+    if (OpenPrinter(pName, phPrinter, nullptr) == 0) {
+      calloc.free(phPrinter);
+      malloc.free(pName);
+      return (ok: false, error: "Printer ochilmadi: $name");
+    }
+
+    final hPrinter = phPrinter.value;
+    calloc.free(phPrinter);
+    malloc.free(pName);
+
+    final pDocName = 'POS Receipt'.toNativeUtf16();
+    final pDatatype = 'RAW'.toNativeUtf16();
+    final pDocInfo = calloc<DOC_INFO_1>()
+      ..ref.pDocName = pDocName
+      ..ref.pOutputFile = nullptr
+      ..ref.pDatatype = pDatatype;
+
+    final jobId = StartDocPrinter(hPrinter, 1, pDocInfo.cast());
+    calloc.free(pDocInfo);
+    malloc.free(pDocName);
+    malloc.free(pDatatype);
+
+    if (jobId == 0) {
+      ClosePrinter(hPrinter);
+      return (ok: false, error: "StartDocPrinter muvaffaqiyatsiz: $name");
+    }
+
+    StartPagePrinter(hPrinter);
+
+    final pData = calloc<Uint8>(bytes.length);
+    pData.asTypedList(bytes.length).setAll(0, bytes);
+    final pWritten = calloc<DWORD>();
+    WritePrinter(hPrinter, pData, bytes.length, pWritten);
+    calloc.free(pData);
+    calloc.free(pWritten);
+
+    EndPagePrinter(hPrinter);
+    EndDocPrinter(hPrinter);
+    ClosePrinter(hPrinter);
+
+    debugPrint('[PrinterService] USB chek yuborildi → $name');
+    return (ok: true, error: null);
   }
 }

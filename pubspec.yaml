@@ -84,7 +84,9 @@ dependencies:
   alice: ^1.0.0
   alice_dio: ^1.0.7
 
-  # Thermal printer (ESC/POS over TCP/IP)
+  # Thermal printer (ESC/POS over TCP/IP + Windows USB)
+  win32: ^5.5.0
+  ffi: ^2.1.0
   esc_pos_utils_plus: ^2.0.4
   windows1251: ^2.0.1
   charset: ^2.0.1
