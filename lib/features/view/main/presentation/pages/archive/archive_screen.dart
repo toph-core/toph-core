@@ -68,8 +68,9 @@ class _ArchiveBody extends StatelessWidget {
                 0,
                 (sum, a) => sum + a.totalPrice,
               );
-              final avgCheck =
-                  archives.isNotEmpty ? revenue ~/ archives.length : 0;
+              final avgCheck = archives.isNotEmpty
+                  ? revenue ~/ archives.length
+                  : 0;
 
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -154,11 +155,12 @@ class _ArchiveBody extends StatelessWidget {
                                   ),
                                   // Table body
                                   Expanded(
-                                    child: state.status == Status.LOADING &&
+                                    child:
+                                        state.status == Status.LOADING &&
                                             archives.isEmpty
                                         ? const Center(
-                                            child: CircularProgressIndicator
-                                                .adaptive(),
+                                            child:
+                                                CircularProgressIndicator.adaptive(),
                                           )
                                         : archives.isEmpty
                                         ? const Center(
@@ -177,19 +179,15 @@ class _ArchiveBody extends StatelessWidget {
                                                 _ArchiveRow(
                                                   archive: archives[i],
                                                   isSelected:
-                                                      state.selectArchive
-                                                          ?.id ==
+                                                      state.selectArchive?.id ==
                                                       archives[i].id,
-                                                  onTap: () =>
-                                                      context
-                                                          .read<ArchivesBloc>()
-                                                          .add(
-                                                            ArchivesEvent
-                                                                .selectArchive(
-                                                                  id: archives[i]
-                                                                      .id,
-                                                                ),
-                                                          ),
+                                                  onTap: () => context
+                                                      .read<ArchivesBloc>()
+                                                      .add(
+                                                        ArchivesEvent.selectArchive(
+                                                          id: archives[i].id,
+                                                        ),
+                                                      ),
                                                 ),
                                           ),
                                   ),
@@ -527,9 +525,7 @@ class _ArchiveRow extends StatelessWidget {
         height: 52,
         decoration: BoxDecoration(
           color: isSelected ? const Color(0xFFFFF3EE) : Colors.transparent,
-          border: const Border(
-            bottom: BorderSide(color: Color(0xFFF5F4F2)),
-          ),
+          border: const Border(bottom: BorderSide(color: Color(0xFFF5F4F2))),
         ),
         child: Row(
           children: [
@@ -708,7 +704,8 @@ class _AdminOrdersArchiveBody extends StatefulWidget {
   const _AdminOrdersArchiveBody();
 
   @override
-  State<_AdminOrdersArchiveBody> createState() => _AdminOrdersArchiveBodyState();
+  State<_AdminOrdersArchiveBody> createState() =>
+      _AdminOrdersArchiveBodyState();
 }
 
 class _AdminOrdersArchiveBodyState extends State<_AdminOrdersArchiveBody> {
@@ -940,7 +937,8 @@ class _AdminOrdersArchiveBodyState extends State<_AdminOrdersArchiveBody> {
                   value: _orderTypeFilter,
                   items: _orderTypes,
                   labelFor: (e) => localizedOrderType(context, e),
-                  onChanged: (v) => _applyFilters(status: _statusFilter, type: v),
+                  onChanged: (v) =>
+                      _applyFilters(status: _statusFilter, type: v),
                 ),
               ),
               const SizedBox(width: 10),
@@ -972,7 +970,10 @@ class _AdminOrdersArchiveBodyState extends State<_AdminOrdersArchiveBody> {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Text(_error!, style: TextStyle(color: colors.systemError)),
+                        Text(
+                          _error!,
+                          style: TextStyle(color: colors.systemError),
+                        ),
                         const SizedBox(height: 10),
                         FilledButton(
                           onPressed: () => _load(page: _page),
@@ -996,174 +997,196 @@ class _AdminOrdersArchiveBodyState extends State<_AdminOrdersArchiveBody> {
                     radius: const Radius.circular(4),
                     interactive: true,
                     child: ListView.separated(
-                    controller: _scrollCtrl,
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    itemCount: _orders.length,
-                    separatorBuilder: (_, _) => Divider(
-                      height: 1,
-                      thickness: 1,
-                      color: colors.border,
-                    ),
-                    itemBuilder: (context, i) {
-                      final o = _orders[i];
-                      return Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 14,
-                          vertical: 10,
-                        ),
-                        child: Builder(builder: (context) {
-                          final meta = _tableMeta[o.tableId];
-                          final hallName = meta?.hallName ?? '';
-                          final tableNum = meta?.number ?? 0;
-                          final waiterName = _userNames[o.waiterId] ?? '';
-                          final cashierName = _userNames[o.cashierId] ?? '';
-                          final staffName = waiterName.isNotEmpty
-                              ? waiterName
-                              : cashierName.isNotEmpty
-                              ? cashierName
-                              : '—';
-                          final isWaiter = waiterName.isNotEmpty;
-                          return Row(
-                          children: [
-                            // Zal
-                            Expanded(
-                              flex: 3,
-                              child: o.orderType == 'takeaway'
-                                  ? Container(
-                                      padding: const EdgeInsets.symmetric(
-                                          horizontal: 8, vertical: 3),
-                                      decoration: BoxDecoration(
-                                        color: const Color(0xFFFFF3EE),
-                                        borderRadius: BorderRadius.circular(6),
-                                        border: Border.all(
-                                            color: const Color(0xFFFB6633)
-                                                .withOpacity(0.3)),
-                                      ),
-                                      child: Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        spacing: 4,
-                                        children: [
-                                          const Icon(
-                                            Icons.shopping_bag_outlined,
-                                            size: 12,
-                                            color: Color(0xFFFB6633),
-                                          ),
-                                          const Text(
-                                            'Olib ketish',
-                                            style: TextStyle(
-                                              fontSize: 11,
-                                              fontWeight: FontWeight.w600,
-                                              color: Color(0xFFFB6633),
-                                              fontFamily: 'Inter',
+                      controller: _scrollCtrl,
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      itemCount: _orders.length,
+                      separatorBuilder: (_, _) => Divider(
+                        height: 1,
+                        thickness: 1,
+                        color: colors.border,
+                      ),
+                      itemBuilder: (context, i) {
+                        final o = _orders[i];
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 10,
+                          ),
+                          child: Builder(
+                            builder: (context) {
+                              final meta = _tableMeta[o.tableId];
+                              final hallName = meta?.hallName ?? '';
+                              final tableNum = meta?.number ?? 0;
+                              final waiterName = _userNames[o.waiterId] ?? '';
+                              final cashierName = _userNames[o.cashierId] ?? '';
+                              final staffName = waiterName.isNotEmpty
+                                  ? waiterName
+                                  : cashierName.isNotEmpty
+                                  ? cashierName
+                                  : '—';
+                              final isWaiter = waiterName.isNotEmpty;
+                              return Row(
+                                children: [
+                                  // Zal
+                                  Expanded(
+                                    flex: 3,
+                                    child: o.orderType == 'takeaway'
+                                        ? Container(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 8,
+                                              vertical: 3,
                                             ),
-                                          ),
-                                        ],
-                                      ),
-                                    )
-                                  : Text(
-                                      hallName.isNotEmpty ? hallName : '—',
-                                      style: TextStyle(
-                                        fontSize: 13,
-                                        color: colors.textDefault,
-                                      ),
-                                    ),
-                            ),
-                            // Stol
-                            Expanded(
-                              flex: 2,
-                              child: o.orderType == 'takeaway'
-                                  ? Text('—',
-                                      style: TextStyle(
-                                          color: colors.textSecondary,
-                                          fontSize: 13))
-                                  : tableNum > 0
-                                      ? Container(
-                                          width: 28,
-                                          height: 28,
-                                          decoration: BoxDecoration(
-                                            color: const Color(0xFFF5F4F2),
-                                            borderRadius:
-                                                BorderRadius.circular(8),
-                                          ),
-                                          alignment: Alignment.center,
-                                          child: Text(
-                                            '$tableNum',
+                                            decoration: BoxDecoration(
+                                              color: const Color(0xFFFFF3EE),
+                                              borderRadius:
+                                                  BorderRadius.circular(6),
+                                              border: Border.all(
+                                                color: const Color(
+                                                  0xFFFB6633,
+                                                ).withOpacity(0.3),
+                                              ),
+                                            ),
+                                            child: const Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              spacing: 4,
+                                              children: [
+                                                Icon(
+                                                  Icons.shopping_bag_outlined,
+                                                  size: 12,
+                                                  color: Color(0xFFFB6633),
+                                                ),
+                                                Text(
+                                                  'Olib ketish',
+                                                  style: TextStyle(
+                                                    fontSize: 11,
+                                                    fontWeight: FontWeight.w600,
+                                                    color: Color(0xFFFB6633),
+                                                    fontFamily: 'Inter',
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          )
+                                        : Text(
+                                            hallName.isNotEmpty
+                                                ? hallName
+                                                : '—',
                                             style: TextStyle(
-                                              fontSize: 12,
-                                              fontWeight: FontWeight.w700,
+                                              fontSize: 13,
                                               color: colors.textDefault,
                                             ),
                                           ),
-                                        )
-                                      : Text('—',
-                                          style: TextStyle(
+                                  ),
+                                  // Stol
+                                  Expanded(
+                                    flex: 2,
+                                    child: o.orderType == 'takeaway'
+                                        ? Text(
+                                            '—',
+                                            style: TextStyle(
                                               color: colors.textSecondary,
-                                              fontSize: 13)),
-                            ),
-                            // Ofitsiant / Kassir
-                            Expanded(
-                              flex: 4,
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Text(
-                                    staffName,
-                                    style: TextStyle(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w500,
-                                      color: colors.textDefault,
+                                              fontSize: 13,
+                                            ),
+                                          )
+                                        : tableNum > 0
+                                        ? Container(
+                                            width: 28,
+                                            height: 28,
+                                            decoration: BoxDecoration(
+                                              color: const Color(0xFFF5F4F2),
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
+                                            ),
+                                            alignment: Alignment.center,
+                                            child: Text(
+                                              '$tableNum',
+                                              style: TextStyle(
+                                                fontSize: 12,
+                                                fontWeight: FontWeight.w700,
+                                                color: colors.textDefault,
+                                              ),
+                                            ),
+                                          )
+                                        : Text(
+                                            '—',
+                                            style: TextStyle(
+                                              color: colors.textSecondary,
+                                              fontSize: 13,
+                                            ),
+                                          ),
+                                  ),
+                                  // Ofitsiant / Kassir
+                                  Expanded(
+                                    flex: 4,
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Text(
+                                          staffName,
+                                          style: TextStyle(
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.w500,
+                                            color: colors.textDefault,
+                                          ),
+                                        ),
+                                        if (staffName != '—')
+                                          Text(
+                                            isWaiter ? 'Ofitsiant' : 'Kassir',
+                                            style: TextStyle(
+                                              fontSize: 10,
+                                              color: colors.textSecondary,
+                                            ),
+                                          ),
+                                      ],
                                     ),
                                   ),
-                                  if (staffName != '—')
-                                    Text(
-                                      isWaiter ? 'Ofitsiant' : 'Kassir',
-                                      style: TextStyle(fontSize: 10, color: colors.textSecondary),
+                                  // Vaqt
+                                  Expanded(
+                                    flex: 3,
+                                    child: Text(
+                                      o.createdAtLabel,
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: colors.textSecondary,
+                                      ),
                                     ),
+                                  ),
+                                  // Summa
+                                  Expanded(
+                                    flex: 3,
+                                    child: Text(
+                                      AppFormatter.formatAmountWithSpaces(
+                                        o.totalAmount,
+                                      ),
+                                      textAlign: TextAlign.right,
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w700,
+                                        color: colors.textBrand,
+                                      ),
+                                    ),
+                                  ),
+                                  // Holat
+                                  Expanded(
+                                    flex: 3,
+                                    child: Align(
+                                      alignment: Alignment.centerRight,
+                                      child: _orderStatusBadge(
+                                        status: o.status,
+                                        secondaryTextColor:
+                                            colors.textSecondary,
+                                      ),
+                                    ),
+                                  ),
                                 ],
-                              ),
-                            ),
-                            // Vaqt
-                            Expanded(
-                              flex: 3,
-                              child: Text(
-                                o.createdAtLabel,
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: colors.textSecondary,
-                                ),
-                              ),
-                            ),
-                            // Summa
-                            Expanded(
-                              flex: 3,
-                              child: Text(
-                                AppFormatter.formatAmountWithSpaces(o.totalAmount),
-                                textAlign: TextAlign.right,
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w700,
-                                  color: colors.textBrand,
-                                ),
-                              ),
-                            ),
-                            // Holat
-                            Expanded(
-                              flex: 3,
-                              child: Align(
-                                alignment: Alignment.centerRight,
-                                child: _orderStatusBadge(
-                                  status: o.status,
-                                  secondaryTextColor: colors.textSecondary,
-                                ),
-                              ),
-                            ),
-                          ],
+                              );
+                            },
+                          ),
                         );
-                        }),
-                      );
-                    },
-                  ),
+                      },
+                    ),
                   ),
           ),
         ),
@@ -1182,9 +1205,9 @@ class _AdminOrdersArchiveBodyState extends State<_AdminOrdersArchiveBody> {
           Theme(
             data: Theme.of(context).copyWith(
               colorScheme: Theme.of(context).colorScheme.copyWith(
-                    secondary: colors.buttonBrand,
-                    onSecondary: colors.textOnBrand,
-                  ),
+                secondary: colors.buttonBrand,
+                onSecondary: colors.textOnBrand,
+              ),
             ),
             child: SizedBox(
               width: 372,
@@ -1222,8 +1245,10 @@ class _AdminOrdersArchiveBodyState extends State<_AdminOrdersArchiveBody> {
               child: DropdownButton<int>(
                 value: _pageSize,
                 isDense: true,
-                icon: Icon(Icons.expand_more_rounded,
-                    color: colors.textSecondary),
+                icon: Icon(
+                  Icons.expand_more_rounded,
+                  color: colors.textSecondary,
+                ),
                 style: TextStyle(
                   fontSize: 13,
                   color: colors.textDefault,
@@ -1244,8 +1269,10 @@ class _AdminOrdersArchiveBodyState extends State<_AdminOrdersArchiveBody> {
                     _pageSize = value;
                     final newTotal = _totalCount == null
                         ? 1
-                        : ((_totalCount! + value - 1) ~/ value)
-                            .clamp(1, 999999);
+                        : ((_totalCount! + value - 1) ~/ value).clamp(
+                            1,
+                            999999,
+                          );
                     if (_page > newTotal) _page = newTotal;
                   });
                   _load(page: _page);
@@ -1290,7 +1317,8 @@ class _AdminOrdersArchiveBodyState extends State<_AdminOrdersArchiveBody> {
     required Color secondaryTextColor,
   }) {
     final s = status.toLowerCase();
-    final isOpen = s == 'open' || s == 'cooking' || s == 'ready' || s == 'served';
+    final isOpen =
+        s == 'open' || s == 'cooking' || s == 'ready' || s == 'served';
     final isPaid = s == 'paid';
     final bg = isOpen
         ? const Color(0xFFFFF3EE)
@@ -1304,7 +1332,10 @@ class _AdminOrdersArchiveBodyState extends State<_AdminOrdersArchiveBody> {
         : secondaryTextColor;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(20)),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(20),
+      ),
       child: Text(
         localizedOrderStatus(context, status),
         textAlign: TextAlign.center,
@@ -1350,7 +1381,9 @@ class _AdminOrderItem {
       status: (json['status'] ?? '').toString(),
       orderType: (json['order_type'] ?? '').toString(),
       totalAmount: (json['total_amount'] ?? '0').toString(),
-      createdAt: DateTime.tryParse((json['created_at'] ?? '').toString())?.toLocal(),
+      createdAt: DateTime.tryParse(
+        (json['created_at'] ?? '').toString(),
+      )?.toLocal(),
     );
   }
 

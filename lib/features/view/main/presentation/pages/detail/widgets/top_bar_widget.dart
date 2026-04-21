@@ -49,7 +49,10 @@ class TopBarWidget extends StatelessWidget {
                           builder: (_) => const LeaveFromDetailScreenDialog(),
                         );
                         if (value == true) {
-                          final saved = detailBloc.saveOrder(cafeTable!, guestCount);
+                          final saved = detailBloc.saveOrder(
+                            cafeTable!,
+                            guestCount,
+                          );
                           if (saved != null) {
                             savedOrdersBloc.add(
                               SavedOrdersEvent.addNewOrder(order: saved),
@@ -120,11 +123,14 @@ class TopBarWidget extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   spacing: 8,
                   children: [
-                    Icon(Icons.shopping_bag_outlined,
-                        size: 20, color: colors.textDefault),
+                    Icon(
+                      Icons.shopping_bag_outlined,
+                      size: 20,
+                      color: colors.textDefault,
+                    ),
                     Text(
                       S.current.strTakeaway,
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w700,
                         color: Color(0xFF19160B),
@@ -137,7 +143,10 @@ class TopBarWidget extends StatelessWidget {
               // Search field
               Flexible(
                 child: ConstrainedBox(
-                  constraints: const BoxConstraints(minWidth: 140, maxWidth: 280),
+                  constraints: const BoxConstraints(
+                    minWidth: 140,
+                    maxWidth: 280,
+                  ),
                   child: Container(
                     height: 36,
                     decoration: BoxDecoration(

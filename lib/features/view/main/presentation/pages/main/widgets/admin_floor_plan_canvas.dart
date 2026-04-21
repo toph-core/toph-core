@@ -100,7 +100,11 @@ class _AdminFloorPlanCanvasState extends State<AdminFloorPlanCanvas> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.table_restaurant_outlined, size: 52, color: colors.border),
+            Icon(
+              Icons.table_restaurant_outlined,
+              size: 52,
+              color: colors.border,
+            ),
             const SizedBox(height: 10),
             Text(
               'Stollar mavjud emas',
@@ -136,18 +140,19 @@ class _AdminFloorPlanCanvasState extends State<AdminFloorPlanCanvas> {
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
-                colors: [
-                  colors.bgDefault,
-                  colors.bgSecondary.withOpacity(0.5),
-                ],
+                colors: [colors.bgDefault, colors.bgSecondary.withOpacity(0.5)],
               ),
             ),
             child: LayoutBuilder(
               builder: (context, constraints) {
-                final hallW =
-                    (widget.hall?.width ?? 1000.0).clamp(1.0, double.infinity);
-                final hallH =
-                    (widget.hall?.height ?? 800.0).clamp(1.0, double.infinity);
+                final hallW = (widget.hall?.width ?? 1000.0).clamp(
+                  1.0,
+                  double.infinity,
+                );
+                final hallH = (widget.hall?.height ?? 800.0).clamp(
+                  1.0,
+                  double.infinity,
+                );
 
                 // Fit hall into viewport
                 const padding = 24.0;
@@ -211,8 +216,9 @@ class _AdminFloorPlanCanvasState extends State<AdminFloorPlanCanvas> {
                                 boxShadow: [
                                   BoxShadow(
                                     color: widget.isEditMode
-                                        ? const Color(0xFF3B82F6)
-                                            .withOpacity(0.15)
+                                        ? const Color(
+                                            0xFF3B82F6,
+                                          ).withOpacity(0.15)
                                         : Colors.black.withOpacity(0.06),
                                     blurRadius: widget.isEditMode ? 16 : 8,
                                     spreadRadius: widget.isEditMode ? 2 : 0,
@@ -227,8 +233,7 @@ class _AdminFloorPlanCanvasState extends State<AdminFloorPlanCanvas> {
                                   children: [
                                     Positioned.fill(
                                       child: CustomPaint(
-                                        painter:
-                                            _DotGridPainter(colors.border),
+                                        painter: _DotGridPainter(colors.border),
                                       ),
                                     ),
                                     ...widget.tables.map(
@@ -285,7 +290,8 @@ class _AdminFloorPlanCanvasState extends State<AdminFloorPlanCanvas> {
           onPanUpdate: widget.isEditMode
               ? (details) {
                   setState(() {
-                    final cur = _localPositions[table.id] ??
+                    final cur =
+                        _localPositions[table.id] ??
                         Offset(table.posX * scale, table.posY * scale);
                     final proposed = cur + details.delta;
                     _localPositions[table.id] = _resolveNoOverlap(
@@ -513,12 +519,15 @@ class _CanvasToolbar extends StatelessWidget {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.drag_indicator,
-                      size: 13, color: Color(0xFF3B82F6)),
+                  const Icon(
+                    Icons.drag_indicator,
+                    size: 13,
+                    color: Color(0xFF3B82F6),
+                  ),
                   const SizedBox(width: 4),
                   Text(
                     S.current.strDragHint,
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontSize: 11,
                       color: Color(0xFF3B82F6),
                       fontFamily: 'Inter',
@@ -616,7 +625,11 @@ class _ZoomGroup extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          _ZoomBtn(icon: Icons.remove, tooltip: S.current.strShrink, onTap: onZoomOut),
+          _ZoomBtn(
+            icon: Icons.remove,
+            tooltip: S.current.strShrink,
+            onTap: onZoomOut,
+          ),
           Container(width: 1, height: 18, color: c.border),
           _ZoomBtn(
             icon: Icons.center_focus_strong_outlined,
@@ -624,7 +637,11 @@ class _ZoomGroup extends StatelessWidget {
             onTap: onReset,
           ),
           Container(width: 1, height: 18, color: c.border),
-          _ZoomBtn(icon: Icons.add, tooltip: S.current.strEnlarge, onTap: onZoomIn),
+          _ZoomBtn(
+            icon: Icons.add,
+            tooltip: S.current.strEnlarge,
+            onTap: onZoomIn,
+          ),
         ],
       ),
     );
@@ -668,9 +685,7 @@ class _ZoomBtnState extends State<_ZoomBtn> {
             child: Icon(
               widget.icon,
               size: 15,
-              color: _hovered
-                  ? const Color(0xFF3B82F6)
-                  : c.textSecondary,
+              color: _hovered ? const Color(0xFF3B82F6) : c.textSecondary,
             ),
           ),
         ),
@@ -766,7 +781,11 @@ class _AdminTableItemState extends State<_AdminTableItem> {
           clipBehavior: Clip.none,
           children: [
             // Chairs
-            ..._buildChairs(chairColor: chairColor, totalW: totalW, totalH: totalH),
+            ..._buildChairs(
+              chairColor: chairColor,
+              totalW: totalW,
+              totalH: totalH,
+            ),
             // Table body
             Positioned(
               left: pad,
@@ -866,9 +885,16 @@ class _AdminTableItemState extends State<_AdminTableItem> {
     }
   }
 
-  List<Widget> _roundChairs(Color color, int count, double totalW, double totalH) {
-    final cs = (math.min(widget.tableWidth, widget.tableHeight) * 0.10)
-        .clamp(5.0, 18.0);
+  List<Widget> _roundChairs(
+    Color color,
+    int count,
+    double totalW,
+    double totalH,
+  ) {
+    final cs = (math.min(widget.tableWidth, widget.tableHeight) * 0.10).clamp(
+      5.0,
+      18.0,
+    );
     final cx = totalW / 2;
     final cy = totalH / 2;
     final radius =
@@ -891,9 +917,16 @@ class _AdminTableItemState extends State<_AdminTableItem> {
     });
   }
 
-  List<Widget> _rectChairs(Color color, int count, double totalW, double totalH) {
-    final cs = (math.min(widget.tableWidth, widget.tableHeight) * 0.10)
-        .clamp(5.0, 16.0);
+  List<Widget> _rectChairs(
+    Color color,
+    int count,
+    double totalW,
+    double totalH,
+  ) {
+    final cs = (math.min(widget.tableWidth, widget.tableHeight) * 0.10).clamp(
+      5.0,
+      16.0,
+    );
     final cr = cs * 0.3;
     final tw = widget.tableWidth;
     final th = widget.tableHeight;
@@ -907,35 +940,39 @@ class _AdminTableItemState extends State<_AdminTableItem> {
     for (int i = 0; i < topCount; i++) {
       final spacing = tw / topCount;
       final x = pad + spacing * (i + 0.5) - cs / 2;
-      chairs.add(Positioned(
-        left: x,
-        top: pad - cs - 3,
-        child: Container(
-          width: cs,
-          height: cs,
-          decoration: BoxDecoration(
-            color: color,
-            borderRadius: BorderRadius.circular(cr),
+      chairs.add(
+        Positioned(
+          left: x,
+          top: pad - cs - 3,
+          child: Container(
+            width: cs,
+            height: cs,
+            decoration: BoxDecoration(
+              color: color,
+              borderRadius: BorderRadius.circular(cr),
+            ),
           ),
         ),
-      ));
+      );
     }
 
     for (int i = 0; i < bottomCount; i++) {
       final spacing = tw / (bottomCount == 0 ? 1 : bottomCount);
       final x = pad + spacing * (i + 0.5) - cs / 2;
-      chairs.add(Positioned(
-        left: x,
-        top: pad + th + 3,
-        child: Container(
-          width: cs,
-          height: cs,
-          decoration: BoxDecoration(
-            color: color,
-            borderRadius: BorderRadius.circular(cr),
+      chairs.add(
+        Positioned(
+          left: x,
+          top: pad + th + 3,
+          child: Container(
+            width: cs,
+            height: cs,
+            decoration: BoxDecoration(
+              color: color,
+              borderRadius: BorderRadius.circular(cr),
+            ),
           ),
         ),
-      ));
+      );
     }
 
     return chairs;

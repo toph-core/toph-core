@@ -60,7 +60,7 @@ class LeaveFromDetailScreenDialog extends StatelessWidget {
                       child: Text(
                         S.current.strCancel,
                         textAlign: TextAlign.center,
-                        style: TextStyle(
+                        style: const TextStyle(
                           color: Color(0xFF2D2D2D),
                           fontSize: 16,
                           fontFamily: 'Inter',

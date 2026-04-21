@@ -35,7 +35,7 @@ class LogoutDialog extends StatelessWidget {
               child: Text(
                 S.current.strLogoutConfirm,
                 textAlign: TextAlign.center,
-                style: TextStyle(
+                style: const TextStyle(
                   color: Color(0xFF2D2D2D),
                   fontSize: 20,
                   fontFamily: 'Inter',
@@ -60,7 +60,7 @@ class LogoutDialog extends StatelessWidget {
                       child: Text(
                         S.current.strCancel,
                         textAlign: TextAlign.center,
-                        style: TextStyle(
+                        style: const TextStyle(
                           color: Color(0xFF2D2D2D),
                           fontSize: 16,
                           fontFamily: 'Inter',
@@ -91,7 +91,7 @@ class LogoutDialog extends StatelessWidget {
                           Text(
                             S.current.strLogout,
                             textAlign: TextAlign.center,
-                            style: TextStyle(
+                            style: const TextStyle(
                               color: Color(0xFFDB2020),
                               fontSize: 16,
                               fontFamily: 'Inter',

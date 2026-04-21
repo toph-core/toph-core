@@ -80,10 +80,7 @@ class _WaiterFloorPlanScreenState extends State<WaiterFloorPlanScreen> {
                     ),
                     const SizedBox(width: 6),
                     // View toggle
-                    _ViewToggle(
-                      mode: _viewMode,
-                      onToggle: _toggleView,
-                    ),
+                    _ViewToggle(mode: _viewMode, onToggle: _toggleView),
                   ],
                 ),
               ),
@@ -100,25 +97,22 @@ class _WaiterFloorPlanScreenState extends State<WaiterFloorPlanScreen> {
                 child: state.status == Status.LOADING
                     ? Center(
                         child: CircularProgressIndicator.adaptive(
-                          valueColor:
-                              AlwaysStoppedAnimation(colors.textBrand),
+                          valueColor: AlwaysStoppedAnimation(colors.textBrand),
                         ),
                       )
                     : _viewMode == _ViewMode.floorPlan
-                        ? AdminFloorPlanCanvas(
-                            tables: tables,
-                            hall: hall,
-                            isEditMode: false,
-                            savedTableIds: savedIds,
-                            onTableTap: (table) =>
-                                _handleTableTap(context, table),
-                          )
-                        : _GridView(
-                            tables: tables,
-                            savedIds: savedIds,
-                            onTap: (table) =>
-                                _handleTableTap(context, table),
-                          ),
+                    ? AdminFloorPlanCanvas(
+                        tables: tables,
+                        hall: hall,
+                        isEditMode: false,
+                        savedTableIds: savedIds,
+                        onTableTap: (table) => _handleTableTap(context, table),
+                      )
+                    : _GridView(
+                        tables: tables,
+                        savedIds: savedIds,
+                        onTap: (table) => _handleTableTap(context, table),
+                      ),
               ),
             ],
           );
@@ -142,8 +136,9 @@ class _WaiterFloorPlanScreenState extends State<WaiterFloorPlanScreen> {
       );
       if (guestCount == null) return;
 
-      final index = savedOrdersBloc.state.order
-          .indexWhere((v) => v.createOrderRequest.tableId == table.id);
+      final index = savedOrdersBloc.state.order.indexWhere(
+        (v) => v.createOrderRequest.tableId == table.id,
+      );
 
       Future.delayed(
         const Duration(milliseconds: 300),
@@ -153,15 +148,17 @@ class _WaiterFloorPlanScreenState extends State<WaiterFloorPlanScreen> {
             'table': table,
             'guest_count': guestCount,
             'table_status': table.status,
-            'saved_orders':
-                index != -1 ? savedOrdersBloc.state.order[index] : null,
+            'saved_orders': index != -1
+                ? savedOrdersBloc.state.order[index]
+                : null,
           },
         ),
       );
     } else {
       final savedOrdersBloc = context.read<SavedOrdersBloc>();
-      final index = savedOrdersBloc.state.order
-          .indexWhere((v) => v.createOrderRequest.tableId == table.id);
+      final index = savedOrdersBloc.state.order.indexWhere(
+        (v) => v.createOrderRequest.tableId == table.id,
+      );
 
       Navigator.pushNamed(
         context,
@@ -169,8 +166,9 @@ class _WaiterFloorPlanScreenState extends State<WaiterFloorPlanScreen> {
         arguments: {
           'table': table,
           'table_status': TableStatus.busy,
-          'saved_orders':
-              index != -1 ? savedOrdersBloc.state.order[index] : null,
+          'saved_orders': index != -1
+              ? savedOrdersBloc.state.order[index]
+              : null,
         },
       );
     }
@@ -259,7 +257,9 @@ class _HeaderIconBtnState extends State<_HeaderIconBtn> {
             decoration: BoxDecoration(
               color: _hovered ? c.bgSecondary : Colors.transparent,
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: _hovered ? c.border : Colors.transparent),
+              border: Border.all(
+                color: _hovered ? c.border : Colors.transparent,
+              ),
             ),
             child: widget.loading
                 ? SizedBox(
@@ -349,8 +349,7 @@ class _GridView extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           spacing: 8,
           children: [
-            Icon(Icons.table_restaurant_outlined,
-                size: 48, color: c.border),
+            Icon(Icons.table_restaurant_outlined, size: 48, color: c.border),
             Text(
               S.current.strNoTables,
               style: TextStyle(
@@ -370,11 +369,13 @@ class _GridView extends StatelessWidget {
         spacing: 12,
         runSpacing: 12,
         children: tables
-            .map((t) => _WaiterTableCard(
-                  table: t,
-                  isSaved: savedIds.contains(t.id),
-                  onTap: () => onTap(t),
-                ))
+            .map(
+              (t) => _WaiterTableCard(
+                table: t,
+                isSaved: savedIds.contains(t.id),
+                onTap: () => onTap(t),
+              ),
+            )
             .toList(),
       ),
     );
@@ -475,14 +476,16 @@ class _WaiterTableCardState extends State<_WaiterTableCard> {
                   if (widget.isSaved)
                     Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 6, vertical: 2),
+                        horizontal: 6,
+                        vertical: 2,
+                      ),
                       decoration: BoxDecoration(
                         color: const Color(0xFFFB6633).withOpacity(0.12),
                         borderRadius: BorderRadius.circular(4),
                       ),
                       child: Text(
                         S.current.strSavedBadge,
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontSize: 9,
                           fontWeight: FontWeight.w600,
                           color: Color(0xFFFB6633),
@@ -495,8 +498,7 @@ class _WaiterTableCardState extends State<_WaiterTableCard> {
               const SizedBox(height: 6),
               // Status badge
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
                   color: statusColor.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(6),
@@ -531,8 +533,7 @@ class _WaiterTableCardState extends State<_WaiterTableCard> {
                 mainAxisSize: MainAxisSize.min,
                 spacing: 4,
                 children: [
-                  Icon(Icons.people_outline,
-                      size: 13, color: c.textTertiary),
+                  Icon(Icons.people_outline, size: 13, color: c.textTertiary),
                   Text(
                     '${widget.table.capacity} ${S.current.strPersonsSuffix}',
                     style: TextStyle(
