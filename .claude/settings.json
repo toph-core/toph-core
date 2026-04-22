@@ -6,7 +6,18 @@
       "Bash(shorebird whoami *)",
       "Bash(shorebird doctor *)",
       "Bash(shorebird init *)",
-      "Bash(curl -sL \"https://raw.githubusercontent.com/gradle/gradle/v8.14.0/gradle/wrapper/gradle-wrapper.jar\" -o \"/Users/ali/StudioProjects/Mary Ai/pos/android/gradle/wrapper/gradle-wrapper.jar\")"
+      "Bash(curl -sL \"https://raw.githubusercontent.com/gradle/gradle/v8.14.0/gradle/wrapper/gradle-wrapper.jar\" -o \"/Users/ali/StudioProjects/Mary Ai/pos/android/gradle/wrapper/gradle-wrapper.jar\")",
+      "Bash(git ls-tree *)",
+      "Bash(git pull *)",
+      "Bash(git stash *)",
+      "Bash(cat README.md)",
+      "Bash(ls *.env* *.json config*)",
+      "Bash(unzip -o '/Users/ali/Downloads/Mary AI POS-handoff.zip' -d mary_ai_pos_handoff)",
+      "Bash(unzip -o \"Mary AI POS-handoff.zip\" -d /tmp/mary_handoff)",
+      "Bash(grep -r \"color\\\\|#[0-9a-fA-F]\\\\{3,6\\\\}\\\\|rgba\\\\|bg-\\\\|text-\" /tmp/mary_handoff/mary-ai-pos/project/src/)",
+      "Bash(grep -r \"color\\\\|background\\\\|#[0-9a-fA-F]\\\\{3,6\\\\}\" /tmp/mary_handoff/mary-ai-pos/project/src/Sidebar.jsx)",
+      "Bash(grep -r \"color\\\\|background\\\\|#[0-9a-fA-F]\\\\{3,6\\\\}\" /tmp/mary_handoff/mary-ai-pos/project/src/TopBar.jsx)",
+      "WebFetch(domain:api.anthropic.com)"
     ]
   }
 }

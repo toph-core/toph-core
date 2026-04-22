@@ -43,7 +43,7 @@ class _TableWidgetState extends State<TableWidget> {
         break;
       default:
         borderColor = colors.systemInfo;
-        bgColor = const Color(0xFFEEF2FF);
+        bgColor = const Color(0xFFFFF3EE);
         statusTextColor = colors.systemInfo;
         statusLabel = "Bron";
     }

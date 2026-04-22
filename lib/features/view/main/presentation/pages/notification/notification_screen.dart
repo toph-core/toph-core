@@ -73,7 +73,7 @@ class _NotificationBodyState extends State<_NotificationBody> {
                           color: colors.textSecondary,
                         ),
                         filled: true,
-                        fillColor: const Color(0xFFF8F9FA),
+                        fillColor: const Color(0xFFF8FAFC),
                         contentPadding: const EdgeInsets.symmetric(
                           horizontal: 12,
                           vertical: 0,
@@ -81,13 +81,13 @@ class _NotificationBodyState extends State<_NotificationBody> {
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(10),
                           borderSide: const BorderSide(
-                            color: Color(0xFFEBEFF2),
+                            color: Color(0xFFE2E8F0),
                           ),
                         ),
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(10),
                           borderSide: const BorderSide(
-                            color: Color(0xFFEBEFF2),
+                            color: Color(0xFFE2E8F0),
                           ),
                         ),
                         focusedBorder: OutlineInputBorder(
@@ -100,7 +100,7 @@ class _NotificationBodyState extends State<_NotificationBody> {
                       style: const TextStyle(
                         fontSize: 13,
                         fontFamily: 'Inter',
-                        color: Color(0xFF19160B),
+                        color: Color(0xFF0F172A),
                       ),
                       onChanged: (_) => setState(() {}),
                     ),
@@ -110,7 +110,7 @@ class _NotificationBodyState extends State<_NotificationBody> {
                   Container(
                     height: 36,
                     decoration: BoxDecoration(
-                      color: const Color(0xFFF8F9FA),
+                      color: const Color(0xFFF8FAFC),
                       borderRadius: BorderRadius.circular(10),
                     ),
                     padding: const EdgeInsets.all(4),
@@ -187,8 +187,8 @@ class _NotificationBodyState extends State<_NotificationBody> {
                       decoration: BoxDecoration(
                         color: state.filterType == ArchivesFilterType.date
                             ? const Color(0xFFFB6633)
-                            : const Color(0xFFF8F9FA),
-                        border: Border.all(color: const Color(0xFFEBEFF2)),
+                            : const Color(0xFFF8FAFC),
+                        border: Border.all(color: const Color(0xFFE2E8F0)),
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Icon(
@@ -196,7 +196,7 @@ class _NotificationBodyState extends State<_NotificationBody> {
                         size: 16,
                         color: state.filterType == ArchivesFilterType.date
                             ? Colors.white
-                            : const Color(0xFF19160B),
+                            : const Color(0xFF0F172A),
                       ),
                     ),
                   ),
@@ -270,7 +270,7 @@ class _NotificationCard extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        border: Border.all(color: const Color(0xFFEBEFF2)),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
         borderRadius: BorderRadius.circular(14),
       ),
       padding: const EdgeInsets.all(16),
@@ -307,7 +307,7 @@ class _NotificationCard extends StatelessWidget {
                       style: const TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w700,
-                        color: Color(0xFF19160B),
+                        color: Color(0xFF0F172A),
                         fontFamily: 'Inter',
                       ),
                     ),
@@ -315,7 +315,7 @@ class _NotificationCard extends StatelessWidget {
                       item.time,
                       style: const TextStyle(
                         fontSize: 12,
-                        color: Color(0xFF888888),
+                        color: Color(0xFF64748B),
                         fontFamily: 'Inter',
                       ),
                     ),
@@ -336,7 +336,7 @@ class _NotificationCard extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
                     fontSize: 12,
-                    color: Color(0xFF888888),
+                    color: Color(0xFF64748B),
                     fontFamily: 'Inter',
                   ),
                 ),
@@ -376,7 +376,7 @@ class _FilterTab extends StatelessWidget {
           style: TextStyle(
             fontSize: 13,
             fontWeight: FontWeight.w500,
-            color: isActive ? Colors.white : const Color(0xFF888888),
+            color: isActive ? Colors.white : const Color(0xFF64748B),
             fontFamily: 'Inter',
           ),
         ),

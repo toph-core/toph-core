@@ -742,7 +742,7 @@ class _AdminTableItemState extends State<_AdminTableItem> {
         borderColor = const Color(0xFFFB6633);
         textColor = const Color(0xFFFB6633);
       case TableStatus.away:
-        bgColor = const Color(0xFFEEF2FF);
+        bgColor = const Color(0xFFFFF3EE);
         borderColor = const Color(0xFF3B82F6);
         textColor = const Color(0xFF3B82F6);
       default:
@@ -754,7 +754,7 @@ class _AdminTableItemState extends State<_AdminTableItem> {
     // Selected in edit mode — ko'k highlight
     if (widget.isSelected) {
       borderColor = const Color(0xFF3B82F6);
-      bgColor = const Color(0xFFEEF2FF);
+      bgColor = const Color(0xFFFFF3EE);
       textColor = const Color(0xFF3B82F6);
     } else if (_hovered) {
       bgColor = bgColor.withOpacity(0.75);

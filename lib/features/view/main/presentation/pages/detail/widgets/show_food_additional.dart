@@ -97,7 +97,7 @@ class _ShowFoodAdditionalState extends State<ShowFoodAdditional> {
                                 Text(
                                   num.parse(widget.goods.price).formatNWithoutS,
                                   style: context.textStyles.semibold20.copyWith(
-                                    color: AppColors.ffFB6633,
+                                    color: const Color(0xFFFB6633),
                                   ),
                                 ),
                               ],

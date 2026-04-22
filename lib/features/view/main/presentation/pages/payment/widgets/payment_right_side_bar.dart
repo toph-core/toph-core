@@ -1,391 +1,68 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:mary_ai_pos/core/constants/constants.dart';
 import 'package:mary_ai_pos/core/extension/for_context.dart';
 import 'package:mary_ai_pos/core/extension/number_formatter.dart';
 import 'package:mary_ai_pos/features/view/main/domain/entities/archive_detail_entity.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/payment/payment_bloc.dart';
-import 'package:mary_ai_pos/features/view/main/presentation/pages/payment/payment_screen_mixin.dart';
-import 'package:mary_ai_pos/gen/assets.gen.dart';
 
-class PaymentRightSideBar extends StatelessWidget with PaymentScreenMixin {
+const _kS900 = Color(0xFF0F172A);
+const _kS700 = Color(0xFF334155);
+const _kS500 = Color(0xFF64748B);
+const _kS200 = Color(0xFFE2E8F0);
+const _kS50 = Color(0xFFF8FAFC);
+const _kBrand = Color(0xFFFB6633);
+
+class PaymentRightSideBar extends StatelessWidget {
   final ArchiveDetailEntity detail;
-  PaymentRightSideBar({super.key, required this.detail});
+  final int finalTotal;
+  const PaymentRightSideBar({
+    super.key,
+    required this.detail,
+    required this.finalTotal,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        border: Border(
-          left: BorderSide(color: context.colors.border),
-        ),
+        border: Border(left: BorderSide(color: context.colors.border)),
       ),
       child: BlocBuilder<PaymentBloc, PaymentState>(
         builder: (context, state) {
-          final int discountAmt = int.tryParse(state.discountAmount) ?? 0;
-          final int offlineExtra = PaymentBloc.pendingOfflineExtra(state.tableId);
-          int finalTotal = PaymentBloc.effectiveTotal(detail) + offlineExtra;
-          if (state.discountType == DiscountType.money) {
-            finalTotal -= discountAmt;
-          } else {
-            finalTotal -= (finalTotal * (discountAmt / 100)).round();
-          }
-          if (finalTotal < 0) finalTotal = 0;
-          finalTotal += state.hourPrice.toInt();
-
-          final int entered = int.tryParse(state.enterSum) ?? 0;
-          final int change = entered > finalTotal ? entered - finalTotal : 0;
-
           return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Total display
-              Container(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-                decoration: BoxDecoration(
-                  border: Border(
-                    bottom: BorderSide(color: context.colors.border),
-                  ),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  spacing: 2,
-                  children: [
-                    Text(
-                      "Jami to'lov",
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: context.colors.textSecondary,
-                        fontFamily: 'Inter',
-                      ),
-                    ),
-                    Text(
-                      finalTotal.formatN,
-                      style: const TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xFF19160B),
-                        fontFamily: 'Inter',
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              // Payment method selector
+              // Discount pills
               Padding(
-                padding: const EdgeInsets.fromLTRB(16, 10, 16, 8),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  spacing: 8,
-                  children: [
-                    const Text(
-                      "To'lov usuli",
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xFF19160B),
-                        fontFamily: 'Inter',
-                      ),
-                    ),
-                    Row(
-                      spacing: 10,
-                      children: [
-                        _PayMethod(
-                          label: 'Naqd',
-                          icon: SvgPicture.asset(
-                            Assets.icons.icCash.path,
-                            width: 24,
-                            height: 24,
-                          ),
-                          isActive: state.paymentType == PaymentType.cash,
-                          onTap: () => context.read<PaymentBloc>().add(
-                            const PaymentEvent.updatePaymentType(
-                              paymentType: PaymentType.cash,
-                            ),
-                          ),
-                        ),
-                        _PayMethod(
-                          label: 'Karta',
-                          icon: SvgPicture.asset(
-                            Assets.icons.icCard.path,
-                            width: 24,
-                            height: 24,
-                          ),
-                          isActive: state.paymentType == PaymentType.card,
-                          onTap: () => context.read<PaymentBloc>().add(
-                            const PaymentEvent.updatePaymentType(
-                              paymentType: PaymentType.card,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                child: _DiscountSection(state: state),
+              ),
+              const SizedBox(height: 8),
+              // Dark total card
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: _DarkTotalCard(
+                  detail: detail,
+                  finalTotal: finalTotal,
                 ),
               ),
-
-              // Amount display (cash only)
-              if (state.paymentType == PaymentType.cash) ...[
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF8F9FA),
-                      border: Border.all(color: const Color(0xFFEBEFF2)),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            spacing: 2,
-                            children: [
-                              Text(
-                                'Berilayotgan summa',
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  color: context.colors.textSecondary,
-                                  fontFamily: 'Inter',
-                                ),
-                              ),
-                              Text(
-                                entered > 0 ? entered.formatN : '0',
-                                style: const TextStyle(
-                                  fontSize: 22,
-                                  fontWeight: FontWeight.w700,
-                                  color: Color(0xFF19160B),
-                                  fontFamily: 'Inter',
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        GestureDetector(
-                          onTap: () => context.read<PaymentBloc>().add(
-                            PaymentEvent.updateEnterSum(
-                              symbol: 'set:$finalTotal',
-                            ),
-                          ),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 14,
-                              vertical: 8,
-                            ),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFFFF3EE),
-                              border: Border.all(color: const Color(0xFFFB6633)),
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: Text(
-                              finalTotal.formatN,
-                              style: const TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w700,
-                                color: Color(0xFFFB6633),
-                                fontFamily: 'Inter',
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                // Numpad
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: GridView.builder(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      gridDelegate:
-                          const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 3,
-                            crossAxisSpacing: 6,
-                            mainAxisSpacing: 6,
-                            mainAxisExtent: 46,
-                          ),
-                      itemCount: keyboardKeys.length,
-                      itemBuilder: (context, index) {
-                        final key = keyboardKeys[index];
-                        final isDelete = key == 'delete';
-                        return GestureDetector(
-                          onTap: () => context.read<PaymentBloc>().add(
-                            PaymentEvent.updateEnterSum(symbol: key),
-                          ),
-                          child: Container(
-                            decoration: BoxDecoration(
-                              color: isDelete
-                                  ? const Color(0xFFFFF0F3)
-                                  : const Color(0xFFF8F9FA),
-                              border: Border.all(
-                                color: isDelete
-                                    ? const Color(0xFFFBCDD8)
-                                    : const Color(0xFFEBEFF2),
-                              ),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Center(
-                              child: isDelete
-                                  ? const Icon(
-                                      Icons.backspace_outlined,
-                                      size: 20,
-                                      color: Color(0xFFEB295B),
-                                    )
-                                  : Text(
-                                      key,
-                                      style: const TextStyle(
-                                        fontSize: 20,
-                                        fontWeight: FontWeight.w500,
-                                        color: Color(0xFF19160B),
-                                        fontFamily: 'Inter',
-                                      ),
-                                    ),
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                ),
-              ],
-
-              // Card confirmation message
-              if (state.paymentType == PaymentType.card)
-                Expanded(
-                  child: Center(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 24),
-                      child: Text(
-                        "Mijoz to'lovni karta orqali amalga oshirganini tasdiqlang",
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: context.colors.textSecondary,
-                          fontFamily: 'Inter',
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-
-              // Change row (only when cash and entered > total)
-              if (state.paymentType == PaymentType.cash && change > 0)
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 12,
-                    ),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF1FAF1),
-                      border: Border.all(color: const Color(0xFF13AF1B)),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text(
-                          'Qaytim',
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w500,
-                            color: Color(0xFF13AF1B),
-                            fontFamily: 'Inter',
-                          ),
-                        ),
-                        Text(
-                          change.formatN,
-                          style: const TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w700,
-                            color: Color(0xFF13AF1B),
-                            fontFamily: 'Inter',
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-
-              // Footer: print + confirm
-              Container(
-                padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
-                decoration: BoxDecoration(
-                  border: Border(
-                    top: BorderSide(color: context.colors.border),
-                  ),
-                ),
-                child: Row(
-                  spacing: 12,
+              const Spacer(),
+              // Chek ko'rish (outlined) + Tasdiqlash (brand)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+                child: Column(
                   children: [
-                    Container(
-                      width: 46,
-                      height: 46,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF8F9FA),
-                        border: Border.all(color: const Color(0xFFEBEFF2)),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Center(
-                        child: SvgPicture.asset(
-                          Assets.icons.icPrinter.path,
-                          width: 22,
-                          height: 22,
-                        ),
-                      ),
+                    _OutlinedActionButton(
+                      label: "Chek ko'rish",
+                      icon: Icons.receipt_long_outlined,
+                      onTap: () {},
                     ),
-                    Expanded(
-                      child: Builder(builder: (context) {
-                        final enteredAmt = int.tryParse(state.enterSum) ?? 0;
-                        final cashOk = state.paymentType != PaymentType.cash ||
-                            finalTotal <= 0 ||
-                            (enteredAmt > 0 && enteredAmt >= finalTotal);
-                        final canConfirm = state.status != Status.LOADING && cashOk;
-                        return GestureDetector(
-                        onTap: canConfirm
-                            ? () => context.read<PaymentBloc>().add(const PaymentEvent.payment())
-                            : null,
-                        child: Container(
-                          height: 46,
-                          decoration: BoxDecoration(
-                            color: canConfirm
-                                ? const Color(0xFFFB6633)
-                                : const Color(0xFFFB6633).withOpacity(0.4),
-                            borderRadius: BorderRadius.circular(14),
-                          ),
-                          child: Center(
-                            child: state.status == Status.LOADING
-                                ? const SizedBox(
-                                    width: 22,
-                                    height: 22,
-                                    child: CircularProgressIndicator.adaptive(
-                                      strokeWidth: 2,
-                                      backgroundColor: Colors.white,
-                                    ),
-                                  )
-                                : const Text(
-                                    'Tasdiqlash',
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w700,
-                                      color: Colors.white,
-                                      fontFamily: 'Inter',
-                                    ),
-                                  ),
-                          ),
-                        ),
-                      );
-                      }),
+                    const SizedBox(height: 10),
+                    _ConfirmButton(
+                      state: state,
+                      finalTotal: finalTotal,
                     ),
                   ],
                 ),
@@ -398,55 +75,517 @@ class PaymentRightSideBar extends StatelessWidget with PaymentScreenMixin {
   }
 }
 
-class _PayMethod extends StatelessWidget {
+class _DiscountSection extends StatelessWidget {
+  final PaymentState state;
+  const _DiscountSection({required this.state});
+
+  @override
+  Widget build(BuildContext context) {
+    const percentages = [0, 5, 10, 15, 20, 25];
+    final amount = int.tryParse(state.discountAmount) ?? 0;
+    final isPercent = state.discountType == DiscountType.percent;
+    final currentPercent = isPercent ? amount : -1;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Chegirma',
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: _kS900,
+            fontFamily: 'Inter',
+          ),
+        ),
+        const SizedBox(height: 10),
+        GridView.count(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          crossAxisCount: 3,
+          crossAxisSpacing: 8,
+          mainAxisSpacing: 8,
+          childAspectRatio: 2.2,
+          children: percentages.map((p) {
+            final active = currentPercent == p;
+            return _DiscountPill(
+              label: '$p%',
+              isActive: active,
+              onTap: () {
+                final bloc = context.read<PaymentBloc>();
+                bloc.add(const PaymentEvent.updateDiscountType(
+                  dicountType: DiscountType.percent,
+                ));
+                bloc.add(
+                  PaymentEvent.updateDiscountAmount(
+                    amount: p == 0 ? '0' : p.toString(),
+                  ),
+                );
+              },
+            );
+          }).toList(),
+        ),
+        const SizedBox(height: 12),
+        _ManualDiscountInput(
+          amount: amount,
+          isPercent: isPercent,
+        ),
+      ],
+    );
+  }
+}
+
+class _ManualDiscountInput extends StatefulWidget {
+  final int amount;
+  final bool isPercent;
+
+  const _ManualDiscountInput({
+    required this.amount,
+    required this.isPercent,
+  });
+
+  @override
+  State<_ManualDiscountInput> createState() => _ManualDiscountInputState();
+}
+
+class _ManualDiscountInputState extends State<_ManualDiscountInput> {
+  late TextEditingController _ctrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = TextEditingController(
+      text: widget.amount == 0 ? '' : widget.amount.toString(),
+    );
+  }
+
+  @override
+  void didUpdateWidget(covariant _ManualDiscountInput old) {
+    super.didUpdateWidget(old);
+    final desired = widget.amount == 0 ? '' : widget.amount.toString();
+    if (_ctrl.text != desired) {
+      _ctrl.value = TextEditingValue(
+        text: desired,
+        selection: TextSelection.collapsed(offset: desired.length),
+      );
+    }
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          "Qo'lda kiritish",
+          style: TextStyle(
+            fontSize: 12,
+            color: _kS500,
+            fontFamily: 'Inter',
+          ),
+        ),
+        const SizedBox(height: 6),
+        Row(
+          children: [
+            Expanded(
+              child: SizedBox(
+                height: 40,
+                child: TextField(
+                  controller: _ctrl,
+                  keyboardType: TextInputType.number,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: _kS900,
+                    fontFamily: 'Inter',
+                  ),
+                  decoration: InputDecoration(
+                    hintText: '0',
+                    hintStyle: const TextStyle(
+                      fontSize: 14,
+                      color: _kS500,
+                      fontFamily: 'Inter',
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
+                    isDense: true,
+                    filled: true,
+                    fillColor: Colors.white,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: const BorderSide(color: _kS200),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: const BorderSide(color: _kS200),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: const BorderSide(color: _kBrand, width: 1.5),
+                    ),
+                  ),
+                  onChanged: (v) {
+                    context.read<PaymentBloc>().add(
+                      PaymentEvent.updateDiscountAmount(
+                        amount: v.isEmpty ? '0' : v,
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ),
+            const SizedBox(width: 6),
+            _UnitToggle(
+              label: '%',
+              isActive: widget.isPercent,
+              onTap: () => context.read<PaymentBloc>().add(
+                const PaymentEvent.updateDiscountType(
+                  dicountType: DiscountType.percent,
+                ),
+              ),
+            ),
+            const SizedBox(width: 4),
+            _UnitToggle(
+              label: "so'm",
+              isActive: !widget.isPercent,
+              onTap: () => context.read<PaymentBloc>().add(
+                const PaymentEvent.updateDiscountType(
+                  dicountType: DiscountType.money,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _UnitToggle extends StatelessWidget {
   final String label;
-  final Widget icon;
   final bool isActive;
   final VoidCallback onTap;
 
-  const _PayMethod({
+  const _UnitToggle({
     required this.label,
-    required this.icon,
     required this.isActive,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Expanded(
-      child: GestureDetector(
-        onTap: onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 150),
-          padding: const EdgeInsets.symmetric(vertical: 8),
-          decoration: BoxDecoration(
-            color: isActive ? const Color(0xFFFFF3EE) : Colors.white,
-            border: Border.all(
-              color: isActive
-                  ? const Color(0xFFFB6633)
-                  : const Color(0xFFEBEFF2),
-              width: isActive ? 2 : 1,
-            ),
-            borderRadius: BorderRadius.circular(14),
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 120),
+        height: 40,
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: isActive ? _kBrand : Colors.white,
+          border: Border.all(color: isActive ? _kBrand : _kS200),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: isActive ? Colors.white : _kS700,
+            fontFamily: 'Inter',
           ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            spacing: 6,
+        ),
+      ),
+    );
+  }
+}
+
+class _DiscountPill extends StatelessWidget {
+  final String label;
+  final bool isActive;
+  final VoidCallback onTap;
+
+  const _DiscountPill({
+    required this.label,
+    required this.isActive,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 120),
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: isActive ? _kBrand : Colors.white,
+          border: Border.all(color: isActive ? _kBrand : _kS200),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
+            color: isActive ? Colors.white : _kS900,
+            fontFamily: 'Inter',
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _DarkTotalCard extends StatelessWidget {
+  final ArchiveDetailEntity detail;
+  final int finalTotal;
+
+  const _DarkTotalCard({required this.detail, required this.finalTotal});
+
+  @override
+  Widget build(BuildContext context) {
+    final activeGoods = detail.goods.where((g) => g.status != 'cancelled');
+    final itemCount =
+        activeGoods.fold<int>(0, (sum, g) => sum + g.quantity);
+    final guestCount = detail.guestCount.toInt();
+
+    return Container(
+      padding: const EdgeInsets.fromLTRB(20, 18, 20, 18),
+      decoration: BoxDecoration(
+        color: _kS900,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            "To'lov miqdori",
+            style: TextStyle(
+              fontSize: 13,
+              color: Color(0xFF94A3B8),
+              fontFamily: 'Inter',
+            ),
+          ),
+          const SizedBox(height: 6),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.baseline,
+            textBaseline: TextBaseline.alphabetic,
             children: [
-              icon,
-              Text(
-                label,
+              Flexible(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    finalTotal.formatN,
+                    style: const TextStyle(
+                      fontSize: 40,
+                      fontWeight: FontWeight.w700,
+                      color: _kBrand,
+                      fontFamily: 'Inter',
+                      height: 1.05,
+                      letterSpacing: -0.8,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 6),
+              const Text(
+                "so'm",
                 style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
-                  color: isActive
-                      ? const Color(0xFFFB6633)
-                      : const Color(0xFF19160B),
+                  fontSize: 14,
+                  color: Color(0xFF94A3B8),
                   fontFamily: 'Inter',
                 ),
               ),
             ],
           ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: _DarkMetric(
+                  label: 'Taomlar',
+                  value: '$itemCount dona',
+                ),
+              ),
+              Container(
+                width: 1,
+                height: 32,
+                color: Colors.white.withOpacity(0.1),
+              ),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.only(left: 12),
+                  child: _DarkMetric(
+                    label: 'Mehmon',
+                    value: '$guestCount kishi',
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _DarkMetric extends StatelessWidget {
+  final String label;
+  final String value;
+  const _DarkMetric({required this.label, required this.value});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 11,
+            color: Color(0xFF94A3B8),
+            fontFamily: 'Inter',
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          value,
+          style: const TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w700,
+            color: Colors.white,
+            fontFamily: 'Inter',
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _OutlinedActionButton extends StatefulWidget {
+  final String label;
+  final IconData icon;
+  final VoidCallback onTap;
+
+  const _OutlinedActionButton({
+    required this.label,
+    required this.icon,
+    required this.onTap,
+  });
+
+  @override
+  State<_OutlinedActionButton> createState() => _OutlinedActionButtonState();
+}
+
+class _OutlinedActionButtonState extends State<_OutlinedActionButton> {
+  bool _hovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
+      child: GestureDetector(
+        onTap: widget.onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 120),
+          height: 44,
+          decoration: BoxDecoration(
+            color: _hovered ? _kS50 : Colors.white,
+            border: Border.all(color: _kS200),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(widget.icon, size: 16, color: _kS500),
+              const SizedBox(width: 8),
+              Text(
+                widget.label,
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: _kS900,
+                  fontFamily: 'Inter',
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ConfirmButton extends StatelessWidget {
+  final PaymentState state;
+  final int finalTotal;
+
+  const _ConfirmButton({required this.state, required this.finalTotal});
+
+  @override
+  Widget build(BuildContext context) {
+    final enteredAmt = int.tryParse(state.enterSum) ?? 0;
+    final cashOk = state.paymentType != PaymentType.cash ||
+        finalTotal <= 0 ||
+        (enteredAmt > 0 && enteredAmt >= finalTotal);
+    final canConfirm = state.status != Status.LOADING && cashOk;
+
+    return GestureDetector(
+      onTap: canConfirm
+          ? () => context.read<PaymentBloc>().add(
+                const PaymentEvent.payment(),
+              )
+          : null,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 120),
+        height: 52,
+        decoration: BoxDecoration(
+          color: canConfirm ? _kBrand : _kBrand.withOpacity(0.4),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Center(
+          child: state.status == Status.LOADING
+              ? const SizedBox(
+                  width: 22,
+                  height: 22,
+                  child: CircularProgressIndicator.adaptive(
+                    strokeWidth: 2,
+                    backgroundColor: Colors.white,
+                  ),
+                )
+              : Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(
+                      Icons.check_rounded,
+                      size: 20,
+                      color: Colors.white,
+                    ),
+                    const SizedBox(width: 8),
+                    const Text(
+                      'Tasdiqlash',
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                        fontFamily: 'Inter',
+                        letterSpacing: -0.2,
+                      ),
+                    ),
+                  ],
+                ),
         ),
       ),
     );

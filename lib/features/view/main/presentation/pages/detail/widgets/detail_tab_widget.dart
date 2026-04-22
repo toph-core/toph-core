@@ -8,6 +8,10 @@ import 'package:mary_ai_pos/features/view/main/data/models/category/category_mod
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/detail/detail_bloc.dart';
 import 'package:mary_ai_pos/generated/l10n.dart';
 
+const _kS900 = Color(0xFF0F172A);
+const _kS200 = Color(0xFFE2E8F0);
+const _kS100 = Color(0xFFF1F5F9);
+
 class DetailTabFilter extends StatelessWidget {
   const DetailTabFilter({super.key});
 
@@ -17,15 +21,15 @@ class DetailTabFilter extends StatelessWidget {
       builder: (context, state) {
         if (state.status == Status.LOADING && state.categories == null) {
           return SizedBox(
-            height: 55,
+            height: 44,
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
               itemBuilder: (context, index) => CustomShimmerBox(
-                h: 52,
-                w: 106,
+                h: 44,
+                w: 120,
                 borderRadius: context.radius.buttonLg,
               ),
-              separatorBuilder: (context, index) => 8.wBox,
+              separatorBuilder: (context, index) => 6.wBox,
               itemCount: 10,
             ),
           );
@@ -37,50 +41,19 @@ class DetailTabFilter extends StatelessWidget {
           );
         }
 
-        return Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Expanded(
-              child: SizedBox(
-                height: 44,
-                child: ListView.separated(
-                  scrollDirection: Axis.horizontal,
-                  physics: const BouncingScrollPhysics(),
-                  itemBuilder: (context, index) => _TabButton(
-                    category: state.categories![index],
-                    isActive:
-                        state.categories![index].id == state.selectedCategoryId,
-                  ),
-                  separatorBuilder: (context, index) => 6.wBox,
-                  itemCount: state.categories?.length ?? 0,
-                ),
-              ),
+        return SizedBox(
+          height: 44,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            physics: const BouncingScrollPhysics(),
+            itemBuilder: (context, index) => _TabButton(
+              category: state.categories![index],
+              isActive:
+                  state.categories![index].id == state.selectedCategoryId,
             ),
-            // Expanded(
-            //   child: Wrap(
-            //     spacing: 8,
-            //     runSpacing: 8,
-            //     children: state.status == Status.LOADING
-            //         ? List.generate(4, (index) {
-            // return CustomShimmerBox(
-            //   h: 52,
-            //   w: 106,
-            //   borderRadius: context.radius.buttonLg,
-            // );
-            //           })
-            //         : state.categories != null
-            //         ? state.categories!
-            //               .map(
-            //                 (category) => _TabButton(
-            //                   category: category,
-            //                   isActive: category.id == state.selectedCategoryId,
-            //                 ),
-            //               )
-            //               .toList()
-            //         : [],
-            //   ),
-            // ),
-          ],
+            separatorBuilder: (context, index) => 6.wBox,
+            itemCount: state.categories?.length ?? 0,
+          ),
         );
       },
     );
@@ -94,26 +67,31 @@ class _TabButton extends StatefulWidget {
   const _TabButton({required this.category, required this.isActive});
 
   @override
-  State<_TabButton> createState() => __TabButtonState();
+  State<_TabButton> createState() => _TabButtonState();
 }
 
-class __TabButtonState extends State<_TabButton> {
-  bool _isHovered = false;
+class _TabButtonState extends State<_TabButton> {
+  bool _hovered = false;
 
   @override
   Widget build(BuildContext context) {
-    Color backgroundColor;
-    if (widget.isActive) {
-      backgroundColor = const Color(0xFF2D2D2D);
+    final active = widget.isActive;
+    final Color bg;
+    final Color borderColor;
+    if (active) {
+      bg = _kS900;
+      borderColor = _kS900;
+    } else if (_hovered) {
+      bg = _kS100;
+      borderColor = _kS200;
     } else {
-      backgroundColor = _isHovered
-          ? const Color(0xFFE5E7EB)
-          : const Color(0xFFF6F7F9);
+      bg = Colors.white;
+      borderColor = _kS200;
     }
 
     return MouseRegion(
-      onEnter: (_) => setState(() => _isHovered = true),
-      onExit: (_) => setState(() => _isHovered = false),
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
       cursor: SystemMouseCursors.click,
       child: GestureDetector(
         onTap: () => context.read<DetailBloc>().add(
@@ -123,17 +101,23 @@ class __TabButtonState extends State<_TabButton> {
           duration: const Duration(milliseconds: 150),
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
           decoration: BoxDecoration(
-            color: backgroundColor,
+            color: bg,
+            border: Border.all(color: borderColor),
             borderRadius: BorderRadius.circular(10),
           ),
-          child: Text(
-            widget.category.name,
-            style: TextStyle(
-              color: widget.isActive ? Colors.white : const Color(0xFF2D2D2D),
-              fontSize: 13,
-              fontFamily: 'Inter',
-              fontWeight: FontWeight.w500,
-            ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                widget.category.name,
+                style: TextStyle(
+                  color: active ? Colors.white : _kS900,
+                  fontSize: 13,
+                  fontFamily: 'Inter',
+                  fontWeight: active ? FontWeight.w500 : FontWeight.w400,
+                ),
+              ),
+            ],
           ),
         ),
       ),

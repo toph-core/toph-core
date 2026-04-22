@@ -67,7 +67,9 @@ class WShiftBottom extends StatelessWidget {
                       );
                     }
                   },
-                  bgColor: AppColors.ffFB6633,
+                  bgColor: state.shift == null
+                      ? const Color(0xFFFB6633)
+                      : const Color(0xFFDC2626),
                   borderRadius: context.radius.card,
                   child: Center(
                     child: state.status == Status.LOADING

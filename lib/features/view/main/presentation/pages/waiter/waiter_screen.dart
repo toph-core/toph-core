@@ -79,7 +79,7 @@ class _WaiterOrdersBootstrapState extends State<_WaiterOrdersBootstrap> {
         }
       },
       child: const Scaffold(
-        backgroundColor: Color(0xFFF5F4F2),
+        backgroundColor: Color(0xFFF8FAFC),
         body: _WaiterLayout(),
       ),
     );

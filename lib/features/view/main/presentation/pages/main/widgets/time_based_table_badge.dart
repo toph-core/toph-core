@@ -6,7 +6,7 @@ import 'package:mary_ai_pos/core/api/dio_client.dart';
 import 'package:mary_ai_pos/di.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/cafe_tables/cafe_tables_model.dart';
 
-const _indigo = Color(0xFF6366F1);
+const _indigo = Color(0xFFFB6633);
 
 /// time_based stol uchun timer badge.
 /// compact: true  — canvas da kichik ko'rinish.
@@ -295,7 +295,7 @@ class _TimeBasedTableBadgeState extends State<TimeBasedTableBadge> {
                 decoration: BoxDecoration(
                   color: isRunning
                       ? const Color(0xFFFB6633).withOpacity(0.12)
-                      : const Color(0xFF13AF1B).withOpacity(0.12),
+                      : const Color(0xFF16A34A).withOpacity(0.12),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Center(
@@ -307,7 +307,7 @@ class _TimeBasedTableBadgeState extends State<TimeBasedTableBadge> {
                             strokeWidth: 2,
                             color: isRunning
                                 ? const Color(0xFFFB6633)
-                                : const Color(0xFF13AF1B),
+                                : const Color(0xFF16A34A),
                           ),
                         )
                       : Icon(
@@ -315,7 +315,7 @@ class _TimeBasedTableBadgeState extends State<TimeBasedTableBadge> {
                           size: 18,
                           color: isRunning
                               ? const Color(0xFFFB6633)
-                              : const Color(0xFF13AF1B),
+                              : const Color(0xFF16A34A),
                         ),
                 ),
               ),

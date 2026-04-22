@@ -104,7 +104,7 @@ class _EnhancedTableCardState extends State<EnhancedTableCard> {
         break;
       default:
         borderColor = colors.systemInfo;
-        bgColor = const Color(0xFFEEF2FF);
+        bgColor = const Color(0xFFFFF3EE);
         statusTextColor = colors.systemInfo;
         statusLabel = "Bron";
     }
@@ -170,7 +170,7 @@ class _EnhancedTableCardState extends State<EnhancedTableCard> {
                             vertical: 3,
                           ),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFEB295B).withOpacity(0.1),
+                            color: const Color(0xFFDC2626).withOpacity(0.1),
                             borderRadius: BorderRadius.circular(4),
                           ),
                           child: const Text(
@@ -299,7 +299,7 @@ class _EnhancedTableCardState extends State<EnhancedTableCard> {
                           child: Container(
                             height: 32,
                             decoration: BoxDecoration(
-                              color: const Color(0xFF13AF1B).withOpacity(0.1),
+                              color: const Color(0xFF16A34A).withOpacity(0.1),
                               borderRadius: BorderRadius.circular(6),
                             ),
                             child: const Center(

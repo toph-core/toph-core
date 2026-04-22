@@ -87,7 +87,7 @@ class _ItemNotesModalState extends State<ItemNotesModal> {
                   color: colors.textSecondary,
                 ),
                 filled: true,
-                fillColor: const Color(0xFFF5F4F2),
+                fillColor: const Color(0xFFF8FAFC),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
                   borderSide: BorderSide(color: colors.border),
@@ -160,7 +160,7 @@ class _ItemNotesModalState extends State<ItemNotesModal> {
                     child: Container(
                       height: 44,
                       decoration: BoxDecoration(
-                        color: const Color(0xFFF5F4F2),
+                        color: const Color(0xFFF8FAFC),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Center(

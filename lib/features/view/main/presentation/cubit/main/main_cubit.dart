@@ -128,9 +128,39 @@ class MainCubit extends Cubit<MainState> {
     _getTablesByHallId(id);
   }
 
+  /// "Barchasi" rejimi: barcha zallar stollarini yig'ib ko'rsatadi.
+  /// `selectedHallId` null ga o'rnatiladi.
+  Future<void> loadAllHallsTables() async {
+    final halls = state.halls ?? [];
+    if (halls.isEmpty) return;
+    emit(state.copyWith(selectedHallId: null, status: Status.LOADING));
+
+    if (!_connectivity.isOnline) {
+      // Offline: kesh'dan o'qiymiz (eng so'nggi saqlangan hall stollari)
+      final cached = _cache.getTables();
+      final all = cached.map((e) => CafeTableModel.fromJson(e)).toList();
+      emit(state.copyWith(tables: all, status: Status.SUCCESS));
+      return;
+    }
+
+    final results = await Future.wait(
+      halls.map((h) => _getTablesUsecase.call(h.id)),
+    );
+    if (isClosed) return;
+
+    final all = <CafeTableModel>[];
+    for (final r in results) {
+      r.fold((_) => null, all.addAll);
+    }
+    emit(state.copyWith(tables: all, status: Status.SUCCESS));
+  }
+
   Future<void> refreshTables() async {
     final hallId = state.selectedHallId;
-    if (hallId == null) return;
+    if (hallId == null) {
+      await loadAllHallsTables();
+      return;
+    }
     await _getTablesByHallId(hallId);
   }
 

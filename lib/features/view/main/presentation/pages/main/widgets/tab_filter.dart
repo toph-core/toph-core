@@ -1,116 +1,175 @@
 import 'package:flutter/material.dart';
 import 'package:mary_ai_pos/core/common/custom_shimmer_container.dart';
-import 'package:mary_ai_pos/core/extension/for_context.dart';
 import 'package:mary_ai_pos/di.dart';
+import 'package:mary_ai_pos/features/view/main/data/models/cafe_tables/cafe_tables_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/hall/hall_model.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/main/main_cubit.dart';
 
+const _kS900 = Color(0xFF0F172A);
+const _kS500 = Color(0xFF64748B);
+const _kS200 = Color(0xFFE2E8F0);
+const _kS50 = Color(0xFFF8FAFC);
+const _kBrand = Color(0xFFFB6633);
+
+/// Hall filter pill row.
+///
+/// Includes a leading "Barchasi (N)" option that aggregates all halls.
 class TabFilter extends StatelessWidget {
   final String? selectedHallId;
   final List<HallModel> halls;
+  final List<CafeTableModel> tables;
   final bool isLoading;
+
+  /// Enables the leading "Barchasi" pill that unsets the hall filter
+  /// via [MainCubit.loadAllHallsTables].
+  final bool showAllOption;
+
   const TabFilter({
     super.key,
     required this.halls,
     this.selectedHallId,
+    this.tables = const [],
     required this.isLoading,
+    this.showAllOption = true,
   });
 
   @override
   Widget build(BuildContext context) {
-    final colors = context.colors;
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Expanded(
-          flex: 3,
-          child: Container(
-            padding: const EdgeInsets.all(4),
-            decoration: BoxDecoration(
-              color: colors.bgSecondary,
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Wrap(
-              spacing: 4,
-              runSpacing: 4,
-              children: isLoading
-                  ? List.generate(4, (index) {
-                      return CustomShimmerBox(
-                        h: 36,
-                        w: 96,
-                        borderRadius: BorderRadius.circular(8),
-                      );
-                    })
-                  : halls
-                        .map(
-                          (hall) => _TabButton(
-                            hall: hall,
-                            isActive: hall.id == selectedHallId,
-                          ),
-                        )
-                        .toList(),
-            ),
+    if (isLoading) {
+      return SizedBox(
+        height: 42,
+        child: ListView.separated(
+          scrollDirection: Axis.horizontal,
+          itemCount: 4,
+          separatorBuilder: (_, _) => const SizedBox(width: 8),
+          itemBuilder: (_, _) => CustomShimmerBox(
+            h: 42,
+            w: 120,
+            borderRadius: BorderRadius.circular(10),
           ),
         ),
-      ],
+      );
+    }
+
+    return SizedBox(
+      height: 42,
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        children: [
+          if (showAllOption) ...[
+            _HallPill(
+              label: 'Barchasi',
+              count: tables.length,
+              isActive: selectedHallId == null,
+              onTap: () => inject<MainCubit>().loadAllHallsTables(),
+            ),
+            const SizedBox(width: 8),
+          ],
+          ...List.generate(halls.length, (i) {
+            final hall = halls[i];
+            final count = tables.where((t) => t.hallId == hall.id).length;
+            return Padding(
+              padding: EdgeInsets.only(right: i == halls.length - 1 ? 0 : 8),
+              child: _HallPill(
+                label: hall.name,
+                count: count,
+                isActive: hall.id == selectedHallId,
+                onTap: () => inject<MainCubit>().setSelectedHallId(hall.id),
+              ),
+            );
+          }),
+        ],
+      ),
     );
   }
 }
 
-class _TabButton extends StatefulWidget {
-  final HallModel hall;
+class _HallPill extends StatefulWidget {
+  final String label;
+  final int count;
   final bool isActive;
+  final VoidCallback onTap;
 
-  const _TabButton({required this.hall, required this.isActive});
+  const _HallPill({
+    required this.label,
+    required this.count,
+    required this.isActive,
+    required this.onTap,
+  });
 
   @override
-  State<_TabButton> createState() => _TabButtonState();
+  State<_HallPill> createState() => _HallPillState();
 }
 
-class _TabButtonState extends State<_TabButton> {
-  bool _isHovered = false;
+class _HallPillState extends State<_HallPill> {
+  bool _hovered = false;
 
   @override
   Widget build(BuildContext context) {
-    final colors = context.colors;
+    final active = widget.isActive;
+    final Color bg;
+    final Color border;
+    final Color textColor;
 
-    Color backgroundColor;
-    Color textColor;
-    if (widget.isActive) {
-      backgroundColor = colors.textBrand;
+    if (active) {
+      bg = _kBrand;
+      border = _kBrand;
       textColor = Colors.white;
+    } else if (_hovered) {
+      bg = _kS50;
+      border = _kS200;
+      textColor = _kS900;
     } else {
-      backgroundColor = _isHovered
-          ? colors.border
-          : Colors.transparent;
-      textColor = colors.textSecondary;
+      bg = Colors.white;
+      border = _kS200;
+      textColor = _kS500;
     }
 
     return MouseRegion(
-      onEnter: (_) => setState(() => _isHovered = true),
-      onExit: (_) => setState(() => _isHovered = false),
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
       cursor: SystemMouseCursors.click,
       child: GestureDetector(
-        onTap: () => inject<MainCubit>().setSelectedHallId(widget.hall.id),
+        onTap: widget.onTap,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 150),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          height: 42,
+          padding: const EdgeInsets.symmetric(horizontal: 16),
           decoration: BoxDecoration(
-            color: backgroundColor,
-            borderRadius: BorderRadius.circular(8),
+            color: bg,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: border),
           ),
-          child: Text(
-            widget.hall.name,
-            style: TextStyle(
-              color: textColor,
-              fontSize: 13,
-              fontFamily: 'Inter',
-              fontWeight: FontWeight.w600,
-            ),
+          alignment: Alignment.center,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                widget.label,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: active ? FontWeight.w600 : FontWeight.w500,
+                  color: textColor,
+                  fontFamily: 'Inter',
+                  letterSpacing: -0.1,
+                ),
+              ),
+              const SizedBox(width: 6),
+              Text(
+                '(${widget.count})',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                  color: active
+                      ? Colors.white.withOpacity(0.8)
+                      : _kS500,
+                  fontFamily: 'Inter',
+                ),
+              ),
+            ],
           ),
         ),
       ),
     );
   }
 }
-

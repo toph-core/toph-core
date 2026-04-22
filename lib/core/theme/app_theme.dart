@@ -155,55 +155,55 @@ class AppTheme {
     infoRadius: BorderRadius.all(Radius.circular(59)),
   );
 
-  /// Light colors (JSON based)
+  /// Light colors — slate/orange palette (Mary AI POS redesign)
   static const _lightColors = ThemeColors(
-    textBrand: Color(0xFFFB6633),
-    textDefault: Color(0xFF19160B),
-    textButtonSecondary: Color(0xFF19160B),
-    textSecondary: Color(0xFF888888),
-    textTertiary: Color(0xFF7B7B7B),
+    textBrand: Color(0xFFFB6633),          // orange-500
+    textDefault: Color(0xFF0F172A),         // slate-900
+    textButtonSecondary: Color(0xFF0F172A),
+    textSecondary: Color(0xFF64748B),       // slate-500
+    textTertiary: Color(0xFF94A3B8),        // slate-400
     textOnBrand: Color(0xFFFFFFFF),
-    textOnBrandDark: Color(0xFF09131A),
-    emptyValueColor: Color(0xFFC9C9C9),
+    textOnBrandDark: Color(0xFF0F172A),
+    emptyValueColor: Color(0xFFCBD5E1),     // slate-300
 
     iconBrand: Color(0xFFFB6633),
-    iconDefault: Color(0xFF19160B),
-    iconSecondary: Color(0xFF888888),
-    iconButtonSecondary: Color(0xFF19160B),
-    iconTertiary: Color(0xFFA0A0A0),
+    iconDefault: Color(0xFF0F172A),
+    iconSecondary: Color(0xFF64748B),
+    iconButtonSecondary: Color(0xFF0F172A),
+    iconTertiary: Color(0xFF94A3B8),
     iconOnBrand: Color(0xFFFFFFFF),
-    iconOnBrandDark: Color(0xFF09131A),
+    iconOnBrandDark: Color(0xFF0F172A),
 
     bgBrand: Color(0xFFFB6633),
     bgDefault: Color(0xFFFFFFFF),
-    bgSecondary: Color(0xFFF5F4F2),
-    bgTritary: Color(0xFFF6F7F9),
-    bgDefaultTritary: Color(0xFFF5F5F5),
+    bgSecondary: Color(0xFFF8FAFC),         // slate-50
+    bgTritary: Color(0xFFF1F5F9),           // slate-100
+    bgDefaultTritary: Color(0xFFF8FAFC),
     bgSecondaryTritary: Color(0xFFFFFFFF),
-    bgBottomSheet: Color(0x3309131A),
+    bgBottomSheet: Color(0x800F172A),
 
     borderBrand: Color(0xFFFB6633),
-    border: Color(0xFFEBEFF2),
+    border: Color(0xFFE2E8F0),              // slate-200
 
-    buttonBrand: Color(0xFF2D2D2D),
-    buttonBrandSecondary: Color(0xFFF2F2F4),
-    buttonSecondary: Color(0xFFF8F9FA),
-    buttonDisabledBg: Color(0xFFF8F9FA),
+    buttonBrand: Color(0xFFFB6633),         // orange primary button
+    buttonBrandSecondary: Color(0xFFFFF3EE), // orange-50
+    buttonSecondary: Color(0xFFF8FAFC),
+    buttonDisabledBg: Color(0xFFF1F5F9),
 
-    systemAccent: Color(0xFFF5A524),
-    systemSuccess: Color(0xFF13AF1B),
-    systemError: Color(0xFFEB295B),
+    systemAccent: Color(0xFFF59E0B),        // amber-500
+    systemSuccess: Color(0xFF16A34A),       // green-600
+    systemError: Color(0xFFDC2626),         // red-600
 
-    extraPurple: Color(0xFF9470DC),
-    extraCyan: Color(0xFF32AACF),
-    extraOrange: Color(0xFFCF8506),
+    extraPurple: Color(0xFFFB6633),         // orange (reused as accent)
+    extraCyan: Color(0xFF0EA5E9),           // sky-500
+    extraOrange: Color(0xFFF97316),         // orange-500
 
-    informationColor: Color(0xFFDF8A1B),
-    responseTextColor: Color(0xFF13AF1B),
-    sidebarBg: Color(0xFF18171C),
-    sidebarActive: Color(0xFF2D2B32),
-    sidebarIcon: Color(0xFF6B6875),
-    systemInfo: Color(0xFF3B82F6),
+    informationColor: Color(0xFFF59E0B),
+    responseTextColor: Color(0xFF16A34A),
+    sidebarBg: Color(0xFF0F172A),           // slate-900
+    sidebarActive: Color(0x1AFB6633),       // orange 10%
+    sidebarIcon: Color(0xFF64748B),         // slate-500
+    systemInfo: Color(0xFF2563EB),          // blue-600
   );
 
   /// Light text styles
@@ -368,15 +368,15 @@ class AppTheme {
     buttonDisabledBg: Color(0xFF2B2F36),
 
     systemAccent: Color(0xFFF5A524),
-    systemSuccess: Color(0xFF13AF1B),
-    systemError: Color(0xFFEB295B),
+    systemSuccess: Color(0xFF16A34A),
+    systemError: Color(0xFFDC2626),
 
     extraPurple: Color(0xFF9470DC),
     extraCyan: Color(0xFF32AACF),
     extraOrange: Color(0xFFCF8506),
 
     informationColor: Color(0xFFDF8A1B),
-    responseTextColor: Color(0xFF13AF1B),
+    responseTextColor: Color(0xFF16A34A),
     sidebarBg: Color(0xFF0F1014),
     sidebarActive: Color(0xFF25272B),
     sidebarIcon: Color(0xFF8A8A8A),

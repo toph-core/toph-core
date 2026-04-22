@@ -72,7 +72,7 @@ class _SpecialRequestsWidgetState extends State<SpecialRequestsWidget> {
                     decoration: BoxDecoration(
                       color: entry.value
                           ? const Color(0xFFFFF3EE)
-                          : const Color(0xFFF5F4F2),
+                          : const Color(0xFFF8FAFC),
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(
                         color: entry.value
@@ -132,7 +132,7 @@ class _SpecialRequestsWidgetState extends State<SpecialRequestsWidget> {
                     child: Container(
                       height: 44,
                       decoration: BoxDecoration(
-                        color: const Color(0xFFF5F4F2),
+                        color: const Color(0xFFF8FAFC),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Center(

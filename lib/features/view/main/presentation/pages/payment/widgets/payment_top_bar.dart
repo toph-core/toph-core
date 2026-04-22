@@ -1,47 +1,84 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mary_ai_pos/core/extension/for_context.dart';
+import 'package:mary_ai_pos/features/view/main/presentation/cubit/payment/payment_bloc.dart';
+
+const _kS900 = Color(0xFF0F172A);
+const _kS500 = Color(0xFF64748B);
+const _kS200 = Color(0xFFE2E8F0);
+const _kS50 = Color(0xFFF8FAFC);
 
 class PaymentTopBar extends StatelessWidget {
   const PaymentTopBar({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final colors = context.colors;
     return Container(
-      height: 60,
+      height: 64,
       decoration: BoxDecoration(
         color: Colors.white,
-        border: Border(bottom: BorderSide(color: colors.border)),
+        border: Border(bottom: BorderSide(color: context.colors.border)),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Row(
-        spacing: 12,
         children: [
           GestureDetector(
             onTap: () => Navigator.pop(context),
             child: Container(
-              width: 36,
-              height: 36,
+              width: 40,
+              height: 40,
               decoration: BoxDecoration(
-                color: const Color(0xFFF8F9FA),
-                border: Border.all(color: colors.border),
+                color: _kS50,
+                border: Border.all(color: _kS200),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: const Icon(
                 Icons.arrow_back_ios_new_rounded,
-                size: 15,
-                color: Color(0xFF19160B),
+                size: 16,
+                color: _kS900,
               ),
             ),
           ),
-          const Text(
-            "To'lov",
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w700,
-              color: Color(0xFF19160B),
-              fontFamily: 'Inter',
-            ),
+          const SizedBox(width: 12),
+          BlocBuilder<PaymentBloc, PaymentState>(
+            builder: (context, state) {
+              final tableNumber = state.detail?.tableNumber;
+              final orderId = state.detail?.id;
+              final tableLabel = (tableNumber != null && tableNumber > 0)
+                  ? 'Stol №${tableNumber.toInt()}'
+                  : 'Takeaway';
+              final codeShort = (orderId != null && orderId.length > 6)
+                  ? orderId.substring(orderId.length - 6).toUpperCase()
+                  : orderId?.toUpperCase();
+              return Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Buyurtma',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w700,
+                      color: _kS900,
+                      fontFamily: 'Inter',
+                      height: 1.1,
+                      letterSpacing: -0.3,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    codeShort != null && codeShort.isNotEmpty
+                        ? '$tableLabel · #$codeShort'
+                        : tableLabel,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      color: _kS500,
+                      fontFamily: 'Inter',
+                    ),
+                  ),
+                ],
+              );
+            },
           ),
         ],
       ),

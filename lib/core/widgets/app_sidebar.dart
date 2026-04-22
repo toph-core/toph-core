@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:mary_ai_pos/core/widgets/brand_logo.dart';
-import 'package:mary_ai_pos/core/extension/for_context.dart';
 import 'package:mary_ai_pos/core/routes/app_routes.dart';
 import 'package:mary_ai_pos/core/constants/constants.dart';
 import 'package:mary_ai_pos/core/utils/user_role_permissions.dart';
 import 'package:mary_ai_pos/features/view/auth/presentation/cubit/bloc/user_bloc.dart';
 import 'package:mary_ai_pos/generated/l10n.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/main/widgets/logout_dialog.dart';
+
+const _kIndigo = Color(0xFFFB6633);
+const _kSlate900 = Color(0xFF0F172A);
+const _kSlate800 = Color(0xFF1E293B);
+const _kSlate500 = Color(0xFF64748B);
 
 class AppSidebar extends StatelessWidget {
   final String activeRoute;
@@ -18,71 +21,89 @@ class AppSidebar extends StatelessWidget {
     final role = context.select((UserBloc b) => b.state.userMOdel?.role);
     final canManageMenu = role.canManageMenu;
     final canAccessSettings = role.canAccessSettings;
-    final colors = context.colors;
+
     return Container(
-      width: 72,
-      color: colors.sidebarBg,
+      width: 76,
+      color: _kSlate900,
       child: Column(
         children: [
-          const SizedBox(height: 12),
-          // Logo: full wordmark must fit — narrow sidebar, use contain (not cover).
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 4),
-            child: SizedBox(
-              width: 64,
-              height: 56,
-              child: BrandLogo(
-                fit: BoxFit.contain,
-                alignment: Alignment.center,
+          // Logo
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 14),
+            child: Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: _kIndigo,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Center(
+                child: Text(
+                  'M',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700,
+                    fontFamily: 'Inter',
+                  ),
+                ),
               ),
             ),
           ),
-          const SizedBox(height: 12),
+          Container(height: 1, color: _kSlate800),
+          const SizedBox(height: 10),
+
+          // Nav items
           Expanded(
             child: Column(
               children: [
                 _NavItem(
-                  icon: Icons.grid_view_rounded,
+                  icon: _IconTables(),
                   label: S.current.strTables,
                   isActive: activeRoute == AppRoutes.mainScreen,
                   onTap: () => _navigate(context, AppRoutes.mainScreen),
                 ),
                 _NavItem(
-                  icon: Icons.receipt_long_rounded,
+                  icon: _IconArchive(),
                   label: S.current.strArchive,
                   isActive: activeRoute == AppRoutes.archiveScreen,
                   onTap: () => _navigate(context, AppRoutes.archiveScreen),
                 ),
                 if (role == UserRole.cashier)
                   _NavItem(
-                    icon: Icons.lock_clock_outlined,
+                    icon: _IconShift(),
                     label: S.current.strShift,
                     isActive: activeRoute == AppRoutes.closeShiftScreen,
-                    onTap: () => _navigate(context, AppRoutes.closeShiftScreen),
+                    onTap: () =>
+                        _navigate(context, AppRoutes.closeShiftScreen),
                   ),
                 if (canManageMenu)
                   _NavItem(
-                    icon: Icons.restaurant_menu_rounded,
+                    icon: _IconMenu(),
                     label: S.current.strMenu,
                     isActive: activeRoute == AppRoutes.menuMealsScreen ||
                         activeRoute == AppRoutes.menuManageScreen,
-                    onTap: () => _navigate(context, AppRoutes.menuMealsScreen),
+                    onTap: () =>
+                        _navigate(context, AppRoutes.menuMealsScreen),
                   ),
                 if (canAccessSettings)
                   _NavItem(
-                    icon: Icons.settings_outlined,
+                    icon: _IconSettings(),
                     label: S.current.strSettings,
                     isActive: activeRoute == AppRoutes.settingsScreen,
-                    onTap: () => _navigate(context, AppRoutes.settingsScreen),
+                    onTap: () =>
+                        _navigate(context, AppRoutes.settingsScreen),
                   ),
               ],
             ),
           ),
-          // Logout at bottom
+
+          // Logout
+          Container(height: 1, color: _kSlate800),
           Padding(
-            padding: const EdgeInsets.only(bottom: 16),
+            padding: const EdgeInsets.only(bottom: 8, top: 4),
             child: _NavItem(
-              icon: Icons.logout_rounded,
+              icon: _IconLogout(),
               label: S.current.strLogout,
               isActive: false,
               isDestructive: true,
@@ -109,7 +130,7 @@ class AppSidebar extends StatelessWidget {
 }
 
 class _NavItem extends StatefulWidget {
-  final IconData icon;
+  final Widget icon;
   final String label;
   final bool isActive;
   final bool isDestructive;
@@ -132,19 +153,22 @@ class _NavItemState extends State<_NavItem> {
 
   @override
   Widget build(BuildContext context) {
-    final colors = context.colors;
-    final activeColor =
-        widget.isDestructive ? colors.systemError : colors.textBrand;
-    final inactiveColor =
-        widget.isDestructive ? colors.systemError.withOpacity(0.7) : colors.sidebarIcon;
+    final activeIconColor =
+        widget.isDestructive ? const Color(0xFFEF4444) : _kIndigo;
+    final inactiveIconColor =
+        widget.isDestructive ? const Color(0xFFEF4444).withOpacity(0.7) : _kSlate500;
+    final activeLabelColor =
+        widget.isDestructive ? const Color(0xFFEF4444) : const Color(0xFFE2E8F0);
+    const inactiveLabelColor = _kSlate500;
 
     final bgColor = widget.isActive
-        ? colors.sidebarActive
+        ? const Color(0x1AFB6633)
         : _hovered
-        ? colors.sidebarActive.withOpacity(0.5)
-        : Colors.transparent;
+            ? const Color(0x0DFB6633)
+            : Colors.transparent;
 
-    final iconColor = widget.isActive ? activeColor : inactiveColor;
+    final iconColor = widget.isActive ? activeIconColor : inactiveIconColor;
+    final labelColor = widget.isActive ? activeLabelColor : inactiveLabelColor;
 
     return MouseRegion(
       onEnter: (_) => setState(() => _hovered = true),
@@ -154,25 +178,30 @@ class _NavItemState extends State<_NavItem> {
         onTap: widget.onTap,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 150),
-          width: 56,
-          height: 56,
-          margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 1),
+          width: 60,
+          margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+          padding: const EdgeInsets.symmetric(vertical: 8),
           decoration: BoxDecoration(
             color: bgColor,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(10),
           ),
           child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(widget.icon, size: 22, color: iconColor),
-              const SizedBox(height: 3),
+              IconTheme(
+                data: IconThemeData(color: iconColor, size: 22),
+                child: widget.icon,
+              ),
+              const SizedBox(height: 4),
               Text(
                 widget.label,
                 style: TextStyle(
-                  fontSize: 9,
-                  fontWeight: FontWeight.w500,
-                  color: iconColor,
+                  fontSize: 10,
+                  fontWeight:
+                      widget.isActive ? FontWeight.w500 : FontWeight.w400,
+                  color: labelColor,
                   fontFamily: 'Inter',
+                  letterSpacing: 0.1,
                 ),
               ),
             ],
@@ -180,5 +209,76 @@ class _NavItemState extends State<_NavItem> {
         ),
       ),
     );
+  }
+}
+
+// ─── Custom SVG-like icons via paths ───────────────────────────────────────
+
+class _IconTables extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final color = IconTheme.of(context).color!;
+    return CustomPaint(size: const Size(22, 22), painter: _TablesPainter(color));
+  }
+}
+
+class _TablesPainter extends CustomPainter {
+  final Color color;
+  _TablesPainter(this.color);
+  @override
+  void paint(Canvas canvas, Size size) {
+    final p = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.8
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round;
+    const rr = RRect.fromRectAndRadius;
+    const r = Radius.circular(1.5);
+    canvas.drawRRect(rr(Rect.fromLTWH(2, 2, 8, 8), r), p);
+    canvas.drawRRect(rr(Rect.fromLTWH(12, 2, 8, 8), r), p);
+    canvas.drawRRect(rr(Rect.fromLTWH(2, 12, 8, 8), r), p);
+    canvas.drawRRect(rr(Rect.fromLTWH(12, 12, 8, 8), r), p);
+  }
+  @override bool shouldRepaint(_TablesPainter old) => old.color != color;
+}
+
+class _IconMenu extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Icon(Icons.menu_rounded,
+        size: 22, color: IconTheme.of(context).color);
+  }
+}
+
+class _IconArchive extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Icon(Icons.archive_outlined,
+        size: 22, color: IconTheme.of(context).color);
+  }
+}
+
+class _IconShift extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Icon(Icons.bar_chart_rounded,
+        size: 22, color: IconTheme.of(context).color);
+  }
+}
+
+class _IconSettings extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Icon(Icons.settings_outlined,
+        size: 22, color: IconTheme.of(context).color);
+  }
+}
+
+class _IconLogout extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Icon(Icons.logout_rounded,
+        size: 22, color: IconTheme.of(context).color);
   }
 }

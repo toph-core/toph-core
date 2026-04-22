@@ -145,7 +145,7 @@ class _UsersSectionState extends State<UsersSection> {
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            style: TextButton.styleFrom(foregroundColor: const Color(0xFFEB295B)),
+            style: TextButton.styleFrom(foregroundColor: const Color(0xFFDC2626)),
             child: const Text('O\'chirish'),
           ),
         ],
@@ -996,7 +996,7 @@ Color _roleColor(String role, ThemeColors colors) {
   switch (role) {
     case 'admin':
     case 'superadmin':
-      return const Color(0xFFEB295B);
+      return const Color(0xFFDC2626);
     case 'manager':
       return const Color(0xFF7C3AED);
     case 'cashier':

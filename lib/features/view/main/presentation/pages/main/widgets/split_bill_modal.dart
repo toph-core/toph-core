@@ -84,7 +84,7 @@ class _SplitBillModalState extends State<SplitBillModal> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: const Color(0xFFF5F4F2),
+                color: const Color(0xFFF8FAFC),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Column(
@@ -159,7 +159,7 @@ class _SplitBillModalState extends State<SplitBillModal> {
                         decoration: BoxDecoration(
                           color: isSelected
                               ? const Color(0xFFFB6633)
-                              : const Color(0xFFF5F4F2),
+                              : const Color(0xFFF8FAFC),
                           borderRadius: BorderRadius.circular(8),
                           border: Border.all(
                             color: isSelected
@@ -237,7 +237,7 @@ class _SplitBillModalState extends State<SplitBillModal> {
                     child: Container(
                       height: 44,
                       decoration: BoxDecoration(
-                        color: const Color(0xFFF5F4F2),
+                        color: const Color(0xFFF8FAFC),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Center(

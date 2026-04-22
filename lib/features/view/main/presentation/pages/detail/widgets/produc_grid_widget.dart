@@ -1,13 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:mary_ai_pos/core/common/custom_network_image.dart';
 import 'package:mary_ai_pos/core/constants/constants.dart';
 import 'package:mary_ai_pos/core/extension/for_context.dart';
 import 'package:mary_ai_pos/core/extension/number_formatter.dart';
 import 'package:mary_ai_pos/core/theme/tokens/theme_colors.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/goods/goods_model.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/detail/detail_bloc.dart';
-import 'package:mary_ai_pos/features/view/main/presentation/cubit/ui_prefs/ui_prefs_cubit.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/detail/widgets/detail_tab_widget.dart';
 import 'package:mary_ai_pos/generated/l10n.dart';
 import 'package:number_paginator/number_paginator.dart';
@@ -94,24 +92,19 @@ class _ProductGridWidgetState extends State<ProductGridWidget> {
                       trackVisibility: true,
                       thickness: 6,
                       radius: const Radius.circular(4),
-                      child: BlocBuilder<UiPrefsCubit, UiPrefsState>(
-                        buildWhen: (p, c) =>
-                            p.menuShowImages != c.menuShowImages,
-                        builder: (context, uiState) => GridView.builder(
-                          controller: _scrollCtrl,
-                          padding: const EdgeInsets.fromLTRB(12, 12, 16, 12),
-                          gridDelegate:
-                              SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 4,
-                            crossAxisSpacing: 10,
-                            mainAxisSpacing: 10,
-                            childAspectRatio:
-                                uiState.menuShowImages ? 0.82 : 1.1,
-                          ),
-                          itemCount: pageItems.length,
-                          itemBuilder: (context, index) =>
-                              _ProductCard(product: pageItems[index]),
+                      child: GridView.builder(
+                        controller: _scrollCtrl,
+                        padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
+                        gridDelegate:
+                            const SliverGridDelegateWithMaxCrossAxisExtent(
+                          maxCrossAxisExtent: 170,
+                          crossAxisSpacing: 16,
+                          mainAxisSpacing: 20,
+                          childAspectRatio: 0.88,
                         ),
+                        itemCount: pageItems.length,
+                        itemBuilder: (context, index) =>
+                            _ProductCard(product: pageItems[index]),
                       ),
                     ),
                   ),
@@ -223,138 +216,142 @@ class _ProductCardState extends State<_ProductCard> {
 
   @override
   Widget build(BuildContext context) {
-    final colors = context.colors;
-    final statusColor = widget.product.colorCode != null
-        ? Color(int.parse(widget.product.colorCode!))
-        : colors.bgBrand;
-    final showImages =
-        context.select((UiPrefsCubit c) => c.state.menuShowImages);
+    // Cart quantity for this product (selected + existing).
+    final cartQty = context.select<DetailBloc, int>((b) {
+      final s = b.state;
+      final selected = s.selectedGoods
+          .where((g) => g.goods.id == widget.product.id)
+          .fold<int>(0, (sum, g) => sum + g.quantity);
+      final existing = s.existingGoods
+          .where(
+            (g) =>
+                g.goods.id == widget.product.id && g.commet != 'cancelled',
+          )
+          .fold<int>(0, (sum, g) => sum + g.quantity);
+      return selected + existing;
+    });
+
+    final letter = widget.product.name.isNotEmpty
+        ? widget.product.name[0].toUpperCase()
+        : '?';
 
     return MouseRegion(
       onEnter: (_) => setState(() => _hovered = true),
       onExit: (_) => setState(() => _hovered = false),
       cursor: SystemMouseCursors.click,
       child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
         onTap: () => context.read<DetailBloc>().add(
           DetailEvent.selectGood(good: widget.product),
         ),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 150),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            border: Border.all(
-              color: _hovered ? colors.textBrand : colors.border,
-              width: 1,
-            ),
-            borderRadius: BorderRadius.circular(14),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              if (showImages)
-                AspectRatio(
-                  aspectRatio: 1.3,
-                  child: ClipRRect(
-                    borderRadius: const BorderRadius.vertical(
-                      top: Radius.circular(11),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            // Circle avatar with cart badge overlay
+            Stack(
+              clipBehavior: Clip.none,
+              children: [
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 150),
+                  width: 88,
+                  height: 88,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFFE4D4),
+                    shape: BoxShape.circle,
+                    boxShadow: _hovered
+                        ? [
+                            BoxShadow(
+                              color: const Color(0xFFFB6633).withOpacity(0.2),
+                              blurRadius: 16,
+                              offset: const Offset(0, 4),
+                            ),
+                          ]
+                        : null,
+                  ),
+                  alignment: Alignment.center,
+                  child: Text(
+                    letter,
+                    style: const TextStyle(
+                      fontSize: 40,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFFFB6633),
+                      fontFamily: 'Inter',
+                      height: 1,
                     ),
-                    child: () {
-                            final pic = widget.product.pictureUrl;
-                            final isMinioName = pic != null &&
-                                !pic.startsWith('http') &&
-                                (pic.contains('/') || pic.contains('.'));
-                            if (isMinioName) {
-                              return CustomCachedNetworkImage(
-                                height: double.infinity,
-                                width: double.infinity,
-                                minioObjectName: pic,
-                                fit: BoxFit.cover,
-                              );
-                            }
-                            return Container(
-                              color: statusColor.withOpacity(0.08),
-                              child: Row(
-                                children: [
-                                  Container(width: 3, color: statusColor),
-                                  Expanded(
-                                    child: Center(
-                                      child: Text(
-                                        widget.product.name.isNotEmpty
-                                            ? widget.product.name[0]
-                                                .toUpperCase()
-                                            : '?',
-                                        style: TextStyle(
-                                          fontSize: 22,
-                                          fontWeight: FontWeight.w700,
-                                          color: statusColor.withOpacity(0.6),
-                                          fontFamily: 'Inter',
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            );
-                          }(),
                   ),
                 ),
-              // Info
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
+                if (cartQty > 0)
+                  Positioned(
+                    top: -4,
+                    right: -4,
+                    child: _CartQtyBadge(qty: cartQty),
                   ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        widget.product.name,
-                        style: const TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: Color(0xFF19160B),
-                          fontFamily: 'Inter',
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      Text(
-                        num.parse(widget.product.price).formatN,
-                        style: const TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                          color: Color(0xFFFB6633),
-                          fontFamily: 'Inter',
-                        ),
-                      ),
-                      const Spacer(),
-                      AnimatedContainer(
-                        duration: const Duration(milliseconds: 120),
-                        width: double.infinity,
-                        height: 26,
-                        decoration: BoxDecoration(
-                          color: _hovered
-                              ? const Color(0xFFFB6633)
-                              : const Color(0xFFFFF3EE),
-                          borderRadius: BorderRadius.circular(7),
-                        ),
-                        child: Center(
-                          child: Icon(
-                            Icons.add,
-                            size: 14,
-                            color: _hovered
-                                ? Colors.white
-                                : const Color(0xFFFB6633),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            // Product name
+            Text(
+              widget.product.name,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF0F172A),
+                fontFamily: 'Inter',
+                height: 1.2,
               ),
-            ],
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: 3),
+            // Price
+            Text(
+              num.parse(widget.product.price).formatN,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+                color: Color(0xFFFB6633),
+                fontFamily: 'Inter',
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _CartQtyBadge extends StatelessWidget {
+  final int qty;
+  const _CartQtyBadge({required this.qty});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      constraints: const BoxConstraints(minWidth: 22, minHeight: 22),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFB6633),
+        borderRadius: BorderRadius.circular(11),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.12),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
           ),
+        ],
+      ),
+      alignment: Alignment.center,
+      child: Text(
+        '$qty',
+        style: const TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w700,
+          color: Colors.white,
+          fontFamily: 'Inter',
+          height: 1,
         ),
       ),
     );

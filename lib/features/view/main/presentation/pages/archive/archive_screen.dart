@@ -96,7 +96,7 @@ class _ArchiveBody extends StatelessWidget {
                           label: 'Bugun yopildi',
                           value: '$closedCount',
                           sub: 'hisob',
-                          valueColor: const Color(0xFF13AF1B),
+                          valueColor: const Color(0xFF16A34A),
                         ),
                         _StatCard(
                           label: "O'rtacha chek",
@@ -125,7 +125,7 @@ class _ArchiveBody extends StatelessWidget {
                                 color: Colors.white,
                                 borderRadius: BorderRadius.circular(16),
                                 border: Border.all(
-                                  color: const Color(0xFFEBEFF2),
+                                  color: const Color(0xFFE2E8F0),
                                 ),
                               ),
                               child: Column(
@@ -136,7 +136,7 @@ class _ArchiveBody extends StatelessWidget {
                                     decoration: const BoxDecoration(
                                       border: Border(
                                         bottom: BorderSide(
-                                          color: Color(0xFFEBEFF2),
+                                          color: Color(0xFFE2E8F0),
                                           width: 2,
                                         ),
                                       ),
@@ -168,7 +168,7 @@ class _ArchiveBody extends StatelessWidget {
                                               'Arxiv topilmadi',
                                               style: TextStyle(
                                                 fontSize: 14,
-                                                color: Color(0xFF888888),
+                                                color: Color(0xFF64748B),
                                                 fontFamily: 'Inter',
                                               ),
                                             ),
@@ -239,24 +239,24 @@ class _ArchiveFilterBar extends StatelessWidget {
                 hintText: 'Stol, chek raqami...',
                 hintStyle: const TextStyle(
                   fontSize: 13,
-                  color: Color(0xFFAAAAAA),
+                  color: Color(0xFF94A3B8),
                   fontFamily: 'Inter',
                 ),
                 prefixIcon: const Icon(
                   Icons.search_rounded,
                   size: 18,
-                  color: Color(0xFFAAAAAA),
+                  color: Color(0xFF94A3B8),
                 ),
                 filled: true,
-                fillColor: const Color(0xFFF5F4F2),
+                fillColor: const Color(0xFFF8FAFC),
                 contentPadding: EdgeInsets.zero,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(10),
-                  borderSide: const BorderSide(color: Color(0xFFEBEBEB)),
+                  borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(10),
-                  borderSide: const BorderSide(color: Color(0xFFEBEBEB)),
+                  borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(10),
@@ -266,7 +266,7 @@ class _ArchiveFilterBar extends StatelessWidget {
               style: const TextStyle(
                 fontSize: 13,
                 fontFamily: 'Inter',
-                color: Color(0xFF19160B),
+                color: Color(0xFF0F172A),
               ),
               onChanged: (v) => context.read<ArchivesBloc>().add(
                 ArchivesEvent.searchByArchiveNum(v),
@@ -278,7 +278,7 @@ class _ArchiveFilterBar extends StatelessWidget {
           Container(
             height: 36,
             decoration: BoxDecoration(
-              color: const Color(0xFFF5F4F2),
+              color: const Color(0xFFF8FAFC),
               borderRadius: BorderRadius.circular(10),
             ),
             padding: const EdgeInsets.all(4),
@@ -315,8 +315,8 @@ class _ArchiveFilterBar extends StatelessWidget {
                         fontSize: 13,
                         fontWeight: FontWeight.w500,
                         color: isActive
-                            ? const Color(0xFF19160B)
-                            : const Color(0xFF888888),
+                            ? const Color(0xFF0F172A)
+                            : const Color(0xFF64748B),
                         fontFamily: 'Inter',
                       ),
                     ),
@@ -370,7 +370,7 @@ class _ArchiveFilterBar extends StatelessWidget {
                 border: Border.all(
                   color: state.filterType == ArchivesFilterType.date
                       ? const Color(0xFFFB6633)
-                      : const Color(0xFFEBEBEB),
+                      : const Color(0xFFE2E8F0),
                 ),
                 borderRadius: BorderRadius.circular(10),
               ),
@@ -382,7 +382,7 @@ class _ArchiveFilterBar extends StatelessWidget {
                     size: 14,
                     color: state.filterType == ArchivesFilterType.date
                         ? const Color(0xFFFB6633)
-                        : const Color(0xFF888888),
+                        : const Color(0xFF64748B),
                   ),
                   Text(
                     state.filterType == ArchivesFilterType.date &&
@@ -393,7 +393,7 @@ class _ArchiveFilterBar extends StatelessWidget {
                       fontSize: 13,
                       color: state.filterType == ArchivesFilterType.date
                           ? const Color(0xFFFB6633)
-                          : const Color(0xFF888888),
+                          : const Color(0xFF64748B),
                       fontFamily: 'Inter',
                     ),
                   ),
@@ -407,7 +407,7 @@ class _ArchiveFilterBar extends StatelessWidget {
             "Jami: ${state.archives?.pagination.total ?? 0} ta",
             style: const TextStyle(
               fontSize: 13,
-              color: Color(0xFF888888),
+              color: Color(0xFF64748B),
               fontFamily: 'Inter',
             ),
           ),
@@ -438,7 +438,7 @@ class _StatCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: const Color(0xFFEBEBEB)),
+          border: Border.all(color: const Color(0xFFE2E8F0)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -449,7 +449,7 @@ class _StatCard extends StatelessWidget {
               style: const TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w500,
-                color: Color(0xFF888888),
+                color: Color(0xFF64748B),
                 fontFamily: 'Inter',
               ),
             ),
@@ -458,7 +458,7 @@ class _StatCard extends StatelessWidget {
               style: TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.w700,
-                color: valueColor ?? const Color(0xFF19160B),
+                color: valueColor ?? const Color(0xFF0F172A),
                 fontFamily: 'Inter',
               ),
             ),
@@ -466,7 +466,7 @@ class _StatCard extends StatelessWidget {
               sub,
               style: const TextStyle(
                 fontSize: 11,
-                color: Color(0xFFAAAAAA),
+                color: Color(0xFF94A3B8),
                 fontFamily: 'Inter',
               ),
             ),
@@ -493,7 +493,7 @@ class _ThCell extends StatelessWidget {
           style: const TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.w600,
-            color: Color(0xFF888888),
+            color: Color(0xFF64748B),
             fontFamily: 'Inter',
           ),
         ),
@@ -525,7 +525,7 @@ class _ArchiveRow extends StatelessWidget {
         height: 52,
         decoration: BoxDecoration(
           color: isSelected ? const Color(0xFFFFF3EE) : Colors.transparent,
-          border: const Border(bottom: BorderSide(color: Color(0xFFF5F4F2))),
+          border: const Border(bottom: BorderSide(color: Color(0xFFF8FAFC))),
         ),
         child: Row(
           children: [
@@ -538,7 +538,7 @@ class _ArchiveRow extends StatelessWidget {
                   style: const TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
-                    color: Color(0xFFAAAAAA),
+                    color: Color(0xFF94A3B8),
                     fontFamily: 'Inter',
                   ),
                 ),
@@ -552,7 +552,7 @@ class _ArchiveRow extends StatelessWidget {
                   width: 28,
                   height: 28,
                   decoration: BoxDecoration(
-                    color: const Color(0xFFF5F4F2),
+                    color: const Color(0xFFF8FAFC),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   alignment: Alignment.center,
@@ -561,7 +561,7 @@ class _ArchiveRow extends StatelessWidget {
                     style: const TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w700,
-                      color: Color(0xFF19160B),
+                      color: Color(0xFF0F172A),
                       fontFamily: 'Inter',
                     ),
                   ),
@@ -583,7 +583,7 @@ class _ArchiveRow extends StatelessWidget {
                   '${archive.goodsQuantity}',
                   style: const TextStyle(
                     fontSize: 13,
-                    color: Color(0xFF19160B),
+                    color: Color(0xFF0F172A),
                     fontFamily: 'Inter',
                   ),
                 ),
@@ -598,7 +598,7 @@ class _ArchiveRow extends StatelessWidget {
                   style: const TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w700,
-                    color: Color(0xFF19160B),
+                    color: Color(0xFF0F172A),
                     fontFamily: 'Inter',
                   ),
                 ),
@@ -612,7 +612,7 @@ class _ArchiveRow extends StatelessWidget {
                   time,
                   style: const TextStyle(
                     fontSize: 13,
-                    color: Color(0xFF19160B),
+                    color: Color(0xFF0F172A),
                     fontFamily: 'Inter',
                   ),
                 ),
@@ -629,13 +629,13 @@ class _ArchiveRow extends StatelessWidget {
                     height: 30,
                     decoration: BoxDecoration(
                       color: Colors.white,
-                      border: Border.all(color: const Color(0xFFEBEBEB)),
+                      border: Border.all(color: const Color(0xFFE2E8F0)),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: const Icon(
                       Icons.remove_red_eye_outlined,
                       size: 14,
-                      color: Color(0xFF888888),
+                      color: Color(0xFF64748B),
                     ),
                   ),
                 ),
@@ -667,16 +667,16 @@ class _StatusBadge extends StatelessWidget {
         key = 'open';
       case OrderStatus.closed:
       case OrderStatus.paid:
-        bg = const Color(0xFFE8F9E9);
-        fg = const Color(0xFF13AF1B);
+        bg = const Color(0xFFDCFCE7);
+        fg = const Color(0xFF16A34A);
         key = status == OrderStatus.paid ? 'paid' : 'closed';
       case OrderStatus.deleted:
-        bg = const Color(0xFFFFF0F3);
-        fg = const Color(0xFFEB295B);
+        bg = const Color(0xFFFEE2E2);
+        fg = const Color(0xFFDC2626);
         key = 'cancelled';
       default:
-        bg = const Color(0xFFF5F4F2);
-        fg = const Color(0xFF888888);
+        bg = const Color(0xFFF8FAFC);
+        fg = const Color(0xFF64748B);
         key = '';
     }
     final label = '● ${key.isEmpty ? '—' : localizedOrderStatus(context, key)}';
@@ -1093,7 +1093,7 @@ class _AdminOrdersArchiveBodyState extends State<_AdminOrdersArchiveBody> {
                                             width: 28,
                                             height: 28,
                                             decoration: BoxDecoration(
-                                              color: const Color(0xFFF5F4F2),
+                                              color: const Color(0xFFF8FAFC),
                                               borderRadius:
                                                   BorderRadius.circular(8),
                                             ),
@@ -1323,12 +1323,12 @@ class _AdminOrdersArchiveBodyState extends State<_AdminOrdersArchiveBody> {
     final bg = isOpen
         ? const Color(0xFFFFF3EE)
         : isPaid
-        ? const Color(0xFFE8F9E9)
+        ? const Color(0xFFDCFCE7)
         : const Color(0xFFF2F3F5);
     final fg = isOpen
         ? const Color(0xFFFB6633)
         : isPaid
-        ? const Color(0xFF13AF1B)
+        ? const Color(0xFF16A34A)
         : secondaryTextColor;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),

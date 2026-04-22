@@ -12,7 +12,6 @@ import 'package:mary_ai_pos/features/view/main/presentation/cubit/shift/shift_bl
 import 'package:mary_ai_pos/features/view/main/presentation/pages/main/widgets/hall_widget.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/main/widgets/main_header.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/main/widgets/tab_filter.dart';
-import 'package:mary_ai_pos/features/view/main/presentation/pages/main/admin_floor_plan_screen.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/main/waiter_floor_plan_screen.dart';
 
 class MainScreen extends StatefulWidget {
@@ -39,7 +38,8 @@ class _MainScreenState extends State<MainScreen> {
         final role = state.userMOdel?.role;
         // admin smena ochmaydi hozircha
         if (role == UserRole.manager ||
-            role == UserRole.cashier) {
+            role == UserRole.cashier ||
+            role == UserRole.waiter) {
           context.read<ShiftBloc>().add(const ShiftEvent.checkShift());
         }
       },
@@ -55,7 +55,6 @@ class _MainScreenState extends State<MainScreen> {
           switch (role) {
             case UserRole.admin:
             case UserRole.manager:
-              return const AdminFloorPlanScreen();
             case UserRole.cashier:
             case UserRole.waiter:
               return const WaiterFloorPlanScreen();

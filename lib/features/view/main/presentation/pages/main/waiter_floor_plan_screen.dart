@@ -1,23 +1,48 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mary_ai_pos/core/constants/constants.dart';
 import 'package:mary_ai_pos/core/extension/for_context.dart';
-import 'package:mary_ai_pos/core/extension/list_extension.dart';
 import 'package:mary_ai_pos/core/routes/app_routes.dart';
 import 'package:mary_ai_pos/core/widgets/app_scaffold.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/cafe_tables/cafe_tables_model.dart';
+import 'package:mary_ai_pos/features/view/main/data/models/hall/hall_model.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/main/main_cubit.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/orders/orders_bloc.dart';
-import 'package:mary_ai_pos/features/view/main/presentation/pages/main/widgets/admin_floor_plan_canvas.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/main/widgets/main_header.dart';
-import 'package:mary_ai_pos/features/view/main/presentation/pages/main/widgets/show_table_guest_count.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/main/widgets/tab_filter.dart';
 import 'package:mary_ai_pos/generated/l10n.dart';
 
-enum _ViewMode { floorPlan, grid }
+// ─────────────────────────────────────────────
+// Design tokens
+// ─────────────────────────────────────────────
 
-/// Waiter va cashier uchun floor plan ekrani.
-/// Canvas (floor plan) yoki karta grid ko'rinishda almashish mumkin.
+const _kS900 = Color(0xFF0F172A);
+const _kS500 = Color(0xFF64748B);
+const _kS400 = Color(0xFF94A3B8);
+const _kS300 = Color(0xFFCBD5E1);
+const _kS200 = Color(0xFFE2E8F0);
+const _kS50 = Color(0xFFF8FAFC);
+const _kBrand = Color(0xFFFB6633);
+const _kBrandTint = Color(0xFFFFF3EE);
+const _kRed = Color(0xFFDC2626);
+const _kRedTint = Color(0xFFFEE2E2);
+const _kGreen = Color(0xFF16A34A);
+const _kFreeBg = Color(0xFFF0FDF4);
+const _kBlue = Color(0xFF2563EB);
+const _kBlueTint = Color(0xFFDBEAFE);
+
+// ─────────────────────────────────────────────
+// Session timestamp: tableId → first-seen saved DateTime
+// ─────────────────────────────────────────────
+
+final Map<String, DateTime> _openedAtByTable = {};
+
+// ─────────────────────────────────────────────
+// Screen
+// ─────────────────────────────────────────────
+
 class WaiterFloorPlanScreen extends StatefulWidget {
   const WaiterFloorPlanScreen({super.key});
 
@@ -26,18 +51,41 @@ class WaiterFloorPlanScreen extends StatefulWidget {
 }
 
 class _WaiterFloorPlanScreenState extends State<WaiterFloorPlanScreen> {
-  _ViewMode _viewMode = _ViewMode.floorPlan;
+  Timer? _elapsedTicker;
 
-  void _toggleView() {
-    setState(() {
-      _viewMode = _viewMode == _ViewMode.floorPlan
-          ? _ViewMode.grid
-          : _ViewMode.floorPlan;
+  @override
+  void initState() {
+    super.initState();
+    _elapsedTicker = Timer.periodic(const Duration(seconds: 30), (_) {
+      if (mounted) setState(() {});
     });
+    // Default rejim: "Barchasi" — har zaldagi stollarni yig'ib ko'rsatamiz.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final cubit = context.read<MainCubit>();
+      if (cubit.state.selectedHallId != null &&
+          (cubit.state.halls?.isNotEmpty ?? false)) {
+        cubit.loadAllHallsTables();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _elapsedTicker?.cancel();
+    super.dispose();
   }
 
   Future<void> _refresh() async {
     await context.read<MainCubit>().refreshTables();
+  }
+
+  void _syncOpenedAt(Set<String> savedIds) {
+    final now = DateTime.now();
+    for (final id in savedIds) {
+      _openedAtByTable.putIfAbsent(id, () => now);
+    }
+    _openedAtByTable.removeWhere((k, _) => !savedIds.contains(k));
   }
 
   @override
@@ -48,18 +96,35 @@ class _WaiterFloorPlanScreenState extends State<WaiterFloorPlanScreen> {
       activeRoute: AppRoutes.mainScreen,
       body: BlocBuilder<MainCubit, MainState>(
         builder: (context, state) {
-          final hall = state.halls?.firstWhereOrNull(
-            (h) => h.id == state.selectedHallId,
-          );
+          final halls = state.halls ?? [];
           final tables = state.tables ?? [];
 
-          // Saved order table IDs
-          final savedIds = context
-              .watch<SavedOrdersBloc>()
-              .state
-              .order
+          // Saved orders — price + timestamp tracking
+          final savedOrders = context.watch<SavedOrdersBloc>().state.order;
+          final savedIds = savedOrders
               .map((o) => o.createOrderRequest.tableId)
               .toSet();
+          final savedTotalsByTable = <String, int>{
+            for (final o in savedOrders)
+              o.createOrderRequest.tableId:
+                  o.createOrderRequest.foods.fold<int>(
+                0,
+                (sum, f) =>
+                    sum + (int.tryParse(f.goods.price) ?? 0) * f.quantity,
+              ),
+          };
+          _syncOpenedAt(savedIds);
+
+          // Status counts (across currently loaded tables).
+          final freeCount =
+              tables.where((t) => t.status == TableStatus.free).length;
+          final busyCount =
+              tables.where((t) => t.status == TableStatus.busy).length;
+          final reservedCount =
+              tables.where((t) => t.status == TableStatus.away).length;
+
+          final isLoading =
+              state.status == Status.LOADING && tables.isEmpty;
 
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -69,48 +134,43 @@ class _WaiterFloorPlanScreenState extends State<WaiterFloorPlanScreen> {
                 trailing: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    _TakeawayButton(),
-                    const SizedBox(width: 6),
-                    // Refresh
-                    _HeaderIconBtn(
-                      icon: Icons.refresh_rounded,
-                      tooltip: S.current.strRefresh,
+                    _HeaderStatChips(
+                      freeCount: freeCount,
+                      busyCount: busyCount,
+                      reservedCount: reservedCount,
+                    ),
+                    const SizedBox(width: 10),
+                    _RefreshButton(
                       loading: state.status == Status.LOADING,
                       onTap: _refresh,
                     ),
-                    const SizedBox(width: 6),
-                    // View toggle
-                    _ViewToggle(mode: _viewMode, onToggle: _toggleView),
                   ],
                 ),
               ),
-              if ((state.halls ?? []).isNotEmpty)
+              if (halls.isNotEmpty)
                 Padding(
                   padding: const EdgeInsets.fromLTRB(20, 14, 20, 0),
                   child: TabFilter(
-                    halls: state.halls ?? [],
+                    halls: halls,
                     selectedHallId: state.selectedHallId,
+                    tables: tables,
                     isLoading: state.status == Status.OTHER_LOADING,
                   ),
                 ),
               Expanded(
-                child: state.status == Status.LOADING
+                child: isLoading
                     ? Center(
                         child: CircularProgressIndicator.adaptive(
                           valueColor: AlwaysStoppedAnimation(colors.textBrand),
                         ),
                       )
-                    : _viewMode == _ViewMode.floorPlan
-                    ? AdminFloorPlanCanvas(
-                        tables: tables,
-                        hall: hall,
-                        isEditMode: false,
-                        savedTableIds: savedIds,
-                        onTableTap: (table) => _handleTableTap(context, table),
-                      )
                     : _GridView(
+                        halls: halls,
                         tables: tables,
                         savedIds: savedIds,
+                        totalsByTable: savedTotalsByTable,
+                        openedAtByTable: _openedAtByTable,
+                        selectedHallId: state.selectedHallId,
                         onTap: (table) => _handleTableTap(context, table),
                       ),
               ),
@@ -125,199 +185,163 @@ class _WaiterFloorPlanScreenState extends State<WaiterFloorPlanScreen> {
     BuildContext context,
     CafeTableModel table,
   ) async {
-    if (table.status == TableStatus.free) {
-      final savedOrdersBloc = context.read<SavedOrdersBloc>();
-      final navigator = Navigator.of(context);
+    final savedOrdersBloc = context.read<SavedOrdersBloc>();
+    final index = savedOrdersBloc.state.order.indexWhere(
+      (v) => v.createOrderRequest.tableId == table.id,
+    );
+    final saved = index != -1 ? savedOrdersBloc.state.order[index] : null;
 
-      final guestCount = await showDialog<int>(
-        context: context,
-        barrierDismissible: false,
-        builder: (_) => ShowTableGuestCount(tableNumber: table.number),
-      );
-      if (guestCount == null) return;
+    // Guest count defaults to the table's capacity. The waiter/cashier
+    // can adjust it later from the order panel if needed. We don't
+    // prompt for it on table tap per the new design.
+    final defaultGuestCount = table.capacity > 0 ? table.capacity : 1;
 
-      final index = savedOrdersBloc.state.order.indexWhere(
-        (v) => v.createOrderRequest.tableId == table.id,
-      );
-
-      Future.delayed(
-        const Duration(milliseconds: 300),
-        () => navigator.pushNamed(
-          AppRoutes.detailScreen,
-          arguments: {
-            'table': table,
-            'guest_count': guestCount,
-            'table_status': table.status,
-            'saved_orders': index != -1
-                ? savedOrdersBloc.state.order[index]
-                : null,
-          },
-        ),
-      );
-    } else {
-      final savedOrdersBloc = context.read<SavedOrdersBloc>();
-      final index = savedOrdersBloc.state.order.indexWhere(
-        (v) => v.createOrderRequest.tableId == table.id,
-      );
-
-      Navigator.pushNamed(
-        context,
-        AppRoutes.detailScreen,
-        arguments: {
-          'table': table,
-          'table_status': TableStatus.busy,
-          'saved_orders': index != -1
-              ? savedOrdersBloc.state.order[index]
-              : null,
-        },
-      );
-    }
-  }
-}
-
-// ─────────────────────────────────────────────
-// Header tugmalar
-// ─────────────────────────────────────────────
-
-class _TakeawayButton extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    final c = context.colors;
-    return GestureDetector(
-      onTap: () => Navigator.pushNamed(
-        context,
-        AppRoutes.detailScreen,
-        arguments: {
-          'table': null,
-          'table_status': TableStatus.none,
-          'guest_count': 1,
-        },
-      ),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-        decoration: BoxDecoration(
-          color: c.bgSecondary,
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: c.border),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          spacing: 6,
-          children: [
-            Icon(Icons.shopping_bag_outlined, size: 15, color: c.textSecondary),
-            Text(
-              S.current.strTakeaway,
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
-                color: c.textSecondary,
-                fontFamily: 'Inter',
-              ),
-            ),
-          ],
-        ),
-      ),
+    Navigator.pushNamed(
+      context,
+      AppRoutes.detailScreen,
+      arguments: {
+        'table': table,
+        'guest_count': defaultGuestCount,
+        'table_status': table.status == TableStatus.free
+            ? TableStatus.free
+            : TableStatus.busy,
+        'saved_orders': saved,
+      },
     );
   }
 }
 
-class _HeaderIconBtn extends StatefulWidget {
-  final IconData icon;
-  final String tooltip;
-  final bool loading;
-  final VoidCallback onTap;
-  const _HeaderIconBtn({
-    required this.icon,
-    required this.tooltip,
-    required this.onTap,
-    this.loading = false,
+// ─────────────────────────────────────────────
+// Header chips (Free / Busy / Reserved)
+// ─────────────────────────────────────────────
+
+class _HeaderStatChips extends StatelessWidget {
+  final int freeCount;
+  final int busyCount;
+  final int reservedCount;
+
+  const _HeaderStatChips({
+    required this.freeCount,
+    required this.busyCount,
+    required this.reservedCount,
   });
 
   @override
-  State<_HeaderIconBtn> createState() => _HeaderIconBtnState();
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _StatChip(
+          label: "Bo'sh",
+          count: freeCount,
+          dotColor: _kGreen,
+        ),
+        const SizedBox(width: 14),
+        _StatChip(
+          label: 'Band',
+          count: busyCount,
+          dotColor: _kBrand,
+        ),
+        const SizedBox(width: 14),
+        _StatChip(
+          label: 'Rezerv',
+          count: reservedCount,
+          dotColor: _kBlue,
+        ),
+      ],
+    );
+  }
 }
 
-class _HeaderIconBtnState extends State<_HeaderIconBtn> {
+class _StatChip extends StatelessWidget {
+  final String label;
+  final int count;
+  final Color dotColor;
+
+  const _StatChip({
+    required this.label,
+    required this.count,
+    required this.dotColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 8,
+          height: 8,
+          decoration: BoxDecoration(color: dotColor, shape: BoxShape.circle),
+        ),
+        const SizedBox(width: 6),
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 12,
+            color: _kS500,
+            fontFamily: 'Inter',
+          ),
+        ),
+        const SizedBox(width: 4),
+        Text(
+          '$count',
+          style: const TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w700,
+            color: _kS900,
+            fontFamily: 'Inter',
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _RefreshButton extends StatefulWidget {
+  final bool loading;
+  final VoidCallback onTap;
+  const _RefreshButton({required this.loading, required this.onTap});
+
+  @override
+  State<_RefreshButton> createState() => _RefreshButtonState();
+}
+
+class _RefreshButtonState extends State<_RefreshButton> {
   bool _hovered = false;
 
   @override
   Widget build(BuildContext context) {
-    final c = context.colors;
-    return Tooltip(
-      message: widget.tooltip,
-      child: MouseRegion(
-        cursor: SystemMouseCursors.click,
-        onEnter: (_) => setState(() => _hovered = true),
-        onExit: (_) => setState(() => _hovered = false),
-        child: GestureDetector(
-          onTap: widget.onTap,
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 120),
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: _hovered ? c.bgSecondary : Colors.transparent,
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(
-                color: _hovered ? c.border : Colors.transparent,
-              ),
-            ),
-            child: widget.loading
-                ? SizedBox(
-                    width: 16,
-                    height: 16,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation(c.textBrand),
-                    ),
-                  )
-                : Icon(widget.icon, size: 18, color: c.textSecondary),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _ViewToggle extends StatelessWidget {
-  final _ViewMode mode;
-  final VoidCallback onToggle;
-  const _ViewToggle({required this.mode, required this.onToggle});
-
-  @override
-  Widget build(BuildContext context) {
-    final c = context.colors;
-    final isFloorPlan = mode == _ViewMode.floorPlan;
-    return Tooltip(
-      message: isFloorPlan ? S.current.strGridView : S.current.strMapView,
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
       child: GestureDetector(
-        onTap: onToggle,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        onTap: widget.loading ? null : widget.onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 120),
+          width: 36,
+          height: 36,
           decoration: BoxDecoration(
-            color: c.bgSecondary,
+            color: _hovered ? _kS50 : Colors.transparent,
+            border: Border.all(
+              color: _hovered ? _kS200 : Colors.transparent,
+            ),
             borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: c.border),
           ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            spacing: 6,
-            children: [
-              Icon(
-                isFloorPlan ? Icons.grid_view_rounded : Icons.map_outlined,
-                size: 15,
-                color: c.textSecondary,
-              ),
-              Text(
-                isFloorPlan ? S.current.strGrid : S.current.strMap,
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
-                  color: c.textSecondary,
-                  fontFamily: 'Inter',
+          child: widget.loading
+              ? const Padding(
+                  padding: EdgeInsets.all(9),
+                  child: CircularProgressIndicator.adaptive(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation(_kBrand),
+                  ),
+                )
+              : const Icon(
+                  Icons.refresh_rounded,
+                  size: 18,
+                  color: _kS500,
                 ),
-              ),
-            ],
-          ),
         ),
       ),
     );
@@ -325,36 +349,46 @@ class _ViewToggle extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────
-// Grid ko'rinish
+// Grid view — grouped by hall when "all zones"
 // ─────────────────────────────────────────────
 
 class _GridView extends StatelessWidget {
+  final List<HallModel> halls;
   final List<CafeTableModel> tables;
   final Set<String> savedIds;
+  final Map<String, int> totalsByTable;
+  final Map<String, DateTime> openedAtByTable;
+  final String? selectedHallId;
   final void Function(CafeTableModel) onTap;
 
   const _GridView({
+    required this.halls,
     required this.tables,
     required this.savedIds,
+    required this.totalsByTable,
+    required this.openedAtByTable,
+    required this.selectedHallId,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    final c = context.colors;
-
     if (tables.isEmpty) {
       return Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
-          spacing: 8,
           children: [
-            Icon(Icons.table_restaurant_outlined, size: 48, color: c.border),
+            const Icon(
+              Icons.table_restaurant_outlined,
+              size: 48,
+              color: _kS300,
+            ),
+            const SizedBox(height: 8),
             Text(
               S.current.strNoTables,
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 14,
-                color: c.textTertiary,
+                color: _kS500,
                 fontFamily: 'Inter',
               ),
             ),
@@ -363,70 +397,191 @@ class _GridView extends StatelessWidget {
       );
     }
 
+    // Group tables by hall id for section rendering.
+    final hallsById = {for (final h in halls) h.id: h};
+    final groups = <String, List<CafeTableModel>>{};
+    for (final t in tables) {
+      groups.putIfAbsent(t.hallId, () => []).add(t);
+    }
+
+    // Preserve order from `halls`.
+    final orderedGroups = <MapEntry<HallModel, List<CafeTableModel>>>[];
+    for (final h in halls) {
+      final list = groups[h.id];
+      if (list != null && list.isNotEmpty) {
+        orderedGroups.add(MapEntry(h, list));
+      }
+    }
+    // Add any tables whose hall isn't in `halls` under a synthetic section.
+    final unknown = <CafeTableModel>[];
+    for (final entry in groups.entries) {
+      if (!hallsById.containsKey(entry.key)) {
+        unknown.addAll(entry.value);
+      }
+    }
+
+    final showSectionHeaders = selectedHallId == null;
+
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(20),
-      child: Wrap(
-        spacing: 12,
-        runSpacing: 12,
-        children: tables
-            .map(
-              (t) => _WaiterTableCard(
-                table: t,
-                isSaved: savedIds.contains(t.id),
-                onTap: () => onTap(t),
+      padding: const EdgeInsets.fromLTRB(20, 14, 20, 20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          for (int g = 0; g < orderedGroups.length; g++) ...[
+            if (showSectionHeaders)
+              Padding(
+                padding: EdgeInsets.only(top: g == 0 ? 6 : 20, bottom: 12),
+                child: _SectionHeader(
+                  label: orderedGroups[g].key.name,
+                  count: orderedGroups[g].value.length,
+                ),
               ),
-            )
-            .toList(),
+            _GridOfTables(
+              tables: orderedGroups[g].value,
+              savedIds: savedIds,
+              totalsByTable: totalsByTable,
+              openedAtByTable: openedAtByTable,
+              onTap: onTap,
+            ),
+          ],
+          if (unknown.isNotEmpty) ...[
+            if (showSectionHeaders)
+              Padding(
+                padding: EdgeInsets.only(
+                  top: orderedGroups.isEmpty ? 6 : 20,
+                  bottom: 12,
+                ),
+                child: _SectionHeader(
+                  label: 'Boshqa',
+                  count: unknown.length,
+                ),
+              ),
+            _GridOfTables(
+              tables: unknown,
+              savedIds: savedIds,
+              totalsByTable: totalsByTable,
+              openedAtByTable: openedAtByTable,
+              onTap: onTap,
+            ),
+          ],
+        ],
       ),
     );
   }
 }
 
-class _WaiterTableCard extends StatefulWidget {
-  final CafeTableModel table;
-  final bool isSaved;
-  final VoidCallback onTap;
+class _SectionHeader extends StatelessWidget {
+  final String label;
+  final int count;
+  const _SectionHeader({required this.label, required this.count});
 
-  const _WaiterTableCard({
-    required this.table,
-    required this.isSaved,
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.baseline,
+      textBaseline: TextBaseline.alphabetic,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+            color: _kS900,
+            fontFamily: 'Inter',
+            letterSpacing: -0.2,
+          ),
+        ),
+        const SizedBox(width: 8),
+        Text(
+          '$count',
+          style: const TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w500,
+            color: _kS400,
+            fontFamily: 'Inter',
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _GridOfTables extends StatelessWidget {
+  final List<CafeTableModel> tables;
+  final Set<String> savedIds;
+  final Map<String, int> totalsByTable;
+  final Map<String, DateTime> openedAtByTable;
+  final void Function(CafeTableModel) onTap;
+
+  const _GridOfTables({
+    required this.tables,
+    required this.savedIds,
+    required this.totalsByTable,
+    required this.openedAtByTable,
     required this.onTap,
   });
 
   @override
-  State<_WaiterTableCard> createState() => _WaiterTableCardState();
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        const cols = 6;
+        const gap = 12.0;
+        final cardW = (constraints.maxWidth - gap * (cols - 1)) / cols;
+        return Wrap(
+          spacing: gap,
+          runSpacing: gap,
+          children: tables
+              .map(
+                (t) => SizedBox(
+                  width: cardW,
+                  child: _TableCard(
+                    table: t,
+                    isSaved: savedIds.contains(t.id),
+                    savedTotal: totalsByTable[t.id],
+                    openedAt: openedAtByTable[t.id],
+                    onTap: () => onTap(t),
+                  ),
+                ),
+              )
+              .toList(),
+        );
+      },
+    );
+  }
 }
 
-class _WaiterTableCardState extends State<_WaiterTableCard> {
+// ─────────────────────────────────────────────
+// Table card
+// ─────────────────────────────────────────────
+
+class _TableCard extends StatefulWidget {
+  final CafeTableModel table;
+  final bool isSaved;
+  final int? savedTotal;
+  final DateTime? openedAt;
+  final VoidCallback onTap;
+
+  const _TableCard({
+    required this.table,
+    required this.isSaved,
+    required this.savedTotal,
+    required this.openedAt,
+    required this.onTap,
+  });
+
+  @override
+  State<_TableCard> createState() => _TableCardState();
+}
+
+class _TableCardState extends State<_TableCard> {
   bool _hovered = false;
 
   @override
   Widget build(BuildContext context) {
-    final c = context.colors;
     final status = widget.table.status;
-
-    final Color borderColor;
-    final Color bgColor;
-    final Color statusColor;
-    final String statusLabel;
-
-    switch (status) {
-      case TableStatus.busy:
-        borderColor = const Color(0xFFFB6633);
-        bgColor = const Color(0xFFFFF3EE);
-        statusColor = const Color(0xFFFB6633);
-        statusLabel = S.current.strBusy;
-      case TableStatus.away:
-        borderColor = const Color(0xFF3B82F6);
-        bgColor = const Color(0xFFEEF2FF);
-        statusColor = const Color(0xFF3B82F6);
-        statusLabel = S.current.strReserved;
-      default:
-        borderColor = c.border;
-        bgColor = c.bgDefault;
-        statusColor = const Color(0xFF22C55E);
-        statusLabel = S.current.strFree;
-    }
+    final bgColor = _bgFor(status);
+    final borderColor = _borderFor(status);
 
     return MouseRegion(
       cursor: SystemMouseCursors.click,
@@ -435,119 +590,332 @@ class _WaiterTableCardState extends State<_WaiterTableCard> {
       child: GestureDetector(
         onTap: widget.onTap,
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 140),
-          width: 160,
-          height: 120,
-          padding: const EdgeInsets.all(14),
+          duration: const Duration(milliseconds: 130),
+          height: 140,
+          padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: _hovered ? bgColor.withOpacity(0.75) : bgColor,
+            color: bgColor,
             borderRadius: BorderRadius.circular(14),
             border: Border.all(
-              color: _hovered ? borderColor : borderColor.withOpacity(0.6),
-              width: status == TableStatus.busy ? 2 : 1.5,
+              color: _hovered ? _kBrand.withOpacity(0.5) : borderColor,
             ),
             boxShadow: _hovered
                 ? [
                     BoxShadow(
-                      color: borderColor.withOpacity(0.18),
-                      blurRadius: 12,
-                      offset: const Offset(0, 4),
+                      color: Colors.black.withOpacity(0.04),
+                      blurRadius: 10,
+                      offset: const Offset(0, 2),
                     ),
                   ]
                 : null,
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          child: _buildContent(status),
+        ),
+      ),
+    );
+  }
+
+  Color _bgFor(TableStatus status) {
+    switch (status) {
+      case TableStatus.free:
+        return _kFreeBg;
+      case TableStatus.busy:
+        return Colors.white;
+      case TableStatus.away:
+        return Colors.white;
+      case TableStatus.none:
+        return Colors.white;
+    }
+  }
+
+  Color _borderFor(TableStatus status) {
+    switch (status) {
+      case TableStatus.free:
+        return const Color(0xFFBBF7D0);
+      case TableStatus.busy:
+        return _kS200;
+      case TableStatus.away:
+        return _kS200;
+      case TableStatus.none:
+        return _kS200;
+    }
+  }
+
+  Widget _buildContent(TableStatus status) {
+    switch (status) {
+      case TableStatus.free:
+        return _FreeCardContent(table: widget.table);
+      case TableStatus.busy:
+        return _BusyCardContent(
+          table: widget.table,
+          isSaved: widget.isSaved,
+          savedTotal: widget.savedTotal,
+          openedAt: widget.openedAt,
+        );
+      case TableStatus.away:
+        return _ReservedCardContent(table: widget.table);
+      case TableStatus.none:
+        return _FreeCardContent(table: widget.table);
+    }
+  }
+}
+
+// ── Card header (title + capacity badge) ──────────────────────────────
+
+class _CardHeader extends StatelessWidget {
+  final int tableNumber;
+  final int capacity;
+  final Color titleColor;
+  final String? statusBadgeLabel;
+  final Color? statusBadgeFg;
+  final Color? statusBadgeBg;
+
+  const _CardHeader({
+    required this.tableNumber,
+    required this.capacity,
+    required this.titleColor,
+    this.statusBadgeLabel,
+    this.statusBadgeFg,
+    this.statusBadgeBg,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(
+          child: Text(
+            'Stol $tableNumber',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+              color: titleColor,
+              fontFamily: 'Inter',
+              letterSpacing: -0.2,
+              height: 1.1,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+        if (statusBadgeLabel != null) ...[
+          Container(
+            padding:
+                const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+            decoration: BoxDecoration(
+              color: statusBadgeBg,
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Text(
+              statusBadgeLabel!,
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: statusBadgeFg,
+                fontFamily: 'Inter',
+              ),
+            ),
+          ),
+          const SizedBox(width: 6),
+        ],
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(
+              Icons.people_outline_rounded,
+              size: 13,
+              color: _kS500,
+            ),
+            const SizedBox(width: 3),
+            Text(
+              '$capacity',
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+                color: _kS500,
+                fontFamily: 'Inter',
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+// ── Free card ────────────────────────────────────────────────────────
+
+class _FreeCardContent extends StatelessWidget {
+  final CafeTableModel table;
+  const _FreeCardContent({required this.table});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _CardHeader(
+          tableNumber: table.number,
+          capacity: table.capacity,
+          titleColor: _kS900,
+        ),
+        const Spacer(),
+        const Center(
+          child: Text(
+            "Bo'sh",
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: _kGreen,
+              fontFamily: 'Inter',
+            ),
+          ),
+        ),
+        const Spacer(),
+      ],
+    );
+  }
+}
+
+// ── Busy card ────────────────────────────────────────────────────────
+
+class _BusyCardContent extends StatelessWidget {
+  final CafeTableModel table;
+  final bool isSaved;
+  final int? savedTotal;
+  final DateTime? openedAt;
+  const _BusyCardContent({
+    required this.table,
+    required this.isSaved,
+    required this.savedTotal,
+    required this.openedAt,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final hasPrice = (savedTotal ?? 0) > 0;
+    final elapsedLabel = _elapsedLabel(openedAt);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _CardHeader(
+          tableNumber: table.number,
+          capacity: table.capacity,
+          titleColor: _kS900,
+          statusBadgeLabel: isSaved ? 'Saqlangan' : 'Band',
+          statusBadgeFg: isSaved ? _kBrand : _kRed,
+          statusBadgeBg: isSaved ? _kBrandTint : _kRedTint,
+        ),
+        const Spacer(),
+        if (hasPrice)
+          Text(
+            '${_fmtSom(savedTotal!)} so\'m',
+            style: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
+              color: _kS900,
+              fontFamily: 'Inter',
+              letterSpacing: -0.3,
+              height: 1.2,
+            ),
+          )
+        else
+          const Text(
+            'Buyurtma kutilmoqda',
+            style: TextStyle(
+              fontSize: 13,
+              color: _kS500,
+              fontFamily: 'Inter',
+            ),
+          ),
+        const Spacer(),
+        if (elapsedLabel != null)
+          Row(
             children: [
-              // Row: table number + saved badge
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      '${S.current.strTable} ${widget.table.number}',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w700,
-                        color: c.textDefault,
-                        fontFamily: 'Inter',
-                      ),
-                    ),
-                  ),
-                  if (widget.isSaved)
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 6,
-                        vertical: 2,
-                      ),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFFB6633).withOpacity(0.12),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: Text(
-                        S.current.strSavedBadge,
-                        style: const TextStyle(
-                          fontSize: 9,
-                          fontWeight: FontWeight.w600,
-                          color: Color(0xFFFB6633),
-                          fontFamily: 'Inter',
-                        ),
-                      ),
-                    ),
-                ],
+              const Icon(
+                Icons.access_time_rounded,
+                size: 13,
+                color: _kS500,
               ),
-              const SizedBox(height: 6),
-              // Status badge
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                  color: statusColor.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  spacing: 4,
-                  children: [
-                    Container(
-                      width: 6,
-                      height: 6,
-                      decoration: BoxDecoration(
-                        color: statusColor,
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                    Text(
-                      statusLabel,
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                        color: statusColor,
-                        fontFamily: 'Inter',
-                      ),
-                    ),
-                  ],
+              const SizedBox(width: 4),
+              Text(
+                elapsedLabel,
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                  color: _kS500,
+                  fontFamily: 'Inter',
                 ),
               ),
-              const Spacer(),
-              // Capacity
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                spacing: 4,
-                children: [
-                  Icon(Icons.people_outline, size: 13, color: c.textTertiary),
-                  Text(
-                    '${widget.table.capacity} ${S.current.strPersonsSuffix}',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: c.textTertiary,
-                      fontFamily: 'Inter',
-                    ),
-                  ),
-                ],
+            ],
+          ),
+      ],
+    );
+  }
+
+  static String? _elapsedLabel(DateTime? openedAt) {
+    if (openedAt == null) return null;
+    final diff = DateTime.now().difference(openedAt);
+    if (diff.isNegative) return null;
+    final h = diff.inHours;
+    final m = diff.inMinutes % 60;
+    if (h <= 0 && diff.inMinutes < 1) return '< 1 daqiqa';
+    if (h <= 0) return '${diff.inMinutes} daqiqa';
+    return '$h soat ${m.toString().padLeft(2, '0')} daqiqa';
+  }
+}
+
+String _fmtSom(int v) {
+  final s = v.toString();
+  final buf = StringBuffer();
+  for (int i = 0; i < s.length; i++) {
+    if (i > 0 && (s.length - i) % 3 == 0) buf.write(' ');
+    buf.write(s[i]);
+  }
+  return buf.toString();
+}
+
+// ── Reserved card ────────────────────────────────────────────────────
+
+class _ReservedCardContent extends StatelessWidget {
+  final CafeTableModel table;
+  const _ReservedCardContent({required this.table});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _CardHeader(
+          tableNumber: table.number,
+          capacity: table.capacity,
+          titleColor: _kS900,
+          statusBadgeLabel: 'Rezerv',
+          statusBadgeFg: _kBlue,
+          statusBadgeBg: _kBlueTint,
+        ),
+        const Spacer(),
+        const Center(
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.access_time_rounded, size: 14, color: _kBlue),
+              SizedBox(width: 6),
+              Text(
+                'Band qilingan',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                  color: _kBlue,
+                  fontFamily: 'Inter',
+                ),
               ),
             ],
           ),
         ),
-      ),
+        const Spacer(),
+      ],
     );
   }
 }

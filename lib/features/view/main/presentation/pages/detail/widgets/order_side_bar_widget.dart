@@ -89,71 +89,26 @@ class _OrderSidebarState extends State<OrderSidebar> with DetailScreenMixin {
             ),
             child: Column(
               children: [
-                // Header
-                Container(
-                  height: 52,
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  decoration: BoxDecoration(
-                    border: Border(bottom: BorderSide(color: colors.border)),
-                  ),
-                  child: Row(
-                    children: [
-                      Text(
-                        S.current.strOrders,
-                        style: const TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w700,
-                          color: Color(0xFF19160B),
-                          fontFamily: 'Inter',
+                // Header — "Joriy buyurtma / N taom · M dona" + trash icon
+                _OrderPanelHeader(
+                  itemCount:
+                      state.selectedGoods.length + state.existingGoods.length,
+                  qtyTotal: [
+                    ...state.selectedGoods,
+                    ...state.existingGoods,
+                  ].fold<int>(0, (sum, g) => sum + g.quantity),
+                  canClear: state.selectedGoods.isNotEmpty,
+                  onClear: () async {
+                    await showDialog(
+                      context: context,
+                      barrierDismissible: false,
+                      builder: (_) => ClearDialog(
+                        onSuccess: () => context.read<DetailBloc>().add(
+                          const DetailEvent.clearGoods(),
                         ),
                       ),
-                      const SizedBox(width: 8),
-                      if (state.selectedGoods.isNotEmpty)
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFF8F9FA),
-                            border: Border.all(color: colors.border),
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: Text(
-                            '${state.selectedGoods.length}',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: colors.textSecondary,
-                              fontFamily: 'Inter',
-                            ),
-                          ),
-                        ),
-                      const Spacer(),
-                      if (state.selectedGoods.isNotEmpty)
-                        GestureDetector(
-                          onTap: () async {
-                            await showDialog(
-                              context: context,
-                              barrierDismissible: false,
-                              builder: (_) => ClearDialog(
-                                onSuccess: () => context.read<DetailBloc>().add(
-                                  const DetailEvent.clearGoods(),
-                                ),
-                              ),
-                            );
-                          },
-                          child: Text(
-                            S.current.strClear,
-                            style: const TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w500,
-                              color: Color(0xFFEB295B),
-                              fontFamily: 'Inter',
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
+                    );
+                  },
                 ),
 
                 // Items list
@@ -242,63 +197,55 @@ class _OrderSidebarState extends State<OrderSidebar> with DetailScreenMixin {
                     ],
                   ),
                   padding: const EdgeInsets.all(16),
-                  child: Column(
-                    spacing: 8,
-                    children: [
-                      BlocBuilder<TableTimerCubit, TableTimerState>(
-                        builder: (ctx, timerState) {
-                          final existingTotal = calculateTotalPrice(
-                            state.existingGoods
-                                .where((g) => g.commet != 'cancelled')
-                                .toList(),
-                          );
-                          final foodTotal =
-                              existingTotal +
-                              calculateTotalPrice(state.selectedGoods);
-                          final rawAmt = timerState.timer?.currentAmount ?? '';
-                          final timerAmt =
-                              int.tryParse(
-                                rawAmt.replaceAll(RegExp(r'[^0-9]'), ''),
-                              ) ??
-                              0;
-                          final detail = context.read<DetailBloc>().lastDetail;
-                          final servicePercent = detail?.servicePercent ?? 0;
-                          final serviceAmt =
-                              _includeService && servicePercent > 0
-                              ? (foodTotal * servicePercent / 100).round()
-                              : 0;
-                          final total = foodTotal + timerAmt + serviceAmt;
-                          return Column(
-                            spacing: 8,
-                            children: [
-                              _SummaryRow(
-                                label: S.current.strTotalLabel,
-                                value: foodTotal.formatN,
-                                isTotal: false,
-                              ),
-                              if (servicePercent > 0)
-                                _ServiceRow(
-                                  percent: servicePercent,
-                                  amount: serviceAmt,
-                                  included: _includeService,
-                                  onToggle: (v) =>
-                                      setState(() => _includeService = v),
-                                ),
-                              if (timerState.shouldShow)
-                                _TimerBadgeRow(timerState: timerState),
-                              Divider(color: colors.border, height: 1),
-                              _SummaryRow(
-                                label: S.current.strPaymentLabel,
-                                value: total.formatN,
-                                isTotal: true,
-                              ),
-                            ],
-                          );
-                        },
-                      ),
-                      const SizedBox(height: 4),
-                      // Takeaway: create order → payment directly
-                      if (tableId == null)
+                  child: BlocBuilder<TableTimerCubit, TableTimerState>(
+                    builder: (ctx, timerState) {
+                      final existingTotal = calculateTotalPrice(
+                        state.existingGoods
+                            .where((g) => g.commet != 'cancelled')
+                            .toList(),
+                      );
+                      final foodTotal =
+                          existingTotal +
+                          calculateTotalPrice(state.selectedGoods);
+                      final rawAmt = timerState.timer?.currentAmount ?? '';
+                      final timerAmt = int.tryParse(
+                            rawAmt.replaceAll(RegExp(r'[^0-9]'), ''),
+                          ) ??
+                          0;
+                      final detail = context.read<DetailBloc>().lastDetail;
+                      final servicePercent = detail?.servicePercent ?? 0;
+                      final serviceAmt = _includeService && servicePercent > 0
+                          ? (foodTotal * servicePercent / 100).round()
+                          : 0;
+                      final total = foodTotal + timerAmt + serviceAmt;
+
+                      return Column(
+                        spacing: 8,
+                        children: [
+                          _SummaryRow(
+                            label: S.current.strTotalLabel,
+                            value: foodTotal.formatN,
+                            isTotal: false,
+                          ),
+                          if (servicePercent > 0)
+                            _ServiceRow(
+                              percent: servicePercent,
+                              amount: serviceAmt,
+                              included: _includeService,
+                              onToggle: (v) =>
+                                  setState(() => _includeService = v),
+                            ),
+                          if (timerState.shouldShow)
+                            _TimerBadgeRow(timerState: timerState),
+                          Divider(color: colors.border, height: 1),
+                          _SummaryRow(
+                            label: S.current.strPaymentLabel,
+                            value: total.formatN,
+                            isTotal: true,
+                          ),
+                          const SizedBox(height: 4),
+                          // Takeaway: create order → payment directly
+                          if (tableId == null)
                         BlocProvider(
                           create: (_) => inject<CreateOrderBloc>()
                             ..add(
@@ -315,6 +262,7 @@ class _OrderSidebarState extends State<OrderSidebar> with DetailScreenMixin {
                                 bgColor: const Color(0xFFFB6633),
                                 textColor: Colors.white,
                                 isLoading: createState.status == Status.LOADING,
+                                trailingAmount: total.formatN,
                                 onTap: state.selectedGoods.isNotEmpty
                                     ? () => context.read<CreateOrderBloc>().add(
                                         CreateOrderEvent.createOrder(
@@ -446,7 +394,7 @@ class _OrderSidebarState extends State<OrderSidebar> with DetailScreenMixin {
                                       if (state.selectedGoods.isNotEmpty)
                                         _ActionButton(
                                           label: S.current.strAddItems,
-                                          bgColor: const Color(0xFF13AF1B),
+                                          bgColor: const Color(0xFF16A34A),
                                           textColor: Colors.white,
                                           isLoading:
                                               createState.status ==
@@ -464,6 +412,7 @@ class _OrderSidebarState extends State<OrderSidebar> with DetailScreenMixin {
                                         bgColor: const Color(0xFFFB6633),
                                         textColor: Colors.white,
                                         isLoading: false,
+                                        trailingAmount: total.formatN,
                                         onTap: () {
                                           final timerCubit = context
                                               .read<TableTimerCubit>();
@@ -504,7 +453,9 @@ class _OrderSidebarState extends State<OrderSidebar> with DetailScreenMixin {
                               ),
                           ),
                         ),
-                    ],
+                        ],
+                      );
+                    },
                   ),
                 ),
               ],
@@ -561,7 +512,7 @@ class _OrderItem extends StatelessWidget with DetailScreenMixin {
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: const Color(0xFFF8F9FA),
+          color: const Color(0xFFF8FAFC),
           borderRadius: BorderRadius.circular(12),
         ),
         child: Row(
@@ -584,7 +535,7 @@ class _OrderItem extends StatelessWidget with DetailScreenMixin {
                   style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w700,
-                    color: Color(0xFF19160B),
+                    color: Color(0xFF0F172A),
                     fontFamily: 'Inter',
                   ),
                 ),
@@ -600,7 +551,7 @@ class _OrderItem extends StatelessWidget with DetailScreenMixin {
                     style: const TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
-                      color: Color(0xFF19160B),
+                      color: Color(0xFF0F172A),
                       fontFamily: 'Inter',
                     ),
                     maxLines: 1,
@@ -644,7 +595,7 @@ class _OrderItem extends StatelessWidget with DetailScreenMixin {
                 style: const TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w700,
-                  color: Color(0xFF19160B),
+                  color: Color(0xFF0F172A),
                   fontFamily: 'Inter',
                 ),
               ),
@@ -679,7 +630,7 @@ class _QtyControl extends StatelessWidget {
           style: const TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w700,
-            color: Color(0xFF19160B),
+            color: Color(0xFF0F172A),
             fontFamily: 'Inter',
           ),
         ),
@@ -715,14 +666,14 @@ class _QtyBtnState extends State<_QtyBtn> {
         decoration: BoxDecoration(
           color: _pressed ? const Color(0xFFFB6633) : Colors.white,
           border: Border.all(
-            color: _pressed ? const Color(0xFFFB6633) : const Color(0xFFEBEFF2),
+            color: _pressed ? const Color(0xFFFB6633) : const Color(0xFFE2E8F0),
           ),
           borderRadius: BorderRadius.circular(8),
         ),
         child: Icon(
           widget.icon,
           size: 18,
-          color: _pressed ? Colors.white : const Color(0xFF19160B),
+          color: _pressed ? Colors.white : const Color(0xFF0F172A),
         ),
       ),
     );
@@ -750,7 +701,7 @@ class _SummaryRow extends StatelessWidget {
           style: TextStyle(
             fontSize: isTotal ? 16 : 13,
             fontWeight: isTotal ? FontWeight.w700 : FontWeight.w400,
-            color: isTotal ? const Color(0xFF19160B) : const Color(0xFF888888),
+            color: isTotal ? const Color(0xFF0F172A) : const Color(0xFF64748B),
             fontFamily: 'Inter',
           ),
         ),
@@ -759,7 +710,7 @@ class _SummaryRow extends StatelessWidget {
           style: TextStyle(
             fontSize: isTotal ? 16 : 13,
             fontWeight: isTotal ? FontWeight.w700 : FontWeight.w500,
-            color: isTotal ? const Color(0xFFFB6633) : const Color(0xFF19160B),
+            color: isTotal ? const Color(0xFFFB6633) : const Color(0xFF0F172A),
             fontFamily: 'Inter',
           ),
         ),
@@ -774,6 +725,7 @@ class _ActionButton extends StatelessWidget {
   final Color textColor;
   final bool isLoading;
   final VoidCallback? onTap;
+  final String? trailingAmount;
 
   const _ActionButton({
     required this.label,
@@ -781,38 +733,181 @@ class _ActionButton extends StatelessWidget {
     required this.textColor,
     required this.isLoading,
     this.onTap,
+    this.trailingAmount,
   });
 
   @override
   Widget build(BuildContext context) {
+    final hasTrailing =
+        trailingAmount != null && trailingAmount!.isNotEmpty;
     return GestureDetector(
       onTap: onTap,
       child: Container(
         width: double.infinity,
-        height: 48,
+        height: 52,
+        padding: hasTrailing
+            ? const EdgeInsets.symmetric(horizontal: 16)
+            : null,
         decoration: BoxDecoration(
           color: onTap != null ? bgColor : bgColor.withOpacity(0.5),
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(10),
         ),
-        child: Center(
-          child: isLoading
-              ? const SizedBox(
+        child: isLoading
+            ? const Center(
+                child: SizedBox(
                   width: 22,
                   height: 22,
                   child: CircularProgressIndicator.adaptive(
                     strokeWidth: 2,
                     backgroundColor: Colors.white,
                   ),
-                )
-              : Text(
-                  label,
+                ),
+              )
+            : hasTrailing
+                ? Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        label,
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          color: textColor,
+                          fontFamily: 'Inter',
+                          letterSpacing: -0.1,
+                        ),
+                      ),
+                      Text(
+                        '$trailingAmount so\'m',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                          color: textColor,
+                          fontFamily: 'Inter',
+                          letterSpacing: -0.1,
+                        ),
+                      ),
+                    ],
+                  )
+                : Center(
+                    child: Text(
+                      label,
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: textColor,
+                        fontFamily: 'Inter',
+                      ),
+                    ),
+                  ),
+      ),
+    );
+  }
+}
+
+class _OrderPanelHeader extends StatelessWidget {
+  final int itemCount;
+  final int qtyTotal;
+  final bool canClear;
+  final Future<void> Function() onClear;
+
+  const _OrderPanelHeader({
+    required this.itemCount,
+    required this.qtyTotal,
+    required this.canClear,
+    required this.onClear,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        border: Border(bottom: BorderSide(color: colors.border)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Joriy buyurtma',
                   style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                    color: textColor,
+                    fontSize: 12,
+                    color: Color(0xFF64748B),
                     fontFamily: 'Inter',
                   ),
                 ),
+                const SizedBox(height: 2),
+                Text(
+                  itemCount == 0
+                      ? S.current.strSelectFoodsNotFound
+                      : '$itemCount taom · $qtyTotal dona',
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF0F172A),
+                    fontFamily: 'Inter',
+                    letterSpacing: -0.2,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+          if (canClear)
+            _TrashButton(onTap: () async => await onClear()),
+        ],
+      ),
+    );
+  }
+}
+
+class _TrashButton extends StatefulWidget {
+  final VoidCallback onTap;
+  const _TrashButton({required this.onTap});
+
+  @override
+  State<_TrashButton> createState() => _TrashButtonState();
+}
+
+class _TrashButtonState extends State<_TrashButton> {
+  bool _hovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
+      child: GestureDetector(
+        onTap: widget.onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 120),
+          width: 36,
+          height: 36,
+          decoration: BoxDecoration(
+            color: _hovered
+                ? const Color(0xFFFEE2E2)
+                : const Color(0xFFF8FAFC),
+            border: Border.all(
+              color: _hovered
+                  ? const Color(0xFFFBCDD8)
+                  : const Color(0xFFE2E8F0),
+            ),
+            borderRadius: BorderRadius.circular(9),
+          ),
+          child: Icon(
+            Icons.delete_outline_rounded,
+            size: 18,
+            color: _hovered
+                ? const Color(0xFFDC2626)
+                : const Color(0xFF64748B),
+          ),
         ),
       ),
     );
@@ -849,11 +944,11 @@ class _ReadonlyOrderItem extends StatelessWidget {
     final isCancelled = item.commet == 'cancelled';
     final isOfflinePending = item.commet == 'pending_offline';
     final textColor = isCancelled
-        ? const Color(0xFFBBBBBB)
-        : const Color(0xFF19160B);
-    Color bgColor = const Color(0xFFF5F4F2);
-    if (isCancelled) bgColor = const Color(0xFFFFF0F0);
-    if (isOfflinePending) bgColor = const Color(0xFFFFF8F0);
+        ? const Color(0xFFCBD5E1)
+        : const Color(0xFF0F172A);
+    Color bgColor = const Color(0xFFF8FAFC);
+    if (isCancelled) bgColor = const Color(0xFFFEE2E2);
+    if (isOfflinePending) bgColor = const Color(0xFFF5F3FF);
     return Opacity(
       opacity: isCancelled ? 0.6 : 1.0,
       child: Container(
@@ -884,8 +979,8 @@ class _ReadonlyOrderItem extends StatelessWidget {
                     fontSize: 14,
                     fontWeight: FontWeight.w700,
                     color: isCancelled
-                        ? const Color(0xFFBBBBBB)
-                        : const Color(0xFF888888),
+                        ? const Color(0xFFCBD5E1)
+                        : const Color(0xFF64748B),
                     fontFamily: 'Inter',
                   ),
                 ),
@@ -905,7 +1000,7 @@ class _ReadonlyOrderItem extends StatelessWidget {
                       decoration: isCancelled
                           ? TextDecoration.lineThrough
                           : null,
-                      decorationColor: const Color(0xFFBBBBBB),
+                      decorationColor: const Color(0xFFCBD5E1),
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -916,7 +1011,7 @@ class _ReadonlyOrderItem extends StatelessWidget {
                       'Bekor qilindi',
                       style: TextStyle(
                         fontSize: 10,
-                        color: Color(0xFFEB295B),
+                        color: Color(0xFFDC2626),
                         fontFamily: 'Inter',
                       ),
                     )
@@ -935,7 +1030,7 @@ class _ReadonlyOrderItem extends StatelessWidget {
                       style: const TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w500,
-                        color: Color(0xFF888888),
+                        color: Color(0xFF64748B),
                         fontFamily: 'Inter',
                       ),
                     ),
@@ -948,11 +1043,11 @@ class _ReadonlyOrderItem extends StatelessWidget {
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
                 color: isCancelled
-                    ? const Color(0xFFBBBBBB)
-                    : const Color(0xFF888888),
+                    ? const Color(0xFFCBD5E1)
+                    : const Color(0xFF64748B),
                 fontFamily: 'Inter',
                 decoration: isCancelled ? TextDecoration.lineThrough : null,
-                decorationColor: const Color(0xFFBBBBBB),
+                decorationColor: const Color(0xFFCBD5E1),
               ),
             ),
             Text(
@@ -964,7 +1059,7 @@ class _ReadonlyOrderItem extends StatelessWidget {
                 color: textColor,
                 fontFamily: 'Inter',
                 decoration: isCancelled ? TextDecoration.lineThrough : null,
-                decorationColor: const Color(0xFFBBBBBB),
+                decorationColor: const Color(0xFFCBD5E1),
               ),
             ),
             if (tableId != null && !isOfflinePending && !isCancelled)
@@ -994,7 +1089,7 @@ class _ReadonlyOrderItem extends StatelessWidget {
                           onPressed: () => Navigator.pop(context, true),
                           child: const Text(
                             'Ha',
-                            style: TextStyle(color: Color(0xFFEB295B)),
+                            style: TextStyle(color: Color(0xFFDC2626)),
                           ),
                         ),
                       ],
@@ -1012,13 +1107,13 @@ class _ReadonlyOrderItem extends StatelessWidget {
                 child: Container(
                   padding: const EdgeInsets.all(6),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFFFF0F3),
+                    color: const Color(0xFFFEE2E2),
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: const Icon(
                     Icons.close,
                     size: 14,
-                    color: Color(0xFFEB295B),
+                    color: Color(0xFFDC2626),
                   ),
                 ),
               ),
@@ -1106,8 +1201,8 @@ class _TimerBadgeRow extends StatelessWidget {
                     height: 30,
                     decoration: BoxDecoration(
                       color: isRunning
-                          ? const Color(0xFFFB6633).withOpacity(0.12)
-                          : const Color(0xFF13AF1B).withOpacity(0.12),
+                          ? const Color(0xFF6366F1).withOpacity(0.12)
+                          : const Color(0xFF16A34A).withOpacity(0.12),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Center(
@@ -1118,8 +1213,8 @@ class _TimerBadgeRow extends StatelessWidget {
                               child: CircularProgressIndicator(
                                 strokeWidth: 2,
                                 color: isRunning
-                                    ? const Color(0xFFFB6633)
-                                    : const Color(0xFF13AF1B),
+                                    ? const Color(0xFF6366F1)
+                                    : const Color(0xFF16A34A),
                               ),
                             )
                           : Icon(
@@ -1128,8 +1223,8 @@ class _TimerBadgeRow extends StatelessWidget {
                                   : Icons.play_arrow_rounded,
                               size: 18,
                               color: isRunning
-                                  ? const Color(0xFFFB6633)
-                                  : const Color(0xFF13AF1B),
+                                  ? const Color(0xFF6366F1)
+                                  : const Color(0xFF16A34A),
                             ),
                     ),
                   ),
@@ -1151,7 +1246,7 @@ class _TimerBadgeRow extends StatelessWidget {
                   _TimerInfoChip(
                     label: 'Pause',
                     value: '${t.pauses.length}x  •  ${_fmtTime(t.totalPauseSec)}',
-                    color: const Color(0xFFFB6633).withOpacity(0.80),
+                    color: const Color(0xFF6366F1).withOpacity(0.80),
                   ),
               ],
             ),
@@ -1246,7 +1341,7 @@ class _ServiceRow extends StatelessWidget {
             'Xizmat (${percent.toInt()}%)',
             style: const TextStyle(
               fontSize: 13,
-              color: Color(0xFF888888),
+              color: Color(0xFF64748B),
               fontFamily: 'Inter',
             ),
           ),
@@ -1256,7 +1351,7 @@ class _ServiceRow extends StatelessWidget {
           style: const TextStyle(
             fontSize: 13,
             fontWeight: FontWeight.w500,
-            color: Color(0xFF19160B),
+            color: Color(0xFF0F172A),
             fontFamily: 'Inter',
           ),
         ),
