@@ -7,6 +7,7 @@ import 'package:mary_ai_pos/features/view/auth/presentation/cubit/bloc/user_bloc
 import 'package:mary_ai_pos/features/view/main/domain/entities/archive_detail_entity.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/payment/payment_bloc.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/payment/widgets/receipt_preview_modal.dart';
+import 'package:mary_ai_pos/generated/l10n.dart';
 
 const _kS900 = Color(0xFF0F172A);
 const _kS700 = Color(0xFF334155);
@@ -57,7 +58,7 @@ class PaymentRightSideBar extends StatelessWidget {
                 child: Column(
                   children: [
                     _OutlinedActionButton(
-                      label: "Chek ko'rish",
+                      label: S.current.strViewReceipt,
                       icon: Icons.receipt_long_outlined,
                       onTap: () {
                         final bloc = context.read<PaymentBloc>();
@@ -273,7 +274,7 @@ class _ManualDiscountInputState extends State<_ManualDiscountInput> {
             ),
             const SizedBox(width: 4),
             _UnitToggle(
-              label: "so'm",
+              label: S.current.strSom,
               isActive: !widget.isPercent,
               onTap: () => context.read<PaymentBloc>().add(
                 const PaymentEvent.updateDiscountType(
@@ -417,9 +418,9 @@ class _DarkTotalCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 6),
-              const Text(
-                "so'm",
-                style: TextStyle(
+              Text(
+                S.current.strSom,
+                style: const TextStyle(
                   fontSize: 14,
                   color: Color(0xFF94A3B8),
                   fontFamily: 'Inter',
@@ -432,7 +433,7 @@ class _DarkTotalCard extends StatelessWidget {
             children: [
               Expanded(
                 child: _DarkMetric(
-                  label: 'Taomlar',
+                  label: S.current.strDishesColumn,
                   value: '$itemCount dona',
                 ),
               ),
@@ -445,7 +446,7 @@ class _DarkTotalCard extends StatelessWidget {
                 child: Padding(
                   padding: const EdgeInsets.only(left: 12),
                   child: _DarkMetric(
-                    label: 'Mehmon',
+                    label: S.current.strGuest,
                     value: '$guestCount kishi',
                   ),
                 ),

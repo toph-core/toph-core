@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mary_ai_pos/core/extension/for_context.dart';
+import 'package:mary_ai_pos/generated/l10n.dart';
 
 class ItemNotesModal extends StatefulWidget {
   final String tableNumber;
@@ -82,7 +83,7 @@ class _ItemNotesModalState extends State<ItemNotesModal> {
               controller: _notesController,
               maxLines: 5,
               decoration: InputDecoration(
-                hintText: 'Izoh yozing...',
+                hintText: S.current.strEnterNotes,
                 hintStyle: context.textStyles.bodySm.copyWith(
                   color: colors.textSecondary,
                 ),

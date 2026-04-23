@@ -7,6 +7,7 @@ import 'package:mary_ai_pos/core/extension/for_context.dart';
 import 'package:mary_ai_pos/core/theme/tokens/theme_colors.dart';
 import 'package:mary_ai_pos/di.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/settings/widgets/section_shell.dart';
+import 'package:mary_ai_pos/generated/l10n.dart';
 import 'package:number_paginator/number_paginator.dart';
 
 class UsersSection extends StatefulWidget {
@@ -98,7 +99,7 @@ class _UsersSectionState extends State<UsersSection> {
       if (!mounted) return;
       setState(() {
         _loading = false;
-        _error = _readError(e) ?? 'Yuklashda xatolik';
+        _error = _readError(e) ?? S.current.strLoadError;
       });
     } catch (e) {
       if (!mounted) return;
@@ -134,19 +135,19 @@ class _UsersSectionState extends State<UsersSection> {
     final ok = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text('Xodimni o\'chirish'),
+        title: Text(S.current.strDeleteEmployee),
         content: Text(
-          '${u.displayName} hisobi o\'chiriladi. Bu amalni qaytarib bo\'lmaydi.',
+          S.current.strDeleteEmployeeConfirm(u.displayName),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Bekor'),
+            child: Text(S.current.strCancelShort),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
             style: TextButton.styleFrom(foregroundColor: const Color(0xFFDC2626)),
-            child: const Text('O\'chirish'),
+            child: Text(S.current.strDelete),
           ),
         ],
       ),
@@ -159,7 +160,7 @@ class _UsersSectionState extends State<UsersSection> {
     } on DioException catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(_readError(e) ?? 'O\'chirishda xatolik')),
+        SnackBar(content: Text(_readError(e) ?? S.current.strDeleteError)),
       );
     }
   }
@@ -183,7 +184,7 @@ class _UsersSectionState extends State<UsersSection> {
             .toList();
       });
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(_readError(e) ?? 'Saqlashda xatolik')),
+        SnackBar(content: Text(_readError(e) ?? S.current.strSaveError)),
       );
     }
   }
@@ -191,13 +192,13 @@ class _UsersSectionState extends State<UsersSection> {
   @override
   Widget build(BuildContext context) {
     return SectionShell(
-      title: 'Restoran xodimlari',
+      title: S.current.strRestaurantStaff,
       subtitle: _totalCount == null
-          ? 'Foydalanuvchilar, rollar va ruxsatlar'
+          ? S.current.strUsersRolesPerms
           : 'Jami: $_totalCount ta xodim',
       trailing: SectionPrimaryButton(
         icon: Icons.person_add_alt_1_rounded,
-        label: 'Yangi xodim',
+        label: S.current.strAddNewEmployee,
         onPressed: () => _openEditor(),
       ),
       child: _buildBody(),
@@ -228,7 +229,7 @@ class _UsersSectionState extends State<UsersSection> {
             decoration: InputDecoration(
               prefixIcon: Icon(Icons.search_rounded,
                   size: 18, color: colors.textSecondary),
-              hintText: 'Ism yoki username bo\'yicha qidirish',
+              hintText: S.current.strSearchNameOrUsername,
               isDense: true,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(10),
@@ -246,16 +247,16 @@ class _UsersSectionState extends State<UsersSection> {
           child: DropdownButtonFormField<String?>(
             value: _roleFilter,
             decoration: InputDecoration(
-              labelText: 'Rol',
+              labelText: S.current.strRole,
               isDense: true,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(10),
               ),
             ),
             items: [
-              const DropdownMenuItem<String?>(
+              DropdownMenuItem<String?>(
                 value: null,
-                child: Text('Hammasi'),
+                child: Text(S.current.strAllRoles),
               ),
               ..._roles.map(
                 (r) => DropdownMenuItem<String?>(
@@ -301,7 +302,7 @@ class _UsersSectionState extends State<UsersSection> {
             const SizedBox(height: 12),
             SectionPrimaryButton(
               icon: Icons.refresh_rounded,
-              label: 'Qayta urinish',
+              label: S.current.strRetry,
               onPressed: () => _load(page: _page),
             ),
           ],
@@ -311,12 +312,12 @@ class _UsersSectionState extends State<UsersSection> {
     if (_users.isEmpty) {
       return SectionEmptyState(
         icon: Icons.people_alt_outlined,
-        title: 'Hali xodim qo\'shilmagan',
+        title: S.current.strNoEmployeesYet,
         subtitle:
             'Ofitsiant, kassir, kassirlar va boshqaruv hisoblarini shu yerdan yarating.',
         action: SectionPrimaryButton(
           icon: Icons.person_add_alt_1_rounded,
-          label: 'Birinchi xodimni qo\'shish',
+          label: S.current.strAddFirstEmployee,
           onPressed: () => _openEditor(),
         ),
       );
@@ -396,7 +397,7 @@ class _UsersSectionState extends State<UsersSection> {
               items: _pageSizeOptions
                   .map((s) => DropdownMenuItem<int>(
                         value: s,
-                        child: Text('$s / sahifa'),
+                        child: Text(S.current.strPageSize(s)),
                       ))
                   .toList(),
               onChanged: (v) {
@@ -533,13 +534,13 @@ class _UserCardState extends State<_UserCard> {
               activeColor: colors.buttonBrand,
             ),
             IconButton(
-              tooltip: 'Tahrirlash',
+              tooltip: S.current.strEdit,
               icon: const Icon(Icons.edit_outlined, size: 18),
               color: colors.textSecondary,
               onPressed: widget.onEdit,
             ),
             IconButton(
-              tooltip: 'O\'chirish',
+              tooltip: S.current.strDelete,
               icon: const Icon(Icons.delete_outline_rounded, size: 18),
               color: colors.systemError,
               onPressed: widget.onDelete,
@@ -717,7 +718,7 @@ class _UserEditDialogState extends State<_UserEditDialog> {
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
-                        _isCreate ? 'Yangi xodim' : 'Xodimni tahrirlash',
+                        _isCreate ? S.current.strAddNewEmployee : 'Xodimni tahrirlash',
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w700,
@@ -736,7 +737,7 @@ class _UserEditDialogState extends State<_UserEditDialog> {
                 ),
                 const SizedBox(height: 16),
                 _field(
-                  label: 'To\'liq ism',
+                  label: S.current.strFullName,
                   controller: _fullNameCtrl,
                   validator: _required,
                 ),
@@ -745,7 +746,7 @@ class _UserEditDialogState extends State<_UserEditDialog> {
                   children: [
                     Expanded(
                       child: _field(
-                        label: 'Username',
+                        label: S.current.strUsername,
                         controller: _usernameCtrl,
                         validator: _required,
                       ),
@@ -753,7 +754,7 @@ class _UserEditDialogState extends State<_UserEditDialog> {
                     const SizedBox(width: 12),
                     Expanded(
                       child: _field(
-                        label: 'Telefon',
+                        label: S.current.strPhone,
                         controller: _phoneCtrl,
                         hint: '+998901234567',
                         keyboard: TextInputType.phone,
@@ -769,14 +770,14 @@ class _UserEditDialogState extends State<_UserEditDialog> {
                 const SizedBox(height: 12),
                 if (_isCreate)
                   _field(
-                    label: 'Parol',
+                    label: S.current.strPassword,
                     controller: _passwordCtrl,
                     obscure: true,
                     validator: _validateCreatePassword,
                   )
                 else
                   _field(
-                    label: 'Email',
+                    label: S.current.strEmail,
                     controller: _emailCtrl,
                     keyboard: TextInputType.emailAddress,
                   ),
@@ -785,7 +786,7 @@ class _UserEditDialogState extends State<_UserEditDialog> {
                   children: [
                     Expanded(
                       child: _field(
-                        label: 'Pinkod (ixtiyoriy)',
+                        label: S.current.strPinOptional,
                         controller: _pincodeCtrl,
                         keyboard: TextInputType.number,
                         formatters: [
@@ -800,7 +801,7 @@ class _UserEditDialogState extends State<_UserEditDialog> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Rol',
+                            S.current.strRole,
                             style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.w500,
@@ -892,7 +893,7 @@ class _UserEditDialogState extends State<_UserEditDialog> {
                       onPressed:
                           _saving ? null : () => Navigator.pop(context, false),
                       child: Text(
-                        'Bekor',
+                        S.current.strCancelShort,
                         style: TextStyle(color: colors.textSecondary),
                       ),
                     ),
@@ -919,7 +920,7 @@ class _UserEditDialogState extends State<_UserEditDialog> {
                                     AlwaysStoppedAnimation(Colors.white),
                               ),
                             )
-                          : Text(_isCreate ? 'Yaratish' : 'Saqlash'),
+                          : Text(_isCreate ? 'Yaratish' : S.current.strSave),
                     ),
                   ],
                 ),

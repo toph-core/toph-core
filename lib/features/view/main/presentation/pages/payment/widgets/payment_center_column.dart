@@ -4,6 +4,7 @@ import 'package:mary_ai_pos/core/constants/constants.dart';
 import 'package:mary_ai_pos/core/extension/number_formatter.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/payment/payment_bloc.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/payment/payment_screen_mixin.dart';
+import 'package:mary_ai_pos/generated/l10n.dart';
 
 const _kS900 = Color(0xFF0F172A);
 const _kS700 = Color(0xFF334155);
@@ -57,14 +58,14 @@ class PaymentCenterColumn extends StatelessWidget with PaymentScreenMixin {
                 // Numpad (large buttons)
                 Expanded(child: _Numpad()),
               ] else
-                const Expanded(
+                Expanded(
                   child: Center(
                     child: Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 32),
+                      padding: const EdgeInsets.symmetric(horizontal: 32),
                       child: Text(
-                        "Mijoz to'lovni karta orqali amalga oshirganini tasdiqlang",
+                        S.current.strConfirmCardPayment,
                         textAlign: TextAlign.center,
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontSize: 15,
                           color: _kS500,
                           fontFamily: 'Inter',
@@ -92,7 +93,7 @@ class _PayTypeTabs extends StatelessWidget {
       children: [
         Expanded(
           child: _PayTypePill(
-            label: 'Naqd',
+            label: S.current.strCash,
             icon: Icons.payments_outlined,
             isActive: state.paymentType == PaymentType.cash,
             onTap: () => context.read<PaymentBloc>().add(
@@ -105,7 +106,7 @@ class _PayTypeTabs extends StatelessWidget {
         const SizedBox(width: 10),
         Expanded(
           child: _PayTypePill(
-            label: 'Karta',
+            label: S.current.strCard,
             icon: Icons.credit_card_outlined,
             isActive: state.paymentType == PaymentType.card,
             onTap: () => context.read<PaymentBloc>().add(
@@ -275,7 +276,7 @@ class _QuickAmountPills extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final options = <({String label, int? amount})>[
-      (label: 'Aniq summa', amount: finalTotal),
+      (label: S.current.strExactAmount, amount: finalTotal),
       (label: '100 000', amount: 100000),
       (label: '200 000', amount: 200000),
       (label: '500 000', amount: 500000),

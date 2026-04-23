@@ -5,6 +5,7 @@ import 'package:mary_ai_pos/core/widgets/app_scaffold.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/notification/notification_bloc.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/main/widgets/main_header.dart';
 import 'package:mary_ai_pos/core/extension/for_context.dart';
+import 'package:mary_ai_pos/generated/l10n.dart';
 
 class NotificationScreen extends StatelessWidget {
   const NotificationScreen({super.key});
@@ -45,7 +46,7 @@ class _NotificationBodyState extends State<_NotificationBody> {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const MainHeader(title: 'Bildirishnomalar'),
+            MainHeader(title: S.current.strNotifications),
             // Filter bar
             Container(
               height: 56,
@@ -61,7 +62,7 @@ class _NotificationBodyState extends State<_NotificationBody> {
                     child: TextField(
                       controller: _searchController,
                       decoration: InputDecoration(
-                        hintText: 'Qidirish...',
+                        hintText: S.current.strSearch,
                         hintStyle: TextStyle(
                           fontSize: 13,
                           color: colors.textSecondary,

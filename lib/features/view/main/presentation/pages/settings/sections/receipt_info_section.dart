@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:mary_ai_pos/core/service/receipt/receipt_info_storage.dart';
 import 'package:mary_ai_pos/di.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/settings/widgets/section_shell.dart';
+import 'package:mary_ai_pos/generated/l10n.dart';
 
 class ReceiptInfoSection extends StatefulWidget {
   const ReceiptInfoSection({super.key});
@@ -58,28 +59,28 @@ class _ReceiptInfoSectionState extends State<ReceiptInfoSection> {
   @override
   Widget build(BuildContext context) {
     return SectionShell(
-      title: "Chek ma'lumotlari",
+      title: S.current.strReceiptInfo,
       subtitle:
           'Kassir chekining sarlavhasida chiqadigan tashkilot ma\'lumotlari. Bo\'sh qoldirilsa standart qiymatlar ishlatiladi.',
       child: ListView(
         padding: EdgeInsets.zero,
         children: [
           _Field(
-            label: 'Tashkilot nomi',
+            label: S.current.strOrgName,
             hint: 'Friends Club',
             controller: _name,
             icon: Icons.storefront_outlined,
           ),
           const SizedBox(height: 12),
           _Field(
-            label: 'Manzil',
+            label: S.current.strAddress,
             hint: 'ул. Юсуфа Хос Ходжиба, 73',
             controller: _address,
             icon: Icons.location_on_outlined,
           ),
           const SizedBox(height: 12),
           _Field(
-            label: 'Telefon',
+            label: S.current.strPhone,
             hint: '+998 95 143 30 00',
             controller: _phone,
             icon: Icons.phone_outlined,

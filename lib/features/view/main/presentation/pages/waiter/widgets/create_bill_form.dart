@@ -10,6 +10,7 @@ import 'package:mary_ai_pos/features/view/main/data/models/hall/hall_model.dart'
 import 'package:mary_ai_pos/features/view/main/data/models/open_order/open_order_model.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/main/main_cubit.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/waiter/waiter_cubit.dart';
+import 'package:mary_ai_pos/generated/l10n.dart';
 
 class CreateBillForm extends StatefulWidget {
   const CreateBillForm({super.key});
@@ -529,7 +530,7 @@ class _PhoneField extends StatelessWidget {
               onTap: onTap,
               style: TextStyle(fontSize: 13, color: colors.textDefault),
               decoration: InputDecoration(
-                hintText: '+998 (__) ___ __ __',
+                hintText: S.current.strPhoneMask,
                 hintStyle: TextStyle(
                   fontSize: 13,
                   color: colors.textSecondary,

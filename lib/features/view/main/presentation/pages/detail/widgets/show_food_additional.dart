@@ -182,7 +182,7 @@ class _ShowFoodAdditionalState extends State<ShowFoodAdditional> {
                             ),
                             16.hBox,
                             CustomTextField(
-                              hintText: "Izoh uchun",
+                              hintText: S.current.strForNotes,
                               textInputType: TextInputType.text,
                               maxLines: 3,
                               onTap: () => keyboardOpen.value = true,

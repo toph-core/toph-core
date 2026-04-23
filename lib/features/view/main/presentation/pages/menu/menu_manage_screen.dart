@@ -22,6 +22,7 @@ import 'package:mary_ai_pos/features/view/auth/data/models/user/user_model.dart'
 import 'package:mary_ai_pos/features/view/auth/presentation/cubit/bloc/user_bloc.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/category/category_model.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/main/widgets/main_header.dart';
+import 'package:mary_ai_pos/generated/l10n.dart';
 
 class MenuManageScreen extends StatefulWidget {
   const MenuManageScreen({super.key});
@@ -80,9 +81,9 @@ class _MenuManageScreenState extends State<MenuManageScreen> {
 
   Future<void> _pickAndUploadImage() async {
     if (_isSubmitting || _uploadingImage) return;
-    const imageGroup = XTypeGroup(
-      label: 'Images',
-      extensions: ['jpg', 'jpeg', 'png', 'gif', 'webp'],
+    final imageGroup = XTypeGroup(
+      label: S.current.strImages,
+      extensions: const ['jpg', 'jpeg', 'png', 'gif', 'webp'],
     );
     final XFile? picked;
     try {
@@ -109,7 +110,7 @@ class _MenuManageScreenState extends State<MenuManageScreen> {
       if (len > 5 * 1024 * 1024) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Файл не больше 5 МБ')),
+          SnackBar(content: Text(S.current.strFileTooLarge)),
         );
         return;
       }
@@ -121,13 +122,13 @@ class _MenuManageScreenState extends State<MenuManageScreen> {
           _pictureUrlCtrl.text = url;
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Не удалось загрузить изображение')),
+            SnackBar(content: Text(S.current.strUploadFailed)),
           );
         }
       } catch (_) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Ошибка загрузки')),
+          SnackBar(content: Text(S.current.strUploadError)),
         );
       } finally {
         if (mounted) setState(() => _uploadingImage = false);
@@ -139,7 +140,7 @@ class _MenuManageScreenState extends State<MenuManageScreen> {
     if (bytes.length > 5 * 1024 * 1024) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Файл не больше 5 МБ')),
+        SnackBar(content: Text(S.current.strFileTooLarge)),
       );
       return;
     }
@@ -152,13 +153,13 @@ class _MenuManageScreenState extends State<MenuManageScreen> {
         _pictureUrlCtrl.text = url;
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Не удалось загрузить изображение')),
+          SnackBar(content: Text(S.current.strUploadFailed)),
         );
       }
     } catch (_) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Ошибка загрузки')),
+        SnackBar(content: Text(S.current.strUploadError)),
       );
     } finally {
       if (mounted) setState(() => _uploadingImage = false);
@@ -486,7 +487,7 @@ class _MenuManageScreenState extends State<MenuManageScreen> {
 
     if (name.isEmpty || category == null || price == null || price <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Название, категория и цена обязательны')),
+        SnackBar(content: Text(S.current.strRequiredFields)),
       );
       return;
     }
@@ -615,7 +616,7 @@ class _MenuManageScreenState extends State<MenuManageScreen> {
     } on DioException {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Не удалось загрузить состав блюда')),
+        SnackBar(content: Text(S.current.strLoadCompositionError)),
       );
     } finally {
       if (mounted) setState(() => _loadingItems = false);
@@ -824,7 +825,7 @@ class _MenuManageScreenState extends State<MenuManageScreen> {
       body: Column(
         children: [
           MainHeader(
-            title: _isEditMode ? 'Edit meal' : 'New meals',
+            title: _isEditMode ? S.current.strEditMeal : S.current.strNewMeal,
             leading: canPop
                 ? IconButton(
                     icon: Icon(
@@ -1092,14 +1093,14 @@ class _MenuManageScreenState extends State<MenuManageScreen> {
           // ── Footer action bar ──
           Row(
             children: [
-              _Tag(label: '${_ingredientCalculations.length} Ingredients'),
+              _Tag(label: S.current.strIngredientsCount(_ingredientCalculations.length)),
               const SizedBox(width: 10),
-              _Tag(label: '${_compoundCalculations.length} Compounds'),
+              _Tag(label: S.current.strCompoundsCount(_compoundCalculations.length)),
               const SizedBox(width: 10),
               _Tag(label: 'Total: $totalFormatted'),
               const Spacer(),
               _ActionBtn(
-                label: 'Cancel',
+                label: S.current.strCancel,
                 bg: colors.buttonSecondary,
                 fg: colors.textButtonSecondary,
                 onTap: _isSubmitting
@@ -1165,7 +1166,7 @@ class _MenuManageScreenState extends State<MenuManageScreen> {
           children: [
             Expanded(
               child: _itemsTabBtn(
-                label: 'Ingredients',
+                label: S.current.strIngredients,
                 selected: _availableItemsTab == _AvailableItemsTab.ingredients,
                 onTap: () => setState(
                   () => _availableItemsTab = _AvailableItemsTab.ingredients,
@@ -1175,7 +1176,7 @@ class _MenuManageScreenState extends State<MenuManageScreen> {
             const SizedBox(width: 6),
             Expanded(
               child: _itemsTabBtn(
-                label: 'Semi-finished',
+                label: S.current.strSemiFinished,
                 selected: _availableItemsTab == _AvailableItemsTab.semiFinished,
                 onTap: () => setState(
                   () => _availableItemsTab = _AvailableItemsTab.semiFinished,
@@ -1525,7 +1526,7 @@ class _MenuManageScreenState extends State<MenuManageScreen> {
                 ),
                 style: TextStyle(color: c.textDefault, fontSize: 13),
                 decoration: InputDecoration(
-                  labelText: 'Количество',
+                  labelText: S.current.strQuantity,
                   labelStyle: TextStyle(color: c.textTertiary),
                 ),
               ),
@@ -1534,11 +1535,11 @@ class _MenuManageScreenState extends State<MenuManageScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx, false),
-              child: Text('Отмена', style: TextStyle(color: c.textSecondary)),
+              child: Text(S.current.strCancel, style: TextStyle(color: c.textSecondary)),
             ),
             TextButton(
               onPressed: () => Navigator.pop(ctx, true),
-              child: Text('OK', style: TextStyle(color: c.textBrand)),
+              child: Text(S.current.strOK, style: TextStyle(color: c.textBrand)),
             ),
           ],
         );

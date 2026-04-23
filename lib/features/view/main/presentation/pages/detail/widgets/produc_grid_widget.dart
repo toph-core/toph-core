@@ -183,7 +183,7 @@ class _ProductGridWidgetState extends State<ProductGridWidget> {
                     .map(
                       (size) => DropdownMenuItem<int>(
                         value: size,
-                        child: Text('$size / sahifa'),
+                        child: Text(S.current.strPageSize(size)),
                       ),
                     )
                     .toList(),

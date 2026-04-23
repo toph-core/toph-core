@@ -1,5 +1,6 @@
 import 'package:animated_snack_bar/animated_snack_bar.dart';
 import 'package:flutter/material.dart';
+import 'package:mary_ai_pos/generated/l10n.dart';
 
 void showErrorMessage(BuildContext bc, String error, {int duration = 3}) {
   WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -107,7 +108,7 @@ void showErrorMessageDismissible(BuildContext context, String message) {
   if (idx <= 0) {
     showStructuredErrorDismissible(
       context,
-      title: 'Xato',
+      title: S.current.strError,
       paragraphs: trimmed.isEmpty ? const [] : [trimmed],
       icon: Icons.error_outline_rounded,
     );
@@ -122,7 +123,7 @@ void showErrorMessageDismissible(BuildContext context, String message) {
       .toList();
   showStructuredErrorDismissible(
     context,
-    title: head.isEmpty ? 'Xato' : head,
+    title: head.isEmpty ? S.current.strError : head,
     paragraphs: parts,
     icon: Icons.error_outline_rounded,
   );

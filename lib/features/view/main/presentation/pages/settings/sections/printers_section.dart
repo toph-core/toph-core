@@ -8,6 +8,7 @@ import 'package:mary_ai_pos/core/service/printer/printer_setting_entry.dart';
 import 'package:mary_ai_pos/di.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/category/category_model.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/settings/widgets/section_shell.dart';
+import 'package:mary_ai_pos/generated/l10n.dart';
 
 class PrintersSection extends StatefulWidget {
   const PrintersSection({super.key});
@@ -70,7 +71,7 @@ class _PrintersSectionState extends State<PrintersSection> {
       if (!mounted) return;
       setState(() {
         _loading = false;
-        _error = _readError(e) ?? 'Yuklashda xatolik';
+        _error = _readError(e) ?? S.current.strLoadError;
       });
     } catch (e) {
       if (!mounted) return;
@@ -109,7 +110,7 @@ class _PrintersSectionState extends State<PrintersSection> {
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => _ConfirmDeleteDialog(
-        title: 'Printerni o\'chirish',
+        title: S.current.strDeletePrinter,
         message:
             '${item.ip}:${item.port} printerini o\'chirmoqchimisiz? Buni bekor qilib bo\'lmaydi.',
       ),
@@ -122,7 +123,7 @@ class _PrintersSectionState extends State<PrintersSection> {
     } on DioException catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(_readError(e) ?? 'O\'chirishda xatolik')),
+        SnackBar(content: Text(_readError(e) ?? S.current.strDeleteError)),
       );
     }
   }
@@ -138,12 +139,12 @@ class _PrintersSectionState extends State<PrintersSection> {
   @override
   Widget build(BuildContext context) {
     return SectionShell(
-      title: 'Printer sozlamalari',
+      title: S.current.strPrinterSettings,
       subtitle:
           '${_items.length} ta ESC/POS qurilma — kategoriya va chek printerlari',
       trailing: SectionPrimaryButton(
         icon: Icons.add_rounded,
-        label: 'Yangi printer',
+        label: S.current.strAddPrinter,
         onPressed: () => _openEditor(),
       ),
       child: _buildBody(),
@@ -186,7 +187,7 @@ class _PrintersSectionState extends State<PrintersSection> {
             const SizedBox(height: 12),
             SectionPrimaryButton(
               icon: Icons.refresh_rounded,
-              label: 'Qayta urinish',
+              label: S.current.strRetry,
               onPressed: _loadAll,
             ),
           ],
@@ -196,12 +197,12 @@ class _PrintersSectionState extends State<PrintersSection> {
     if (_items.isEmpty) {
       return SectionEmptyState(
         icon: Icons.print_outlined,
-        title: 'Hali printer qo\'shilmagan',
+        title: S.current.strNoPrintersYet,
         subtitle:
             'Kategoriyalar va yopiq cheklar uchun ESC/POS TCP printerlarni shu yerdan qo\'shing.',
         action: SectionPrimaryButton(
           icon: Icons.add_rounded,
-          label: 'Yangi printer qo\'shish',
+          label: S.current.strAddFirstPrinter,
           onPressed: () => _openEditor(),
         ),
       );
@@ -248,7 +249,7 @@ class _PrinterCardState extends State<_PrinterCard> {
     final typeColor = isCloseCheck ? colors.extraOrange : colors.systemAccent;
     final connectionIcon =
         entry.connectionType == 'wlan' ? Icons.wifi_rounded : Icons.cable_rounded;
-    final connLabel = entry.connectionType == 'wlan' ? 'Wi-Fi' : 'Kabel';
+    final connLabel = entry.connectionType == 'wlan' ? S.current.strWiFi : S.current.strCable;
 
     return MouseRegion(
       onEnter: (_) => setState(() => _hover = true),
@@ -304,7 +305,7 @@ class _PrinterCardState extends State<_PrinterCard> {
                       const SizedBox(width: 10),
                       _Badge(
                         color: typeColor,
-                        label: isCloseCheck ? 'Chek printer' : 'Kategoriya',
+                        label: isCloseCheck ? S.current.strCheckPrinter : S.current.strCategory,
                       ),
                     ],
                   ),
@@ -351,13 +352,13 @@ class _PrinterCardState extends State<_PrinterCard> {
                 children: [
                   _GhostIconButton(
                     icon: Icons.edit_outlined,
-                    tooltip: 'Tahrirlash',
+                    tooltip: S.current.strEdit,
                     onTap: widget.onEdit,
                   ),
                   const SizedBox(width: 4),
                   _GhostIconButton(
                     icon: Icons.delete_outline_rounded,
-                    tooltip: 'O\'chirish',
+                    tooltip: S.current.strDelete,
                     color: colors.systemError,
                     onTap: widget.onDelete,
                   ),
@@ -535,12 +536,12 @@ class _ConfirmDeleteDialog extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
                   _DialogButton.ghost(
-                    label: 'Bekor qilish',
+                    label: S.current.strCancel,
                     onPressed: () => Navigator.pop(context, false),
                   ),
                   const SizedBox(width: 8),
                   _DialogButton.danger(
-                    label: 'O\'chirish',
+                    label: S.current.strDelete,
                     onPressed: () => Navigator.pop(context, true),
                   ),
                 ],
@@ -714,7 +715,7 @@ class _PrinterEditDialogState extends State<_PrinterEditDialog> {
       if (!mounted) return;
       setState(() {
         _saving = false;
-        _saveError = _readError(e) ?? 'Saqlashda xatolik';
+        _saveError = _readError(e) ?? S.current.strSaveError;
       });
     }
   }
@@ -744,7 +745,7 @@ class _PrinterEditDialogState extends State<_PrinterEditDialog> {
           children: [
             _DialogHeader(
               icon: isEdit ? Icons.edit_outlined : Icons.add_rounded,
-              title: isEdit ? 'Printerni tahrirlash' : 'Yangi printer',
+              title: isEdit ? S.current.strEditPrinter : S.current.strAddPrinter,
               subtitle: isEdit
                   ? 'Printer sozlamalarini o\'zgartiring'
                   : 'Yangi ESC/POS TCP printerni qo\'shing',
@@ -763,7 +764,7 @@ class _PrinterEditDialogState extends State<_PrinterEditDialog> {
                           Expanded(
                             flex: 3,
                             child: _LabeledField(
-                              label: 'IP manzil',
+                              label: S.current.strIPAddress,
                               child: _TextField(
                                 controller: _ipCtrl,
                                 hint: '192.168.1.100',
@@ -779,7 +780,7 @@ class _PrinterEditDialogState extends State<_PrinterEditDialog> {
                           Expanded(
                             flex: 2,
                             child: _LabeledField(
-                              label: 'Port',
+                              label: S.current.strPort,
                               child: _TextField(
                                 controller: _portCtrl,
                                 hint: '9100',
@@ -795,20 +796,20 @@ class _PrinterEditDialogState extends State<_PrinterEditDialog> {
                       ),
                       const SizedBox(height: 14),
                       _LabeledField(
-                        label: 'Printer turi',
+                        label: S.current.strPrinterType,
                         child: _SegmentedChoice<String>(
                           value: _type,
                           onChanged: (v) => setState(() => _type = v),
-                          options: const [
+                          options: [
                             _ChoiceOption(
                               value: 'category',
-                              label: 'Kategoriya',
+                              label: S.current.strCategory,
                               icon: Icons.restaurant_menu_rounded,
                               helper: 'Taomlar uchun',
                             ),
                             _ChoiceOption(
                               value: 'close_check',
-                              label: 'Chek printer',
+                              label: S.current.strCheckPrinter,
                               icon: Icons.receipt_long_rounded,
                               helper: 'Yopish uchun',
                             ),
@@ -817,20 +818,20 @@ class _PrinterEditDialogState extends State<_PrinterEditDialog> {
                       ),
                       const SizedBox(height: 14),
                       _LabeledField(
-                        label: 'Ulanish turi',
+                        label: S.current.strConnectionType,
                         child: _SegmentedChoice<String>(
                           value: _connection,
                           onChanged: (v) => setState(() => _connection = v),
-                          options: const [
+                          options: [
                             _ChoiceOption(
                               value: 'cable',
-                              label: 'Kabel',
+                              label: S.current.strCable,
                               icon: Icons.cable_rounded,
                               helper: 'LAN',
                             ),
                             _ChoiceOption(
                               value: 'wlan',
-                              label: 'Wi-Fi',
+                              label: S.current.strWiFi,
                               icon: Icons.wifi_rounded,
                               helper: 'WLAN',
                             ),
@@ -840,7 +841,7 @@ class _PrinterEditDialogState extends State<_PrinterEditDialog> {
                       if (_type == 'category') ...[
                         const SizedBox(height: 14),
                         _LabeledField(
-                          label: 'Bog\'langan kategoriyalar',
+                          label: S.current.strConnectedCategories,
                           helper:
                               'Shu kategoriyalar uchun buyurtmalar shu printerga yuboriladi',
                           child: _CategoryMultiSelect(
@@ -900,14 +901,14 @@ class _PrinterEditDialogState extends State<_PrinterEditDialog> {
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
                   _DialogButton.ghost(
-                    label: 'Bekor qilish',
+                    label: S.current.strCancel,
                     onPressed:
                         _saving ? null : () => Navigator.pop(context, false),
                   ),
                   const SizedBox(width: 8),
                   _SavingButton(
                     saving: _saving,
-                    label: isEdit ? 'Saqlash' : 'Qo\'shish',
+                    label: isEdit ? S.current.strSave : S.current.strAdd,
                     onPressed: _saving ? null : _save,
                   ),
                 ],

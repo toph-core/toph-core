@@ -40,7 +40,7 @@ class ArchiveTopBar extends StatelessWidget {
                       height: 44,
                       child: CustomTextField(
                         textEditingController: state.textController,
-                        hintText: "Chek raqami bo'yicha qidirish",
+                        hintText: S.current.strSearchByCheckNumber,
                         textInputType: TextInputType.number,
                         formatter: [AppFormatter.numberOnlyFormatter],
                         onChange: (value) => context.read<ArchivesBloc>().add(
@@ -143,7 +143,7 @@ class ArchiveTopBar extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.end,
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text("Jami:", style: context.textStyles.bodyMd),
+                      Text(S.current.strTotalLabel, style: context.textStyles.bodyMd),
                       Text(
                         "${state.archives?.pagination.total ?? 0} ta chek",
                         style: context.textStyles.bold20.copyWith(

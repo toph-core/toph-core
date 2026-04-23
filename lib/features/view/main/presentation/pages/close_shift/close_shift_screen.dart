@@ -544,13 +544,13 @@ class _PageHeader extends StatelessWidget {
               children: [
                 _OutlinedIconButton(
                   icon: Icons.file_download_outlined,
-                  label: 'Eksport',
+                  label: S.current.strExport,
                   onTap: () {},
                 ),
                 const SizedBox(width: 8),
                 _OutlinedIconButton(
                   icon: Icons.print_outlined,
-                  label: 'Chop etish',
+                  label: S.current.strPrint,
                   onTap: () => context
                       .read<ShiftBloc>()
                       .add(const ShiftEvent.printShiftReport()),
@@ -738,7 +738,7 @@ class _StatsRow extends StatelessWidget {
             SizedBox(
               width: w,
               child: _DarkStatCard(
-                label: 'Umumiy savdo',
+                label: S.current.strTotalSales,
                 value: revenue.formatNWithoutS,
                 suffix: "so'm",
               ),
@@ -749,7 +749,7 @@ class _StatsRow extends StatelessWidget {
                 icon: Icons.receipt_long_outlined,
                 iconBg: _kBrandTint,
                 iconColor: _kBrand,
-                label: 'Buyurtmalar',
+                label: S.current.strOrders,
                 value: '$orderCount ta',
                 sub: orderCount > 0
                     ? "$itemsCount taom · o'rt. ${avgCheck.formatN}"
@@ -762,7 +762,7 @@ class _StatsRow extends StatelessWidget {
                 icon: Icons.spa_outlined,
                 iconBg: _kGreenTint,
                 iconColor: _kGreen,
-                label: 'Xizmat haqi',
+                label: S.current.strServiceCharge,
                 value: serviceTotal.formatN,
                 sub: orderCount > 0
                     ? '$orderCount ta buyurtma'
@@ -1284,13 +1284,13 @@ class _CashBalancePanel extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           _BalanceRow(
-            label: "Boshlang'ich qoldiq",
+            label: S.current.strOpeningBalance,
             value: openingCash,
             valueColor: _kS900,
           ),
           const SizedBox(height: 12),
           _BalanceRow(
-            label: 'Smena tushumi',
+            label: S.current.strShiftRevenue,
             value: cashReceived,
             valueColor: _kGreen,
             prefix: '+',
@@ -1744,7 +1744,7 @@ class _DiscountServicePanel extends StatelessWidget {
         ),
         const SizedBox(height: 12),
         _TintCard(
-          label: 'Chegirmalar',
+          label: S.current.strDiscounts,
           value: discountTotal.formatN,
           sub: discountOrderCount > 0
               ? "$discountOrderCount ta buyurtma · o'rt. ${avgDiscount.formatN}"
@@ -1756,7 +1756,7 @@ class _DiscountServicePanel extends StatelessWidget {
         ),
         const SizedBox(height: 12),
         _TintCard(
-          label: 'Xizmat haqi',
+          label: S.current.strServiceCharge,
           value: serviceTotal.formatN,
           sub: orderCount > 0
               ? "$orderCount ta · o'rt. ${avgService.formatN}"

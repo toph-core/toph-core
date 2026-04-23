@@ -143,28 +143,28 @@ class _InlineStatsRow extends StatelessWidget {
     return Row(
       children: [
         _Metric(
-          label: 'Zakazlar',
+          label: S.current.strOrders,
           value: '$count',
           unit: 'ta',
           valueColor: const Color(0xFF0F172A),
         ),
         const _MetricDivider(),
         _Metric(
-          label: 'Umumiy summa',
+          label: S.current.strUmumiySumma,
           value: revenue.formatNWithoutS,
           unit: "so'm",
           valueColor: const Color(0xFF16A34A),
         ),
         const _MetricDivider(),
         _Metric(
-          label: 'Ochiq hisoblar',
+          label: S.current.strOpenBills,
           value: '$openCount',
           unit: 'aktiv',
           valueColor: const Color(0xFFFB6633),
         ),
         const _MetricDivider(),
         _Metric(
-          label: "O'rtacha chek",
+          label: S.current.strAverageCheck,
           value: avgCheck.formatNWithoutS,
           unit: "so'm",
           valueColor: const Color(0xFF2563EB),
@@ -290,16 +290,16 @@ class _ArchiveTable extends StatelessWidget {
                 bottom: BorderSide(color: Color(0xFFE2E8F0)),
               ),
             ),
-            child: const Row(
+            child: Row(
               children: [
-                _ThCell(label: '#', flex: 2),
-                _ThCell(label: 'Vaqt', flex: 2),
-                _ThCell(label: 'Tur', flex: 2),
-                _ThCell(label: 'Stol', flex: 1),
-                _ThCell(label: 'Taomlar', flex: 2),
-                _ThCell(label: 'Summa', flex: 3),
-                _ThCell(label: 'Holat', flex: 2),
-                _ThCell(label: 'Amal', flex: 1),
+                const _ThCell(label: '#', flex: 2),
+                _ThCell(label: S.current.strTimeColumnHeader, flex: 2),
+                _ThCell(label: S.current.strTypeColumnHeader, flex: 2),
+                const _ThCell(label: 'Stol', flex: 1),
+                _ThCell(label: S.current.strDishesColumn, flex: 2),
+                _ThCell(label: S.current.strAmountColumnHeader, flex: 3),
+                _ThCell(label: S.current.strStatusColumnHeader, flex: 2),
+                _ThCell(label: S.current.strActionColumnHeader, flex: 1),
               ],
             ),
           ),
@@ -395,7 +395,7 @@ class _ArchiveFilterBar extends StatelessWidget {
             child: TextField(
               controller: state.textController,
               decoration: InputDecoration(
-                hintText: 'Stol, chek raqami...',
+                hintText: S.current.strSearchTableOrCheck,
                 hintStyle: const TextStyle(
                   fontSize: 13,
                   color: Color(0xFF94A3B8),
@@ -1342,7 +1342,7 @@ class _AdminOrdersArchiveBodyState extends State<_AdminOrdersArchiveBody> {
                 height: 34,
                 child: TextField(
                   decoration: InputDecoration(
-                    hintText: 'Qidirish...',
+                    hintText: S.current.strSearch,
                     hintStyle: const TextStyle(
                       fontSize: 13,
                       color: Color(0xFF94A3B8),
@@ -1464,28 +1464,28 @@ class _AdminOrdersArchiveBodyState extends State<_AdminOrdersArchiveBody> {
           child: Row(
             children: [
               _AdminStatBlock(
-                label: 'Zakazlar',
+                label: S.current.strOrders,
                 value: '${_totalCount ?? _orders.length}',
                 unit: 'ta',
                 color: const Color(0xFF0F172A),
               ),
               const _AdminStatDivider(),
               _AdminStatBlock(
-                label: 'Jami summa',
+                label: S.current.strTotalSum,
                 value: AppFormatter.formatAmountWithSpaces(totalSum.toString()),
                 unit: "so'm",
                 color: const Color(0xFF16A34A),
               ),
               const _AdminStatDivider(),
               _AdminStatBlock(
-                label: 'Naqd',
+                label: S.current.strCash,
                 value: AppFormatter.formatAmountWithSpaces(cashSum.toString()),
                 unit: "so'm",
                 color: const Color(0xFF0F172A),
               ),
               const _AdminStatDivider(),
               _AdminStatBlock(
-                label: 'Karta',
+                label: S.current.strCard,
                 value: AppFormatter.formatAmountWithSpaces(cardSum.toString()),
                 unit: "so'm",
                 color: const Color(0xFF2563EB),
@@ -1512,17 +1512,17 @@ class _AdminOrdersArchiveBodyState extends State<_AdminOrdersArchiveBody> {
                       bottom: BorderSide(color: Color(0xFFE2E8F0)),
                     ),
                   ),
-                  child: const Row(
+                  child: Row(
                     children: [
-                      _AdminThCell(label: '№ Zakaz', flex: 2),
-                      _AdminThCell(label: 'Vaqt', flex: 2),
-                      _AdminThCell(label: 'Tur', flex: 1),
-                      _AdminThCell(label: 'Stol / Zal', flex: 3),
-                      _AdminThCell(label: 'Taomlar', flex: 2),
-                      _AdminThCell(label: 'Summa', flex: 3),
-                      _AdminThCell(label: "To'lov", flex: 1),
-                      _AdminThCell(label: 'Holat', flex: 2),
-                      _AdminThCell(label: '', flex: 1),
+                      _AdminThCell(label: S.current.strOrderNumber, flex: 2),
+                      _AdminThCell(label: S.current.strTimeColumnHeader, flex: 2),
+                      _AdminThCell(label: S.current.strTypeColumnHeader, flex: 1),
+                      _AdminThCell(label: S.current.strTableHall, flex: 3),
+                      _AdminThCell(label: S.current.strDishesColumn, flex: 2),
+                      _AdminThCell(label: S.current.strAmountColumnHeader, flex: 3),
+                      _AdminThCell(label: S.current.strPayment, flex: 1),
+                      _AdminThCell(label: S.current.strStatusColumnHeader, flex: 2),
+                      const _AdminThCell(label: '', flex: 1),
                     ],
                   ),
                 ),
@@ -1545,7 +1545,7 @@ class _AdminOrdersArchiveBodyState extends State<_AdminOrdersArchiveBody> {
                               const SizedBox(height: 10),
                               FilledButton(
                                 onPressed: () => _load(page: _page),
-                                child: const Text('Qayta urinish'),
+                                child: Text(S.current.strRetry),
                               ),
                             ],
                           ),

@@ -5,7 +5,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mary_ai_pos/core/constants/constants.dart';
 import 'package:mary_ai_pos/core/extension/for_context.dart';
 import 'package:mary_ai_pos/core/routes/app_routes.dart';
+import 'package:mary_ai_pos/core/services/connectivity/connectivity_cubit.dart';
 import 'package:mary_ai_pos/core/widgets/app_scaffold.dart';
+import 'package:mary_ai_pos/di.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/cafe_tables/cafe_tables_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/hall/hall_model.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/main/main_cubit.dart';
@@ -52,6 +54,9 @@ class WaiterFloorPlanScreen extends StatefulWidget {
 
 class _WaiterFloorPlanScreenState extends State<WaiterFloorPlanScreen> {
   Timer? _elapsedTicker;
+  Timer? _bgRefreshTimer;
+
+  static const _bgRefreshInterval = Duration(minutes: 2);
 
   @override
   void initState() {
@@ -68,16 +73,24 @@ class _WaiterFloorPlanScreenState extends State<WaiterFloorPlanScreen> {
         cubit.loadAllHallsTables();
       }
     });
+    // Orqa fonda stollar statusini yangilab turadi — faqat floor plan ochiq paytda
+    _bgRefreshTimer = Timer.periodic(_bgRefreshInterval, (_) {
+      if (inject<ConnectivityCubit>().isOnline && mounted) {
+        context.read<MainCubit>().refreshTables();
+      }
+    });
   }
 
   @override
   void dispose() {
     _elapsedTicker?.cancel();
+    _bgRefreshTimer?.cancel();
     super.dispose();
   }
 
   Future<void> _refresh() async {
-    await context.read<MainCubit>().refreshTables();
+    // Foydalanuvchi bosgan refresh — throttle ni chetlab o'tamiz
+    await context.read<MainCubit>().refreshTables(force: true);
   }
 
   void _syncOpenedAt(Set<String> savedIds) {
@@ -144,6 +157,8 @@ class _WaiterFloorPlanScreenState extends State<WaiterFloorPlanScreen> {
                       loading: state.status == Status.LOADING,
                       onTap: _refresh,
                     ),
+                    const SizedBox(width: 10),
+                    const _TakeawayHeaderButton(),
                   ],
                 ),
               ),
@@ -232,19 +247,19 @@ class _HeaderStatChips extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         _StatChip(
-          label: "Bo'sh",
+          label: S.current.strFree,
           count: freeCount,
           dotColor: _kGreen,
         ),
         const SizedBox(width: 14),
         _StatChip(
-          label: 'Band',
+          label: S.current.strBusy,
           count: busyCount,
           dotColor: _kBrand,
         ),
         const SizedBox(width: 14),
         _StatChip(
-          label: 'Rezerv',
+          label: S.current.strReserved,
           count: reservedCount,
           dotColor: _kBlue,
         ),
@@ -452,7 +467,7 @@ class _GridView extends StatelessWidget {
                   bottom: 12,
                 ),
                 child: _SectionHeader(
-                  label: 'Boshqa',
+                  label: S.current.strOther,
                   count: unknown.length,
                 ),
               ),
@@ -761,10 +776,10 @@ class _FreeCardContent extends StatelessWidget {
           titleColor: _kS900,
         ),
         const Spacer(),
-        const Center(
+        Center(
           child: Text(
-            "Bo'sh",
-            style: TextStyle(
+            S.current.strFree,
+            style: const TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w600,
               color: _kGreen,
@@ -803,7 +818,7 @@ class _BusyCardContent extends StatelessWidget {
           tableNumber: table.number,
           capacity: table.capacity,
           titleColor: _kS900,
-          statusBadgeLabel: isSaved ? 'Saqlangan' : 'Band',
+          statusBadgeLabel: isSaved ? S.current.strSavedBadge : S.current.strBusy,
           statusBadgeFg: isSaved ? _kBrand : _kRed,
           statusBadgeBg: isSaved ? _kBrandTint : _kRedTint,
         ),
@@ -891,20 +906,20 @@ class _ReservedCardContent extends StatelessWidget {
           tableNumber: table.number,
           capacity: table.capacity,
           titleColor: _kS900,
-          statusBadgeLabel: 'Rezerv',
+          statusBadgeLabel: S.current.strReserved,
           statusBadgeFg: _kBlue,
           statusBadgeBg: _kBlueTint,
         ),
         const Spacer(),
-        const Center(
+        Center(
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.access_time_rounded, size: 14, color: _kBlue),
-              SizedBox(width: 6),
+              const Icon(Icons.access_time_rounded, size: 14, color: _kBlue),
+              const SizedBox(width: 6),
               Text(
-                'Band qilingan',
-                style: TextStyle(
+                S.current.strBusy,
+                style: const TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w500,
                   color: _kBlue,
@@ -916,6 +931,53 @@ class _ReservedCardContent extends StatelessWidget {
         ),
         const Spacer(),
       ],
+    );
+  }
+}
+
+class _TakeawayHeaderButton extends StatelessWidget {
+  const _TakeawayHeaderButton();
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () => Navigator.pushNamed(
+        context,
+        AppRoutes.detailScreen,
+        arguments: {
+          'table': null,
+          'table_status': TableStatus.none,
+          'guest_count': 1,
+        },
+      ),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: const Color(0xFFFFF3EE),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: const Color(0xFFFECDBA)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          spacing: 7,
+          children: [
+            const Icon(
+              Icons.shopping_bag_outlined,
+              size: 16,
+              color: Color(0xFFFB6633),
+            ),
+            Text(
+              S.current.strTakeaway,
+              style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFFFB6633),
+                fontFamily: 'Inter',
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

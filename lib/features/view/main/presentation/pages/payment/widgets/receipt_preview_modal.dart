@@ -10,6 +10,7 @@ import 'package:mary_ai_pos/di.dart';
 import 'package:mary_ai_pos/features/view/auth/presentation/cubit/bloc/user_bloc.dart';
 import 'package:mary_ai_pos/features/view/main/domain/entities/archive_detail_entity.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/payment/payment_bloc.dart';
+import 'package:mary_ai_pos/generated/l10n.dart';
 
 const _kS900 = Color(0xFF0F172A);
 const _kS700 = Color(0xFF334155);
@@ -461,7 +462,7 @@ class _ActionsRow extends StatelessWidget {
           Expanded(
             child: _OutlinedBtn(
               icon: Icons.print_outlined,
-              label: 'Chop etish',
+              label: S.current.strPrint,
               onTap: () => _print(context),
             ),
           ),
@@ -469,14 +470,14 @@ class _ActionsRow extends StatelessWidget {
           Expanded(
             child: _OutlinedBtn(
               icon: Icons.mail_outline_rounded,
-              label: 'Email',
+              label: S.current.strEmail,
               onTap: () => _email(context),
             ),
           ),
           const SizedBox(width: 10),
           Expanded(
             child: _BrandBtn(
-              label: 'Yakunlash',
+              label: S.current.strCloseAction,
               onTap: () => Navigator.of(context).pop(),
             ),
           ),

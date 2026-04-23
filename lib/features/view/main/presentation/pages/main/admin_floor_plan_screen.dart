@@ -120,7 +120,6 @@ class _AdminFloorPlanScreenState extends State<AdminFloorPlanScreen> {
 class _TakeawayButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    final c = context.colors;
     return GestureDetector(
       onTap: () => Navigator.pushNamed(
         context,
@@ -132,23 +131,27 @@ class _TakeawayButton extends StatelessWidget {
         },
       ),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
-          color: c.bgSecondary,
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: c.border),
+          color: const Color(0xFFFFF3EE),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: const Color(0xFFFECDBA)),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
-          spacing: 6,
+          spacing: 7,
           children: [
-            Icon(Icons.shopping_bag_outlined, size: 15, color: c.textSecondary),
+            const Icon(
+              Icons.shopping_bag_outlined,
+              size: 16,
+              color: Color(0xFFFB6633),
+            ),
             Text(
               S.current.strTakeaway,
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
-                color: c.textSecondary,
+              style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFFFB6633),
                 fontFamily: 'Inter',
               ),
             ),
@@ -158,3 +161,4 @@ class _TakeawayButton extends StatelessWidget {
     );
   }
 }
+

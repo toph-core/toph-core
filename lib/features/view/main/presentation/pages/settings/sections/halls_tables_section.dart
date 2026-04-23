@@ -13,6 +13,7 @@ import 'package:mary_ai_pos/features/view/main/data/models/hall/hall_model.dart'
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/main/main_cubit.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/main/widgets/admin_floor_plan_canvas.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/settings/widgets/section_shell.dart';
+import 'package:mary_ai_pos/generated/l10n.dart';
 
 class HallsTablesSection extends StatefulWidget {
   const HallsTablesSection({super.key});
@@ -62,7 +63,7 @@ class _HallsTablesSectionState extends State<HallsTablesSection> {
       if (!mounted) return;
       setState(() {
         _loading = false;
-        _error = _readError(e) ?? 'Yuklashda xatolik';
+        _error = _readError(e) ?? S.current.strLoadError;
       });
     } catch (e) {
       if (!mounted) return;
@@ -106,7 +107,7 @@ class _HallsTablesSectionState extends State<HallsTablesSection> {
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => _ConfirmDeleteDialog(
-        title: 'Zalni o\'chirish',
+        title: S.current.strDeleteHall,
         message:
             '«${hall.name}» zalini o\'chirmoqchimisiz? Ichidagi stollar ham o\'chib ketishi mumkin.',
       ),
@@ -123,7 +124,7 @@ class _HallsTablesSectionState extends State<HallsTablesSection> {
     } on DioException catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(_readError(e) ?? 'O\'chirishda xatolik')),
+        SnackBar(content: Text(_readError(e) ?? S.current.strDeleteError)),
       );
     }
   }
@@ -160,13 +161,13 @@ class _HallsTablesSectionState extends State<HallsTablesSection> {
   Widget _buildHallsList() {
     return SectionShell(
       key: const ValueKey('halls-list'),
-      title: 'Zallar',
+      title: S.current.strHalls,
       subtitle: _halls.isEmpty
-          ? 'Hali zal qo\'shilmagan'
+          ? S.current.strNoHallsYet
           : '${_halls.length} ta zal — har bir zalning ichida stollar sozlanadi',
       trailing: SectionPrimaryButton(
         icon: Icons.add_rounded,
-        label: 'Yangi zal',
+        label: S.current.strAddNewHall,
         onPressed: () => _openHallEditor(),
       ),
       child: _buildListBody(),
@@ -209,7 +210,7 @@ class _HallsTablesSectionState extends State<HallsTablesSection> {
             const SizedBox(height: 12),
             SectionPrimaryButton(
               icon: Icons.refresh_rounded,
-              label: 'Qayta urinish',
+              label: S.current.strRetry,
               onPressed: _load,
             ),
           ],
@@ -219,12 +220,12 @@ class _HallsTablesSectionState extends State<HallsTablesSection> {
     if (_halls.isEmpty) {
       return SectionEmptyState(
         icon: Icons.table_restaurant_outlined,
-        title: 'Hali zal qo\'shilmagan',
+        title: S.current.strNoHallsYet,
         subtitle:
             'Birinchi zalni yarating. Keyin uning ichida stollar qo\'shasiz.',
         action: SectionPrimaryButton(
           icon: Icons.add_rounded,
-          label: 'Yangi zal qo\'shish',
+          label: S.current.strAddFirstHall,
           onPressed: () => _openHallEditor(),
         ),
       );
@@ -354,13 +355,13 @@ class _HallCardState extends State<_HallCard> {
                       children: [
                         _GhostIconButton(
                           icon: Icons.edit_outlined,
-                          tooltip: 'Tahrirlash',
+                          tooltip: S.current.strEdit,
                           onTap: widget.onEdit,
                         ),
                         const SizedBox(width: 4),
                         _GhostIconButton(
                           icon: Icons.delete_outline_rounded,
-                          tooltip: 'O\'chirish',
+                          tooltip: S.current.strDelete,
                           color: colors.systemError,
                           onTap: widget.onDelete,
                         ),
@@ -446,7 +447,7 @@ class _TablesDetailViewState extends State<_TablesDetailView> {
       if (!mounted) return;
       setState(() {
         _loading = false;
-        _error = _readError(e) ?? 'Yuklashda xatolik';
+        _error = _readError(e) ?? S.current.strLoadError;
       });
     } catch (e) {
       if (!mounted) return;
@@ -576,7 +577,7 @@ class _TablesDetailViewState extends State<_TablesDetailView> {
     } on DioException catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(_readError(e) ?? 'Pozitsiyani saqlashda xato')),
+        SnackBar(content: Text(_readError(e) ?? S.current.strSavePositionError)),
       );
       _load();
     }
@@ -645,16 +646,16 @@ class _TablesDetailViewState extends State<_TablesDetailView> {
     if (failCount > 0) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('$failCount ta stol saqlanmadi'),
+          content: Text(S.current.strTablesNotSavedCount(failCount)),
           backgroundColor: const Color(0xFFEF4444),
         ),
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Pozitsiyalar saqlandi'),
-          backgroundColor: Color(0xFF22C55E),
-          duration: Duration(seconds: 2),
+        SnackBar(
+          content: Text(S.current.strPositionsSaved),
+          backgroundColor: const Color(0xFF22C55E),
+          duration: const Duration(seconds: 2),
         ),
       );
     }
@@ -708,7 +709,7 @@ class _TablesDetailViewState extends State<_TablesDetailView> {
     final ok = await showDialog<bool>(
       context: context,
       builder: (_) => _ConfirmDeleteDialog(
-        title: 'Stolni o\'chirish',
+        title: S.current.strDeleteTable,
         message: 'Stol №${t.number} o\'chiriladi. Buni qaytarib bo\'lmaydi.',
       ),
     );
@@ -724,7 +725,7 @@ class _TablesDetailViewState extends State<_TablesDetailView> {
     } on DioException catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(_readError(e) ?? 'O\'chirishda xatolik')),
+        SnackBar(content: Text(_readError(e) ?? S.current.strDeleteError)),
       );
     }
   }
@@ -792,7 +793,7 @@ class _TablesDetailViewState extends State<_TablesDetailView> {
             const SizedBox(height: 12),
             SectionPrimaryButton(
               icon: Icons.refresh_rounded,
-              label: 'Qayta urinish',
+              label: S.current.strRetry,
               onPressed: _load,
             ),
           ],
@@ -802,12 +803,12 @@ class _TablesDetailViewState extends State<_TablesDetailView> {
     if (_tables.isEmpty) {
       return SectionEmptyState(
         icon: Icons.deck_outlined,
-        title: 'Bu zalda stol yo\'q',
+        title: S.current.strNoTablesInHall,
         subtitle:
             'Stollarni qo\'shib, sig\'im va turini sozlang. Pozitsiya admin floor-plan ekranida sudrab qo\'yiladi.',
         action: SectionPrimaryButton(
           icon: Icons.add_rounded,
-          label: 'Birinchi stolni qo\'shish',
+          label: S.current.strAddFirstTable,
           onPressed: () => _openTableEditor(),
         ),
       );
@@ -932,8 +933,8 @@ class _PendingMovesBar extends StatelessWidget {
               padding:
                   const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
             ),
-            child: const Text('Bekor',
-                style: TextStyle(fontSize: 12, fontFamily: 'Inter')),
+            child: Text(S.current.strCancelShort,
+                style: const TextStyle(fontSize: 12, fontFamily: 'Inter')),
           ),
           const SizedBox(width: 6),
           ElevatedButton(
@@ -998,7 +999,7 @@ class _DetailHeader extends StatelessWidget {
               Row(
                 children: [
                   Text(
-                    'Zallar',
+                    S.current.strHalls,
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w500,
@@ -1038,7 +1039,7 @@ class _DetailHeader extends StatelessWidget {
         ),
         SectionPrimaryButton(
           icon: Icons.add_rounded,
-          label: 'Yangi stol',
+          label: S.current.strNewTable,
           onPressed: onAdd,
         ),
       ],
@@ -1113,7 +1114,7 @@ class _StatsRow extends StatelessWidget {
         Expanded(
           child: _StatCard(
             icon: Icons.table_bar_rounded,
-            label: 'Jami stollar',
+            label: S.current.strTotalTables,
             value: '$total',
             tint: colors.buttonBrand,
           ),
@@ -1122,7 +1123,7 @@ class _StatsRow extends StatelessWidget {
         Expanded(
           child: _StatCard(
             icon: Icons.people_outline_rounded,
-            label: 'Umumiy sig\'im',
+            label: S.current.strTotalCapacity,
             value: '$capacity',
             tint: colors.textSecondary,
           ),
@@ -1131,7 +1132,7 @@ class _StatsRow extends StatelessWidget {
         Expanded(
           child: _StatCard(
             icon: Icons.check_circle_outline_rounded,
-            label: 'Bo\'sh',
+            label: S.current.strFree,
             value: '$free',
             tint: const Color(0xFF16A34A),
           ),
@@ -1140,7 +1141,7 @@ class _StatsRow extends StatelessWidget {
         Expanded(
           child: _StatCard(
             icon: Icons.radio_button_checked_rounded,
-            label: 'Band',
+            label: S.current.strBusy,
             value: '$busy',
             tint: const Color(0xFFE07A1F),
           ),
@@ -1443,7 +1444,7 @@ class _TableEditDialogState extends State<_TableEditDialog> {
       if (!mounted) return;
       setState(() {
         _saving = false;
-        _saveError = _readError(e) ?? 'Saqlashda xatolik';
+        _saveError = _readError(e) ?? S.current.strSaveError;
       });
     }
   }
@@ -1495,7 +1496,7 @@ class _TableEditDialogState extends State<_TableEditDialog> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          isEdit ? 'Stolni tahrirlash' : 'Yangi stol',
+                          isEdit ? 'Stolni tahrirlash' : S.current.strNewTable,
                           style: TextStyle(
                             fontSize: 17,
                             fontWeight: FontWeight.w700,
@@ -1537,7 +1538,7 @@ class _TableEditDialogState extends State<_TableEditDialog> {
                         children: [
                           Expanded(
                             child: _LabeledField(
-                              label: 'Stol raqami',
+                              label: S.current.strTableNumber,
                               child: _HallTextField(
                                 controller: _numberCtrl,
                                 hint: '1',
@@ -1553,7 +1554,7 @@ class _TableEditDialogState extends State<_TableEditDialog> {
                           const SizedBox(width: 12),
                           Expanded(
                             child: _LabeledField(
-                              label: 'Sig\'im (kishi)',
+                              label: S.current.strCapacityPersons,
                               child: _HallTextField(
                                 controller: _capacityCtrl,
                                 hint: '4',
@@ -1569,19 +1570,19 @@ class _TableEditDialogState extends State<_TableEditDialog> {
                       ),
                       const SizedBox(height: 16),
                       _LabeledField(
-                        label: 'Shakli',
+                        label: S.current.strShape,
                         child: _SegmentedSelector<TableShape>(
                           value: _shape,
-                          options: const [
+                          options: [
                             _SegOption(
                               value: TableShape.square,
                               icon: Icons.square_outlined,
-                              label: 'Kvadrat',
+                              label: S.current.strSquare,
                             ),
                             _SegOption(
                               value: TableShape.circle,
                               icon: Icons.circle_outlined,
-                              label: 'Dumaloq',
+                              label: S.current.strRound,
                             ),
                           ],
                           onChanged: (v) => setState(() => _shape = v),
@@ -1589,20 +1590,20 @@ class _TableEditDialogState extends State<_TableEditDialog> {
                       ),
                       const SizedBox(height: 16),
                       _LabeledField(
-                        label: 'Turi',
+                        label: S.current.strTableType,
                         child: _SegmentedSelector<String>(
                           value: _type,
-                          options: const [
+                          options: [
                             _SegOption(
                               value: 'simple',
                               icon: Icons.receipt_long_outlined,
-                              label: 'Oddiy',
+                              label: S.current.strRegular,
                               helper: 'Menyu bo\'yicha',
                             ),
                             _SegOption(
                               value: 'time_based',
                               icon: Icons.timer_outlined,
-                              label: 'Soatlik',
+                              label: S.current.strHourly,
                               helper: 'Vaqt bo\'yicha',
                             ),
                           ],
@@ -1612,7 +1613,7 @@ class _TableEditDialogState extends State<_TableEditDialog> {
                       if (_type == 'time_based') ...[
                         const SizedBox(height: 16),
                         _LabeledField(
-                          label: 'Soatlik narx (so\'m)',
+                          label: S.current.strHourlyPrice,
                           child: _HallTextField(
                             controller: _priceCtrl,
                             hint: '50 000',
@@ -1627,7 +1628,7 @@ class _TableEditDialogState extends State<_TableEditDialog> {
                         children: [
                           Expanded(
                             child: _LabeledField(
-                              label: 'Kengligi (m)',
+                              label: S.current.strWidthMeters,
                               child: _HallTextField(
                                 controller: _widthCtrl,
                                 hint: '0.8',
@@ -1642,7 +1643,7 @@ class _TableEditDialogState extends State<_TableEditDialog> {
                           const SizedBox(width: 12),
                           Expanded(
                             child: _LabeledField(
-                              label: 'Balandligi (m)',
+                              label: S.current.strHeightMeters,
                               child: _HallTextField(
                                 controller: _heightCtrl,
                                 hint: '0.8',
@@ -1657,7 +1658,7 @@ class _TableEditDialogState extends State<_TableEditDialog> {
                           const SizedBox(width: 12),
                           Expanded(
                             child: _LabeledField(
-                              label: 'Burchak (°)',
+                              label: S.current.strAngleDegrees,
                               child: _HallTextField(
                                 controller: _rotationCtrl,
                                 hint: '0',
@@ -1673,24 +1674,24 @@ class _TableEditDialogState extends State<_TableEditDialog> {
                       ),
                       const SizedBox(height: 16),
                       _LabeledField(
-                        label: 'Boshlang\'ich holat',
+                        label: S.current.strInitialStatus,
                         child: _SegmentedSelector<TableStatus>(
                           value: _status,
-                          options: const [
+                          options: [
                             _SegOption(
                               value: TableStatus.free,
                               icon: Icons.check_circle_outline_rounded,
-                              label: 'Bo\'sh',
+                              label: S.current.strFree,
                             ),
                             _SegOption(
                               value: TableStatus.busy,
                               icon: Icons.radio_button_checked_rounded,
-                              label: 'Band',
+                              label: S.current.strBusy,
                             ),
                             _SegOption(
                               value: TableStatus.away,
                               icon: Icons.do_not_disturb_on_outlined,
-                              label: 'Yopiq',
+                              label: S.current.strClosedStatus,
                             ),
                           ],
                           onChanged: (v) => setState(() => _status = v),
@@ -1698,7 +1699,7 @@ class _TableEditDialogState extends State<_TableEditDialog> {
                       ),
                       const SizedBox(height: 16),
                       _LabeledField(
-                        label: 'Joylashuv xaritasi',
+                        label: S.current.strLocationMap,
                         child: _HallPositionCanvas(
                           hallWidth: widget.hall.width,
                           hallHeight: widget.hall.height,
@@ -1719,7 +1720,7 @@ class _TableEditDialogState extends State<_TableEditDialog> {
                         children: [
                           Expanded(
                             child: _LabeledField(
-                              label: 'Pozitsiya X (m)',
+                              label: S.current.strPositionX,
                               child: _HallTextField(
                                 controller: _posXCtrl,
                                 hint: '0.4',
@@ -1736,7 +1737,7 @@ class _TableEditDialogState extends State<_TableEditDialog> {
                           const SizedBox(width: 12),
                           Expanded(
                             child: _LabeledField(
-                              label: 'Pozitsiya Y (m)',
+                              label: S.current.strPositionY,
                               child: _HallTextField(
                                 controller: _posYCtrl,
                                 hint: '0.4',
@@ -1804,7 +1805,7 @@ class _TableEditDialogState extends State<_TableEditDialog> {
                 children: [
                   if (isEdit && widget.onRequestDelete != null)
                     _DangerButton(
-                      label: 'O\'chirish',
+                      label: S.current.strDelete,
                       onPressed: _saving
                           ? null
                           : () async {
@@ -1815,14 +1816,14 @@ class _TableEditDialogState extends State<_TableEditDialog> {
                     ),
                   const Spacer(),
                   _GhostButton(
-                    label: 'Bekor qilish',
+                    label: S.current.strCancel,
                     onPressed:
                         _saving ? null : () => Navigator.pop(context, false),
                   ),
                   const SizedBox(width: 8),
                   _SavingButton(
                     saving: _saving,
-                    label: isEdit ? 'Saqlash' : 'Qo\'shish',
+                    label: isEdit ? S.current.strSave : S.current.strAdd,
                     onPressed: _saving ? null : _save,
                   ),
                 ],
@@ -2366,12 +2367,12 @@ class _ConfirmDeleteDialog extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
                   _GhostButton(
-                    label: 'Bekor qilish',
+                    label: S.current.strCancel,
                     onPressed: () => Navigator.pop(context, false),
                   ),
                   const SizedBox(width: 8),
                   _DangerButton(
-                    label: 'O\'chirish',
+                    label: S.current.strDelete,
                     onPressed: () => Navigator.pop(context, true),
                   ),
                 ],
@@ -2603,7 +2604,7 @@ class _HallEditDialogState extends State<_HallEditDialog> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          isEdit ? 'Zalni tahrirlash' : 'Yangi zal',
+                          isEdit ? 'Zalni tahrirlash' : S.current.strAddNewHall,
                           style: TextStyle(
                             fontSize: 17,
                             fontWeight: FontWeight.w700,
@@ -2644,7 +2645,7 @@ class _HallEditDialogState extends State<_HallEditDialog> {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       _LabeledField(
-                        label: 'Zal nomi',
+                        label: S.current.strHallName,
                         child: _HallTextField(
                           controller: _nameCtrl,
                           hint: 'Masalan, Asosiy zal',
@@ -2656,7 +2657,7 @@ class _HallEditDialogState extends State<_HallEditDialog> {
                         children: [
                           Expanded(
                             child: _LabeledField(
-                              label: 'Kenglik (m)',
+                              label: S.current.strWidthShort,
                               child: _HallTextField(
                                 controller: _widthCtrl,
                                 hint: '8',
@@ -2673,7 +2674,7 @@ class _HallEditDialogState extends State<_HallEditDialog> {
                           const SizedBox(width: 12),
                           Expanded(
                             child: _LabeledField(
-                              label: 'Balandlik (m)',
+                              label: S.current.strHeightShort,
                               child: _HallTextField(
                                 controller: _heightCtrl,
                                 hint: '6',
@@ -2741,14 +2742,14 @@ class _HallEditDialogState extends State<_HallEditDialog> {
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
                   _GhostButton(
-                    label: 'Bekor qilish',
+                    label: S.current.strCancel,
                     onPressed:
                         _saving ? null : () => Navigator.pop(context, false),
                   ),
                   const SizedBox(width: 8),
                   _SavingButton(
                     saving: _saving,
-                    label: isEdit ? 'Saqlash' : 'Qo\'shish',
+                    label: isEdit ? S.current.strSave : S.current.strAdd,
                     onPressed: _saving ? null : _save,
                   ),
                 ],

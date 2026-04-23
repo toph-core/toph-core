@@ -30,9 +30,11 @@ class AppScaffold extends StatefulWidget {
 
 class _AppScaffoldState extends State<AppScaffold> {
   StreamSubscription<bool>? _connectivitySub;
-  Timer? _bgRefreshTimer;
 
-  static const _bgRefreshInterval = Duration(seconds: 60);
+  // Ilova ichida prefetch faqat bir marta triggerlanadi (CacheService'da ham
+  // o'z throttle bor, lekin bu erda ham qo'shimcha darvoza qo'yamiz —
+  // har yangi scaffold yaratilganda qayta urinishi to'xtatiladi).
+  static bool _prefetchAttempted = false;
 
   @override
   void initState() {
@@ -40,17 +42,16 @@ class _AppScaffoldState extends State<AppScaffold> {
     _connectivitySub = inject<ConnectivityCubit>().stream.listen((isOnline) {
       if (isOnline) {
         _syncOfflineQueue();
+        // Offline-ga tushib chiqqanda goods kesh eski bo'lishi mumkin —
+        // CacheService throttle tekshiradi, kerak bo'lsa yangilaydi.
         _prefetchGoods();
       }
     });
-    // Orqa fonda stollar statusini yangilab turadi
-    _bgRefreshTimer = Timer.periodic(_bgRefreshInterval, (_) {
-      if (inject<ConnectivityCubit>().isOnline && mounted) {
-        context.read<MainCubit>().refreshTables();
-      }
-    });
-    // Birinchi ochilishda ham goods prefetch
-    if (inject<ConnectivityCubit>().isOnline) _prefetchGoods();
+    // Birinchi ochilishda bir marta prefetch (keyingi scaffoldlar triggerlamaydi)
+    if (!_prefetchAttempted && inject<ConnectivityCubit>().isOnline) {
+      _prefetchAttempted = true;
+      _prefetchGoods();
+    }
   }
 
   void _prefetchGoods() {
@@ -67,7 +68,6 @@ class _AppScaffoldState extends State<AppScaffold> {
   @override
   void dispose() {
     _connectivitySub?.cancel();
-    _bgRefreshTimer?.cancel();
     super.dispose();
   }
 

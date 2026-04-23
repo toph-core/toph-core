@@ -15,6 +15,7 @@ import 'package:mary_ai_pos/features/view/main/presentation/cubit/waiter/waiter_
 import 'package:mary_ai_pos/features/view/main/presentation/pages/waiter/widgets/create_bill_form.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/waiter/widgets/order_status_badge.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/waiter/widgets/table_timer_section.dart';
+import 'package:mary_ai_pos/generated/l10n.dart';
 
 enum _OrderStatusTab { pending, cooking, ready, cancelled }
 
@@ -355,7 +356,7 @@ class _InfoGrid extends StatelessWidget {
                     _InfoRow('Гости', '${order.guestCount}'),
                     const _InfoRow('Скидка', '0 сум'),
                     _InfoRow(
-                      'Сумма',
+                      S.current.strAmountColumnHeader,
                       order.totalAmountValue > 0
                           ? order.totalAmountValue.formatN
                           : '—',
@@ -544,25 +545,25 @@ class _StatusTabs extends StatelessWidget {
           child: Row(
             children: [
               _TabBtn(
-                label: 'Ожидание',
+                label: S.current.strWaiting,
                 isActive: activeTab == _OrderStatusTab.pending,
                 onTap: () => onTabChanged(_OrderStatusTab.pending),
               ),
               const SizedBox(width: 6),
               _TabBtn(
-                label: 'Готовится',
+                label: S.current.strCooking,
                 isActive: activeTab == _OrderStatusTab.cooking,
                 onTap: () => onTabChanged(_OrderStatusTab.cooking),
               ),
               const SizedBox(width: 6),
               _TabBtn(
-                label: 'Получено',
+                label: S.current.strReceived,
                 isActive: activeTab == _OrderStatusTab.ready,
                 onTap: () => onTabChanged(_OrderStatusTab.ready),
               ),
               const SizedBox(width: 6),
               _TabBtn(
-                label: 'Отменено',
+                label: S.current.strCancelled,
                 isActive: activeTab == _OrderStatusTab.cancelled,
                 onTap: () => onTabChanged(_OrderStatusTab.cancelled),
               ),
@@ -1578,7 +1579,7 @@ class _CloseOrderViewState extends State<_CloseOrderView> {
                     children: [
                       Expanded(
                         child: _PaymentTypeChip(
-                          label: 'Наличные',
+                          label: S.current.strCash,
                           icon: Icons.payments_outlined,
                           selected: _paymentType == PaymentType.cash,
                           colors: colors,
@@ -1590,7 +1591,7 @@ class _CloseOrderViewState extends State<_CloseOrderView> {
                       const SizedBox(width: 8),
                       Expanded(
                         child: _PaymentTypeChip(
-                          label: 'Карта',
+                          label: S.current.strCard,
                           icon: Icons.credit_card_outlined,
                           selected: _paymentType == PaymentType.card,
                           colors: colors,
@@ -1727,7 +1728,7 @@ class _DiscountTypeToggle extends StatelessWidget {
             onTap: () => onChanged(_DiscountType.percent),
           ),
           _DiscountTab(
-            label: 'Сумма',
+            label: S.current.strAmountColumnHeader,
             active: selected == _DiscountType.amount,
             colors: colors,
             onTap: () => onChanged(_DiscountType.amount),

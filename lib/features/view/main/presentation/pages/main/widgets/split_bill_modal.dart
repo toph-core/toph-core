@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:mary_ai_pos/core/extension/for_context.dart';
 import 'package:mary_ai_pos/core/extension/number_formatter.dart';
+import 'package:mary_ai_pos/generated/l10n.dart';
 
 class SplitBillModal extends StatefulWidget {
   final String tableNumber;
@@ -94,12 +95,9 @@ class _SplitBillModalState extends State<SplitBillModal> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
+                      Text(S.current.strTotalLabel, style: context.textStyles.bodySm),
                       Text(
-                        'Jami:',
-                        style: context.textStyles.bodySm,
-                      ),
-                      Text(
-                        '${widget.totalAmount.formatN}',
+                        widget.totalAmount.formatN,
                         style: context.textStyles.bold18.copyWith(
                           color: const Color(0xFFFB6633),
                           fontWeight: FontWeight.w700,
@@ -107,10 +105,7 @@ class _SplitBillModalState extends State<SplitBillModal> {
                       ),
                     ],
                   ),
-                  Container(
-                    height: 1,
-                    color: colors.border,
-                  ),
+                  Container(height: 1, color: colors.border),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -119,7 +114,7 @@ class _SplitBillModalState extends State<SplitBillModal> {
                         style: context.textStyles.bodySm,
                       ),
                       Text(
-                        '${_perPersonAmount.formatN}',
+                        _perPersonAmount.formatN,
                         style: context.textStyles.bold16.copyWith(
                           fontWeight: FontWeight.w600,
                         ),
@@ -144,55 +139,53 @@ class _SplitBillModalState extends State<SplitBillModal> {
             Wrap(
               spacing: 8,
               runSpacing: 8,
-              children: [10, 15, 20, 25]
-                  .map((percent) {
-                    final isSelected = _selectedTipPercent == percent;
-                    return GestureDetector(
-                      onTap: () {
-                        setState(() => _selectedTipPercent = percent);
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 10,
-                        ),
-                        decoration: BoxDecoration(
-                          color: isSelected
-                              ? const Color(0xFFFB6633)
-                              : const Color(0xFFF8FAFC),
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(
+              children: [10, 15, 20, 25].map((percent) {
+                final isSelected = _selectedTipPercent == percent;
+                return GestureDetector(
+                  onTap: () {
+                    setState(() => _selectedTipPercent = percent);
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 10,
+                    ),
+                    decoration: BoxDecoration(
+                      color: isSelected
+                          ? const Color(0xFFFB6633)
+                          : const Color(0xFFF8FAFC),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: isSelected
+                            ? const Color(0xFFFB6633)
+                            : colors.border,
+                      ),
+                    ),
+                    child: Column(
+                      children: [
+                        Text(
+                          '$percent%',
+                          style: context.textStyles.bodySm.copyWith(
                             color: isSelected
-                                ? const Color(0xFFFB6633)
-                                : colors.border,
+                                ? Colors.white
+                                : colors.textDefault,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
-                        child: Column(
-                          children: [
-                            Text(
-                              '$percent%',
-                              style: context.textStyles.bodySm.copyWith(
-                                color: isSelected
-                                    ? Colors.white
-                                    : colors.textDefault,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            Text(
-                              (_perPersonAmount * percent ~/ 100).formatN,
-                              style: context.textStyles.bodySm.copyWith(
-                                color: isSelected
-                                    ? Colors.white
-                                    : colors.textSecondary,
-                                fontSize: 11,
-                              ),
-                            ),
-                          ],
+                        Text(
+                          (_perPersonAmount * percent ~/ 100).formatN,
+                          style: context.textStyles.bodySm.copyWith(
+                            color: isSelected
+                                ? Colors.white
+                                : colors.textSecondary,
+                            fontSize: 11,
+                          ),
                         ),
-                      ),
-                    );
-                  })
-                  .toList(),
+                      ],
+                    ),
+                  ),
+                );
+              }).toList(),
             ),
             const SizedBox(height: 20),
 
@@ -216,7 +209,7 @@ class _SplitBillModalState extends State<SplitBillModal> {
                     ),
                   ),
                   Text(
-                    '${_tipAmount.formatN}',
+                    _tipAmount.formatN,
                     style: context.textStyles.bold18.copyWith(
                       color: const Color(0xFFFB6633),
                       fontWeight: FontWeight.w700,

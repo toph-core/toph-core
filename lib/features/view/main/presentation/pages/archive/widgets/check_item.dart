@@ -9,6 +9,7 @@ import 'package:mary_ai_pos/core/extension/widget_extension.dart';
 import 'package:mary_ai_pos/features/view/main/domain/entities/archive_entity.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/archives/archives_bloc.dart';
 import 'package:mary_ai_pos/gen/assets.gen.dart';
+import 'package:mary_ai_pos/generated/l10n.dart';
 
 class CheckItem extends StatelessWidget {
   final ArchiveEntity archive;
@@ -46,7 +47,7 @@ class CheckItem extends StatelessWidget {
                   ),
                 ),
                 const Spacer(),
-                Text("Naqd", style: context.textStyles.bodyMd),
+                Text(S.current.strCash, style: context.textStyles.bodyMd),
               ],
             ),
             Row(

@@ -14,6 +14,7 @@ import 'package:mary_ai_pos/features/view/main/presentation/cubit/payment/paymen
 import 'package:mary_ai_pos/features/view/main/presentation/pages/payment/widgets/payment_center_column.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/payment/widgets/payment_right_side_bar.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/payment/widgets/payment_top_bar.dart';
+import 'package:mary_ai_pos/generated/l10n.dart';
 
 const _kS900 = Color(0xFF0F172A);
 const _kS500 = Color(0xFF64748B);
@@ -92,8 +93,8 @@ class _PaymentScreenState extends State<PaymentScreen> {
             builder: (context, state) {
               if (state.detail == null) {
                 if (state.detailStatus == Status.ERROR) {
-                  return const Center(
-                    child: Text("To'lov ma'lumotlari topilmadi"),
+                  return Center(
+                    child: Text(S.current.strPaymentInfoNotFound),
                   );
                 }
                 return const Center(

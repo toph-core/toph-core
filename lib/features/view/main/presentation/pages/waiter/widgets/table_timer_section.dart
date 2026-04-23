@@ -5,6 +5,7 @@ import 'package:mary_ai_pos/core/extension/number_formatter.dart';
 import 'package:mary_ai_pos/core/theme/tokens/theme_colors.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/table_timer/table_timer_cubit.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/waiter/waiter_cubit.dart';
+import 'package:mary_ai_pos/generated/l10n.dart';
 
 /// Vaqt bo‘yicha stol (`time_based`) — `GET /orders/{id}/table-timer` + start/pause/resume.
 class TableTimerSection extends StatefulWidget {
@@ -177,7 +178,7 @@ class _TableTimerSectionState extends State<TableTimerSection> {
                       children: [
                         if (canStart)
                           _ActBtn(
-                            label: 'Start',
+                            label: S.current.strStart,
                             colors: colors,
                             busy: s.isMutating,
                             onTap: () => context
@@ -186,7 +187,7 @@ class _TableTimerSectionState extends State<TableTimerSection> {
                           ),
                         if (canPause)
                           _ActBtn(
-                            label: 'Pause',
+                            label: S.current.strPauseAction,
                             colors: colors,
                             busy: s.isMutating,
                             onTap: () => context
@@ -195,7 +196,7 @@ class _TableTimerSectionState extends State<TableTimerSection> {
                           ),
                         if (canResume)
                           _ActBtn(
-                            label: 'Resume',
+                            label: S.current.strResumeAction,
                             colors: colors,
                             busy: s.isMutating,
                             onTap: () => context

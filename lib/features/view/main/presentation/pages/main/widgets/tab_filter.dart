@@ -160,9 +160,7 @@ class _HallPillState extends State<_HallPill> {
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w500,
-                  color: active
-                      ? Colors.white.withOpacity(0.8)
-                      : _kS500,
+                  color: active ? Colors.white.withOpacity(0.8) : _kS500,
                   fontFamily: 'Inter',
                 ),
               ),

@@ -59,10 +59,28 @@ class CacheService {
     }
   }
 
+  static const _goodsFetchedAt = 'cache_goods_fetched_at';
+  static const _goodsStale = Duration(minutes: 30);
+
+  // In-memory flag: prevents concurrent fetches within a single app session
+  static bool _isFetchingGoods = false;
+
+  bool isGoodsFresh() {
+    final raw = _box.get(_goodsFetchedAt) as String?;
+    if (raw == null) return false;
+    final ts = DateTime.tryParse(raw);
+    if (ts == null) return false;
+    return DateTime.now().difference(ts) < _goodsStale;
+  }
+
   /// Barcha goodslarni pagination bilan orqa fonda yuklab saqlab qo'yadi.
-  /// Har bir batch 100 ta; bo'sh javob kelsa to'xtaydi.
-  Future<void> prefetchAllGoods(DioClient client) async {
-    const batchSize = 100;
+  /// Har bir batch 500 ta; bo'sh javob kelsa yoki batchdan kam javob kelsa to'xtaydi.
+  /// [force] = true bo'lsa throttle tekshirilmaydi.
+  Future<void> prefetchAllGoods(DioClient client, {bool force = false}) async {
+    if (!force && isGoodsFresh()) return;
+    if (_isFetchingGoods) return;
+    _isFetchingGoods = true;
+    const batchSize = 500;
     int offset = 0;
     final all = <Map<String, dynamic>>[];
     try {
@@ -79,9 +97,14 @@ class CacheService {
         if (items.length < batchSize) break;
         offset += batchSize;
       }
-      if (all.isNotEmpty) await saveGoods(all);
+      if (all.isNotEmpty) {
+        await saveGoods(all);
+        await _box.put(_goodsFetchedAt, DateTime.now().toIso8601String());
+      }
     } catch (e) {
       if (kDebugMode) debugPrint('[CacheService] prefetchAllGoods: $e');
+    } finally {
+      _isFetchingGoods = false;
     }
   }
 

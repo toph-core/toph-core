@@ -20,7 +20,20 @@ typedef String MessageIfAbsent(String messageStr, List<dynamic> args);
 class MessageLookup extends MessageLookupByLibrary {
   String get localeName => 'uz';
 
-  static String m0(n) => "${n} ta stol";
+  static String m0(count) => "${count} Qo\'shma";
+
+  static String m1(item) => "\'${item}\' ni o\'chirmoqchimisiz?";
+
+  static String m2(name) =>
+      "${name} hisobi o\'chiriladi. Bu amalni qaytarib bo\'lmaydi.";
+
+  static String m3(count) => "${count} Ingredient";
+
+  static String m4(n) => "${n} ta stol";
+
+  static String m5(size) => "${size} / sahifa";
+
+  static String m6(count) => "${count} ta stol saqlanmadi";
 
   final messages = _notInlinedMessages(_notInlinedMessages);
   static Map<String, Function> _notInlinedMessages(_) => <String, Function>{
@@ -28,12 +41,35 @@ class MessageLookup extends MessageLookupByLibrary {
         "month": MessageLookupByLibrary.simpleMessage("Oy"),
         "strAccessRestricted":
             MessageLookupByLibrary.simpleMessage("Ruxsat cheklangan"),
+        "strActionColumnHeader": MessageLookupByLibrary.simpleMessage("Amal"),
         "strActionsColumn": MessageLookupByLibrary.simpleMessage("Amallar"),
         "strAdd": MessageLookupByLibrary.simpleMessage("Qo\'shish"),
+        "strAddCategory":
+            MessageLookupByLibrary.simpleMessage("Kategoriya qo\'shish"),
+        "strAddFirstEmployee":
+            MessageLookupByLibrary.simpleMessage("Birinchi xodimni qo\'shish"),
+        "strAddFirstHall":
+            MessageLookupByLibrary.simpleMessage("Yangi zal qo\'shish"),
+        "strAddFirstPrinter":
+            MessageLookupByLibrary.simpleMessage("Yangi printer qo\'shish"),
+        "strAddFirstTable":
+            MessageLookupByLibrary.simpleMessage("Birinchi stolni qo\'shish"),
         "strAddItems": MessageLookupByLibrary.simpleMessage("Qo\'shish"),
+        "strAddNewEmployee":
+            MessageLookupByLibrary.simpleMessage("Yangi xodim"),
+        "strAddNewHall": MessageLookupByLibrary.simpleMessage("Yangi zal"),
+        "strAddOrder":
+            MessageLookupByLibrary.simpleMessage("Buyurtma qo\'shish"),
+        "strAddPrinter": MessageLookupByLibrary.simpleMessage("Yangi printer"),
+        "strAddress": MessageLookupByLibrary.simpleMessage("Manzil"),
+        "strAllColon": MessageLookupByLibrary.simpleMessage("Hammasi:"),
+        "strAllDishes": MessageLookupByLibrary.simpleMessage("Barcha taomlar"),
         "strAllOrdersTitle":
             MessageLookupByLibrary.simpleMessage("Barcha buyurtmalar"),
+        "strAllRoles": MessageLookupByLibrary.simpleMessage("Hammasi"),
         "strAmountColumn": MessageLookupByLibrary.simpleMessage("Summa"),
+        "strAmountColumnHeader": MessageLookupByLibrary.simpleMessage("Summa"),
+        "strAngleDegrees": MessageLookupByLibrary.simpleMessage("Burchak (°)"),
         "strAppLanguage": MessageLookupByLibrary.simpleMessage("Ilova tili"),
         "strAppliesToAllUsers": MessageLookupByLibrary.simpleMessage(
             "Barcha foydalanuvchilar uchun qo\'llaniladi"),
@@ -48,19 +84,74 @@ class MessageLookup extends MessageLookupByLibrary {
             MessageLookupByLibrary.simpleMessage("Orqaga qaytish"),
         "strBillSuffix": MessageLookupByLibrary.simpleMessage("hisob"),
         "strBusy": MessageLookupByLibrary.simpleMessage("Band"),
+        "strCable": MessageLookupByLibrary.simpleMessage("Kabel"),
         "strCancel": MessageLookupByLibrary.simpleMessage("Bekor qilish"),
+        "strCancelShort": MessageLookupByLibrary.simpleMessage("Bekor"),
+        "strCancelled": MessageLookupByLibrary.simpleMessage("Bekor qilindi"),
+        "strCapacityPersons":
+            MessageLookupByLibrary.simpleMessage("Sig\'im (kishi)"),
+        "strCard": MessageLookupByLibrary.simpleMessage("Karta"),
+        "strCash": MessageLookupByLibrary.simpleMessage("Naqd"),
+        "strCashierLabel": MessageLookupByLibrary.simpleMessage("Kassir:"),
         "strCashierRole": MessageLookupByLibrary.simpleMessage("Kassir"),
+        "strCategory": MessageLookupByLibrary.simpleMessage("Kategoriya"),
+        "strChange": MessageLookupByLibrary.simpleMessage("Qaytim"),
+        "strCheckForDetails": MessageLookupByLibrary.simpleMessage(
+            "Chek haqida batafsil ko\'rish uchun ustiga bosing!"),
         "strCheckInternetConnection": MessageLookupByLibrary.simpleMessage(
             "Internet aloqasini tekshiring"),
+        "strCheckNotFound":
+            MessageLookupByLibrary.simpleMessage("Chek topilmadi"),
+        "strCheckNumberLabel":
+            MessageLookupByLibrary.simpleMessage("Chek raqami:"),
+        "strCheckPrinter": MessageLookupByLibrary.simpleMessage("Chek printer"),
         "strClear": MessageLookupByLibrary.simpleMessage("Tozalash"),
+        "strClient": MessageLookupByLibrary.simpleMessage("Client"),
+        "strCloseAction": MessageLookupByLibrary.simpleMessage("Yakunlash"),
         "strCloseShift": MessageLookupByLibrary.simpleMessage("Smenani yopish"),
         "strCloseShiftInstruction": MessageLookupByLibrary.simpleMessage(
             "Smenani yopish uchun o\'ng pastdagi tugmani bosing."),
+        "strClosedStatus": MessageLookupByLibrary.simpleMessage("Yopiq"),
         "strClosedToday": MessageLookupByLibrary.simpleMessage("Bugun yopildi"),
+        "strCompounds": MessageLookupByLibrary.simpleMessage("Qo\'shma"),
+        "strCompoundsCount": m0,
+        "strConfirmCardPayment": MessageLookupByLibrary.simpleMessage(
+            "Mijoz to\'lovni karta orqali amalga oshirganini tasdiqlang"),
+        "strConfirmDelete":
+            MessageLookupByLibrary.simpleMessage("O\'chirishni tasdiqlang"),
+        "strConfirmDeleteItem": m1,
         "strConnected": MessageLookupByLibrary.simpleMessage("Ulangan"),
+        "strConnectedCategories":
+            MessageLookupByLibrary.simpleMessage("Bog\'langan kategoriyalar"),
+        "strConnectionType":
+            MessageLookupByLibrary.simpleMessage("Ulanish turi"),
         "strContinue": MessageLookupByLibrary.simpleMessage("Davom etish"),
+        "strCooking": MessageLookupByLibrary.simpleMessage("Pishirilmoqda"),
+        "strCustomer": MessageLookupByLibrary.simpleMessage("Mijoz"),
         "strDate": MessageLookupByLibrary.simpleMessage("Sana"),
+        "strDateLabel": MessageLookupByLibrary.simpleMessage("Sana:"),
         "strDecember": MessageLookupByLibrary.simpleMessage("Dekabr"),
+        "strDelete": MessageLookupByLibrary.simpleMessage("O\'chirish"),
+        "strDeleteCategory":
+            MessageLookupByLibrary.simpleMessage("Kategoriyani o\'chirish"),
+        "strDeleteEmployee":
+            MessageLookupByLibrary.simpleMessage("Xodimni o\'chirish"),
+        "strDeleteEmployeeConfirm": m2,
+        "strDeleteError":
+            MessageLookupByLibrary.simpleMessage("O\'chirishda xatolik"),
+        "strDeleteHall":
+            MessageLookupByLibrary.simpleMessage("Zalni o\'chirish"),
+        "strDeleteMeal":
+            MessageLookupByLibrary.simpleMessage("Taomni o\'chirish"),
+        "strDeletePrinter":
+            MessageLookupByLibrary.simpleMessage("Printerni o\'chirish"),
+        "strDeleteTable":
+            MessageLookupByLibrary.simpleMessage("Stolni o\'chirish"),
+        "strDeviceSynchronization": MessageLookupByLibrary.simpleMessage(
+            "Qurilmalararo sinxronizatsiya"),
+        "strDisabled": MessageLookupByLibrary.simpleMessage("O\'chirilgan"),
+        "strDiscounts": MessageLookupByLibrary.simpleMessage("Chegirmalar"),
+        "strDishesColumn": MessageLookupByLibrary.simpleMessage("Taomlar"),
         "strDoYouWantClearOrders": MessageLookupByLibrary.simpleMessage(
             "Siz rostdan ham buyurtmalarni tozalashni hohlaysizmi?"),
         "strDoYouWantSendOrdersToKitchken":
@@ -70,14 +161,29 @@ class MessageLookup extends MessageLookupByLibrary {
             "Ilovadan chiqishni xohlaysizmi?"),
         "strDragHint": MessageLookupByLibrary.simpleMessage("Drag qiling"),
         "strDuration": MessageLookupByLibrary.simpleMessage("Davomiyligi"),
+        "strEdit": MessageLookupByLibrary.simpleMessage("Tahrirlash"),
+        "strEditMeal":
+            MessageLookupByLibrary.simpleMessage("Taomni tahrirlash"),
+        "strEditPrinter":
+            MessageLookupByLibrary.simpleMessage("Printerni tahrirlash"),
+        "strEmail": MessageLookupByLibrary.simpleMessage("Email"),
         "strEnlarge": MessageLookupByLibrary.simpleMessage("Kattalashtirish"),
         "strEnterBrandID":
             MessageLookupByLibrary.simpleMessage("Brand ID ni yozing"),
         "strEnterCode": MessageLookupByLibrary.simpleMessage("Kodni yozing"),
+        "strEnterNotes": MessageLookupByLibrary.simpleMessage("Izoh yozing..."),
+        "strEnterPinCode":
+            MessageLookupByLibrary.simpleMessage("2-6 raqam kiriting"),
+        "strError": MessageLookupByLibrary.simpleMessage("Xato"),
         "strEscPosDevices":
             MessageLookupByLibrary.simpleMessage("ESC/POS qurilmalari"),
+        "strExactAmount": MessageLookupByLibrary.simpleMessage("Aniq summa"),
         "strExistingOrders":
             MessageLookupByLibrary.simpleMessage("Mavjud buyurtmalar"),
+        "strExport": MessageLookupByLibrary.simpleMessage("Eksport"),
+        "strExtraSalt": MessageLookupByLibrary.simpleMessage("Qo\'shimcha tuz"),
+        "strExtraSpicy":
+            MessageLookupByLibrary.simpleMessage("Qo\'shimcha achchiq"),
         "strExtras": MessageLookupByLibrary.simpleMessage("Qo\'shimchalar"),
         "strFailureMessage_cache": MessageLookupByLibrary.simpleMessage(
             "Keshga murojaat qilishda xatolik"),
@@ -111,21 +217,44 @@ class MessageLookup extends MessageLookupByLibrary {
         "strFebruary": MessageLookupByLibrary.simpleMessage("Fevral"),
         "strFieldCannotBeEmpty": MessageLookupByLibrary.simpleMessage(
             "Bu maydon bo\'sh bo\'lishi mumkin emas"),
+        "strFileTooLarge": MessageLookupByLibrary.simpleMessage(
+            "Fayl 5 MB dan katta bo\'lmasligi kerak"),
         "strFloorMap": MessageLookupByLibrary.simpleMessage("Stollar xaritasi"),
         "strFoodsCategoriesNotFound": MessageLookupByLibrary.simpleMessage(
             "Taomlar kategoriyasi topilmadi!"),
         "strFoodsColumn": MessageLookupByLibrary.simpleMessage("Taomlar"),
+        "strForNotes": MessageLookupByLibrary.simpleMessage("Izoh uchun"),
         "strFree": MessageLookupByLibrary.simpleMessage("Bo\'sh"),
         "strFriday": MessageLookupByLibrary.simpleMessage("Juma"),
+        "strFullName": MessageLookupByLibrary.simpleMessage("To\'liq ism"),
+        "strGiven": MessageLookupByLibrary.simpleMessage("Berilgan"),
+        "strGoToPayment":
+            MessageLookupByLibrary.simpleMessage("To\'lovga o\'tish"),
         "strGrid": MessageLookupByLibrary.simpleMessage("Grid"),
         "strGridView": MessageLookupByLibrary.simpleMessage("Grid ko\'rinish"),
+        "strGuest": MessageLookupByLibrary.simpleMessage("Mehmon"),
         "strGuestsSuffix": MessageLookupByLibrary.simpleMessage("mehmon"),
         "strHall": MessageLookupByLibrary.simpleMessage("Zal"),
+        "strHallName": MessageLookupByLibrary.simpleMessage("Zal nomi"),
         "strHalls": MessageLookupByLibrary.simpleMessage("Zallar"),
         "strHallsAndTables":
             MessageLookupByLibrary.simpleMessage("Zallar va stollar"),
+        "strHeightMeters":
+            MessageLookupByLibrary.simpleMessage("Balandligi (m)"),
+        "strHeightShort": MessageLookupByLibrary.simpleMessage("Balandlik (m)"),
+        "strHotter": MessageLookupByLibrary.simpleMessage("Issiqroq"),
+        "strHourly": MessageLookupByLibrary.simpleMessage("Soatlik"),
+        "strHourlyPrice":
+            MessageLookupByLibrary.simpleMessage("Soatlik narx (so\'m)"),
+        "strHub": MessageLookupByLibrary.simpleMessage("Hub"),
         "strHubClientSettings":
             MessageLookupByLibrary.simpleMessage("Hub va client sozlamalari"),
+        "strIPAddress": MessageLookupByLibrary.simpleMessage("IP manzil"),
+        "strImages": MessageLookupByLibrary.simpleMessage("Rasmlar"),
+        "strIngredients": MessageLookupByLibrary.simpleMessage("Ingredientlar"),
+        "strIngredientsCount": m3,
+        "strInitialStatus":
+            MessageLookupByLibrary.simpleMessage("Boshlang\'ich holat"),
         "strInterfaceLanguage":
             MessageLookupByLibrary.simpleMessage("Interfeys tili"),
         "strInterfaceSettings": MessageLookupByLibrary.simpleMessage(
@@ -142,6 +271,12 @@ class MessageLookup extends MessageLookupByLibrary {
         "strLanNetwork": MessageLookupByLibrary.simpleMessage("LAN Tarmoq"),
         "strLanguageAndGeneral":
             MessageLookupByLibrary.simpleMessage("Til va umumiy"),
+        "strLoadCompositionError": MessageLookupByLibrary.simpleMessage(
+            "Taom tarkibini yuklab bo\'lmadi"),
+        "strLoadError":
+            MessageLookupByLibrary.simpleMessage("Yuklashda xatolik"),
+        "strLocationMap":
+            MessageLookupByLibrary.simpleMessage("Joylashuv xaritasi"),
         "strLogin": MessageLookupByLibrary.simpleMessage("Kirish"),
         "strLogout": MessageLookupByLibrary.simpleMessage("Chiqish"),
         "strLogoutConfirm": MessageLookupByLibrary.simpleMessage(
@@ -152,46 +287,101 @@ class MessageLookup extends MessageLookupByLibrary {
         "strMay": MessageLookupByLibrary.simpleMessage("May"),
         "strMenu": MessageLookupByLibrary.simpleMessage("Menu"),
         "strMenuImages": MessageLookupByLibrary.simpleMessage("Menyu rasmlari"),
+        "strMode": MessageLookupByLibrary.simpleMessage("Rejim"),
+        "strModeDescription": MessageLookupByLibrary.simpleMessage(
+            "Bu qurilmaning LAN tarmog\'idagi roli"),
         "strMonday": MessageLookupByLibrary.simpleMessage("Dushanba"),
-        "strNPeopleTable": m0,
+        "strMoreKetchup":
+            MessageLookupByLibrary.simpleMessage("Ketchup ko\'proq"),
+        "strNPeopleTable": m4,
         "strNameTooShort":
             MessageLookupByLibrary.simpleMessage("Ism juda qisqa"),
+        "strNeedAttention":
+            MessageLookupByLibrary.simpleMessage("Diqqat kerak"),
+        "strNetworkLAN": MessageLookupByLibrary.simpleMessage("Tarmoq (LAN)"),
+        "strNewMeal": MessageLookupByLibrary.simpleMessage("Yangi taom"),
+        "strNewPrinter": MessageLookupByLibrary.simpleMessage("Yangi printer"),
+        "strNewTable": MessageLookupByLibrary.simpleMessage("Yangi stol"),
         "strNo": MessageLookupByLibrary.simpleMessage("Yo\'q"),
         "strNoDataFound":
             MessageLookupByLibrary.simpleMessage("Ma\'lumot topilmadi"),
+        "strNoEmployeesYet":
+            MessageLookupByLibrary.simpleMessage("Hali xodim qo\'shilmagan"),
+        "strNoHallsYet":
+            MessageLookupByLibrary.simpleMessage("Hali zal qo\'shilmagan"),
         "strNoInternetConnection":
             MessageLookupByLibrary.simpleMessage("Internet aloqasi yo\'q"),
+        "strNoPrintersYet":
+            MessageLookupByLibrary.simpleMessage("Hali printer qo\'shilmagan"),
         "strNoTables":
             MessageLookupByLibrary.simpleMessage("Stollar mavjud emas"),
+        "strNoTablesInHall":
+            MessageLookupByLibrary.simpleMessage("Bu zalda stol yo\'q"),
+        "strNotifications":
+            MessageLookupByLibrary.simpleMessage("Bildirishnomalar"),
+        "strNotifyKitchen":
+            MessageLookupByLibrary.simpleMessage("Oshxonaga bildir"),
         "strNovember": MessageLookupByLibrary.simpleMessage("Noyabr"),
         "strNowActive": MessageLookupByLibrary.simpleMessage("Hozir aktiv"),
+        "strNumberColumn": MessageLookupByLibrary.simpleMessage("#"),
+        "strOK": MessageLookupByLibrary.simpleMessage("OK"),
         "strOctober": MessageLookupByLibrary.simpleMessage("Oktabr"),
+        "strOfflineModeMessage": MessageLookupByLibrary.simpleMessage(
+            "Offline rejim — ma\'lumotlar internet qaytganda sync bo\'ladi"),
         "strOpenBills": MessageLookupByLibrary.simpleMessage("Ochiq hisoblar"),
         "strOpenShift": MessageLookupByLibrary.simpleMessage("Smenani ochish"),
+        "strOpeningBalance":
+            MessageLookupByLibrary.simpleMessage("Boshlang\'ich qoldiq"),
+        "strOrderDetails":
+            MessageLookupByLibrary.simpleMessage("Buyurtma tafsilotlari"),
+        "strOrderNumber": MessageLookupByLibrary.simpleMessage("№ Zakaz"),
         "strOrderSuccessCreated": MessageLookupByLibrary.simpleMessage(
             "Buyurtma muvaffaqiyatli yaratildi"),
         "strOrderType": MessageLookupByLibrary.simpleMessage("Buyurtma turi"),
         "strOrders": MessageLookupByLibrary.simpleMessage("Buyurtmalar"),
         "strOrdersEmpty":
             MessageLookupByLibrary.simpleMessage("Buyurtmalar topilmadi"),
+        "strOrgName": MessageLookupByLibrary.simpleMessage("Tashkilot nomi"),
+        "strOther": MessageLookupByLibrary.simpleMessage("Boshqa"),
+        "strPageSize": m5,
         "strPassword": MessageLookupByLibrary.simpleMessage("Parol"),
         "strPasswordContainAtLeastChars": MessageLookupByLibrary.simpleMessage(
             "Parol kamida 8 ta belgidan iborat bo\'lishi kerak."),
         "strPasswordsNotSame":
             MessageLookupByLibrary.simpleMessage("Parollar mos kelmadi"),
+        "strPauseAction": MessageLookupByLibrary.simpleMessage("To\'xtatish"),
         "strPayment": MessageLookupByLibrary.simpleMessage("To\'lov"),
+        "strPaymentInfoNotFound": MessageLookupByLibrary.simpleMessage(
+            "To\'lov ma\'lumotlari topilmadi"),
         "strPaymentLabel": MessageLookupByLibrary.simpleMessage("To\'lov:"),
+        "strPaymentMethodLabel":
+            MessageLookupByLibrary.simpleMessage("To\'lov usuli:"),
         "strPersonsSuffix": MessageLookupByLibrary.simpleMessage("kishi"),
+        "strPhone": MessageLookupByLibrary.simpleMessage("Telefon"),
+        "strPhoneMask":
+            MessageLookupByLibrary.simpleMessage("+998 (__) ___ __ __"),
         "strPhoneOrPasswordWrong": MessageLookupByLibrary.simpleMessage(
             "Telefon raqami yoki parol noto\'g\'ri"),
+        "strPinOptional":
+            MessageLookupByLibrary.simpleMessage("Pinkod (ixtiyoriy)"),
+        "strPort": MessageLookupByLibrary.simpleMessage("Port"),
+        "strPositionX": MessageLookupByLibrary.simpleMessage("Pozitsiya X (m)"),
+        "strPositionY": MessageLookupByLibrary.simpleMessage("Pozitsiya Y (m)"),
+        "strPositionsSaved":
+            MessageLookupByLibrary.simpleMessage("Pozitsiyalar saqlandi"),
         "strPrint": MessageLookupByLibrary.simpleMessage("Chop etish"),
         "strPrinterSettings":
             MessageLookupByLibrary.simpleMessage("Printer sozlamalari"),
+        "strPrinterType": MessageLookupByLibrary.simpleMessage("Printer turi"),
         "strProductNotFound":
             MessageLookupByLibrary.simpleMessage("Mahsulotlar topilmadi"),
         "strProfile": MessageLookupByLibrary.simpleMessage("Profil"),
         "strPullDownToRefresh": MessageLookupByLibrary.simpleMessage(
             "Yangilash uchun pastga torting"),
+        "strQuantity": MessageLookupByLibrary.simpleMessage("Miqdor"),
+        "strReceiptInfo":
+            MessageLookupByLibrary.simpleMessage("Chek ma\'lumotlari"),
+        "strReceived": MessageLookupByLibrary.simpleMessage("Qabul qilindi"),
         "strRecenter": MessageLookupByLibrary.simpleMessage("Qayta markazga"),
         "strRefresh": MessageLookupByLibrary.simpleMessage("Yangilash"),
         "strRefreshCompleted":
@@ -200,13 +390,19 @@ class MessageLookup extends MessageLookupByLibrary {
             MessageLookupByLibrary.simpleMessage("Yangilash amalga oshmadi"),
         "strRefreshing":
             MessageLookupByLibrary.simpleMessage("Ma\'lumot yangilanmoqda..."),
+        "strRegular": MessageLookupByLibrary.simpleMessage("Oddiy"),
         "strReleaseToRefresh": MessageLookupByLibrary.simpleMessage(
             "Qo\'yib yuboring — yangilanadi"),
+        "strRequiredFields": MessageLookupByLibrary.simpleMessage(
+            "Nomi, kategoriya va narx majburiy"),
         "strReserved": MessageLookupByLibrary.simpleMessage("Bron"),
         "strRestaurantStaff":
             MessageLookupByLibrary.simpleMessage("Restoran xodimlari"),
+        "strResumeAction":
+            MessageLookupByLibrary.simpleMessage("Davom ettirish"),
         "strRetry":
             MessageLookupByLibrary.simpleMessage("Qayta urinib ko\'rish"),
+        "strRole": MessageLookupByLibrary.simpleMessage("Rol"),
         "strRoleAdmin": MessageLookupByLibrary.simpleMessage("Admin"),
         "strRoleCashier": MessageLookupByLibrary.simpleMessage("Kassir"),
         "strRoleChef": MessageLookupByLibrary.simpleMessage("Oshpaz"),
@@ -214,47 +410,93 @@ class MessageLookup extends MessageLookupByLibrary {
         "strRoleSuperadmin": MessageLookupByLibrary.simpleMessage("Superadmin"),
         "strRoleUser": MessageLookupByLibrary.simpleMessage("Foydalanuvchi"),
         "strRoleWaiter": MessageLookupByLibrary.simpleMessage("Ofitsiant"),
+        "strRound": MessageLookupByLibrary.simpleMessage("Dumaloq"),
         "strRussian": MessageLookupByLibrary.simpleMessage("Русский"),
         "strSaturday": MessageLookupByLibrary.simpleMessage("Shanba"),
         "strSave": MessageLookupByLibrary.simpleMessage("Saqlash"),
+        "strSaveError":
+            MessageLookupByLibrary.simpleMessage("Saqlashda xatolik"),
+        "strSavePositionError":
+            MessageLookupByLibrary.simpleMessage("Pozitsiyani saqlashda xato"),
         "strSavedBadge": MessageLookupByLibrary.simpleMessage("Saqlangan"),
+        "strSearch": MessageLookupByLibrary.simpleMessage("Qidirish..."),
+        "strSearchByCheckNumber": MessageLookupByLibrary.simpleMessage(
+            "Chek raqami bo\'yicha qidirish"),
         "strSearchHint": MessageLookupByLibrary.simpleMessage("Qidirish..."),
+        "strSearchNameOrUsername": MessageLookupByLibrary.simpleMessage(
+            "Ism yoki username bo\'yicha qidirish"),
+        "strSearchTableOrCheck":
+            MessageLookupByLibrary.simpleMessage("Stol, chek raqami..."),
+        "strSelectFile": MessageLookupByLibrary.simpleMessage("Faylni tanlang"),
         "strSelectFoodsNotFound": MessageLookupByLibrary.simpleMessage(
             "Buyurtmalar yo\'q. Qo\'shish uchun ovqat ustiga bosing"),
         "strSelectGuestsCount":
             MessageLookupByLibrary.simpleMessage("Mehmonlar sonini belgilang"),
+        "strSemiFinished": MessageLookupByLibrary.simpleMessage("Yarim tayyor"),
         "strSeptember": MessageLookupByLibrary.simpleMessage("Sentabr"),
+        "strServiceCharge": MessageLookupByLibrary.simpleMessage("Xizmat haqi"),
         "strSettings": MessageLookupByLibrary.simpleMessage("Sozlamalar"),
         "strSettingsAdminOnly": MessageLookupByLibrary.simpleMessage(
             "Sozlamalarga faqat administrator yoki menejer kira oladi."),
+        "strShape": MessageLookupByLibrary.simpleMessage("Shakli"),
         "strShift": MessageLookupByLibrary.simpleMessage("Smena"),
         "strShiftOpened": MessageLookupByLibrary.simpleMessage("Smena ochildi"),
+        "strShiftRevenue":
+            MessageLookupByLibrary.simpleMessage("Smena tushumi"),
         "strShowProductImages": MessageLookupByLibrary.simpleMessage(
             "Mahsulot kartochkalarida rasm ko\'rsatish"),
         "strShrink": MessageLookupByLibrary.simpleMessage("Kichraytirish"),
         "strSom": MessageLookupByLibrary.simpleMessage("so\'m"),
+        "strSquare": MessageLookupByLibrary.simpleMessage("Kvadrat"),
         "strStaffRoles":
             MessageLookupByLibrary.simpleMessage("Xodimlar va rollari"),
+        "strStart": MessageLookupByLibrary.simpleMessage("Boshlash"),
         "strStartWorkInstruction": MessageLookupByLibrary.simpleMessage(
             "Ish boshlash uchun quyidagi tugmani bosing."),
         "strStatusColumn": MessageLookupByLibrary.simpleMessage("Holat"),
+        "strStatusColumnHeader": MessageLookupByLibrary.simpleMessage("Holat"),
         "strSunday": MessageLookupByLibrary.simpleMessage("Yakshanba"),
         "strTable": MessageLookupByLibrary.simpleMessage("Stol"),
+        "strTableHall": MessageLookupByLibrary.simpleMessage("Stol / Zal"),
+        "strTableLabel": MessageLookupByLibrary.simpleMessage("Stol:"),
         "strTableNumber": MessageLookupByLibrary.simpleMessage("Stol"),
+        "strTableType": MessageLookupByLibrary.simpleMessage("Turi"),
         "strTables": MessageLookupByLibrary.simpleMessage("Stollar"),
+        "strTablesNotSavedCount": m6,
         "strTakeaway": MessageLookupByLibrary.simpleMessage("Olib ketish"),
         "strTerminal": MessageLookupByLibrary.simpleMessage("Terminal"),
         "strThursday": MessageLookupByLibrary.simpleMessage("Payshanba"),
         "strTimeColumn": MessageLookupByLibrary.simpleMessage("Vaqt"),
+        "strTimeColumnHeader": MessageLookupByLibrary.simpleMessage("Vaqt"),
         "strTodayRevenue":
             MessageLookupByLibrary.simpleMessage("Bugungi tushum"),
+        "strTotalCapacity":
+            MessageLookupByLibrary.simpleMessage("Umumiy sig\'im"),
+        "strTotalColon": MessageLookupByLibrary.simpleMessage("Jami:"),
         "strTotalLabel": MessageLookupByLibrary.simpleMessage("Jami:"),
+        "strTotalSales": MessageLookupByLibrary.simpleMessage("Umumiy savdo"),
+        "strTotalSum": MessageLookupByLibrary.simpleMessage("Jami summa"),
+        "strTotalTables": MessageLookupByLibrary.simpleMessage("Jami stollar"),
         "strTuesday": MessageLookupByLibrary.simpleMessage("Seshanba"),
+        "strTypeColumnHeader": MessageLookupByLibrary.simpleMessage("Tur"),
+        "strUmumiySumma": MessageLookupByLibrary.simpleMessage("Umumiy summa"),
         "strUnacceptableDate":
             MessageLookupByLibrary.simpleMessage("Noto\'g\'ri sana formati"),
+        "strUploadError":
+            MessageLookupByLibrary.simpleMessage("Yuklash xatosi"),
+        "strUploadFailed":
+            MessageLookupByLibrary.simpleMessage("Rasmni yuklashda xatolik"),
+        "strUsername": MessageLookupByLibrary.simpleMessage("Username"),
+        "strUsersRolesPerms": MessageLookupByLibrary.simpleMessage(
+            "Foydalanuvchilar, rollar va ruxsatlar"),
         "strUzbek": MessageLookupByLibrary.simpleMessage("O\'zbek"),
+        "strViewReceipt": MessageLookupByLibrary.simpleMessage("Chek ko\'rish"),
         "strWaiterRole": MessageLookupByLibrary.simpleMessage("Ofitsiant"),
+        "strWaiting": MessageLookupByLibrary.simpleMessage("Kutilmoqda"),
         "strWednesday": MessageLookupByLibrary.simpleMessage("Chorshanba"),
+        "strWiFi": MessageLookupByLibrary.simpleMessage("Wi-Fi"),
+        "strWidthMeters": MessageLookupByLibrary.simpleMessage("Kengligi (m)"),
+        "strWidthShort": MessageLookupByLibrary.simpleMessage("Kenglik (m)"),
         "strYes": MessageLookupByLibrary.simpleMessage("Ha"),
         "strYouWantLeaveOrderScreen": MessageLookupByLibrary.simpleMessage(
             "Rostdan ham chiqmoqchimisiz? Chiqsangiz ovqatlar bekor qilinadi."),

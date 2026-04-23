@@ -14,6 +14,7 @@ import 'package:mary_ai_pos/features/view/auth/presentation/cubit/bloc/user_bloc
 import 'package:mary_ai_pos/features/view/main/data/models/category/category_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/goods/goods_model.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/main/widgets/main_header.dart';
+import 'package:mary_ai_pos/generated/l10n.dart';
 import 'package:number_paginator/number_paginator.dart';
 
 /// Admin/manager: kategoriyalar + taomlar ikkita panel ko'rinishida.
@@ -150,9 +151,9 @@ class _MenuMealsListScreenState extends State<MenuMealsListScreen> {
     showDialog<void>(
       context: context,
       builder: (_) => _ConfirmDialog(
-        title: "Kategoriyani o'chirish",
+        title: S.current.strDeleteCategory,
         body: '"${c.name}" kategoriyasini o\'chirasizmi?',
-        confirmLabel: "O'chirish",
+        confirmLabel: S.current.strDelete,
         confirmColor: const Color(0xFFEF4444),
         onConfirm: () async {
           try {
@@ -224,9 +225,9 @@ class _MenuMealsListScreenState extends State<MenuMealsListScreen> {
     final ok = await showDialog<bool>(
       context: context,
       builder: (_) => _ConfirmDialog(
-        title: "Taomni o'chirish",
+        title: S.current.strDeleteMeal,
         body: '"${g.name}" taomini o\'chirasizmi?',
-        confirmLabel: "O'chirish",
+        confirmLabel: S.current.strDelete,
         confirmColor: const Color(0xFFEF4444),
         onConfirm: null,
       ),
@@ -292,7 +293,7 @@ class _MenuMealsListScreenState extends State<MenuMealsListScreen> {
       activeRoute: AppRoutes.menuMealsScreen,
       body: Column(
         children: [
-          const MainHeader(title: 'Menyu'),
+          MainHeader(title: S.current.strMenu),
           Expanded(
             child: BlocBuilder<UserBloc, UserState>(
               buildWhen: (p, c) => p.userMOdel?.role != c.userMOdel?.role,
@@ -438,7 +439,7 @@ class _CategoriesPanelState extends State<_CategoriesPanel> {
                 const Spacer(),
                 _IconBtn(
                   icon: Icons.add_rounded,
-                  tooltip: "Kategoriya qo'shish",
+                  tooltip: S.current.strAddCategory,
                   color: c.textBrand,
                   onTap: widget.onAdd,
                 ),
@@ -456,7 +457,7 @@ class _CategoriesPanelState extends State<_CategoriesPanel> {
           const SizedBox(height: 4),
           // "Barcha taomlar" item
           _CatItem(
-            label: 'Barcha taomlar',
+            label: S.current.strAllDishes,
             icon: Icons.restaurant_menu_rounded,
             selected: widget.selectedId == null,
             onTap: () => widget.onSelect(null),
@@ -652,14 +653,14 @@ class _CatItemWithActionsState extends State<_CatItemWithActions> {
               if (_hovered || widget.selected) ...[
                 _IconBtn(
                   icon: Icons.edit_outlined,
-                  tooltip: 'Tahrirlash',
+                  tooltip: S.current.strEdit,
                   color: c.textSecondary,
                   size: 15,
                   onTap: widget.onEdit,
                 ),
                 _IconBtn(
                   icon: Icons.delete_outline_rounded,
-                  tooltip: "O'chirish",
+                  tooltip: S.current.strDelete,
                   color: const Color(0xFFEF4444),
                   size: 15,
                   onTap: widget.onDelete,
@@ -724,7 +725,7 @@ class _GoodsPanel extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = context.colors;
     final catName = selectedCategoryId == null
-        ? 'Barcha taomlar'
+        ? S.current.strAllDishes
         : categories
                 .where((cat) => cat.id == selectedCategoryId)
                 .firstOrNull
@@ -779,7 +780,7 @@ class _GoodsPanel extends StatelessWidget {
               ),
               const SizedBox(width: 12),
               _PrimaryBtn(
-                label: 'Yangi taom',
+                label: S.current.strNewMeal,
                 icon: Icons.add_rounded,
                 onTap: onNew,
               ),
@@ -937,13 +938,13 @@ class _GoodCardState extends State<_GoodCard> {
                           children: [
                             _OverlayIconBtn(
                               icon: Icons.edit_outlined,
-                              tooltip: 'Tahrirlash',
+                              tooltip: S.current.strEdit,
                               onTap: widget.onEdit,
                             ),
                             const SizedBox(width: 6),
                             _OverlayIconBtn(
                               icon: Icons.delete_outline_rounded,
-                              tooltip: "O'chirish",
+                              tooltip: S.current.strDelete,
                               onTap: widget.onDelete,
                               destructive: true,
                             ),
@@ -1258,7 +1259,7 @@ class _GoodsEmptyState extends StatelessWidget {
           ),
           const SizedBox(height: 18),
           _PrimaryBtn(
-            label: 'Yangi taom',
+            label: S.current.strNewMeal,
             icon: Icons.add_rounded,
             onTap: onNew,
           ),
@@ -1295,7 +1296,7 @@ class _GoodsErrorState extends StatelessWidget {
           FilledButton.icon(
             onPressed: onRetry,
             icon: const Icon(Icons.refresh_rounded, size: 16),
-            label: const Text('Qayta urinish'),
+            label: Text(S.current.strRetry),
           ),
         ],
       ),
@@ -1385,7 +1386,7 @@ class _PaginationBar extends StatelessWidget {
                 items: pageSizeOptions
                     .map((s) => DropdownMenuItem(
                           value: s,
-                          child: Text('$s / sahifa'),
+                          child: Text(S.current.strPageSize(s)),
                         ))
                     .toList(),
                 onChanged: (v) {

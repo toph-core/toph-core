@@ -7,6 +7,7 @@ import 'package:mary_ai_pos/core/extension/number_formatter.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/category/category_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/goods/goods_model.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/detail/detail_bloc.dart';
+import 'package:mary_ai_pos/generated/l10n.dart';
 
 class MenuPanel extends StatefulWidget {
   const MenuPanel({super.key});
@@ -118,7 +119,7 @@ class _TopBar extends StatelessWidget {
                   color: colors.textDefault,
                 ),
                 decoration: InputDecoration(
-                  hintText: 'Поиск...',
+                  hintText: S.current.strSearch,
                   hintStyle: TextStyle(
                     fontSize: 13,
                     color: colors.textSecondary,

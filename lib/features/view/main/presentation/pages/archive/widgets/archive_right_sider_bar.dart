@@ -10,6 +10,7 @@ import 'package:mary_ai_pos/core/extension/widget_extension.dart';
 import 'package:mary_ai_pos/core/values/app_colors.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/archives/archives_bloc.dart';
 import 'package:mary_ai_pos/gen/assets.gen.dart';
+import 'package:mary_ai_pos/generated/l10n.dart';
 
 class ArchiveRightSiderBar extends StatelessWidget {
   const ArchiveRightSiderBar({super.key});
@@ -29,7 +30,7 @@ class ArchiveRightSiderBar extends StatelessWidget {
             if (state.selectArchive == null) {
               return Center(
                 child: Text(
-                  "Chek haqida batafsil ko'rish uchun ustiga bosing!",
+                  S.current.strCheckForDetails,
                   style: context.textStyles.bodyMd,
                 ),
               );
@@ -42,7 +43,7 @@ class ArchiveRightSiderBar extends StatelessWidget {
 
             if (state.selectArchiveDetail == null) {
               return Center(
-                child: Text("Chek topildi", style: context.textStyles.bodyMd),
+                child: Text(S.current.strCheckNotFound, style: context.textStyles.bodyMd),
               );
             }
 
@@ -79,7 +80,7 @@ class ArchiveRightSiderBar extends StatelessWidget {
                             ),
                             10.wBox,
                             Text(
-                              "Chop",
+                              S.current.strPrint,
                               style: context.textStyles.title14.copyWith(
                                 fontSize: 14,
                                 color: context.colors.textOnBrand,
@@ -103,7 +104,7 @@ class ArchiveRightSiderBar extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          "Buyrutma tafsilotlari",
+                          S.current.strOrderDetails,
                           style: context.textStyles.bold20.copyWith(
                             fontWeight: FontWeight.w500,
                           ),
@@ -112,7 +113,7 @@ class ArchiveRightSiderBar extends StatelessWidget {
                         Row(
                           children: [
                             Text(
-                              "Check raqami:",
+                              S.current.strCheckNumberLabel,
                               style: context.textStyles.bodySm,
                             ),
                             const Spacer(),
@@ -127,7 +128,7 @@ class ArchiveRightSiderBar extends StatelessWidget {
                         13.hBox,
                         Row(
                           children: [
-                            Text("Stol:", style: context.textStyles.bodySm),
+                            Text(S.current.strTableLabel, style: context.textStyles.bodySm),
                             const Spacer(),
                             Text(
                               state.selectArchive!.tableNumber.toString(),
@@ -140,7 +141,7 @@ class ArchiveRightSiderBar extends StatelessWidget {
                         13.hBox,
                         Row(
                           children: [
-                            Text("Sana:", style: context.textStyles.bodySm),
+                            Text(S.current.strDateLabel, style: context.textStyles.bodySm),
                             const Spacer(),
                             Text(
                               state.selectArchive!.opened.toYyyyMmDd,
@@ -153,7 +154,7 @@ class ArchiveRightSiderBar extends StatelessWidget {
                         13.hBox,
                         Row(
                           children: [
-                            Text("Kassir:", style: context.textStyles.bodySm),
+                            Text(S.current.strCashierLabel, style: context.textStyles.bodySm),
                             const Spacer(),
                             Text(
                               "Admin",
@@ -167,12 +168,12 @@ class ArchiveRightSiderBar extends StatelessWidget {
                         Row(
                           children: [
                             Text(
-                              "To'lov usuli:",
+                              S.current.strPaymentMethodLabel,
                               style: context.textStyles.bodySm,
                             ),
                             const Spacer(),
                             Text(
-                              "Naqd",
+                              S.current.strCash,
                               style: context.textStyles.bold16.copyWith(
                                 fontWeight: FontWeight.w500,
                               ),
@@ -182,7 +183,7 @@ class ArchiveRightSiderBar extends StatelessWidget {
                         13.hBox,
                         Row(
                           children: [
-                            Text("Berilgan", style: context.textStyles.bodySm),
+                            Text(S.current.strGiven, style: context.textStyles.bodySm),
                             const Spacer(),
                             Text(
                               state
@@ -199,7 +200,7 @@ class ArchiveRightSiderBar extends StatelessWidget {
                         13.hBox,
                         Row(
                           children: [
-                            Text("Qaytim", style: context.textStyles.bodySm),
+                            Text(S.current.strChange, style: context.textStyles.bodySm),
                             const Spacer(),
                             Text(
                               state.selectArchiveDetail?.changeAmount.formatN ??
@@ -281,7 +282,7 @@ class ArchiveRightSiderBar extends StatelessWidget {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text("Jami:", style: context.textStyles.bodySm),
+                            Text(S.current.strTotalLabel, style: context.textStyles.bodySm),
                             Text(
                               state.selectArchive!.goodsTotal.formatN,
                               style: context.textStyles.bold16.copyWith(
@@ -310,7 +311,7 @@ class ArchiveRightSiderBar extends StatelessWidget {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text("Hammasi:", style: context.textStyles.bodySm),
+                            Text(S.current.strAllColon, style: context.textStyles.bodySm),
                             Text(
                               state.selectArchive!.totalPrice.formatN,
                               style: context.textStyles.bold18.copyWith(

@@ -10,6 +10,7 @@ import 'package:mary_ai_pos/core/extension/widget_extension.dart';
 import 'package:mary_ai_pos/core/routes/app_routes.dart';
 import 'package:mary_ai_pos/core/values/app_assets.dart';
 import 'package:mary_ai_pos/core/values/app_colors.dart';
+import 'package:mary_ai_pos/generated/l10n.dart';
 import 'package:mary_ai_pos/di.dart';
 import 'package:mary_ai_pos/features/view/auth/presentation/cubit/login_pin/login_pin_cubit.dart';
 
@@ -49,7 +50,7 @@ class LoginPinScreen extends StatelessWidget {
                       alignment: Alignment.centerRight,
                       child: IntrinsicWidth(
                         child: CustomButton(
-                          text: "Chiqish",
+                          text: S.current.strLogout,
                           onTap: () => cubit.logoutFromApp(() {
                             Navigator.pushNamedAndRemoveUntil(
                               context,
@@ -78,7 +79,7 @@ class LoginPinScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 24),
                     Text(
-                      '2-6 raqam kiriting',
+                      S.current.strEnterPinCode,
                       style: context.textStyles.bodyMd.copyWith(
                         color: AppColors.white,
                         fontSize: 20,

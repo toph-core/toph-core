@@ -5,6 +5,7 @@ import 'package:mary_ai_pos/core/extension/for_context.dart';
 import 'package:mary_ai_pos/core/services/lan_hub/lan_hub_service.dart';
 import 'package:mary_ai_pos/di.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/settings/widgets/section_shell.dart';
+import 'package:mary_ai_pos/generated/l10n.dart';
 
 class LanNetworkSection extends StatefulWidget {
   const LanNetworkSection({super.key});
@@ -61,24 +62,24 @@ class _LanNetworkSectionState extends State<LanNetworkSection> {
     final colors = context.colors;
 
     return SectionShell(
-      title: 'Tarmoq (LAN)',
-      subtitle: 'Qurilmalararo sinxronizatsiya',
+      title: S.current.strNetworkLAN,
+      subtitle: S.current.strDeviceSynchronization,
       child: ListView(
         padding: EdgeInsets.zero,
         children: [
           _SettingCard(
             icon: Icons.router_outlined,
-            title: 'Rejim',
-            subtitle: 'Bu qurilmaning LAN tarmog\'idagi roli',
+            title: S.current.strMode,
+            subtitle: S.current.strModeDescription,
             control: _SegmentedPicker<LanMode>(
               value: _mode,
-              options: const [
+              options: [
                 _Option(
                   value: LanMode.disabled,
-                  label: "O'chirilgan",
+                  label: S.current.strDisabled,
                 ),
-                _Option(value: LanMode.server, label: 'Hub'),
-                _Option(value: LanMode.client, label: 'Client'),
+                _Option(value: LanMode.server, label: S.current.strHub),
+                _Option(value: LanMode.client, label: S.current.strClient),
               ],
               onChanged: _onModeChanged,
             ),

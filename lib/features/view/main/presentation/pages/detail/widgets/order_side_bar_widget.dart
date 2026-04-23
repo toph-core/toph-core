@@ -1134,27 +1134,27 @@ class _ReadonlyOrderItem extends StatelessWidget {
                   final confirmed = await showDialog<bool>(
                     context: context,
                     builder: (_) => AlertDialog(
-                      title: const Text(
-                        "O'chirishni tasdiqlang",
-                        style: TextStyle(
+                      title: Text(
+                        S.current.strConfirmDelete,
+                        style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w700,
                         ),
                       ),
                       content: Text(
-                        "'${item.goods.name}' ni o'chirmoqchimisiz?",
+                        S.current.strConfirmDeleteItem(item.goods.name),
                         style: const TextStyle(fontSize: 14),
                       ),
                       actions: [
                         TextButton(
                           onPressed: () => Navigator.pop(context, false),
-                          child: const Text("Yo'q"),
+                          child: Text(S.current.strNo),
                         ),
                         TextButton(
                           onPressed: () => Navigator.pop(context, true),
-                          child: const Text(
-                            'Ha',
-                            style: TextStyle(color: Color(0xFFDC2626)),
+                          child: Text(
+                            S.current.strYes,
+                            style: const TextStyle(color: Color(0xFFDC2626)),
                           ),
                         ),
                       ],

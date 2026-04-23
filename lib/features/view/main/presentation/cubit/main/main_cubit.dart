@@ -23,6 +23,13 @@ class MainCubit extends Cubit<MainState> {
 
   StreamSubscription<({String tableId, String status})>? _lanSub;
 
+  // ── Throttle: bir xil tables chaqiriqni 30s ichida takrorlamaymiz ──
+  DateTime? _lastAllTablesFetchAt;
+  final Map<String, DateTime> _lastHallFetchAt = {};
+  DateTime? _lastHallsFetchAt;
+  static const _tablesThrottle = Duration(seconds: 30);
+  static const _hallsThrottle = Duration(minutes: 5);
+
   MainCubit(
     this._getTablesUsecase,
     this._getHallsUsecase,
@@ -41,7 +48,7 @@ class MainCubit extends Cubit<MainState> {
     updateTableStatus(event.tableId, newStatus);
   }
 
-  Future<void> _getTablesByHallId(String hallId) async {
+  Future<void> _getTablesByHallId(String hallId, {bool force = false}) async {
     // Cache-first: darhol cache dan ko'rsat
     final cached = _cache.getTables();
     if (cached.isNotEmpty) {
@@ -55,6 +62,15 @@ class MainCubit extends Cubit<MainState> {
     }
 
     if (!_connectivity.isOnline) return;
+
+    // Throttle: so'nggi fetch 30s ichida bo'lsa — takrorlamaymiz
+    final lastAt = _lastHallFetchAt[hallId];
+    if (!force &&
+        lastAt != null &&
+        DateTime.now().difference(lastAt) < _tablesThrottle) {
+      return;
+    }
+    _lastHallFetchAt[hallId] = DateTime.now();
 
     // Orqa fonda network dan yangilanadi
     final result = await _getTablesUsecase.call(hallId);
@@ -89,7 +105,7 @@ class MainCubit extends Cubit<MainState> {
     _lanHub.tableStatusChanged(tableId, status.name);
   }
 
-  Future<void> getHalls() async {
+  Future<void> getHalls({bool force = false}) async {
     // Cache-first: darhol cache dan ko'rsat
     final cached = _cache.getHalls();
     if (cached.isNotEmpty) {
@@ -106,8 +122,14 @@ class MainCubit extends Cubit<MainState> {
       emit(state.copyWith(selectedHallId: null, status: Status.OTHER_LOADING));
     }
 
+    // Throttle: halls kam o'zgaradi — 5 daqiqa ichida takrorlamaymiz
+    final shouldSkipNetwork = !force &&
+        _lastHallsFetchAt != null &&
+        DateTime.now().difference(_lastHallsFetchAt!) < _hallsThrottle;
+
     // Orqa fonda network dan yangilanadi
-    if (_connectivity.isOnline) {
+    if (_connectivity.isOnline && !shouldSkipNetwork) {
+      _lastHallsFetchAt = DateTime.now();
       final result = await _getHallsUsecase.call(NoParams());
       if (isClosed) return;
       result.fold(
@@ -125,7 +147,7 @@ class MainCubit extends Cubit<MainState> {
 
     // Zallar mavjud bo'lsa — "Barchasi" rejimida barcha stollarni yuklaymiz
     if ((state.halls ?? []).isNotEmpty) {
-      await loadAllHallsTables();
+      await loadAllHallsTables(force: force);
     }
   }
 
@@ -137,9 +159,19 @@ class MainCubit extends Cubit<MainState> {
 
   /// "Barchasi" rejimi: barcha zallar stollarini yig'ib ko'rsatadi.
   /// `selectedHallId` null ga o'rnatiladi.
-  Future<void> loadAllHallsTables() async {
+  Future<void> loadAllHallsTables({bool force = false}) async {
     final halls = state.halls ?? [];
     if (halls.isEmpty) return;
+
+    // Throttle: so'nggi "barchasi" fetch 30s ichida bo'lsa — takrorlamaymiz
+    if (!force &&
+        _lastAllTablesFetchAt != null &&
+        DateTime.now().difference(_lastAllTablesFetchAt!) < _tablesThrottle &&
+        (state.tables?.isNotEmpty ?? false)) {
+      emit(state.copyWith(selectedHallId: null, status: Status.SUCCESS));
+      return;
+    }
+
     emit(state.copyWith(selectedHallId: null, status: Status.LOADING));
 
     if (!_connectivity.isOnline) {
@@ -150,6 +182,7 @@ class MainCubit extends Cubit<MainState> {
       return;
     }
 
+    _lastAllTablesFetchAt = DateTime.now();
     final results = await Future.wait(
       halls.map((h) => _getTablesUsecase.call(h.id)),
     );
@@ -159,16 +192,17 @@ class MainCubit extends Cubit<MainState> {
     for (final r in results) {
       r.fold((_) => null, all.addAll);
     }
+    _cache.saveTables(all.map((t) => t.toJson()).toList());
     emit(state.copyWith(tables: all, status: Status.SUCCESS));
   }
 
-  Future<void> refreshTables() async {
+  Future<void> refreshTables({bool force = false}) async {
     final hallId = state.selectedHallId;
     if (hallId == null) {
-      await loadAllHallsTables();
+      await loadAllHallsTables(force: force);
       return;
     }
-    await _getTablesByHallId(hallId);
+    await _getTablesByHallId(hallId, force: force);
   }
 
   @override

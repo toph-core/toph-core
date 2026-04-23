@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mary_ai_pos/core/services/connectivity/connectivity_cubit.dart';
+import 'package:mary_ai_pos/generated/l10n.dart';
 
 class OfflineBanner extends StatelessWidget {
   const OfflineBanner({super.key});
@@ -15,14 +16,14 @@ class OfflineBanner extends StatelessWidget {
           color: const Color(0xFFFBBC04),
           child: isOnline
               ? const SizedBox.shrink()
-              : const Row(
+              : Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.wifi_off_rounded, size: 16, color: Colors.black87),
-                    SizedBox(width: 8),
+                    const Icon(Icons.wifi_off_rounded, size: 16, color: Colors.black87),
+                    const SizedBox(width: 8),
                     Text(
-                      'Offline rejim — ma\'lumotlar internet qaytganda sync bo\'ladi',
-                      style: TextStyle(
+                      S.current.strOfflineModeMessage,
+                      style: const TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
                         color: Colors.black87,

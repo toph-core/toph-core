@@ -4,6 +4,7 @@ import 'package:mary_ai_pos/core/extension/for_context.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/cafe_tables/cafe_tables_model.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/orders/orders_bloc.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/main/widgets/time_based_table_badge.dart';
+import 'package:mary_ai_pos/generated/l10n.dart';
 
 class EnhancedTableCard extends StatefulWidget {
   final CafeTableModel table;
@@ -45,33 +46,39 @@ class _EnhancedTableCardState extends State<EnhancedTableCard> {
       context: context,
       position: _tapPosition,
       items: [
-        const PopupMenuItem(
-          child: Row(
-            spacing: 8,
-            children: [Icon(Icons.edit, size: 16), Text('Buyurtma qo\'shish')],
-          ),
-        ),
-        const PopupMenuItem(
+        PopupMenuItem(
           child: Row(
             spacing: 8,
             children: [
-              Icon(Icons.notifications, size: 16),
-              Text('Oshxonaga bildir'),
+              const Icon(Icons.edit, size: 16),
+              Text(S.current.strAddOrder),
             ],
           ),
         ),
-        const PopupMenuItem(
-          child: Row(
-            spacing: 8,
-            children: [Icon(Icons.warning, size: 16), Text('Diqqat kerak')],
-          ),
-        ),
-        const PopupMenuItem(
+        PopupMenuItem(
           child: Row(
             spacing: 8,
             children: [
-              Icon(Icons.receipt, size: 16),
-              Text('To\'lovga o\'tish'),
+              const Icon(Icons.notifications, size: 16),
+              Text(S.current.strNotifyKitchen),
+            ],
+          ),
+        ),
+        PopupMenuItem(
+          child: Row(
+            spacing: 8,
+            children: [
+              const Icon(Icons.warning, size: 16),
+              Text(S.current.strNeedAttention),
+            ],
+          ),
+        ),
+        PopupMenuItem(
+          child: Row(
+            spacing: 8,
+            children: [
+              const Icon(Icons.receipt, size: 16),
+              Text(S.current.strGoToPayment),
             ],
           ),
         ),
