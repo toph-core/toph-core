@@ -94,32 +94,39 @@ class MainCubit extends Cubit<MainState> {
     final cached = _cache.getHalls();
     if (cached.isNotEmpty) {
       final halls = cached.map((e) => HallModel.fromJson(e)).toList();
-      emit(state.copyWith(halls: halls, status: Status.SUCCESS));
-      if (halls.isNotEmpty) setSelectedHallId(halls.first.id);
+      emit(
+        state.copyWith(
+          halls: halls,
+          // "Barchasi" har safar default — avvalgi tanlangan zalni tozalaymiz
+          selectedHallId: null,
+          status: Status.SUCCESS,
+        ),
+      );
     } else {
-      emit(state.copyWith(status: Status.OTHER_LOADING));
+      emit(state.copyWith(selectedHallId: null, status: Status.OTHER_LOADING));
     }
 
-    if (!_connectivity.isOnline) return;
-
     // Orqa fonda network dan yangilanadi
-    final result = await _getHallsUsecase.call(NoParams());
-    if (isClosed) return;
-    result.fold(
-      (failure) {
-        if (cached.isEmpty) {
-          emit(state.copyWith(failure: failure, status: Status.ERROR));
-        }
-      },
-      (halls) {
-        _cache.saveHalls(halls.map((h) => h.toJson()).toList());
-        emit(state.copyWith(halls: halls, status: Status.SUCCESS));
-        // Agar hali zal tanlanmagan bo'lsa birinchisini tanlash
-        if (state.selectedHallId == null && halls.isNotEmpty) {
-          setSelectedHallId(halls.first.id);
-        }
-      },
-    );
+    if (_connectivity.isOnline) {
+      final result = await _getHallsUsecase.call(NoParams());
+      if (isClosed) return;
+      result.fold(
+        (failure) {
+          if (cached.isEmpty) {
+            emit(state.copyWith(failure: failure, status: Status.ERROR));
+          }
+        },
+        (halls) {
+          _cache.saveHalls(halls.map((h) => h.toJson()).toList());
+          emit(state.copyWith(halls: halls, status: Status.SUCCESS));
+        },
+      );
+    }
+
+    // Zallar mavjud bo'lsa — "Barchasi" rejimida barcha stollarni yuklaymiz
+    if ((state.halls ?? []).isNotEmpty) {
+      await loadAllHallsTables();
+    }
   }
 
   void setSelectedHallId(String id) {

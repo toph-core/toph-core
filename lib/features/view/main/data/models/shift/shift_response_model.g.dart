@@ -13,23 +13,13 @@ _$ShiftResponseModelImpl _$$ShiftResponseModelImplFromJson(
       branchId: json['branch_id'] as String? ?? '',
       cashRegisterId: json['cash_register_id'] as String? ?? '',
       cashierId: json['cashier_id'] as String? ?? '',
-      openedAt: json['opened_at'] == null
-          ? null
-          : DateTime.parse(json['opened_at'] as String),
-      openingCash: json['opening_cash'] == null
-          ? 0
-          : int.parse(json['opening_cash'] as String),
-      openinCard: json['opening_card'] == null
-          ? 0
-          : int.parse(json['opening_card'] as String),
+      openedAt: _parseLocal(json['opened_at']),
+      openingCash: _parseIntFlex(json['opening_cash']),
+      openinCard: _parseIntFlex(json['opening_card']),
       status: $enumDecodeNullable(_$CashStatusEnumMap, json['status']) ??
           CashStatus.none,
-      createdAt: json['created_at'] == null
-          ? null
-          : DateTime.parse(json['created_at'] as String),
-      updatedAt: json['updated_at'] == null
-          ? null
-          : DateTime.parse(json['updated_at'] as String),
+      createdAt: _parseLocal(json['created_at']),
+      updatedAt: _parseLocal(json['updated_at']),
     );
 
 Map<String, dynamic> _$$ShiftResponseModelImplToJson(

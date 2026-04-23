@@ -312,7 +312,18 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
         },
         (detail) {
           cache.saveOrderDetail(state.tableId!, (detail as ArchiveDetailModel).toJson());
-          emit(state.copyWith(status: Status.SUCCESS, detailStatus: Status.SUCCESS, detail: detail, failure: null));
+          // Dastlabki to'lov oynasida "Qabul qilingan" ni aniq summa bilan
+          // avtomatik to'ldirib qo'yamiz (agar kassir hali hech nima kiritmagan bo'lsa).
+          final prefill = PaymentBloc.effectiveTotal(detail);
+          final shouldPrefill =
+              state.enterSum.isEmpty || state.enterSum == '0';
+          emit(state.copyWith(
+            status: Status.SUCCESS,
+            detailStatus: Status.SUCCESS,
+            detail: detail,
+            enterSum: shouldPrefill ? prefill.toString() : state.enterSum,
+            failure: null,
+          ));
         },
       );
     } else if (state.orderId != null) {
@@ -326,12 +337,18 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
           );
           emit(state.copyWith(status: Status.ERROR, detailStatus: Status.ERROR, failure: failure));
         },
-        (detail) => emit(state.copyWith(
-          status: Status.SUCCESS,
-          detailStatus: Status.SUCCESS,
-          detail: detail,
-          failure: null,
-        )),
+        (detail) {
+          final prefill = PaymentBloc.effectiveTotal(detail);
+          final shouldPrefill =
+              state.enterSum.isEmpty || state.enterSum == '0';
+          emit(state.copyWith(
+            status: Status.SUCCESS,
+            detailStatus: Status.SUCCESS,
+            detail: detail,
+            enterSum: shouldPrefill ? prefill.toString() : state.enterSum,
+            failure: null,
+          ));
+        },
       );
     }
   }

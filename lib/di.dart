@@ -3,6 +3,7 @@ import 'package:alice/model/alice_configuration.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:mary_ai_pos/core/api/dio_client.dart';
 import 'package:mary_ai_pos/core/services/auth/offline_auth_cache.dart';
+import 'package:mary_ai_pos/core/service/receipt/receipt_info_storage.dart';
 import 'package:mary_ai_pos/core/services/cache/cache_service.dart';
 import 'package:mary_ai_pos/core/services/connectivity/connectivity_cubit.dart';
 import 'package:mary_ai_pos/core/services/lan_hub/lan_hub_service.dart';
@@ -75,6 +76,7 @@ Future<void> initDi() async {
   inject.registerSingleton<SharedPreferences>(prefs);
   inject.registerSingleton<AppTokenStorage>(tokenStorage);
   inject.registerSingleton<OfflineAuthCache>(OfflineAuthCache(prefs));
+  inject.registerSingleton<ReceiptInfoStorage>(ReceiptInfoStorage(prefs));
 
   final alice = Alice(
     configuration: AliceConfiguration(

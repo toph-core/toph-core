@@ -6,6 +6,17 @@ import 'package:mary_ai_pos/features/view/main/domain/entities/archive_entity.da
 part 'archive_model.freezed.dart';
 part 'archive_model.g.dart';
 
+// Backend sanalari UTC'da kelgani uchun qurilmaning lokal zonasiga o'giramiz.
+DateTime? _parseLocal(Object? v) {
+  if (v == null) return null;
+  if (v is String) {
+    if (v.isEmpty) return null;
+    return DateTime.tryParse(v)?.toLocal();
+  }
+  if (v is DateTime) return v.toLocal();
+  return null;
+}
+
 @freezed
 class ArchiveModel with _$ArchiveModel implements ArchiveEntity {
   const ArchiveModel._();
@@ -14,7 +25,7 @@ class ArchiveModel with _$ArchiveModel implements ArchiveEntity {
     @Default('') String id,
     @JsonKey(name: 'bill_no', fromJson: parseInt) @Default(0) int bilNumber,
     @JsonKey(name: "bill_status") @Default(OrderStatus.none) OrderStatus status,
-    @JsonKey(name: "opened_at") DateTime? opened,
+    @JsonKey(name: "opened_at", fromJson: _parseLocal) DateTime? opened,
     @JsonKey(name: 'table_number', fromJson: parseInt)
     @Default(0)
     int tableNumber,
@@ -25,6 +36,9 @@ class ArchiveModel with _$ArchiveModel implements ArchiveEntity {
     @JsonKey(name: "service_amount", fromJson: parseInt)
     @Default(0)
     int serviceAmount,
+    @JsonKey(name: "discount_amount", fromJson: parseInt)
+    @Default(0)
+    int discountAmount,
     @JsonKey(name: "quantity", fromJson: parseInt)
     @Default(0)
     int goodsQuantity,

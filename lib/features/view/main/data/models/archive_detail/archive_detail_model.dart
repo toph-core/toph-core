@@ -17,7 +17,7 @@ class ArchiveDetailModel
     @Default('') String id,
     @JsonKey(name: 'bill_no') @Default(0) int bilNumber,
     @JsonKey(name: 'bill_status') @Default(OrderStatus.none) OrderStatus status,
-    @JsonKey(name: 'opened_at') DateTime? opened,
+    @JsonKey(name: 'opened_at', fromJson: _parseLocal) DateTime? opened,
     @JsonKey(name: 'payment_type') @Default('') String paymentType,
     @JsonKey(name: 'table_id') @Default('') String tableId,
     @JsonKey(name: 'table_number', fromJson: _parseDouble) @Default(0.0) double tableNumber,
@@ -91,4 +91,15 @@ double _parseDouble(dynamic value) {
     return double.tryParse(value) ?? 0.0;
   }
   return 0.0;
+}
+
+// Backend UTC sanalarini qurilma lokal zonasiga o'giradi.
+DateTime? _parseLocal(Object? v) {
+  if (v == null) return null;
+  if (v is String) {
+    if (v.isEmpty) return null;
+    return DateTime.tryParse(v)?.toLocal();
+  }
+  if (v is DateTime) return v.toLocal();
+  return null;
 }

@@ -208,7 +208,8 @@ class _OrderSidebarState extends State<OrderSidebar> with DetailScreenMixin {
                           existingTotal +
                           calculateTotalPrice(state.selectedGoods);
                       final rawAmt = timerState.timer?.currentAmount ?? '';
-                      final timerAmt = int.tryParse(
+                      final timerAmt =
+                          int.tryParse(
                             rawAmt.replaceAll(RegExp(r'[^0-9]'), ''),
                           ) ??
                           0;
@@ -246,213 +247,258 @@ class _OrderSidebarState extends State<OrderSidebar> with DetailScreenMixin {
                           const SizedBox(height: 4),
                           // Takeaway: create order → payment directly
                           if (tableId == null)
-                        BlocProvider(
-                          create: (_) => inject<CreateOrderBloc>()
-                            ..add(
-                              const CreateOrderEvent.started(
-                                tableId: null,
-                                guestCount: 1,
-                                tableStatus: TableStatus.free,
-                              ),
-                            ),
-                          child: BlocBuilder<CreateOrderBloc, CreateOrderState>(
-                            builder: (context, createState) {
-                              return _ActionButton(
-                                label: S.current.strPayment,
-                                bgColor: const Color(0xFFFB6633),
-                                textColor: Colors.white,
-                                isLoading: createState.status == Status.LOADING,
-                                trailingAmount: total.formatN,
-                                onTap: state.selectedGoods.isNotEmpty
-                                    ? () => context.read<CreateOrderBloc>().add(
-                                        CreateOrderEvent.createOrder(
-                                          orders: state.selectedGoods,
-                                        ),
-                                      )
-                                    : null,
-                              );
-                            },
-                          ),
-                        ),
-                      // Save button (for free tables)
-                      if (tableId != null && tableStatus == TableStatus.free)
-                        BlocProvider(
-                          create: (_) => inject<CreateOrderBloc>()
-                            ..add(
-                              CreateOrderEvent.started(
-                                tableId: tableId,
-                                guestCount: guestCount,
-                                tableStatus: tableStatus,
-                              ),
-                            ),
-                          child:
-                              BlocConsumer<CreateOrderBloc, CreateOrderState>(
-                                listener: (context, createState) {
-                                  if (createState.status != Status.LOADING &&
-                                      createState.success) {
-                                    if (createState.tableId.isNotEmpty) {
-                                      context.read<SavedOrdersBloc>().add(
-                                        SavedOrdersEvent.removeOrder(
-                                          tableId: createState.tableId,
-                                        ),
-                                      );
-                                    }
-                                    context.read<MainCubit>().updateTableStatus(
-                                      createState.tableId,
-                                      TableStatus.busy,
-                                    );
-                                    if (cafeTable != null) {
-                                      context.read<DetailBloc>().add(
-                                        DetailEvent.fetchBillOrders(billId: cafeTable!.id),
-                                      );
-                                    }
-                                    context.read<DetailBloc>().add(
-                                      const DetailEvent.clearGoods(),
-                                    );
-                                    showSuccessMessage(
-                                      navigatorKey.currentContext!,
-                                      S.current.strOrderSuccessCreated,
-                                    );
-                                    setState(() => _tableStatus = TableStatus.busy);
-                                  }
-                                },
-                                builder: (context, createState) {
-                                  return _ActionButton(
-                                    label: S.current.strSave,
-                                    bgColor: const Color(0xFFFB6633),
-                                    textColor: Colors.white,
-                                    isLoading:
-                                        createState.status == Status.LOADING,
-                                    onTap: state.selectedGoods.isNotEmpty
-                                        ? () {
-                                            context.read<CreateOrderBloc>().add(
-                                              CreateOrderEvent.createOrder(
-                                                orders: state.selectedGoods,
-                                              ),
-                                            );
-                                          }
-                                        : null,
-                                  );
-                                },
-                              ),
-                        ),
-                      // Busy table: add items + payment buttons
-                      if (tableId != null && tableStatus != TableStatus.free)
-                        BlocProvider(
-                          create: (ctx) {
-                            final bloc = inject<CreateOrderBloc>()
-                              ..add(
-                                CreateOrderEvent.started(
-                                  tableId: tableId,
-                                  guestCount: guestCount,
-                                  tableStatus: tableStatus,
+                            BlocProvider(
+                              create: (_) => inject<CreateOrderBloc>()
+                                ..add(
+                                  const CreateOrderEvent.started(
+                                    tableId: null,
+                                    guestCount: 1,
+                                    tableStatus: TableStatus.free,
+                                  ),
                                 ),
-                              );
-                            // Bind active order immediately if already known
-                            final activeId =
-                                ctx.read<DetailBloc>().state.activeOrderId;
-                            if (activeId != null) bloc.bindActiveOrder(activeId);
-                            return bloc;
-                          },
-                          child: MultiBlocListener(
-                            listeners: [
-                              // Keep activeOrderId in sync when DetailBloc updates it
-                              BlocListener<DetailBloc, DetailState>(
-                                listenWhen: (p, c) =>
-                                    p.activeOrderId != c.activeOrderId &&
-                                    c.activeOrderId != null,
-                                listener: (ctx, s) {
-                                  ctx
-                                      .read<CreateOrderBloc>()
-                                      .bindActiveOrder(s.activeOrderId!);
-                                },
-                              ),
-                            ],
-                            child:
-                              BlocConsumer<CreateOrderBloc, CreateOrderState>(
-                                listener: (context, createState) {
-                                  if (createState.status != Status.LOADING &&
-                                      createState.success) {
-                                    showSuccessMessage(
-                                      context,
-                                      S.current.strOrderSuccessCreated,
-                                    );
-                                    context.read<DetailBloc>().add(
-                                      DetailEvent.fetchBillOrders(
-                                        billId: cafeTable!.id,
-                                      ),
-                                    );
-                                    context.read<DetailBloc>().add(
-                                      const DetailEvent.clearGoods(),
-                                    );
-                                  }
-                                },
-                                builder: (context, createState) {
-                                  return Column(
-                                    spacing: 8,
-                                    children: [
-                                      if (state.selectedGoods.isNotEmpty)
-                                        _ActionButton(
-                                          label: S.current.strAddItems,
-                                          bgColor: const Color(0xFF16A34A),
-                                          textColor: Colors.white,
-                                          isLoading:
-                                              createState.status ==
-                                              Status.LOADING,
-                                          onTap: () {
-                                            context.read<CreateOrderBloc>().add(
-                                              CreateOrderEvent.createOrder(
-                                                orders: state.selectedGoods,
-                                              ),
-                                            );
-                                          },
-                                        ),
-                                      _ActionButton(
+                              child:
+                                  BlocBuilder<
+                                    CreateOrderBloc,
+                                    CreateOrderState
+                                  >(
+                                    builder: (context, createState) {
+                                      return _ActionButton(
                                         label: S.current.strPayment,
                                         bgColor: const Color(0xFFFB6633),
                                         textColor: Colors.white,
-                                        isLoading: false,
+                                        isLoading:
+                                            createState.status ==
+                                            Status.LOADING,
                                         trailingAmount: total.formatN,
-                                        onTap: () {
-                                          final timerCubit = context
-                                              .read<TableTimerCubit>();
-                                          final currentAmt = timerCubit
-                                              .state
-                                              .timer
-                                              ?.currentAmount;
-                                          if (cafeTable?.tableType ==
-                                                  'time_based' &&
-                                              timerCubit
-                                                      .state
-                                                      .timer
-                                                      ?.isRunning ==
-                                                  true) {
-                                            timerCubit.pauseTimer();
-                                          }
-                                          final timerData = timerCubit.state.timer;
-                                          Navigator.pushNamed(
-                                            context,
-                                            AppRoutes.paymentScreen,
-                                            arguments: {
-                                              'table_id': tableId,
-                                              'table_type':
-                                                  cafeTable?.tableType ??
-                                                  'simple',
-                                              'hour_amount': currentAmt,
-                                              'timer_started_at': timerData?.startedAt,
-                                              'timer_pauses': timerData?.pauses ?? const <PauseInterval>[],
-                                              'timer_total_sec': timerData?.totalActiveSec ?? 0,
-                                              'timer_price_per_hour': timerData?.pricePerHour,
-                                            },
+                                        onTap: state.selectedGoods.isNotEmpty
+                                            ? () => context
+                                                  .read<CreateOrderBloc>()
+                                                  .add(
+                                                    CreateOrderEvent.createOrder(
+                                                      orders:
+                                                          state.selectedGoods,
+                                                    ),
+                                                  )
+                                            : null,
+                                      );
+                                    },
+                                  ),
+                            ),
+                          // Save button (for free tables)
+                          if (tableId != null &&
+                              tableStatus == TableStatus.free)
+                            BlocProvider(
+                              create: (_) => inject<CreateOrderBloc>()
+                                ..add(
+                                  CreateOrderEvent.started(
+                                    tableId: tableId,
+                                    guestCount: guestCount,
+                                    tableStatus: tableStatus,
+                                  ),
+                                ),
+                              child:
+                                  BlocConsumer<
+                                    CreateOrderBloc,
+                                    CreateOrderState
+                                  >(
+                                    listener: (context, createState) {
+                                      if (createState.status !=
+                                              Status.LOADING &&
+                                          createState.success) {
+                                        if (createState.tableId.isNotEmpty) {
+                                          context.read<SavedOrdersBloc>().add(
+                                            SavedOrdersEvent.removeOrder(
+                                              tableId: createState.tableId,
+                                            ),
                                           );
-                                        },
-                                      ),
-                                    ],
+                                        }
+                                        context
+                                            .read<MainCubit>()
+                                            .updateTableStatus(
+                                              createState.tableId,
+                                              TableStatus.busy,
+                                            );
+                                        if (cafeTable != null) {
+                                          context.read<DetailBloc>().add(
+                                            DetailEvent.fetchBillOrders(
+                                              billId: cafeTable!.id,
+                                            ),
+                                          );
+                                        }
+                                        context.read<DetailBloc>().add(
+                                          const DetailEvent.clearGoods(),
+                                        );
+                                        showSuccessMessage(
+                                          navigatorKey.currentContext!,
+                                          S.current.strOrderSuccessCreated,
+                                        );
+                                        setState(
+                                          () => _tableStatus = TableStatus.busy,
+                                        );
+                                      }
+                                    },
+                                    builder: (context, createState) {
+                                      return _ActionButton(
+                                        label: S.current.strSave,
+                                        bgColor: const Color(0xFFFB6633),
+                                        textColor: Colors.white,
+                                        isLoading:
+                                            createState.status ==
+                                            Status.LOADING,
+                                        onTap: state.selectedGoods.isNotEmpty
+                                            ? () {
+                                                context
+                                                    .read<CreateOrderBloc>()
+                                                    .add(
+                                                      CreateOrderEvent.createOrder(
+                                                        orders:
+                                                            state.selectedGoods,
+                                                      ),
+                                                    );
+                                              }
+                                            : null,
+                                      );
+                                    },
+                                  ),
+                            ),
+                          // Busy table: add items + payment buttons
+                          if (tableId != null &&
+                              tableStatus != TableStatus.free)
+                            BlocProvider(
+                              create: (ctx) {
+                                final bloc = inject<CreateOrderBloc>()
+                                  ..add(
+                                    CreateOrderEvent.started(
+                                      tableId: tableId,
+                                      guestCount: guestCount,
+                                      tableStatus: tableStatus,
+                                    ),
                                   );
-                                },
+                                // Bind active order immediately if already known
+                                final activeId = ctx
+                                    .read<DetailBloc>()
+                                    .state
+                                    .activeOrderId;
+                                if (activeId != null)
+                                  bloc.bindActiveOrder(activeId);
+                                return bloc;
+                              },
+                              child: MultiBlocListener(
+                                listeners: [
+                                  // Keep activeOrderId in sync when DetailBloc updates it
+                                  BlocListener<DetailBloc, DetailState>(
+                                    listenWhen: (p, c) =>
+                                        p.activeOrderId != c.activeOrderId &&
+                                        c.activeOrderId != null,
+                                    listener: (ctx, s) {
+                                      ctx
+                                          .read<CreateOrderBloc>()
+                                          .bindActiveOrder(s.activeOrderId!);
+                                    },
+                                  ),
+                                ],
+                                child:
+                                    BlocConsumer<
+                                      CreateOrderBloc,
+                                      CreateOrderState
+                                    >(
+                                      listener: (context, createState) {
+                                        if (createState.status !=
+                                                Status.LOADING &&
+                                            createState.success) {
+                                          showSuccessMessage(
+                                            context,
+                                            S.current.strOrderSuccessCreated,
+                                          );
+                                          context.read<DetailBloc>().add(
+                                            DetailEvent.fetchBillOrders(
+                                              billId: cafeTable!.id,
+                                            ),
+                                          );
+                                          context.read<DetailBloc>().add(
+                                            const DetailEvent.clearGoods(),
+                                          );
+                                        }
+                                      },
+                                      builder: (context, createState) {
+                                        return Column(
+                                          spacing: 8,
+                                          children: [
+                                            if (state.selectedGoods.isNotEmpty)
+                                              _ActionButton(
+                                                label: S.current.strAddItems,
+                                                bgColor: const Color(
+                                                  0xFF16A34A,
+                                                ),
+                                                textColor: Colors.white,
+                                                isLoading:
+                                                    createState.status ==
+                                                    Status.LOADING,
+                                                onTap: () {
+                                                  context
+                                                      .read<CreateOrderBloc>()
+                                                      .add(
+                                                        CreateOrderEvent.createOrder(
+                                                          orders: state
+                                                              .selectedGoods,
+                                                        ),
+                                                      );
+                                                },
+                                              ),
+                                            _ActionButton(
+                                              label: S.current.strPayment,
+                                              bgColor: const Color(0xFFFB6633),
+                                              textColor: Colors.white,
+                                              isLoading: false,
+                                              trailingAmount: total.formatN,
+                                              onTap: () {
+                                                final timerCubit = context
+                                                    .read<TableTimerCubit>();
+                                                final currentAmt = timerCubit
+                                                    .state
+                                                    .timer
+                                                    ?.currentAmount;
+                                                if (cafeTable?.tableType ==
+                                                        'time_based' &&
+                                                    timerCubit
+                                                            .state
+                                                            .timer
+                                                            ?.isRunning ==
+                                                        true) {
+                                                  timerCubit.pauseTimer();
+                                                }
+                                                final timerData =
+                                                    timerCubit.state.timer;
+                                                Navigator.pushNamed(
+                                                  context,
+                                                  AppRoutes.paymentScreen,
+                                                  arguments: {
+                                                    'table_id': tableId,
+                                                    'table_type':
+                                                        cafeTable?.tableType ??
+                                                        'simple',
+                                                    'hour_amount': currentAmt,
+                                                    'timer_started_at':
+                                                        timerData?.startedAt,
+                                                    'timer_pauses':
+                                                        timerData?.pauses ??
+                                                        const <PauseInterval>[],
+                                                    'timer_total_sec':
+                                                        timerData
+                                                            ?.totalActiveSec ??
+                                                        0,
+                                                    'timer_price_per_hour':
+                                                        timerData?.pricePerHour,
+                                                  },
+                                                );
+                                              },
+                                            ),
+                                          ],
+                                        );
+                                      },
+                                    ),
                               ),
-                          ),
-                        ),
+                            ),
                         ],
                       );
                     },
@@ -738,8 +784,7 @@ class _ActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final hasTrailing =
-        trailingAmount != null && trailingAmount!.isNotEmpty;
+    final hasTrailing = trailingAmount != null && trailingAmount!.isNotEmpty;
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -764,42 +809,42 @@ class _ActionButton extends StatelessWidget {
                 ),
               )
             : hasTrailing
-                ? Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        label,
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w600,
-                          color: textColor,
-                          fontFamily: 'Inter',
-                          letterSpacing: -0.1,
-                        ),
-                      ),
-                      Text(
-                        '$trailingAmount so\'m',
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w700,
-                          color: textColor,
-                          fontFamily: 'Inter',
-                          letterSpacing: -0.1,
-                        ),
-                      ),
-                    ],
-                  )
-                : Center(
-                    child: Text(
-                      label,
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w700,
-                        color: textColor,
-                        fontFamily: 'Inter',
-                      ),
+            ? Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    label,
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: textColor,
+                      fontFamily: 'Inter',
+                      letterSpacing: -0.1,
                     ),
                   ),
+                  Text(
+                    '$trailingAmount',
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      color: textColor,
+                      fontFamily: 'Inter',
+                      letterSpacing: -0.1,
+                    ),
+                  ),
+                ],
+              )
+            : Center(
+                child: Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: textColor,
+                    fontFamily: 'Inter',
+                  ),
+                ),
+              ),
       ),
     );
   }
@@ -859,8 +904,7 @@ class _OrderPanelHeader extends StatelessWidget {
               ],
             ),
           ),
-          if (canClear)
-            _TrashButton(onTap: () async => await onClear()),
+          if (canClear) _TrashButton(onTap: () async => await onClear()),
         ],
       ),
     );
@@ -891,9 +935,7 @@ class _TrashButtonState extends State<_TrashButton> {
           width: 36,
           height: 36,
           decoration: BoxDecoration(
-            color: _hovered
-                ? const Color(0xFFFEE2E2)
-                : const Color(0xFFF8FAFC),
+            color: _hovered ? const Color(0xFFFEE2E2) : const Color(0xFFF8FAFC),
             border: Border.all(
               color: _hovered
                   ? const Color(0xFFFBCDD8)
@@ -904,9 +946,7 @@ class _TrashButtonState extends State<_TrashButton> {
           child: Icon(
             Icons.delete_outline_rounded,
             size: 18,
-            color: _hovered
-                ? const Color(0xFFDC2626)
-                : const Color(0xFF64748B),
+            color: _hovered ? const Color(0xFFDC2626) : const Color(0xFF64748B),
           ),
         ),
       ),
@@ -1245,7 +1285,8 @@ class _TimerBadgeRow extends StatelessWidget {
                 if (t != null && t.pauses.isNotEmpty)
                   _TimerInfoChip(
                     label: 'Pause',
-                    value: '${t.pauses.length}x  •  ${_fmtTime(t.totalPauseSec)}',
+                    value:
+                        '${t.pauses.length}x  •  ${_fmtTime(t.totalPauseSec)}',
                     color: const Color(0xFF6366F1).withOpacity(0.80),
                   ),
               ],
@@ -1286,7 +1327,11 @@ class _TimerInfoChip extends StatelessWidget {
   final String label;
   final String value;
   final Color color;
-  const _TimerInfoChip({required this.label, required this.value, required this.color});
+  const _TimerInfoChip({
+    required this.label,
+    required this.value,
+    required this.color,
+  });
 
   @override
   Widget build(BuildContext context) {

@@ -1,6 +1,5 @@
 import 'dart:convert';
 
-import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mary_ai_pos/core/api/api.dart';
 import 'package:mary_ai_pos/core/extension/for_context.dart';
@@ -44,7 +43,8 @@ class _PaymentScreenState extends State<PaymentScreen> {
   late final List<PauseInterval> _timerPauses =
       (args['timer_pauses'] as List<PauseInterval>?) ?? const [];
   late final int _timerTotalSec = (args['timer_total_sec'] as int?) ?? 0;
-  late final String? _timerPricePerHour = args['timer_price_per_hour'] as String?;
+  late final String? _timerPricePerHour =
+      args['timer_price_per_hour'] as String?;
 
   @override
   Widget build(BuildContext context) {
@@ -102,8 +102,9 @@ class _PaymentScreenState extends State<PaymentScreen> {
               }
 
               final effective = PaymentBloc.effectiveTotal(state.detail!);
-              final offlineExtra =
-                  PaymentBloc.pendingOfflineExtra(state.tableId);
+              final offlineExtra = PaymentBloc.pendingOfflineExtra(
+                state.tableId,
+              );
               final discountAmt = int.tryParse(state.discountAmount) ?? 0;
               int finalTotal = effective + offlineExtra;
               if (state.discountType == DiscountType.money) {
@@ -229,8 +230,7 @@ class _ItemsList extends StatelessWidget {
       }
       final int qty = (g.quantity as num).toInt();
       if (grouped.containsKey(g.name)) {
-        grouped[g.name] =
-            grouped[g.name]!.withQty(grouped[g.name]!.qty + qty);
+        grouped[g.name] = grouped[g.name]!.withQty(grouped[g.name]!.qty + qty);
       } else {
         grouped[g.name] = _PayItem(
           name: g.name,
@@ -245,9 +245,7 @@ class _ItemsList extends StatelessWidget {
     if (tableId != null) {
       final cachedGoods = inject<CacheService>().getGoods();
       for (final op in inject<OfflineQueueService>().pending.where(
-        (o) =>
-            o.tableId == tableId &&
-            o.type == PendingOperationType.addItems,
+        (o) => o.tableId == tableId && o.type == PendingOperationType.addItems,
       )) {
         try {
           final payload = jsonDecode(op.payload) as Map<String, dynamic>;
@@ -262,12 +260,10 @@ class _ItemsList extends StatelessWidget {
             if (goodJson.isEmpty) continue;
             final name = goodJson['name'] as String? ?? goodId;
             final price =
-                double.tryParse(goodJson['price']?.toString() ?? '0') ??
-                    0.0;
+                double.tryParse(goodJson['price']?.toString() ?? '0') ?? 0.0;
             final key = '⏳$name';
             if (grouped.containsKey(key)) {
-              grouped[key] =
-                  grouped[key]!.withQty(grouped[key]!.qty + qty);
+              grouped[key] = grouped[key]!.withQty(grouped[key]!.qty + qty);
             } else {
               grouped[key] = _PayItem(
                 name: '⏳ $name',
@@ -285,14 +281,10 @@ class _ItemsList extends StatelessWidget {
     final allItems = [...grouped.values, ...cancelled];
 
     if (allItems.isEmpty) {
-      return Center(
+      return const Center(
         child: Text(
           "Buyurtma topilmadi",
-          style: const TextStyle(
-            fontSize: 13,
-            color: _kS500,
-            fontFamily: 'Inter',
-          ),
+          style: TextStyle(fontSize: 13, color: _kS500, fontFamily: 'Inter'),
         ),
       );
     }
@@ -316,8 +308,8 @@ class _OrderLineRow extends StatelessWidget {
     final nameColor = item.isCancelled
         ? _kS400
         : item.isPending
-            ? _kBrand
-            : _kS900;
+        ? _kBrand
+        : _kS900;
     final total = item.price * item.qty;
 
     return Padding(
@@ -335,8 +327,9 @@ class _OrderLineRow extends StatelessWidget {
                 fontWeight: FontWeight.w600,
                 color: item.isCancelled ? _kS400 : _kS500,
                 fontFamily: 'Inter',
-                decoration:
-                    item.isCancelled ? TextDecoration.lineThrough : null,
+                decoration: item.isCancelled
+                    ? TextDecoration.lineThrough
+                    : null,
               ),
             ),
           ),
@@ -352,8 +345,9 @@ class _OrderLineRow extends StatelessWidget {
                     fontWeight: FontWeight.w500,
                     color: nameColor,
                     fontFamily: 'Inter',
-                    decoration:
-                        item.isCancelled ? TextDecoration.lineThrough : null,
+                    decoration: item.isCancelled
+                        ? TextDecoration.lineThrough
+                        : null,
                     decorationColor: _kS400,
                   ),
                   maxLines: 1,
@@ -398,8 +392,7 @@ class _OrderLineRow extends StatelessWidget {
               fontWeight: FontWeight.w700,
               color: item.isCancelled ? _kS400 : _kS900,
               fontFamily: 'Inter',
-              decoration:
-                  item.isCancelled ? TextDecoration.lineThrough : null,
+              decoration: item.isCancelled ? TextDecoration.lineThrough : null,
               decorationColor: _kS400,
             ),
           ),
@@ -429,21 +422,24 @@ class _SummaryFooter extends StatelessWidget {
 
           return Column(
             children: [
-              _SummaryLine(label: 'Oraliq jami', value: effective.formatN),
+              _SummaryLine(
+                label: 'Oraliq jami',
+                value: effective.formatNWithoutS,
+              ),
               if (serviceAmt > 0) ...[
                 const SizedBox(height: 8),
                 _SummaryLine(
                   label: servicePct > 0
                       ? 'Xizmat haqi ($servicePct%)'
                       : 'Xizmat haqi',
-                  value: serviceAmt.formatN,
+                  value: serviceAmt.formatNWithoutS,
                 ),
               ],
               if (state.hourPrice > 0) ...[
                 const SizedBox(height: 8),
                 _SummaryLine(
                   label: "Soatlik to'lov",
-                  value: state.hourPrice.toInt().formatN,
+                  value: state.hourPrice.toInt().formatNWithoutS,
                   valueColor: _kBrand,
                 ),
               ],
@@ -524,10 +520,10 @@ class _PayItem {
   });
 
   _PayItem withQty(int newQty) => _PayItem(
-        name: name,
-        price: price,
-        qty: newQty,
-        isPending: isPending,
-        isCancelled: isCancelled,
-      );
+    name: name,
+    price: price,
+    qty: newQty,
+    isPending: isPending,
+    isCancelled: isCancelled,
+  );
 }

@@ -12,9 +12,17 @@ import 'package:mary_ai_pos/features/view/main/presentation/pages/settings/secti
 import 'package:mary_ai_pos/features/view/main/presentation/pages/settings/sections/halls_tables_section.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/settings/sections/printers_section.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/settings/sections/lan_network_section.dart';
+import 'package:mary_ai_pos/features/view/main/presentation/pages/settings/sections/receipt_info_section.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/settings/sections/users_section.dart';
 
-enum SettingsSection { users, hallsTables, appearance, printers, lanNetwork }
+enum SettingsSection {
+  users,
+  hallsTables,
+  appearance,
+  printers,
+  receiptInfo,
+  lanNetwork,
+}
 
 extension _SectionMeta on SettingsSection {
   IconData get icon {
@@ -27,6 +35,8 @@ extension _SectionMeta on SettingsSection {
         return Icons.tune_rounded;
       case SettingsSection.printers:
         return Icons.print_outlined;
+      case SettingsSection.receiptInfo:
+        return Icons.receipt_long_outlined;
       case SettingsSection.lanNetwork:
         return Icons.router_outlined;
     }
@@ -42,6 +52,8 @@ extension _SectionMeta on SettingsSection {
         return S.current.strSettings;
       case SettingsSection.printers:
         return S.current.strPrinterSettings;
+      case SettingsSection.receiptInfo:
+        return "Chek ma'lumotlari";
       case SettingsSection.lanNetwork:
         return S.current.strLanNetwork;
     }
@@ -57,6 +69,8 @@ extension _SectionMeta on SettingsSection {
         return S.current.strLanguageAndGeneral;
       case SettingsSection.printers:
         return S.current.strEscPosDevices;
+      case SettingsSection.receiptInfo:
+        return 'Nom, manzil, telefon, STIR';
       case SettingsSection.lanNetwork:
         return S.current.strHubClientSettings;
     }
@@ -138,6 +152,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
         return const UsersSection(key: ValueKey('users'));
       case SettingsSection.hallsTables:
         return const HallsTablesSection(key: ValueKey('hallsTables'));
+      case SettingsSection.receiptInfo:
+        return const ReceiptInfoSection(key: ValueKey('receiptInfo'));
       case SettingsSection.lanNetwork:
         return const LanNetworkSection(key: ValueKey('lanNetwork'));
     }

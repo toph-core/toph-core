@@ -58,14 +58,14 @@ class PaymentCenterColumn extends StatelessWidget with PaymentScreenMixin {
                 // Numpad (large buttons)
                 Expanded(child: _Numpad()),
               ] else
-                Expanded(
+                const Expanded(
                   child: Center(
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 32),
+                      padding: EdgeInsets.symmetric(horizontal: 32),
                       child: Text(
                         "Mijoz to'lovni karta orqali amalga oshirganini tasdiqlang",
                         textAlign: TextAlign.center,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 15,
                           color: _kS500,
                           fontFamily: 'Inter',
@@ -211,7 +211,7 @@ class _AmountEntry extends StatelessWidget {
             textBaseline: TextBaseline.alphabetic,
             children: [
               Text(
-                entered > 0 ? entered.formatN : '0',
+                entered > 0 ? entered.formatNWithoutS : '0',
                 style: const TextStyle(
                   fontSize: 40,
                   fontWeight: FontWeight.w700,
@@ -254,7 +254,7 @@ class _AmountEntry extends StatelessWidget {
                   ),
                   const SizedBox(width: 8),
                   Text(
-                    '${change.formatN} so\'m',
+                    change.formatN,
                     style: const TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w700,

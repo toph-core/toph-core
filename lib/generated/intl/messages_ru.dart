@@ -38,8 +38,9 @@ class MessageLookup extends MessageLookupByLibrary {
         "strAppliesToAllUsers": MessageLookupByLibrary.simpleMessage(
             "Применяется для всех пользователей"),
         "strApril": MessageLookupByLibrary.simpleMessage("Апрель"),
-        "strArchive": MessageLookupByLibrary.simpleMessage("Архив"),
-        "strArchiveEmpty": MessageLookupByLibrary.simpleMessage("Архив пуст"),
+        "strArchive": MessageLookupByLibrary.simpleMessage("Заказы"),
+        "strArchiveEmpty":
+            MessageLookupByLibrary.simpleMessage("Заказы не найдены"),
         "strAugust": MessageLookupByLibrary.simpleMessage("Август"),
         "strAverageCheck": MessageLookupByLibrary.simpleMessage("Средний чек"),
         "strBackToScreen": MessageLookupByLibrary.simpleMessage("Назад"),

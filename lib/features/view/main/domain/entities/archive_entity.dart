@@ -9,6 +9,7 @@ abstract class ArchiveEntity {
   final int totalPrice;
   final int goodsTotal;
   final int serviceAmount;
+  final int discountAmount;
   final int goodsQuantity;
   final int customerPaidAmount;
 
@@ -21,6 +22,7 @@ abstract class ArchiveEntity {
     required this.totalPrice,
     required this.goodsTotal,
     required this.serviceAmount,
+    required this.discountAmount,
     required this.goodsQuantity,
     required this.customerPaidAmount,
   });

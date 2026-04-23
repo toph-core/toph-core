@@ -85,7 +85,7 @@
   "strPayment": "To'lov",
   "strAddItems": "Qo'shish",
 
-  "strArchive": "Arxiv",
+  "strArchive": "Zakazlar",
   "strOpenBills": "Ochiq hisoblar",
   "strNowActive": "Hozir aktiv",
   "strTodayRevenue": "Bugungi tushum",
@@ -98,7 +98,7 @@
   "strAmountColumn": "Summa",
   "strTimeColumn": "Vaqt",
   "strActionsColumn": "Amallar",
-  "strArchiveEmpty": "Arxiv topilmadi",
+  "strArchiveEmpty": "Zakazlar topilmadi",
   "strDate": "Sana",
   "strAllOrdersTitle": "Barcha buyurtmalar",
   "strOrderType": "Buyurtma turi",

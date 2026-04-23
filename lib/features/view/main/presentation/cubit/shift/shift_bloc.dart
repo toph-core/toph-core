@@ -347,14 +347,27 @@ class ShiftBloc extends Bloc<ShiftEvent, ShiftState> {
     final response = await _checkShiftUsecase.call(cashRegisterId);
     if (emit.isDone) return;
 
+    // On a real failure (parse/network/server) we must NOT assume "no shift" —
+    // the server may already have an open shift. Keep the last-known local shift
+    // if present, and surface the failure without redirecting to the open-shift flow.
+    if (response.isLeft()) {
+      final failure = response.swap().getOrElse(() => const UnknownFailure());
+      final local = _readLocalShift();
+      final fallback = local ?? state.shift;
+      emit(
+        state.copyWith(
+          status: fallback != null ? Status.SUCCESS : Status.ERROR,
+          shift: fallback,
+          failure: failure,
+        ),
+      );
+      return;
+    }
+
     ShiftResponseModel? resolved;
-    Failure? failure;
+    response.fold((_) {}, (r) => resolved = r);
 
-    response.fold(
-      (l) => failure = l,
-      (r) => resolved = r,
-    );
-
+    // Genuine "no active shift" from server (Right(null)) → open-shift flow.
     resolved ??= _readLocalShift();
     if (resolved == null) {
       final ctx = navigatorKey.currentContext;
@@ -367,7 +380,7 @@ class ShiftBloc extends Bloc<ShiftEvent, ShiftState> {
     }
 
     if (emit.isDone) return;
-    emit(state.copyWith(status: Status.SUCCESS, shift: resolved, failure: failure));
+    emit(state.copyWith(status: Status.SUCCESS, shift: resolved));
   }
 
   void _started(_Started event, Emitter<ShiftState> emit) {

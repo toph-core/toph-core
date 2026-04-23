@@ -99,7 +99,7 @@ class _SplitBillModalState extends State<SplitBillModal> {
                         style: context.textStyles.bodySm,
                       ),
                       Text(
-                        '${widget.totalAmount.formatN} so\'m',
+                        '${widget.totalAmount.formatN}',
                         style: context.textStyles.bold18.copyWith(
                           color: const Color(0xFFFB6633),
                           fontWeight: FontWeight.w700,
@@ -119,7 +119,7 @@ class _SplitBillModalState extends State<SplitBillModal> {
                         style: context.textStyles.bodySm,
                       ),
                       Text(
-                        '${_perPersonAmount.formatN} so\'m',
+                        '${_perPersonAmount.formatN}',
                         style: context.textStyles.bold16.copyWith(
                           fontWeight: FontWeight.w600,
                         ),
@@ -216,7 +216,7 @@ class _SplitBillModalState extends State<SplitBillModal> {
                     ),
                   ),
                   Text(
-                    '${_tipAmount.formatN} so\'m',
+                    '${_tipAmount.formatN}',
                     style: context.textStyles.bold18.copyWith(
                       color: const Color(0xFFFB6633),
                       fontWeight: FontWeight.w700,

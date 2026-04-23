@@ -1,3 +1,4 @@
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mary_ai_pos/core/api/api.dart';
 import 'package:mary_ai_pos/core/extension/for_context.dart';
@@ -14,6 +15,7 @@ import 'package:mary_ai_pos/features/view/main/domain/entities/archive_entity.da
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/archives/archives_bloc.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/archive/widgets/archive_right_sider_bar.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/main/widgets/main_header.dart';
+import 'package:mary_ai_pos/generated/l10n.dart';
 import 'package:number_paginator/number_paginator.dart';
 
 class ArchiveScreen extends StatelessWidget {
@@ -43,25 +45,17 @@ class _ArchiveBody extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const MainHeader(title: 'Arxiv'),
+        MainHeader(title: S.current.strArchive),
         Expanded(
           child: BlocBuilder<ArchivesBloc, ArchivesState>(
             builder: (context, state) {
               final archives = state.archives?.archives ?? [];
 
-              // Stats derived from loaded data
               final openCount = archives
                   .where(
                     (a) =>
                         a.status == OrderStatus.open ||
                         a.status == OrderStatus.opened,
-                  )
-                  .length;
-              final closedCount = archives
-                  .where(
-                    (a) =>
-                        a.status == OrderStatus.closed ||
-                        a.status == OrderStatus.paid,
                   )
                   .length;
               final revenue = archives.fold<int>(
@@ -75,128 +69,41 @@ class _ArchiveBody extends StatelessWidget {
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Stats row
+                  // Header row: filter bar + Export CSV
+                  _ArchiveFilterBar(state: state),
+
+                  // Inline metrics (no card containers — Rule 4: anti-card overuse)
                   Padding(
-                    padding: const EdgeInsets.fromLTRB(24, 20, 24, 0),
-                    child: Row(
-                      spacing: 16,
-                      children: [
-                        _StatCard(
-                          label: 'Ochiq hisoblar',
-                          value: '$openCount',
-                          sub: 'Hozir aktiv',
-                          valueColor: const Color(0xFFFB6633),
-                        ),
-                        _StatCard(
-                          label: "Bugungi tushum",
-                          value: revenue.formatNWithoutS,
-                          sub: "so'm",
-                        ),
-                        _StatCard(
-                          label: 'Bugun yopildi',
-                          value: '$closedCount',
-                          sub: 'hisob',
-                          valueColor: const Color(0xFF16A34A),
-                        ),
-                        _StatCard(
-                          label: "O'rtacha chek",
-                          value: avgCheck.formatNWithoutS,
-                          sub: "so'm",
-                        ),
-                      ],
+                    padding: const EdgeInsets.fromLTRB(24, 4, 24, 18),
+                    child: _InlineStatsRow(
+                      count: archives.length,
+                      revenue: revenue,
+                      openCount: openCount,
+                      avgCheck: avgCheck,
                     ),
                   ),
 
-                  // Filter bar
-                  _ArchiveFilterBar(state: state),
+                  // Thin structural divider between controls and table
+                  const Divider(height: 1, color: Color(0xFFE2E8F0)),
 
                   // Table + optional detail sidebar
                   Expanded(
                     child: Padding(
-                      padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+                      padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
                       child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
                         spacing: 16,
                         children: [
-                          // Table
                           Expanded(
-                            child: Container(
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(16),
-                                border: Border.all(
-                                  color: const Color(0xFFE2E8F0),
-                                ),
-                              ),
-                              child: Column(
-                                children: [
-                                  // Table header
-                                  Container(
-                                    height: 40,
-                                    decoration: const BoxDecoration(
-                                      border: Border(
-                                        bottom: BorderSide(
-                                          color: Color(0xFFE2E8F0),
-                                          width: 2,
-                                        ),
-                                      ),
-                                    ),
-                                    child: const Row(
-                                      children: [
-                                        _ThCell(label: '#', flex: 2),
-                                        _ThCell(label: 'Stol', flex: 1),
-                                        _ThCell(label: 'Holat', flex: 2),
-                                        _ThCell(label: 'Taomlar', flex: 1),
-                                        _ThCell(label: 'Summa', flex: 3),
-                                        _ThCell(label: 'Vaqt', flex: 2),
-                                        _ThCell(label: 'Amallar', flex: 2),
-                                      ],
-                                    ),
-                                  ),
-                                  // Table body
-                                  Expanded(
-                                    child:
-                                        state.status == Status.LOADING &&
-                                            archives.isEmpty
-                                        ? const Center(
-                                            child:
-                                                CircularProgressIndicator.adaptive(),
-                                          )
-                                        : archives.isEmpty
-                                        ? const Center(
-                                            child: Text(
-                                              'Arxiv topilmadi',
-                                              style: TextStyle(
-                                                fontSize: 14,
-                                                color: Color(0xFF64748B),
-                                                fontFamily: 'Inter',
-                                              ),
-                                            ),
-                                          )
-                                        : ListView.builder(
-                                            itemCount: archives.length,
-                                            itemBuilder: (context, i) =>
-                                                _ArchiveRow(
-                                                  archive: archives[i],
-                                                  isSelected:
-                                                      state.selectArchive?.id ==
-                                                      archives[i].id,
-                                                  onTap: () => context
-                                                      .read<ArchivesBloc>()
-                                                      .add(
-                                                        ArchivesEvent.selectArchive(
-                                                          id: archives[i].id,
-                                                        ),
-                                                      ),
-                                                ),
-                                          ),
-                                  ),
-                                ],
-                              ),
+                            child: _ArchiveTable(
+                              archives: archives,
+                              selectedId: state.selectArchive?.id,
+                              isLoading: state.status == Status.LOADING,
+                              onSelect: (id) => context
+                                  .read<ArchivesBloc>()
+                                  .add(ArchivesEvent.selectArchive(id: id)),
                             ),
                           ),
-
-                          // Right sidebar (shown when archive selected)
                           if (state.selectArchive != null)
                             const SizedBox(
                               width: 300,
@@ -212,6 +119,258 @@ class _ArchiveBody extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+// ─── Inline 4-metric row (borderless, divider-separated) ────────────────────
+
+class _InlineStatsRow extends StatelessWidget {
+  final int count;
+  final int revenue;
+  final int openCount;
+  final int avgCheck;
+
+  const _InlineStatsRow({
+    required this.count,
+    required this.revenue,
+    required this.openCount,
+    required this.avgCheck,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        _Metric(
+          label: 'Zakazlar',
+          value: '$count',
+          unit: 'ta',
+          valueColor: const Color(0xFF0F172A),
+        ),
+        const _MetricDivider(),
+        _Metric(
+          label: 'Umumiy summa',
+          value: revenue.formatNWithoutS,
+          unit: "so'm",
+          valueColor: const Color(0xFF16A34A),
+        ),
+        const _MetricDivider(),
+        _Metric(
+          label: 'Ochiq hisoblar',
+          value: '$openCount',
+          unit: 'aktiv',
+          valueColor: const Color(0xFFFB6633),
+        ),
+        const _MetricDivider(),
+        _Metric(
+          label: "O'rtacha chek",
+          value: avgCheck.formatNWithoutS,
+          unit: "so'm",
+          valueColor: const Color(0xFF2563EB),
+        ),
+      ],
+    );
+  }
+}
+
+class _Metric extends StatelessWidget {
+  final String label;
+  final String value;
+  final String unit;
+  final Color valueColor;
+
+  const _Metric({
+    required this.label,
+    required this.value,
+    required this.unit,
+    required this.valueColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              color: Color(0xFF64748B),
+              fontFamily: 'Inter',
+            ),
+          ),
+          const SizedBox(height: 6),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.baseline,
+            textBaseline: TextBaseline.alphabetic,
+            children: [
+              Flexible(
+                child: Text(
+                  value,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 26,
+                    fontWeight: FontWeight.w700,
+                    color: valueColor,
+                    fontFamily: 'Inter',
+                    letterSpacing: -0.5,
+                    height: 1,
+                    fontFeatures: const [FontFeature.tabularFigures()],
+                  ),
+                ),
+              ),
+              const SizedBox(width: 6),
+              Text(
+                unit,
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                  color: Color(0xFF94A3B8),
+                  fontFamily: 'Inter',
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MetricDivider extends StatelessWidget {
+  const _MetricDivider();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 1,
+      height: 36,
+      margin: const EdgeInsets.symmetric(horizontal: 24),
+      color: const Color(0xFFE2E8F0),
+    );
+  }
+}
+
+// ─── Cashier archive table ──────────────────────────────────────────────────
+
+class _ArchiveTable extends StatelessWidget {
+  final List<ArchiveEntity> archives;
+  final String? selectedId;
+  final bool isLoading;
+  final ValueChanged<String> onSelect;
+
+  const _ArchiveTable({
+    required this.archives,
+    required this.selectedId,
+    required this.isLoading,
+    required this.onSelect,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: Column(
+        children: [
+          // Header
+          Container(
+            height: 44,
+            padding: const EdgeInsets.symmetric(horizontal: 4),
+            decoration: const BoxDecoration(
+              border: Border(
+                bottom: BorderSide(color: Color(0xFFE2E8F0)),
+              ),
+            ),
+            child: const Row(
+              children: [
+                _ThCell(label: '#', flex: 2),
+                _ThCell(label: 'Vaqt', flex: 2),
+                _ThCell(label: 'Tur', flex: 2),
+                _ThCell(label: 'Stol', flex: 1),
+                _ThCell(label: 'Taomlar', flex: 2),
+                _ThCell(label: 'Summa', flex: 3),
+                _ThCell(label: 'Holat', flex: 2),
+                _ThCell(label: 'Amal', flex: 1),
+              ],
+            ),
+          ),
+          Expanded(
+            child: isLoading && archives.isEmpty
+                ? const Center(
+                    child: CircularProgressIndicator.adaptive(),
+                  )
+                : archives.isEmpty
+                ? _EmptyState()
+                : ListView.separated(
+                    itemCount: archives.length,
+                    separatorBuilder: (_, _) => const Divider(
+                      height: 1,
+                      thickness: 1,
+                      color: Color(0xFFF1F5F9),
+                    ),
+                    itemBuilder: (context, i) => _ArchiveRow(
+                      archive: archives[i],
+                      isSelected: selectedId == archives[i].id,
+                      onTap: () => onSelect(archives[i].id),
+                    ),
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _EmptyState extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 56,
+            height: 56,
+            decoration: BoxDecoration(
+              color: const Color(0xFFF8FAFC),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: const Icon(
+              Icons.receipt_long_outlined,
+              size: 26,
+              color: Color(0xFF94A3B8),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            S.current.strArchiveEmpty,
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              color: Color(0xFF64748B),
+              fontFamily: 'Inter',
+            ),
+          ),
+          const SizedBox(height: 4),
+          const Text(
+            'Tanlangan davrda buyurtmalar topilmadi',
+            style: TextStyle(
+              fontSize: 12,
+              color: Color(0xFF94A3B8),
+              fontFamily: 'Inter',
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -402,71 +561,101 @@ class _ArchiveFilterBar extends StatelessWidget {
             ),
           ),
 
-          // Total count
+          // Total count (subtle)
           Text(
-            "Jami: ${state.archives?.pagination.total ?? 0} ta",
+            "Jami ${state.archives?.pagination.total ?? 0} ta",
             style: const TextStyle(
-              fontSize: 13,
-              color: Color(0xFF64748B),
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              color: Color(0xFF94A3B8),
               fontFamily: 'Inter',
             ),
           ),
+
+          const SizedBox(width: 6),
+
+          // Export CSV
+          _ExportCsvButton(archives: state.archives?.archives ?? const []),
         ],
       ),
     );
   }
 }
 
-class _StatCard extends StatelessWidget {
-  final String label;
-  final String value;
-  final String sub;
-  final Color? valueColor;
+// ─── Export CSV (copies to clipboard) ───────────────────────────────────────
 
-  const _StatCard({
-    required this.label,
-    required this.value,
-    required this.sub,
-    this.valueColor,
-  });
+class _ExportCsvButton extends StatelessWidget {
+  final List<ArchiveEntity> archives;
+  const _ExportCsvButton({required this.archives});
+
+  void _export(BuildContext context) {
+    final buffer = StringBuffer()
+      ..writeln('#,Stol,Holat,Taomlar,Summa,Vaqt');
+    for (final a in archives) {
+      final time = a.opened != null
+          ? '${a.opened!.year}-${a.opened!.month.toString().padLeft(2, '0')}-${a.opened!.day.toString().padLeft(2, '0')} '
+                '${a.opened!.hour.toString().padLeft(2, '0')}:${a.opened!.minute.toString().padLeft(2, '0')}'
+          : '';
+      buffer.writeln(
+        '${a.bilNumber},${a.tableNumber},${a.status.name},${a.goodsQuantity},${a.totalPrice},$time',
+      );
+    }
+    Clipboard.setData(ClipboardData(text: buffer.toString()));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        duration: const Duration(seconds: 2),
+        backgroundColor: const Color(0xFF0F172A),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10),
+        ),
+        content: Text(
+          'CSV clipboard\'ga nusxalandi · ${archives.length} ta',
+          style: const TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w500,
+            color: Colors.white,
+            fontFamily: 'Inter',
+          ),
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+    final enabled = archives.isNotEmpty;
+    return GestureDetector(
+      onTap: enabled ? () => _export(context) : null,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 120),
+        curve: Curves.easeOut,
+        height: 36,
+        padding: const EdgeInsets.symmetric(horizontal: 14),
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
+          color: enabled ? Colors.white : const Color(0xFFF8FAFC),
           border: Border.all(color: const Color(0xFFE2E8F0)),
+          borderRadius: BorderRadius.circular(10),
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          spacing: 4,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Text(
-              label,
-              style: const TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
-                color: Color(0xFF64748B),
-                fontFamily: 'Inter',
-              ),
+            Icon(
+              Icons.file_download_outlined,
+              size: 15,
+              color: enabled
+                  ? const Color(0xFF0F172A)
+                  : const Color(0xFF94A3B8),
             ),
+            const SizedBox(width: 8),
             Text(
-              value,
+              'Eksport CSV',
               style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.w700,
-                color: valueColor ?? const Color(0xFF0F172A),
-                fontFamily: 'Inter',
-              ),
-            ),
-            Text(
-              sub,
-              style: const TextStyle(
-                fontSize: 11,
-                color: Color(0xFF94A3B8),
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+                color: enabled
+                    ? const Color(0xFF0F172A)
+                    : const Color(0xFF94A3B8),
                 fontFamily: 'Inter',
               ),
             ),
@@ -502,7 +691,7 @@ class _ThCell extends StatelessWidget {
   }
 }
 
-class _ArchiveRow extends StatelessWidget {
+class _ArchiveRow extends StatefulWidget {
   final ArchiveEntity archive;
   final bool isSelected;
   final VoidCallback onTap;
@@ -514,135 +703,257 @@ class _ArchiveRow extends StatelessWidget {
   });
 
   @override
+  State<_ArchiveRow> createState() => _ArchiveRowState();
+}
+
+class _ArchiveRowState extends State<_ArchiveRow> {
+  bool _hover = false;
+
+  @override
   Widget build(BuildContext context) {
+    final archive = widget.archive;
     final time = archive.opened != null
         ? '${archive.opened!.hour.toString().padLeft(2, '0')}:${archive.opened!.minute.toString().padLeft(2, '0')}'
         : '-';
+    final isTakeaway = archive.tableNumber == 0;
 
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        height: 52,
-        decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFFFFF3EE) : Colors.transparent,
-          border: const Border(bottom: BorderSide(color: Color(0xFFF8FAFC))),
-        ),
-        child: Row(
-          children: [
-            Expanded(
-              flex: 2,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 14),
-                child: Text(
-                  '#${archive.bilNumber}',
-                  style: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                    color: Color(0xFF94A3B8),
-                    fontFamily: 'Inter',
+    final bg = widget.isSelected
+        ? const Color(0xFFFFF3EE)
+        : _hover
+        ? const Color(0xFFF8FAFC)
+        : Colors.transparent;
+
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      onEnter: (_) => setState(() => _hover = true),
+      onExit: (_) => setState(() => _hover = false),
+      child: GestureDetector(
+        onTap: widget.onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 120),
+          curve: Curves.easeOut,
+          height: 56,
+          padding: const EdgeInsets.symmetric(horizontal: 4),
+          color: bg,
+          child: Row(
+            children: [
+              // #
+              Expanded(
+                flex: 2,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 14),
+                  child: Text(
+                    '#${archive.bilNumber}',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: widget.isSelected
+                          ? const Color(0xFFFB6633)
+                          : const Color(0xFF0F172A),
+                      fontFamily: 'Inter',
+                      fontFeatures: const [FontFeature.tabularFigures()],
+                    ),
                   ),
                 ),
               ),
-            ),
-            Expanded(
-              flex: 1,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 14),
-                child: Container(
-                  width: 28,
-                  height: 28,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF8FAFC),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  alignment: Alignment.center,
+              // Vaqt
+              Expanded(
+                flex: 2,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 14),
                   child: Text(
-                    '${archive.tableNumber}',
+                    time,
                     style: const TextStyle(
-                      fontSize: 12,
+                      fontSize: 13,
+                      color: Color(0xFF64748B),
+                      fontFamily: 'Inter',
+                      fontFeatures: [FontFeature.tabularFigures()],
+                    ),
+                  ),
+                ),
+              ),
+              // Tur
+              Expanded(
+                flex: 2,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 14),
+                  child: _TypeChip(isTakeaway: isTakeaway),
+                ),
+              ),
+              // Stol
+              Expanded(
+                flex: 1,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 14),
+                  child: isTakeaway
+                      ? const Text(
+                          '—',
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Color(0xFF94A3B8),
+                            fontFamily: 'Inter',
+                          ),
+                        )
+                      : Container(
+                          width: 30,
+                          height: 30,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF1F5F9),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          alignment: Alignment.center,
+                          child: Text(
+                            '${archive.tableNumber}',
+                            style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFF0F172A),
+                              fontFamily: 'Inter',
+                            ),
+                          ),
+                        ),
+                ),
+              ),
+              // Taomlar
+              Expanded(
+                flex: 2,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 14),
+                  child: Text(
+                    '${archive.goodsQuantity} ta',
+                    style: const TextStyle(
+                      fontSize: 13,
+                      color: Color(0xFF0F172A),
+                      fontFamily: 'Inter',
+                      fontFeatures: [FontFeature.tabularFigures()],
+                    ),
+                  ),
+                ),
+              ),
+              // Summa
+              Expanded(
+                flex: 3,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 14),
+                  child: Text(
+                    archive.totalPrice.formatN,
+                    style: const TextStyle(
+                      fontSize: 13,
                       fontWeight: FontWeight.w700,
                       color: Color(0xFF0F172A),
                       fontFamily: 'Inter',
+                      fontFeatures: [FontFeature.tabularFigures()],
                     ),
                   ),
                 ),
               ),
-            ),
-            Expanded(
-              flex: 2,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 14),
-                child: _StatusBadge(status: archive.status),
-              ),
-            ),
-            Expanded(
-              flex: 1,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 14),
-                child: Text(
-                  '${archive.goodsQuantity}',
-                  style: const TextStyle(
-                    fontSize: 13,
-                    color: Color(0xFF0F172A),
-                    fontFamily: 'Inter',
-                  ),
+              // Holat
+              Expanded(
+                flex: 2,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 14),
+                  child: _StatusBadge(status: archive.status),
                 ),
               ),
-            ),
-            Expanded(
-              flex: 3,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 14),
-                child: Text(
-                  archive.totalPrice.formatN,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700,
-                    color: Color(0xFF0F172A),
-                    fontFamily: 'Inter',
-                  ),
-                ),
-              ),
-            ),
-            Expanded(
-              flex: 2,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 14),
-                child: Text(
-                  time,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    color: Color(0xFF0F172A),
-                    fontFamily: 'Inter',
-                  ),
-                ),
-              ),
-            ),
-            Expanded(
-              flex: 2,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 14),
-                child: GestureDetector(
-                  onTap: onTap,
+              // Amal
+              Expanded(
+                flex: 1,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 14),
                   child: Container(
-                    width: 30,
-                    height: 30,
+                    width: 32,
+                    height: 32,
                     decoration: BoxDecoration(
-                      color: Colors.white,
-                      border: Border.all(color: const Color(0xFFE2E8F0)),
+                      color: widget.isSelected
+                          ? const Color(0xFFFB6633)
+                          : Colors.white,
+                      border: Border.all(
+                        color: widget.isSelected
+                            ? const Color(0xFFFB6633)
+                            : const Color(0xFFE2E8F0),
+                      ),
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: const Icon(
+                    child: Icon(
                       Icons.remove_red_eye_outlined,
-                      size: 14,
-                      color: Color(0xFF64748B),
+                      size: 15,
+                      color: widget.isSelected
+                          ? Colors.white
+                          : const Color(0xFF64748B),
                     ),
                   ),
                 ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// Order type chip (dine-in vs takeaway)
+class _TypeChip extends StatelessWidget {
+  final bool isTakeaway;
+  const _TypeChip({required this.isTakeaway});
+
+  @override
+  Widget build(BuildContext context) {
+    if (isTakeaway) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        decoration: BoxDecoration(
+          color: const Color(0xFFFFF3EE),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: const Color(0xFFFB6633).withOpacity(0.3)),
+        ),
+        child: const Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.shopping_bag_outlined,
+              size: 13,
+              color: Color(0xFFFB6633),
+            ),
+            SizedBox(width: 6),
+            Text(
+              'Olib ketish',
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFFFB6633),
+                fontFamily: 'Inter',
               ),
             ),
           ],
         ),
+      );
+    }
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF1F5F9),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: const Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.restaurant_outlined,
+            size: 13,
+            color: Color(0xFF475569),
+          ),
+          SizedBox(width: 6),
+          Text(
+            'Zalda',
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF475569),
+              fontFamily: 'Inter',
+            ),
+          ),
+        ],
       ),
     );
   }

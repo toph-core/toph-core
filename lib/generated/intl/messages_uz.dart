@@ -38,9 +38,9 @@ class MessageLookup extends MessageLookupByLibrary {
         "strAppliesToAllUsers": MessageLookupByLibrary.simpleMessage(
             "Barcha foydalanuvchilar uchun qo\'llaniladi"),
         "strApril": MessageLookupByLibrary.simpleMessage("Aprel"),
-        "strArchive": MessageLookupByLibrary.simpleMessage("Arxiv"),
+        "strArchive": MessageLookupByLibrary.simpleMessage("Zakazlar"),
         "strArchiveEmpty":
-            MessageLookupByLibrary.simpleMessage("Arxiv topilmadi"),
+            MessageLookupByLibrary.simpleMessage("Zakazlar topilmadi"),
         "strAugust": MessageLookupByLibrary.simpleMessage("Avgust"),
         "strAverageCheck":
             MessageLookupByLibrary.simpleMessage("O\'rtacha chek"),

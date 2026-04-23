@@ -85,7 +85,7 @@
   "strPayment": "Payment",
   "strAddItems": "Add",
 
-  "strArchive": "Archive",
+  "strArchive": "Orders",
   "strOpenBills": "Open bills",
   "strNowActive": "Currently active",
   "strTodayRevenue": "Today's revenue",
@@ -98,7 +98,7 @@
   "strAmountColumn": "Amount",
   "strTimeColumn": "Time",
   "strActionsColumn": "Actions",
-  "strArchiveEmpty": "Archive is empty",
+  "strArchiveEmpty": "Orders not found",
   "strDate": "Date",
   "strAllOrdersTitle": "All Orders",
   "strOrderType": "Order type",

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mary_ai_pos/core/api/dio_client.dart';
 import 'package:mary_ai_pos/core/api/list_api.dart';
+import 'package:mary_ai_pos/core/common/custom_network_image.dart';
 import 'package:mary_ai_pos/core/extension/for_context.dart';
 import 'package:mary_ai_pos/core/utils/app_formatter.dart';
 import 'package:mary_ai_pos/core/utils/user_role_permissions.dart';
@@ -74,6 +75,7 @@ class _MenuMealsListScreenState extends State<MenuMealsListScreen> {
   // ── Categories ──────────────────────────────
 
   Future<void> _loadCategories() async {
+    if (!mounted) return;
     setState(() => _loadingCategories = true);
     try {
       final res = await _client.get(ListAPI.categories);
@@ -105,10 +107,12 @@ class _MenuMealsListScreenState extends State<MenuMealsListScreen> {
 
   Future<void> _deleteCategory(String id) async {
     await _client.delete(ListAPI.categoryById(id));
+    if (!mounted) return;
     if (_selectedCategoryId == id) {
       setState(() => _selectedCategoryId = null);
     }
     await _loadCategories();
+    if (!mounted) return;
     await _loadGoods(page: 1);
   }
 
@@ -165,6 +169,7 @@ class _MenuMealsListScreenState extends State<MenuMealsListScreen> {
   // ── Goods ────────────────────────────────────
 
   Future<void> _loadGoods({required int page}) async {
+    if (!mounted) return;
     setState(() {
       _loadingGoods = true;
       _errorGoods = null;
@@ -448,7 +453,7 @@ class _CategoriesPanelState extends State<_CategoriesPanel> {
               onChanged: (v) => setState(() => _catSearch = v),
             ),
           ),
-          Divider(height: 1, color: c.border),
+          const SizedBox(height: 4),
           // "Barcha taomlar" item
           _CatItem(
             label: 'Barcha taomlar',
@@ -456,7 +461,6 @@ class _CategoriesPanelState extends State<_CategoriesPanel> {
             selected: widget.selectedId == null,
             onTap: () => widget.onSelect(null),
           ),
-          Divider(height: 1, color: c.border),
           Expanded(
             child: widget.loading
                 ? const Center(child: CircularProgressIndicator.adaptive())
@@ -472,11 +476,9 @@ class _CategoriesPanelState extends State<_CategoriesPanel> {
                           ),
                         ),
                       )
-                    : ListView.separated(
-                        padding: EdgeInsets.zero,
+                    : ListView.builder(
+                        padding: const EdgeInsets.symmetric(vertical: 4),
                         itemCount: filtered.length,
-                        separatorBuilder: (_, _) =>
-                            Divider(height: 1, color: c.border),
                         itemBuilder: (_, i) {
                           final cat = filtered[i];
                           return _CatItemWithActions(
@@ -519,7 +521,7 @@ class _CatItemState extends State<_CatItem> {
   Widget build(BuildContext context) {
     final c = context.colors;
     final bg = widget.selected
-        ? c.textBrand.withOpacity(0.08)
+        ? c.textBrand.withOpacity(0.10)
         : _hovered
             ? c.bgSecondary
             : Colors.transparent;
@@ -530,18 +532,23 @@ class _CatItemState extends State<_CatItem> {
       onExit: (_) => setState(() => _hovered = false),
       child: GestureDetector(
         onTap: widget.onTap,
-        child: Container(
-          color: bg,
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 140),
+          margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+          decoration: BoxDecoration(
+            color: bg,
+            borderRadius: BorderRadius.circular(10),
+          ),
           child: Row(
             children: [
               if (widget.icon != null) ...[
                 Icon(
                   widget.icon!,
-                  size: 15,
+                  size: 16,
                   color: widget.selected ? c.textBrand : c.textSecondary,
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: 10),
               ],
               Expanded(
                 child: Text(
@@ -552,21 +559,13 @@ class _CatItemState extends State<_CatItem> {
                     fontSize: 13,
                     fontWeight: widget.selected
                         ? FontWeight.w600
-                        : FontWeight.w400,
+                        : FontWeight.w500,
                     color: widget.selected ? c.textBrand : c.textDefault,
                     fontFamily: 'Inter',
+                    letterSpacing: -0.1,
                   ),
                 ),
               ),
-              if (widget.selected)
-                Container(
-                  width: 3,
-                  height: 18,
-                  decoration: BoxDecoration(
-                    color: c.textBrand,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
             ],
           ),
         ),
@@ -601,7 +600,7 @@ class _CatItemWithActionsState extends State<_CatItemWithActions> {
   Widget build(BuildContext context) {
     final c = context.colors;
     final bg = widget.selected
-        ? c.textBrand.withOpacity(0.08)
+        ? c.textBrand.withOpacity(0.10)
         : _hovered
             ? c.bgSecondary
             : Colors.transparent;
@@ -612,11 +611,28 @@ class _CatItemWithActionsState extends State<_CatItemWithActions> {
       onExit: (_) => setState(() => _hovered = false),
       child: GestureDetector(
         onTap: widget.onTap,
-        child: Container(
-          color: bg,
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 140),
+          margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+          decoration: BoxDecoration(
+            color: bg,
+            borderRadius: BorderRadius.circular(10),
+          ),
           child: Row(
             children: [
+              // Color swatch dot
+              Container(
+                width: 8,
+                height: 8,
+                margin: const EdgeInsets.only(right: 10),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: widget.selected
+                      ? c.textBrand
+                      : c.textTertiary.withOpacity(0.5),
+                ),
+              ),
               Expanded(
                 child: Text(
                   widget.cat.name,
@@ -626,9 +642,10 @@ class _CatItemWithActionsState extends State<_CatItemWithActions> {
                     fontSize: 13,
                     fontWeight: widget.selected
                         ? FontWeight.w600
-                        : FontWeight.w400,
+                        : FontWeight.w500,
                     color: widget.selected ? c.textBrand : c.textDefault,
                     fontFamily: 'Inter',
+                    letterSpacing: -0.1,
                   ),
                 ),
               ),
@@ -647,17 +664,7 @@ class _CatItemWithActionsState extends State<_CatItemWithActions> {
                   size: 15,
                   onTap: widget.onDelete,
                 ),
-              ] else
-                const SizedBox(width: 6),
-              if (widget.selected)
-                Container(
-                  width: 3,
-                  height: 18,
-                  decoration: BoxDecoration(
-                    color: c.textBrand,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
+              ],
             ],
           ),
         ),
@@ -729,41 +736,48 @@ class _GoodsPanel extends StatelessWidget {
       children: [
         // ── Toolbar ──
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
+          padding: const EdgeInsets.fromLTRB(24, 22, 24, 16),
           child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    catName,
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w700,
-                      color: c.textDefault,
-                      fontFamily: 'Inter',
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      catName,
+                      style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w700,
+                        color: c.textDefault,
+                        fontFamily: 'Inter',
+                        letterSpacing: -0.4,
+                        height: 1.1,
+                      ),
                     ),
-                  ),
-                  Text(
-                    '$totalCount ta taom',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: c.textSecondary,
-                      fontFamily: 'Inter',
+                    const SizedBox(height: 4),
+                    Text(
+                      totalCount == 0
+                          ? 'Taomlar topilmadi'
+                          : '$totalCount ta taom',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: c.textSecondary,
+                        fontFamily: 'Inter',
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-              const Spacer(),
               SizedBox(
-                width: 240,
+                width: 280,
                 child: _SearchField(
                   controller: searchCtrl,
                   hint: 'Taom qidirish...',
                   onChanged: onSearch,
                 ),
               ),
-              const SizedBox(width: 10),
+              const SizedBox(width: 12),
               _PrimaryBtn(
                 label: 'Yangi taom',
                 icon: Icons.add_rounded,
@@ -772,60 +786,46 @@ class _GoodsPanel extends StatelessWidget {
             ],
           ),
         ),
-        Divider(height: 1, color: c.border),
         // ── Content ──
         Expanded(
           child: loading
-              ? const Center(child: CircularProgressIndicator.adaptive())
+              ? const _GoodsSkeleton()
               : error != null
-                  ? Center(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        spacing: 10,
-                        children: [
-                          Text(
-                            error!,
-                            style: TextStyle(color: c.systemError),
-                          ),
-                          FilledButton(
-                            onPressed: onRetry,
-                            child: const Text('Qayta urinish'),
-                          ),
-                        ],
-                      ),
-                    )
+                  ? _GoodsErrorState(message: error!, onRetry: onRetry)
                   : goods.isEmpty
-                      ? Center(
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            spacing: 8,
-                            children: [
-                              Icon(Icons.restaurant_menu_outlined,
-                                  size: 48, color: c.border),
-                              Text(
-                                'Taomlar topilmadi',
-                                style: TextStyle(color: c.textSecondary),
+                      ? _GoodsEmptyState(onNew: onNew)
+                      : LayoutBuilder(
+                          builder: (context, constraints) {
+                            // Grid: 3–5 ustun ekran kengligiga qarab
+                            const minCardW = 220.0;
+                            const gap = 14.0;
+                            final w = constraints.maxWidth - 48; // 24+24 padding
+                            final cols =
+                                (w / (minCardW + gap)).floor().clamp(2, 5);
+                            return GridView.builder(
+                              padding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
+                              itemCount: goods.length,
+                              gridDelegate:
+                                  SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: cols,
+                                crossAxisSpacing: gap,
+                                mainAxisSpacing: gap,
+                                childAspectRatio: 0.78,
                               ),
-                            ],
-                          ),
-                        )
-                      : ListView.separated(
-                          padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
-                          itemCount: goods.length,
-                          separatorBuilder: (_, _) =>
-                              const SizedBox(height: 6),
-                          itemBuilder: (context, i) {
-                            final g = goods[i];
-                            final catName = categories
-                                    .where((c) => c.id == g.categoryId)
-                                    .firstOrNull
-                                    ?.name ??
-                                '';
-                            return _GoodRow(
-                              good: g,
-                              categoryName: catName,
-                              onEdit: () => onEdit(g),
-                              onDelete: () => onDelete(g),
+                              itemBuilder: (context, i) {
+                                final g = goods[i];
+                                final catNameLocal = categories
+                                        .where((c) => c.id == g.categoryId)
+                                        .firstOrNull
+                                        ?.name ??
+                                    '';
+                                return _GoodCard(
+                                  good: g,
+                                  categoryName: catNameLocal,
+                                  onEdit: () => onEdit(g),
+                                  onDelete: () => onDelete(g),
+                                );
+                              },
                             );
                           },
                         ),
@@ -846,13 +846,17 @@ class _GoodsPanel extends StatelessWidget {
   }
 }
 
-class _GoodRow extends StatefulWidget {
+// ═══════════════════════════════════════════════════════
+// Premium product card (grid tile) — image + name + price
+// ═══════════════════════════════════════════════════════
+
+class _GoodCard extends StatefulWidget {
   final GoodsModel good;
   final String categoryName;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
 
-  const _GoodRow({
+  const _GoodCard({
     required this.good,
     required this.categoryName,
     required this.onEdit,
@@ -860,16 +864,19 @@ class _GoodRow extends StatefulWidget {
   });
 
   @override
-  State<_GoodRow> createState() => _GoodRowState();
+  State<_GoodCard> createState() => _GoodCardState();
 }
 
-class _GoodRowState extends State<_GoodRow> {
+class _GoodCardState extends State<_GoodCard> {
   bool _hovered = false;
 
   @override
   Widget build(BuildContext context) {
     final c = context.colors;
-    final hasImage = (widget.good.pictureUrl ?? '').isNotEmpty;
+    final pic = widget.good.pictureUrl;
+    final hasImage = pic != null && pic.isNotEmpty;
+    final initial =
+        widget.good.name.isNotEmpty ? widget.good.name[0].toUpperCase() : '•';
 
     return MouseRegion(
       cursor: SystemMouseCursors.click,
@@ -878,95 +885,419 @@ class _GoodRowState extends State<_GoodRow> {
       child: GestureDetector(
         onTap: widget.onEdit,
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 120),
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          duration: const Duration(milliseconds: 180),
+          curve: Curves.easeOut,
+          transform: Matrix4.translationValues(0, _hovered ? -2 : 0, 0),
           decoration: BoxDecoration(
-            color: _hovered ? c.bgSecondary : c.bgDefault,
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: c.border),
+            color: c.bgDefault,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: _hovered ? c.textBrand.withOpacity(0.4) : c.border,
+              width: _hovered ? 1.2 : 1,
+            ),
+            boxShadow: _hovered
+                ? [
+                    BoxShadow(
+                      color: c.textBrand.withOpacity(0.10),
+                      blurRadius: 18,
+                      offset: const Offset(0, 6),
+                    ),
+                  ]
+                : null,
           ),
-          child: Row(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Image indicator
-              Container(
-                width: 36,
-                height: 36,
-                decoration: BoxDecoration(
-                  color: hasImage
-                      ? c.textBrand.withOpacity(0.08)
-                      : c.bgSecondary,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Icon(
-                  hasImage
-                      ? Icons.image_outlined
-                      : Icons.hide_image_outlined,
-                  size: 18,
-                  color: hasImage ? c.textBrand : c.textTertiary,
+              // ── Image area ──
+              Expanded(
+                flex: 5,
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    ClipRRect(
+                      borderRadius: const BorderRadius.vertical(
+                        top: Radius.circular(15),
+                      ),
+                      child: hasImage
+                          ? CustomCachedNetworkImage(
+                              minioObjectName: pic,
+                              fit: BoxFit.cover,
+                              width: double.infinity,
+                              height: double.infinity,
+                            )
+                          : _InitialPlaceholder(initial: initial),
+                    ),
+                    // Hover actions overlay
+                    if (_hovered)
+                      Positioned(
+                        top: 8,
+                        right: 8,
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            _OverlayIconBtn(
+                              icon: Icons.edit_outlined,
+                              tooltip: 'Tahrirlash',
+                              onTap: widget.onEdit,
+                            ),
+                            const SizedBox(width: 6),
+                            _OverlayIconBtn(
+                              icon: Icons.delete_outline_rounded,
+                              tooltip: "O'chirish",
+                              onTap: widget.onDelete,
+                              destructive: true,
+                            ),
+                          ],
+                        ),
+                      ),
+                    // Category flag
+                    if (widget.categoryName.isNotEmpty)
+                      Positioned(
+                        left: 10,
+                        bottom: 10,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 5,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.94),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
+                            widget.categoryName,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 10.5,
+                              fontWeight: FontWeight.w600,
+                              color: c.textSecondary,
+                              fontFamily: 'Inter',
+                              letterSpacing: 0.2,
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
               ),
-              const SizedBox(width: 12),
-              // Name + category
-              Expanded(
+              // ── Footer: name + price ──
+              Padding(
+                padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       widget.good.name,
-                      maxLines: 1,
+                      maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
                         color: c.textDefault,
                         fontFamily: 'Inter',
+                        height: 1.25,
+                        letterSpacing: -0.1,
                       ),
                     ),
-                    if (widget.categoryName.isNotEmpty)
-                      Text(
-                        widget.categoryName,
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: c.textTertiary,
-                          fontFamily: 'Inter',
+                    const SizedBox(height: 6),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.baseline,
+                      textBaseline: TextBaseline.alphabetic,
+                      children: [
+                        Text(
+                          AppFormatter.formatAmountWithSpaces(
+                              widget.good.price),
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                            color: c.textBrand,
+                            fontFamily: 'Inter',
+                            letterSpacing: -0.2,
+                            fontFeatures: const [
+                              FontFeature.tabularFigures(),
+                            ],
+                          ),
                         ),
-                      ),
+                        const SizedBox(width: 3),
+                        Text(
+                          "so'm",
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: c.textSecondary,
+                            fontFamily: 'Inter',
+                          ),
+                        ),
+                      ],
+                    ),
                   ],
                 ),
               ),
-              // Price
-              Text(
-                '${AppFormatter.formatAmountWithSpaces(widget.good.price)} so\'m',
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: c.textBrand,
-                  fontFamily: 'Inter',
-                ),
-              ),
-              const SizedBox(width: 10),
-              // Action buttons
-              if (_hovered) ...[
-                _IconBtn(
-                  icon: Icons.edit_outlined,
-                  tooltip: 'Tahrirlash',
-                  color: c.textSecondary,
-                  onTap: widget.onEdit,
-                ),
-                _IconBtn(
-                  icon: Icons.delete_outline_rounded,
-                  tooltip: "O'chirish",
-                  color: const Color(0xFFEF4444),
-                  onTap: widget.onDelete,
-                ),
-              ] else
-                Icon(
-                  Icons.chevron_right_rounded,
-                  color: c.textTertiary,
-                ),
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _InitialPlaceholder extends StatelessWidget {
+  final String initial;
+  const _InitialPlaceholder({required this.initial});
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            c.textBrand.withOpacity(0.05),
+            c.textBrand.withOpacity(0.12),
+          ],
+        ),
+      ),
+      alignment: Alignment.center,
+      child: Text(
+        initial,
+        style: TextStyle(
+          fontSize: 42,
+          fontWeight: FontWeight.w700,
+          color: c.textBrand.withOpacity(0.55),
+          fontFamily: 'Inter',
+          letterSpacing: -1,
+        ),
+      ),
+    );
+  }
+}
+
+class _OverlayIconBtn extends StatefulWidget {
+  final IconData icon;
+  final String tooltip;
+  final VoidCallback onTap;
+  final bool destructive;
+
+  const _OverlayIconBtn({
+    required this.icon,
+    required this.tooltip,
+    required this.onTap,
+    this.destructive = false,
+  });
+
+  @override
+  State<_OverlayIconBtn> createState() => _OverlayIconBtnState();
+}
+
+class _OverlayIconBtnState extends State<_OverlayIconBtn> {
+  bool _hovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    final iconColor =
+        widget.destructive ? const Color(0xFFDC2626) : c.textDefault;
+    return Tooltip(
+      message: widget.tooltip,
+      child: MouseRegion(
+        cursor: SystemMouseCursors.click,
+        onEnter: (_) => setState(() => _hovered = true),
+        onExit: (_) => setState(() => _hovered = false),
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: widget.onTap,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 120),
+            width: 30,
+            height: 30,
+            decoration: BoxDecoration(
+              color: _hovered ? Colors.white : Colors.white.withOpacity(0.92),
+              borderRadius: BorderRadius.circular(8),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.08),
+                  blurRadius: 6,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            alignment: Alignment.center,
+            child: Icon(widget.icon, size: 14, color: iconColor),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// Skeleton / Empty / Error states
+// ═══════════════════════════════════════════════════════
+
+class _GoodsSkeleton extends StatelessWidget {
+  const _GoodsSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        const minCardW = 220.0;
+        const gap = 14.0;
+        final w = constraints.maxWidth - 48;
+        final cols = (w / (minCardW + gap)).floor().clamp(2, 5);
+        return GridView.builder(
+          padding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
+          itemCount: cols * 2,
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: cols,
+            crossAxisSpacing: gap,
+            mainAxisSpacing: gap,
+            childAspectRatio: 0.78,
+          ),
+          itemBuilder: (_, _) => Container(
+            decoration: BoxDecoration(
+              color: c.bgDefault,
+              border: Border.all(color: c.border),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Expanded(
+                  flex: 5,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: c.bgSecondary,
+                      borderRadius: const BorderRadius.vertical(
+                        top: Radius.circular(15),
+                      ),
+                    ),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        height: 12,
+                        width: 120,
+                        decoration: BoxDecoration(
+                          color: c.bgSecondary,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Container(
+                        height: 14,
+                        width: 80,
+                        decoration: BoxDecoration(
+                          color: c.bgSecondary,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _GoodsEmptyState extends StatelessWidget {
+  final VoidCallback onNew;
+  const _GoodsEmptyState({required this.onNew});
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 72,
+            height: 72,
+            decoration: BoxDecoration(
+              color: c.textBrand.withOpacity(0.08),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            alignment: Alignment.center,
+            child: Icon(
+              Icons.restaurant_menu_outlined,
+              size: 32,
+              color: c.textBrand,
+            ),
+          ),
+          const SizedBox(height: 18),
+          Text(
+            "Hozircha taom qo'shilmagan",
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: c.textDefault,
+              fontFamily: 'Inter',
+              letterSpacing: -0.2,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Menyuga birinchi taomni qo\'shing',
+            style: TextStyle(
+              fontSize: 13,
+              color: c.textSecondary,
+              fontFamily: 'Inter',
+            ),
+          ),
+          const SizedBox(height: 18),
+          _PrimaryBtn(
+            label: 'Yangi taom',
+            icon: Icons.add_rounded,
+            onTap: onNew,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _GoodsErrorState extends StatelessWidget {
+  final String message;
+  final VoidCallback onRetry;
+  const _GoodsErrorState({required this.message, required this.onRetry});
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.error_outline_rounded, size: 36, color: c.systemError),
+          const SizedBox(height: 12),
+          Text(
+            message,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 13,
+              color: c.systemError,
+              fontFamily: 'Inter',
+            ),
+          ),
+          const SizedBox(height: 14),
+          FilledButton.icon(
+            onPressed: onRetry,
+            icon: const Icon(Icons.refresh_rounded, size: 16),
+            label: const Text('Qayta urinish'),
+          ),
+        ],
       ),
     );
   }

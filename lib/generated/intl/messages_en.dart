@@ -37,9 +37,9 @@ class MessageLookup extends MessageLookupByLibrary {
         "strAppliesToAllUsers":
             MessageLookupByLibrary.simpleMessage("Applied to all users"),
         "strApril": MessageLookupByLibrary.simpleMessage("April"),
-        "strArchive": MessageLookupByLibrary.simpleMessage("Archive"),
+        "strArchive": MessageLookupByLibrary.simpleMessage("Orders"),
         "strArchiveEmpty":
-            MessageLookupByLibrary.simpleMessage("Archive is empty"),
+            MessageLookupByLibrary.simpleMessage("Orders not found"),
         "strAugust": MessageLookupByLibrary.simpleMessage("August"),
         "strAverageCheck":
             MessageLookupByLibrary.simpleMessage("Average check"),

@@ -7,6 +7,7 @@ import 'package:mary_ai_pos/core/services/cache/cache_service.dart';
 import 'package:mary_ai_pos/core/services/connectivity/connectivity_cubit.dart';
 import 'package:mary_ai_pos/core/services/offline_queue/offline_queue_service.dart';
 import 'package:mary_ai_pos/core/widgets/app_sidebar.dart';
+import 'package:mary_ai_pos/core/widgets/global_virtual_keyboard.dart';
 import 'package:mary_ai_pos/core/widgets/offline_banner.dart';
 import 'package:mary_ai_pos/di.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/main/main_cubit.dart';
@@ -73,20 +74,23 @@ class _AppScaffoldState extends State<AppScaffold> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       backgroundColor:
           widget.backgroundColor ?? Theme.of(context).scaffoldBackgroundColor,
-      body: Column(
-        children: [
-          const OfflineBanner(),
-          Expanded(
-            child: Row(
-              children: [
-                AppSidebar(activeRoute: widget.activeRoute),
-                Expanded(child: widget.body),
-              ],
+      body: GlobalVirtualKeyboard(
+        child: Column(
+          children: [
+            const OfflineBanner(),
+            Expanded(
+              child: Row(
+                children: [
+                  AppSidebar(activeRoute: widget.activeRoute),
+                  Expanded(child: widget.body),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

@@ -22,15 +22,40 @@ jobs:
           channel: 'stable'
           cache: true
 
+      - name: Enable Windows desktop
+        run: flutter config --enable-windows-desktop
+
       - name: Flutter pub get
         run: flutter pub get
 
       - name: Build Windows Release
         run: flutter build windows --release
 
-      - name: Upload build artifact
+      - name: Extract version from pubspec.yaml
+        id: version
+        shell: pwsh
+        run: |
+          $raw = (Select-String -Path pubspec.yaml -Pattern '^version:\s*(.+)$').Matches[0].Groups[1].Value.Trim()
+          $ver = $raw.Split('+')[0]
+          echo "version=$ver" >> $env:GITHUB_OUTPUT
+
+      - name: Create installer with Inno Setup
+        shell: pwsh
+        run: |
+          & "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe" `
+            "/DMyAppVersion=${{ steps.version.outputs.version }}" `
+            windows\installer.iss
+
+      - name: Upload installer
         uses: actions/upload-artifact@v4
         with:
-          name: mary-ai-pos-windows
-          path: build\windows\x64\runner\Release\
+          name: MaryAIPOS-Installer-${{ steps.version.outputs.version }}
+          path: build\windows\installer\*.exe
           retention-days: 30
+
+      - name: Upload raw build
+        uses: actions/upload-artifact@v4
+        with:
+          name: MaryAIPOS-RawBuild-${{ steps.version.outputs.version }}
+          path: build\windows\x64\runner\Release\
+          retention-days: 7

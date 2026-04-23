@@ -843,9 +843,9 @@ class _MenuManageScreenState extends State<MenuManageScreen> {
           ),
           Expanded(
             child: Container(
-              color: colors.bgDefault,
+              color: colors.bgSecondary,
               child: Padding(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.fromLTRB(28, 24, 28, 24),
                 child: allowed
                     ? (_isLoadingMeal
                           ? const Center(
@@ -886,40 +886,75 @@ class _MenuManageScreenState extends State<MenuManageScreen> {
       children: [
         if (ref.isNotEmpty)
           Padding(
-            padding: const EdgeInsets.only(bottom: 8),
+            padding: const EdgeInsets.only(bottom: 12),
             child: _MealImagePreview(pictureRef: ref),
           ),
         GestureDetector(
           onTap: _isSubmitting || _uploadingImage ? null : _pickAndUploadImage,
-          child: Container(
-            height: 108,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 180),
+            curve: Curves.easeOut,
+            height: ref.isNotEmpty ? 110 : 220,
             decoration: BoxDecoration(
-              color: colors.bgDefault,
-              border: Border.all(color: colors.border),
-              borderRadius: BorderRadius.circular(8),
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  colors.textBrand.withOpacity(0.04),
+                  colors.textBrand.withOpacity(0.10),
+                ],
+              ),
+              border: Border.all(
+                color: colors.textBrand.withOpacity(0.25),
+                width: 1.2,
+              ),
+              borderRadius: BorderRadius.circular(16),
             ),
             child: _uploadingImage
                 ? const Center(child: CircularProgressIndicator.adaptive())
                 : Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(
-                        Icons.cloud_upload_outlined,
-                        color: colors.textSecondary,
+                      Container(
+                        width: 56,
+                        height: 56,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            BoxShadow(
+                              color: colors.textBrand.withOpacity(0.12),
+                              blurRadius: 12,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: Icon(
+                          Icons.cloud_upload_outlined,
+                          color: colors.textBrand,
+                          size: 26,
+                        ),
                       ),
-                      const SizedBox(height: 6),
+                      const SizedBox(height: 14),
                       Text(
-                        'jpg, png, gif\nmax 5 МБ',
-                        textAlign: TextAlign.center,
+                        'Rasm yuklash',
                         style: TextStyle(
-                          fontSize: 10,
-                          color: colors.textSecondary,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          color: colors.textDefault,
+                          fontFamily: 'Inter',
+                          letterSpacing: -0.1,
                         ),
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        'Выбрать файл',
-                        style: TextStyle(fontSize: 11, color: colors.textBrand),
+                        'JPG · PNG · GIF · 5 MB gacha',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: colors.textSecondary,
+                          fontFamily: 'Inter',
+                        ),
                       ),
                     ],
                   ),
@@ -938,19 +973,20 @@ class _MenuManageScreenState extends State<MenuManageScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // ── Basic info card ──
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.fromLTRB(24, 22, 24, 24),
             decoration: BoxDecoration(
-              color: colors.bgSecondary,
+              color: colors.bgDefault,
               border: Border.all(color: colors.border),
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(20),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const _SectionTitle('BASIC INFORMATION'),
-                const SizedBox(height: 10),
+                const SizedBox(height: 18),
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -958,11 +994,11 @@ class _MenuManageScreenState extends State<MenuManageScreen> {
                       child: Column(
                         children: [
                           _labeledInput('Name*', _nameCtrl),
-                          const SizedBox(height: 8),
+                          const SizedBox(height: 16),
                           _labeledInput('Name (English)', _nameEnCtrl),
-                          const SizedBox(height: 8),
+                          const SizedBox(height: 16),
                           _labeledInput('Name (Russian)', _nameRuCtrl),
-                          const SizedBox(height: 8),
+                          const SizedBox(height: 16),
                           _labeledInput(
                             'Price*',
                             _priceCtrl,
@@ -974,31 +1010,31 @@ class _MenuManageScreenState extends State<MenuManageScreen> {
                         ],
                       ),
                     ),
-                    const SizedBox(width: 10),
+                    const SizedBox(width: 20),
                     Expanded(
                       child: Column(
                         children: [
                           _labeledCategory(),
-                          const SizedBox(height: 8),
+                          const SizedBox(height: 16),
                           _labeledInput(
                             'Cooking time (min)',
                             _cookTimeCtrl,
                             keyboardType: TextInputType.number,
                           ),
-                          const SizedBox(height: 8),
+                          const SizedBox(height: 16),
                           _labeledInput(
                             'Description',
                             _descriptionCtrl,
                             maxLines: 2,
                           ),
-                          const SizedBox(height: 8),
+                          const SizedBox(height: 16),
                           _labeledInput('Image URL', _pictureUrlCtrl),
                         ],
                       ),
                     ),
-                    const SizedBox(width: 10),
+                    const SizedBox(width: 20),
                     SizedBox(
-                      width: 160,
+                      width: 240,
                       child: _mealImagePanel(colors),
                     ),
                   ],
@@ -1006,14 +1042,15 @@ class _MenuManageScreenState extends State<MenuManageScreen> {
               ],
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
+          // ── Items (ingredients + compounds) card ──
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+            padding: const EdgeInsets.fromLTRB(24, 10, 24, 12),
             decoration: BoxDecoration(
-              color: colors.bgSecondary,
+              color: colors.bgDefault,
               border: Border.all(color: colors.border),
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(20),
             ),
             child: Theme(
               data: Theme.of(
@@ -1021,38 +1058,44 @@ class _MenuManageScreenState extends State<MenuManageScreen> {
               ).copyWith(dividerColor: Colors.transparent),
               child: ExpansionTile(
                 tilePadding: EdgeInsets.zero,
+                iconColor: colors.textSecondary,
+                collapsedIconColor: colors.textSecondary,
                 onExpansionChanged: _onItemsExpansionChanged,
-                title: Row(
-                  children: [
-                    const _SectionTitle('ITEMS'),
-                    const SizedBox(width: 8),
-                    if (_loadingItems)
-                      SizedBox(
-                        width: 14,
-                        height: 14,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: colors.textTertiary,
+                title: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  child: Row(
+                    children: [
+                      const _SectionTitle('ITEMS'),
+                      const SizedBox(width: 10),
+                      if (_loadingItems)
+                        SizedBox(
+                          width: 14,
+                          height: 14,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: colors.textTertiary,
+                          ),
                         ),
-                      ),
-                  ],
+                    ],
+                  ),
                 ),
                 children: [
                   Padding(
-                    padding: const EdgeInsets.only(bottom: 10),
+                    padding: const EdgeInsets.only(bottom: 12),
                     child: _buildItemsSectionContent(context.colors),
                   ),
                 ],
               ),
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 20),
+          // ── Footer action bar ──
           Row(
             children: [
               _Tag(label: '${_ingredientCalculations.length} Ingredients'),
-              const SizedBox(width: 8),
+              const SizedBox(width: 10),
               _Tag(label: '${_compoundCalculations.length} Compounds'),
-              const SizedBox(width: 8),
+              const SizedBox(width: 10),
               _Tag(label: 'Total: $totalFormatted'),
               const Spacer(),
               _ActionBtn(
@@ -1069,15 +1112,15 @@ class _MenuManageScreenState extends State<MenuManageScreen> {
                         }
                       },
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: 12),
               _ActionBtn(
                 label: _isSubmitting
                     ? 'Saving...'
                     : (_isEditMode ? 'Update' : 'Save'),
                 bg: _isSubmitting
                     ? colors.buttonDisabledBg
-                    : colors.textDefault,
-                fg: colors.textOnBrand,
+                    : colors.textBrand,
+                fg: Colors.white,
                 onTap: _isSubmitting
                     ? null
                     : () {
@@ -1087,6 +1130,7 @@ class _MenuManageScreenState extends State<MenuManageScreen> {
               ),
             ],
           ),
+          const SizedBox(height: 12),
         ],
       ),
     );
@@ -1525,7 +1569,7 @@ class _MenuManageScreenState extends State<MenuManageScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _FieldLabel(label),
-        const SizedBox(height: 5),
+        const SizedBox(height: 8),
         _StyledInput(
           controller: ctrl,
           hint: '',
@@ -1542,7 +1586,7 @@ class _MenuManageScreenState extends State<MenuManageScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const _FieldLabel('Category*'),
-        const SizedBox(height: 5),
+        const SizedBox(height: 8),
         _buildCategoryField(),
       ],
     );
@@ -1602,13 +1646,19 @@ class _MenuManageScreenState extends State<MenuManageScreen> {
 
     return DropdownButtonFormField<CategoryModel>(
       value: _selectedCategory,
+      borderRadius: BorderRadius.circular(14),
       items: _categories
           .map(
             (c) => DropdownMenuItem<CategoryModel>(
               value: c,
               child: Text(
                 c.name,
-                style: TextStyle(fontSize: 13, color: colors.textDefault),
+                style: TextStyle(
+                  fontSize: 15,
+                  color: colors.textDefault,
+                  fontWeight: FontWeight.w500,
+                  fontFamily: 'Inter',
+                ),
               ),
             ),
           )
@@ -1617,27 +1667,33 @@ class _MenuManageScreenState extends State<MenuManageScreen> {
       icon: Icon(
         Icons.keyboard_arrow_down_rounded,
         color: colors.textSecondary,
+        size: 22,
       ),
       dropdownColor: colors.bgDefault,
+      style: TextStyle(
+        fontSize: 15,
+        color: colors.textDefault,
+        fontWeight: FontWeight.w500,
+        fontFamily: 'Inter',
+      ),
       decoration: InputDecoration(
-        isDense: true,
         contentPadding: const EdgeInsets.symmetric(
-          horizontal: 10,
-          vertical: 10,
+          horizontal: 16,
+          vertical: 18,
         ),
         filled: true,
         fillColor: colors.bgDefault,
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide(color: colors.border),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide(color: colors.border),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide: BorderSide(color: colors.borderBrand),
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: colors.borderBrand, width: 1.5),
         ),
       ),
     );
@@ -1667,9 +1723,11 @@ class _SectionTitle extends StatelessWidget {
     return Text(
       text,
       style: TextStyle(
-        fontSize: 11,
+        fontSize: 12,
         fontWeight: FontWeight.w700,
-        color: context.colors.textSecondary,
+        color: context.colors.textTertiary,
+        fontFamily: 'Inter',
+        letterSpacing: 1.2,
       ),
     );
   }
@@ -1683,7 +1741,13 @@ class _FieldLabel extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       text,
-      style: TextStyle(fontSize: 12, color: context.colors.textTertiary),
+      style: TextStyle(
+        fontSize: 13,
+        fontWeight: FontWeight.w600,
+        color: context.colors.textDefault,
+        fontFamily: 'Inter',
+        letterSpacing: -0.1,
+      ),
     );
   }
 }
@@ -1696,24 +1760,29 @@ class _Tag extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.colors;
     return Container(
-      height: 30,
-      padding: const EdgeInsets.symmetric(horizontal: 10),
+      height: 44,
+      padding: const EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(
         color: colors.bgSecondary,
         border: Border.all(color: colors.border),
-        borderRadius: BorderRadius.circular(6),
+        borderRadius: BorderRadius.circular(10),
       ),
       child: Center(
         child: Text(
           label,
-          style: TextStyle(fontSize: 11, color: colors.textSecondary),
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: colors.textDefault,
+            fontFamily: 'Inter',
+          ),
         ),
       ),
     );
   }
 }
 
-class _ActionBtn extends StatelessWidget {
+class _ActionBtn extends StatefulWidget {
   final String label;
   final Color bg;
   final Color fg;
@@ -1726,23 +1795,46 @@ class _ActionBtn extends StatelessWidget {
   });
 
   @override
+  State<_ActionBtn> createState() => _ActionBtnState();
+}
+
+class _ActionBtnState extends State<_ActionBtn> {
+  bool _pressed = false;
+
+  @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        height: 36,
-        padding: const EdgeInsets.symmetric(horizontal: 14),
-        decoration: BoxDecoration(
-          color: bg,
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Center(
-          child: Text(
-            label,
-            style: TextStyle(
-              fontSize: 12,
-              color: fg,
-              fontWeight: FontWeight.w600,
+    final disabled = widget.onTap == null;
+    return MouseRegion(
+      cursor: disabled ? MouseCursor.defer : SystemMouseCursors.click,
+      child: GestureDetector(
+        onTapDown: (_) {
+          if (!disabled) setState(() => _pressed = true);
+        },
+        onTapUp: (_) => setState(() => _pressed = false),
+        onTapCancel: () => setState(() => _pressed = false),
+        onTap: widget.onTap,
+        child: AnimatedScale(
+          scale: _pressed ? 0.97 : 1.0,
+          duration: const Duration(milliseconds: 120),
+          curve: Curves.easeOut,
+          child: Container(
+            height: 56,
+            padding: const EdgeInsets.symmetric(horizontal: 28),
+            decoration: BoxDecoration(
+              color: widget.bg,
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Center(
+              child: Text(
+                widget.label,
+                style: TextStyle(
+                  fontSize: 15,
+                  color: widget.fg,
+                  fontWeight: FontWeight.w600,
+                  fontFamily: 'Inter',
+                  letterSpacing: -0.1,
+                ),
+              ),
             ),
           ),
         ),
@@ -1851,28 +1943,37 @@ class _StyledInput extends StatelessWidget {
       keyboardType: keyboardType,
       maxLines: maxLines,
       inputFormatters: inputFormatters,
-      style: TextStyle(fontSize: 13, color: colors.textDefault),
+      style: TextStyle(
+        fontSize: 15,
+        color: colors.textDefault,
+        fontWeight: FontWeight.w500,
+        fontFamily: 'Inter',
+        letterSpacing: -0.1,
+      ),
       decoration: InputDecoration(
         hintText: hint,
-        hintStyle: TextStyle(fontSize: 13, color: colors.textSecondary),
-        isDense: true,
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 10,
-          vertical: 10,
+        hintStyle: TextStyle(
+          fontSize: 15,
+          color: colors.textTertiary,
+          fontFamily: 'Inter',
+        ),
+        contentPadding: EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: maxLines > 1 ? 14 : 18,
         ),
         filled: true,
         fillColor: colors.bgDefault,
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide(color: colors.border),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide(color: colors.border),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide: BorderSide(color: colors.borderBrand),
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: colors.borderBrand, width: 1.5),
         ),
       ),
     );

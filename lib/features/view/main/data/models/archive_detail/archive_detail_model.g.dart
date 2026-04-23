@@ -13,9 +13,7 @@ _$ArchiveDetailModelImpl _$$ArchiveDetailModelImplFromJson(
       bilNumber: (json['bill_no'] as num?)?.toInt() ?? 0,
       status: $enumDecodeNullable(_$OrderStatusEnumMap, json['bill_status']) ??
           OrderStatus.none,
-      opened: json['opened_at'] == null
-          ? null
-          : DateTime.parse(json['opened_at'] as String),
+      opened: _parseLocal(json['opened_at']),
       paymentType: json['payment_type'] as String? ?? '',
       tableId: json['table_id'] as String? ?? '',
       tableNumber: json['table_number'] == null

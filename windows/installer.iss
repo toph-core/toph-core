@@ -1,5 +1,7 @@
 #define MyAppName "Mary AI POS"
-#define MyAppVersion "1.0.0"
+#ifndef MyAppVersion
+  #define MyAppVersion "1.0.0"
+#endif
 #define MyAppPublisher "Mary AI"
 #define MyAppExeName "mary_ai_pos.exe"
 
@@ -12,7 +14,7 @@ DefaultDirName={autopf}\{#MyAppName}
 DefaultGroupName={#MyAppName}
 DisableProgramGroupPage=yes
 OutputDir=build\windows\installer
-OutputBaseFilename=mary_ai_pos_setup
+OutputBaseFilename=MaryAIPOS-Setup-{#MyAppVersion}
 Compression=lzma
 SolidCompression=yes
 WizardStyle=modern

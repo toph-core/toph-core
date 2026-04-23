@@ -25,7 +25,7 @@ mixin _$ArchiveModel {
   int get bilNumber => throw _privateConstructorUsedError;
   @JsonKey(name: "bill_status")
   OrderStatus get status => throw _privateConstructorUsedError;
-  @JsonKey(name: "opened_at")
+  @JsonKey(name: "opened_at", fromJson: _parseLocal)
   DateTime? get opened => throw _privateConstructorUsedError;
   @JsonKey(name: 'table_number', fromJson: parseInt)
   int get tableNumber => throw _privateConstructorUsedError;
@@ -35,6 +35,8 @@ mixin _$ArchiveModel {
   int get goodsTotal => throw _privateConstructorUsedError;
   @JsonKey(name: "service_amount", fromJson: parseInt)
   int get serviceAmount => throw _privateConstructorUsedError;
+  @JsonKey(name: "discount_amount", fromJson: parseInt)
+  int get discountAmount => throw _privateConstructorUsedError;
   @JsonKey(name: "quantity", fromJson: parseInt)
   int get goodsQuantity => throw _privateConstructorUsedError;
   @JsonKey(name: "customer_paid_amount", fromJson: parseInt)
@@ -56,11 +58,12 @@ abstract class $ArchiveModelCopyWith<$Res> {
       {String id,
       @JsonKey(name: 'bill_no', fromJson: parseInt) int bilNumber,
       @JsonKey(name: "bill_status") OrderStatus status,
-      @JsonKey(name: "opened_at") DateTime? opened,
+      @JsonKey(name: "opened_at", fromJson: _parseLocal) DateTime? opened,
       @JsonKey(name: 'table_number', fromJson: parseInt) int tableNumber,
       @JsonKey(name: 'grand_total', fromJson: parseInt) int totalPrice,
       @JsonKey(name: "food_total", fromJson: parseInt) int goodsTotal,
       @JsonKey(name: "service_amount", fromJson: parseInt) int serviceAmount,
+      @JsonKey(name: "discount_amount", fromJson: parseInt) int discountAmount,
       @JsonKey(name: "quantity", fromJson: parseInt) int goodsQuantity,
       @JsonKey(name: "customer_paid_amount", fromJson: parseInt)
       int customerPaidAmount});
@@ -87,6 +90,7 @@ class _$ArchiveModelCopyWithImpl<$Res, $Val extends ArchiveModel>
     Object? totalPrice = null,
     Object? goodsTotal = null,
     Object? serviceAmount = null,
+    Object? discountAmount = null,
     Object? goodsQuantity = null,
     Object? customerPaidAmount = null,
   }) {
@@ -123,6 +127,10 @@ class _$ArchiveModelCopyWithImpl<$Res, $Val extends ArchiveModel>
           ? _value.serviceAmount
           : serviceAmount // ignore: cast_nullable_to_non_nullable
               as int,
+      discountAmount: null == discountAmount
+          ? _value.discountAmount
+          : discountAmount // ignore: cast_nullable_to_non_nullable
+              as int,
       goodsQuantity: null == goodsQuantity
           ? _value.goodsQuantity
           : goodsQuantity // ignore: cast_nullable_to_non_nullable
@@ -147,11 +155,12 @@ abstract class _$$ArchiveModelImplCopyWith<$Res>
       {String id,
       @JsonKey(name: 'bill_no', fromJson: parseInt) int bilNumber,
       @JsonKey(name: "bill_status") OrderStatus status,
-      @JsonKey(name: "opened_at") DateTime? opened,
+      @JsonKey(name: "opened_at", fromJson: _parseLocal) DateTime? opened,
       @JsonKey(name: 'table_number', fromJson: parseInt) int tableNumber,
       @JsonKey(name: 'grand_total', fromJson: parseInt) int totalPrice,
       @JsonKey(name: "food_total", fromJson: parseInt) int goodsTotal,
       @JsonKey(name: "service_amount", fromJson: parseInt) int serviceAmount,
+      @JsonKey(name: "discount_amount", fromJson: parseInt) int discountAmount,
       @JsonKey(name: "quantity", fromJson: parseInt) int goodsQuantity,
       @JsonKey(name: "customer_paid_amount", fromJson: parseInt)
       int customerPaidAmount});
@@ -176,6 +185,7 @@ class __$$ArchiveModelImplCopyWithImpl<$Res>
     Object? totalPrice = null,
     Object? goodsTotal = null,
     Object? serviceAmount = null,
+    Object? discountAmount = null,
     Object? goodsQuantity = null,
     Object? customerPaidAmount = null,
   }) {
@@ -212,6 +222,10 @@ class __$$ArchiveModelImplCopyWithImpl<$Res>
           ? _value.serviceAmount
           : serviceAmount // ignore: cast_nullable_to_non_nullable
               as int,
+      discountAmount: null == discountAmount
+          ? _value.discountAmount
+          : discountAmount // ignore: cast_nullable_to_non_nullable
+              as int,
       goodsQuantity: null == goodsQuantity
           ? _value.goodsQuantity
           : goodsQuantity // ignore: cast_nullable_to_non_nullable
@@ -231,12 +245,14 @@ class _$ArchiveModelImpl extends _ArchiveModel {
       {this.id = '',
       @JsonKey(name: 'bill_no', fromJson: parseInt) this.bilNumber = 0,
       @JsonKey(name: "bill_status") this.status = OrderStatus.none,
-      @JsonKey(name: "opened_at") this.opened,
+      @JsonKey(name: "opened_at", fromJson: _parseLocal) this.opened,
       @JsonKey(name: 'table_number', fromJson: parseInt) this.tableNumber = 0,
       @JsonKey(name: 'grand_total', fromJson: parseInt) this.totalPrice = 0,
       @JsonKey(name: "food_total", fromJson: parseInt) this.goodsTotal = 0,
       @JsonKey(name: "service_amount", fromJson: parseInt)
       this.serviceAmount = 0,
+      @JsonKey(name: "discount_amount", fromJson: parseInt)
+      this.discountAmount = 0,
       @JsonKey(name: "quantity", fromJson: parseInt) this.goodsQuantity = 0,
       @JsonKey(name: "customer_paid_amount", fromJson: parseInt)
       this.customerPaidAmount = 0})
@@ -255,7 +271,7 @@ class _$ArchiveModelImpl extends _ArchiveModel {
   @JsonKey(name: "bill_status")
   final OrderStatus status;
   @override
-  @JsonKey(name: "opened_at")
+  @JsonKey(name: "opened_at", fromJson: _parseLocal)
   final DateTime? opened;
   @override
   @JsonKey(name: 'table_number', fromJson: parseInt)
@@ -270,6 +286,9 @@ class _$ArchiveModelImpl extends _ArchiveModel {
   @JsonKey(name: "service_amount", fromJson: parseInt)
   final int serviceAmount;
   @override
+  @JsonKey(name: "discount_amount", fromJson: parseInt)
+  final int discountAmount;
+  @override
   @JsonKey(name: "quantity", fromJson: parseInt)
   final int goodsQuantity;
   @override
@@ -278,7 +297,7 @@ class _$ArchiveModelImpl extends _ArchiveModel {
 
   @override
   String toString() {
-    return 'ArchiveModel(id: $id, bilNumber: $bilNumber, status: $status, opened: $opened, tableNumber: $tableNumber, totalPrice: $totalPrice, goodsTotal: $goodsTotal, serviceAmount: $serviceAmount, goodsQuantity: $goodsQuantity, customerPaidAmount: $customerPaidAmount)';
+    return 'ArchiveModel(id: $id, bilNumber: $bilNumber, status: $status, opened: $opened, tableNumber: $tableNumber, totalPrice: $totalPrice, goodsTotal: $goodsTotal, serviceAmount: $serviceAmount, discountAmount: $discountAmount, goodsQuantity: $goodsQuantity, customerPaidAmount: $customerPaidAmount)';
   }
 
   @override
@@ -299,6 +318,8 @@ class _$ArchiveModelImpl extends _ArchiveModel {
                 other.goodsTotal == goodsTotal) &&
             (identical(other.serviceAmount, serviceAmount) ||
                 other.serviceAmount == serviceAmount) &&
+            (identical(other.discountAmount, discountAmount) ||
+                other.discountAmount == discountAmount) &&
             (identical(other.goodsQuantity, goodsQuantity) ||
                 other.goodsQuantity == goodsQuantity) &&
             (identical(other.customerPaidAmount, customerPaidAmount) ||
@@ -317,6 +338,7 @@ class _$ArchiveModelImpl extends _ArchiveModel {
       totalPrice,
       goodsTotal,
       serviceAmount,
+      discountAmount,
       goodsQuantity,
       customerPaidAmount);
 
@@ -339,12 +361,14 @@ abstract class _ArchiveModel extends ArchiveModel {
       {final String id,
       @JsonKey(name: 'bill_no', fromJson: parseInt) final int bilNumber,
       @JsonKey(name: "bill_status") final OrderStatus status,
-      @JsonKey(name: "opened_at") final DateTime? opened,
+      @JsonKey(name: "opened_at", fromJson: _parseLocal) final DateTime? opened,
       @JsonKey(name: 'table_number', fromJson: parseInt) final int tableNumber,
       @JsonKey(name: 'grand_total', fromJson: parseInt) final int totalPrice,
       @JsonKey(name: "food_total", fromJson: parseInt) final int goodsTotal,
       @JsonKey(name: "service_amount", fromJson: parseInt)
       final int serviceAmount,
+      @JsonKey(name: "discount_amount", fromJson: parseInt)
+      final int discountAmount,
       @JsonKey(name: "quantity", fromJson: parseInt) final int goodsQuantity,
       @JsonKey(name: "customer_paid_amount", fromJson: parseInt)
       final int customerPaidAmount}) = _$ArchiveModelImpl;
@@ -362,7 +386,7 @@ abstract class _ArchiveModel extends ArchiveModel {
   @JsonKey(name: "bill_status")
   OrderStatus get status;
   @override
-  @JsonKey(name: "opened_at")
+  @JsonKey(name: "opened_at", fromJson: _parseLocal)
   DateTime? get opened;
   @override
   @JsonKey(name: 'table_number', fromJson: parseInt)
@@ -376,6 +400,9 @@ abstract class _ArchiveModel extends ArchiveModel {
   @override
   @JsonKey(name: "service_amount", fromJson: parseInt)
   int get serviceAmount;
+  @override
+  @JsonKey(name: "discount_amount", fromJson: parseInt)
+  int get discountAmount;
   @override
   @JsonKey(name: "quantity", fromJson: parseInt)
   int get goodsQuantity;

@@ -3,8 +3,10 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mary_ai_pos/core/constants/constants.dart';
 import 'package:mary_ai_pos/core/extension/for_context.dart';
 import 'package:mary_ai_pos/core/extension/number_formatter.dart';
+import 'package:mary_ai_pos/features/view/auth/presentation/cubit/bloc/user_bloc.dart';
 import 'package:mary_ai_pos/features/view/main/domain/entities/archive_detail_entity.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/payment/payment_bloc.dart';
+import 'package:mary_ai_pos/features/view/main/presentation/pages/payment/widgets/receipt_preview_modal.dart';
 
 const _kS900 = Color(0xFF0F172A);
 const _kS700 = Color(0xFF334155);
@@ -57,7 +59,24 @@ class PaymentRightSideBar extends StatelessWidget {
                     _OutlinedActionButton(
                       label: "Chek ko'rish",
                       icon: Icons.receipt_long_outlined,
-                      onTap: () {},
+                      onTap: () {
+                        final bloc = context.read<PaymentBloc>();
+                        final userBloc = context.read<UserBloc>();
+                        showDialog<void>(
+                          context: context,
+                          barrierColor: Colors.black54,
+                          builder: (_) => MultiBlocProvider(
+                            providers: [
+                              BlocProvider<PaymentBloc>.value(value: bloc),
+                              BlocProvider<UserBloc>.value(value: userBloc),
+                            ],
+                            child: ReceiptPreviewModal(
+                              detail: detail,
+                              finalTotal: finalTotal,
+                            ),
+                          ),
+                        );
+                      },
                     ),
                     const SizedBox(height: 10),
                     _ConfirmButton(
@@ -385,7 +404,7 @@ class _DarkTotalCard extends StatelessWidget {
                   fit: BoxFit.scaleDown,
                   alignment: Alignment.centerLeft,
                   child: Text(
-                    finalTotal.formatN,
+                    finalTotal.formatNWithoutS,
                     style: const TextStyle(
                       fontSize: 40,
                       fontWeight: FontWeight.w700,
@@ -565,16 +584,16 @@ class _ConfirmButton extends StatelessWidget {
                     backgroundColor: Colors.white,
                   ),
                 )
-              : Row(
+              : const Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Icon(
+                    Icon(
                       Icons.check_rounded,
                       size: 20,
                       color: Colors.white,
                     ),
-                    const SizedBox(width: 8),
-                    const Text(
+                    SizedBox(width: 8),
+                    Text(
                       'Tasdiqlash',
                       style: TextStyle(
                         fontSize: 15,

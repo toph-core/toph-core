@@ -188,6 +188,20 @@ class MainDataSourcesImpl implements MainDataSources {
       );
       return Right(ShiftResponseModel.fromJson(response.data['data']));
     } on DioException catch (exception) {
+      // Server already has an open shift for this kassa — fetch & return it.
+      final data = exception.response?.data;
+      final message = data is Map ? (data['error'] ?? data['message']) : null;
+      final alreadyOpen =
+          message is String && message.toLowerCase().contains('already');
+      if (alreadyOpen) {
+        final existing = await checkShift(id: request.cashRegisterId);
+        return existing.fold(
+          (_) => Left(handleDioException(exception)),
+          (shift) => shift != null
+              ? Right(shift)
+              : Left(handleDioException(exception)),
+        );
+      }
       return Left(handleDioException(exception));
     } on FormatException catch (e, st) {
       if (kDebugMode) print('ParsingError: $e\n$st');
@@ -212,9 +226,30 @@ class MainDataSourcesImpl implements MainDataSources {
         ListAPI.activeShift,
         queryParameters: {"cash_register_id": id},
       );
-      return Right(ShiftResponseModel.fromJson(response.data['data']));
-    } catch (e) {
-      return const Right(null);
+      final raw = response.data;
+      final data = raw is Map<String, dynamic> ? raw['data'] : null;
+      if (data is! Map<String, dynamic> || data.isEmpty) {
+        return const Right(null);
+      }
+      return Right(ShiftResponseModel.fromJson(data));
+    } on DioException catch (e) {
+      // 404 / "no active shift" is a real "none" answer — let UI show the open flow.
+      if (e.response?.statusCode == 404) {
+        return const Right(null);
+      }
+      if (kDebugMode) {
+        print('[checkShift] DioException ${e.response?.statusCode}: ${e.response?.data}');
+      }
+      return Left(handleDioException(e));
+    } on TypeError catch (e, st) {
+      if (kDebugMode) print('[checkShift] parse TypeError: $e\n$st');
+      return const Left(ParsingFailure());
+    } on FormatException catch (e, st) {
+      if (kDebugMode) print('[checkShift] FormatException: $e\n$st');
+      return const Left(ParsingFailure());
+    } catch (e, st) {
+      if (kDebugMode) print('[checkShift] unexpected: $e\n$st');
+      return const Left(UnknownFailure());
     }
   }
 

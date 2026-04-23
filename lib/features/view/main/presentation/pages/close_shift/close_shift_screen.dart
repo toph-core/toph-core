@@ -39,31 +39,59 @@ class CloseShiftScreen extends StatefulWidget {
 
 class _CloseShiftScreenState extends State<CloseShiftScreen> {
   Timer? _ticker;
+  late final ArchivesBloc _archivesBloc;
+  int _tickCount = 0;
+  bool _syncing = false;
 
   @override
   void initState() {
     super.initState();
+    _archivesBloc = inject<ArchivesBloc>()
+      ..add(const ArchivesEvent.started());
     _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
-      if (mounted) setState(() {});
+      if (!mounted) return;
+      _tickCount++;
+      setState(() {});
+      // Har 30 soniyada archive'larni fonda yangilab turamiz — yangi
+      // to'lovlar smena hisobotida avtomatik paydo bo'ladi.
+      if (_tickCount % 30 == 0) {
+        _archivesBloc.add(const ArchivesEvent.getArchived());
+      }
     });
   }
 
   @override
   void dispose() {
     _ticker?.cancel();
+    _archivesBloc.close();
     super.dispose();
+  }
+
+  Future<void> _sync() async {
+    if (_syncing) return;
+    setState(() => _syncing = true);
+    context.read<ShiftBloc>().add(const ShiftEvent.checkShift());
+    _archivesBloc.add(const ArchivesEvent.getArchived());
+    // Spinner ko'rsatish uchun qisqa delay
+    await Future<void>.delayed(const Duration(milliseconds: 600));
+    if (mounted) setState(() => _syncing = false);
   }
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (_) => inject<ArchivesBloc>()
-        ..add(const ArchivesEvent.started()),
+    return BlocProvider.value(
+      value: _archivesBloc,
       child: AppScaffold(
         activeRoute: AppRoutes.closeShiftScreen,
         body: Column(
           children: [
-            MainHeader(title: S.current.strTerminal),
+            MainHeader(
+              title: S.current.strTerminal,
+              trailing: _SyncButton(
+                spinning: _syncing,
+                onTap: _sync,
+              ),
+            ),
             Expanded(
               child: BlocBuilder<ShiftBloc, ShiftState>(
                 builder: (context, state) {
@@ -74,6 +102,75 @@ class _CloseShiftScreenState extends State<CloseShiftScreen> {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SyncButton extends StatefulWidget {
+  final bool spinning;
+  final VoidCallback onTap;
+
+  const _SyncButton({required this.spinning, required this.onTap});
+
+  @override
+  State<_SyncButton> createState() => _SyncButtonState();
+}
+
+class _SyncButtonState extends State<_SyncButton>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _ctrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 900),
+    );
+  }
+
+  @override
+  void didUpdateWidget(covariant _SyncButton old) {
+    super.didUpdateWidget(old);
+    if (widget.spinning && !_ctrl.isAnimating) {
+      _ctrl.repeat();
+    } else if (!widget.spinning && _ctrl.isAnimating) {
+      _ctrl.stop();
+      _ctrl.value = 0;
+    }
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
+        onTap: widget.onTap,
+        child: Container(
+          height: 40,
+          width: 40,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            border: Border.all(color: _kS200),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          alignment: Alignment.center,
+          child: RotationTransition(
+            turns: _ctrl,
+            child: const Icon(
+              Icons.refresh_rounded,
+              size: 18,
+              color: _kS700,
+            ),
+          ),
         ),
       ),
     );
@@ -293,6 +390,12 @@ class _ShiftDashboard extends StatelessWidget {
       0,
       (sum, a) => sum + a.serviceAmount,
     );
+    final discountTotal = shiftArchives.fold<int>(
+      0,
+      (sum, a) => sum + a.discountAmount,
+    );
+    final discountOrderCount =
+        shiftArchives.where((a) => a.discountAmount > 0).length;
     final orderCount = shiftArchives.length;
     final itemsCount = shiftArchives.fold<int>(
       0,
@@ -340,7 +443,7 @@ class _ShiftDashboard extends StatelessWidget {
                 );
               }
               return Row(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Expanded(
                     child: _HourlyChartPanel(
@@ -359,6 +462,15 @@ class _ShiftDashboard extends StatelessWidget {
                 ],
               );
             },
+          ),
+          const SizedBox(height: 20),
+          _BottomRow(
+            archives: shiftArchives,
+            revenue: revenue,
+            serviceTotal: serviceTotal,
+            discountTotal: discountTotal,
+            discountOrderCount: discountOrderCount,
+            orderCount: orderCount,
           ),
           const SizedBox(height: 24),
           const _CloseShiftCTA(),
@@ -627,7 +739,7 @@ class _StatsRow extends StatelessWidget {
               width: w,
               child: _DarkStatCard(
                 label: 'Umumiy savdo',
-                value: revenue.formatN,
+                value: revenue.formatNWithoutS,
                 suffix: "so'm",
               ),
             ),
@@ -651,7 +763,7 @@ class _StatsRow extends StatelessWidget {
                 iconBg: _kGreenTint,
                 iconColor: _kGreen,
                 label: 'Xizmat haqi',
-                value: '${serviceTotal.formatN} so\'m',
+                value: serviceTotal.formatN,
                 sub: orderCount > 0
                     ? '$orderCount ta buyurtma'
                     : '—',
@@ -732,17 +844,17 @@ class _DarkStatCard extends StatelessWidget {
               ),
             ],
           ),
-          Row(
+          const Row(
             children: [
-              const Icon(
+              Icon(
                 Icons.trending_up_rounded,
                 size: 14,
                 color: _kGrowth,
               ),
-              const SizedBox(width: 4),
+              SizedBox(width: 4),
               Text(
                 'Joriy smena',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w500,
                   color: _kGrowth,
@@ -996,7 +1108,7 @@ class _HourlyChartPanel extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             peakValue > 0
-                ? 'Eng gavjum vaqt: ${peakHour.toString().padLeft(2, '0')}:00 — ${peakValue.formatN} so\'m'
+                ? 'Eng gavjum vaqt: ${peakHour.toString().padLeft(2, '0')}:00 — ${peakValue.formatN}'
                 : "Hali savdo ma'lumoti yo'q",
             style: const TextStyle(
               fontSize: 12,
@@ -1203,7 +1315,7 @@ class _CashBalancePanel extends StatelessWidget {
                 textBaseline: TextBaseline.alphabetic,
                 children: [
                   Text(
-                    expected.formatN,
+                    expected.formatNWithoutS,
                     style: const TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w700,
@@ -1262,7 +1374,7 @@ class _BalanceRow extends StatelessWidget {
           textBaseline: TextBaseline.alphabetic,
           children: [
             Text(
-              '$prefix${value.formatN}',
+              '$prefix${value.formatNWithoutS}',
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
@@ -1289,6 +1401,448 @@ class _BalanceRow extends StatelessWidget {
 // ─────────────────────────────────────────────
 // Close shift CTA (full-width red)
 // ─────────────────────────────────────────────
+
+// ─────────────────────────────────────────────
+// Bottom row — Recent orders + Discount/Service tinted cards
+// ─────────────────────────────────────────────
+
+class _BottomRow extends StatelessWidget {
+  final List<ArchiveEntity> archives;
+  final int revenue;
+  final int serviceTotal;
+  final int discountTotal;
+  final int discountOrderCount;
+  final int orderCount;
+
+  const _BottomRow({
+    required this.archives,
+    required this.revenue,
+    required this.serviceTotal,
+    required this.discountTotal,
+    required this.discountOrderCount,
+    required this.orderCount,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final compact = constraints.maxWidth < 1100;
+        if (compact) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _RecentOrdersPanel(archives: archives, revenue: revenue),
+              const SizedBox(height: 16),
+              _DiscountServicePanel(
+                serviceTotal: serviceTotal,
+                discountTotal: discountTotal,
+                discountOrderCount: discountOrderCount,
+                orderCount: orderCount,
+              ),
+            ],
+          );
+        }
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: _RecentOrdersPanel(archives: archives, revenue: revenue),
+            ),
+            const SizedBox(width: 20),
+            SizedBox(
+              width: 340,
+              child: _DiscountServicePanel(
+                serviceTotal: serviceTotal,
+                discountTotal: discountTotal,
+                discountOrderCount: discountOrderCount,
+                orderCount: orderCount,
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _RecentOrdersPanel extends StatelessWidget {
+  final List<ArchiveEntity> archives;
+  final int revenue;
+
+  const _RecentOrdersPanel({required this.archives, required this.revenue});
+
+  @override
+  Widget build(BuildContext context) {
+    // Most recent first, top 5 (largest-paid).
+    final sorted = [...archives]
+      ..sort((a, b) {
+        final at = a.opened;
+        final bt = b.opened;
+        if (at == null && bt == null) return 0;
+        if (at == null) return 1;
+        if (bt == null) return -1;
+        return bt.compareTo(at);
+      });
+    final recent = sorted.take(5).toList();
+    final maxTotal = recent.isEmpty
+        ? 1
+        : recent.map((a) => a.totalPrice).reduce((a, b) => a > b ? a : b);
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border.all(color: _kS200),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                "So'nggi buyurtmalar",
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                  color: _kS900,
+                  fontFamily: 'Inter',
+                  letterSpacing: -0.2,
+                ),
+              ),
+              GestureDetector(
+                onTap: () => Navigator.of(context)
+                    .pushNamed(AppRoutes.archiveScreen),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      "Barchasini ko'rish",
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: _kBrand,
+                        fontFamily: 'Inter',
+                      ),
+                    ),
+                    SizedBox(width: 4),
+                    Icon(
+                      Icons.arrow_forward_rounded,
+                      size: 14,
+                      color: _kBrand,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            recent.isEmpty
+                ? "Smena davomida hali buyurtma yo'q"
+                : '${archives.length} ta buyurtma · ${revenue.formatN}',
+            style: const TextStyle(
+              fontSize: 12,
+              color: _kS500,
+              fontFamily: 'Inter',
+            ),
+          ),
+          const SizedBox(height: 16),
+          if (recent.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 32),
+              child: Center(
+                child: Column(
+                  children: [
+                    Container(
+                      width: 48,
+                      height: 48,
+                      decoration: BoxDecoration(
+                        color: _kS50,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(
+                        Icons.receipt_long_outlined,
+                        size: 22,
+                        color: _kS400,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    const Text(
+                      "Buyurtma qilinmagan",
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                        color: _kS500,
+                        fontFamily: 'Inter',
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            )
+          else
+            Column(
+              children: [
+                for (var i = 0; i < recent.length; i++)
+                  Padding(
+                    padding: EdgeInsets.only(
+                      bottom: i == recent.length - 1 ? 0 : 14,
+                    ),
+                    child: _RecentOrderRow(
+                      rank: i + 1,
+                      archive: recent[i],
+                      ratio: maxTotal > 0
+                          ? recent[i].totalPrice / maxTotal
+                          : 0.0,
+                    ),
+                  ),
+              ],
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _RecentOrderRow extends StatelessWidget {
+  final int rank;
+  final ArchiveEntity archive;
+  final double ratio;
+
+  const _RecentOrderRow({
+    required this.rank,
+    required this.archive,
+    required this.ratio,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isTakeaway = archive.tableNumber == 0;
+    final label = isTakeaway
+        ? 'Olib ketish · #${archive.bilNumber}'
+        : '${archive.tableNumber}-stol · #${archive.bilNumber}';
+    final time = archive.opened != null
+        ? '${archive.opened!.hour.toString().padLeft(2, '0')}:${archive.opened!.minute.toString().padLeft(2, '0')}'
+        : '—';
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Container(
+          width: 28,
+          height: 28,
+          decoration: BoxDecoration(
+            color: _kS50,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          alignment: Alignment.center,
+          child: Text(
+            '$rank',
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              color: _kS700,
+              fontFamily: 'Inter',
+            ),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Flexible(
+                    child: Text(
+                      label,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: _kS900,
+                        fontFamily: 'Inter',
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    archive.totalPrice.formatN,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: _kS900,
+                      fontFamily: 'Inter',
+                      fontFeatures: [FontFeature.tabularFigures()],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 6),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(4),
+                child: LinearProgressIndicator(
+                  value: ratio.clamp(0.04, 1.0),
+                  minHeight: 4,
+                  backgroundColor: _kS50,
+                  valueColor: const AlwaysStoppedAnimation<Color>(_kBrand),
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                '${archive.goodsQuantity} taom · $time',
+                style: const TextStyle(
+                  fontSize: 11,
+                  color: _kS500,
+                  fontFamily: 'Inter',
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _DiscountServicePanel extends StatelessWidget {
+  final int serviceTotal;
+  final int discountTotal;
+  final int discountOrderCount;
+  final int orderCount;
+
+  const _DiscountServicePanel({
+    required this.serviceTotal,
+    required this.discountTotal,
+    required this.discountOrderCount,
+    required this.orderCount,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final avgService = orderCount > 0 ? serviceTotal ~/ orderCount : 0;
+    final avgDiscount =
+        discountOrderCount > 0 ? discountTotal ~/ discountOrderCount : 0;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const Text(
+          'Chegirma & Xizmat',
+          style: TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.w700,
+            color: _kS900,
+            fontFamily: 'Inter',
+            letterSpacing: -0.2,
+          ),
+        ),
+        const SizedBox(height: 12),
+        _TintCard(
+          label: 'Chegirmalar',
+          value: discountTotal.formatN,
+          sub: discountOrderCount > 0
+              ? "$discountOrderCount ta buyurtma · o'rt. ${avgDiscount.formatN}"
+              : 'Hali chegirma yo\'q',
+          labelColor: const Color(0xFFEA580C),
+          bg: const Color(0xFFFFF7ED),
+          border: const Color(0xFFFED7AA),
+          icon: Icons.local_offer_outlined,
+        ),
+        const SizedBox(height: 12),
+        _TintCard(
+          label: 'Xizmat haqi',
+          value: serviceTotal.formatN,
+          sub: orderCount > 0
+              ? "$orderCount ta · o'rt. ${avgService.formatN}"
+              : 'Hali xizmat haqi yo\'q',
+          labelColor: _kGreen,
+          bg: const Color(0xFFF0FDF4),
+          border: const Color(0xFFBBF7D0),
+          icon: Icons.room_service_outlined,
+        ),
+      ],
+    );
+  }
+}
+
+class _TintCard extends StatelessWidget {
+  final String label;
+  final String value;
+  final String sub;
+  final Color labelColor;
+  final Color bg;
+  final Color border;
+  final IconData icon;
+
+  const _TintCard({
+    required this.label,
+    required this.value,
+    required this.sub,
+    required this.labelColor,
+    required this.bg,
+    required this.border,
+    required this.icon,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: bg,
+        border: Border.all(color: border),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, size: 14, color: labelColor),
+              const SizedBox(width: 6),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: labelColor,
+                  fontFamily: 'Inter',
+                  letterSpacing: 0.2,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.w700,
+              color: _kS900,
+              fontFamily: 'Inter',
+              letterSpacing: -0.3,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            sub,
+            style: const TextStyle(
+              fontSize: 12,
+              color: _kS500,
+              fontFamily: 'Inter',
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
 
 class _CloseShiftCTA extends StatelessWidget {
   const _CloseShiftCTA();

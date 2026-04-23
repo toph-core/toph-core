@@ -12,9 +12,7 @@ _$ArchiveModelImpl _$$ArchiveModelImplFromJson(Map<String, dynamic> json) =>
       bilNumber: json['bill_no'] == null ? 0 : parseInt(json['bill_no']),
       status: $enumDecodeNullable(_$OrderStatusEnumMap, json['bill_status']) ??
           OrderStatus.none,
-      opened: json['opened_at'] == null
-          ? null
-          : DateTime.parse(json['opened_at'] as String),
+      opened: _parseLocal(json['opened_at']),
       tableNumber:
           json['table_number'] == null ? 0 : parseInt(json['table_number']),
       totalPrice:
@@ -22,6 +20,9 @@ _$ArchiveModelImpl _$$ArchiveModelImplFromJson(Map<String, dynamic> json) =>
       goodsTotal: json['food_total'] == null ? 0 : parseInt(json['food_total']),
       serviceAmount:
           json['service_amount'] == null ? 0 : parseInt(json['service_amount']),
+      discountAmount: json['discount_amount'] == null
+          ? 0
+          : parseInt(json['discount_amount']),
       goodsQuantity: json['quantity'] == null ? 0 : parseInt(json['quantity']),
       customerPaidAmount: json['customer_paid_amount'] == null
           ? 0
@@ -38,6 +39,7 @@ Map<String, dynamic> _$$ArchiveModelImplToJson(_$ArchiveModelImpl instance) =>
       'grand_total': instance.totalPrice,
       'food_total': instance.goodsTotal,
       'service_amount': instance.serviceAmount,
+      'discount_amount': instance.discountAmount,
       'quantity': instance.goodsQuantity,
       'customer_paid_amount': instance.customerPaidAmount,
     };

@@ -3,14 +3,15 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mary_ai_pos/core/routes/app_routes.dart';
 import 'package:mary_ai_pos/core/constants/constants.dart';
 import 'package:mary_ai_pos/core/utils/user_role_permissions.dart';
+import 'package:mary_ai_pos/core/values/app_assets.dart';
 import 'package:mary_ai_pos/features/view/auth/presentation/cubit/bloc/user_bloc.dart';
 import 'package:mary_ai_pos/generated/l10n.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/main/widgets/logout_dialog.dart';
 
-const _kIndigo = Color(0xFFFB6633);
+const _kBrand = Color(0xFFFB6633);
 const _kSlate900 = Color(0xFF0F172A);
-const _kSlate800 = Color(0xFF1E293B);
 const _kSlate500 = Color(0xFF64748B);
+const _kSlate200 = Color(0xFFE2E8F0);
 
 class AppSidebar extends StatelessWidget {
   final String activeRoute;
@@ -23,35 +24,26 @@ class AppSidebar extends StatelessWidget {
     final canAccessSettings = role.canAccessSettings;
 
     return Container(
-      width: 76,
-      color: _kSlate900,
+      width: 92,
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        border: Border(right: BorderSide(color: _kSlate200)),
+      ),
       child: Column(
         children: [
-          // Logo
+          // Logo — ichki kontainer yo'q, faqat o'zi
           Padding(
-            padding: const EdgeInsets.symmetric(vertical: 14),
-            child: Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: _kIndigo,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: const Center(
-                child: Text(
-                  'M',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 20,
-                    fontWeight: FontWeight.w700,
-                    fontFamily: 'Inter',
-                  ),
-                ),
-              ),
+            padding: const EdgeInsets.symmetric(vertical: 18),
+            child: Image.asset(
+              AppImages.imgBrandLogo,
+              width: 56,
+              height: 56,
+              fit: BoxFit.contain,
+              filterQuality: FilterQuality.high,
             ),
           ),
-          Container(height: 1, color: _kSlate800),
-          const SizedBox(height: 10),
+          Container(height: 1, color: _kSlate200),
+          const SizedBox(height: 12),
 
           // Nav items
           Expanded(
@@ -99,7 +91,7 @@ class AppSidebar extends StatelessWidget {
           ),
 
           // Logout
-          Container(height: 1, color: _kSlate800),
+          Container(height: 1, color: _kSlate200),
           Padding(
             padding: const EdgeInsets.only(bottom: 8, top: 4),
             child: _NavItem(
@@ -154,11 +146,12 @@ class _NavItemState extends State<_NavItem> {
   @override
   Widget build(BuildContext context) {
     final activeIconColor =
-        widget.isDestructive ? const Color(0xFFEF4444) : _kIndigo;
-    final inactiveIconColor =
-        widget.isDestructive ? const Color(0xFFEF4444).withOpacity(0.7) : _kSlate500;
+        widget.isDestructive ? const Color(0xFFEF4444) : _kBrand;
+    final inactiveIconColor = widget.isDestructive
+        ? const Color(0xFFEF4444).withOpacity(0.8)
+        : _kSlate500;
     final activeLabelColor =
-        widget.isDestructive ? const Color(0xFFEF4444) : const Color(0xFFE2E8F0);
+        widget.isDestructive ? const Color(0xFFEF4444) : _kSlate900;
     const inactiveLabelColor = _kSlate500;
 
     final bgColor = widget.isActive
@@ -178,27 +171,27 @@ class _NavItemState extends State<_NavItem> {
         onTap: widget.onTap,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 150),
-          width: 60,
-          margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-          padding: const EdgeInsets.symmetric(vertical: 8),
+          width: 76,
+          margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          padding: const EdgeInsets.symmetric(vertical: 12),
           decoration: BoxDecoration(
             color: bgColor,
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(12),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               IconTheme(
-                data: IconThemeData(color: iconColor, size: 22),
+                data: IconThemeData(color: iconColor, size: 26),
                 child: widget.icon,
               ),
-              const SizedBox(height: 4),
+              const SizedBox(height: 6),
               Text(
                 widget.label,
                 style: TextStyle(
-                  fontSize: 10,
+                  fontSize: 11,
                   fontWeight:
-                      widget.isActive ? FontWeight.w500 : FontWeight.w400,
+                      widget.isActive ? FontWeight.w600 : FontWeight.w500,
                   color: labelColor,
                   fontFamily: 'Inter',
                   letterSpacing: 0.1,
@@ -217,8 +210,11 @@ class _NavItemState extends State<_NavItem> {
 class _IconTables extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    final color = IconTheme.of(context).color!;
-    return CustomPaint(size: const Size(22, 22), painter: _TablesPainter(color));
+    final theme = IconTheme.of(context);
+    return CustomPaint(
+      size: Size(theme.size ?? 26, theme.size ?? 26),
+      painter: _TablesPainter(theme.color!),
+    );
   }
 }
 
@@ -230,55 +226,74 @@ class _TablesPainter extends CustomPainter {
     final p = Paint()
       ..color = color
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.8
+      ..strokeWidth = 2.0
       ..strokeCap = StrokeCap.round
       ..strokeJoin = StrokeJoin.round;
-    const rr = RRect.fromRectAndRadius;
-    const r = Radius.circular(1.5);
-    canvas.drawRRect(rr(Rect.fromLTWH(2, 2, 8, 8), r), p);
-    canvas.drawRRect(rr(Rect.fromLTWH(12, 2, 8, 8), r), p);
-    canvas.drawRRect(rr(Rect.fromLTWH(2, 12, 8, 8), r), p);
-    canvas.drawRRect(rr(Rect.fromLTWH(12, 12, 8, 8), r), p);
+    // 4 teng kvadrat — chizish 22px asosida, size ga mos skalaplanadi.
+    final scale = size.width / 22;
+    final r = Radius.circular(1.8 * scale);
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+          Rect.fromLTWH(2 * scale, 2 * scale, 8 * scale, 8 * scale), r),
+      p,
+    );
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+          Rect.fromLTWH(12 * scale, 2 * scale, 8 * scale, 8 * scale), r),
+      p,
+    );
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+          Rect.fromLTWH(2 * scale, 12 * scale, 8 * scale, 8 * scale), r),
+      p,
+    );
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+          Rect.fromLTWH(12 * scale, 12 * scale, 8 * scale, 8 * scale), r),
+      p,
+    );
   }
-  @override bool shouldRepaint(_TablesPainter old) => old.color != color;
+
+  @override
+  bool shouldRepaint(_TablesPainter old) => old.color != color;
 }
 
 class _IconMenu extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return Icon(Icons.menu_rounded,
-        size: 22, color: IconTheme.of(context).color);
+    final t = IconTheme.of(context);
+    return Icon(Icons.menu_rounded, size: t.size, color: t.color);
   }
 }
 
 class _IconArchive extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return Icon(Icons.archive_outlined,
-        size: 22, color: IconTheme.of(context).color);
+    final t = IconTheme.of(context);
+    return Icon(Icons.archive_outlined, size: t.size, color: t.color);
   }
 }
 
 class _IconShift extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return Icon(Icons.bar_chart_rounded,
-        size: 22, color: IconTheme.of(context).color);
+    final t = IconTheme.of(context);
+    return Icon(Icons.bar_chart_rounded, size: t.size, color: t.color);
   }
 }
 
 class _IconSettings extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return Icon(Icons.settings_outlined,
-        size: 22, color: IconTheme.of(context).color);
+    final t = IconTheme.of(context);
+    return Icon(Icons.settings_outlined, size: t.size, color: t.color);
   }
 }
 
 class _IconLogout extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return Icon(Icons.logout_rounded,
-        size: 22, color: IconTheme.of(context).color);
+    final t = IconTheme.of(context);
+    return Icon(Icons.logout_rounded, size: t.size, color: t.color);
   }
 }

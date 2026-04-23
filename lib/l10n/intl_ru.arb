@@ -85,7 +85,7 @@
   "strPayment": "Оплата",
   "strAddItems": "Добавить",
 
-  "strArchive": "Архив",
+  "strArchive": "Заказы",
   "strOpenBills": "Открытые счета",
   "strNowActive": "Сейчас активны",
   "strTodayRevenue": "Выручка за сегодня",
@@ -98,7 +98,7 @@
   "strAmountColumn": "Сумма",
   "strTimeColumn": "Время",
   "strActionsColumn": "Действия",
-  "strArchiveEmpty": "Архив пуст",
+  "strArchiveEmpty": "Заказы не найдены",
   "strDate": "Дата",
   "strAllOrdersTitle": "Все заказы",
   "strOrderType": "Тип заказа",
