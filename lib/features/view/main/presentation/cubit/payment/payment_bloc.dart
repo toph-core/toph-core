@@ -75,7 +75,22 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
   }
 
   void _updateHourPrice(_UpdateHourPrice event, emit) {
-    emit(state.copyWith(hourPrice: event.hourPrice));
+    // enterSum ni ham yangilash — agar kassir hali o'zgartirmagan bo'lsa
+    final detail = state.detail;
+    final newHour = event.hourPrice.toInt();
+    String? newEnterSum;
+    if (detail != null) {
+      final base = effectiveTotal(detail);
+      final currentEntered = int.tryParse(state.enterSum) ?? 0;
+      final oldExpected = base + state.hourPrice.toInt();
+      if (currentEntered == 0 || currentEntered == oldExpected) {
+        newEnterSum = (base + newHour).toString();
+      }
+    }
+    emit(state.copyWith(
+      hourPrice: event.hourPrice,
+      enterSum: newEnterSum ?? state.enterSum,
+    ));
   }
 
   void _updateDiscountAmount(_UpdateDiscountAmount event, emit) => emit(
@@ -314,7 +329,7 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
           cache.saveOrderDetail(state.tableId!, (detail as ArchiveDetailModel).toJson());
           // Dastlabki to'lov oynasida "Qabul qilingan" ni aniq summa bilan
           // avtomatik to'ldirib qo'yamiz (agar kassir hali hech nima kiritmagan bo'lsa).
-          final prefill = PaymentBloc.effectiveTotal(detail);
+          final prefill = PaymentBloc.effectiveTotal(detail) + state.hourPrice.toInt();
           final shouldPrefill =
               state.enterSum.isEmpty || state.enterSum == '0';
           emit(state.copyWith(
@@ -338,7 +353,7 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
           emit(state.copyWith(status: Status.ERROR, detailStatus: Status.ERROR, failure: failure));
         },
         (detail) {
-          final prefill = PaymentBloc.effectiveTotal(detail);
+          final prefill = PaymentBloc.effectiveTotal(detail) + state.hourPrice.toInt();
           final shouldPrefill =
               state.enterSum.isEmpty || state.enterSum == '0';
           emit(state.copyWith(

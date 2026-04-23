@@ -96,6 +96,27 @@ class AppTheme {
       secondaryLabelStyle: _lightTextStyles.bodySm,
     ),
 
+    // 🔹 Scrollbar — kiosk: always visible, thick thumb
+    scrollbarTheme: ScrollbarThemeData(
+      thumbVisibility: WidgetStateProperty.all(true),
+      trackVisibility: WidgetStateProperty.all(true),
+      thickness: WidgetStateProperty.all(6),
+      radius: const Radius.circular(4),
+      thumbColor: WidgetStateProperty.resolveWith((states) {
+        if (states.contains(WidgetState.dragged)) {
+          return const Color(0xFFFB6633);
+        }
+        if (states.contains(WidgetState.hovered)) {
+          return const Color(0xFFCBD5E1);
+        }
+        return const Color(0xFFCBD5E1);
+      }),
+      trackColor: WidgetStateProperty.all(const Color(0xFFF1F5F9)),
+      trackBorderColor: WidgetStateProperty.all(Colors.transparent),
+      crossAxisMargin: 2,
+      mainAxisMargin: 4,
+    ),
+
     // 🔹 Extensions (custom)
     extensions: <ThemeExtension<dynamic>>[
       _lightColors,
@@ -132,6 +153,22 @@ class AppTheme {
       titleTextStyle: _darkTextStyles.headingMd,
     ),
     dividerTheme: DividerThemeData(color: _darkColors.border, thickness: 1),
+    scrollbarTheme: ScrollbarThemeData(
+      thumbVisibility: WidgetStateProperty.all(true),
+      trackVisibility: WidgetStateProperty.all(true),
+      thickness: WidgetStateProperty.all(6),
+      radius: const Radius.circular(4),
+      thumbColor: WidgetStateProperty.resolveWith((states) {
+        if (states.contains(WidgetState.dragged)) {
+          return const Color(0xFFFB6633);
+        }
+        return const Color(0xFF3F4046);
+      }),
+      trackColor: WidgetStateProperty.all(const Color(0xFF25272B)),
+      trackBorderColor: WidgetStateProperty.all(Colors.transparent),
+      crossAxisMargin: 2,
+      mainAxisMargin: 4,
+    ),
     extensions: <ThemeExtension<dynamic>>[
       _darkColors,
       _darkTextStyles,

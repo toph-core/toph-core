@@ -52,8 +52,8 @@ Future<void> main() async {
         await wm.focus();
       });
     } on SocketException {
-      // Port band — demak, boshqa instance allaqachon ishlayapti.
-      // Unga focus signali yuborib, o'zimiz chiqamiz.
+      // Port band — eski instance haqiqatan ishlayaptimi tekshiramiz.
+      bool alreadyRunning = false;
       try {
         final sock = await Socket.connect(
           InternetAddress.loopbackIPv4,
@@ -61,8 +61,13 @@ Future<void> main() async {
           timeout: const Duration(seconds: 1),
         );
         await sock.close();
-      } catch (_) {}
-      exit(0);
+        alreadyRunning = true;
+      } catch (_) {
+        // Ulanib bo'lmadi — port stale, davom etamiz.
+      }
+      if (alreadyRunning) exit(0);
+      // Stale port bo'lsa — SO_REUSEADDR bilan qayta bind qilish mumkin emas,
+      // lekin shared: true bilan urinib ko'ramiz.
     }
   }
   // ───────────────────────────────────────────────────────────────────────
@@ -160,14 +165,11 @@ class MyApp extends StatelessWidget {
   }
 }
 
-class ScrollBehaviorModified extends ScrollBehavior {
+class ScrollBehaviorModified extends MaterialScrollBehavior {
   const ScrollBehaviorModified();
 
   @override
   Set<PointerDeviceKind> get dragDevices => PointerDeviceKind.values.toSet();
-
-  @override
-  Widget buildScrollbar(_, Widget child, _) => child;
 
   @override
   ScrollPhysics getScrollPhysics(BuildContext context) {

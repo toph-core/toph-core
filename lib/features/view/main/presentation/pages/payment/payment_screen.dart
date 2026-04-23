@@ -292,7 +292,7 @@ class _ItemsList extends StatelessWidget {
     return ListView.separated(
       padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
       itemCount: allItems.length,
-      separatorBuilder: (_, __) =>
+      separatorBuilder: (_, _) =>
           const Divider(height: 1, color: Color(0xFFF1F5F9)),
       itemBuilder: (_, i) => _OrderLineRow(item: allItems[i]),
     );

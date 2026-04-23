@@ -16,6 +16,7 @@ class TableTimerCubit extends Cubit<TableTimerState> {
   Timer? _serverSyncTimer;
   Timer? _uiTickTimer;
   String? _activeOrderId;
+
   int _baseTotalActiveSec = 0;
   DateTime? _lastSyncAt;
 
@@ -68,6 +69,33 @@ class TableTimerCubit extends Cubit<TableTimerState> {
     ));
     _ensureServerSync();
     _startUiTickIfRunning(t);
+    // Bill API-dan pause_periods-ni yangilash
+    _fetchBillPauses();
+  }
+
+  /// Bill API-dan pause_periods-ni olib state-ga yozadi.
+  Future<void> _fetchBillPauses() async {
+    final orderId = _activeOrderId;
+    if (orderId == null || orderId.isEmpty) return;
+    try {
+      final res = await _client.get('/api/v1/bills/$orderId');
+      if (isClosed) return;
+      // Stale: order almashgan bo'lsa — eski javobni tashlaymiz
+      if (_activeOrderId != orderId) return;
+      final raw = res.data['data'];
+      if (raw is! Map<String, dynamic>) return;
+      final rawPauses = raw['pause_periods'];
+      if (rawPauses is! List) return;
+      final pauses = rawPauses
+          .whereType<Map<String, dynamic>>()
+          .map(PauseInterval.fromJson)
+          .toList();
+      if (!isClosed) {
+        emit(state.copyWith(billPauses: pauses));
+      }
+    } catch (_) {
+      // Xatolik bo'lsa — jimgina o'tib ketamiz
+    }
   }
 
   /// Buyurtma almashganda chaqiriladi. Timer faqat `dine_in` (yoki tur noma’lum) uchun so‘raladi.
@@ -121,6 +149,7 @@ class TableTimerCubit extends Cubit<TableTimerState> {
     try {
       final res = await _client.get(ListAPI.orderTableTimer(orderId));
       if (isClosed) return;
+      if (_activeOrderId != orderId) return;
       final raw = res.data['data'];
       if (raw is! Map<String, dynamic>) {
         emit(state.copyWith(
@@ -145,16 +174,14 @@ class TableTimerCubit extends Cubit<TableTimerState> {
       _applyTimer(t);
     } on DioException catch (e) {
       if (isClosed) return;
+      if (_activeOrderId != orderId) return;
       if (e.response?.statusCode == 400 || e.response?.statusCode == 404) {
-        // Timer hali boshlanmagan — 0:00 + Resume tugmani ko'rsat
-        if (!isClosed) {
-          emit(state.copyWith(
-            isLoading: false,
-            shouldShow: true,
-            clearTimer: true,
-            displayActiveSec: 0,
-          ));
-        }
+        emit(state.copyWith(
+          isLoading: false,
+          shouldShow: true,
+          clearTimer: true,
+          displayActiveSec: 0,
+        ));
         return;
       }
       emit(state.copyWith(
@@ -163,6 +190,7 @@ class TableTimerCubit extends Cubit<TableTimerState> {
       ));
     } catch (e) {
       if (isClosed) return;
+      if (_activeOrderId != orderId) return;
       emit(state.copyWith(
         isLoading: false,
         shouldShow: false,
@@ -232,7 +260,7 @@ class TableTimerCubit extends Cubit<TableTimerState> {
     emit(state.copyWith(isMutating: true, errorMessage: null));
     try {
       final res = await _client.post(ListAPI.orderTableTimerStart(id));
-      if (isClosed) return;
+      if (isClosed || _activeOrderId != id) return;
       final raw = res.data['data'];
       if (raw is Map<String, dynamic>) {
         final t = TableTimerResponse.fromJson(raw);
@@ -242,16 +270,14 @@ class TableTimerCubit extends Cubit<TableTimerState> {
         await fetchTimer(orderId: id);
       }
     } on DioException catch (e) {
-      if (!isClosed) {
-        emit(state.copyWith(
-          isMutating: false,
-          errorMessage: e.message ?? 'Start xatosi',
-        ));
-      }
+      if (isClosed || _activeOrderId != id) return;
+      emit(state.copyWith(
+        isMutating: false,
+        errorMessage: e.message ?? 'Start xatosi',
+      ));
     } catch (e) {
-      if (!isClosed) {
-        emit(state.copyWith(isMutating: false, errorMessage: e.toString()));
-      }
+      if (isClosed || _activeOrderId != id) return;
+      emit(state.copyWith(isMutating: false, errorMessage: e.toString()));
     }
   }
 
@@ -261,7 +287,7 @@ class TableTimerCubit extends Cubit<TableTimerState> {
     emit(state.copyWith(isMutating: true, errorMessage: null));
     try {
       final res = await _client.post(ListAPI.orderTableTimerPause(id));
-      if (isClosed) return;
+      if (isClosed || _activeOrderId != id) return;
       final raw = res.data['data'];
       if (raw is Map<String, dynamic>) {
         final t = TableTimerResponse.fromJson(raw);
@@ -271,16 +297,14 @@ class TableTimerCubit extends Cubit<TableTimerState> {
         await fetchTimer(orderId: id);
       }
     } on DioException catch (e) {
-      if (!isClosed) {
-        emit(state.copyWith(
-          isMutating: false,
-          errorMessage: e.message ?? 'Pause xatosi',
-        ));
-      }
+      if (isClosed || _activeOrderId != id) return;
+      emit(state.copyWith(
+        isMutating: false,
+        errorMessage: e.message ?? 'Pause xatosi',
+      ));
     } catch (e) {
-      if (!isClosed) {
-        emit(state.copyWith(isMutating: false, errorMessage: e.toString()));
-      }
+      if (isClosed || _activeOrderId != id) return;
+      emit(state.copyWith(isMutating: false, errorMessage: e.toString()));
     }
   }
 
@@ -295,7 +319,7 @@ class TableTimerCubit extends Cubit<TableTimerState> {
     emit(state.copyWith(isMutating: true, errorMessage: null));
     try {
       final res = await _client.post(ListAPI.orderTableTimerResume(id));
-      if (isClosed) return;
+      if (isClosed || _activeOrderId != id) return;
       final raw = res.data['data'];
       if (raw is Map<String, dynamic>) {
         final t = TableTimerResponse.fromJson(raw);
@@ -305,16 +329,14 @@ class TableTimerCubit extends Cubit<TableTimerState> {
         await fetchTimer(orderId: id);
       }
     } on DioException catch (e) {
-      if (!isClosed) {
-        emit(state.copyWith(
-          isMutating: false,
-          errorMessage: e.message ?? 'Resume xatosi',
-        ));
-      }
+      if (isClosed || _activeOrderId != id) return;
+      emit(state.copyWith(
+        isMutating: false,
+        errorMessage: e.message ?? 'Resume xatosi',
+      ));
     } catch (e) {
-      if (!isClosed) {
-        emit(state.copyWith(isMutating: false, errorMessage: e.toString()));
-      }
+      if (isClosed || _activeOrderId != id) return;
+      emit(state.copyWith(isMutating: false, errorMessage: e.toString()));
     }
   }
 

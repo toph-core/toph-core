@@ -11,14 +11,17 @@ class PauseInterval {
   });
 
   factory PauseInterval.fromJson(Map<String, dynamic> json) {
+    // timer API: started_at/ended_at | bill API: paused_at/resumed_at
+    final startRaw = (json['started_at'] ?? json['paused_at']) as String?;
+    final endRaw = (json['ended_at'] ?? json['resumed_at']) as String?;
+    final durationMinutes = (json['duration_minutes'] as num?)?.toInt();
     return PauseInterval(
-      startedAt: DateTime.tryParse(json['started_at'] as String? ?? '') ??
+      startedAt: (startRaw != null ? DateTime.tryParse(startRaw) : null) ??
           DateTime.now(),
-      endedAt: json['ended_at'] == null
-          ? null
-          : DateTime.tryParse(json['ended_at'] as String),
+      endedAt: endRaw != null ? DateTime.tryParse(endRaw) : null,
       durationSec: (json['duration_sec'] as num?)?.toInt() ??
           (json['pause_sec'] as num?)?.toInt() ??
+          (durationMinutes != null ? durationMinutes * 60 : null) ??
           0,
     );
   }

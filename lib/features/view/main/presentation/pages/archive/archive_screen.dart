@@ -1024,18 +1024,6 @@ class _AdminOrdersArchiveBodyState extends State<_AdminOrdersArchiveBody> {
   int _pageSize = 20;
   final NumberPaginatorController _paginatorController =
       NumberPaginatorController();
-  static const List<String> _statuses = [
-    'open',
-    'cooking',
-    'ready',
-    'served',
-    'paid',
-    'cancelled',
-    'reserved',
-    'rescheduled',
-  ];
-  static const List<String> _orderTypes = ['dine_in', 'takeaway'];
-
   final DioClient _client = inject<DioClient>();
   final ScrollController _scrollCtrl = ScrollController();
 
@@ -1218,289 +1206,391 @@ class _AdminOrdersArchiveBodyState extends State<_AdminOrdersArchiveBody> {
     _load(page: 1);
   }
 
+  void _exportCsvAdmin(BuildContext context) {
+    final buffer = StringBuffer()
+      ..writeln('#,Stol,Zal,Ofitsiant,Vaqt,Taomlar,Summa,Holat,Tur');
+    for (final o in _orders) {
+      final meta = _tableMeta[o.tableId];
+      final tableNum = meta?.number ?? 0;
+      final hallName = meta?.hallName ?? '';
+      final staff = _userNames[o.waiterId] ?? _userNames[o.cashierId] ?? '';
+      final statusLabel = localizedOrderStatus(context, o.status);
+      final typeLabel = localizedOrderType(context, o.orderType);
+      final tableLabel = tableNum > 0 ? 'Stol $tableNum' : '—';
+      final sumLabel = o.totalAmount == '0' || o.totalAmount.isEmpty ? '—' : o.totalAmount;
+      buffer.writeln(
+        '${o.bilNumber > 0 ? o.bilNumber : o.id},$tableLabel,$hallName,$staff,${o.createdAtLabel},${o.goodsCount > 0 ? o.goodsCount : '—'},$sumLabel,$statusLabel,$typeLabel',
+      );
+    }
+    Clipboard.setData(ClipboardData(text: buffer.toString()));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        duration: const Duration(seconds: 2),
+        backgroundColor: const Color(0xFF0F172A),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        content: Text(
+          'CSV clipboard\'ga nusxalandi · ${_orders.length} ta',
+          style: const TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w500,
+            color: Colors.white,
+            fontFamily: 'Inter',
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
+
+    // Compute stats from loaded orders
+    int totalSum = 0;
+    int cashSum = 0;
+    int cardSum = 0;
+    for (final o in _orders) {
+      final amt = int.tryParse(
+            o.totalAmount.replaceAll(RegExp(r'[^0-9]'), ''),
+          ) ??
+          0;
+      totalSum += amt;
+      final pm = o.paymentMethod;
+      if (pm == 'cash' || pm == 'naqd') {
+        cashSum += amt;
+      } else if (pm == 'card' || pm == 'karta') {
+        cardSum += amt;
+      }
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const MainHeader(title: 'Barcha buyurtmalar'),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(20, 12, 20, 10),
+        // ── Page header ──────────────────────────────────────────────────
+        Container(
+          height: 58,
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            border: Border(bottom: BorderSide(color: Color(0xFFE2E8F0))),
+          ),
           child: Row(
             children: [
-              SizedBox(
-                width: 220,
-                child: _filterDropdown(
-                  label: 'Status',
-                  value: _statusFilter,
-                  items: _statuses,
-                  labelFor: (e) => localizedOrderStatus(context, e),
-                  onChanged: (v) =>
-                      _applyFilters(status: v, type: _orderTypeFilter),
+              const Text(
+                'Barcha buyurtmalar',
+                style: TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF0F172A),
+                  fontFamily: 'Inter',
+                  letterSpacing: -0.3,
                 ),
-              ),
-              const SizedBox(width: 10),
-              SizedBox(
-                width: 180,
-                child: _filterDropdown(
-                  label: 'Order type',
-                  value: _orderTypeFilter,
-                  items: _orderTypes,
-                  labelFor: (e) => localizedOrderType(context, e),
-                  onChanged: (v) =>
-                      _applyFilters(status: _statusFilter, type: v),
-                ),
-              ),
-              const SizedBox(width: 10),
-              OutlinedButton.icon(
-                onPressed: _loading ? null : () => _load(page: 1),
-                icon: const Icon(Icons.refresh_rounded, size: 18),
-                label: const Text('Yangilash'),
               ),
               const Spacer(),
-              Text(
-                'Jami: ${_totalCount ?? _orders.length}',
-                style: TextStyle(fontSize: 13, color: colors.textSecondary),
+              GestureDetector(
+                onTap: _orders.isNotEmpty ? () => _exportCsvAdmin(context) : null,
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 120),
+                  height: 36,
+                  padding: const EdgeInsets.symmetric(horizontal: 14),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    border: Border.all(color: const Color(0xFFE2E8F0)),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    spacing: 8,
+                    children: [
+                      Icon(
+                        Icons.file_download_outlined,
+                        size: 15,
+                        color: _orders.isNotEmpty
+                            ? const Color(0xFF0F172A)
+                            : const Color(0xFF94A3B8),
+                      ),
+                      Text(
+                        'Eksport CSV',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                          color: _orders.isNotEmpty
+                              ? const Color(0xFF0F172A)
+                              : const Color(0xFF94A3B8),
+                          fontFamily: 'Inter',
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ],
           ),
         ),
-        Expanded(
-          child: Container(
-            margin: const EdgeInsets.fromLTRB(20, 0, 20, 12),
-            decoration: BoxDecoration(
-              color: colors.bgSecondary,
-              border: Border.all(color: colors.border),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: _loading && _orders.isEmpty
-                ? const Center(child: CircularProgressIndicator.adaptive())
-                : _error != null
-                ? Center(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          _error!,
-                          style: TextStyle(color: colors.systemError),
-                        ),
-                        const SizedBox(height: 10),
-                        FilledButton(
-                          onPressed: () => _load(page: _page),
-                          child: const Text('Qayta urinish'),
-                        ),
-                      ],
+
+        // ── Filter bar ────────────────────────────────────────────────────
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
+          color: Colors.white,
+          child: Row(
+            spacing: 6,
+            children: [
+              // Search
+              SizedBox(
+                width: 220,
+                height: 34,
+                child: TextField(
+                  decoration: InputDecoration(
+                    hintText: 'Qidirish...',
+                    hintStyle: const TextStyle(
+                      fontSize: 13,
+                      color: Color(0xFF94A3B8),
+                      fontFamily: 'Inter',
                     ),
-                  )
-                : _orders.isEmpty
-                ? Center(
-                    child: Text(
-                      'Buyurtmalar topilmadi',
-                      style: TextStyle(color: colors.textSecondary),
+                    prefixIcon: const Icon(
+                      Icons.search_rounded,
+                      size: 16,
+                      color: Color(0xFF94A3B8),
                     ),
-                  )
-                : Scrollbar(
-                    controller: _scrollCtrl,
-                    thumbVisibility: true,
-                    trackVisibility: true,
-                    thickness: 8,
-                    radius: const Radius.circular(4),
-                    interactive: true,
-                    child: ListView.separated(
-                      controller: _scrollCtrl,
-                      padding: const EdgeInsets.symmetric(vertical: 8),
-                      itemCount: _orders.length,
-                      separatorBuilder: (_, _) => Divider(
-                        height: 1,
-                        thickness: 1,
-                        color: colors.border,
-                      ),
-                      itemBuilder: (context, i) {
-                        final o = _orders[i];
-                        return Padding(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 14,
-                            vertical: 10,
-                          ),
-                          child: Builder(
-                            builder: (context) {
-                              final meta = _tableMeta[o.tableId];
-                              final hallName = meta?.hallName ?? '';
-                              final tableNum = meta?.number ?? 0;
-                              final waiterName = _userNames[o.waiterId] ?? '';
-                              final cashierName = _userNames[o.cashierId] ?? '';
-                              final staffName = waiterName.isNotEmpty
-                                  ? waiterName
-                                  : cashierName.isNotEmpty
-                                  ? cashierName
-                                  : '—';
-                              final isWaiter = waiterName.isNotEmpty;
-                              return Row(
-                                children: [
-                                  // Zal
-                                  Expanded(
-                                    flex: 3,
-                                    child: o.orderType == 'takeaway'
-                                        ? Container(
-                                            padding: const EdgeInsets.symmetric(
-                                              horizontal: 8,
-                                              vertical: 3,
-                                            ),
-                                            decoration: BoxDecoration(
-                                              color: const Color(0xFFFFF3EE),
-                                              borderRadius:
-                                                  BorderRadius.circular(6),
-                                              border: Border.all(
-                                                color: const Color(
-                                                  0xFFFB6633,
-                                                ).withOpacity(0.3),
-                                              ),
-                                            ),
-                                            child: const Row(
-                                              mainAxisSize: MainAxisSize.min,
-                                              spacing: 4,
-                                              children: [
-                                                Icon(
-                                                  Icons.shopping_bag_outlined,
-                                                  size: 12,
-                                                  color: Color(0xFFFB6633),
-                                                ),
-                                                Text(
-                                                  'Olib ketish',
-                                                  style: TextStyle(
-                                                    fontSize: 11,
-                                                    fontWeight: FontWeight.w600,
-                                                    color: Color(0xFFFB6633),
-                                                    fontFamily: 'Inter',
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          )
-                                        : Text(
-                                            hallName.isNotEmpty
-                                                ? hallName
-                                                : '—',
-                                            style: TextStyle(
-                                              fontSize: 13,
-                                              color: colors.textDefault,
-                                            ),
-                                          ),
-                                  ),
-                                  // Stol
-                                  Expanded(
-                                    flex: 2,
-                                    child: o.orderType == 'takeaway'
-                                        ? Text(
-                                            '—',
-                                            style: TextStyle(
-                                              color: colors.textSecondary,
-                                              fontSize: 13,
-                                            ),
-                                          )
-                                        : tableNum > 0
-                                        ? Container(
-                                            width: 28,
-                                            height: 28,
-                                            decoration: BoxDecoration(
-                                              color: const Color(0xFFF8FAFC),
-                                              borderRadius:
-                                                  BorderRadius.circular(8),
-                                            ),
-                                            alignment: Alignment.center,
-                                            child: Text(
-                                              '$tableNum',
-                                              style: TextStyle(
-                                                fontSize: 12,
-                                                fontWeight: FontWeight.w700,
-                                                color: colors.textDefault,
-                                              ),
-                                            ),
-                                          )
-                                        : Text(
-                                            '—',
-                                            style: TextStyle(
-                                              color: colors.textSecondary,
-                                              fontSize: 13,
-                                            ),
-                                          ),
-                                  ),
-                                  // Ofitsiant / Kassir
-                                  Expanded(
-                                    flex: 4,
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Text(
-                                          staffName,
-                                          style: TextStyle(
-                                            fontSize: 13,
-                                            fontWeight: FontWeight.w500,
-                                            color: colors.textDefault,
-                                          ),
-                                        ),
-                                        if (staffName != '—')
-                                          Text(
-                                            isWaiter ? 'Ofitsiant' : 'Kassir',
-                                            style: TextStyle(
-                                              fontSize: 10,
-                                              color: colors.textSecondary,
-                                            ),
-                                          ),
-                                      ],
-                                    ),
-                                  ),
-                                  // Vaqt
-                                  Expanded(
-                                    flex: 3,
-                                    child: Text(
-                                      o.createdAtLabel,
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        color: colors.textSecondary,
-                                      ),
-                                    ),
-                                  ),
-                                  // Summa
-                                  Expanded(
-                                    flex: 3,
-                                    child: Text(
-                                      AppFormatter.formatAmountWithSpaces(
-                                        o.totalAmount,
-                                      ),
-                                      textAlign: TextAlign.right,
-                                      style: TextStyle(
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.w700,
-                                        color: colors.textBrand,
-                                      ),
-                                    ),
-                                  ),
-                                  // Holat
-                                  Expanded(
-                                    flex: 3,
-                                    child: Align(
-                                      alignment: Alignment.centerRight,
-                                      child: _orderStatusBadge(
-                                        status: o.status,
-                                        secondaryTextColor:
-                                            colors.textSecondary,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              );
-                            },
-                          ),
-                        );
-                      },
+                    filled: true,
+                    fillColor: const Color(0xFFF8FAFC),
+                    contentPadding: EdgeInsets.zero,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(9),
+                      borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(9),
+                      borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(9),
+                      borderSide: const BorderSide(color: Color(0xFFFB6633)),
                     ),
                   ),
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontFamily: 'Inter',
+                    color: Color(0xFF0F172A),
+                  ),
+                ),
+              ),
+
+              const _VerticalDivider(),
+
+              // Status pills
+              for (final entry in const [
+                (null, 'Hammasi'),
+                ('open', 'Ochiq'),
+                ('paid', "To'langan"),
+                ('cancelled', 'Bekor'),
+              ])
+                _AdminFilterPill(
+                  label: entry.$2,
+                  isActive: _statusFilter == entry.$1,
+                  activeColor: switch (entry.$1) {
+                    'open' => const Color(0xFFFB6633),
+                    'paid' => const Color(0xFF16A34A),
+                    'cancelled' => const Color(0xFFDC2626),
+                    _ => const Color(0xFF0F172A),
+                  },
+                  onTap: () =>
+                      _applyFilters(status: entry.$1, type: _orderTypeFilter),
+                ),
+
+              const _VerticalDivider(),
+
+              // Type pills
+              for (final entry in const [
+                (null, 'Barchasi'),
+                ('dine_in', 'Zalda'),
+                ('takeaway', 'Olib ketish'),
+              ])
+                _AdminFilterPill(
+                  label: entry.$2,
+                  isActive: _orderTypeFilter == entry.$1,
+                  activeColor: const Color(0xFF0F172A),
+                  onTap: () =>
+                      _applyFilters(status: _statusFilter, type: entry.$1),
+                ),
+
+              const Spacer(),
+
+              // Jami count
+              Text(
+                'Jami: ${_totalCount ?? _orders.length}',
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                  color: Color(0xFF94A3B8),
+                  fontFamily: 'Inter',
+                ),
+              ),
+
+              // Refresh
+              GestureDetector(
+                onTap: _loading ? null : () => _load(page: 1),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 120),
+                  width: 34,
+                  height: 34,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF8FAFC),
+                    border: Border.all(color: const Color(0xFFE2E8F0)),
+                    borderRadius: BorderRadius.circular(9),
+                  ),
+                  child: Center(
+                    child: Icon(
+                      Icons.refresh_rounded,
+                      size: 16,
+                      color: _loading
+                          ? const Color(0xFFCBD5E1)
+                          : const Color(0xFF64748B),
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
+
+        const Divider(height: 1, color: Color(0xFFE2E8F0)),
+
+        // ── Stats row ─────────────────────────────────────────────────────
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+          color: Colors.white,
+          child: Row(
+            children: [
+              _AdminStatBlock(
+                label: 'Zakazlar',
+                value: '${_totalCount ?? _orders.length}',
+                unit: 'ta',
+                color: const Color(0xFF0F172A),
+              ),
+              const _AdminStatDivider(),
+              _AdminStatBlock(
+                label: 'Jami summa',
+                value: AppFormatter.formatAmountWithSpaces(totalSum.toString()),
+                unit: "so'm",
+                color: const Color(0xFF16A34A),
+              ),
+              const _AdminStatDivider(),
+              _AdminStatBlock(
+                label: 'Naqd',
+                value: AppFormatter.formatAmountWithSpaces(cashSum.toString()),
+                unit: "so'm",
+                color: const Color(0xFF0F172A),
+              ),
+              const _AdminStatDivider(),
+              _AdminStatBlock(
+                label: 'Karta',
+                value: AppFormatter.formatAmountWithSpaces(cardSum.toString()),
+                unit: "so'm",
+                color: const Color(0xFF2563EB),
+              ),
+            ],
+          ),
+        ),
+
+        const Divider(height: 1, color: Color(0xFFE2E8F0)),
+
+        // ── Table ─────────────────────────────────────────────────────────
+        Expanded(
+          child: Container(
+            color: Colors.white,
+            child: Column(
+              children: [
+                // Table header
+                Container(
+                  height: 40,
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  decoration: const BoxDecoration(
+                    color: Color(0xFFF8FAFC),
+                    border: Border(
+                      bottom: BorderSide(color: Color(0xFFE2E8F0)),
+                    ),
+                  ),
+                  child: const Row(
+                    children: [
+                      _AdminThCell(label: '№ Zakaz', flex: 2),
+                      _AdminThCell(label: 'Vaqt', flex: 2),
+                      _AdminThCell(label: 'Tur', flex: 1),
+                      _AdminThCell(label: 'Stol / Zal', flex: 3),
+                      _AdminThCell(label: 'Taomlar', flex: 2),
+                      _AdminThCell(label: 'Summa', flex: 3),
+                      _AdminThCell(label: "To'lov", flex: 1),
+                      _AdminThCell(label: 'Holat', flex: 2),
+                      _AdminThCell(label: '', flex: 1),
+                    ],
+                  ),
+                ),
+
+                // Table body
+                Expanded(
+                  child: _loading && _orders.isEmpty
+                      ? const Center(
+                          child: CircularProgressIndicator.adaptive(),
+                        )
+                      : _error != null
+                      ? Center(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                _error!,
+                                style: TextStyle(color: colors.systemError),
+                              ),
+                              const SizedBox(height: 10),
+                              FilledButton(
+                                onPressed: () => _load(page: _page),
+                                child: const Text('Qayta urinish'),
+                              ),
+                            ],
+                          ),
+                        )
+                      : _orders.isEmpty
+                      ? Center(
+                          child: Text(
+                            'Buyurtmalar topilmadi',
+                            style: TextStyle(color: colors.textSecondary),
+                          ),
+                        )
+                      : ListView.separated(
+                          controller: _scrollCtrl,
+                          itemCount: _orders.length,
+                          separatorBuilder: (_, _) => const Divider(
+                            height: 1,
+                            color: Color(0xFFF1F5F9),
+                          ),
+                          itemBuilder: (context, i) {
+                            final o = _orders[i];
+                            final meta = _tableMeta[o.tableId];
+                            final tableNum = meta?.number ?? 0;
+                            final hallName = meta?.hallName ?? '';
+                            final waiterName = _userNames[o.waiterId] ?? '';
+                            final cashierName = _userNames[o.cashierId] ?? '';
+                            return _AdminOrderRow(
+                              order: o,
+                              tableNum: tableNum,
+                              hallName: hallName,
+                              staffName: waiterName.isNotEmpty
+                                  ? waiterName
+                                  : cashierName,
+                              statusBadge: _orderStatusBadge(
+                                status: o.status,
+                                secondaryTextColor: colors.textSecondary,
+                              ),
+                            );
+                          },
+                        ),
+                ),
+              ],
+            ),
+          ),
+        ),
+
         _buildPaginationBar(colors),
       ],
     );
@@ -1596,33 +1686,6 @@ class _AdminOrdersArchiveBodyState extends State<_AdminOrdersArchiveBody> {
     );
   }
 
-  Widget _filterDropdown({
-    required String label,
-    required String? value,
-    required List<String> items,
-    required ValueChanged<String?> onChanged,
-    String Function(String)? labelFor,
-  }) {
-    return DropdownButtonFormField<String?>(
-      value: value,
-      decoration: InputDecoration(
-        labelText: label,
-        isDense: true,
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-      ),
-      items: [
-        const DropdownMenuItem<String?>(value: null, child: Text('Hammasi')),
-        ...items.map(
-          (e) => DropdownMenuItem<String?>(
-            value: e,
-            child: Text(labelFor?.call(e) ?? e),
-          ),
-        ),
-      ],
-      onChanged: onChanged,
-    );
-  }
-
   Widget _orderStatusBadge({
     required String status,
     required Color secondaryTextColor,
@@ -1671,6 +1734,9 @@ class _AdminOrderItem {
   final String orderType;
   final String totalAmount;
   final DateTime? createdAt;
+  final int bilNumber;
+  final int goodsCount;
+  final String paymentMethod;
 
   const _AdminOrderItem({
     required this.id,
@@ -1681,6 +1747,9 @@ class _AdminOrderItem {
     required this.orderType,
     required this.totalAmount,
     required this.createdAt,
+    required this.bilNumber,
+    required this.goodsCount,
+    required this.paymentMethod,
   });
 
   factory _AdminOrderItem.fromJson(Map<String, dynamic> json) {
@@ -1691,10 +1760,24 @@ class _AdminOrderItem {
       cashierId: (json['cashier_id'] ?? '').toString(),
       status: (json['status'] ?? '').toString(),
       orderType: (json['order_type'] ?? '').toString(),
-      totalAmount: (json['total_amount'] ?? '0').toString(),
+      totalAmount: (json['total_amount'] ??
+              json['grand_total'] ??
+              json['total'] ??
+              json['amount'] ??
+              '0')
+          .toString(),
       createdAt: DateTime.tryParse(
         (json['created_at'] ?? '').toString(),
       )?.toLocal(),
+      bilNumber: (json['number'] as num?)?.toInt() ??
+          (json['bill_number'] as num?)?.toInt() ?? 0,
+      goodsCount: (json['goods_quantity'] as num?)?.toInt() ??
+          (json['items_count'] as num?)?.toInt() ??
+          (json['goods_count'] as num?)?.toInt() ??
+          (json['items'] is List ? (json['items'] as List).length : null) ??
+          0,
+      paymentMethod:
+          (json['payment_method'] ?? json['payment_type'] ?? '').toString().toLowerCase(),
     );
   }
 
@@ -1706,5 +1789,357 @@ class _AdminOrderItem {
     final hour = d.hour.toString().padLeft(2, '0');
     final minute = d.minute.toString().padLeft(2, '0');
     return '$day.$month $hour:$minute';
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Admin archive helper widgets
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _VerticalDivider extends StatelessWidget {
+  const _VerticalDivider();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 1,
+      height: 20,
+      margin: const EdgeInsets.symmetric(horizontal: 4),
+      color: const Color(0xFFE2E8F0),
+    );
+  }
+}
+
+class _AdminFilterPill extends StatelessWidget {
+  const _AdminFilterPill({
+    required this.label,
+    required this.isActive,
+    required this.activeColor,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool isActive;
+  final Color activeColor;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 140),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: isActive ? activeColor.withOpacity(0.08) : Colors.transparent,
+          border: Border.all(
+            color: isActive ? activeColor.withOpacity(0.4) : Colors.transparent,
+          ),
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
+            color: isActive ? activeColor : const Color(0xFF64748B),
+            fontFamily: 'Inter',
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _AdminStatBlock extends StatelessWidget {
+  const _AdminStatBlock({
+    required this.label,
+    required this.value,
+    required this.unit,
+    required this.color,
+  });
+
+  final String label;
+  final String value;
+  final String unit;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w400,
+              color: Color(0xFF94A3B8),
+              fontFamily: 'Inter',
+            ),
+          ),
+          const SizedBox(height: 2),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.baseline,
+            textBaseline: TextBaseline.alphabetic,
+            children: [
+              Text(
+                value,
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: color,
+                  fontFamily: 'Inter',
+                  letterSpacing: -0.5,
+                  fontFeatures: const [FontFeature.tabularFigures()],
+                ),
+              ),
+              const SizedBox(width: 4),
+              Text(
+                unit,
+                style: const TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w400,
+                  color: Color(0xFF94A3B8),
+                  fontFamily: 'Inter',
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AdminStatDivider extends StatelessWidget {
+  const _AdminStatDivider();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 1,
+      height: 36,
+      margin: const EdgeInsets.symmetric(horizontal: 20),
+      color: const Color(0xFFE2E8F0),
+    );
+  }
+}
+
+class _AdminThCell extends StatelessWidget {
+  const _AdminThCell({required this.label, required this.flex});
+
+  final String label;
+  final int flex;
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      flex: flex,
+      child: Text(
+        label,
+        style: const TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
+          color: Color(0xFF94A3B8),
+          letterSpacing: 0.4,
+          fontFamily: 'Inter',
+        ),
+      ),
+    );
+  }
+}
+
+class _AdminOrderRow extends StatelessWidget {
+  const _AdminOrderRow({
+    required this.order,
+    required this.tableNum,
+    required this.hallName,
+    required this.staffName,
+    required this.statusBadge,
+  });
+
+  final _AdminOrderItem order;
+  final int tableNum;
+  final String hallName;
+  final String staffName;
+  final Widget statusBadge;
+
+  @override
+  Widget build(BuildContext context) {
+    final pmIcon = switch (order.paymentMethod) {
+      'cash' || 'naqd' => Icons.payments_outlined,
+      'card' || 'karta' => Icons.credit_card_outlined,
+      _ => Icons.help_outline_rounded,
+    };
+    final pmColor = switch (order.paymentMethod) {
+      'cash' || 'naqd' => const Color(0xFF16A34A),
+      'card' || 'karta' => const Color(0xFF2563EB),
+      _ => const Color(0xFF94A3B8),
+    };
+    final orderTypeLabel = switch (order.orderType.toLowerCase()) {
+      'dine_in' => 'Zalda',
+      'takeaway' => 'Olib ketish',
+      _ => order.orderType,
+    };
+
+    return Container(
+      height: 52,
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: Row(
+        children: [
+          // № Zakaz
+          Expanded(
+            flex: 2,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  order.bilNumber > 0 ? '#${order.bilNumber}' : '—',
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF0F172A),
+                    fontFamily: 'Inter',
+                    fontFeatures: [FontFeature.tabularFigures()],
+                  ),
+                ),
+                if (staffName.isNotEmpty)
+                  Text(
+                    staffName,
+                    style: const TextStyle(
+                      fontSize: 10,
+                      color: Color(0xFF94A3B8),
+                      fontFamily: 'Inter',
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+              ],
+            ),
+          ),
+          // Vaqt
+          Expanded(
+            flex: 2,
+            child: Text(
+              order.createdAtLabel,
+              style: const TextStyle(
+                fontSize: 12,
+                color: Color(0xFF64748B),
+                fontFamily: 'Inter',
+                fontFeatures: [FontFeature.tabularFigures()],
+              ),
+            ),
+          ),
+          // Tur
+          Expanded(
+            flex: 1,
+            child: Text(
+              orderTypeLabel,
+              style: const TextStyle(
+                fontSize: 12,
+                color: Color(0xFF64748B),
+                fontFamily: 'Inter',
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          // Stol / Zal
+          Expanded(
+            flex: 3,
+            child: tableNum > 0
+                ? RichText(
+                    text: TextSpan(
+                      children: [
+                        TextSpan(
+                          text: 'Stol $tableNum',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF0F172A),
+                            fontFamily: 'Inter',
+                          ),
+                        ),
+                        if (hallName.isNotEmpty)
+                          TextSpan(
+                            text: ' · $hallName',
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: Color(0xFF94A3B8),
+                              fontFamily: 'Inter',
+                            ),
+                          ),
+                      ],
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  )
+                : const Text(
+                    '—',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Color(0xFF94A3B8),
+                      fontFamily: 'Inter',
+                    ),
+                  ),
+          ),
+          // Taomlar
+          Expanded(
+            flex: 2,
+            child: Text(
+              order.goodsCount > 0 ? '${order.goodsCount} ta' : '—',
+              style: const TextStyle(
+                fontSize: 12,
+                color: Color(0xFF64748B),
+                fontFamily: 'Inter',
+              ),
+            ),
+          ),
+          // Summa
+          Expanded(
+            flex: 3,
+            child: Builder(builder: (context) {
+              final amt = int.tryParse(
+                    order.totalAmount.replaceAll(RegExp(r'[^0-9]'), ''),
+                  ) ??
+                  0;
+              return Text(
+                amt > 0
+                    ? '${AppFormatter.formatAmountWithSpaces(order.totalAmount)} so\'m'
+                    : '—',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: amt > 0 ? FontWeight.w600 : FontWeight.w400,
+                  color: amt > 0
+                      ? const Color(0xFF0F172A)
+                      : const Color(0xFF94A3B8),
+                  fontFamily: 'Inter',
+                  fontFeatures: const [FontFeature.tabularFigures()],
+                ),
+              );
+            }),
+          ),
+          // To'lov
+          Expanded(
+            flex: 1,
+            child: Icon(pmIcon, size: 16, color: pmColor),
+          ),
+          // Holat
+          Expanded(flex: 2, child: statusBadge),
+          // Actions
+          const Expanded(
+            flex: 1,
+            child: Icon(
+              Icons.chevron_right_rounded,
+              size: 16,
+              color: Color(0xFFCBD5E1),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

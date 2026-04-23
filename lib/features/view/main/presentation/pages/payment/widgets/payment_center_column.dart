@@ -41,8 +41,7 @@ class PaymentCenterColumn extends StatelessWidget with PaymentScreenMixin {
               _AmountEntry(
                 entered: entered,
                 change: change,
-                showChange:
-                    state.paymentType == PaymentType.cash && change > 0,
+                showChange: state.paymentType == PaymentType.cash && change > 0,
               ),
               const SizedBox(height: 14),
 
@@ -149,11 +148,7 @@ class _PayTypePill extends StatelessWidget {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              icon,
-              size: 18,
-              color: isActive ? Colors.white : _kS700,
-            ),
+            Icon(icon, size: 18, color: isActive ? Colors.white : _kS700),
             const SizedBox(width: 8),
             Text(
               label,
@@ -199,11 +194,7 @@ class _AmountEntry extends StatelessWidget {
         children: [
           const Text(
             'Qabul qilingan',
-            style: TextStyle(
-              fontSize: 13,
-              color: _kS500,
-              fontFamily: 'Inter',
-            ),
+            style: TextStyle(fontSize: 13, color: _kS500, fontFamily: 'Inter'),
           ),
           const SizedBox(height: 4),
           Row(
@@ -297,10 +288,11 @@ class _QuickAmountPills extends StatelessWidget {
         scrollDirection: Axis.horizontal,
         physics: const BouncingScrollPhysics(),
         itemCount: options.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 8),
+        separatorBuilder: (_, _) => const SizedBox(width: 8),
         itemBuilder: (context, i) {
           final opt = options[i];
-          final isActive = opt.amount != null &&
+          final isActive =
+              opt.amount != null &&
               currentEntered == opt.amount &&
               opt.amount != 0;
           return _QuickPill(
@@ -426,11 +418,7 @@ class _NumpadButtonState extends State<_NumpadButton> {
         ),
         child: Center(
           child: widget.isDelete
-              ? const Icon(
-                  Icons.backspace_outlined,
-                  size: 22,
-                  color: _kRed,
-                )
+              ? const Icon(Icons.backspace_outlined, size: 22, color: _kRed)
               : Text(
                   widget.keyLabel,
                   style: const TextStyle(
