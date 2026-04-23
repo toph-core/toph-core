@@ -97,7 +97,7 @@ class _ProductGridWidgetState extends State<ProductGridWidget> {
                         padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
                         gridDelegate:
                             const SliverGridDelegateWithMaxCrossAxisExtent(
-                          maxCrossAxisExtent: 170,
+                          maxCrossAxisExtent: 260,
                           crossAxisSpacing: 16,
                           mainAxisSpacing: 20,
                           childAspectRatio: 0.88,
@@ -306,14 +306,20 @@ class _ProductCardState extends State<_ProductCard> {
             ),
             const SizedBox(height: 3),
             // Price
-            Text(
-              num.parse(widget.product.price).formatN,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w700,
-                color: Color(0xFFFB6633),
-                fontFamily: 'Inter',
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                num.parse(widget.product.price).formatN,
+                textAlign: TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                softWrap: false,
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFFFB6633),
+                  fontFamily: 'Inter',
+                ),
               ),
             ),
           ],

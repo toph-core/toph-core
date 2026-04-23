@@ -403,26 +403,30 @@ class _ShiftDashboard extends StatelessWidget {
     );
     final avgCheck = orderCount > 0 ? revenue ~/ orderCount : 0;
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          _PageHeader(
-            openedAt: openedAt,
-            cashierName: cashierName,
-            shiftId: shift.id,
-          ),
-          const SizedBox(height: 20),
-          _StatsRow(
-            revenue: revenue,
-            serviceTotal: serviceTotal,
-            orderCount: orderCount,
-            itemsCount: itemsCount,
-            avgCheck: avgCheck,
-            openedAt: openedAt,
-          ),
-          const SizedBox(height: 20),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Expanded(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(24, 16, 24, 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _PageHeader(
+                  openedAt: openedAt,
+                  cashierName: cashierName,
+                  shiftId: shift.id,
+                ),
+                const SizedBox(height: 20),
+                _StatsRow(
+                  revenue: revenue,
+                  serviceTotal: serviceTotal,
+                  orderCount: orderCount,
+                  itemsCount: itemsCount,
+                  avgCheck: avgCheck,
+                  openedAt: openedAt,
+                ),
+                const SizedBox(height: 20),
           LayoutBuilder(
             builder: (context, constraints) {
               final isCompact = constraints.maxWidth < 1100;
@@ -463,19 +467,31 @@ class _ShiftDashboard extends StatelessWidget {
               );
             },
           ),
-          const SizedBox(height: 20),
-          _BottomRow(
-            archives: shiftArchives,
-            revenue: revenue,
-            serviceTotal: serviceTotal,
-            discountTotal: discountTotal,
-            discountOrderCount: discountOrderCount,
-            orderCount: orderCount,
+                const SizedBox(height: 20),
+                _BottomRow(
+                  archives: shiftArchives,
+                  revenue: revenue,
+                  serviceTotal: serviceTotal,
+                  discountTotal: discountTotal,
+                  discountOrderCount: discountOrderCount,
+                  orderCount: orderCount,
+                ),
+              ],
+            ),
           ),
-          const SizedBox(height: 24),
-          const _CloseShiftCTA(),
-        ],
-      ),
+        ),
+        // Fixed bottom: Close Shift CTA — scroll bilan ketmaydi
+        const DecoratedBox(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            border: Border(top: BorderSide(color: Color(0xFFE2E8F0))),
+          ),
+          child: Padding(
+            padding: EdgeInsets.fromLTRB(24, 12, 24, 16),
+            child: _CloseShiftCTA(),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -507,9 +523,9 @@ class _PageHeader extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Smena hisoboti',
-          style: TextStyle(
+        Text(
+          S.current.strShiftReport,
+          style: const TextStyle(
             fontSize: 13,
             color: _kS500,
             fontFamily: 'Inter',
@@ -562,8 +578,8 @@ class _PageHeader extends StatelessWidget {
         const SizedBox(height: 6),
         Text(
           shortId.isEmpty
-              ? 'Kassir: $cashierName'
-              : 'Kassir: $cashierName · Smena #$shortId',
+              ? '${S.current.strCashier}: $cashierName'
+              : '${S.current.strCashier}: $cashierName · ${S.current.strShiftHash} #$shortId',
           style: const TextStyle(
             fontSize: 14,
             color: _kS500,
@@ -632,7 +648,7 @@ class _OpenShiftPill extends StatelessWidget {
           ),
           const SizedBox(width: 8),
           Text(
-            'Smena ochiq · $openedClock',
+            '${S.current.strShiftOpen} · $openedClock',
             style: const TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w600,
@@ -752,8 +768,11 @@ class _StatsRow extends StatelessWidget {
                 label: S.current.strOrders,
                 value: '$orderCount ta',
                 sub: orderCount > 0
-                    ? "$itemsCount taom · o'rt. ${avgCheck.formatN}"
-                    : 'Hali yo\'q',
+                    ? S.current.strItemsCountWithAvg(
+                        itemsCount.toString(),
+                        avgCheck.formatN,
+                      )
+                    : S.current.strNotYet,
               ),
             ),
             SizedBox(
@@ -765,7 +784,7 @@ class _StatsRow extends StatelessWidget {
                 label: S.current.strServiceCharge,
                 value: serviceTotal.formatN,
                 sub: orderCount > 0
-                    ? '$orderCount ta buyurtma'
+                    ? S.current.strOrdersCountShort(orderCount.toString())
                     : '—',
               ),
             ),
@@ -844,17 +863,17 @@ class _DarkStatCard extends StatelessWidget {
               ),
             ],
           ),
-          const Row(
+          Row(
             children: [
-              Icon(
+              const Icon(
                 Icons.trending_up_rounded,
                 size: 14,
                 color: _kGrowth,
               ),
-              SizedBox(width: 4),
+              const SizedBox(width: 4),
               Text(
-                'Joriy smena',
-                style: TextStyle(
+                S.current.strCurrentShift,
+                style: const TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w500,
                   color: _kGrowth,
@@ -1003,10 +1022,10 @@ class _DurationStatCardState extends State<_DurationStatCard> {
                 ),
               ),
               const SizedBox(width: 10),
-              const Expanded(
+              Expanded(
                 child: Text(
-                  'Davomiyligi',
-                  style: TextStyle(
+                  S.current.strDurationLabel,
+                  style: const TextStyle(
                     fontSize: 13,
                     color: _kS500,
                     fontFamily: 'Inter',
@@ -1027,7 +1046,7 @@ class _DurationStatCardState extends State<_DurationStatCard> {
             ),
           ),
           Text(
-            'Ochildi $startedAt',
+            '${S.current.strOpenedAt} $startedAt',
             style: const TextStyle(
               fontSize: 12,
               color: _kS500,
@@ -1095,9 +1114,9 @@ class _HourlyChartPanel extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Soatlik savdo dinamikasi',
-            style: TextStyle(
+          Text(
+            S.current.strHourlySalesDynamics,
+            style: const TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.w700,
               color: _kS900,
@@ -1108,8 +1127,8 @@ class _HourlyChartPanel extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             peakValue > 0
-                ? 'Eng gavjum vaqt: ${peakHour.toString().padLeft(2, '0')}:00 — ${peakValue.formatN}'
-                : "Hali savdo ma'lumoti yo'q",
+                ? '${S.current.strPeakTime}: ${peakHour.toString().padLeft(2, '0')}:00 — ${peakValue.formatN}'
+                : S.current.strNoSalesData,
             style: const TextStyle(
               fontSize: 12,
               color: _kS500,
@@ -1147,10 +1166,10 @@ class _HourlyChart extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (hourRange.isEmpty) {
-      return const Center(
+      return Center(
         child: Text(
-          "Smena hozirgina boshlandi",
-          style: TextStyle(
+          S.current.strShiftJustStarted,
+          style: const TextStyle(
             fontSize: 13,
             color: _kS400,
             fontFamily: 'Inter',
@@ -1191,9 +1210,9 @@ class _HourlyChart extends StatelessWidget {
                                 color: _kBrandTint,
                                 borderRadius: BorderRadius.circular(6),
                               ),
-                              child: const Text(
-                                'hozir',
-                                style: TextStyle(
+                              child: Text(
+                                S.current.strNowShort,
+                                style: const TextStyle(
                                   fontSize: 9,
                                   fontWeight: FontWeight.w600,
                                   color: _kBrand,
@@ -1272,9 +1291,9 @@ class _CashBalancePanel extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Kassa balansi',
-            style: TextStyle(
+          Text(
+            S.current.strCashBalance,
+            style: const TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.w700,
               color: _kS900,
@@ -1301,9 +1320,9 @@ class _CashBalancePanel extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                'Kutilayotgan qoldiq',
-                style: TextStyle(
+              Text(
+                S.current.strExpectedBalance,
+                style: const TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w700,
                   color: _kS900,
@@ -1502,9 +1521,9 @@ class _RecentOrdersPanel extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                "So'nggi buyurtmalar",
-                style: TextStyle(
+              Text(
+                S.current.strRecentOrders,
+                style: const TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w700,
                   color: _kS900,
@@ -1515,20 +1534,20 @@ class _RecentOrdersPanel extends StatelessWidget {
               GestureDetector(
                 onTap: () => Navigator.of(context)
                     .pushNamed(AppRoutes.archiveScreen),
-                child: const Row(
+                child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      "Barchasini ko'rish",
-                      style: TextStyle(
+                      S.current.strViewAll,
+                      style: const TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
                         color: _kBrand,
                         fontFamily: 'Inter',
                       ),
                     ),
-                    SizedBox(width: 4),
-                    Icon(
+                    const SizedBox(width: 4),
+                    const Icon(
                       Icons.arrow_forward_rounded,
                       size: 14,
                       color: _kBrand,
@@ -1541,8 +1560,8 @@ class _RecentOrdersPanel extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             recent.isEmpty
-                ? "Smena davomida hali buyurtma yo'q"
-                : '${archives.length} ta buyurtma · ${revenue.formatN}',
+                ? S.current.strNoOrdersInShift
+                : '${S.current.strOrdersCountShort(archives.length.toString())} · ${revenue.formatN}',
             style: const TextStyle(
               fontSize: 12,
               color: _kS500,
@@ -1570,9 +1589,9 @@ class _RecentOrdersPanel extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 10),
-                    const Text(
-                      "Buyurtma qilinmagan",
-                      style: TextStyle(
+                    Text(
+                      S.current.strNotOrdered,
+                      style: const TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w500,
                         color: _kS500,
@@ -1695,7 +1714,10 @@ class _RecentOrderRow extends StatelessWidget {
               ),
               const SizedBox(height: 4),
               Text(
-                '${archive.goodsQuantity} taom · $time',
+                S.current.strItemsCountWithTime(
+                  archive.goodsQuantity.toString(),
+                  time,
+                ),
                 style: const TextStyle(
                   fontSize: 11,
                   color: _kS500,
@@ -1732,9 +1754,9 @@ class _DiscountServicePanel extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const Text(
-          'Chegirma & Xizmat',
-          style: TextStyle(
+        Text(
+          S.current.strDiscountServiceTitle,
+          style: const TextStyle(
             fontSize: 15,
             fontWeight: FontWeight.w700,
             color: _kS900,
@@ -1747,8 +1769,11 @@ class _DiscountServicePanel extends StatelessWidget {
           label: S.current.strDiscounts,
           value: discountTotal.formatN,
           sub: discountOrderCount > 0
-              ? "$discountOrderCount ta buyurtma · o'rt. ${avgDiscount.formatN}"
-              : 'Hali chegirma yo\'q',
+              ? S.current.strOrdersCountWithAvg(
+                  discountOrderCount.toString(),
+                  avgDiscount.formatN,
+                )
+              : S.current.strNoDiscountYet,
           labelColor: const Color(0xFFEA580C),
           bg: const Color(0xFFFFF7ED),
           border: const Color(0xFFFED7AA),
@@ -1760,7 +1785,7 @@ class _DiscountServicePanel extends StatelessWidget {
           value: serviceTotal.formatN,
           sub: orderCount > 0
               ? "$orderCount ta · o'rt. ${avgService.formatN}"
-              : 'Hali xizmat haqi yo\'q',
+              : S.current.strNoServiceChargeYet,
           labelColor: _kGreen,
           bg: const Color(0xFFF0FDF4),
           border: const Color(0xFFBBF7D0),
@@ -1889,9 +1914,9 @@ class _CloseShiftCTA extends StatelessWidget {
                             ),
                           ),
                           const SizedBox(width: 10),
-                          const Text(
-                            'Smenani yopish',
-                            style: TextStyle(
+                          Text(
+                            S.current.strCloseShiftShort,
+                            style: const TextStyle(
                               fontSize: 15,
                               fontWeight: FontWeight.w600,
                               color: Colors.white,

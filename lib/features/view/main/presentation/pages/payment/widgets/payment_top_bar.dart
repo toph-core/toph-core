@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mary_ai_pos/core/extension/for_context.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/payment/payment_bloc.dart';
+import 'package:mary_ai_pos/generated/l10n.dart';
 
 const _kS900 = Color(0xFF0F172A);
 const _kS500 = Color(0xFF64748B);
@@ -54,9 +55,9 @@ class PaymentTopBar extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'Buyurtma',
-                    style: TextStyle(
+                  Text(
+                    S.current.strOrder,
+                    style: const TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.w700,
                       color: _kS900,

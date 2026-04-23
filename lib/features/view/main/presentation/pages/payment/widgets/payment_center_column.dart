@@ -193,9 +193,9 @@ class _AmountEntry extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Qabul qilingan',
-            style: TextStyle(fontSize: 13, color: _kS500, fontFamily: 'Inter'),
+          Text(
+            S.current.strAcceptedAmount,
+            style: const TextStyle(fontSize: 13, color: _kS500, fontFamily: 'Inter'),
           ),
           const SizedBox(height: 4),
           Row(
@@ -214,9 +214,9 @@ class _AmountEntry extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 8),
-              const Text(
-                "so'm",
-                style: TextStyle(
+              Text(
+                S.current.strSom,
+                style: const TextStyle(
                   fontSize: 14,
                   color: _kS500,
                   fontFamily: 'Inter',
@@ -235,9 +235,9 @@ class _AmountEntry extends StatelessWidget {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Text(
-                    'Qaytim',
-                    style: TextStyle(
+                  Text(
+                    S.current.strChange,
+                    style: const TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w500,
                       color: _kGreen,

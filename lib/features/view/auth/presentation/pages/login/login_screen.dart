@@ -37,6 +37,7 @@ class _OnlineOfflineStudentScreenState extends State<LoginScreen>
   final FocusNode _passwordFocusNode = FocusNode();
   TextEditingController? _activeController;
   bool _shiftEnabled = false;
+  bool _keyboardVisible = false;
 
   @override
   void initState() {
@@ -45,6 +46,7 @@ class _OnlineOfflineStudentScreenState extends State<LoginScreen>
     _brandIdFocusNode.addListener(() {
       if (_brandIdFocusNode.hasFocus) {
         _activeController = _brandIdController;
+        _keyboardVisible = true;
       }
       setState(() {});
     });
@@ -52,9 +54,16 @@ class _OnlineOfflineStudentScreenState extends State<LoginScreen>
     _passwordFocusNode.addListener(() {
       if (_passwordFocusNode.hasFocus) {
         _activeController = _passwordController;
+        _keyboardVisible = true;
       }
       setState(() {});
     });
+  }
+
+  void _dismissKeyboard() {
+    _brandIdFocusNode.unfocus();
+    _passwordFocusNode.unfocus();
+    setState(() => _keyboardVisible = false);
   }
 
   void _onKeyPress(VirtualKeyboardKey key) {
@@ -161,7 +170,11 @@ class _OnlineOfflineStudentScreenState extends State<LoginScreen>
               }
             },
             builder: (context, state) {
-              return Stack(
+              return GestureDetector(
+                behavior: HitTestBehavior.translucent,
+                // Ekranning istalgan joyiga bosilganda — klaviatura yopiladi
+                onTap: _dismissKeyboard,
+                child: Stack(
                 children: [
                   Container(
                     height: context.h,
@@ -265,22 +278,41 @@ class _OnlineOfflineStudentScreenState extends State<LoginScreen>
                     bottom: 0,
                     left: 0,
                     right: 0,
-                    child: DecoratedBox(
-                      decoration: BoxDecoration(
-                        color: context.colors.bgSecondary,
+                    child: AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 220),
+                      transitionBuilder: (child, anim) => SlideTransition(
+                        position: Tween<Offset>(
+                          begin: const Offset(0, 1),
+                          end: Offset.zero,
+                        ).animate(CurvedAnimation(
+                          parent: anim,
+                          curve: Curves.easeOutCubic,
+                        )),
+                        child: FadeTransition(opacity: anim, child: child),
                       ),
-                      child: SafeArea(
-                        child: VirtualKeyboard(
-                          height: context.h * .3,
-                          customLayoutKeys: VirtualKeyboardDefaultLayoutKeys([
-                            VirtualKeyboardDefaultLayouts.English,
-                          ]),
-                          textColor: Colors.black,
-                          fontSize: 24,
-                          type: VirtualKeyboardType.Alphanumeric,
-                          postKeyPress: _onKeyPress,
-                        ),
-                      ),
+                      child: _keyboardVisible
+                          ? DecoratedBox(
+                              key: const ValueKey('kb-visible'),
+                              decoration: BoxDecoration(
+                                color: context.colors.bgSecondary,
+                              ),
+                              child: SafeArea(
+                                child: VirtualKeyboard(
+                                  height: context.h * .3,
+                                  customLayoutKeys:
+                                      VirtualKeyboardDefaultLayoutKeys([
+                                    VirtualKeyboardDefaultLayouts.English,
+                                  ]),
+                                  textColor: Colors.black,
+                                  fontSize: 24,
+                                  type: VirtualKeyboardType.Alphanumeric,
+                                  postKeyPress: _onKeyPress,
+                                ),
+                              ),
+                            )
+                          : const SizedBox.shrink(
+                              key: ValueKey('kb-hidden'),
+                            ),
                     ),
                   ),
                   Positioned(
@@ -335,6 +367,7 @@ class _OnlineOfflineStudentScreenState extends State<LoginScreen>
                     ),
                   ),
                 ],
+                ),
               );
             },
           ),

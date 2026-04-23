@@ -109,9 +109,9 @@ class _DiscountSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Chegirma',
-          style: TextStyle(
+        Text(
+          S.current.strDiscount,
+          style: const TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w600,
             color: _kS900,
@@ -202,9 +202,9 @@ class _ManualDiscountInputState extends State<_ManualDiscountInput> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          "Qo'lda kiritish",
-          style: TextStyle(
+        Text(
+          S.current.strManualInput,
+          style: const TextStyle(
             fontSize: 12,
             color: _kS500,
             fontFamily: 'Inter',
@@ -387,9 +387,9 @@ class _DarkTotalCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            "To'lov miqdori",
-            style: TextStyle(
+          Text(
+            S.current.strPaymentAmount,
+            style: const TextStyle(
               fontSize: 13,
               color: Color(0xFF94A3B8),
               fontFamily: 'Inter',
@@ -434,7 +434,7 @@ class _DarkTotalCard extends StatelessWidget {
               Expanded(
                 child: _DarkMetric(
                   label: S.current.strDishesColumn,
-                  value: '$itemCount dona',
+                  value: '$itemCount ${S.current.strPiecesSuffix}',
                 ),
               ),
               Container(
@@ -447,7 +447,7 @@ class _DarkTotalCard extends StatelessWidget {
                   padding: const EdgeInsets.only(left: 12),
                   child: _DarkMetric(
                     label: S.current.strGuest,
-                    value: '$guestCount kishi',
+                    value: '$guestCount ${S.current.strPersonsSuffix}',
                   ),
                 ),
               ),
@@ -585,18 +585,18 @@ class _ConfirmButton extends StatelessWidget {
                     backgroundColor: Colors.white,
                   ),
                 )
-              : const Row(
+              : Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(
+                    const Icon(
                       Icons.check_rounded,
                       size: 20,
                       color: Colors.white,
                     ),
-                    SizedBox(width: 8),
+                    const SizedBox(width: 8),
                     Text(
-                      'Tasdiqlash',
-                      style: TextStyle(
+                      S.current.strConfirm,
+                      style: const TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w600,
                         color: Colors.white,

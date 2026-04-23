@@ -37,8 +37,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
   late final double _passedHourAmount = () {
     final raw = args['hour_amount'] as String?;
     if (raw == null) return 0.0;
-    // Strip decimal point too — backend sends e.g. "530.28" meaning 53028 so'm
-    return double.tryParse(raw.replaceAll(RegExp(r'[^0-9]'), '')) ?? 0.0;
+    return double.tryParse(raw.replaceAll(RegExp(r'[^0-9.]'), '')) ?? 0.0;
   }();
   late final DateTime? _timerStartedAt = args['timer_started_at'] as DateTime?;
   late final List<PauseInterval> _timerPauses =
@@ -184,9 +183,9 @@ class _OrderSummaryColumn extends StatelessWidget {
             decoration: BoxDecoration(
               border: Border(bottom: BorderSide(color: colors.border)),
             ),
-            child: const Text(
-              'Buyurtma',
-              style: TextStyle(
+            child: Text(
+              S.current.strOrder,
+              style: const TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.w700,
                 color: _kS900,
@@ -282,10 +281,10 @@ class _ItemsList extends StatelessWidget {
     final allItems = [...grouped.values, ...cancelled];
 
     if (allItems.isEmpty) {
-      return const Center(
+      return Center(
         child: Text(
-          "Buyurtma topilmadi",
-          style: TextStyle(fontSize: 13, color: _kS500, fontFamily: 'Inter'),
+          S.current.strOrderNotFound,
+          style: const TextStyle(fontSize: 13, color: _kS500, fontFamily: 'Inter'),
         ),
       );
     }
@@ -424,22 +423,22 @@ class _SummaryFooter extends StatelessWidget {
           return Column(
             children: [
               _SummaryLine(
-                label: 'Oraliq jami',
+                label: S.current.strSubtotal,
                 value: effective.formatNWithoutS,
               ),
               if (serviceAmt > 0) ...[
                 const SizedBox(height: 8),
                 _SummaryLine(
                   label: servicePct > 0
-                      ? 'Xizmat haqi ($servicePct%)'
-                      : 'Xizmat haqi',
+                      ? '${S.current.strServiceCharge} ($servicePct%)'
+                      : S.current.strServiceCharge,
                   value: serviceAmt.formatNWithoutS,
                 ),
               ],
               if (state.hourPrice > 0) ...[
                 const SizedBox(height: 8),
                 _SummaryLine(
-                  label: "Soatlik to'lov",
+                  label: S.current.strHourlyPayment,
                   value: state.hourPrice.toInt().formatNWithoutS,
                   valueColor: _kBrand,
                 ),
@@ -490,9 +489,9 @@ class _SummaryLine extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 3),
-            const Text(
-              "so'm",
-              style: TextStyle(
+            Text(
+              S.current.strSom,
+              style: const TextStyle(
                 fontSize: 11,
                 color: _kS500,
                 fontFamily: 'Inter',

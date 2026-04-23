@@ -153,8 +153,10 @@ class _TimeBasedTableBadgeState extends State<TimeBasedTableBadge> {
   }
 
   static String fmtAmount(String raw) {
-    final n = int.tryParse(raw.replaceAll(RegExp(r'[^0-9]'), ''));
-    if (n == null) return raw;
+    // Backend "4436.39" decimal qaytaradi — nuqtani saqlaymiz va yaxlitlaymiz.
+    final d = double.tryParse(raw.replaceAll(RegExp(r'[^0-9.]'), ''));
+    if (d == null) return raw;
+    final n = d.round();
     return n
         .toString()
         .replaceAllMapped(RegExp(r'(\d)(?=(\d{3})+(?!\d))'), (m) => '${m[1]} ');

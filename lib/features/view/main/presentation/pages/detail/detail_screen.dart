@@ -121,11 +121,13 @@ class _DetailScreenState extends State<DetailScreen> with DetailScreenMixin {
                       child: LayoutBuilder(
                         builder: (context, constraints) {
                           final w = constraints.maxWidth;
-                          final sidebarW = w >= 1200
-                              ? 360.0
+                          final sidebarW = w >= 1400
+                              ? 440.0
+                              : w >= 1200
+                              ? 400.0
                               : w >= 1000
-                              ? 320.0
-                              : 280.0;
+                              ? 360.0
+                              : 320.0;
                           return Row(
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [

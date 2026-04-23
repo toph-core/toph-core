@@ -5,6 +5,8 @@ import 'package:intl/intl.dart';
 import 'package:mary_ai_pos/core/service/printer/receipt/receipt_esc_pos_helper.dart';
 import 'package:mary_ai_pos/core/service/printer/receipt/receipt_notice_lines.dart';
 import 'package:mary_ai_pos/core/service/printer/receipt/receipt_som_format.dart';
+import 'package:mary_ai_pos/core/service/receipt/receipt_info_storage.dart';
+import 'package:mary_ai_pos/di.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/open_order/open_order_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/table_timer/table_timer_response_model.dart';
 import 'package:mary_ai_pos/features/view/main/domain/entities/archive_detail_entity.dart';
@@ -281,7 +283,16 @@ class CashierReceiptBuilder {
     return bytes;
   }
 
+  /// Ismdan qisqa format ("Ali Valiyev" → "Ali V.")
+  static String _shortName(String name) {
+    final parts = name.trim().split(RegExp(r'\s+'));
+    if (parts.isEmpty || parts.first.isEmpty) return '—';
+    if (parts.length == 1) return parts.first;
+    return '${parts.first} ${parts[1][0].toUpperCase()}.';
+  }
+
   /// To'lov ekranidan keyin chek — [ArchiveDetailEntity] asosida.
+  /// Preview modal (`ReceiptPreviewModal`) bilan bir xil ko'rinishda chop etiladi.
   static Future<List<int>> buildFromDetail({
     required ArchiveDetailEntity detail,
     PaperSize paperSize = PaperSize.mm80,
@@ -296,77 +307,135 @@ class CashierReceiptBuilder {
     final profile = await CapabilityProfile.load();
     final gen = receiptGenerator(paperSize, profile);
     final now = DateTime.now();
-    final timeFmt = DateFormat('dd.MM.yyyy  HH:mm');
+    final dateStr = DateFormat('dd.MM.yyyy  HH:mm').format(now);
+
+    // Restoran ma'lumotlari
+    final info = inject<ReceiptInfoStorage>().effective;
+    final companyName = info.companyName.toUpperCase();
 
     List<int> bytes = [];
     bytes += receiptEncodingPreamble(gen);
 
+    // ─── 1) Restoran sarlavhasi ──────────────────────────────────────────
     bytes += gen.text(
-      'КАССИРСКИЙ ЧЕК',
+      companyName,
       styles: const PosStyles(
-        align: PosAlign.center, bold: true,
-        height: PosTextSize.size2, width: PosTextSize.size1,
+        align: PosAlign.center,
+        bold: true,
+        height: PosTextSize.size2,
+        width: PosTextSize.size1,
       ),
-      linesAfter: 1,
     );
+    if (info.address.isNotEmpty) {
+      bytes += gen.text(
+        info.address,
+        styles: const PosStyles(align: PosAlign.center),
+      );
+    }
+    if (info.phone.isNotEmpty) {
+      bytes += gen.text(
+        'Tel: ${info.phone}',
+        styles: const PosStyles(align: PosAlign.center),
+      );
+    }
 
-    bytes += gen.text(timeFmt.format(now));
+    bytes += gen.hr(ch: '-');
+
+    // ─── 2) Meta info ────────────────────────────────────────────────────
     bytes += gen.row([
-      PosColumn(text: 'Зал:', width: 4),
-      PosColumn(text: detail.hallName, width: 8),
+      PosColumn(text: 'Chek №:', width: 6),
+      PosColumn(
+        text: 'A-${detail.bilNumber}',
+        width: 6,
+        styles: const PosStyles(align: PosAlign.right, bold: true),
+      ),
     ]);
     bytes += gen.row([
-      PosColumn(text: 'Стол:', width: 4),
-      PosColumn(text: '${detail.tableNumber.toInt()}', width: 8),
+      PosColumn(text: 'Sana:', width: 4),
+      PosColumn(
+        text: dateStr,
+        width: 8,
+        styles: const PosStyles(align: PosAlign.right),
+      ),
     ]);
+    final tableNum = detail.tableNumber.toInt();
+    if (tableNum > 0) {
+      final guests = detail.guestCount > 0
+          ? ' · ${detail.guestCount.toInt()} mehmon'
+          : '';
+      bytes += gen.row([
+        PosColumn(text: 'Stol:', width: 4),
+        PosColumn(
+          text: '№$tableNum$guests',
+          width: 8,
+          styles: const PosStyles(align: PosAlign.right),
+        ),
+      ]);
+    }
     bytes += gen.row([
-      PosColumn(text: 'Гости:', width: 4),
-      PosColumn(text: '${detail.guestCount.toInt()}', width: 8),
+      PosColumn(text: 'Kassir:', width: 5),
+      PosColumn(
+        text: _shortName(detail.cashierName),
+        width: 7,
+        styles: const PosStyles(align: PosAlign.right),
+      ),
     ]);
 
     _appendTimerSection(
-      gen: gen, bytes: bytes,
+      gen: gen,
+      bytes: bytes,
       timerStartedAt: timerStartedAt,
       timerPauses: timerPauses,
       timerTotalSec: timerTotalSec,
       timerPricePerHour: timerPricePerHour,
     );
 
-    bytes += gen.hr();
+    bytes += gen.hr(ch: '-');
 
-    bytes += gen.row([
-      PosColumn(text: 'Блюдо', width: 6, styles: const PosStyles(bold: true, underline: true)),
-      PosColumn(text: 'Кол', width: 2, styles: const PosStyles(bold: true, align: PosAlign.center)),
-      PosColumn(text: 'Сумма', width: 4, styles: const PosStyles(bold: true, align: PosAlign.right)),
-    ]);
-
+    // ─── 3) Items ────────────────────────────────────────────────────────
     double subtotal = 0;
     for (final g in detail.goods.where((g) => g.status != 'cancelled')) {
       final lineTotal = g.price * g.quantity;
       subtotal += lineTotal;
-      final name = g.name.length > 22 ? '${g.name.substring(0, 20)}..' : g.name;
+      // Nom — alohida qatorda, to'liq (kesilmaydi)
+      bytes += gen.text(
+        g.name,
+        styles: const PosStyles(bold: true),
+      );
+      // "qty × price           total" — ikkinchi qator
       bytes += gen.row([
-        PosColumn(text: name, width: 6),
-        PosColumn(text: 'x${g.quantity}', width: 2,
-            styles: const PosStyles(align: PosAlign.center)),
-        PosColumn(text: _fmt(lineTotal), width: 4,
-            styles: const PosStyles(align: PosAlign.right)),
+        PosColumn(
+          text: '  ${g.quantity} x ${_fmt(g.price)}',
+          width: 7,
+        ),
+        PosColumn(
+          text: _fmt(lineTotal),
+          width: 5,
+          styles: const PosStyles(align: PosAlign.right, bold: true),
+        ),
       ]);
     }
 
-    bytes += gen.hr();
+    bytes += gen.hr(ch: '-');
 
+    // ─── 4) Totals (preview order) ───────────────────────────────────────
     bytes += gen.row([
-      PosColumn(text: 'Mahsulotlar:', width: 8, styles: const PosStyles(bold: true)),
-      PosColumn(text: _fmt(subtotal), width: 4,
-          styles: const PosStyles(bold: true, align: PosAlign.right)),
+      PosColumn(text: 'Oraliq jami', width: 7),
+      PosColumn(
+        text: _fmt(subtotal),
+        width: 5,
+        styles: const PosStyles(align: PosAlign.right),
+      ),
     ]);
 
     if (hourAmount > 0.0001) {
       bytes += gen.row([
-        PosColumn(text: 'Soatlik haq:', width: 8),
-        PosColumn(text: _fmt(hourAmount), width: 4,
-            styles: const PosStyles(align: PosAlign.right)),
+        PosColumn(text: 'Soatlik haq', width: 7),
+        PosColumn(
+          text: _fmt(hourAmount),
+          width: 5,
+          styles: const PosStyles(align: PosAlign.right),
+        ),
       ]);
     }
 
@@ -374,13 +443,15 @@ class CashierReceiptBuilder {
         ? detail.serviceAmount
         : (detail.servicePercent > 0 ? subtotal * detail.servicePercent / 100 : 0.0);
     if (serviceAmt > 0.0001) {
-      final label = detail.servicePercent > 0
-          ? 'Обслужение (${detail.servicePercent.toInt()}%):'
-          : 'Обслужение:';
+      final servicePct = detail.servicePercent.toInt();
+      final label = servicePct > 0 ? 'Xizmat ($servicePct%)' : 'Xizmat';
       bytes += gen.row([
-        PosColumn(text: label, width: 8),
-        PosColumn(text: _fmt(serviceAmt), width: 4,
-            styles: const PosStyles(align: PosAlign.right)),
+        PosColumn(text: label, width: 7),
+        PosColumn(
+          text: _fmt(serviceAmt),
+          width: 5,
+          styles: const PosStyles(align: PosAlign.right),
+        ),
       ]);
     }
 
@@ -388,29 +459,51 @@ class CashierReceiptBuilder {
     final discVal = _discountValue(preDiscount, discountPercent, discountAmount);
     if (discVal > 0.0001) {
       final discLabel = discountPercent > 0
-          ? 'Скидка (${discountPercent.toInt()}%):'
-          : 'Скидка:';
+          ? 'Chegirma (${discountPercent.toInt()}%)'
+          : 'Chegirma';
       bytes += gen.row([
-        PosColumn(text: discLabel, width: 8),
-        PosColumn(text: _fmt(discVal), width: 4,
-            styles: const PosStyles(align: PosAlign.right)),
+        PosColumn(text: discLabel, width: 7),
+        PosColumn(
+          text: '-${_fmt(discVal)}',
+          width: 5,
+          styles: const PosStyles(align: PosAlign.right),
+        ),
       ]);
     }
 
-    final toPay = (preDiscount - discVal).clamp(0.0, double.infinity);
+    bytes += gen.hr(ch: '-');
 
-    bytes += gen.hr();
+    final toPay = (preDiscount - discVal).clamp(0.0, double.infinity);
+    // ─── 5) JAMI (big, bold) ──────────────────────────────────────────────
     bytes += gen.row([
-      PosColumn(text: 'TO\'LOV:', width: 8,
-          styles: const PosStyles(bold: true, height: PosTextSize.size2, width: PosTextSize.size1)),
-      PosColumn(text: _fmt(toPay.round()), width: 4,
-          styles: const PosStyles(bold: true, align: PosAlign.right,
-              height: PosTextSize.size2, width: PosTextSize.size1)),
+      PosColumn(
+        text: 'JAMI',
+        width: 5,
+        styles: const PosStyles(
+          bold: true,
+          height: PosTextSize.size2,
+          width: PosTextSize.size1,
+        ),
+      ),
+      PosColumn(
+        text: '${_fmt(toPay.round())} so\'m',
+        width: 7,
+        styles: const PosStyles(
+          bold: true,
+          align: PosAlign.right,
+          height: PosTextSize.size2,
+          width: PosTextSize.size1,
+        ),
+      ),
     ]);
 
     appendReceiptNoReprepNotice(gen, bytes);
     bytes += gen.feed(1);
-    bytes += gen.text('Rahmat!', styles: const PosStyles(align: PosAlign.center, bold: true), linesAfter: 1);
+    bytes += gen.text(
+      'Rahmat!',
+      styles: const PosStyles(align: PosAlign.center, bold: true),
+      linesAfter: 1,
+    );
     bytes += gen.cut();
 
     return bytes;

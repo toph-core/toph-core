@@ -19,8 +19,11 @@ class TableTimerCubit extends Cubit<TableTimerState> {
 
   int _baseTotalActiveSec = 0;
   DateTime? _lastSyncAt;
+  DateTime? _lastBillPausesFetchAt;
+  String? _lastBillPausesOrderId;
 
   static const Duration _serverSyncInterval = Duration(seconds: 60);
+  static const Duration _billPausesThrottle = Duration(seconds: 60);
 
   void _cancelTimers() {
     _serverSyncTimer?.cancel();
@@ -57,7 +60,7 @@ class TableTimerCubit extends Cubit<TableTimerState> {
     });
   }
 
-  void _applyTimer(TableTimerResponse t) {
+  void _applyTimer(TableTimerResponse t, {bool forceBillPauses = false}) {
     _lastSyncAt = DateTime.now();
     _baseTotalActiveSec = t.totalActiveSec;
     emit(state.copyWith(
@@ -70,13 +73,27 @@ class TableTimerCubit extends Cubit<TableTimerState> {
     _ensureServerSync();
     _startUiTickIfRunning(t);
     // Bill API-dan pause_periods-ni yangilash
-    _fetchBillPauses();
+    _fetchBillPauses(force: forceBillPauses);
   }
 
   /// Bill API-dan pause_periods-ni olib state-ga yozadi.
-  Future<void> _fetchBillPauses() async {
+  /// DetailBloc ham `/bills/{id}` chaqiradi — duplikat bo'lmasin uchun
+  /// bir xil orderId uchun 60s ichida takroriy chaqiriq bloklanadi.
+  Future<void> _fetchBillPauses({bool force = false}) async {
     final orderId = _activeOrderId;
     if (orderId == null || orderId.isEmpty) return;
+
+    // Throttle: oxirgi chaqiriq shu orderId uchun 60s ichida bo'lsa — o'tkazamiz
+    if (!force &&
+        _lastBillPausesOrderId == orderId &&
+        _lastBillPausesFetchAt != null &&
+        DateTime.now().difference(_lastBillPausesFetchAt!) <
+            _billPausesThrottle) {
+      return;
+    }
+    _lastBillPausesOrderId = orderId;
+    _lastBillPausesFetchAt = DateTime.now();
+
     try {
       final res = await _client.get('/api/v1/bills/$orderId');
       if (isClosed) return;
@@ -265,9 +282,10 @@ class TableTimerCubit extends Cubit<TableTimerState> {
       if (raw is Map<String, dynamic>) {
         final t = TableTimerResponse.fromJson(raw);
         emit(state.copyWith(isMutating: false));
-        _applyTimer(t);
+        _applyTimer(t, forceBillPauses: true);
       } else {
         await fetchTimer(orderId: id);
+        await _fetchBillPauses(force: true);
       }
     } on DioException catch (e) {
       if (isClosed || _activeOrderId != id) return;
@@ -292,9 +310,10 @@ class TableTimerCubit extends Cubit<TableTimerState> {
       if (raw is Map<String, dynamic>) {
         final t = TableTimerResponse.fromJson(raw);
         emit(state.copyWith(isMutating: false));
-        _applyTimer(t);
+        _applyTimer(t, forceBillPauses: true);
       } else {
         await fetchTimer(orderId: id);
+        await _fetchBillPauses(force: true);
       }
     } on DioException catch (e) {
       if (isClosed || _activeOrderId != id) return;
@@ -324,9 +343,10 @@ class TableTimerCubit extends Cubit<TableTimerState> {
       if (raw is Map<String, dynamic>) {
         final t = TableTimerResponse.fromJson(raw);
         emit(state.copyWith(isMutating: false));
-        _applyTimer(t);
+        _applyTimer(t, forceBillPauses: true);
       } else {
         await fetchTimer(orderId: id);
+        await _fetchBillPauses(force: true);
       }
     } on DioException catch (e) {
       if (isClosed || _activeOrderId != id) return;

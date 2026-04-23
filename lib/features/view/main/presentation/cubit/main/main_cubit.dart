@@ -49,23 +49,24 @@ class MainCubit extends Cubit<MainState> {
   }
 
   Future<void> _getTablesByHallId(String hallId, {bool force = false}) async {
-    // Cache-first: darhol cache dan ko'rsat
-    final cached = _cache.getTables();
-    if (cached.isNotEmpty) {
-      final cachedTables = cached
-          .map((e) => CafeTableModel.fromJson(e))
-          .where((t) => t.hallId == hallId)
-          .toList();
-      emit(state.copyWith(tables: cachedTables, status: Status.SUCCESS));
+    // Cache-first: cache dan ushbu zal stollarini ko'rsat
+    final allCachedRaw = _cache.getTables();
+    final allCached = allCachedRaw
+        .map((e) => CafeTableModel.fromJson(e))
+        .toList();
+    final cachedForHall = allCached.where((t) => t.hallId == hallId).toList();
+    if (cachedForHall.isNotEmpty) {
+      emit(state.copyWith(tables: cachedForHall, status: Status.SUCCESS));
     } else {
       emit(state.copyWith(status: Status.LOADING));
     }
 
     if (!_connectivity.isOnline) return;
 
-    // Throttle: so'nggi fetch 30s ichida bo'lsa — takrorlamaymiz
+    // Throttle: 30s ichida VA cache da shu zal stollari bor bo'lsa — takrorlamaymiz
     final lastAt = _lastHallFetchAt[hallId];
     if (!force &&
+        cachedForHall.isNotEmpty &&
         lastAt != null &&
         DateTime.now().difference(lastAt) < _tablesThrottle) {
       return;
@@ -77,12 +78,15 @@ class MainCubit extends Cubit<MainState> {
     if (isClosed) return;
     result.fold(
       (failure) {
-        if (cached.isEmpty) {
+        if (cachedForHall.isEmpty) {
           emit(state.copyWith(failure: failure, status: Status.ERROR));
         }
       },
       (tables) {
-        _cache.saveTables(tables.map((t) => t.toJson()).toList());
+        // Merge: boshqa zallarning cache yozuvlarini saqlab, faqat shu zalni yangilaymiz
+        final otherHalls = allCached.where((t) => t.hallId != hallId).toList();
+        final merged = [...otherHalls, ...tables];
+        _cache.saveTables(merged.map((t) => t.toJson()).toList());
         emit(state.copyWith(tables: tables, status: Status.SUCCESS));
       },
     );
@@ -163,22 +167,33 @@ class MainCubit extends Cubit<MainState> {
     final halls = state.halls ?? [];
     if (halls.isEmpty) return;
 
-    // Throttle: so'nggi "barchasi" fetch 30s ichida bo'lsa — takrorlamaymiz
+    // Cache-first: darhol keshdagi barcha stollarni ko'rsat (boshqa zal
+    // tanlovidan qolgan state.tables ni "Barchasi" ostida ko'rsatish muammosini
+    // oldini olamiz)
+    final allCached = _cache
+        .getTables()
+        .map((e) => CafeTableModel.fromJson(e))
+        .toList();
+    if (allCached.isNotEmpty) {
+      emit(state.copyWith(
+        selectedHallId: null,
+        tables: allCached,
+        status: Status.SUCCESS,
+      ));
+    } else {
+      emit(state.copyWith(selectedHallId: null, status: Status.LOADING));
+    }
+
+    // Throttle: so'nggi "barchasi" fetch 30s ichida bo'lsa — network chaqirmaymiz
     if (!force &&
         _lastAllTablesFetchAt != null &&
         DateTime.now().difference(_lastAllTablesFetchAt!) < _tablesThrottle &&
-        (state.tables?.isNotEmpty ?? false)) {
-      emit(state.copyWith(selectedHallId: null, status: Status.SUCCESS));
+        allCached.isNotEmpty) {
       return;
     }
 
-    emit(state.copyWith(selectedHallId: null, status: Status.LOADING));
-
     if (!_connectivity.isOnline) {
-      // Offline: kesh'dan o'qiymiz (eng so'nggi saqlangan hall stollari)
-      final cached = _cache.getTables();
-      final all = cached.map((e) => CafeTableModel.fromJson(e)).toList();
-      emit(state.copyWith(tables: all, status: Status.SUCCESS));
+      // Offline: cache dan chiqarib qo'ydik
       return;
     }
 

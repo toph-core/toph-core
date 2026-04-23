@@ -3359,6 +3359,456 @@ class S {
       args: [],
     );
   }
+
+  /// `All`
+  String get strAllHalls {
+    return Intl.message(
+      'All',
+      name: 'strAllHalls',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Shift report`
+  String get strShiftReport {
+    return Intl.message(
+      'Shift report',
+      name: 'strShiftReport',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Cashier`
+  String get strCashier {
+    return Intl.message(
+      'Cashier',
+      name: 'strCashier',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Shift open`
+  String get strShiftOpen {
+    return Intl.message(
+      'Shift open',
+      name: 'strShiftOpen',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Current shift`
+  String get strCurrentShift {
+    return Intl.message(
+      'Current shift',
+      name: 'strCurrentShift',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Opened`
+  String get strOpenedAt {
+    return Intl.message(
+      'Opened',
+      name: 'strOpenedAt',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Cash balance`
+  String get strCashBalance {
+    return Intl.message(
+      'Cash balance',
+      name: 'strCashBalance',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Expected balance`
+  String get strExpectedBalance {
+    return Intl.message(
+      'Expected balance',
+      name: 'strExpectedBalance',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Initial balance`
+  String get strInitialBalance {
+    return Intl.message(
+      'Initial balance',
+      name: 'strInitialBalance',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Recent orders`
+  String get strRecentOrders {
+    return Intl.message(
+      'Recent orders',
+      name: 'strRecentOrders',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `View all`
+  String get strViewAll {
+    return Intl.message(
+      'View all',
+      name: 'strViewAll',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Hourly sales dynamics`
+  String get strHourlySalesDynamics {
+    return Intl.message(
+      'Hourly sales dynamics',
+      name: 'strHourlySalesDynamics',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Peak time`
+  String get strPeakTime {
+    return Intl.message(
+      'Peak time',
+      name: 'strPeakTime',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `No sales data yet`
+  String get strNoSalesData {
+    return Intl.message(
+      'No sales data yet',
+      name: 'strNoSalesData',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Waiting for order`
+  String get strWaitingForOrder {
+    return Intl.message(
+      'Waiting for order',
+      name: 'strWaitingForOrder',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Discount & Service`
+  String get strDiscountServiceTitle {
+    return Intl.message(
+      'Discount & Service',
+      name: 'strDiscountServiceTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `No discount yet`
+  String get strNoDiscountYet {
+    return Intl.message(
+      'No discount yet',
+      name: 'strNoDiscountYet',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Close shift`
+  String get strCloseShiftShort {
+    return Intl.message(
+      'Close shift',
+      name: 'strCloseShiftShort',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Total revenue`
+  String get strTotalRevenueLabel {
+    return Intl.message(
+      'Total revenue',
+      name: 'strTotalRevenueLabel',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Service`
+  String get strService {
+    return Intl.message(
+      'Service',
+      name: 'strService',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Discount`
+  String get strDiscount {
+    return Intl.message(
+      'Discount',
+      name: 'strDiscount',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `No orders in this shift yet`
+  String get strNoOrdersInShift {
+    return Intl.message(
+      'No orders in this shift yet',
+      name: 'strNoOrdersInShift',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `now`
+  String get strNowShort {
+    return Intl.message(
+      'now',
+      name: 'strNowShort',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Shift`
+  String get strShiftHash {
+    return Intl.message(
+      'Shift',
+      name: 'strShiftHash',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `avg`
+  String get strAverageShort {
+    return Intl.message(
+      'avg',
+      name: 'strAverageShort',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `{count} orders · avg {avg}`
+  String strOrdersCountWithAvg(Object count, Object avg) {
+    return Intl.message(
+      '$count orders · avg $avg',
+      name: 'strOrdersCountWithAvg',
+      desc: '',
+      args: [count, avg],
+    );
+  }
+
+  /// `{count} orders`
+  String strOrdersCountShort(Object count) {
+    return Intl.message(
+      '$count orders',
+      name: 'strOrdersCountShort',
+      desc: '',
+      args: [count],
+    );
+  }
+
+  /// `{count} items · avg {avg}`
+  String strItemsCountWithAvg(Object count, Object avg) {
+    return Intl.message(
+      '$count items · avg $avg',
+      name: 'strItemsCountWithAvg',
+      desc: '',
+      args: [count, avg],
+    );
+  }
+
+  /// `{count} items · {time}`
+  String strItemsCountWithTime(Object count, Object time) {
+    return Intl.message(
+      '$count items · $time',
+      name: 'strItemsCountWithTime',
+      desc: '',
+      args: [count, time],
+    );
+  }
+
+  /// `Duration`
+  String get strDurationLabel {
+    return Intl.message(
+      'Duration',
+      name: 'strDurationLabel',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Not ordered`
+  String get strNotOrdered {
+    return Intl.message(
+      'Not ordered',
+      name: 'strNotOrdered',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Shift just started`
+  String get strShiftJustStarted {
+    return Intl.message(
+      'Shift just started',
+      name: 'strShiftJustStarted',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Not yet`
+  String get strNotYet {
+    return Intl.message(
+      'Not yet',
+      name: 'strNotYet',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `No service charge yet`
+  String get strNoServiceChargeYet {
+    return Intl.message(
+      'No service charge yet',
+      name: 'strNoServiceChargeYet',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Waiting for order`
+  String get strWaitingForOrderStatus {
+    return Intl.message(
+      'Waiting for order',
+      name: 'strWaitingForOrderStatus',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Open shift first. Shift must be open to create orders.`
+  String get strShiftNotOpenError {
+    return Intl.message(
+      'Open shift first. Shift must be open to create orders.',
+      name: 'strShiftNotOpenError',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Order`
+  String get strOrder {
+    return Intl.message(
+      'Order',
+      name: 'strOrder',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Accepted`
+  String get strAcceptedAmount {
+    return Intl.message(
+      'Accepted',
+      name: 'strAcceptedAmount',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Manual input`
+  String get strManualInput {
+    return Intl.message(
+      'Manual input',
+      name: 'strManualInput',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Payment amount`
+  String get strPaymentAmount {
+    return Intl.message(
+      'Payment amount',
+      name: 'strPaymentAmount',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Subtotal`
+  String get strSubtotal {
+    return Intl.message(
+      'Subtotal',
+      name: 'strSubtotal',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Hourly fee`
+  String get strHourlyPayment {
+    return Intl.message(
+      'Hourly fee',
+      name: 'strHourlyPayment',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Order not found`
+  String get strOrderNotFound {
+    return Intl.message(
+      'Order not found',
+      name: 'strOrderNotFound',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Confirm`
+  String get strConfirm {
+    return Intl.message(
+      'Confirm',
+      name: 'strConfirm',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `pcs`
+  String get strPiecesSuffix {
+    return Intl.message(
+      'pcs',
+      name: 'strPiecesSuffix',
+      desc: '',
+      args: [],
+    );
+  }
 }
 
 class AppLocalizationDelegate extends LocalizationsDelegate<S> {

@@ -47,6 +47,11 @@ class DetailBloc extends Bloc<DetailEvent, DetailState> {
 
   ArchiveDetailEntity? lastDetail;
 
+  // Duplikat /orders/table/{id} + /bills/{id} chaqiriqlarini kamaytirish uchun
+  DateTime? _lastBillFetchAt;
+  String? _lastBillFetchTableId;
+  static const _billFetchThrottle = Duration(seconds: 15);
+
   DetailBloc(
     this._getCategoriesUsecase,
     this._getGoodsByCategoryIdUseCase,
@@ -132,6 +137,16 @@ class DetailBloc extends Bloc<DetailEvent, DetailState> {
     if (cached != null) {
       _applyDetailToState(ArchiveDetailModel.fromJson(cached), event.billId, emit);
     }
+
+    // Throttle: shu tableId uchun 15s ichida takroriy /bills/ + /orders/table/
+    // chaqiriqlari bloklanadi (widget rebuild dan kelgan duplicate eventlarni yutadi)
+    if (_lastBillFetchTableId == event.billId &&
+        _lastBillFetchAt != null &&
+        DateTime.now().difference(_lastBillFetchAt!) < _billFetchThrottle) {
+      return;
+    }
+    _lastBillFetchTableId = event.billId;
+    _lastBillFetchAt = DateTime.now();
 
     final result = await _getPaymentDetailWithTableIdUsecase.call(event.billId);
     if (isClosed) return;

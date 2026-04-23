@@ -115,9 +115,9 @@ class _ShiftChip extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                'Smena',
-                style: TextStyle(
+              Text(
+                S.current.strShift,
+                style: const TextStyle(
                   fontSize: 11,
                   color: _kSlate500,
                   fontWeight: FontWeight.w400,

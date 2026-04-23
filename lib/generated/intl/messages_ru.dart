@@ -29,11 +29,19 @@ class MessageLookup extends MessageLookupByLibrary {
 
   static String m3(count) => "${count} Ингредиентов";
 
-  static String m4(n) => "${n} столов";
+  static String m4(count, avg) => "${count} блюд · ср. ${avg}";
 
-  static String m5(size) => "${size} / стр.";
+  static String m5(count, time) => "${count} блюд · ${time}";
 
-  static String m6(count) => "${count} столов не сохранено";
+  static String m6(n) => "${n} столов";
+
+  static String m7(count) => "${count} заказов";
+
+  static String m8(count, avg) => "${count} заказов · ср. ${avg}";
+
+  static String m9(size) => "${size} / стр.";
+
+  static String m10(count) => "${count} столов не сохранено";
 
   final messages = _notInlinedMessages(_notInlinedMessages);
   static Map<String, Function> _notInlinedMessages(_) => <String, Function>{
@@ -64,6 +72,7 @@ class MessageLookup extends MessageLookupByLibrary {
         "strAddress": MessageLookupByLibrary.simpleMessage("Адрес"),
         "strAllColon": MessageLookupByLibrary.simpleMessage("Всего:"),
         "strAllDishes": MessageLookupByLibrary.simpleMessage("Все блюда"),
+        "strAllHalls": MessageLookupByLibrary.simpleMessage("Все"),
         "strAllOrdersTitle": MessageLookupByLibrary.simpleMessage("Все заказы"),
         "strAllRoles": MessageLookupByLibrary.simpleMessage("Все"),
         "strAmountColumn": MessageLookupByLibrary.simpleMessage("Сумма"),
@@ -79,6 +88,7 @@ class MessageLookup extends MessageLookupByLibrary {
             MessageLookupByLibrary.simpleMessage("Заказы не найдены"),
         "strAugust": MessageLookupByLibrary.simpleMessage("Август"),
         "strAverageCheck": MessageLookupByLibrary.simpleMessage("Средний чек"),
+        "strAverageShort": MessageLookupByLibrary.simpleMessage("ср."),
         "strBackToScreen": MessageLookupByLibrary.simpleMessage("Назад"),
         "strBillSuffix": MessageLookupByLibrary.simpleMessage("счёт"),
         "strBusy": MessageLookupByLibrary.simpleMessage("Занят"),
@@ -90,6 +100,9 @@ class MessageLookup extends MessageLookupByLibrary {
             MessageLookupByLibrary.simpleMessage("Вместимость (чел.)"),
         "strCard": MessageLookupByLibrary.simpleMessage("Карта"),
         "strCash": MessageLookupByLibrary.simpleMessage("Наличные"),
+        "strCashBalance":
+            MessageLookupByLibrary.simpleMessage("Кассовый баланс"),
+        "strCashier": MessageLookupByLibrary.simpleMessage("Кассир"),
         "strCashierLabel": MessageLookupByLibrary.simpleMessage("Кассир:"),
         "strCashierRole": MessageLookupByLibrary.simpleMessage("Кассир"),
         "strCategory": MessageLookupByLibrary.simpleMessage("Категория"),
@@ -110,6 +123,8 @@ class MessageLookup extends MessageLookupByLibrary {
         "strCloseShift": MessageLookupByLibrary.simpleMessage("Закрыть смену"),
         "strCloseShiftInstruction": MessageLookupByLibrary.simpleMessage(
             "Нажмите кнопку в правом нижнем углу, чтобы закрыть смену."),
+        "strCloseShiftShort":
+            MessageLookupByLibrary.simpleMessage("Закрыть смену"),
         "strClosedStatus": MessageLookupByLibrary.simpleMessage("Закрыт"),
         "strClosedToday":
             MessageLookupByLibrary.simpleMessage("Закрыто сегодня"),
@@ -127,6 +142,8 @@ class MessageLookup extends MessageLookupByLibrary {
             MessageLookupByLibrary.simpleMessage("Тип подключения"),
         "strContinue": MessageLookupByLibrary.simpleMessage("Продолжить"),
         "strCooking": MessageLookupByLibrary.simpleMessage("Готовится"),
+        "strCurrentShift":
+            MessageLookupByLibrary.simpleMessage("Текущая смена"),
         "strCustomer": MessageLookupByLibrary.simpleMessage("Клиент"),
         "strDate": MessageLookupByLibrary.simpleMessage("Дата"),
         "strDateLabel": MessageLookupByLibrary.simpleMessage("Дата:"),
@@ -147,6 +164,9 @@ class MessageLookup extends MessageLookupByLibrary {
         "strDeviceSynchronization": MessageLookupByLibrary.simpleMessage(
             "Синхронизация между устройствами"),
         "strDisabled": MessageLookupByLibrary.simpleMessage("Отключён"),
+        "strDiscount": MessageLookupByLibrary.simpleMessage("Скидка"),
+        "strDiscountServiceTitle":
+            MessageLookupByLibrary.simpleMessage("Скидка и Сервис"),
         "strDiscounts": MessageLookupByLibrary.simpleMessage("Скидки"),
         "strDishesColumn": MessageLookupByLibrary.simpleMessage("Блюда"),
         "strDoYouWantClearOrders": MessageLookupByLibrary.simpleMessage(
@@ -158,6 +178,8 @@ class MessageLookup extends MessageLookupByLibrary {
             "Вы хотите выйти из приложения?"),
         "strDragHint": MessageLookupByLibrary.simpleMessage("Перетащите"),
         "strDuration": MessageLookupByLibrary.simpleMessage("Длительность"),
+        "strDurationLabel":
+            MessageLookupByLibrary.simpleMessage("Длительность"),
         "strEdit": MessageLookupByLibrary.simpleMessage("Редактировать"),
         "strEditMeal":
             MessageLookupByLibrary.simpleMessage("Редактировать блюдо"),
@@ -178,6 +200,8 @@ class MessageLookup extends MessageLookupByLibrary {
         "strExactAmount": MessageLookupByLibrary.simpleMessage("Точная сумма"),
         "strExistingOrders":
             MessageLookupByLibrary.simpleMessage("Текущие заказы"),
+        "strExpectedBalance":
+            MessageLookupByLibrary.simpleMessage("Ожидаемый остаток"),
         "strExport": MessageLookupByLibrary.simpleMessage("Экспорт"),
         "strExtraSalt":
             MessageLookupByLibrary.simpleMessage("Дополнительно соли"),
@@ -243,6 +267,8 @@ class MessageLookup extends MessageLookupByLibrary {
         "strHourly": MessageLookupByLibrary.simpleMessage("Почасовой"),
         "strHourlyPrice":
             MessageLookupByLibrary.simpleMessage("Цена за час (сум)"),
+        "strHourlySalesDynamics":
+            MessageLookupByLibrary.simpleMessage("Почасовая динамика продаж"),
         "strHub": MessageLookupByLibrary.simpleMessage("Hub"),
         "strHubClientSettings":
             MessageLookupByLibrary.simpleMessage("Настройки Hub и клиентов"),
@@ -250,6 +276,8 @@ class MessageLookup extends MessageLookupByLibrary {
         "strImages": MessageLookupByLibrary.simpleMessage("Изображения"),
         "strIngredients": MessageLookupByLibrary.simpleMessage("Ингредиенты"),
         "strIngredientsCount": m3,
+        "strInitialBalance":
+            MessageLookupByLibrary.simpleMessage("Начальный остаток"),
         "strInitialStatus":
             MessageLookupByLibrary.simpleMessage("Начальный статус"),
         "strInterfaceLanguage":
@@ -260,6 +288,8 @@ class MessageLookup extends MessageLookupByLibrary {
         "strInvalidName": MessageLookupByLibrary.simpleMessage("Неверное имя"),
         "strInvalidNumber":
             MessageLookupByLibrary.simpleMessage("Неверный номер"),
+        "strItemsCountWithAvg": m4,
+        "strItemsCountWithTime": m5,
         "strJanuary": MessageLookupByLibrary.simpleMessage("Январь"),
         "strJuly": MessageLookupByLibrary.simpleMessage("Июль"),
         "strJune": MessageLookupByLibrary.simpleMessage("Июнь"),
@@ -288,7 +318,7 @@ class MessageLookup extends MessageLookupByLibrary {
         "strMonday": MessageLookupByLibrary.simpleMessage("Понедельник"),
         "strMoreKetchup":
             MessageLookupByLibrary.simpleMessage("Больше кетчупа"),
-        "strNPeopleTable": m4,
+        "strNPeopleTable": m6,
         "strNameTooShort":
             MessageLookupByLibrary.simpleMessage("Имя слишком короткое"),
         "strNeedAttention":
@@ -300,22 +330,33 @@ class MessageLookup extends MessageLookupByLibrary {
         "strNo": MessageLookupByLibrary.simpleMessage("Нет"),
         "strNoDataFound":
             MessageLookupByLibrary.simpleMessage("Данные не найдены"),
+        "strNoDiscountYet":
+            MessageLookupByLibrary.simpleMessage("Скидок пока нет"),
         "strNoEmployeesYet":
             MessageLookupByLibrary.simpleMessage("Сотрудники ещё не добавлены"),
         "strNoHallsYet":
             MessageLookupByLibrary.simpleMessage("Залы ещё не добавлены"),
         "strNoInternetConnection":
             MessageLookupByLibrary.simpleMessage("Нет подключения к интернету"),
+        "strNoOrdersInShift":
+            MessageLookupByLibrary.simpleMessage("В смене пока нет заказов"),
         "strNoPrintersYet":
             MessageLookupByLibrary.simpleMessage("Принтеры ещё не добавлены"),
+        "strNoSalesData":
+            MessageLookupByLibrary.simpleMessage("Нет данных о продажах"),
+        "strNoServiceChargeYet":
+            MessageLookupByLibrary.simpleMessage("Сервисного сбора пока нет"),
         "strNoTables": MessageLookupByLibrary.simpleMessage("Столов нет"),
         "strNoTablesInHall":
             MessageLookupByLibrary.simpleMessage("В этом зале нет столов"),
+        "strNotOrdered": MessageLookupByLibrary.simpleMessage("Не заказано"),
+        "strNotYet": MessageLookupByLibrary.simpleMessage("Пока нет"),
         "strNotifications": MessageLookupByLibrary.simpleMessage("Уведомления"),
         "strNotifyKitchen":
             MessageLookupByLibrary.simpleMessage("Сообщить на кухню"),
         "strNovember": MessageLookupByLibrary.simpleMessage("Ноябрь"),
         "strNowActive": MessageLookupByLibrary.simpleMessage("Сейчас активны"),
+        "strNowShort": MessageLookupByLibrary.simpleMessage("сейчас"),
         "strNumberColumn": MessageLookupByLibrary.simpleMessage("#"),
         "strOK": MessageLookupByLibrary.simpleMessage("OK"),
         "strOctober": MessageLookupByLibrary.simpleMessage("Октябрь"),
@@ -323,6 +364,7 @@ class MessageLookup extends MessageLookupByLibrary {
             "Оффлайн режим — данные синхронизируются при подключении"),
         "strOpenBills": MessageLookupByLibrary.simpleMessage("Открытые счета"),
         "strOpenShift": MessageLookupByLibrary.simpleMessage("Открыть смену"),
+        "strOpenedAt": MessageLookupByLibrary.simpleMessage("Открыто"),
         "strOpeningBalance":
             MessageLookupByLibrary.simpleMessage("Начальный остаток"),
         "strOrderDetails":
@@ -332,12 +374,14 @@ class MessageLookup extends MessageLookupByLibrary {
             MessageLookupByLibrary.simpleMessage("Заказ успешно создан"),
         "strOrderType": MessageLookupByLibrary.simpleMessage("Тип заказа"),
         "strOrders": MessageLookupByLibrary.simpleMessage("Заказы"),
+        "strOrdersCountShort": m7,
+        "strOrdersCountWithAvg": m8,
         "strOrdersEmpty":
             MessageLookupByLibrary.simpleMessage("Заказы не найдены"),
         "strOrgName":
             MessageLookupByLibrary.simpleMessage("Название организации"),
         "strOther": MessageLookupByLibrary.simpleMessage("Другое"),
-        "strPageSize": m5,
+        "strPageSize": m9,
         "strPassword": MessageLookupByLibrary.simpleMessage("Пароль"),
         "strPasswordContainAtLeastChars": MessageLookupByLibrary.simpleMessage(
             "Пароль должен содержать не менее 8 символов."),
@@ -350,6 +394,7 @@ class MessageLookup extends MessageLookupByLibrary {
         "strPaymentLabel": MessageLookupByLibrary.simpleMessage("К оплате:"),
         "strPaymentMethodLabel":
             MessageLookupByLibrary.simpleMessage("Способ оплаты:"),
+        "strPeakTime": MessageLookupByLibrary.simpleMessage("Пиковое время"),
         "strPersonsSuffix": MessageLookupByLibrary.simpleMessage("чел."),
         "strPhone": MessageLookupByLibrary.simpleMessage("Телефон"),
         "strPhoneMask":
@@ -375,6 +420,8 @@ class MessageLookup extends MessageLookupByLibrary {
         "strQuantity": MessageLookupByLibrary.simpleMessage("Количество"),
         "strReceiptInfo": MessageLookupByLibrary.simpleMessage("Данные чека"),
         "strReceived": MessageLookupByLibrary.simpleMessage("Получено"),
+        "strRecentOrders":
+            MessageLookupByLibrary.simpleMessage("Последние заказы"),
         "strRecenter": MessageLookupByLibrary.simpleMessage("По центру"),
         "strRefresh": MessageLookupByLibrary.simpleMessage("Обновить"),
         "strRefreshCompleted":
@@ -426,6 +473,7 @@ class MessageLookup extends MessageLookupByLibrary {
         "strSemiFinished":
             MessageLookupByLibrary.simpleMessage("Полуфабрикаты"),
         "strSeptember": MessageLookupByLibrary.simpleMessage("Сентябрь"),
+        "strService": MessageLookupByLibrary.simpleMessage("Сервис"),
         "strServiceCharge":
             MessageLookupByLibrary.simpleMessage("Сервисный сбор"),
         "strSettings": MessageLookupByLibrary.simpleMessage("Настройки"),
@@ -433,7 +481,14 @@ class MessageLookup extends MessageLookupByLibrary {
             "Только администратор или менеджер может войти в настройки."),
         "strShape": MessageLookupByLibrary.simpleMessage("Форма"),
         "strShift": MessageLookupByLibrary.simpleMessage("Смена"),
+        "strShiftHash": MessageLookupByLibrary.simpleMessage("Смена"),
+        "strShiftJustStarted":
+            MessageLookupByLibrary.simpleMessage("Смена только что началась"),
+        "strShiftNotOpenError": MessageLookupByLibrary.simpleMessage(
+            "Сначала откройте смену. Для создания заказа смена должна быть открыта."),
+        "strShiftOpen": MessageLookupByLibrary.simpleMessage("Смена открыта"),
         "strShiftOpened": MessageLookupByLibrary.simpleMessage("Смена открыта"),
+        "strShiftReport": MessageLookupByLibrary.simpleMessage("Отчёт смены"),
         "strShiftRevenue":
             MessageLookupByLibrary.simpleMessage("Выручка смены"),
         "strShowProductImages": MessageLookupByLibrary.simpleMessage(
@@ -455,7 +510,7 @@ class MessageLookup extends MessageLookupByLibrary {
         "strTableNumber": MessageLookupByLibrary.simpleMessage("Стол"),
         "strTableType": MessageLookupByLibrary.simpleMessage("Тип"),
         "strTables": MessageLookupByLibrary.simpleMessage("Столы"),
-        "strTablesNotSavedCount": m6,
+        "strTablesNotSavedCount": m10,
         "strTakeaway": MessageLookupByLibrary.simpleMessage("С собой"),
         "strTerminal": MessageLookupByLibrary.simpleMessage("Терминал"),
         "strThursday": MessageLookupByLibrary.simpleMessage("Четверг"),
@@ -467,6 +522,8 @@ class MessageLookup extends MessageLookupByLibrary {
             MessageLookupByLibrary.simpleMessage("Общая вместимость"),
         "strTotalColon": MessageLookupByLibrary.simpleMessage("Итого:"),
         "strTotalLabel": MessageLookupByLibrary.simpleMessage("Итого:"),
+        "strTotalRevenueLabel":
+            MessageLookupByLibrary.simpleMessage("Общая выручка"),
         "strTotalSales": MessageLookupByLibrary.simpleMessage("Общая выручка"),
         "strTotalSum": MessageLookupByLibrary.simpleMessage("Итого"),
         "strTotalTables": MessageLookupByLibrary.simpleMessage("Всего столов"),
@@ -483,9 +540,14 @@ class MessageLookup extends MessageLookupByLibrary {
         "strUsersRolesPerms":
             MessageLookupByLibrary.simpleMessage("Пользователи, роли и права"),
         "strUzbek": MessageLookupByLibrary.simpleMessage("O\'zbek"),
+        "strViewAll": MessageLookupByLibrary.simpleMessage("Смотреть все"),
         "strViewReceipt": MessageLookupByLibrary.simpleMessage("Показать чек"),
         "strWaiterRole": MessageLookupByLibrary.simpleMessage("Официант"),
         "strWaiting": MessageLookupByLibrary.simpleMessage("Ожидание"),
+        "strWaitingForOrder":
+            MessageLookupByLibrary.simpleMessage("Ожидание заказа"),
+        "strWaitingForOrderStatus":
+            MessageLookupByLibrary.simpleMessage("Ожидание заказа"),
         "strWednesday": MessageLookupByLibrary.simpleMessage("Среда"),
         "strWiFi": MessageLookupByLibrary.simpleMessage("Wi-Fi"),
         "strWidthMeters": MessageLookupByLibrary.simpleMessage("Ширина (м)"),
@@ -494,6 +556,20 @@ class MessageLookup extends MessageLookupByLibrary {
         "strYouWantLeaveOrderScreen": MessageLookupByLibrary.simpleMessage(
             "Вы уверены, что хотите выйти? Блюда будут отменены."),
         "today": MessageLookupByLibrary.simpleMessage("Сегодня"),
-        "week": MessageLookupByLibrary.simpleMessage("Неделя")
+        "week": MessageLookupByLibrary.simpleMessage("Неделя"),
+        "strOrder": MessageLookupByLibrary.simpleMessage("Заказ"),
+        "strAcceptedAmount": MessageLookupByLibrary.simpleMessage("Принято"),
+        "strManualInput":
+            MessageLookupByLibrary.simpleMessage("Ручной ввод"),
+        "strPaymentAmount":
+            MessageLookupByLibrary.simpleMessage("Сумма оплаты"),
+        "strSubtotal":
+            MessageLookupByLibrary.simpleMessage("Промежуточный итог"),
+        "strHourlyPayment":
+            MessageLookupByLibrary.simpleMessage("Почасовая оплата"),
+        "strOrderNotFound":
+            MessageLookupByLibrary.simpleMessage("Заказ не найден"),
+        "strConfirm": MessageLookupByLibrary.simpleMessage("Подтвердить"),
+        "strPiecesSuffix": MessageLookupByLibrary.simpleMessage("шт")
       };
 }

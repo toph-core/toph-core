@@ -4,14 +4,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mary_ai_pos/core/constants/constants.dart';
 import 'package:mary_ai_pos/core/extension/for_context.dart';
+import 'package:mary_ai_pos/core/components/flush_bars.dart';
 import 'package:mary_ai_pos/core/routes/app_routes.dart';
 import 'package:mary_ai_pos/core/services/connectivity/connectivity_cubit.dart';
 import 'package:mary_ai_pos/core/widgets/app_scaffold.dart';
 import 'package:mary_ai_pos/di.dart';
+import 'package:mary_ai_pos/features/view/auth/presentation/cubit/bloc/user_bloc.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/cafe_tables/cafe_tables_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/hall/hall_model.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/main/main_cubit.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/orders/orders_bloc.dart';
+import 'package:mary_ai_pos/features/view/main/presentation/cubit/shift/shift_bloc.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/main/widgets/main_header.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/main/widgets/tab_filter.dart';
 import 'package:mary_ai_pos/generated/l10n.dart';
@@ -200,6 +203,10 @@ class _WaiterFloorPlanScreenState extends State<WaiterFloorPlanScreen> {
     BuildContext context,
     CafeTableModel table,
   ) async {
+    // Band stolga qaytib kirish — smena kerak emas (mavjud buyurtmaga)
+    final isNewOrder = table.status == TableStatus.free;
+    if (isNewOrder && !_requireOpenShift(context)) return;
+
     final savedOrdersBloc = context.read<SavedOrdersBloc>();
     final index = savedOrdersBloc.state.order.indexWhere(
       (v) => v.createOrderRequest.tableId == table.id,
@@ -217,13 +224,30 @@ class _WaiterFloorPlanScreenState extends State<WaiterFloorPlanScreen> {
       arguments: {
         'table': table,
         'guest_count': defaultGuestCount,
-        'table_status': table.status == TableStatus.free
-            ? TableStatus.free
-            : TableStatus.busy,
+        'table_status': isNewOrder ? TableStatus.free : TableStatus.busy,
         'saved_orders': saved,
       },
     );
   }
+}
+
+/// Smena ochiqligini tekshiradi. Admin/superadmin ga smena shart emas.
+/// Agar smena ochilmagan bo'lsa — xato xabari chiqadi va smena sahifasiga o'tiladi.
+bool _requireOpenShift(BuildContext context) {
+  final role = context.read<UserBloc>().state.userMOdel?.role;
+  // Admin va superadmin smenasiz ham buyurtma qila oladi
+  if (role == UserRole.admin || role == UserRole.superadmin) return true;
+
+  final shift = context.read<ShiftBloc>().state.shift;
+  if (shift != null) return true;
+
+  showErrorMessage(context, S.current.strShiftNotOpenError);
+  // 300ms dan keyin smena sahifasiga o'tamiz — toast ko'rinsin deb
+  Future.delayed(const Duration(milliseconds: 300), () {
+    if (!context.mounted) return;
+    Navigator.pushNamed(context, AppRoutes.closeShiftScreen);
+  });
+  return false;
 }
 
 // ─────────────────────────────────────────────
@@ -836,9 +860,9 @@ class _BusyCardContent extends StatelessWidget {
             ),
           )
         else
-          const Text(
-            'Buyurtma kutilmoqda',
-            style: TextStyle(
+          Text(
+            S.current.strWaitingForOrderStatus,
+            style: const TextStyle(
               fontSize: 13,
               color: _kS500,
               fontFamily: 'Inter',
@@ -941,15 +965,18 @@ class _TakeawayHeaderButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () => Navigator.pushNamed(
-        context,
-        AppRoutes.detailScreen,
-        arguments: {
-          'table': null,
-          'table_status': TableStatus.none,
-          'guest_count': 1,
-        },
-      ),
+      onTap: () {
+        if (!_requireOpenShift(context)) return;
+        Navigator.pushNamed(
+          context,
+          AppRoutes.detailScreen,
+          arguments: {
+            'table': null,
+            'table_status': TableStatus.none,
+            'guest_count': 1,
+          },
+        );
+      },
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(

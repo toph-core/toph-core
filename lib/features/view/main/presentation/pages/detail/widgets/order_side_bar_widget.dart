@@ -209,11 +209,13 @@ class _OrderSidebarState extends State<OrderSidebar> with DetailScreenMixin {
                           existingTotal +
                           calculateTotalPrice(state.selectedGoods);
                       final rawAmt = timerState.timer?.currentAmount ?? '';
+                      // "4436.39" — backend decimal qaytaradi; . ni saqlash kerak
                       final timerAmt =
-                          int.tryParse(
-                            rawAmt.replaceAll(RegExp(r'[^0-9]'), ''),
-                          ) ??
-                          0;
+                          (double.tryParse(
+                                rawAmt.replaceAll(RegExp(r'[^0-9.]'), ''),
+                              ) ??
+                              0)
+                              .round();
                       final detail = context.read<DetailBloc>().lastDetail;
                       final servicePercent = detail?.servicePercent ?? 0;
                       final serviceAmt = _includeService && servicePercent > 0
@@ -586,38 +588,39 @@ class _OrderItem extends StatelessWidget with DetailScreenMixin {
           color: const Color(0xFFF8FAFC),
           borderRadius: BorderRadius.circular(12),
         ),
-        child: Row(
-          spacing: 12,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Item color indicator
-            Container(
-              width: 44,
-              height: 44,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: colors.border),
-              ),
-              child: Center(
-                child: Text(
-                  item.goods.name.isNotEmpty
-                      ? item.goods.name[0].toUpperCase()
-                      : '?',
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                    color: Color(0xFF0F172A),
-                    fontFamily: 'Inter',
+            // ─── Yuqori qator: ikon + nom + jami ───
+            Row(
+              children: [
+                // Item color indicator (kichraytirildi)
+                Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: colors.border),
+                  ),
+                  child: Center(
+                    child: Text(
+                      item.goods.name.isNotEmpty
+                          ? item.goods.name[0].toUpperCase()
+                          : '?',
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF0F172A),
+                        fontFamily: 'Inter',
+                      ),
+                    ),
                   ),
                 ),
-              ),
-            ),
-            // Name + price
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
+                const SizedBox(width: 10),
+                // Nomi (to'liq joy oladi)
+                Expanded(
+                  child: Text(
                     item.goods.name,
                     style: const TextStyle(
                       fontSize: 13,
@@ -625,51 +628,61 @@ class _OrderItem extends StatelessWidget with DetailScreenMixin {
                       color: Color(0xFF0F172A),
                       fontFamily: 'Inter',
                     ),
-                    maxLines: 1,
+                    maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 2),
-                  Text(
+                ),
+                const SizedBox(width: 8),
+                // Jami narx (o'ng tomonda)
+                Text(
+                  (item.goods.additionals.isNotEmpty
+                          ? (item.goods.additionals
+                                        .map((v) => v.price)
+                                        .reduce((a, b) => a + b) +
+                                    double.parse(item.goods.price)) *
+                                item.quantity
+                          : double.parse(item.goods.price) * item.quantity)
+                      .formatN,
+                  textAlign: TextAlign.right,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  softWrap: false,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF0F172A),
+                    fontFamily: 'Inter',
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            // ─── Pastki qator: dona narxi + miqdor boshqaruvi ───
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
                     double.parse(item.goods.price).formatN,
                     style: TextStyle(
                       fontSize: 12,
                       color: colors.textSecondary,
                       fontFamily: 'Inter',
                     ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    softWrap: false,
                   ),
-                ],
-              ),
-            ),
-            // Qty control
-            _QtyControl(
-              quantity: item.quantity,
-              onDecrement: () => context.read<DetailBloc>().add(
-                DetailEvent.decrementQuantity(goodsId: item.goods.id),
-              ),
-              onIncrement: () => context.read<DetailBloc>().add(
-                DetailEvent.incrementQuantity(goodsId: item.goods.id),
-              ),
-            ),
-            // Total
-            SizedBox(
-              width: 72,
-              child: Text(
-                (item.goods.additionals.isNotEmpty
-                        ? (item.goods.additionals
-                                      .map((v) => v.price)
-                                      .reduce((a, b) => a + b) +
-                                  double.parse(item.goods.price)) *
-                              item.quantity
-                        : double.parse(item.goods.price) * item.quantity)
-                    .formatN,
-                textAlign: TextAlign.right,
-                style: const TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFF0F172A),
-                  fontFamily: 'Inter',
                 ),
-              ),
+                _QtyControl(
+                  quantity: item.quantity,
+                  onDecrement: () => context.read<DetailBloc>().add(
+                    DetailEvent.decrementQuantity(goodsId: item.goods.id),
+                  ),
+                  onIncrement: () => context.read<DetailBloc>().add(
+                    DetailEvent.incrementQuantity(goodsId: item.goods.id),
+                  ),
+                ),
+              ],
             ),
           ],
         ),
@@ -1459,8 +1472,11 @@ class _TimerBadgeRowState extends State<_TimerBadgeRow> {
   }
 
   static String _fmtAmount(String raw) {
-    final n = int.tryParse(raw.replaceAll(RegExp(r'[^0-9]'), ''));
-    if (n == null) return raw;
+    // Backend "4436.39" formatida decimal qaytaradi. Nuqtani saqlab olib,
+    // double ga parse qilib, yaxlitlaymiz.
+    final d = double.tryParse(raw.replaceAll(RegExp(r'[^0-9.]'), ''));
+    if (d == null) return raw;
+    final n = d.round();
     return n.toString().replaceAllMapped(
       RegExp(r'(\d)(?=(\d{3})+(?!\d))'),
       (m) => '${m[1]} ',

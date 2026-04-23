@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:mary_ai_pos/core/common/custom_shimmer_container.dart';
+import 'package:mary_ai_pos/core/services/cache/cache_service.dart';
 import 'package:mary_ai_pos/di.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/cafe_tables/cafe_tables_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/hall/hall_model.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/main/main_cubit.dart';
+import 'package:mary_ai_pos/generated/l10n.dart';
 
 const _kS900 = Color(0xFF0F172A);
 const _kS500 = Color(0xFF64748B);
@@ -51,6 +53,21 @@ class TabFilter extends StatelessWidget {
       );
     }
 
+    // Counts: cache dagi barcha stollarni o'qib, har zal bo'yicha hisoblaymiz.
+    // Shuning uchun zal tanlovi o'zgarsa ham countlar turg'un qoladi.
+    final allCached = inject<CacheService>()
+        .getTables()
+        .map((e) => CafeTableModel.fromJson(e))
+        .toList();
+    final bool useCache = allCached.isNotEmpty;
+    final int allCount = useCache ? allCached.length : tables.length;
+    int countFor(String hallId) {
+      if (useCache) {
+        return allCached.where((t) => t.hallId == hallId).length;
+      }
+      return tables.where((t) => t.hallId == hallId).length;
+    }
+
     return SizedBox(
       height: 42,
       child: ListView(
@@ -58,8 +75,8 @@ class TabFilter extends StatelessWidget {
         children: [
           if (showAllOption) ...[
             _HallPill(
-              label: 'Barchasi',
-              count: tables.length,
+              label: S.current.strAllHalls,
+              count: allCount,
               isActive: selectedHallId == null,
               onTap: () => inject<MainCubit>().loadAllHallsTables(),
             ),
@@ -67,12 +84,11 @@ class TabFilter extends StatelessWidget {
           ],
           ...List.generate(halls.length, (i) {
             final hall = halls[i];
-            final count = tables.where((t) => t.hallId == hall.id).length;
             return Padding(
               padding: EdgeInsets.only(right: i == halls.length - 1 ? 0 : 8),
               child: _HallPill(
                 label: hall.name,
-                count: count,
+                count: countFor(hall.id),
                 isActive: hall.id == selectedHallId,
                 onTap: () => inject<MainCubit>().setSelectedHallId(hall.id),
               ),
