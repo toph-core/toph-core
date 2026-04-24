@@ -85,10 +85,22 @@ class _DetailScreenState extends State<DetailScreen> with DetailScreenMixin {
       tableId: cafeTable!.id,
       guestCount: guestCount,
     );
-    if (!mounted || orderId == null) return;
+    if (!mounted) return;
+
+    // orderId null bo'lsa ham — ehtimol server'da buyurtma yaratilgan
+    // (response parsing yoki receiveTimeout bilan null qaytgan). Shu sabab
+    // bill'ni force fetch qilamiz — DetailBloc activeOrderId ni javobdan
+    // olib yozadi va UI to'g'ri ishlaydi. Aks holda foydalanuvchi stolga
+    // qaytadan urinishda 409 oladi.
+    if (orderId != null) {
+      _detailBloc.add(DetailEvent.setActiveOrderId(orderId: orderId));
+    }
     setState(() => tableStatus = TableStatus.busy);
     context.read<MainCubit>().updateTableStatus(cafeTable!.id, TableStatus.busy);
-    _detailBloc.add(DetailEvent.fetchBillOrders(billId: cafeTable!.id));
+    _detailBloc.add(DetailEvent.fetchBillOrders(
+      billId: cafeTable!.id,
+      force: true,
+    ));
   }
 
   @override

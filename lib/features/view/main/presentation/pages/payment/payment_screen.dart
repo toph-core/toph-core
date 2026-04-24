@@ -224,13 +224,17 @@ class _ItemsList extends StatelessWidget {
             qty: (g.quantity as num).toInt(),
             isPending: false,
             isCancelled: true,
+            createdAt: g.createdAt as DateTime?,
           ),
         );
         continue;
       }
       final int qty = (g.quantity as num).toInt();
       if (grouped.containsKey(g.name)) {
-        grouped[g.name] = grouped[g.name]!.withQty(grouped[g.name]!.qty + qty);
+        grouped[g.name] = grouped[g.name]!.withQty(
+          grouped[g.name]!.qty + qty,
+          earliestAt: g.createdAt as DateTime?,
+        );
       } else {
         grouped[g.name] = _PayItem(
           name: g.name,
@@ -238,6 +242,7 @@ class _ItemsList extends StatelessWidget {
           qty: qty,
           isPending: false,
           isCancelled: false,
+          createdAt: g.createdAt as DateTime?,
         );
       }
     }
@@ -263,7 +268,10 @@ class _ItemsList extends StatelessWidget {
                 double.tryParse(goodJson['price']?.toString() ?? '0') ?? 0.0;
             final key = '⏳$name';
             if (grouped.containsKey(key)) {
-              grouped[key] = grouped[key]!.withQty(grouped[key]!.qty + qty);
+              grouped[key] = grouped[key]!.withQty(
+                grouped[key]!.qty + qty,
+                earliestAt: op.createdAt,
+              );
             } else {
               grouped[key] = _PayItem(
                 name: '⏳ $name',
@@ -271,6 +279,7 @@ class _ItemsList extends StatelessWidget {
                 qty: qty,
                 isPending: true,
                 isCancelled: false,
+                createdAt: op.createdAt,
               );
             }
           }
@@ -373,13 +382,39 @@ class _OrderLineRow extends StatelessWidget {
                     ),
                   )
                 else
-                  Text(
-                    item.price.formatN,
-                    style: const TextStyle(
-                      fontSize: 11,
-                      color: _kS500,
-                      fontFamily: 'Inter',
-                    ),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        item.price.formatN,
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: _kS500,
+                          fontFamily: 'Inter',
+                        ),
+                      ),
+                      if (item.createdAt != null) ...[
+                        const SizedBox(width: 6),
+                        Container(
+                          width: 3,
+                          height: 3,
+                          decoration: const BoxDecoration(
+                            color: Color(0xFFCBD5E1),
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          _fmtHm(item.createdAt!),
+                          style: const TextStyle(
+                            fontSize: 11,
+                            color: Color(0xFF94A3B8),
+                            fontFamily: 'Inter',
+                            fontFeatures: [FontFeature.tabularFigures()],
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
               ],
             ),
@@ -510,6 +545,7 @@ class _PayItem {
   final int qty;
   final bool isPending;
   final bool isCancelled;
+  final DateTime? createdAt;
 
   const _PayItem({
     required this.name,
@@ -517,13 +553,28 @@ class _PayItem {
     required this.qty,
     required this.isPending,
     required this.isCancelled,
+    this.createdAt,
   });
 
-  _PayItem withQty(int newQty) => _PayItem(
+  _PayItem withQty(int newQty, {DateTime? earliestAt}) => _PayItem(
     name: name,
     price: price,
     qty: newQty,
     isPending: isPending,
     isCancelled: isCancelled,
+    createdAt: _earliest(createdAt, earliestAt),
   );
+}
+
+DateTime? _earliest(DateTime? a, DateTime? b) {
+  if (a == null) return b;
+  if (b == null) return a;
+  return a.isBefore(b) ? a : b;
+}
+
+String _fmtHm(DateTime dt) {
+  final l = dt.toLocal();
+  final h = l.hour.toString().padLeft(2, '0');
+  final m = l.minute.toString().padLeft(2, '0');
+  return '$h:$m';
 }

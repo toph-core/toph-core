@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:mary_ai_pos/core/components/flush_bars.dart';
 import 'package:mary_ai_pos/core/constants/constants.dart';
 import 'package:mary_ai_pos/core/extension/number_formatter.dart';
 import 'package:mary_ai_pos/core/service/printer/printer_service.dart';
@@ -441,15 +442,19 @@ class _ActionsRow extends StatelessWidget {
         discountAmount: isPercent ? 0 : discountAmt.toDouble(),
       ),
     );
-    ScaffoldMessenger.of(context).showSnackBar(
-      _snack('Chop etish printer\'ga yuborildi'),
+    showInfoMessage(
+      context,
+      'Chop etish printer\'ga yuborildi',
+      duration: 2,
     );
     Navigator.of(context).pop();
   }
 
   void _email(BuildContext context) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      _snack('Email yuborish funksiyasi tez orada qo\'shiladi'),
+    showInfoMessage(
+      context,
+      'Email yuborish funksiyasi tez orada qo\'shiladi',
+      duration: 2,
     );
   }
 
@@ -486,23 +491,6 @@ class _ActionsRow extends StatelessWidget {
     );
   }
 
-  static SnackBar _snack(String text) => SnackBar(
-        duration: const Duration(seconds: 2),
-        backgroundColor: _kS900,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10),
-        ),
-        content: Text(
-          text,
-          style: const TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w500,
-            color: Colors.white,
-            fontFamily: 'Inter',
-          ),
-        ),
-      );
 }
 
 class _OutlinedBtn extends StatefulWidget {

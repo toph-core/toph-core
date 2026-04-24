@@ -7,6 +7,9 @@ class OrderItem with _$OrderItem {
     required GoodsModel goods,
     @Default(1) int quantity,
     @Default('') String commet,
+    // Item qachon buyurtmaga qo'shilgan (server `created_at` yoki
+    // offline queue `createdAt`). UI HH:mm formatida ko'rsatadi.
+    DateTime? createdAt,
   }) = _OrderItem;
 }
 

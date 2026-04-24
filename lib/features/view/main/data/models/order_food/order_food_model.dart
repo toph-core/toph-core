@@ -16,10 +16,23 @@ class OrderFoodModel with _$OrderFoodModel implements OrderFoodEntity {
     @JsonKey(fromJson: parseInt) @Default(0) int price,
     @Default('') String comment,
     @Default('pending') String status,
+    // Backend `created_at` (UTC) — har bir item qachon buyurtmaga qo'shilgan.
+    // Agar mavjud bo'lsa, UI vaqt belgisi sifatida ko'rsatadi.
+    @JsonKey(name: 'created_at', fromJson: _parseLocalDate) DateTime? createdAt,
   }) = _OrderFoodModel;
 
   factory OrderFoodModel.fromJson(Map<String, dynamic> json) =>
       _$OrderFoodModelFromJson(json);
+}
+
+DateTime? _parseLocalDate(Object? v) {
+  if (v == null) return null;
+  if (v is String) {
+    if (v.isEmpty) return null;
+    return DateTime.tryParse(v)?.toLocal();
+  }
+  if (v is DateTime) return v.toLocal();
+  return null;
 }
 
 class OrderFoodEntityListConverter

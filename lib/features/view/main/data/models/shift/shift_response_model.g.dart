@@ -14,8 +14,12 @@ _$ShiftResponseModelImpl _$$ShiftResponseModelImplFromJson(
       cashRegisterId: json['cash_register_id'] as String? ?? '',
       cashierId: json['cashier_id'] as String? ?? '',
       openedAt: _parseLocal(json['opened_at']),
-      openingCash: _parseIntFlex(json['opening_cash']),
-      openinCard: _parseIntFlex(json['opening_card']),
+      openingCash: json['opening_cash'] == null
+          ? 0
+          : _parseIntFlex(json['opening_cash']),
+      openinCard: json['opening_card'] == null
+          ? 0
+          : _parseIntFlex(json['opening_card']),
       status: $enumDecodeNullable(_$CashStatusEnumMap, json['status']) ??
           CashStatus.none,
       createdAt: _parseLocal(json['created_at']),

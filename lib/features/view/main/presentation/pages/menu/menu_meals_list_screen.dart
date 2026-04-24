@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mary_ai_pos/core/api/dio_client.dart';
 import 'package:mary_ai_pos/core/api/list_api.dart';
 import 'package:mary_ai_pos/core/common/custom_network_image.dart';
+import 'package:mary_ai_pos/core/components/flush_bars.dart';
 import 'package:mary_ai_pos/core/extension/for_context.dart';
 import 'package:mary_ai_pos/core/utils/app_formatter.dart';
 import 'package:mary_ai_pos/core/utils/user_role_permissions.dart';
@@ -247,10 +248,11 @@ class _MenuMealsListScreenState extends State<MenuMealsListScreen> {
   }
 
   void _showSnack(String msg, {bool success = false}) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text(msg),
-      backgroundColor: success ? const Color(0xFF22C55E) : const Color(0xFFEF4444),
-    ));
+    if (success) {
+      showSuccessMessage(context, msg);
+    } else {
+      showErrorMessage(context, msg);
+    }
   }
 
   List<GoodsModel> _extractGoodsList(dynamic raw) {

@@ -1,6 +1,7 @@
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mary_ai_pos/core/api/api.dart';
+import 'package:mary_ai_pos/core/components/flush_bars.dart';
 import 'package:mary_ai_pos/core/extension/for_context.dart';
 import 'package:mary_ai_pos/core/extension/number_formatter.dart';
 import 'package:mary_ai_pos/core/routes/app_routes.dart';
@@ -601,24 +602,10 @@ class _ExportCsvButton extends StatelessWidget {
       );
     }
     Clipboard.setData(ClipboardData(text: buffer.toString()));
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        duration: const Duration(seconds: 2),
-        backgroundColor: const Color(0xFF0F172A),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10),
-        ),
-        content: Text(
-          'CSV clipboard\'ga nusxalandi · ${archives.length} ta',
-          style: const TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w500,
-            color: Colors.white,
-            fontFamily: 'Inter',
-          ),
-        ),
-      ),
+    showInfoMessage(
+      context,
+      'CSV clipboard\'ga nusxalandi · ${archives.length} ta',
+      duration: 2,
     );
   }
 
@@ -1223,22 +1210,10 @@ class _AdminOrdersArchiveBodyState extends State<_AdminOrdersArchiveBody> {
       );
     }
     Clipboard.setData(ClipboardData(text: buffer.toString()));
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        duration: const Duration(seconds: 2),
-        backgroundColor: const Color(0xFF0F172A),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        content: Text(
-          'CSV clipboard\'ga nusxalandi · ${_orders.length} ta',
-          style: const TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w500,
-            color: Colors.white,
-            fontFamily: 'Inter',
-          ),
-        ),
-      ),
+    showInfoMessage(
+      context,
+      'CSV clipboard\'ga nusxalandi · ${_orders.length} ta',
+      duration: 2,
     );
   }
 

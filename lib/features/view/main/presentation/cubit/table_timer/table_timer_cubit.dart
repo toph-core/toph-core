@@ -220,6 +220,9 @@ class TableTimerCubit extends Cubit<TableTimerState> {
 
   /// Bo'sh order yaratadi va timerni boshlaydi (time-based free stol uchun).
   /// Returns orderId on success, null on failure.
+  /// Agar server 409 qaytarsa ("stol allaqachon faol buyurtmaga ega"),
+  /// xato xabaridan mavjud orderId'ni ajratib olib, shu ID bilan davom etadi —
+  /// shunda foydalanuvchi takroriy 409 olmaydi.
   Future<String?> createTimedOrderAndStart({
     required String tableId,
     required int guestCount,
@@ -251,6 +254,23 @@ class TableTimerCubit extends Cubit<TableTimerState> {
       await startTimer();
       return orderId;
     } on DioException catch (e) {
+      // 409 Conflict: stolda mavjud faol buyurtma bor.
+      // Javob: {"error": "stol already has an active buyurtma: <uuid>", ...}
+      if (e.response?.statusCode == 409) {
+        final raw = e.response?.data;
+        final msg = raw is Map ? (raw['error'] ?? raw['message']).toString() : '';
+        final uuidMatch = RegExp(
+          r'[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}',
+        ).firstMatch(msg);
+        final existingOrderId = uuidMatch?.group(0);
+        if (existingOrderId != null && existingOrderId.isNotEmpty) {
+          _activeOrderId = existingOrderId;
+          emit(state.copyWith(isLoading: false));
+          // Timer holatini sinxronlaymiz — allaqachon ishlayotgan bo'lishi mumkin
+          await fetchTimer(orderId: existingOrderId);
+          return existingOrderId;
+        }
+      }
       if (!isClosed) {
         emit(state.copyWith(
           isLoading: false,

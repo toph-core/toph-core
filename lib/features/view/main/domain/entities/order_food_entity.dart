@@ -5,6 +5,7 @@ abstract class OrderFoodEntity {
   final int price;
   final String comment;
   final String status;
+  final DateTime? createdAt;
 
   OrderFoodEntity({
     required this.id,
@@ -13,5 +14,6 @@ abstract class OrderFoodEntity {
     required this.price,
     required this.comment,
     this.status = 'pending',
+    this.createdAt,
   });
 }

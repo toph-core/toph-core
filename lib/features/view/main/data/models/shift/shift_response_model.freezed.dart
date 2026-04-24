@@ -27,16 +27,16 @@ mixin _$ShiftResponseModel {
   String get cashRegisterId => throw _privateConstructorUsedError;
   @JsonKey(name: "cashier_id")
   String get cashierId => throw _privateConstructorUsedError;
-  @JsonKey(name: "opened_at")
+  @JsonKey(name: "opened_at", fromJson: _parseLocal)
   DateTime? get openedAt => throw _privateConstructorUsedError;
-  @JsonKey(name: "opening_cash", fromJson: int.parse)
+  @JsonKey(name: "opening_cash", fromJson: _parseIntFlex)
   int get openingCash => throw _privateConstructorUsedError;
-  @JsonKey(name: "opening_card", fromJson: int.parse)
+  @JsonKey(name: "opening_card", fromJson: _parseIntFlex)
   int get openinCard => throw _privateConstructorUsedError;
   CashStatus get status => throw _privateConstructorUsedError;
-  @JsonKey(name: "created_at")
+  @JsonKey(name: "created_at", fromJson: _parseLocal)
   DateTime? get createdAt => throw _privateConstructorUsedError;
-  @JsonKey(name: "updated_at")
+  @JsonKey(name: "updated_at", fromJson: _parseLocal)
   DateTime? get updatedAt => throw _privateConstructorUsedError;
 
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -56,12 +56,12 @@ abstract class $ShiftResponseModelCopyWith<$Res> {
       @JsonKey(name: "branch_id") String branchId,
       @JsonKey(name: "cash_register_id") String cashRegisterId,
       @JsonKey(name: "cashier_id") String cashierId,
-      @JsonKey(name: "opened_at") DateTime? openedAt,
-      @JsonKey(name: "opening_cash", fromJson: int.parse) int openingCash,
-      @JsonKey(name: "opening_card", fromJson: int.parse) int openinCard,
+      @JsonKey(name: "opened_at", fromJson: _parseLocal) DateTime? openedAt,
+      @JsonKey(name: "opening_cash", fromJson: _parseIntFlex) int openingCash,
+      @JsonKey(name: "opening_card", fromJson: _parseIntFlex) int openinCard,
       CashStatus status,
-      @JsonKey(name: "created_at") DateTime? createdAt,
-      @JsonKey(name: "updated_at") DateTime? updatedAt});
+      @JsonKey(name: "created_at", fromJson: _parseLocal) DateTime? createdAt,
+      @JsonKey(name: "updated_at", fromJson: _parseLocal) DateTime? updatedAt});
 }
 
 /// @nodoc
@@ -146,12 +146,12 @@ abstract class _$$ShiftResponseModelImplCopyWith<$Res>
       @JsonKey(name: "branch_id") String branchId,
       @JsonKey(name: "cash_register_id") String cashRegisterId,
       @JsonKey(name: "cashier_id") String cashierId,
-      @JsonKey(name: "opened_at") DateTime? openedAt,
-      @JsonKey(name: "opening_cash", fromJson: int.parse) int openingCash,
-      @JsonKey(name: "opening_card", fromJson: int.parse) int openinCard,
+      @JsonKey(name: "opened_at", fromJson: _parseLocal) DateTime? openedAt,
+      @JsonKey(name: "opening_cash", fromJson: _parseIntFlex) int openingCash,
+      @JsonKey(name: "opening_card", fromJson: _parseIntFlex) int openinCard,
       CashStatus status,
-      @JsonKey(name: "created_at") DateTime? createdAt,
-      @JsonKey(name: "updated_at") DateTime? updatedAt});
+      @JsonKey(name: "created_at", fromJson: _parseLocal) DateTime? createdAt,
+      @JsonKey(name: "updated_at", fromJson: _parseLocal) DateTime? updatedAt});
 }
 
 /// @nodoc
@@ -229,12 +229,14 @@ class _$ShiftResponseModelImpl extends _ShiftResponseModel {
       @JsonKey(name: "branch_id") this.branchId = '',
       @JsonKey(name: "cash_register_id") this.cashRegisterId = '',
       @JsonKey(name: "cashier_id") this.cashierId = '',
-      @JsonKey(name: "opened_at") this.openedAt,
-      @JsonKey(name: "opening_cash", fromJson: int.parse) this.openingCash = 0,
-      @JsonKey(name: "opening_card", fromJson: int.parse) this.openinCard = 0,
+      @JsonKey(name: "opened_at", fromJson: _parseLocal) this.openedAt,
+      @JsonKey(name: "opening_cash", fromJson: _parseIntFlex)
+      this.openingCash = 0,
+      @JsonKey(name: "opening_card", fromJson: _parseIntFlex)
+      this.openinCard = 0,
       this.status = CashStatus.none,
-      @JsonKey(name: "created_at") this.createdAt,
-      @JsonKey(name: "updated_at") this.updatedAt})
+      @JsonKey(name: "created_at", fromJson: _parseLocal) this.createdAt,
+      @JsonKey(name: "updated_at", fromJson: _parseLocal) this.updatedAt})
       : super._();
 
   factory _$ShiftResponseModelImpl.fromJson(Map<String, dynamic> json) =>
@@ -253,22 +255,22 @@ class _$ShiftResponseModelImpl extends _ShiftResponseModel {
   @JsonKey(name: "cashier_id")
   final String cashierId;
   @override
-  @JsonKey(name: "opened_at")
+  @JsonKey(name: "opened_at", fromJson: _parseLocal)
   final DateTime? openedAt;
   @override
-  @JsonKey(name: "opening_cash", fromJson: int.parse)
+  @JsonKey(name: "opening_cash", fromJson: _parseIntFlex)
   final int openingCash;
   @override
-  @JsonKey(name: "opening_card", fromJson: int.parse)
+  @JsonKey(name: "opening_card", fromJson: _parseIntFlex)
   final int openinCard;
   @override
   @JsonKey()
   final CashStatus status;
   @override
-  @JsonKey(name: "created_at")
+  @JsonKey(name: "created_at", fromJson: _parseLocal)
   final DateTime? createdAt;
   @override
-  @JsonKey(name: "updated_at")
+  @JsonKey(name: "updated_at", fromJson: _parseLocal)
   final DateTime? updatedAt;
 
   @override
@@ -337,12 +339,16 @@ abstract class _ShiftResponseModel extends ShiftResponseModel {
       @JsonKey(name: "branch_id") final String branchId,
       @JsonKey(name: "cash_register_id") final String cashRegisterId,
       @JsonKey(name: "cashier_id") final String cashierId,
-      @JsonKey(name: "opened_at") final DateTime? openedAt,
-      @JsonKey(name: "opening_cash", fromJson: int.parse) final int openingCash,
-      @JsonKey(name: "opening_card", fromJson: int.parse) final int openinCard,
+      @JsonKey(name: "opened_at", fromJson: _parseLocal)
+      final DateTime? openedAt,
+      @JsonKey(name: "opening_cash", fromJson: _parseIntFlex)
+      final int openingCash,
+      @JsonKey(name: "opening_card", fromJson: _parseIntFlex)
+      final int openinCard,
       final CashStatus status,
-      @JsonKey(name: "created_at") final DateTime? createdAt,
-      @JsonKey(name: "updated_at")
+      @JsonKey(name: "created_at", fromJson: _parseLocal)
+      final DateTime? createdAt,
+      @JsonKey(name: "updated_at", fromJson: _parseLocal)
       final DateTime? updatedAt}) = _$ShiftResponseModelImpl;
   const _ShiftResponseModel._() : super._();
 
@@ -361,21 +367,21 @@ abstract class _ShiftResponseModel extends ShiftResponseModel {
   @JsonKey(name: "cashier_id")
   String get cashierId;
   @override
-  @JsonKey(name: "opened_at")
+  @JsonKey(name: "opened_at", fromJson: _parseLocal)
   DateTime? get openedAt;
   @override
-  @JsonKey(name: "opening_cash", fromJson: int.parse)
+  @JsonKey(name: "opening_cash", fromJson: _parseIntFlex)
   int get openingCash;
   @override
-  @JsonKey(name: "opening_card", fromJson: int.parse)
+  @JsonKey(name: "opening_card", fromJson: _parseIntFlex)
   int get openinCard;
   @override
   CashStatus get status;
   @override
-  @JsonKey(name: "created_at")
+  @JsonKey(name: "created_at", fromJson: _parseLocal)
   DateTime? get createdAt;
   @override
-  @JsonKey(name: "updated_at")
+  @JsonKey(name: "updated_at", fromJson: _parseLocal)
   DateTime? get updatedAt;
   @override
   @JsonKey(ignore: true)

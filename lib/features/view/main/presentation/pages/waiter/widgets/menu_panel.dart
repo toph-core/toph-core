@@ -20,9 +20,29 @@ class _MenuPanelState extends State<MenuPanel> {
   // null = categories view, non-null = foods view
   CategoryModel? _selectedCategory;
   final TextEditingController _searchCtrl = TextEditingController();
+  String _lastSearch = '';
+
+  @override
+  void initState() {
+    super.initState();
+    // Virtual keyboard controller.value ni dasturiy o'zgartiradi — onChanged
+    // bunday o'zgarishlarni tutmaydi. Shuning uchun controller listener.
+    _searchCtrl.addListener(_onSearchChanged);
+  }
+
+  void _onSearchChanged() {
+    final current = _searchCtrl.text;
+    if (current == _lastSearch) return;
+    _lastSearch = current;
+    if (!mounted) return;
+    context.read<DetailBloc>().add(
+      DetailEvent.searchTextChanged(text: current),
+    );
+  }
 
   @override
   void dispose() {
+    _searchCtrl.removeListener(_onSearchChanged);
     _searchCtrl.dispose();
     super.dispose();
   }
@@ -111,9 +131,8 @@ class _TopBar extends StatelessWidget {
               height: 36,
               child: TextField(
                 controller: searchCtrl,
-                onChanged: (v) => context
-                    .read<DetailBloc>()
-                    .add(DetailEvent.searchTextChanged(text: v)),
+                // onChanged virtual keyboard bilan ishlamaydi —
+                // parent `_MenuPanelState` controller listener'ga ulangan.
                 style: TextStyle(
                   fontSize: 13,
                   color: colors.textDefault,

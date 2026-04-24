@@ -1,3 +1,5 @@
+import 'dart:collection';
+
 import 'package:alice_dio/alice_dio_adapter.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
@@ -12,6 +14,18 @@ class DioClient {
   final ConnectivityCubit _connectivity;
   late final Dio _dio;
   final aliceDioAdapter = AliceDioAdapter();
+
+  // Bir xil GET so'rov hali tugamagan bo'lsa — uni qayta yubormaymiz,
+  // mavjud Future ga ulanamiz. Bu widget rebuild va duplicate trigger'lar
+  // tufayli serverga ketadigan takroriy so'rovlarni bloklaydi.
+  final Map<String, Future<Response<dynamic>>> _inflightGets = {};
+
+  String _inflightKey(String url, Map<String, dynamic>? query) {
+    if (query == null || query.isEmpty) return url;
+    final sorted = SplayTreeMap<String, dynamic>.from(query);
+    final qs = sorted.entries.map((e) => '${e.key}=${e.value}').join('&');
+    return '$url?$qs';
+  }
 
   DioClient(this._tokenStorage, this._connectivity) {
     _dio = Dio(
@@ -46,8 +60,24 @@ class DioClient {
     String url, {
     Map<String, dynamic>? queryParameters,
   }) async {
+    final key = _inflightKey(url, queryParameters);
+    final existing = _inflightGets[key];
+    if (existing != null) {
+      // Xuddi shunday so'rov uchib ketayotgan bo'lsa — o'sha Future ga ulanamiz
+      return existing;
+    }
+
+    // DIQQAT: whenComplete callback'i VOID qaytarishi kerak. Arrow form
+    // `() => _inflightGets.remove(key)` olib tashlangan Future ni qaytaradi
+    // (o'zi wrappedFuture bo'ladi) — bu self-referential deadlock keltirib
+    // chiqaradi. Block form ishlating.
+    final future = _dio.get(url, queryParameters: queryParameters).whenComplete(() {
+      _inflightGets.remove(key);
+    });
+    _inflightGets[key] = future;
+
     try {
-      final response = await _dio.get(url, queryParameters: queryParameters);
+      final response = await future;
       if (response.statusCode != 200) {
         throw DioException(
           requestOptions: response.requestOptions,

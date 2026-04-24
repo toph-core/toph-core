@@ -1,7 +1,19 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:mary_ai_pos/core/utils/helper/helper_widget.dart';
 import 'package:mary_ai_pos/generated/l10n.dart';
+
+/// Overlay'ni topishning ishonchli yo'li. Ba'zi context'lar (masalan
+/// `navigatorKey.currentContext`) Overlay'ning ustida turadi va
+/// `Overlay.maybeOf(ctx)` null qaytaradi. Shuning uchun avval global
+/// navigator overlay'ni sinab ko'ramiz, kerak bo'lsa context dan izlaymiz.
+OverlayState? _resolveOverlay(BuildContext? bc) {
+  final fromNav = navigatorKey.currentState?.overlay;
+  if (fromNav != null) return fromNav;
+  if (bc == null) return null;
+  return Overlay.maybeOf(bc, rootOverlay: true);
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Premium animated error toast — 4s auto-dismiss, spring slide-in from top.
@@ -42,7 +54,7 @@ String _sanitizeErrorText(String raw) {
 
 void showErrorMessage(BuildContext bc, String error, {int duration = 4}) {
   WidgetsBinding.instance.addPostFrameCallback((_) {
-    final overlay = Overlay.maybeOf(bc, rootOverlay: true);
+    final overlay = _resolveOverlay(bc);
     if (overlay == null) return;
     final sanitized = _sanitizeErrorText(error);
     _ToastController.show(
@@ -54,7 +66,9 @@ void showErrorMessage(BuildContext bc, String error, {int duration = 4}) {
   });
 }
 
-/// Sarlavha + paragraflar; ikonka, yumaloq burchak, scroll.
+/// Sarlavha + paragraflar — premium overlay style, top-right.
+/// Auto-dismiss qilmaydi (printer xatolari kabi jiddiy holatlar uchun),
+/// faqat X tugmasi orqali yopiladi.
 void showStructuredErrorDismissible(
   BuildContext context, {
   required String title,
@@ -62,76 +76,14 @@ void showStructuredErrorDismissible(
   IconData icon = Icons.error_outline_rounded,
 }) {
   WidgetsBinding.instance.addPostFrameCallback((_) {
-    final messenger = ScaffoldMessenger.maybeOf(context);
-    if (messenger == null) return;
-
-    messenger.clearSnackBars();
-    messenger.showSnackBar(
-      SnackBar(
-        behavior: SnackBarBehavior.floating,
-        margin: const EdgeInsets.fromLTRB(12, 0, 12, 14),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-        backgroundColor: const Color(0xFFBE123C),
-        elevation: 10,
-        dismissDirection: DismissDirection.none,
-        duration: const Duration(days: 365),
-        showCloseIcon: true,
-        closeIconColor: Colors.white,
-        content: ConstrainedBox(
-          constraints: const BoxConstraints(maxHeight: 300),
-          child: SingleChildScrollView(
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                DecoratedBox(
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.14),
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(10),
-                    child: Icon(icon, color: Colors.white, size: 28),
-                  ),
-                ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        title,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 17,
-                          fontWeight: FontWeight.w700,
-                          height: 1.25,
-                        ),
-                      ),
-                      if (paragraphs.isNotEmpty) const SizedBox(height: 10),
-                      for (final p in paragraphs) ...[
-                        if (p.isEmpty)
-                          const SizedBox(height: 6)
-                        else ...[
-                          Text(
-                            p,
-                            style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.92),
-                              fontSize: 14,
-                              height: 1.45,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                        ],
-                      ],
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
+    final overlay = _resolveOverlay(context);
+    if (overlay == null) return;
+    // Juda uzun duration — faqat user X bosganda yopiladi
+    _ToastController.show(
+      overlay: overlay,
+      message: paragraphs.isEmpty ? title : paragraphs.join('\n\n'),
+      variant: _ToastVariant.error,
+      autoDismissMs: const Duration(days: 365).inMilliseconds,
     );
   });
 }
@@ -167,7 +119,7 @@ void showErrorMessageDismissible(BuildContext context, String message) {
 
 void showSuccessMessage(BuildContext bc, String success, {int duration = 4}) {
   WidgetsBinding.instance.addPostFrameCallback((_) {
-    final overlay = Overlay.maybeOf(bc, rootOverlay: true);
+    final overlay = _resolveOverlay(bc);
     if (overlay == null) return;
     _ToastController.show(
       overlay: overlay,
@@ -180,7 +132,7 @@ void showSuccessMessage(BuildContext bc, String success, {int duration = 4}) {
 
 void showInfoMessage(BuildContext bc, String info, {int duration = 4}) {
   WidgetsBinding.instance.addPostFrameCallback((_) {
-    final overlay = Overlay.maybeOf(bc, rootOverlay: true);
+    final overlay = _resolveOverlay(bc);
     if (overlay == null) return;
     _ToastController.show(
       overlay: overlay,
@@ -199,6 +151,7 @@ enum _ToastVariant { error, success, info }
 
 class _ToastPalette {
   final Color bg;
+  final Color bgHighlight; // top inner highlight (1px soft line)
   final Color border;
   final Color iconBg;
   final Color accent;
@@ -207,6 +160,7 @@ class _ToastPalette {
 
   const _ToastPalette({
     required this.bg,
+    required this.bgHighlight,
     required this.border,
     required this.iconBg,
     required this.accent,
@@ -215,30 +169,34 @@ class _ToastPalette {
   });
 
   static _ToastPalette of(_ToastVariant v) {
+    // Desaturated, premium palettes — no pure red/green/blue, matches Zinc base.
     switch (v) {
       case _ToastVariant.error:
         return const _ToastPalette(
-          bg: Color(0xFF1C1013),
-          border: Color(0x33F87171),
-          iconBg: Color(0x26F87171),
-          accent: Color(0xFFF87171),
+          bg: Color(0xFF171214), // Zinc-950 tinted warm
+          bgHighlight: Color(0x14FFFFFF),
+          border: Color(0x26E05B5B),
+          iconBg: Color(0x1FE05B5B),
+          accent: Color(0xFFE05B5B), // desaturated rose
           icon: Icons.error_outline_rounded,
           title: 'Xatolik',
         );
       case _ToastVariant.success:
         return const _ToastPalette(
-          bg: Color(0xFF0D1A12),
-          border: Color(0x3334D399),
-          iconBg: Color(0x2634D399),
+          bg: Color(0xFF0F1613),
+          bgHighlight: Color(0x14FFFFFF),
+          border: Color(0x2634D399),
+          iconBg: Color(0x1F34D399),
           accent: Color(0xFF34D399),
           icon: Icons.check_circle_outline_rounded,
           title: 'Muvaffaqiyatli',
         );
       case _ToastVariant.info:
         return const _ToastPalette(
-          bg: Color(0xFF0F1624),
-          border: Color(0x3360A5FA),
-          iconBg: Color(0x2660A5FA),
+          bg: Color(0xFF101319),
+          bgHighlight: Color(0x14FFFFFF),
+          border: Color(0x2660A5FA),
+          iconBg: Color(0x1F60A5FA),
           accent: Color(0xFF60A5FA),
           icon: Icons.info_outline_rounded,
           title: "Ma'lumot",
@@ -360,11 +318,11 @@ class _ToastWidgetState extends State<_ToastWidget>
   Widget build(BuildContext context) {
     final palette = _ToastPalette.of(widget.variant);
     final media = MediaQuery.of(context);
-    // Desktop: top-right (360px max). Mobile: top-center with padding.
+    // Desktop: top-right (460px max). Mobile: top-center with padding.
     final isWide = media.size.width >= 720;
 
     return Positioned(
-      top: media.padding.top + 18,
+      top: media.padding.top + 20,
       left: isWide ? null : 16,
       right: isWide ? 24 : 16,
       child: SafeArea(
@@ -372,7 +330,7 @@ class _ToastWidgetState extends State<_ToastWidget>
         child: AnimatedBuilder(
           animation: _ctrl,
           builder: (context, child) {
-            final dy = (1 - _slide.value) * -80;
+            final dy = (1 - _slide.value) * -64;
             return Opacity(
               opacity: _fade.value.clamp(0, 1),
               child: Transform.translate(
@@ -382,11 +340,12 @@ class _ToastWidgetState extends State<_ToastWidget>
             );
           },
           child: ConstrainedBox(
-            constraints: BoxConstraints(maxWidth: isWide ? 420 : double.infinity),
+            constraints: BoxConstraints(maxWidth: isWide ? 460 : double.infinity),
             child: _ToastCard(
               palette: palette,
               message: widget.message,
               onClose: dismiss,
+              totalMs: widget.autoDismissMs,
             ),
           ),
         ),
@@ -399,11 +358,16 @@ class _ToastCard extends StatelessWidget {
   final _ToastPalette palette;
   final String message;
   final VoidCallback onClose;
+  // totalMs hozir ishlatilmaydi — oldingi progress bar animatsiyasi
+  // render loop'ni bloklashga sabab bo'layotgan edi. Dizayn statik qoldi.
+  // ignore: unused_element
+  final int totalMs;
 
   const _ToastCard({
     required this.palette,
     required this.message,
     required this.onClose,
+    required this.totalMs,
   });
 
   @override
@@ -413,76 +377,89 @@ class _ToastCard extends StatelessWidget {
       child: Container(
         decoration: BoxDecoration(
           color: palette.bg,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(14),
           border: Border.all(color: palette.border, width: 1),
           boxShadow: [
             BoxShadow(
-              color: palette.accent.withValues(alpha: 0.18),
-              blurRadius: 32,
-              offset: const Offset(0, 14),
-              spreadRadius: -8,
+              color: palette.accent.withValues(alpha: 0.12),
+              blurRadius: 28,
+              offset: const Offset(0, 12),
+              spreadRadius: -10,
             ),
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.35),
-              blurRadius: 40,
-              offset: const Offset(0, 20),
-              spreadRadius: -12,
+              color: const Color(0xFF0A0A0B).withValues(alpha: 0.45),
+              blurRadius: 36,
+              offset: const Offset(0, 18),
+              spreadRadius: -14,
             ),
           ],
         ),
-        padding: const EdgeInsets.fromLTRB(14, 14, 10, 14),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Icon pill (double-bezel: tint bg + inner highlight)
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: palette.iconBg,
-                borderRadius: BorderRadius.circular(11),
-                border: Border.all(color: palette.border, width: 1),
-              ),
-              child: Icon(palette.icon, size: 20, color: palette.accent),
-            ),
-            const SizedBox(width: 12),
-            // Title + message
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    palette.title,
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w700,
-                      color: palette.accent,
-                      fontFamily: 'Inter',
-                      letterSpacing: 0.1,
-                      height: 1.2,
-                    ),
+        clipBehavior: Clip.antiAlias,
+        child: IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Left accent bar — categorical signal
+              Container(width: 3, color: palette.accent),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(14, 13, 8, 13),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Icon pill
+                      Container(
+                        width: 38,
+                        height: 38,
+                        decoration: BoxDecoration(
+                          color: palette.iconBg,
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: palette.border, width: 1),
+                        ),
+                        child: Icon(palette.icon, size: 19, color: palette.accent),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              palette.title,
+                              style: TextStyle(
+                                fontSize: 12.5,
+                                fontWeight: FontWeight.w600,
+                                color: palette.accent,
+                                fontFamily: 'Inter',
+                                letterSpacing: -0.05,
+                                height: 1.2,
+                              ),
+                            ),
+                            const SizedBox(height: 3),
+                            Text(
+                              message,
+                              maxLines: 3,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontSize: 13.5,
+                                fontWeight: FontWeight.w400,
+                                color: Color(0xFFE4E4E7),
+                                fontFamily: 'Inter',
+                                letterSpacing: -0.1,
+                                height: 1.4,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      _ToastCloseButton(onTap: onClose),
+                    ],
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    message,
-                    maxLines: 3,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w400,
-                      color: Color(0xFFE2E8F0),
-                      fontFamily: 'Inter',
-                      height: 1.42,
-                    ),
-                  ),
-                ],
+                ),
               ),
-            ),
-            const SizedBox(width: 6),
-            // Close X
-            _ToastCloseButton(onTap: onClose),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -504,22 +481,29 @@ class _ToastCloseButtonState extends State<_ToastCloseButton> {
   Widget build(BuildContext context) {
     return MouseRegion(
       cursor: SystemMouseCursors.click,
-      onEnter: (_) => setState(() => _hover = true),
-      onExit: (_) => setState(() => _hover = false),
+      onEnter: (_) {
+        if (mounted) setState(() => _hover = true);
+      },
+      onExit: (_) {
+        if (mounted) setState(() => _hover = false);
+      },
       child: GestureDetector(
         onTap: widget.onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 140),
-          width: 30,
-          height: 30,
+        child: Container(
+          width: 28,
+          height: 28,
           decoration: BoxDecoration(
-            color: _hover ? Colors.white.withValues(alpha: 0.08) : Colors.transparent,
-            borderRadius: BorderRadius.circular(8),
+            color: _hover
+                ? Colors.white.withValues(alpha: 0.06)
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(7),
           ),
-          child: const Icon(
+          child: Icon(
             Icons.close_rounded,
-            size: 16,
-            color: Color(0xFFCBD5E1),
+            size: 15,
+            color: _hover
+                ? const Color(0xFFF4F4F5)
+                : const Color(0xFF71717A),
           ),
         ),
       ),

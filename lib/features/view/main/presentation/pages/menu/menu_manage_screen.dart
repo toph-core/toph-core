@@ -8,6 +8,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mary_ai_pos/core/api/dio_client.dart';
 import 'package:mary_ai_pos/core/api/list_api.dart';
+import 'package:mary_ai_pos/core/components/flush_bars.dart';
 import 'package:mary_ai_pos/core/extension/for_context.dart';
 import 'package:mary_ai_pos/core/extension/list_extension.dart';
 import 'package:mary_ai_pos/core/theme/tokens/theme_colors.dart';
@@ -90,14 +91,11 @@ class _MenuManageScreenState extends State<MenuManageScreen> {
       picked = await openFile(acceptedTypeGroups: [imageGroup]);
     } on PlatformException catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            e.code == 'channel-error'
-                ? 'Не удалось открыть выбор файла. Пересоберите приложение (flutter clean → Run) или укажите ссылку на изображение.'
-                : 'Выбор файла: ${e.message ?? e.code}',
-          ),
-        ),
+      showErrorMessage(
+        context,
+        e.code == 'channel-error'
+            ? 'Не удалось открыть выбор файла. Пересоберите приложение (flutter clean → Run) или укажите ссылку на изображение.'
+            : 'Выбор файла: ${e.message ?? e.code}',
       );
       return;
     }
@@ -109,9 +107,7 @@ class _MenuManageScreenState extends State<MenuManageScreen> {
       final len = await file.length();
       if (len > 5 * 1024 * 1024) {
         if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(S.current.strFileTooLarge)),
-        );
+        showErrorMessage(context, S.current.strFileTooLarge);
         return;
       }
       setState(() => _uploadingImage = true);
@@ -121,15 +117,11 @@ class _MenuManageScreenState extends State<MenuManageScreen> {
         if (url != null && url.isNotEmpty) {
           _pictureUrlCtrl.text = url;
         } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(S.current.strUploadFailed)),
-          );
+          showErrorMessage(context, S.current.strUploadFailed);
         }
       } catch (_) {
         if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(S.current.strUploadError)),
-        );
+        showErrorMessage(context, S.current.strUploadError);
       } finally {
         if (mounted) setState(() => _uploadingImage = false);
       }
@@ -139,9 +131,7 @@ class _MenuManageScreenState extends State<MenuManageScreen> {
     final bytes = await picked.readAsBytes();
     if (bytes.length > 5 * 1024 * 1024) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(S.current.strFileTooLarge)),
-      );
+      showErrorMessage(context, S.current.strFileTooLarge);
       return;
     }
     setState(() => _uploadingImage = true);
@@ -152,15 +142,11 @@ class _MenuManageScreenState extends State<MenuManageScreen> {
       if (url != null && url.isNotEmpty) {
         _pictureUrlCtrl.text = url;
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(S.current.strUploadFailed)),
-        );
+        showErrorMessage(context, S.current.strUploadFailed);
       }
     } catch (_) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(S.current.strUploadError)),
-      );
+      showErrorMessage(context, S.current.strUploadError);
     } finally {
       if (mounted) setState(() => _uploadingImage = false);
     }
@@ -486,9 +472,7 @@ class _MenuManageScreenState extends State<MenuManageScreen> {
     final cookTime = int.tryParse(_cookTimeCtrl.text.trim()) ?? 0;
 
     if (name.isEmpty || category == null || price == null || price <= 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(S.current.strRequiredFields)),
-      );
+      showErrorMessage(context, S.current.strRequiredFields);
       return;
     }
 
@@ -545,14 +529,11 @@ class _MenuManageScreenState extends State<MenuManageScreen> {
       if (!mounted) return;
       _nameTranslationId = nameTransId;
       _descriptionTranslationId = descTransId;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            _isEditMode
-                ? 'Позиция меню успешно обновлена'
-                : 'Позиция меню успешно добавлена',
-          ),
-        ),
+      showSuccessMessage(
+        context,
+        _isEditMode
+            ? 'Позиция меню успешно обновлена'
+            : 'Позиция меню успешно добавлена',
       );
       if (_isEditMode) {
         // SnackBar bir kadrdan keyin yopish — aks holda route bilan birga yo‘qoladi.
@@ -571,9 +552,7 @@ class _MenuManageScreenState extends State<MenuManageScreen> {
       final message = e.response?.data is Map
           ? (e.response!.data['message']?.toString() ?? 'Ошибка сохранения')
           : 'Ошибка сохранения';
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(message)));
+      showErrorMessage(context, message);
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
     }
@@ -615,9 +594,7 @@ class _MenuManageScreenState extends State<MenuManageScreen> {
       });
     } on DioException {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(S.current.strLoadCompositionError)),
-      );
+      showErrorMessage(context, S.current.strLoadCompositionError);
     } finally {
       if (mounted) setState(() => _loadingItems = false);
     }

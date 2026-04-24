@@ -287,11 +287,45 @@ class _TakeawayHeader extends StatelessWidget {
   }
 }
 
-class _SearchInput extends StatelessWidget {
+class _SearchInput extends StatefulWidget {
   final TextEditingController controller;
   final ValueNotifier<bool> showKeyboard;
 
   const _SearchInput({required this.controller, required this.showKeyboard});
+
+  @override
+  State<_SearchInput> createState() => _SearchInputState();
+}
+
+class _SearchInputState extends State<_SearchInput> {
+  String _last = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _last = widget.controller.text;
+    // Virtual keyboard `controller.value` ni dasturiy o'zgartiradi.
+    // TextField.onChanged bunday o'zgarishlarni TUTMAYDI — shuning uchun
+    // controller.addListener orqali kuzatamiz (ham fizik, ham virtual
+    // klaviatura orqali yozilgan matnni).
+    widget.controller.addListener(_onTextChanged);
+  }
+
+  @override
+  void dispose() {
+    widget.controller.removeListener(_onTextChanged);
+    super.dispose();
+  }
+
+  void _onTextChanged() {
+    final current = widget.controller.text;
+    if (current == _last) return;
+    _last = current;
+    if (!mounted) return;
+    context.read<DetailBloc>().add(
+      DetailEvent.searchTextChanged(text: current),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -303,11 +337,8 @@ class _SearchInput extends StatelessWidget {
         borderRadius: BorderRadius.circular(10),
       ),
       child: TextField(
-        controller: controller,
-        onTap: () => showKeyboard.value = true,
-        onChanged: (v) => context.read<DetailBloc>().add(
-          DetailEvent.searchTextChanged(text: v),
-        ),
+        controller: widget.controller,
+        onTap: () => widget.showKeyboard.value = true,
         style: const TextStyle(
           fontSize: 13,
           color: _kS900,

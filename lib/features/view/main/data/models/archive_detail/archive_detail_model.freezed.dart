@@ -25,7 +25,7 @@ mixin _$ArchiveDetailModel {
   int get bilNumber => throw _privateConstructorUsedError;
   @JsonKey(name: 'bill_status')
   OrderStatus get status => throw _privateConstructorUsedError;
-  @JsonKey(name: 'opened_at')
+  @JsonKey(name: 'opened_at', fromJson: _parseLocal)
   DateTime? get opened => throw _privateConstructorUsedError;
   @JsonKey(name: 'payment_type')
   String get paymentType => throw _privateConstructorUsedError;
@@ -81,7 +81,7 @@ abstract class $ArchiveDetailModelCopyWith<$Res> {
       {String id,
       @JsonKey(name: 'bill_no') int bilNumber,
       @JsonKey(name: 'bill_status') OrderStatus status,
-      @JsonKey(name: 'opened_at') DateTime? opened,
+      @JsonKey(name: 'opened_at', fromJson: _parseLocal) DateTime? opened,
       @JsonKey(name: 'payment_type') String paymentType,
       @JsonKey(name: 'table_id') String tableId,
       @JsonKey(name: 'table_number', fromJson: _parseDouble) double tableNumber,
@@ -251,7 +251,7 @@ abstract class _$$ArchiveDetailModelImplCopyWith<$Res>
       {String id,
       @JsonKey(name: 'bill_no') int bilNumber,
       @JsonKey(name: 'bill_status') OrderStatus status,
-      @JsonKey(name: 'opened_at') DateTime? opened,
+      @JsonKey(name: 'opened_at', fromJson: _parseLocal) DateTime? opened,
       @JsonKey(name: 'payment_type') String paymentType,
       @JsonKey(name: 'table_id') String tableId,
       @JsonKey(name: 'table_number', fromJson: _parseDouble) double tableNumber,
@@ -414,7 +414,7 @@ class _$ArchiveDetailModelImpl extends _ArchiveDetailModel {
       {this.id = '',
       @JsonKey(name: 'bill_no') this.bilNumber = 0,
       @JsonKey(name: 'bill_status') this.status = OrderStatus.none,
-      @JsonKey(name: 'opened_at') this.opened,
+      @JsonKey(name: 'opened_at', fromJson: _parseLocal) this.opened,
       @JsonKey(name: 'payment_type') this.paymentType = '',
       @JsonKey(name: 'table_id') this.tableId = '',
       @JsonKey(name: 'table_number', fromJson: _parseDouble)
@@ -460,7 +460,7 @@ class _$ArchiveDetailModelImpl extends _ArchiveDetailModel {
   @JsonKey(name: 'bill_status')
   final OrderStatus status;
   @override
-  @JsonKey(name: 'opened_at')
+  @JsonKey(name: 'opened_at', fromJson: _parseLocal)
   final DateTime? opened;
   @override
   @JsonKey(name: 'payment_type')
@@ -621,7 +621,7 @@ abstract class _ArchiveDetailModel extends ArchiveDetailModel {
       {final String id,
       @JsonKey(name: 'bill_no') final int bilNumber,
       @JsonKey(name: 'bill_status') final OrderStatus status,
-      @JsonKey(name: 'opened_at') final DateTime? opened,
+      @JsonKey(name: 'opened_at', fromJson: _parseLocal) final DateTime? opened,
       @JsonKey(name: 'payment_type') final String paymentType,
       @JsonKey(name: 'table_id') final String tableId,
       @JsonKey(name: 'table_number', fromJson: _parseDouble)
@@ -666,7 +666,7 @@ abstract class _ArchiveDetailModel extends ArchiveDetailModel {
   @JsonKey(name: 'bill_status')
   OrderStatus get status;
   @override
-  @JsonKey(name: 'opened_at')
+  @JsonKey(name: 'opened_at', fromJson: _parseLocal)
   DateTime? get opened;
   @override
   @JsonKey(name: 'payment_type')

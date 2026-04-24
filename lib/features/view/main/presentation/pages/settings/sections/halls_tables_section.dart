@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mary_ai_pos/core/api/dio_client.dart';
 import 'package:mary_ai_pos/core/api/list_api.dart';
+import 'package:mary_ai_pos/core/components/flush_bars.dart';
 import 'package:mary_ai_pos/core/extension/for_context.dart';
 import 'package:mary_ai_pos/core/utils/pos_units.dart';
 import 'package:mary_ai_pos/di.dart';
@@ -123,9 +124,7 @@ class _HallsTablesSectionState extends State<HallsTablesSection> {
       } catch (_) {}
     } on DioException catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(_readError(e) ?? S.current.strDeleteError)),
-      );
+      showErrorMessage(context, _readError(e) ?? S.current.strDeleteError);
     }
   }
 
@@ -576,9 +575,8 @@ class _TablesDetailViewState extends State<_TablesDetailView> {
       } catch (_) {}
     } on DioException catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(_readError(e) ?? S.current.strSavePositionError)),
-      );
+      showErrorMessage(
+          context, _readError(e) ?? S.current.strSavePositionError);
       _load();
     }
   }
@@ -644,20 +642,9 @@ class _TablesDetailViewState extends State<_TablesDetailView> {
 
     if (!mounted) return;
     if (failCount > 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(S.current.strTablesNotSavedCount(failCount)),
-          backgroundColor: const Color(0xFFEF4444),
-        ),
-      );
+      showErrorMessage(context, S.current.strTablesNotSavedCount(failCount));
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(S.current.strPositionsSaved),
-          backgroundColor: const Color(0xFF22C55E),
-          duration: const Duration(seconds: 2),
-        ),
-      );
+      showSuccessMessage(context, S.current.strPositionsSaved, duration: 2);
     }
 
     setState(() {
@@ -724,9 +711,7 @@ class _TablesDetailViewState extends State<_TablesDetailView> {
       } catch (_) {}
     } on DioException catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(_readError(e) ?? S.current.strDeleteError)),
-      );
+      showErrorMessage(context, _readError(e) ?? S.current.strDeleteError);
     }
   }
 

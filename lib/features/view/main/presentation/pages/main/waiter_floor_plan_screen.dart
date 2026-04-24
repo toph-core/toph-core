@@ -67,15 +67,8 @@ class _WaiterFloorPlanScreenState extends State<WaiterFloorPlanScreen> {
     _elapsedTicker = Timer.periodic(const Duration(seconds: 30), (_) {
       if (mounted) setState(() {});
     });
-    // Default rejim: "Barchasi" — har zaldagi stollarni yig'ib ko'rsatamiz.
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      final cubit = context.read<MainCubit>();
-      if (cubit.state.selectedHallId != null &&
-          (cubit.state.halls?.isNotEmpty ?? false)) {
-        cubit.loadAllHallsTables();
-      }
-    });
+    // `MainCubit.getHalls()` allaqachon halls + barcha stollarni cache-first
+    // va 30s throttle bilan yuklaydi — bu yerda qayta chaqirmaymiz.
     // Orqa fonda stollar statusini yangilab turadi — faqat floor plan ochiq paytda
     _bgRefreshTimer = Timer.periodic(_bgRefreshInterval, (_) {
       if (inject<ConnectivityCubit>().isOnline && mounted) {

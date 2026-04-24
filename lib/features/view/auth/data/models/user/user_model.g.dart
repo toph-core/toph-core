@@ -9,7 +9,7 @@ part of 'user_model.dart';
 _$UserModelImpl _$$UserModelImplFromJson(Map<String, dynamic> json) =>
     _$UserModelImpl(
       id: json['id'] as String? ?? '',
-      fullName: json['full_name'] as String? ?? '',
+      fullName: _readFullName(json, 'full_name') as String? ?? '',
       username: json['username'] as String? ?? '',
       role:
           $enumDecodeNullable(_$UserRoleEnumMap, json['role']) ?? UserRole.none,

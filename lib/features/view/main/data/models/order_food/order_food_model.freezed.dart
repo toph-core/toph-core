@@ -27,7 +27,11 @@ mixin _$OrderFoodModel {
   @JsonKey(fromJson: parseInt)
   int get price => throw _privateConstructorUsedError;
   String get comment => throw _privateConstructorUsedError;
-  String get status => throw _privateConstructorUsedError;
+  String get status =>
+      throw _privateConstructorUsedError; // Backend `created_at` (UTC) — har bir item qachon buyurtmaga qo'shilgan.
+// Agar mavjud bo'lsa, UI vaqt belgisi sifatida ko'rsatadi.
+  @JsonKey(name: 'created_at', fromJson: _parseLocalDate)
+  DateTime? get createdAt => throw _privateConstructorUsedError;
 
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
   @JsonKey(ignore: true)
@@ -47,7 +51,9 @@ abstract class $OrderFoodModelCopyWith<$Res> {
       int quantity,
       @JsonKey(fromJson: parseInt) int price,
       String comment,
-      String status});
+      String status,
+      @JsonKey(name: 'created_at', fromJson: _parseLocalDate)
+      DateTime? createdAt});
 }
 
 /// @nodoc
@@ -69,14 +75,37 @@ class _$OrderFoodModelCopyWithImpl<$Res, $Val extends OrderFoodModel>
     Object? price = null,
     Object? comment = null,
     Object? status = null,
+    Object? createdAt = freezed,
   }) {
     return _then(_value.copyWith(
-      id: null == id ? _value.id : id as String,
-      name: null == name ? _value.name : name as String,
-      quantity: null == quantity ? _value.quantity : quantity as int,
-      price: null == price ? _value.price : price as int,
-      comment: null == comment ? _value.comment : comment as String,
-      status: null == status ? _value.status : status as String,
+      id: null == id
+          ? _value.id
+          : id // ignore: cast_nullable_to_non_nullable
+              as String,
+      name: null == name
+          ? _value.name
+          : name // ignore: cast_nullable_to_non_nullable
+              as String,
+      quantity: null == quantity
+          ? _value.quantity
+          : quantity // ignore: cast_nullable_to_non_nullable
+              as int,
+      price: null == price
+          ? _value.price
+          : price // ignore: cast_nullable_to_non_nullable
+              as int,
+      comment: null == comment
+          ? _value.comment
+          : comment // ignore: cast_nullable_to_non_nullable
+              as String,
+      status: null == status
+          ? _value.status
+          : status // ignore: cast_nullable_to_non_nullable
+              as String,
+      createdAt: freezed == createdAt
+          ? _value.createdAt
+          : createdAt // ignore: cast_nullable_to_non_nullable
+              as DateTime?,
     ) as $Val);
   }
 }
@@ -95,7 +124,9 @@ abstract class _$$OrderFoodModelImplCopyWith<$Res>
       int quantity,
       @JsonKey(fromJson: parseInt) int price,
       String comment,
-      String status});
+      String status,
+      @JsonKey(name: 'created_at', fromJson: _parseLocalDate)
+      DateTime? createdAt});
 }
 
 /// @nodoc
@@ -115,14 +146,37 @@ class __$$OrderFoodModelImplCopyWithImpl<$Res>
     Object? price = null,
     Object? comment = null,
     Object? status = null,
+    Object? createdAt = freezed,
   }) {
     return _then(_$OrderFoodModelImpl(
-      id: null == id ? _value.id : id as String,
-      name: null == name ? _value.name : name as String,
-      quantity: null == quantity ? _value.quantity : quantity as int,
-      price: null == price ? _value.price : price as int,
-      comment: null == comment ? _value.comment : comment as String,
-      status: null == status ? _value.status : status as String,
+      id: null == id
+          ? _value.id
+          : id // ignore: cast_nullable_to_non_nullable
+              as String,
+      name: null == name
+          ? _value.name
+          : name // ignore: cast_nullable_to_non_nullable
+              as String,
+      quantity: null == quantity
+          ? _value.quantity
+          : quantity // ignore: cast_nullable_to_non_nullable
+              as int,
+      price: null == price
+          ? _value.price
+          : price // ignore: cast_nullable_to_non_nullable
+              as int,
+      comment: null == comment
+          ? _value.comment
+          : comment // ignore: cast_nullable_to_non_nullable
+              as String,
+      status: null == status
+          ? _value.status
+          : status // ignore: cast_nullable_to_non_nullable
+              as String,
+      createdAt: freezed == createdAt
+          ? _value.createdAt
+          : createdAt // ignore: cast_nullable_to_non_nullable
+              as DateTime?,
     ));
   }
 }
@@ -136,7 +190,8 @@ class _$OrderFoodModelImpl extends _OrderFoodModel {
       this.quantity = 0,
       @JsonKey(fromJson: parseInt) this.price = 0,
       this.comment = '',
-      this.status = 'pending'})
+      this.status = 'pending',
+      @JsonKey(name: 'created_at', fromJson: _parseLocalDate) this.createdAt})
       : super._();
 
   factory _$OrderFoodModelImpl.fromJson(Map<String, dynamic> json) =>
@@ -160,10 +215,15 @@ class _$OrderFoodModelImpl extends _OrderFoodModel {
   @override
   @JsonKey()
   final String status;
+// Backend `created_at` (UTC) — har bir item qachon buyurtmaga qo'shilgan.
+// Agar mavjud bo'lsa, UI vaqt belgisi sifatida ko'rsatadi.
+  @override
+  @JsonKey(name: 'created_at', fromJson: _parseLocalDate)
+  final DateTime? createdAt;
 
   @override
   String toString() {
-    return 'OrderFoodModel(id: $id, name: $name, quantity: $quantity, price: $price, comment: $comment, status: $status)';
+    return 'OrderFoodModel(id: $id, name: $name, quantity: $quantity, price: $price, comment: $comment, status: $status, createdAt: $createdAt)';
   }
 
   @override
@@ -173,16 +233,19 @@ class _$OrderFoodModelImpl extends _OrderFoodModel {
             other is _$OrderFoodModelImpl &&
             (identical(other.id, id) || other.id == id) &&
             (identical(other.name, name) || other.name == name) &&
-            (identical(other.quantity, quantity) || other.quantity == quantity) &&
+            (identical(other.quantity, quantity) ||
+                other.quantity == quantity) &&
             (identical(other.price, price) || other.price == price) &&
             (identical(other.comment, comment) || other.comment == comment) &&
-            (identical(other.status, status) || other.status == status));
+            (identical(other.status, status) || other.status == status) &&
+            (identical(other.createdAt, createdAt) ||
+                other.createdAt == createdAt));
   }
 
   @JsonKey(ignore: true)
   @override
-  int get hashCode =>
-      Object.hash(runtimeType, id, name, quantity, price, comment, status);
+  int get hashCode => Object.hash(
+      runtimeType, id, name, quantity, price, comment, status, createdAt);
 
   @JsonKey(ignore: true)
   @override
@@ -206,7 +269,9 @@ abstract class _OrderFoodModel extends OrderFoodModel {
       final int quantity,
       @JsonKey(fromJson: parseInt) final int price,
       final String comment,
-      final String status}) = _$OrderFoodModelImpl;
+      final String status,
+      @JsonKey(name: 'created_at', fromJson: _parseLocalDate)
+      final DateTime? createdAt}) = _$OrderFoodModelImpl;
   const _OrderFoodModel._() : super._();
 
   factory _OrderFoodModel.fromJson(Map<String, dynamic> json) =
@@ -226,6 +291,10 @@ abstract class _OrderFoodModel extends OrderFoodModel {
   String get comment;
   @override
   String get status;
+  @override // Backend `created_at` (UTC) — har bir item qachon buyurtmaga qo'shilgan.
+// Agar mavjud bo'lsa, UI vaqt belgisi sifatida ko'rsatadi.
+  @JsonKey(name: 'created_at', fromJson: _parseLocalDate)
+  DateTime? get createdAt;
   @override
   @JsonKey(ignore: true)
   _$$OrderFoodModelImplCopyWith<_$OrderFoodModelImpl> get copyWith =>

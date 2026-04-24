@@ -89,7 +89,10 @@ class MySmartDioInterceptor extends Interceptor {
       }
     }
 
-    // API javobidagi xabar — overlay (401 refresh / token yo‘qligi bundan tashqari).
+    // API javobidagi xabar — toast orqali ko'rsatamiz (401 refresh va token
+    // yo'qligi bundan tashqari). Backend body'da xabar bo'lmasa ham status
+    // kodi bo'yicha tushunarli fallback chiqaramiz — aks holda 500/502 kabi
+    // xatoliklar foydalanuvchi uchun "jim" qoladi.
     final resp = err.response;
     final sc = resp?.statusCode;
     if (resp != null &&
@@ -97,9 +100,17 @@ class MySmartDioInterceptor extends Interceptor {
         sc >= 400 &&
         sc != 401 &&
         !err.requestOptions.path.endsWith(ListAPI.refresh)) {
-      final msg = messageFromDioErrorData(resp.data);
-      if (msg.isNotEmpty) {
-        showApiErrorOverlayIfPossible(msg);
+      var msg = messageFromDioErrorData(resp.data);
+      if (msg.isEmpty) {
+        msg = _fallbackMessageForStatus(sc);
+      }
+      showApiErrorOverlayIfPossible(msg);
+    } else if (resp == null &&
+        !err.requestOptions.path.endsWith(ListAPI.refresh)) {
+      // Response yo'q — tarmoq/timeout xatolari. Oddiy fallback.
+      final fallback = _fallbackMessageForDioType(err.type);
+      if (fallback.isNotEmpty) {
+        showApiErrorOverlayIfPossible(fallback);
       }
     }
 
@@ -149,5 +160,38 @@ class MySmartDioInterceptor extends Interceptor {
       AppRoutes.loginPinScreen,
       (route) => false,
     );
+  }
+
+  /// Backend body bo'sh bo'lsa — status kodi bo'yicha tushunarli xabar.
+  String _fallbackMessageForStatus(int sc) {
+    if (sc == 500) return "Serverda ichki xatolik (500). Qayta urinib ko'ring.";
+    if (sc == 502) return "Server bilan ulanishda muammo (502).";
+    if (sc == 503) return "Xizmat vaqtincha mavjud emas (503).";
+    if (sc == 504) return "Server javob bermayapti (504). Internetni tekshiring.";
+    if (sc == 400) return "So'rov noto'g'ri (400).";
+    if (sc == 403) return "Ruxsat yo'q (403).";
+    if (sc == 404) return "Ma'lumot topilmadi (404).";
+    if (sc == 409) return "Holat mos kelmaydi (409).";
+    if (sc == 422) return "Kiritilgan ma'lumotlarda xato (422).";
+    if (sc >= 500) return "Server xatosi ($sc).";
+    return "Xatolik yuz berdi ($sc).";
+  }
+
+  /// Response bo'lmagan tarmoq xatolari uchun fallback (timeout, connection).
+  String _fallbackMessageForDioType(DioExceptionType t) {
+    switch (t) {
+      case DioExceptionType.connectionTimeout:
+      case DioExceptionType.receiveTimeout:
+      case DioExceptionType.sendTimeout:
+        return "Server javob bermayapti. Internetni tekshiring.";
+      case DioExceptionType.connectionError:
+        return "Server bilan ulanib bo'lmadi. Internetni tekshiring.";
+      case DioExceptionType.badCertificate:
+        return "Server sertifikati noto'g'ri.";
+      case DioExceptionType.cancel:
+      case DioExceptionType.badResponse:
+      case DioExceptionType.unknown:
+        return '';
+    }
   }
 }

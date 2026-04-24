@@ -89,8 +89,11 @@ class CreateOrderBloc extends Bloc<CreateOrderEvent, CreateOrderState> {
       return;
     }
 
-    // Busy table: add items to existing order (POST /api/v1/order-items)
-    if (state.tableStatus == TableStatus.busy && _activeOrderId != null) {
+    // Kalit qoida: agar `_activeOrderId` bog'langan bo'lsa — server'da
+    // mavjud buyurtmaga item qo'shamiz (POST /api/v1/order-items).
+    // `state.tableStatus` free bo'lsa ham shunday ishlaydi — UI holati
+    // eskirgan bo'lsa ham 409 conflict yuz bermaydi.
+    if (_activeOrderId != null) {
       try {
         await _client.post(
           ListAPI.orderItemsCreate,
@@ -120,6 +123,18 @@ class CreateOrderBloc extends Bloc<CreateOrderEvent, CreateOrderState> {
         );
         emit(state.copyWith(status: Status.ERROR));
       }
+      return;
+    }
+
+    // Qo'shimcha himoya: stol busy lekin orderId hali bog'lanmagan — POST
+    // /orders qilmaymiz (409 oldini olish). Foydalanuvchi ekranni yangilab
+    // qayta urinsin (fetchBillOrders activeOrderId ni yozib qo'yadi).
+    if (state.tableStatus == TableStatus.busy) {
+      showErrorMessage(
+        navigatorKey.currentContext!,
+        "Buyurtma ID topilmadi. Ekranni yangilab qayta urinib ko'ring.",
+      );
+      emit(state.copyWith(status: Status.ERROR));
       return;
     }
 

@@ -248,6 +248,7 @@ class _OrderSidebarState extends State<OrderSidebar> with DetailScreenMixin {
                                   ctx.read<DetailBloc>().add(
                                     DetailEvent.fetchBillOrders(
                                       billId: cafeTable!.id,
+                                      force: true,
                                     ),
                                   );
                                 }
@@ -338,6 +339,7 @@ class _OrderSidebarState extends State<OrderSidebar> with DetailScreenMixin {
                                           context.read<DetailBloc>().add(
                                             DetailEvent.fetchBillOrders(
                                               billId: cafeTable!.id,
+                                              force: true,
                                             ),
                                           );
                                         }
@@ -363,14 +365,27 @@ class _OrderSidebarState extends State<OrderSidebar> with DetailScreenMixin {
                                             Status.LOADING,
                                         onTap: state.selectedGoods.isNotEmpty
                                             ? () {
-                                                context
-                                                    .read<CreateOrderBloc>()
-                                                    .add(
-                                                      CreateOrderEvent.createOrder(
-                                                        orders:
-                                                            state.selectedGoods,
-                                                      ),
-                                                    );
+                                                final createBloc = context
+                                                    .read<CreateOrderBloc>();
+                                                // Just-in-time bind: agar
+                                                // backend'da mavjud buyurtma
+                                                // bor bo'lsa (stale UI) —
+                                                // POST /order-items ga tushamiz.
+                                                final activeId = context
+                                                    .read<DetailBloc>()
+                                                    .state
+                                                    .activeOrderId;
+                                                if (activeId != null) {
+                                                  createBloc.bindActiveOrder(
+                                                    activeId,
+                                                  );
+                                                }
+                                                createBloc.add(
+                                                  CreateOrderEvent.createOrder(
+                                                    orders:
+                                                        state.selectedGoods,
+                                                  ),
+                                                );
                                               }
                                             : null,
                                       );
@@ -430,6 +445,7 @@ class _OrderSidebarState extends State<OrderSidebar> with DetailScreenMixin {
                                           context.read<DetailBloc>().add(
                                             DetailEvent.fetchBillOrders(
                                               billId: cafeTable!.id,
+                                              force: true,
                                             ),
                                           );
                                           context.read<DetailBloc>().add(
@@ -452,14 +468,34 @@ class _OrderSidebarState extends State<OrderSidebar> with DetailScreenMixin {
                                                     createState.status ==
                                                     Status.LOADING,
                                                 onTap: () {
-                                                  context
-                                                      .read<CreateOrderBloc>()
-                                                      .add(
-                                                        CreateOrderEvent.createOrder(
-                                                          orders: state
-                                                              .selectedGoods,
-                                                        ),
-                                                      );
+                                                  final createBloc = context
+                                                      .read<CreateOrderBloc>();
+                                                  // Just-in-time bind: agar
+                                                  // BlocProvider.create
+                                                  // setActiveOrderId'dan oldin
+                                                  // ishga tushgan bo'lsa,
+                                                  // activeOrderId hali null
+                                                  // bo'lishi mumkin. Bu yerda
+                                                  // DetailBloc dan so'nggi
+                                                  // qiymatni o'qib beramiz —
+                                                  // shunda busy shoxi POST
+                                                  // /order-items ga tushadi
+                                                  // (POST /orders emas).
+                                                  final activeId = context
+                                                      .read<DetailBloc>()
+                                                      .state
+                                                      .activeOrderId;
+                                                  if (activeId != null) {
+                                                    createBloc.bindActiveOrder(
+                                                      activeId,
+                                                    );
+                                                  }
+                                                  createBloc.add(
+                                                    CreateOrderEvent.createOrder(
+                                                      orders: state
+                                                          .selectedGoods,
+                                                    ),
+                                                  );
                                                 },
                                               ),
                                             _ActionButton(
@@ -1103,14 +1139,41 @@ class _ReadonlyOrderItem extends StatelessWidget {
                       ),
                     )
                   else
-                    Text(
-                      (double.tryParse(item.goods.price) ?? 0).formatN,
-                      style: const TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w500,
-                        color: Color(0xFF64748B),
-                        fontFamily: 'Inter',
-                      ),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          (double.tryParse(item.goods.price) ?? 0).formatN,
+                          style: const TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w500,
+                            color: Color(0xFF64748B),
+                            fontFamily: 'Inter',
+                          ),
+                        ),
+                        if (item.createdAt != null) ...[
+                          const SizedBox(width: 6),
+                          Container(
+                            width: 3,
+                            height: 3,
+                            decoration: const BoxDecoration(
+                              color: Color(0xFFCBD5E1),
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            _fmtHm(item.createdAt!),
+                            style: const TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w500,
+                              color: Color(0xFF94A3B8),
+                              fontFamily: 'Inter',
+                              fontFeatures: [FontFeature.tabularFigures()],
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
                 ],
               ),
@@ -1675,4 +1738,12 @@ class _ServiceRow extends StatelessWidget {
       ],
     );
   }
+}
+
+/// HH:mm formatida sanadan vaqt chiqaradi (lokal zona).
+String _fmtHm(DateTime dt) {
+  final l = dt.toLocal();
+  final h = l.hour.toString().padLeft(2, '0');
+  final m = l.minute.toString().padLeft(2, '0');
+  return '$h:$m';
 }

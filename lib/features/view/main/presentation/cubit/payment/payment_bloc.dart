@@ -191,17 +191,18 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
       timerTotalSec: _timerTotalSec,
       timerPricePerHour: _timerPricePerHour,
     );
+    final mainCubit = navigatorKey.currentContext!.read<MainCubit>();
     if (state.tableId != null) {
-      navigatorKey.currentContext!.read<MainCubit>().updateTableStatus(
-        state.tableId!,
-        TableStatus.free,
-      );
+      mainCubit.updateTableStatus(state.tableId!, TableStatus.free);
     }
     Navigator.pushNamedAndRemoveUntil(
       navigatorKey.currentContext!,
       AppRoutes.mainScreen,
       (value) => true,
     );
+    // To'lovdan keyin backend holatini yangilaymiz — local status yangilandi,
+    // lekin boshqa stollar yoki serverdagi o'zgarishlar eskirgan bo'lishi mumkin.
+    mainCubit.refreshTables(force: true);
   }
 
   Future<void> _enqueuePayment() async {

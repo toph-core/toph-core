@@ -4,11 +4,19 @@ import 'package:mary_ai_pos/core/constants/constants.dart';
 part 'user_model.freezed.dart';
 part 'user_model.g.dart';
 
+// Backend uses `full_name` (snake_case), but offline-cached payloads saved
+// by older builds may contain `fullName` (camelCase). `readValue` accepts both
+// while keeping the standard freezed fromJson factory (so toJson is generated).
+Object? _readFullName(Map json, String key) =>
+    json['full_name'] ?? json['fullName'];
+
 @freezed
 class UserModel with _$UserModel {
   const factory UserModel({
     @Default('') String id,
-    @JsonKey(name: 'full_name') @Default('') String fullName,
+    @JsonKey(name: 'full_name', readValue: _readFullName)
+    @Default('')
+    String fullName,
     @Default('') String username,
     @Default(UserRole.none) UserRole role,
     @JsonKey(name: "is_active") @Default(false) bool isActive,
@@ -21,12 +29,6 @@ class UserModel with _$UserModel {
 
   const UserModel._();
 
-  factory UserModel.fromJson(Map<String, dynamic> json) {
-    // Backend uses `full_name` (snake_case), but offline-cached payloads
-    // saved by older builds may contain `fullName` (camelCase). Accept both.
-    final raw = Map<String, dynamic>.from(json);
-    final fn = raw['full_name'] ?? raw['fullName'];
-    if (fn != null) raw['full_name'] = fn;
-    return _$UserModelFromJson(raw);
-  }
+  factory UserModel.fromJson(Map<String, dynamic> json) =>
+      _$UserModelFromJson(json);
 }

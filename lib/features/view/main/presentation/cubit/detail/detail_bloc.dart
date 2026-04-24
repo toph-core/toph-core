@@ -52,6 +52,11 @@ class DetailBloc extends Bloc<DetailEvent, DetailState> {
   String? _lastBillFetchTableId;
   static const _billFetchThrottle = Duration(seconds: 15);
 
+  // Kategoriyani tez-tez tanlashda /goods ga burst so'rov yubormaslik uchun
+  DateTime? _lastCategoryFetchAt;
+  String? _lastCategoryFetchId;
+  static const _categoryFetchThrottle = Duration(seconds: 10);
+
   DetailBloc(
     this._getCategoriesUsecase,
     this._getGoodsByCategoryIdUseCase,
@@ -63,6 +68,7 @@ class DetailBloc extends Bloc<DetailEvent, DetailState> {
     on<_GetCategories>(_onGetCategories);
     on<_InitSavedGoods>(_onInitSavedGoods);
     on<_FetchBillOrders>(_onFetchBillOrders);
+    on<_SetActiveOrderId>(_onSetActiveOrderId);
     on<_CancelOrderItem>(_onCancelOrderItem);
     on<_SetSelectedCategoryId>(_onSetSelectedCategoryId);
     on<_AddFoodAdditional>(_onAddFoodAdditional);
@@ -128,6 +134,11 @@ class DetailBloc extends Bloc<DetailEvent, DetailState> {
     emit(state.copyWith(selectedGoods: event.savedGoods));
   }
 
+  void _onSetActiveOrderId(_SetActiveOrderId event, Emitter<DetailState> emit) {
+    if (state.activeOrderId == event.orderId) return;
+    emit(state.copyWith(activeOrderId: event.orderId));
+  }
+
   Future<void> _onFetchBillOrders(
     _FetchBillOrders event,
     Emitter<DetailState> emit,
@@ -139,8 +150,11 @@ class DetailBloc extends Bloc<DetailEvent, DetailState> {
     }
 
     // Throttle: shu tableId uchun 15s ichida takroriy /bills/ + /orders/table/
-    // chaqiriqlari bloklanadi (widget rebuild dan kelgan duplicate eventlarni yutadi)
-    if (_lastBillFetchTableId == event.billId &&
+    // chaqiriqlari bloklanadi (widget rebuild dan kelgan duplicate eventlarni yutadi).
+    // `force: true` — user mutatsiyasi (item qo'shildi/bekor qilindi) dan keyin
+    // throttle'ni chetlab o'tamiz, yangi state darhol yuklanishi kerak.
+    if (!event.force &&
+        _lastBillFetchTableId == event.billId &&
         _lastBillFetchAt != null &&
         DateTime.now().difference(_lastBillFetchAt!) < _billFetchThrottle) {
       return;
@@ -174,8 +188,13 @@ class DetailBloc extends Bloc<DetailEvent, DetailState> {
       if (g.status == 'cancelled') continue; // cancelled — ko'rsatmaymiz
       final key = g.name;
       if (grouped.containsKey(key)) {
-        grouped[key] = grouped[key]!.copyWith(
-          quantity: grouped[key]!.quantity + g.quantity,
+        // Bir xil nomli itemlar guruhlansa — eng erta qo'shilgan vaqtni
+        // saqlaymiz (foydalanuvchi "qachon birinchi marta urilgan" ni ko'radi).
+        final existing = grouped[key]!;
+        final earliest = _earlier(existing.createdAt, g.createdAt);
+        grouped[key] = existing.copyWith(
+          quantity: existing.quantity + g.quantity,
+          createdAt: earliest,
         );
       } else {
         grouped[key] = OrderItem(
@@ -193,6 +212,7 @@ class DetailBloc extends Bloc<DetailEvent, DetailState> {
           ),
           quantity: g.quantity,
           commet: g.status,
+          createdAt: g.createdAt,
         );
       }
     }
@@ -219,8 +239,10 @@ class DetailBloc extends Bloc<DetailEvent, DetailState> {
           final price = goodJson['price']?.toString() ?? '0';
           final key = '⏳$name'; // prefix — offline itemlar boshqa key
           if (grouped.containsKey(key)) {
-            grouped[key] = grouped[key]!.copyWith(
-              quantity: grouped[key]!.quantity + qty,
+            final existing = grouped[key]!;
+            grouped[key] = existing.copyWith(
+              quantity: existing.quantity + qty,
+              createdAt: _earlier(existing.createdAt, op.createdAt),
             );
           } else {
             grouped[key] = OrderItem(
@@ -238,6 +260,7 @@ class DetailBloc extends Bloc<DetailEvent, DetailState> {
               ),
               quantity: qty,
               commet: 'pending_offline',
+              createdAt: op.createdAt,
             );
           }
         }
@@ -298,6 +321,18 @@ class DetailBloc extends Bloc<DetailEvent, DetailState> {
     } else {
       emit(state.copyWith(status: Status.LOADING));
     }
+
+    // Throttle: kassir tez-tez kategoriyani bosganda serverga burst ketmasin.
+    // Cache da goodlar bo'lsa — 10s ichida bir xil kategoriya takrorlanmaydi.
+    if (allCached.isNotEmpty &&
+        _lastCategoryFetchId == event.id &&
+        _lastCategoryFetchAt != null &&
+        DateTime.now().difference(_lastCategoryFetchAt!) <
+            _categoryFetchThrottle) {
+      return;
+    }
+    _lastCategoryFetchId = event.id;
+    _lastCategoryFetchAt = DateTime.now();
 
     // Orqa fonda network dan yangilanadi
     final result = await _getGoodsByCategoryIdUseCase(event.id);
@@ -444,5 +479,14 @@ class DetailBloc extends Bloc<DetailEvent, DetailState> {
   Future<void> close() {
     state.textController?.dispose();
     return super.close();
+  }
+
+  /// Ikki vaqtdan eng erta bo'lganini qaytaradi (null-aware).
+  /// Bir xil nomli itemlarni guruhlanganda eng birinchi "urilgan" vaqtni
+  /// saqlash uchun ishlatiladi.
+  DateTime? _earlier(DateTime? a, DateTime? b) {
+    if (a == null) return b;
+    if (b == null) return a;
+    return a.isBefore(b) ? a : b;
   }
 }

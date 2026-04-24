@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:mary_ai_pos/core/api/dio_client.dart';
 import 'package:mary_ai_pos/core/api/list_api.dart';
+import 'package:mary_ai_pos/core/components/flush_bars.dart';
 import 'package:mary_ai_pos/core/extension/for_context.dart';
 import 'package:mary_ai_pos/core/theme/tokens/theme_colors.dart';
 import 'package:mary_ai_pos/di.dart';
@@ -159,9 +160,7 @@ class _UsersSectionState extends State<UsersSection> {
       _load(page: _page);
     } on DioException catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(_readError(e) ?? S.current.strDeleteError)),
-      );
+      showErrorMessage(context, _readError(e) ?? S.current.strDeleteError);
     }
   }
 
@@ -183,9 +182,7 @@ class _UsersSectionState extends State<UsersSection> {
             .map((x) => x.id == u.id ? x.copyWith(isActive: !value) : x)
             .toList();
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(_readError(e) ?? S.current.strSaveError)),
-      );
+      showErrorMessage(context, _readError(e) ?? S.current.strSaveError);
     }
   }
 

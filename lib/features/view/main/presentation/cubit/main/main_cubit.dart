@@ -112,11 +112,12 @@ class MainCubit extends Cubit<MainState> {
   Future<void> getHalls({bool force = false}) async {
     // Cache-first: darhol cache dan ko'rsat
     final cached = _cache.getHalls();
+    List<HallModel> hallsForTables = const [];
     if (cached.isNotEmpty) {
-      final halls = cached.map((e) => HallModel.fromJson(e)).toList();
+      hallsForTables = cached.map((e) => HallModel.fromJson(e)).toList();
       emit(
         state.copyWith(
-          halls: halls,
+          halls: hallsForTables,
           // "Barchasi" har safar default — avvalgi tanlangan zalni tozalaymiz
           selectedHallId: null,
           status: Status.SUCCESS,
@@ -144,14 +145,17 @@ class MainCubit extends Cubit<MainState> {
         },
         (halls) {
           _cache.saveHalls(halls.map((h) => h.toJson()).toList());
+          hallsForTables = halls;
           emit(state.copyWith(halls: halls, status: Status.SUCCESS));
         },
       );
     }
 
-    // Zallar mavjud bo'lsa — "Barchasi" rejimida barcha stollarni yuklaymiz
-    if ((state.halls ?? []).isNotEmpty) {
-      await loadAllHallsTables(force: force);
+    // Zallar mavjud bo'lsa — "Barchasi" rejimida barcha stollarni yuklaymiz.
+    // `state.halls` o'rniga bevosita lokal nusxadan foydalanamiz — hech qanday
+    // sinxron/ketma-ketlik muammosi bo'lmasin.
+    if (hallsForTables.isNotEmpty) {
+      await loadAllHallsTables(force: force, hallsOverride: hallsForTables);
     }
   }
 
@@ -163,8 +167,11 @@ class MainCubit extends Cubit<MainState> {
 
   /// "Barchasi" rejimi: barcha zallar stollarini yig'ib ko'rsatadi.
   /// `selectedHallId` null ga o'rnatiladi.
-  Future<void> loadAllHallsTables({bool force = false}) async {
-    final halls = state.halls ?? [];
+  Future<void> loadAllHallsTables({
+    bool force = false,
+    List<HallModel>? hallsOverride,
+  }) async {
+    final halls = hallsOverride ?? state.halls ?? const <HallModel>[];
     if (halls.isEmpty) return;
 
     // Cache-first: darhol keshdagi barcha stollarni ko'rsat (boshqa zal
@@ -193,19 +200,18 @@ class MainCubit extends Cubit<MainState> {
     }
 
     if (!_connectivity.isOnline) {
-      // Offline: cache dan chiqarib qo'ydik
       return;
     }
 
     _lastAllTablesFetchAt = DateTime.now();
-    final results = await Future.wait(
-      halls.map((h) => _getTablesUsecase.call(h.id)),
-    );
-    if (isClosed) return;
-
+    // Ketma-ket yuklaymiz — parallel Future.wait backendni cho'ktiradi (500 xato).
     final all = <CafeTableModel>[];
-    for (final r in results) {
+    for (final h in halls) {
+      if (isClosed) return;
+      final r = await _getTablesUsecase.call(h.id);
+      if (isClosed) return;
       r.fold((_) => null, all.addAll);
+      _lastHallFetchAt[h.id] = DateTime.now();
     }
     _cache.saveTables(all.map((t) => t.toJson()).toList());
     emit(state.copyWith(tables: all, status: Status.SUCCESS));

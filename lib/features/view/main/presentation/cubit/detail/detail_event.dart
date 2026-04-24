@@ -23,8 +23,12 @@ class DetailEvent with _$DetailEvent {
   const factory DetailEvent.clearGoods() = _ClearGoods;
   const factory DetailEvent.searchTextChanged({required String text}) =
       _SearchTextChanged;
-  const factory DetailEvent.fetchBillOrders({required String billId}) =
-      _FetchBillOrders;
+  const factory DetailEvent.fetchBillOrders({
+    required String billId,
+    @Default(false) bool force,
+  }) = _FetchBillOrders;
+  const factory DetailEvent.setActiveOrderId({required String orderId}) =
+      _SetActiveOrderId;
   const factory DetailEvent.cancelOrderItem({
     required String itemId,
     required String tableId,

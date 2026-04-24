@@ -21,6 +21,7 @@ UserModel _$UserModelFromJson(Map<String, dynamic> json) {
 /// @nodoc
 mixin _$UserModel {
   String get id => throw _privateConstructorUsedError;
+  @JsonKey(name: 'full_name', readValue: _readFullName)
   String get fullName => throw _privateConstructorUsedError;
   String get username => throw _privateConstructorUsedError;
   UserRole get role => throw _privateConstructorUsedError;
@@ -50,7 +51,7 @@ abstract class $UserModelCopyWith<$Res> {
   @useResult
   $Res call(
       {String id,
-      String fullName,
+      @JsonKey(name: 'full_name', readValue: _readFullName) String fullName,
       String username,
       UserRole role,
       @JsonKey(name: "is_active") bool isActive,
@@ -140,7 +141,7 @@ abstract class _$$UserModelImplCopyWith<$Res>
   @useResult
   $Res call(
       {String id,
-      String fullName,
+      @JsonKey(name: 'full_name', readValue: _readFullName) String fullName,
       String username,
       UserRole role,
       @JsonKey(name: "is_active") bool isActive,
@@ -223,7 +224,7 @@ class __$$UserModelImplCopyWithImpl<$Res>
 class _$UserModelImpl extends _UserModel {
   const _$UserModelImpl(
       {this.id = '',
-      this.fullName = '',
+      @JsonKey(name: 'full_name', readValue: _readFullName) this.fullName = '',
       this.username = '',
       this.role = UserRole.none,
       @JsonKey(name: "is_active") this.isActive = false,
@@ -241,7 +242,7 @@ class _$UserModelImpl extends _UserModel {
   @JsonKey()
   final String id;
   @override
-  @JsonKey()
+  @JsonKey(name: 'full_name', readValue: _readFullName)
   final String fullName;
   @override
   @JsonKey()
@@ -319,6 +320,7 @@ class _$UserModelImpl extends _UserModel {
 abstract class _UserModel extends UserModel {
   const factory _UserModel(
           {final String id,
+          @JsonKey(name: 'full_name', readValue: _readFullName)
           final String fullName,
           final String username,
           final UserRole role,
@@ -337,6 +339,7 @@ abstract class _UserModel extends UserModel {
   @override
   String get id;
   @override
+  @JsonKey(name: 'full_name', readValue: _readFullName)
   String get fullName;
   @override
   String get username;

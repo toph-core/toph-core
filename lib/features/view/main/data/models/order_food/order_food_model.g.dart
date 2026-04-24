@@ -14,6 +14,7 @@ _$OrderFoodModelImpl _$$OrderFoodModelImplFromJson(Map<String, dynamic> json) =>
       price: json['price'] == null ? 0 : parseInt(json['price']),
       comment: json['comment'] as String? ?? '',
       status: json['status'] as String? ?? 'pending',
+      createdAt: _parseLocalDate(json['created_at']),
     );
 
 Map<String, dynamic> _$$OrderFoodModelImplToJson(
@@ -25,4 +26,5 @@ Map<String, dynamic> _$$OrderFoodModelImplToJson(
       'price': instance.price,
       'comment': instance.comment,
       'status': instance.status,
+      'created_at': instance.createdAt?.toIso8601String(),
     };

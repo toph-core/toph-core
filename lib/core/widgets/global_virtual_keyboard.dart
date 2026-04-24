@@ -21,6 +21,10 @@ class _GlobalVirtualKeyboardState extends State<GlobalVirtualKeyboard> {
   bool _numericOnly = false;
   TextEditingController? _controller;
   VoidCallback? _controllerListener;
+  // Fokuslangan EditableText widget'i. Matn yozilgandan keyin uning
+  // `onChanged` callback'ini sinxron chaqiramiz — aks holda TextField.onChanged
+  // faqat fizik klaviaturada ishlaydi (Flutter'ning cheklovi).
+  EditableText? _editableText;
 
   @override
   void initState() {
@@ -41,6 +45,7 @@ class _GlobalVirtualKeyboardState extends State<GlobalVirtualKeyboard> {
     if (l != null && c != null) c.removeListener(l);
     _controllerListener = null;
     _controller = null;
+    _editableText = null;
   }
 
   void _onFocusChange() {
@@ -64,6 +69,8 @@ class _GlobalVirtualKeyboardState extends State<GlobalVirtualKeyboard> {
         };
         ctrl.addListener(_controllerListener!);
       }
+      // Fokuslangan widget — keyinchalik uning onChanged'ini chaqirish uchun saqlaymiz
+      _editableText = widget;
 
       if (!_open || _numericOnly != numeric) {
         setState(() {
@@ -77,6 +84,19 @@ class _GlobalVirtualKeyboardState extends State<GlobalVirtualKeyboard> {
         _open = false;
         _shift = false;
       });
+    }
+  }
+
+  /// Matn o'zgargandan keyin fokuslangan TextField.onChanged ni sinxron chaqiradi.
+  /// Flutter dasturiy `controller.value` yozganda onChanged ni o'zi ishga
+  /// tushirmaydi — bu metod shu bo'shliqni to'ldiradi.
+  void _invokeOnChanged(String text) {
+    final et = _editableText;
+    if (et == null) return;
+    try {
+      et.onChanged?.call(text);
+    } catch (_) {
+      // Callback ichidagi xato klaviaturani bloklamasin.
     }
   }
 
@@ -98,6 +118,7 @@ class _GlobalVirtualKeyboardState extends State<GlobalVirtualKeyboard> {
         text: next,
         selection: TextSelection.collapsed(offset: sel.start + insert.length),
       );
+      _invokeOnChanged(next);
     }
 
     if (key.keyType == VirtualKeyboardKeyType.String) {
@@ -112,12 +133,14 @@ class _GlobalVirtualKeyboardState extends State<GlobalVirtualKeyboard> {
               text: next,
               selection: TextSelection.collapsed(offset: sel.start - 1),
             );
+            _invokeOnChanged(next);
           } else if (sel.start != sel.end) {
             final next = text.replaceRange(sel.start, sel.end, '');
             ctrl.value = TextEditingValue(
               text: next,
               selection: TextSelection.collapsed(offset: sel.start),
             );
+            _invokeOnChanged(next);
           }
           break;
         case VirtualKeyboardKeyAction.Space:
