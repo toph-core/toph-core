@@ -59,6 +59,38 @@ class CacheService {
     }
   }
 
+  // ─── Order Item Timestamps ────────────────────────────────────
+  // `name -> earliestCreatedAt` map'i orderId bo'yicha cache'lanadi.
+  // Offline'da bill ekrani ochilganda ham vaqtlar ko'rinishi uchun.
+  static const _itemTsPrefix = 'cache_order_item_ts:';
+
+  Future<void> saveItemTimestamps(
+    String orderId,
+    Map<String, DateTime> ts,
+  ) async {
+    if (ts.isEmpty) return;
+    final encoded = ts.map((k, v) => MapEntry(k, v.toIso8601String()));
+    await _box.put('$_itemTsPrefix$orderId', jsonEncode(encoded));
+  }
+
+  Map<String, DateTime> getItemTimestamps(String orderId) {
+    final raw = _box.get('$_itemTsPrefix$orderId');
+    if (raw == null) return const {};
+    try {
+      final map = jsonDecode(raw as String) as Map<String, dynamic>;
+      final out = <String, DateTime>{};
+      map.forEach((k, v) {
+        if (v is String && v.isNotEmpty) {
+          final dt = DateTime.tryParse(v);
+          if (dt != null) out[k] = dt.toLocal();
+        }
+      });
+      return out;
+    } catch (_) {
+      return const {};
+    }
+  }
+
   static const _goodsFetchedAt = 'cache_goods_fetched_at';
   static const _goodsStale = Duration(minutes: 30);
 

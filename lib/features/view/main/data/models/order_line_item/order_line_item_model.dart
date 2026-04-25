@@ -8,6 +8,7 @@ class OrderLineItemModel {
   final String? comment;
   final String? goodName;
   final String? status;
+  final DateTime? createdAt;
 
   const OrderLineItemModel({
     required this.id,
@@ -17,6 +18,7 @@ class OrderLineItemModel {
     this.comment,
     this.goodName,
     this.status,
+    this.createdAt,
   });
 
   factory OrderLineItemModel.fromJson(Map<String, dynamic> json) {
@@ -35,7 +37,17 @@ class OrderLineItemModel {
           _stringField(json['name']) ??
           nameFromGood,
       status: json['status'] as String?,
+      createdAt: _parseDate(json['created_at'] ?? json['createdAt']),
     );
+  }
+
+  static DateTime? _parseDate(dynamic v) {
+    if (v == null) return null;
+    if (v is String && v.isNotEmpty) {
+      return DateTime.tryParse(v)?.toLocal();
+    }
+    if (v is DateTime) return v.toLocal();
+    return null;
   }
 
   static String? _stringField(dynamic v) {

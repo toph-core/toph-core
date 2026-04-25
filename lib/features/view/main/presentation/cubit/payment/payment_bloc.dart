@@ -72,6 +72,14 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
     on<_DiscountType>(_updateDiscountType);
     on<_UpdateDiscountAmount>(_updateDiscountAmount);
     on<_UpdateHourPrice>(_updateHourPrice);
+    on<_ItemTimestampsLoaded>(_onItemTimestampsLoaded);
+  }
+
+  void _onItemTimestampsLoaded(
+    _ItemTimestampsLoaded event,
+    Emitter<PaymentState> emit,
+  ) {
+    emit(state.copyWith(itemTimestamps: event.timestamps));
   }
 
   void _updateHourPrice(_UpdateHourPrice event, emit) {
@@ -303,10 +311,14 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
       // Cache-first: avval saqlangan detalni ko'rsat
       final cached = cache.getOrderDetail(state.tableId!);
       if (cached != null) {
+        final cachedDetail = ArchiveDetailModel.fromJson(cached);
+        // Avvalgi sessiyada cache'lab qo'yilgan timestamplarni ham qo'llaymiz
+        final cachedTs = cache.getItemTimestamps(cachedDetail.id);
         emit(state.copyWith(
           detailStatus: Status.SUCCESS,
           status: Status.SUCCESS,
-          detail: ArchiveDetailModel.fromJson(cached),
+          detail: cachedDetail,
+          itemTimestamps: cachedTs,
           failure: null,
         ));
       } else {
@@ -340,6 +352,11 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
             enterSum: shouldPrefill ? prefill.toString() : state.enterSum,
             failure: null,
           ));
+          // Item timestamps — bills javobida yo'q, /order-items/order/{id}
+          // dan olib alohida fetch qilamiz (UI vaqtni ko'rsatishi uchun).
+          if (detail.id.isNotEmpty) {
+            _fetchItemTimestamps(detail.id);
+          }
         },
       );
     } else if (state.orderId != null) {
@@ -364,8 +381,52 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
             enterSum: shouldPrefill ? prefill.toString() : state.enterSum,
             failure: null,
           ));
+          if (detail.id.isNotEmpty) {
+            _fetchItemTimestamps(detail.id);
+          }
         },
       );
+    }
+  }
+
+  /// `/api/v1/order-items/order/{orderId}` orqali har bir itemning
+  /// `created_at` vaqtini olib, `state.itemTimestamps` (name -> earliest)
+  /// ga yozadi. Bills javobida bu maydon yo'q.
+  Future<void> _fetchItemTimestamps(String orderId) async {
+    try {
+      final res = await inject<DioClient>().get(
+        ListAPI.orderItemsListByOrder(orderId),
+      );
+      if (isClosed) return;
+      final raw = res.data['data'];
+      final List<dynamic> list = raw is List
+          ? raw
+          : (raw is Map<String, dynamic> && raw['items'] is List
+              ? raw['items'] as List
+              : const []);
+      final tsByName = <String, DateTime>{};
+      for (final entry in list.whereType<Map>()) {
+        final m = Map<String, dynamic>.from(entry);
+        final name = (m['good_name'] ?? m['name'] ?? '').toString();
+        if (name.isEmpty) continue;
+        final rawDate = m['created_at'] ?? m['createdAt'];
+        DateTime? created;
+        if (rawDate is String && rawDate.isNotEmpty) {
+          created = DateTime.tryParse(rawDate)?.toLocal();
+        }
+        if (created == null) continue;
+        final existing = tsByName[name];
+        if (existing == null || created.isBefore(existing)) {
+          tsByName[name] = created;
+        }
+      }
+      if (tsByName.isEmpty || isClosed) return;
+      // Cache — offline'da ham ko'rinadi
+      await inject<CacheService>().saveItemTimestamps(orderId, tsByName);
+      // emit'ni BLoC pattern qoidasiga muvofiq event orqali yuboramiz
+      add(PaymentEvent.itemTimestampsLoaded(timestamps: tsByName));
+    } catch (_) {
+      // Endpoint xatosi sukut bilan o'tib ketadi
     }
   }
 

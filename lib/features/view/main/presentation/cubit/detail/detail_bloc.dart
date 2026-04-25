@@ -164,6 +164,7 @@ class DetailBloc extends Bloc<DetailEvent, DetailState> {
 
     final result = await _getPaymentDetailWithTableIdUsecase.call(event.billId);
     if (isClosed) return;
+    String? orderIdForTimestamps;
     result.fold(
       (_) => null, // cache allaqachon ko'rsatilgan, hech nima qilmaymiz
       (detail) {
@@ -171,8 +172,66 @@ class DetailBloc extends Bloc<DetailEvent, DetailState> {
         lastDetail = detail;
         _cache.saveOrderDetail(event.billId, (detail as ArchiveDetailModel).toJson());
         _applyDetailToState(detail, event.billId, emit);
+        orderIdForTimestamps = detail.id;
       },
     );
+
+    // Bill javobida items.created_at yo'q — `/api/v1/order-items/order/{id}`
+    // endpoint'idan timestamplarni olib, ko'rsatilgan itemlar ustidan merge
+    // qilamiz. Aks holda foydalanuvchi vaqtni ko'rmaydi.
+    if (orderIdForTimestamps != null && orderIdForTimestamps!.isNotEmpty) {
+      await _enrichExistingGoodsWithTimestamps(orderIdForTimestamps!, emit);
+    }
+  }
+
+  Future<void> _enrichExistingGoodsWithTimestamps(
+    String orderId,
+    Emitter<DetailState> emit,
+  ) async {
+    try {
+      final res = await inject<DioClient>().get(
+        ListAPI.orderItemsListByOrder(orderId),
+      );
+      if (isClosed) return;
+      final raw = res.data['data'];
+      final List<dynamic> list = raw is List
+          ? raw
+          : (raw is Map<String, dynamic> && raw['items'] is List
+              ? raw['items'] as List
+              : const []);
+      // name -> earliest createdAt
+      final tsByName = <String, DateTime>{};
+      for (final entry in list.whereType<Map>()) {
+        final m = Map<String, dynamic>.from(entry);
+        final name = (m['good_name'] ?? m['name'] ?? '').toString();
+        if (name.isEmpty) continue;
+        final rawDate = m['created_at'] ?? m['createdAt'];
+        DateTime? created;
+        if (rawDate is String && rawDate.isNotEmpty) {
+          created = DateTime.tryParse(rawDate)?.toLocal();
+        }
+        if (created == null) continue;
+        final existing = tsByName[name];
+        if (existing == null || created.isBefore(existing)) {
+          tsByName[name] = created;
+        }
+      }
+      if (tsByName.isEmpty || isClosed) return;
+
+      // Cache'ga saqlaymiz — offline'da ham itemlar uchun vaqt ko'rinadi
+      await _cache.saveItemTimestamps(orderId, tsByName);
+
+      final updated = state.existingGoods.map((g) {
+        // Offline pending itemlar (⏳ prefix) o'z timestamp'iga ega — tegmaymiz
+        if (g.commet == 'pending_offline') return g;
+        final t = tsByName[g.goods.name];
+        if (t == null) return g;
+        return g.copyWith(createdAt: t);
+      }).toList();
+      emit(state.copyWith(existingGoods: updated));
+    } catch (_) {
+      // Endpoint ishlamasa yoki javob noto'g'ri — sukut bilan o'tamiz
+    }
   }
 
   /// Server/cache detail + offline queue itemlarni birlashtiradi.
@@ -182,16 +241,22 @@ class DetailBloc extends Bloc<DetailEvent, DetailState> {
     String tableId,
     Emitter<DetailState> emit,
   ) {
+    // Cache'da saqlangan timestamplar — offline rejimda ham vaqtlar ko'rinadi
+    final cachedTs = _cache.getItemTimestamps(detail.id);
+
     // 1. Server itemlarini guruhlash: bir xil nom → miqdorini qo'sh
     final Map<String, OrderItem> grouped = {};
     for (final g in detail.goods) {
       if (g.status == 'cancelled') continue; // cancelled — ko'rsatmaymiz
       final key = g.name;
+      // Bill javobida `created_at` yo'q, lekin avvalgi sessiyada
+      // `/order-items/order/{id}` orqali olingan vaqt cache'da bo'lishi mumkin
+      final ts = g.createdAt ?? cachedTs[g.name];
       if (grouped.containsKey(key)) {
         // Bir xil nomli itemlar guruhlansa — eng erta qo'shilgan vaqtni
         // saqlaymiz (foydalanuvchi "qachon birinchi marta urilgan" ni ko'radi).
         final existing = grouped[key]!;
-        final earliest = _earlier(existing.createdAt, g.createdAt);
+        final earliest = _earlier(existing.createdAt, ts);
         grouped[key] = existing.copyWith(
           quantity: existing.quantity + g.quantity,
           createdAt: earliest,
@@ -212,7 +277,7 @@ class DetailBloc extends Bloc<DetailEvent, DetailState> {
           ),
           quantity: g.quantity,
           commet: g.status,
-          createdAt: g.createdAt,
+          createdAt: ts,
         );
       }
     }

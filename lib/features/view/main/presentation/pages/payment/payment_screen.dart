@@ -213,9 +213,15 @@ class _ItemsList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // PaymentBloc.state.itemTimestamps — `/order-items/order/{id}` dan
+    // olingan name->earliestCreatedAt mapping (bills javobida yo'q).
+    final timestamps = context.select<PaymentBloc, Map<String, DateTime>>(
+      (b) => b.state.itemTimestamps,
+    );
     final Map<String, _PayItem> grouped = {};
     final List<_PayItem> cancelled = [];
     for (final g in detail.goods) {
+      final ts = (g.createdAt as DateTime?) ?? timestamps[g.name];
       if (g.status == 'cancelled') {
         cancelled.add(
           _PayItem(
@@ -224,7 +230,7 @@ class _ItemsList extends StatelessWidget {
             qty: (g.quantity as num).toInt(),
             isPending: false,
             isCancelled: true,
-            createdAt: g.createdAt as DateTime?,
+            createdAt: ts,
           ),
         );
         continue;
@@ -233,7 +239,7 @@ class _ItemsList extends StatelessWidget {
       if (grouped.containsKey(g.name)) {
         grouped[g.name] = grouped[g.name]!.withQty(
           grouped[g.name]!.qty + qty,
-          earliestAt: g.createdAt as DateTime?,
+          earliestAt: ts,
         );
       } else {
         grouped[g.name] = _PayItem(
@@ -242,7 +248,7 @@ class _ItemsList extends StatelessWidget {
           qty: qty,
           isPending: false,
           isCancelled: false,
-          createdAt: g.createdAt as DateTime?,
+          createdAt: ts,
         );
       }
     }
@@ -381,41 +387,32 @@ class _OrderLineRow extends StatelessWidget {
                       fontFamily: 'Inter',
                     ),
                   )
-                else
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        item.price.formatN,
-                        style: const TextStyle(
-                          fontSize: 11,
-                          color: _kS500,
-                          fontFamily: 'Inter',
-                        ),
-                      ),
-                      if (item.createdAt != null) ...[
-                        const SizedBox(width: 6),
-                        Container(
-                          width: 3,
-                          height: 3,
-                          decoration: const BoxDecoration(
-                            color: Color(0xFFCBD5E1),
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                        const SizedBox(width: 6),
-                        Text(
-                          _fmtHm(item.createdAt!),
-                          style: const TextStyle(
-                            fontSize: 11,
-                            color: Color(0xFF94A3B8),
-                            fontFamily: 'Inter',
-                            fontFeatures: [FontFeature.tabularFigures()],
-                          ),
-                        ),
-                      ],
-                    ],
+                else ...[
+                  Text(
+                    item.price.formatN,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 11,
+                      color: _kS500,
+                      fontFamily: 'Inter',
+                    ),
                   ),
+                  if (item.createdAt != null) ...[
+                    const SizedBox(height: 1),
+                    Text(
+                      _fmtHm(item.createdAt!),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 10,
+                        color: Color(0xFF94A3B8),
+                        fontFamily: 'Inter',
+                        fontFeatures: [FontFeature.tabularFigures()],
+                      ),
+                    ),
+                  ],
+                ],
               ],
             ),
           ),

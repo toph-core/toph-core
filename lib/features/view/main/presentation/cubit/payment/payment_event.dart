@@ -18,4 +18,10 @@ class PaymentEvent with _$PaymentEvent {
 
   const factory PaymentEvent.upadeHourPrice({required double hourPrice,}) =
       _UpdateHourPrice;
+
+  /// `_fetchItemTimestamps` async tugagandan keyin yuboriladi —
+  /// emit'ni BLoC pattern qoidalariga zid qilmasdan state'ga yozamiz.
+  const factory PaymentEvent.itemTimestampsLoaded({
+    required Map<String, DateTime> timestamps,
+  }) = _ItemTimestampsLoaded;
 }

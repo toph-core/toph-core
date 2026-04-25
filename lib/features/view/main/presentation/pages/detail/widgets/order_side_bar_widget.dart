@@ -1138,43 +1138,34 @@ class _ReadonlyOrderItem extends StatelessWidget {
                         fontFamily: 'Inter',
                       ),
                     )
-                  else
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          (double.tryParse(item.goods.price) ?? 0).formatN,
-                          style: const TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w500,
-                            color: Color(0xFF64748B),
-                            fontFamily: 'Inter',
-                          ),
-                        ),
-                        if (item.createdAt != null) ...[
-                          const SizedBox(width: 6),
-                          Container(
-                            width: 3,
-                            height: 3,
-                            decoration: const BoxDecoration(
-                              color: Color(0xFFCBD5E1),
-                              shape: BoxShape.circle,
-                            ),
-                          ),
-                          const SizedBox(width: 6),
-                          Text(
-                            _fmtHm(item.createdAt!),
-                            style: const TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w500,
-                              color: Color(0xFF94A3B8),
-                              fontFamily: 'Inter',
-                              fontFeatures: [FontFeature.tabularFigures()],
-                            ),
-                          ),
-                        ],
-                      ],
+                  else ...[
+                    Text(
+                      (double.tryParse(item.goods.price) ?? 0).formatN,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w500,
+                        color: Color(0xFF64748B),
+                        fontFamily: 'Inter',
+                      ),
                     ),
+                    if (item.createdAt != null) ...[
+                      const SizedBox(height: 1),
+                      Text(
+                        _fmtHm(item.createdAt!),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w500,
+                          color: Color(0xFF94A3B8),
+                          fontFamily: 'Inter',
+                          fontFeatures: [FontFeature.tabularFigures()],
+                        ),
+                      ),
+                    ],
+                  ],
                 ],
               ),
             ),

@@ -15,6 +15,9 @@ class PaymentState with _$PaymentState {
     @Default(0) int returnAmount,
     @Default(DiscountType.money) DiscountType discountType,
     @Default(0) double hourPrice,
+    // Item nomi -> eng erta urilgan vaqt. `/order-items/order/{id}` dan
+    // olinadi; `/bills/{id}` items'da `created_at` yo'q.
+    @Default(<String, DateTime>{}) Map<String, DateTime> itemTimestamps,
     Failure? failure,
   }) = _PaymentState;
 }

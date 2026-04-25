@@ -206,12 +206,21 @@ class MainCubit extends Cubit<MainState> {
     _lastAllTablesFetchAt = DateTime.now();
     // Ketma-ket yuklaymiz — parallel Future.wait backendni cho'ktiradi (500 xato).
     final all = <CafeTableModel>[];
+    int failureCount = 0;
     for (final h in halls) {
       if (isClosed) return;
       final r = await _getTablesUsecase.call(h.id);
       if (isClosed) return;
-      r.fold((_) => null, all.addAll);
+      r.fold(
+        (_) => failureCount++,
+        all.addAll,
+      );
       _lastHallFetchAt[h.id] = DateTime.now();
+    }
+    // Hech qanday yangi ma'lumot kelmagan VA cache to'la — eskini buzmaymiz.
+    // Aks holda offline retry yoki vaqtinchalik xato cache'ni o'chirib yuboradi.
+    if (all.isEmpty && failureCount > 0 && allCached.isNotEmpty) {
+      return;
     }
     _cache.saveTables(all.map((t) => t.toJson()).toList());
     emit(state.copyWith(tables: all, status: Status.SUCCESS));
