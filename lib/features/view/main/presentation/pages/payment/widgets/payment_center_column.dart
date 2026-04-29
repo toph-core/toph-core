@@ -19,7 +19,8 @@ const _kRedBg = Color(0xFFFEE2E2);
 
 class PaymentCenterColumn extends StatelessWidget with PaymentScreenMixin {
   final int finalTotal;
-  PaymentCenterColumn({super.key, required this.finalTotal});
+  final ValueNotifier<bool> discountFocused;
+  PaymentCenterColumn({super.key, required this.finalTotal, required this.discountFocused});
 
   @override
   Widget build(BuildContext context) {
@@ -56,7 +57,7 @@ class PaymentCenterColumn extends StatelessWidget with PaymentScreenMixin {
               if (state.paymentType == PaymentType.cash) ...[
                 const SizedBox(height: 14),
                 // Numpad (large buttons)
-                Expanded(child: _Numpad()),
+                Expanded(child: _Numpad(discountFocused: discountFocused)),
               ] else
                 Expanded(
                   child: Center(
@@ -348,35 +349,50 @@ class _QuickPill extends StatelessWidget {
 }
 
 class _Numpad extends StatelessWidget with PaymentScreenMixin {
-  _Numpad();
+  final ValueNotifier<bool> discountFocused;
+  _Numpad({required this.discountFocused});
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        const cols = 3;
-        const spacing = 10.0;
-        final cellW = (constraints.maxWidth - spacing * (cols - 1)) / cols;
-        final maxCellH = (constraints.maxHeight - spacing * 3) / 4;
-        final cellH = maxCellH.clamp(56.0, 80.0);
+    return ValueListenableBuilder<bool>(
+      valueListenable: discountFocused,
+      builder: (context, isDiscountMode, _) {
+        return LayoutBuilder(
+          builder: (context, constraints) {
+            const cols = 3;
+            const spacing = 10.0;
+            final cellW = (constraints.maxWidth - spacing * (cols - 1)) / cols;
+            final maxCellH = (constraints.maxHeight - spacing * 3) / 4;
+            final cellH = maxCellH.clamp(56.0, 80.0);
 
-        return Wrap(
-          spacing: spacing,
-          runSpacing: spacing,
-          children: keyboardKeys.map((key) {
-            final isDelete = key == 'delete';
-            return SizedBox(
-              width: cellW,
-              height: cellH,
-              child: _NumpadButton(
-                keyLabel: key,
-                isDelete: isDelete,
-                onTap: () => context.read<PaymentBloc>().add(
-                  PaymentEvent.updateEnterSum(symbol: key),
-                ),
-              ),
+            return Wrap(
+              spacing: spacing,
+              runSpacing: spacing,
+              children: keyboardKeys.map((key) {
+                final isDelete = key == '⌫';
+                return SizedBox(
+                  width: cellW,
+                  height: cellH,
+                  child: _NumpadButton(
+                    keyLabel: key,
+                    isDelete: isDelete,
+                    isDiscountMode: isDiscountMode,
+                    onTap: () {
+                      if (isDiscountMode) {
+                        context.read<PaymentBloc>().add(
+                          PaymentEvent.updateDiscountAmount(amount: 'numpad:$key'),
+                        );
+                      } else {
+                        context.read<PaymentBloc>().add(
+                          PaymentEvent.updateEnterSum(symbol: key),
+                        );
+                      }
+                    },
+                  ),
+                );
+              }).toList(),
             );
-          }).toList(),
+          },
         );
       },
     );
@@ -386,11 +402,13 @@ class _Numpad extends StatelessWidget with PaymentScreenMixin {
 class _NumpadButton extends StatefulWidget {
   final String keyLabel;
   final bool isDelete;
+  final bool isDiscountMode;
   final VoidCallback onTap;
 
   const _NumpadButton({
     required this.keyLabel,
     required this.isDelete,
+    required this.isDiscountMode,
     required this.onTap,
   });
 
@@ -405,7 +423,9 @@ class _NumpadButtonState extends State<_NumpadButton> {
   Widget build(BuildContext context) {
     final bg = widget.isDelete
         ? (_pressed ? const Color(0xFFFBCDD8) : _kRedBg)
-        : (_pressed ? _kS200 : _kS100);
+        : widget.isDiscountMode
+            ? (_pressed ? const Color(0xFFFDD9CC) : const Color(0xFFFEEDE8))
+            : (_pressed ? _kS200 : _kS100);
     return GestureDetector(
       onTap: widget.onTap,
       onTapDown: (_) => setState(() => _pressed = true),
@@ -416,16 +436,19 @@ class _NumpadButtonState extends State<_NumpadButton> {
         decoration: BoxDecoration(
           color: bg,
           borderRadius: BorderRadius.circular(10),
+          border: widget.isDiscountMode && !widget.isDelete
+              ? Border.all(color: _kBrand.withOpacity(0.3))
+              : null,
         ),
         child: Center(
           child: widget.isDelete
-              ? const Icon(Icons.backspace_outlined, size: 22, color: _kRed)
+              ? Icon(Icons.backspace_outlined, size: 22, color: widget.isDiscountMode ? _kBrand : _kRed)
               : Text(
                   widget.keyLabel,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.w600,
-                    color: _kS900,
+                    color: widget.isDiscountMode ? _kBrand : _kS900,
                     fontFamily: 'Inter',
                   ),
                 ),

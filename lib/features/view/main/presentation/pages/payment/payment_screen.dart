@@ -30,6 +30,8 @@ class PaymentScreen extends StatefulWidget {
 }
 
 class _PaymentScreenState extends State<PaymentScreen> {
+  final _discountFocused = ValueNotifier<bool>(false);
+
   late final args =
       ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>;
   late final String? tableId = args['table_id'];
@@ -45,6 +47,12 @@ class _PaymentScreenState extends State<PaymentScreen> {
   late final int _timerTotalSec = (args['timer_total_sec'] as int?) ?? 0;
   late final String? _timerPricePerHour =
       args['timer_price_per_hour'] as String?;
+
+  @override
+  void dispose() {
+    _discountFocused.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -132,7 +140,10 @@ class _PaymentScreenState extends State<PaymentScreen> {
                         ),
                         // Center column (flex) — payment + numpad
                         Expanded(
-                          child: PaymentCenterColumn(finalTotal: finalTotal),
+                          child: PaymentCenterColumn(
+                            finalTotal: finalTotal,
+                            discountFocused: _discountFocused,
+                          ),
                         ),
                         // Right column (280px) — discount + total + actions
                         SizedBox(
@@ -140,6 +151,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
                           child: PaymentRightSideBar(
                             detail: state.detail!,
                             finalTotal: finalTotal,
+                            discountFocused: _discountFocused,
                           ),
                         ),
                       ],

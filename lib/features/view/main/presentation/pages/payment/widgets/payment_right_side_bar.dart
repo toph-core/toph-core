@@ -19,10 +19,12 @@ const _kBrand = Color(0xFFFB6633);
 class PaymentRightSideBar extends StatelessWidget {
   final ArchiveDetailEntity detail;
   final int finalTotal;
+  final ValueNotifier<bool> discountFocused;
   const PaymentRightSideBar({
     super.key,
     required this.detail,
     required this.finalTotal,
+    required this.discountFocused,
   });
 
   @override
@@ -40,7 +42,7 @@ class PaymentRightSideBar extends StatelessWidget {
               // Discount pills
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-                child: _DiscountSection(state: state),
+                child: _DiscountSection(state: state, discountFocused: discountFocused),
               ),
               const SizedBox(height: 8),
               // Dark total card
@@ -97,7 +99,8 @@ class PaymentRightSideBar extends StatelessWidget {
 
 class _DiscountSection extends StatelessWidget {
   final PaymentState state;
-  const _DiscountSection({required this.state});
+  final ValueNotifier<bool> discountFocused;
+  const _DiscountSection({required this.state, required this.discountFocused});
 
   @override
   Widget build(BuildContext context) {
@@ -132,6 +135,7 @@ class _DiscountSection extends StatelessWidget {
               label: '$p%',
               isActive: active,
               onTap: () {
+                discountFocused.value = false;
                 final bloc = context.read<PaymentBloc>();
                 bloc.add(const PaymentEvent.updateDiscountType(
                   dicountType: DiscountType.percent,
@@ -149,6 +153,7 @@ class _DiscountSection extends StatelessWidget {
         _ManualDiscountInput(
           amount: amount,
           isPercent: isPercent,
+          discountFocused: discountFocused,
         ),
       ],
     );
@@ -158,10 +163,12 @@ class _DiscountSection extends StatelessWidget {
 class _ManualDiscountInput extends StatefulWidget {
   final int amount;
   final bool isPercent;
+  final ValueNotifier<bool> discountFocused;
 
   const _ManualDiscountInput({
     required this.amount,
     required this.isPercent,
+    required this.discountFocused,
   });
 
   @override
@@ -214,52 +221,62 @@ class _ManualDiscountInputState extends State<_ManualDiscountInput> {
         Row(
           children: [
             Expanded(
-              child: SizedBox(
-                height: 40,
-                child: TextField(
-                  controller: _ctrl,
-                  keyboardType: TextInputType.number,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: _kS900,
-                    fontFamily: 'Inter',
-                  ),
-                  decoration: InputDecoration(
-                    hintText: '0',
-                    hintStyle: const TextStyle(
-                      fontSize: 14,
-                      color: _kS500,
-                      fontFamily: 'Inter',
-                    ),
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 8,
-                    ),
-                    isDense: true,
-                    filled: true,
-                    fillColor: Colors.white,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
-                      borderSide: const BorderSide(color: _kS200),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
-                      borderSide: const BorderSide(color: _kS200),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
-                      borderSide: const BorderSide(color: _kBrand, width: 1.5),
-                    ),
-                  ),
-                  onChanged: (v) {
-                    context.read<PaymentBloc>().add(
-                      PaymentEvent.updateDiscountAmount(
-                        amount: v.isEmpty ? '0' : v,
+              child: ValueListenableBuilder<bool>(
+                valueListenable: widget.discountFocused,
+                builder: (context, isActive, _) {
+                  return SizedBox(
+                    height: 40,
+                    child: TextField(
+                      controller: _ctrl,
+                      keyboardType: TextInputType.number,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: _kS900,
+                        fontFamily: 'Inter',
                       ),
-                    );
-                  },
-                ),
+                      decoration: InputDecoration(
+                        hintText: '0',
+                        hintStyle: const TextStyle(
+                          fontSize: 14,
+                          color: _kS500,
+                          fontFamily: 'Inter',
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 8,
+                        ),
+                        isDense: true,
+                        filled: true,
+                        fillColor: isActive ? const Color(0xFFFFF4F0) : Colors.white,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: const BorderSide(color: _kS200),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: BorderSide(
+                            color: isActive ? _kBrand : _kS200,
+                            width: isActive ? 1.5 : 1.0,
+                          ),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: const BorderSide(color: _kBrand, width: 1.5),
+                        ),
+                      ),
+                      onTap: () => widget.discountFocused.value = true,
+                      onChanged: (v) {
+                        widget.discountFocused.value = true;
+                        context.read<PaymentBloc>().add(
+                          PaymentEvent.updateDiscountAmount(
+                            amount: v.isEmpty ? '0' : v,
+                          ),
+                        );
+                      },
+                    ),
+                  );
+                },
               ),
             ),
             const SizedBox(width: 6),

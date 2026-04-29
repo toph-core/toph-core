@@ -101,9 +101,25 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
     ));
   }
 
-  void _updateDiscountAmount(_UpdateDiscountAmount event, emit) => emit(
-    state.copyWith(discountAmount: event.amount.isEmpty ? "0" : event.amount),
-  );
+  void _updateDiscountAmount(_UpdateDiscountAmount event, emit) {
+    final raw = event.amount;
+    if (raw.startsWith('numpad:')) {
+      final symbol = raw.substring(7);
+      String current = state.discountAmount == '0' ? '' : state.discountAmount;
+      if (symbol == '⌫') {
+        current = current.isEmpty ? '' : current.substring(0, current.length - 1);
+      } else if (symbol == '00') {
+        if (current.isNotEmpty) current += '00';
+      } else if (current.isEmpty && symbol == '0') {
+        current = '';
+      } else {
+        current += symbol;
+      }
+      emit(state.copyWith(discountAmount: current.isEmpty ? '0' : current));
+    } else {
+      emit(state.copyWith(discountAmount: raw.isEmpty ? '0' : raw));
+    }
+  }
 
   void _updateDiscountType(_DiscountType event, emit) =>
       emit(state.copyWith(discountType: event.dicountType));

@@ -73,7 +73,22 @@ class LoginPinCubit extends Cubit<LoginPinState> {
     );
 
     result.fold(
-      (failure) => emit(state.copyWith(failure: failure, status: Status.ERROR)),
+      (failure) async {
+        // API muvaffaqiyatsiz bo'lsa — offline cache dan urinib ko'r
+        final cached = _offlineCache.getForPin(brandIdTokenPair.brandId, pincode);
+        if (cached != null) {
+          await _secureStorage.writeAuthToken(
+            AuthTokenPair(
+              accessToken: cached.accessToken,
+              refreshToken: cached.refreshToken,
+            ),
+          );
+          emit(state.copyWith(status: Status.SUCCESS));
+          onSuccess();
+        } else {
+          emit(state.copyWith(failure: failure, status: Status.ERROR));
+        }
+      },
       (_) async {
         // Keyingi offline login uchun pincode ni saqla
         await _secureStorage.writeLastPincode(pincode);
