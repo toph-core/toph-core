@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mary_ai_pos/core/components/flush_bars.dart';
 import 'package:mary_ai_pos/core/constants/constants.dart';
+import 'package:mary_ai_pos/core/design_system/pos_design_system.dart';
 import 'package:mary_ai_pos/core/extension/for_context.dart';
 import 'package:mary_ai_pos/core/extension/number_formatter.dart';
 import 'package:mary_ai_pos/core/routes/app_routes.dart';
@@ -69,7 +70,14 @@ class _OrderActionsBarState extends State<OrderActionsBar>
             color: Colors.white,
             border: Border(bottom: BorderSide(color: colors.border)),
           ),
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+          padding: EdgeInsets.symmetric(
+            horizontal: PosBreakpoints.pick<double>(
+              context,
+              compact: PosDimensions.l, // 16
+              comfortable: PosDimensions.xl, // 20
+            ),
+            vertical: PosDimensions.s, // 8
+          ),
           child: BlocBuilder<TableTimerCubit, TableTimerState>(
             builder: (ctx, timerState) {
               final existingTotal = calculateTotalPrice(
@@ -241,22 +249,23 @@ class _TotalBlock extends StatelessWidget {
             Text(
               S.current.strPaymentLabel,
               style: const TextStyle(
-                fontSize: 12,
+                fontSize: PosTypography.bodySm, // 13
                 fontWeight: FontWeight.w500,
                 color: _kS500,
-                fontFamily: 'Inter',
+                fontFamily: PosTypography.family,
               ),
             ),
-            const SizedBox(width: 6),
+            const SizedBox(width: PosDimensions.s),
             Text(
               total.formatN,
               style: const TextStyle(
-                fontSize: 17,
-                fontWeight: FontWeight.w700,
+                // POS uchun katta — kassir ham mijoz ham masofadan ko'rsin
+                fontSize: PosTypography.priceLg, // 24
+                fontWeight: FontWeight.w800,
                 color: Color(0xFFFB6633),
-                fontFamily: 'Inter',
-                letterSpacing: -0.2,
-                fontFeatures: [FontFeature.tabularFigures()],
+                fontFamily: PosTypography.family,
+                letterSpacing: -0.4,
+                fontFeatures: PosTypography.tabularFigures,
               ),
             ),
           ],
@@ -485,19 +494,20 @@ class _TimerCompactState extends State<_TimerCompact> {
                       : context.read<TableTimerCubit>().resumeTimer(),
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 150),
-                width: 32,
-                height: 32,
+                // Pause/resume — POS touch zone 48dp
+                width: 48,
+                height: 48,
                 decoration: BoxDecoration(
                   color: isRunning
                       ? _indigo.withOpacity(0.10)
                       : const Color(0xFF22C55E).withOpacity(0.10),
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(PosDimensions.radiusSm),
                 ),
                 child: Center(
                   child: widget.timerState.isMutating
                       ? SizedBox(
-                          width: 12,
-                          height: 12,
+                          width: 16,
+                          height: 16,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
                             color: isRunning
@@ -509,7 +519,7 @@ class _TimerCompactState extends State<_TimerCompact> {
                           isRunning
                               ? Icons.pause_rounded
                               : Icons.play_arrow_rounded,
-                          size: 18,
+                          size: 24,
                           color: isRunning ? _indigo : const Color(0xFF22C55E),
                         ),
                 ),
@@ -828,21 +838,23 @@ class _IconBtnState extends State<_IconBtn> {
       child: Tooltip(
         message: widget.tooltip,
         child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
           onTap: widget.onTap,
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 120),
-            width: 40,
-            height: 40,
+            // POS minimum touch target — barmoq uchun qulay
+            width: PosDimensions.touchTargetMin, // 56
+            height: PosDimensions.touchTargetMin,
             decoration: BoxDecoration(
               color: _hovered ? widget.hoverColor : _kS50,
               border: Border.all(
                 color: _hovered ? widget.hoverBorder : _kS200,
               ),
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(PosDimensions.radiusMd),
             ),
             child: Icon(
               widget.icon,
-              size: 18,
+              size: 20,
               color: _hovered ? widget.hoverIcon : _kS500,
             ),
           ),
@@ -1076,20 +1088,22 @@ class _PillButton extends StatelessWidget {
     final hasTrailing =
         trailingAmount != null && trailingAmount!.isNotEmpty;
     return GestureDetector(
+      behavior: HitTestBehavior.opaque,
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 120),
-        height: 44,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
+        // POS primary action — touch target 56dp
+        height: PosDimensions.touchTargetMin, // 56
+        padding: const EdgeInsets.symmetric(horizontal: PosDimensions.l),
         decoration: BoxDecoration(
           color: onTap != null ? bgColor : bgColor.withOpacity(0.5),
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(PosDimensions.radiusMd),
         ),
         child: isLoading
             ? const Center(
                 child: SizedBox(
-                  width: 18,
-                  height: 18,
+                  width: 20,
+                  height: 20,
                   child: CircularProgressIndicator.adaptive(
                     strokeWidth: 2,
                     backgroundColor: Colors.white,
@@ -1102,23 +1116,23 @@ class _PillButton extends StatelessWidget {
                   Text(
                     label,
                     style: const TextStyle(
-                      fontSize: 14,
+                      fontSize: PosTypography.buttonMd, // 16
                       fontWeight: FontWeight.w600,
                       color: Colors.white,
-                      fontFamily: 'Inter',
+                      fontFamily: PosTypography.family,
                       letterSpacing: -0.1,
                     ),
                   ),
                   if (hasTrailing) ...[
-                    const SizedBox(width: 10),
+                    const SizedBox(width: PosDimensions.s),
                     Text(
                       trailingAmount!,
                       style: const TextStyle(
-                        fontSize: 14,
+                        fontSize: PosTypography.buttonLg, // 18
                         fontWeight: FontWeight.w700,
                         color: Colors.white,
-                        fontFamily: 'Inter',
-                        fontFeatures: [FontFeature.tabularFigures()],
+                        fontFamily: PosTypography.family,
+                        fontFeatures: PosTypography.tabularFigures,
                       ),
                     ),
                   ],

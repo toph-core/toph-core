@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:mary_ai_pos/core/design_system/pos_design_system.dart';
 import 'package:mary_ai_pos/core/extension/for_context.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/cafe_tables/cafe_tables_model.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/detail/detail_bloc.dart';
@@ -30,13 +31,19 @@ class TopBarWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
+    // Compact ekranlarda kichikroq padding — joy tejash uchun
+    final hPad = PosBreakpoints.pick<double>(
+      context,
+      compact: PosDimensions.l, // 16
+      comfortable: PosDimensions.xl, // 20
+    );
     return Container(
-      height: 64,
+      height: PosDimensions.appBarHeight, // 64
       decoration: BoxDecoration(
         color: Colors.white,
         border: Border(bottom: BorderSide(color: colors.border)),
       ),
-      padding: const EdgeInsets.symmetric(horizontal: 20),
+      padding: EdgeInsets.symmetric(horizontal: hPad),
       child: BlocBuilder<DetailBloc, DetailState>(
         builder: (context, state) {
           final itemCount =
@@ -54,7 +61,7 @@ class TopBarWidget extends StatelessWidget {
                 guestCount: guestCount,
                 hasSelection: state.selectedGoods.isNotEmpty,
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: PosDimensions.m),
               if (cafeTable != null)
                 _TableHeader(
                   table: cafeTable!,
@@ -64,12 +71,20 @@ class TopBarWidget extends StatelessWidget {
               else
                 _TakeawayHeader(),
               const Spacer(),
-              // Search input
+              // Search input — compact'da kengligi kichikroq
               Flexible(
                 child: ConstrainedBox(
-                  constraints: const BoxConstraints(
-                    minWidth: 160,
-                    maxWidth: 260,
+                  constraints: BoxConstraints(
+                    minWidth: PosBreakpoints.pick<double>(
+                      context,
+                      compact: 140,
+                      comfortable: 160,
+                    ),
+                    maxWidth: PosBreakpoints.pick<double>(
+                      context,
+                      compact: 220,
+                      comfortable: 280,
+                    ),
                   ),
                   child: _SearchInput(
                     controller: textEditingController,
@@ -77,7 +92,7 @@ class TopBarWidget extends StatelessWidget {
                   ),
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: PosDimensions.m),
               // Right-side order summary
               if (itemCount > 0)
                 _OrderSummaryChip(
@@ -85,7 +100,7 @@ class TopBarWidget extends StatelessWidget {
                   qtyTotal: qtyTotal,
                 ),
               if (state.selectedGoods.isNotEmpty) ...[
-                const SizedBox(width: 8),
+                const SizedBox(width: PosDimensions.s),
                 _TrashIconButton(
                   onTap: () => context.read<DetailBloc>().add(
                     const DetailEvent.clearGoods(),
@@ -146,18 +161,20 @@ class _BackButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
+      behavior: HitTestBehavior.opaque,
       onTap: () => _onTap(context),
       child: Container(
-        width: 40,
-        height: 40,
+        // POS minimum touch target — barmoqqa qulay
+        width: PosDimensions.touchTargetMin, // 56
+        height: PosDimensions.touchTargetMin,
         decoration: BoxDecoration(
           color: _kS50,
           border: Border.all(color: _kS200),
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(PosDimensions.radiusMd),
         ),
         child: const Icon(
           Icons.arrow_back_ios_new_rounded,
-          size: 16,
+          size: 18,
           color: _kS900,
         ),
       ),
@@ -330,30 +347,31 @@ class _SearchInputState extends State<_SearchInput> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 40,
+      // Touch target ≥ 48 dp
+      height: 48,
       decoration: BoxDecoration(
         color: _kS50,
         border: Border.all(color: _kS200),
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(PosDimensions.radiusMd),
       ),
       child: TextField(
         controller: widget.controller,
         onTap: () => widget.showKeyboard.value = true,
         style: const TextStyle(
-          fontSize: 13,
+          fontSize: PosTypography.bodyMd, // 15
           color: _kS900,
-          fontFamily: 'Inter',
+          fontFamily: PosTypography.family,
         ),
         decoration: InputDecoration(
           hintText: S.current.strSearchHint,
           hintStyle: const TextStyle(
-            fontSize: 13,
+            fontSize: PosTypography.bodyMd,
             color: _kS500,
-            fontFamily: 'Inter',
+            fontFamily: PosTypography.family,
           ),
-          prefixIcon: const Icon(Icons.search, size: 18, color: _kS500),
+          prefixIcon: const Icon(Icons.search, size: 20, color: _kS500),
           border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(vertical: 8),
+          contentPadding: const EdgeInsets.symmetric(vertical: PosDimensions.s),
           isDense: true,
         ),
       ),
@@ -415,21 +433,23 @@ class _TrashIconButtonState extends State<_TrashIconButton> {
       onEnter: (_) => setState(() => _hovered = true),
       onExit: (_) => setState(() => _hovered = false),
       child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
         onTap: widget.onTap,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 120),
-          width: 40,
-          height: 40,
+          // POS minimum touch target
+          width: PosDimensions.touchTargetMin, // 56
+          height: PosDimensions.touchTargetMin,
           decoration: BoxDecoration(
             color: _hovered ? const Color(0xFFFEE2E2) : _kS50,
             border: Border.all(
               color: _hovered ? const Color(0xFFFBCDD8) : _kS200,
             ),
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(PosDimensions.radiusMd),
           ),
           child: Icon(
             Icons.delete_outline_rounded,
-            size: 18,
+            size: 20,
             color: _hovered ? const Color(0xFFDC2626) : _kS500,
           ),
         ),

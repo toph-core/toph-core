@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:mary_ai_pos/core/design_system/pos_design_system.dart';
 import 'package:mary_ai_pos/core/extension/for_context.dart';
 import 'package:mary_ai_pos/core/extension/number_formatter.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/cafe_tables/cafe_tables_model.dart';
@@ -172,20 +173,25 @@ class _OrderItem extends StatelessWidget with DetailScreenMixin {
         }
       },
       child: Container(
-        padding: const EdgeInsets.fromLTRB(8, 7, 7, 7),
+        padding: const EdgeInsets.fromLTRB(
+          PosDimensions.s, // 8
+          PosDimensions.s,
+          PosDimensions.s,
+          PosDimensions.s,
+        ),
         decoration: BoxDecoration(
           color: const Color(0xFFF8FAFC),
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(PosDimensions.radiusMd),
         ),
         child: Row(
           children: [
-            // Initial badge (kichik)
+            // Initial badge — qty button bilan bir o'lchamda
             Container(
-              width: 30,
-              height: 30,
+              width: 36,
+              height: 36,
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(7),
+                borderRadius: BorderRadius.circular(PosDimensions.radiusSm),
                 border: Border.all(color: colors.border),
               ),
               child: Center(
@@ -194,16 +200,16 @@ class _OrderItem extends StatelessWidget with DetailScreenMixin {
                       ? item.goods.name[0].toUpperCase()
                       : '?',
                   style: const TextStyle(
-                    fontSize: 13,
+                    fontSize: PosTypography.bodyMd, // 15
                     fontWeight: FontWeight.w700,
                     color: Color(0xFF0F172A),
-                    fontFamily: 'Inter',
+                    fontFamily: PosTypography.family,
                   ),
                 ),
               ),
             ),
-            const SizedBox(width: 9),
-            // Nom + jami narx (column)
+            const SizedBox(width: PosDimensions.s + 2),
+            // Nom + jami narx
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -212,10 +218,10 @@ class _OrderItem extends StatelessWidget with DetailScreenMixin {
                   Text(
                     item.goods.name,
                     style: const TextStyle(
-                      fontSize: 12.5,
+                      fontSize: PosTypography.bodyMd, // 15
                       fontWeight: FontWeight.w600,
                       color: Color(0xFF0F172A),
-                      fontFamily: 'Inter',
+                      fontFamily: PosTypography.family,
                       height: 1.2,
                       letterSpacing: -0.1,
                     ),
@@ -233,12 +239,12 @@ class _OrderItem extends StatelessWidget with DetailScreenMixin {
                             item.quantity)
                         .formatN,
                     style: const TextStyle(
-                      fontSize: 12,
+                      fontSize: PosTypography.bodyMd, // 15
                       fontWeight: FontWeight.w700,
                       color: Color(0xFFFB6633),
-                      fontFamily: 'Inter',
+                      fontFamily: PosTypography.family,
                       letterSpacing: -0.1,
-                      fontFeatures: [FontFeature.tabularFigures()],
+                      fontFeatures: PosTypography.tabularFigures,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -246,7 +252,7 @@ class _OrderItem extends StatelessWidget with DetailScreenMixin {
                 ],
               ),
             ),
-            const SizedBox(width: 6),
+            const SizedBox(width: PosDimensions.s),
             _QtyControl(
               quantity: item.quantity,
               onDecrement: () => context.read<DetailBloc>().add(
@@ -278,20 +284,20 @@ class _QtyControl extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       mainAxisSize: MainAxisSize.min,
-      spacing: 4,
+      spacing: PosDimensions.xs, // 4
       children: [
         _QtyBtn(icon: Icons.remove, onTap: onDecrement),
         SizedBox(
-          width: 18,
+          width: 24,
           child: Text(
             '$quantity',
             textAlign: TextAlign.center,
             style: const TextStyle(
-              fontSize: 13,
+              fontSize: PosTypography.bodyMd, // 15
               fontWeight: FontWeight.w700,
               color: Color(0xFF0F172A),
-              fontFamily: 'Inter',
-              fontFeatures: [FontFeature.tabularFigures()],
+              fontFamily: PosTypography.family,
+              fontFeatures: PosTypography.tabularFigures,
             ),
           ),
         ),
@@ -322,18 +328,19 @@ class _QtyBtnState extends State<_QtyBtn> {
       onTapCancel: () => setState(() => _pressed = false),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 100),
-        width: 28,
-        height: 28,
+        // POS qty +/- — 44dp (kompakt POS sidebar uchun, lekin 28 dan 1.5x katta)
+        width: 44,
+        height: 44,
         decoration: BoxDecoration(
           color: _pressed ? const Color(0xFFFB6633) : Colors.white,
           border: Border.all(
             color: _pressed ? const Color(0xFFFB6633) : const Color(0xFFE2E8F0),
           ),
-          borderRadius: BorderRadius.circular(7),
+          borderRadius: BorderRadius.circular(PosDimensions.radiusSm),
         ),
         child: Icon(
           widget.icon,
-          size: 14,
+          size: 20,
           color: _pressed ? Colors.white : const Color(0xFF0F172A),
         ),
       ),

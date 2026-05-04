@@ -133,8 +133,9 @@ class _ProductGridWidgetState extends State<ProductGridWidget> {
                   ),
             ),
             child: SizedBox(
-              width: 280,
-              height: 36,
+              width: 320,
+              // POS bosish zonasi — barmoqqa qulay
+              height: 48,
               child: NumberPaginator(
                 key: ValueKey('paginator-$totalPages-$_pageSize'),
                 controller: _paginatorController,
@@ -147,7 +148,7 @@ class _ProductGridWidgetState extends State<ProductGridWidget> {
                   }
                 },
                 child: const SizedBox(
-                  height: 36,
+                  height: 48,
                   child: Row(
                     children: [
                       PrevButton(),
@@ -160,8 +161,8 @@ class _ProductGridWidgetState extends State<ProductGridWidget> {
             ),
           ),
           Container(
-            height: 36,
-            padding: const EdgeInsets.symmetric(horizontal: 10),
+            height: 48,
+            padding: const EdgeInsets.symmetric(horizontal: 12),
             decoration: BoxDecoration(
               color: colors.bgSecondary,
               borderRadius: BorderRadius.circular(10),

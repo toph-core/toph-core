@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:keyboard_dismisser/keyboard_dismisser.dart';
+import 'package:mary_ai_pos/core/design_system/pos_design_system.dart';
 import 'package:mary_ai_pos/core/extension/for_context.dart';
 import 'package:mary_ai_pos/di.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/cafe_tables/cafe_tables_model.dart';
@@ -139,16 +140,16 @@ class _DetailScreenState extends State<DetailScreen> with DetailScreenMixin {
                           setState(() => tableStatus = s),
                     ),
                     Expanded(
-                      child: LayoutBuilder(
-                        builder: (context, constraints) {
-                          final w = constraints.maxWidth;
-                          final sidebarW = w >= 1400
-                              ? 440.0
-                              : w >= 1200
-                              ? 400.0
-                              : w >= 1000
-                              ? 360.0
-                              : 320.0;
+                      child: Builder(
+                        builder: (context) {
+                          // Compact (1024–1366): kichikroq sidebar — joy tejash
+                          // Comfortable (1366+): kengroq, qulayroq item kartochkalari
+                          final sidebarW = PosBreakpoints.pickThree<double>(
+                            context,
+                            compact: PosDimensions.cartPanelCompact, // 320
+                            comfortable: PosDimensions.cartPanelComfortable, // 400
+                            large: 440.0,
+                          );
                           return Row(
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
