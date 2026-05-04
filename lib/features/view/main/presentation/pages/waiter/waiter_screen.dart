@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mary_ai_pos/core/constants/constants.dart';
+import 'package:mary_ai_pos/core/design_system/pos_design_system.dart';
 import 'package:mary_ai_pos/core/routes/app_routes.dart';
 import 'package:mary_ai_pos/core/widgets/app_sidebar.dart';
 import 'package:mary_ai_pos/di.dart';
@@ -93,11 +94,22 @@ class _WaiterLayout extends StatelessWidget {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final w = constraints.maxWidth;
-        // 1024px → bills=230, detail=270; 1280px+ → bills=280, detail=320
-        final billsW = w < 1100 ? 230.0 : 280.0;
-        final detailW = w < 1100 ? 270.0 : 320.0;
-        final menuVPad = w < 1100 ? 8.0 : 16.0;
+        // Compact (1024–1366) — kichikroq panellar, comfortable (1366+) — kengroq
+        final billsW = PosBreakpoints.pick<double>(
+          context,
+          compact: 240,
+          comfortable: 300,
+        );
+        final detailW = PosBreakpoints.pick<double>(
+          context,
+          compact: 280,
+          comfortable: 340,
+        );
+        final menuVPad = PosBreakpoints.pick<double>(
+          context,
+          compact: PosDimensions.s, // 8
+          comfortable: PosDimensions.l, // 16
+        );
         return Row(
           children: [
             const AppSidebar(activeRoute: AppRoutes.mainScreen),

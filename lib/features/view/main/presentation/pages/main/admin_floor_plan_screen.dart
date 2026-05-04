@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mary_ai_pos/core/constants/constants.dart';
+import 'package:mary_ai_pos/core/design_system/pos_design_system.dart';
 import 'package:mary_ai_pos/core/extension/for_context.dart';
 import 'package:mary_ai_pos/core/extension/list_extension.dart';
 import 'package:mary_ai_pos/core/routes/app_routes.dart';
@@ -149,10 +150,10 @@ class _TakeawayButton extends StatelessWidget {
             Text(
               S.current.strTakeaway,
               style: const TextStyle(
-                fontSize: 13,
+                fontSize: PosTypography.bodyMd, // 15
                 fontWeight: FontWeight.w600,
                 color: Color(0xFFFB6633),
-                fontFamily: 'Inter',
+                fontFamily: PosTypography.family,
               ),
             ),
           ],

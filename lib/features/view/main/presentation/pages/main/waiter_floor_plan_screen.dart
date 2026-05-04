@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mary_ai_pos/core/constants/constants.dart';
+import 'package:mary_ai_pos/core/design_system/pos_design_system.dart';
 import 'package:mary_ai_pos/core/extension/for_context.dart';
 import 'package:mary_ai_pos/core/components/flush_bars.dart';
 import 'package:mary_ai_pos/core/routes/app_routes.dart';
@@ -349,21 +350,23 @@ class _RefreshButtonState extends State<_RefreshButton> {
       onEnter: (_) => setState(() => _hovered = true),
       onExit: (_) => setState(() => _hovered = false),
       child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
         onTap: widget.loading ? null : widget.onTap,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 120),
-          width: 36,
-          height: 36,
+          // POS minimum touch zone
+          width: 48,
+          height: 48,
           decoration: BoxDecoration(
             color: _hovered ? _kS50 : Colors.transparent,
             border: Border.all(
               color: _hovered ? _kS200 : Colors.transparent,
             ),
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(PosDimensions.radiusMd),
           ),
           child: widget.loading
               ? const Padding(
-                  padding: EdgeInsets.all(9),
+                  padding: EdgeInsets.all(12),
                   child: CircularProgressIndicator.adaptive(
                     strokeWidth: 2,
                     valueColor: AlwaysStoppedAnimation(_kBrand),
@@ -371,7 +374,7 @@ class _RefreshButtonState extends State<_RefreshButton> {
                 )
               : const Icon(
                   Icons.refresh_rounded,
-                  size: 18,
+                  size: 22,
                   color: _kS500,
                 ),
         ),
