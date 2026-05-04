@@ -5,6 +5,7 @@ import 'package:mary_ai_pos/core/api/dio_client.dart';
 import 'package:mary_ai_pos/core/api/list_api.dart';
 import 'package:mary_ai_pos/core/common/custom_network_image.dart';
 import 'package:mary_ai_pos/core/components/flush_bars.dart';
+import 'package:mary_ai_pos/core/design_system/pos_design_system.dart';
 import 'package:mary_ai_pos/core/extension/for_context.dart';
 import 'package:mary_ai_pos/core/utils/app_formatter.dart';
 import 'package:mary_ai_pos/core/utils/user_role_permissions.dart';
@@ -800,13 +801,24 @@ class _GoodsPanel extends StatelessWidget {
                       : LayoutBuilder(
                           builder: (context, constraints) {
                             // Grid: 3–7 ustun ekran kengligiga qarab
-                            const minCardW = 160.0;
-                            const gap = 10.0;
-                            final w = constraints.maxWidth - 48; // 24+24 padding
+                            // Compact ekranlarda kichikroq min width (ko'p ustun)
+                            final minCardW = PosBreakpoints.pick<double>(
+                              context,
+                              compact: PosDimensions.gridItemMinWidth, // 160
+                              comfortable: PosDimensions.gridItemMinWidthLg, // 200
+                            );
+                            const gap = PosDimensions.s + 2; // 10
+                            final w = constraints.maxWidth -
+                                PosDimensions.xxl * 2; // 24+24
                             final cols =
                                 (w / (minCardW + gap)).floor().clamp(3, 7);
                             return GridView.builder(
-                              padding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
+                              padding: const EdgeInsets.fromLTRB(
+                                PosDimensions.xxl, // 24
+                                0,
+                                PosDimensions.xxl,
+                                PosDimensions.l, // 16
+                              ),
                               itemCount: goods.length,
                               gridDelegate:
                                   SliverGridDelegateWithFixedCrossAxisCount(
@@ -986,7 +998,12 @@ class _GoodCardState extends State<_GoodCard> {
               ),
               // ── Footer: name + price ──
               Padding(
-                padding: const EdgeInsets.fromLTRB(10, 8, 10, 10),
+                padding: const EdgeInsets.fromLTRB(
+                  PosDimensions.s + 2, // 10
+                  PosDimensions.s, // 8
+                  PosDimensions.s + 2,
+                  PosDimensions.s + 2, // 10
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -998,12 +1015,12 @@ class _GoodCardState extends State<_GoodCard> {
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
                         color: c.textDefault,
-                        fontFamily: 'Inter',
+                        fontFamily: PosTypography.family,
                         height: 1.2,
                         letterSpacing: -0.1,
                       ),
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: PosDimensions.xs), // 4
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.baseline,
                       textBaseline: TextBaseline.alphabetic,
@@ -1015,11 +1032,9 @@ class _GoodCardState extends State<_GoodCard> {
                             fontSize: 13,
                             fontWeight: FontWeight.w700,
                             color: c.textBrand,
-                            fontFamily: 'Inter',
+                            fontFamily: PosTypography.family,
                             letterSpacing: -0.2,
-                            fontFeatures: const [
-                              FontFeature.tabularFigures(),
-                            ],
+                            fontFeatures: PosTypography.tabularFigures,
                           ),
                         ),
                         const SizedBox(width: 3),
@@ -1028,7 +1043,7 @@ class _GoodCardState extends State<_GoodCard> {
                           style: TextStyle(
                             fontSize: 10,
                             color: c.textSecondary,
-                            fontFamily: 'Inter',
+                            fontFamily: PosTypography.family,
                           ),
                         ),
                       ],
@@ -1344,7 +1359,8 @@ class _PaginationBar extends StatelessWidget {
             ),
             child: SizedBox(
               width: 320,
-              height: 40,
+              // POS minimum touch zone — barmoqqa qulay
+              height: 48,
               child: NumberPaginator(
                 controller: paginatorController,
                 numberPages: totalPages,
@@ -1353,7 +1369,7 @@ class _PaginationBar extends StatelessWidget {
                   if (idx + 1 != page) onPageChange(idx + 1);
                 },
                 child: const SizedBox(
-                  height: 40,
+                  height: 48,
                   child: Row(
                     children: [
                       PrevButton(),
@@ -1367,11 +1383,11 @@ class _PaginationBar extends StatelessWidget {
           ),
           const Spacer(),
           Container(
-            height: 38,
-            padding: const EdgeInsets.symmetric(horizontal: 10),
+            height: 48,
+            padding: const EdgeInsets.symmetric(horizontal: 12),
             decoration: BoxDecoration(
               color: c.bgSecondary,
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(PosDimensions.radiusMd),
               border: Border.all(color: c.border),
             ),
             child: DropdownButtonHideUnderline(
@@ -1717,23 +1733,25 @@ class _PrimaryBtn extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = context.colors;
     return GestureDetector(
+      behavior: HitTestBehavior.opaque,
       onTap: onTap,
       child: Container(
-        height: 38,
-        padding: const EdgeInsets.symmetric(horizontal: 14),
+        // POS minimum touch zone
+        height: 48,
+        padding: const EdgeInsets.symmetric(horizontal: PosDimensions.l),
         decoration: BoxDecoration(
           color: c.buttonBrand,
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(PosDimensions.radiusMd),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
-          spacing: 6,
+          spacing: PosDimensions.s,
           children: [
-            Icon(icon, size: 16, color: c.textOnBrand),
+            Icon(icon, size: 18, color: c.textOnBrand),
             Text(
               label,
               style: TextStyle(
-                fontSize: 13,
+                fontSize: PosTypography.bodyMd, // 15
                 fontWeight: FontWeight.w600,
                 color: c.textOnBrand,
                 fontFamily: 'Inter',
