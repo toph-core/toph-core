@@ -401,5 +401,26 @@
   "strHourlyPayment": "Hourly fee",
   "strOrderNotFound": "Order not found",
   "strConfirm": "Confirm",
-  "strPiecesSuffix": "pcs"
+  "strPiecesSuffix": "pcs",
+
+  "strChangeTable": "Change table",
+  "strSelectFreeTableForTransfer": "Select a free table to move the order to",
+  "strTransfer": "Move",
+  "strNoOtherTablesInHall": "No other tables in this hall",
+  "strBusyShort": "busy",
+  "strSelectedTableIsBusy": "Selected table is busy",
+  "strOrderOrTableNotFound": "Order or table not found",
+  "strCannotTransfer": "Cannot transfer",
+  "strErrorOccurred": "An error occurred",
+  "strOrderTransferred": "Order moved to another table",
+  "strClearSelection": "Clear selection",
+  "strCurrentOrder": "Current order",
+  "strPauseHistory": "Pause history",
+  "strOpenedAtLabel": "Opened:",
+  "strTotalPause": "Total pause:",
+  "strNoPauses": "No pauses yet",
+  "strService": "Service",
+  "strSpecialNote": "Special note",
+  "strClose": "Close",
+  "strSidebarEmptyTitle": "Your order is empty"
 }

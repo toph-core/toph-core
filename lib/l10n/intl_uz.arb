@@ -401,5 +401,26 @@
   "strHourlyPayment": "Soatlik to'lov",
   "strOrderNotFound": "Buyurtma topilmadi",
   "strConfirm": "Tasdiqlash",
-  "strPiecesSuffix": "dona"
+  "strPiecesSuffix": "dona",
+
+  "strChangeTable": "Stolni o'zgartirish",
+  "strSelectFreeTableForTransfer": "Buyurtma ko'chiriladigan bo'sh stolni tanlang",
+  "strTransfer": "Ko'chirish",
+  "strNoOtherTablesInHall": "Bu zalda boshqa stol yo'q",
+  "strBusyShort": "band",
+  "strSelectedTableIsBusy": "Tanlangan stol band",
+  "strOrderOrTableNotFound": "Buyurtma yoki stol topilmadi",
+  "strCannotTransfer": "Ko'chirib bo'lmaydi",
+  "strErrorOccurred": "Xato yuz berdi",
+  "strOrderTransferred": "Buyurtma boshqa stolga ko'chirildi",
+  "strClearSelection": "Tanlovni tozalash",
+  "strCurrentOrder": "Hozirgi buyurtma",
+  "strPauseHistory": "Pauza tarixi",
+  "strOpenedAtLabel": "Ochildi:",
+  "strTotalPause": "Jami pauza:",
+  "strNoPauses": "Hech qanday pauza yo'q",
+  "strService": "Xizmat",
+  "strSpecialNote": "Maxsus izoh",
+  "strClose": "Yopish",
+  "strSidebarEmptyTitle": "Buyurtmangiz bo'sh"
 }

@@ -21,6 +21,7 @@ class PauseInterval {
       endedAt: endRaw != null ? DateTime.tryParse(endRaw) : null,
       durationSec: (json['duration_sec'] as num?)?.toInt() ??
           (json['pause_sec'] as num?)?.toInt() ??
+          (json['seconds'] as num?)?.toInt() ??
           (durationMinutes != null ? durationMinutes * 60 : null) ??
           0,
     );
@@ -85,7 +86,28 @@ class TableTimerResponse {
         .toList();
   }
 
+  /// Backend `table_history` ichidagi barcha segmentlardan
+  /// `pause_intervals`'ni yig'ib chiqaradi.
+  static List<PauseInterval> _parsePausesFromHistory(Object? v) {
+    if (v is! List) return const [];
+    final out = <PauseInterval>[];
+    for (final segment in v.whereType<Map<String, dynamic>>()) {
+      final intervals = segment['pause_intervals'];
+      if (intervals is List) {
+        out.addAll(intervals
+            .whereType<Map<String, dynamic>>()
+            .map(PauseInterval.fromJson));
+      }
+    }
+    return out;
+  }
+
   factory TableTimerResponse.fromJson(Map<String, dynamic> json) {
+    final topLevelPauses = _parsePauses(
+      json['pauses'] ?? json['pause_intervals'] ?? json['pause_sessions'],
+    );
+    final historyPauses =
+        topLevelPauses.isEmpty ? _parsePausesFromHistory(json['table_history']) : const <PauseInterval>[];
     return TableTimerResponse(
       orderId: json['order_id'] as String? ?? '',
       tableId: json['table_id'] as String? ?? '',
@@ -104,9 +126,7 @@ class TableTimerResponse {
       isRunning: json['is_running'] as bool? ?? false,
       isPaused: json['is_paused'] as bool? ?? false,
       isClosed: json['is_closed'] as bool? ?? false,
-      pauses: _parsePauses(
-        json['pauses'] ?? json['pause_intervals'] ?? json['pause_sessions'],
-      ),
+      pauses: topLevelPauses.isNotEmpty ? topLevelPauses : historyPauses,
     );
   }
 

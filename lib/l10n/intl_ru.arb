@@ -401,5 +401,26 @@
   "strHourlyPayment": "Почасовая оплата",
   "strOrderNotFound": "Заказ не найден",
   "strConfirm": "Подтвердить",
-  "strPiecesSuffix": "шт"
+  "strPiecesSuffix": "шт",
+
+  "strChangeTable": "Сменить стол",
+  "strSelectFreeTableForTransfer": "Выберите свободный стол для переноса заказа",
+  "strTransfer": "Перенести",
+  "strNoOtherTablesInHall": "В этом зале нет других столов",
+  "strBusyShort": "занят",
+  "strSelectedTableIsBusy": "Выбранный стол занят",
+  "strOrderOrTableNotFound": "Заказ или стол не найден",
+  "strCannotTransfer": "Невозможно перенести",
+  "strErrorOccurred": "Произошла ошибка",
+  "strOrderTransferred": "Заказ перенесён на другой стол",
+  "strClearSelection": "Очистить выбор",
+  "strCurrentOrder": "Текущий заказ",
+  "strPauseHistory": "История пауз",
+  "strOpenedAtLabel": "Открыт:",
+  "strTotalPause": "Всего пауз:",
+  "strNoPauses": "Пауз не было",
+  "strService": "Обслуживание",
+  "strSpecialNote": "Особое примечание",
+  "strClose": "Закрыть",
+  "strSidebarEmptyTitle": "Ваш заказ пуст"
 }

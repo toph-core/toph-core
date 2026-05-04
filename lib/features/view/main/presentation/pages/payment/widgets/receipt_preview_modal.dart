@@ -218,6 +218,7 @@ class _ReceiptCard extends StatelessWidget {
               name: g.name,
               qty: g.quantity,
               price: g.price,
+              comment: g.comment,
             ),
             const SizedBox(height: 6),
           ],
@@ -371,16 +372,19 @@ class _LineItem extends StatelessWidget {
   final String name;
   final int qty;
   final int price;
+  final String comment;
 
   const _LineItem({
     required this.name,
     required this.qty,
     required this.price,
+    this.comment = '',
   });
 
   @override
   Widget build(BuildContext context) {
     final total = qty * price;
+    final note = comment.trim();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -420,6 +424,19 @@ class _LineItem extends StatelessWidget {
             ],
           ),
         ),
+        if (note.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.only(top: 2, left: 6),
+            child: Text(
+              '· $note',
+              style: const TextStyle(
+                fontSize: 10,
+                fontStyle: FontStyle.italic,
+                color: _kS500,
+                fontFamily: 'JetBrainsMono',
+              ),
+            ),
+          ),
       ],
     );
   }

@@ -223,6 +223,13 @@ class CashierReceiptBuilder {
         PosColumn(text: _fmt(lineTotal), width: 4,
             styles: const PosStyles(align: PosAlign.right, height: PosTextSize.size1, width: PosTextSize.size1)),
       ]);
+      final note = item.comment.trim();
+      if (note.isNotEmpty) {
+        bytes += gen.text(
+          '  · $note',
+          styles: const PosStyles(height: PosTextSize.size1, width: PosTextSize.size1),
+        );
+      }
     }
 
     bytes += gen.hr();
@@ -414,6 +421,10 @@ class CashierReceiptBuilder {
           styles: const PosStyles(align: PosAlign.right, bold: true),
         ),
       ]);
+      final note = g.comment.trim();
+      if (note.isNotEmpty) {
+        bytes += gen.text('  · $note');
+      }
     }
 
     bytes += gen.hr(ch: '-');

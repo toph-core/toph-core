@@ -2827,8 +2827,13 @@ abstract class _CancelOrderItem implements DetailEvent {
 mixin _$OrderItem {
   String get uniqueId => throw _privateConstructorUsedError;
   GoodsModel get goods => throw _privateConstructorUsedError;
-  int get quantity => throw _privateConstructorUsedError;
+  int get quantity =>
+      throw _privateConstructorUsedError; // `commet` aslida status'ni saqlaydi: 'pending', 'cancelled',
+// 'pending_offline'. Tarixiy nomlanish, refaktor qilmaymiz.
   String get commet =>
+      throw _privateConstructorUsedError; // Foydalanuvchi yozgan taom izohi (mas. "achchiqsiz"). Backend'ga
+// `comment` sifatida yuboriladi va chekka chiqariladi.
+  String get comment =>
       throw _privateConstructorUsedError; // Item qachon buyurtmaga qo'shilgan (server `created_at` yoki
 // offline queue `createdAt`). UI HH:mm formatida ko'rsatadi.
   DateTime? get createdAt => throw _privateConstructorUsedError;
@@ -2848,6 +2853,7 @@ abstract class $OrderItemCopyWith<$Res> {
       GoodsModel goods,
       int quantity,
       String commet,
+      String comment,
       DateTime? createdAt});
 
   $GoodsModelCopyWith<$Res> get goods;
@@ -2870,6 +2876,7 @@ class _$OrderItemCopyWithImpl<$Res, $Val extends OrderItem>
     Object? goods = null,
     Object? quantity = null,
     Object? commet = null,
+    Object? comment = null,
     Object? createdAt = freezed,
   }) {
     return _then(_value.copyWith(
@@ -2888,6 +2895,10 @@ class _$OrderItemCopyWithImpl<$Res, $Val extends OrderItem>
       commet: null == commet
           ? _value.commet
           : commet // ignore: cast_nullable_to_non_nullable
+              as String,
+      comment: null == comment
+          ? _value.comment
+          : comment // ignore: cast_nullable_to_non_nullable
               as String,
       createdAt: freezed == createdAt
           ? _value.createdAt
@@ -2918,6 +2929,7 @@ abstract class _$$OrderItemImplCopyWith<$Res>
       GoodsModel goods,
       int quantity,
       String commet,
+      String comment,
       DateTime? createdAt});
 
   @override
@@ -2939,6 +2951,7 @@ class __$$OrderItemImplCopyWithImpl<$Res>
     Object? goods = null,
     Object? quantity = null,
     Object? commet = null,
+    Object? comment = null,
     Object? createdAt = freezed,
   }) {
     return _then(_$OrderItemImpl(
@@ -2958,6 +2971,10 @@ class __$$OrderItemImplCopyWithImpl<$Res>
           ? _value.commet
           : commet // ignore: cast_nullable_to_non_nullable
               as String,
+      comment: null == comment
+          ? _value.comment
+          : comment // ignore: cast_nullable_to_non_nullable
+              as String,
       createdAt: freezed == createdAt
           ? _value.createdAt
           : createdAt // ignore: cast_nullable_to_non_nullable
@@ -2974,6 +2991,7 @@ class _$OrderItemImpl implements _OrderItem {
       required this.goods,
       this.quantity = 1,
       this.commet = '',
+      this.comment = '',
       this.createdAt});
 
   @override
@@ -2984,9 +3002,16 @@ class _$OrderItemImpl implements _OrderItem {
   @override
   @JsonKey()
   final int quantity;
+// `commet` aslida status'ni saqlaydi: 'pending', 'cancelled',
+// 'pending_offline'. Tarixiy nomlanish, refaktor qilmaymiz.
   @override
   @JsonKey()
   final String commet;
+// Foydalanuvchi yozgan taom izohi (mas. "achchiqsiz"). Backend'ga
+// `comment` sifatida yuboriladi va chekka chiqariladi.
+  @override
+  @JsonKey()
+  final String comment;
 // Item qachon buyurtmaga qo'shilgan (server `created_at` yoki
 // offline queue `createdAt`). UI HH:mm formatida ko'rsatadi.
   @override
@@ -2994,7 +3019,7 @@ class _$OrderItemImpl implements _OrderItem {
 
   @override
   String toString() {
-    return 'OrderItem(uniqueId: $uniqueId, goods: $goods, quantity: $quantity, commet: $commet, createdAt: $createdAt)';
+    return 'OrderItem(uniqueId: $uniqueId, goods: $goods, quantity: $quantity, commet: $commet, comment: $comment, createdAt: $createdAt)';
   }
 
   @override
@@ -3008,13 +3033,14 @@ class _$OrderItemImpl implements _OrderItem {
             (identical(other.quantity, quantity) ||
                 other.quantity == quantity) &&
             (identical(other.commet, commet) || other.commet == commet) &&
+            (identical(other.comment, comment) || other.comment == comment) &&
             (identical(other.createdAt, createdAt) ||
                 other.createdAt == createdAt));
   }
 
   @override
-  int get hashCode =>
-      Object.hash(runtimeType, uniqueId, goods, quantity, commet, createdAt);
+  int get hashCode => Object.hash(
+      runtimeType, uniqueId, goods, quantity, commet, comment, createdAt);
 
   @JsonKey(ignore: true)
   @override
@@ -3029,6 +3055,7 @@ abstract class _OrderItem implements OrderItem {
       required final GoodsModel goods,
       final int quantity,
       final String commet,
+      final String comment,
       final DateTime? createdAt}) = _$OrderItemImpl;
 
   @override
@@ -3037,8 +3064,12 @@ abstract class _OrderItem implements OrderItem {
   GoodsModel get goods;
   @override
   int get quantity;
-  @override
+  @override // `commet` aslida status'ni saqlaydi: 'pending', 'cancelled',
+// 'pending_offline'. Tarixiy nomlanish, refaktor qilmaymiz.
   String get commet;
+  @override // Foydalanuvchi yozgan taom izohi (mas. "achchiqsiz"). Backend'ga
+// `comment` sifatida yuboriladi va chekka chiqariladi.
+  String get comment;
   @override // Item qachon buyurtmaga qo'shilgan (server `created_at` yoki
 // offline queue `createdAt`). UI HH:mm formatida ko'rsatadi.
   DateTime? get createdAt;

@@ -799,12 +799,12 @@ class _GoodsPanel extends StatelessWidget {
                       ? _GoodsEmptyState(onNew: onNew)
                       : LayoutBuilder(
                           builder: (context, constraints) {
-                            // Grid: 3–5 ustun ekran kengligiga qarab
-                            const minCardW = 220.0;
-                            const gap = 14.0;
+                            // Grid: 3–7 ustun ekran kengligiga qarab
+                            const minCardW = 160.0;
+                            const gap = 10.0;
                             final w = constraints.maxWidth - 48; // 24+24 padding
                             final cols =
-                                (w / (minCardW + gap)).floor().clamp(2, 5);
+                                (w / (minCardW + gap)).floor().clamp(3, 7);
                             return GridView.builder(
                               padding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
                               itemCount: goods.length,
@@ -813,7 +813,7 @@ class _GoodsPanel extends StatelessWidget {
                                 crossAxisCount: cols,
                                 crossAxisSpacing: gap,
                                 mainAxisSpacing: gap,
-                                childAspectRatio: 0.78,
+                                childAspectRatio: 0.92,
                               ),
                               itemBuilder: (context, i) {
                                 final g = goods[i];
@@ -893,7 +893,7 @@ class _GoodCardState extends State<_GoodCard> {
           transform: Matrix4.translationValues(0, _hovered ? -2 : 0, 0),
           decoration: BoxDecoration(
             color: c.bgDefault,
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(12),
             border: Border.all(
               color: _hovered ? c.textBrand.withOpacity(0.4) : c.border,
               width: _hovered ? 1.2 : 1,
@@ -902,8 +902,8 @@ class _GoodCardState extends State<_GoodCard> {
                 ? [
                     BoxShadow(
                       color: c.textBrand.withOpacity(0.10),
-                      blurRadius: 18,
-                      offset: const Offset(0, 6),
+                      blurRadius: 14,
+                      offset: const Offset(0, 4),
                     ),
                   ]
                 : null,
@@ -913,13 +913,13 @@ class _GoodCardState extends State<_GoodCard> {
             children: [
               // ── Image area ──
               Expanded(
-                flex: 5,
+                flex: 4,
                 child: Stack(
                   fit: StackFit.expand,
                   children: [
                     ClipRRect(
                       borderRadius: const BorderRadius.vertical(
-                        top: Radius.circular(15),
+                        top: Radius.circular(11),
                       ),
                       child: hasImage
                           ? CustomCachedNetworkImage(
@@ -933,8 +933,8 @@ class _GoodCardState extends State<_GoodCard> {
                     // Hover actions overlay
                     if (_hovered)
                       Positioned(
-                        top: 8,
-                        right: 8,
+                        top: 6,
+                        right: 6,
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
@@ -943,7 +943,7 @@ class _GoodCardState extends State<_GoodCard> {
                               tooltip: S.current.strEdit,
                               onTap: widget.onEdit,
                             ),
-                            const SizedBox(width: 6),
+                            const SizedBox(width: 4),
                             _OverlayIconBtn(
                               icon: Icons.delete_outline_rounded,
                               tooltip: S.current.strDelete,
@@ -956,23 +956,23 @@ class _GoodCardState extends State<_GoodCard> {
                     // Category flag
                     if (widget.categoryName.isNotEmpty)
                       Positioned(
-                        left: 10,
-                        bottom: 10,
+                        left: 8,
+                        bottom: 8,
                         child: Container(
                           padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 5,
+                            horizontal: 7,
+                            vertical: 3,
                           ),
                           decoration: BoxDecoration(
                             color: Colors.white.withOpacity(0.94),
-                            borderRadius: BorderRadius.circular(6),
+                            borderRadius: BorderRadius.circular(5),
                           ),
                           child: Text(
                             widget.categoryName,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
-                              fontSize: 10.5,
+                              fontSize: 9.5,
                               fontWeight: FontWeight.w600,
                               color: c.textSecondary,
                               fontFamily: 'Inter',
@@ -986,7 +986,7 @@ class _GoodCardState extends State<_GoodCard> {
               ),
               // ── Footer: name + price ──
               Padding(
-                padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
+                padding: const EdgeInsets.fromLTRB(10, 8, 10, 10),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -995,15 +995,15 @@ class _GoodCardState extends State<_GoodCard> {
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        fontSize: 13,
+                        fontSize: 12,
                         fontWeight: FontWeight.w600,
                         color: c.textDefault,
                         fontFamily: 'Inter',
-                        height: 1.25,
+                        height: 1.2,
                         letterSpacing: -0.1,
                       ),
                     ),
-                    const SizedBox(height: 6),
+                    const SizedBox(height: 4),
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.baseline,
                       textBaseline: TextBaseline.alphabetic,
@@ -1012,7 +1012,7 @@ class _GoodCardState extends State<_GoodCard> {
                           AppFormatter.formatAmountWithSpaces(
                               widget.good.price),
                           style: TextStyle(
-                            fontSize: 15,
+                            fontSize: 13,
                             fontWeight: FontWeight.w700,
                             color: c.textBrand,
                             fontFamily: 'Inter',
@@ -1026,7 +1026,7 @@ class _GoodCardState extends State<_GoodCard> {
                         Text(
                           "so'm",
                           style: TextStyle(
-                            fontSize: 11,
+                            fontSize: 10,
                             color: c.textSecondary,
                             fontFamily: 'Inter',
                           ),
@@ -1113,21 +1113,21 @@ class _OverlayIconBtnState extends State<_OverlayIconBtn> {
           onTap: widget.onTap,
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 120),
-            width: 30,
-            height: 30,
+            width: 26,
+            height: 26,
             decoration: BoxDecoration(
               color: _hovered ? Colors.white : Colors.white.withOpacity(0.92),
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(7),
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withOpacity(0.08),
-                  blurRadius: 6,
+                  blurRadius: 5,
                   offset: const Offset(0, 2),
                 ),
               ],
             ),
             alignment: Alignment.center,
-            child: Icon(widget.icon, size: 14, color: iconColor),
+            child: Icon(widget.icon, size: 13, color: iconColor),
           ),
         ),
       ),
@@ -1147,18 +1147,18 @@ class _GoodsSkeleton extends StatelessWidget {
     final c = context.colors;
     return LayoutBuilder(
       builder: (context, constraints) {
-        const minCardW = 220.0;
-        const gap = 14.0;
+        const minCardW = 160.0;
+        const gap = 10.0;
         final w = constraints.maxWidth - 48;
-        final cols = (w / (minCardW + gap)).floor().clamp(2, 5);
+        final cols = (w / (minCardW + gap)).floor().clamp(3, 7);
         return GridView.builder(
           padding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
-          itemCount: cols * 2,
+          itemCount: cols * 3,
           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: cols,
             crossAxisSpacing: gap,
             mainAxisSpacing: gap,
-            childAspectRatio: 0.78,
+            childAspectRatio: 0.92,
           ),
           itemBuilder: (_, _) => Container(
             decoration: BoxDecoration(

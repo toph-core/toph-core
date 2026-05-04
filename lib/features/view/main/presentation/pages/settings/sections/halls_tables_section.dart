@@ -1401,7 +1401,7 @@ class _TableEditDialogState extends State<_TableEditDialog> {
             'width': width,
             'height': height,
             'rotation': rotation,
-            if (pricePerHour != null) 'price_per_hour': pricePerHour,
+            'price_per_hour': ?pricePerHour,
           },
         );
       } else {
@@ -1419,7 +1419,7 @@ class _TableEditDialogState extends State<_TableEditDialog> {
             'width': width,
             'height': height,
             'rotation': rotation,
-            if (pricePerHour != null) 'price_per_hour': pricePerHour,
+            'price_per_hour': ?pricePerHour,
           },
         );
       }

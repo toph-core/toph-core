@@ -9,6 +9,7 @@ import 'package:mary_ai_pos/features/view/main/presentation/cubit/detail/detail_
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/main/main_cubit.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/table_timer/table_timer_cubit.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/detail/detail_screen_mixin.dart';
+import 'package:mary_ai_pos/features/view/main/presentation/pages/detail/widgets/order_actions_bar.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/detail/widgets/order_side_bar_widget.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/detail/widgets/produc_grid_widget.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/detail/widgets/top_bar_widget.dart';
@@ -129,6 +130,14 @@ class _DetailScreenState extends State<DetailScreen> with DetailScreenMixin {
                       textEditingController: controller,
                       guestCount: guestCount,
                     ),
+                    OrderActionsBar(
+                      tableId: cafeTable?.id,
+                      guestCount: guestCount,
+                      tableStatus: tableStatus,
+                      cafeTable: cafeTable,
+                      onTableStatusChanged: (s) =>
+                          setState(() => tableStatus = s),
+                    ),
                     Expanded(
                       child: LayoutBuilder(
                         builder: (context, constraints) {
@@ -148,8 +157,6 @@ class _DetailScreenState extends State<DetailScreen> with DetailScreenMixin {
                                 width: sidebarW,
                                 child: OrderSidebar(
                                   tableId: cafeTable?.id,
-                                  guestCount: guestCount,
-                                  tableStatus: tableStatus,
                                   cafeTable: cafeTable,
                                 ),
                               ),

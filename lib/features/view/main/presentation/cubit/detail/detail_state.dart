@@ -6,7 +6,12 @@ class OrderItem with _$OrderItem {
     @Default('') String uniqueId,
     required GoodsModel goods,
     @Default(1) int quantity,
+    // `commet` aslida status'ni saqlaydi: 'pending', 'cancelled',
+    // 'pending_offline'. Tarixiy nomlanish, refaktor qilmaymiz.
     @Default('') String commet,
+    // Foydalanuvchi yozgan taom izohi (mas. "achchiqsiz"). Backend'ga
+    // `comment` sifatida yuboriladi va chekka chiqariladi.
+    @Default('') String comment,
     // Item qachon buyurtmaga qo'shilgan (server `created_at` yoki
     // offline queue `createdAt`). UI HH:mm formatida ko'rsatadi.
     DateTime? createdAt,

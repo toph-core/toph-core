@@ -1309,7 +1309,6 @@ class _AdminOrdersArchiveBodyState extends State<_AdminOrdersArchiveBody> {
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
           color: Colors.white,
           child: Row(
-            spacing: 6,
             children: [
               // Search
               SizedBox(
@@ -1352,45 +1351,56 @@ class _AdminOrdersArchiveBodyState extends State<_AdminOrdersArchiveBody> {
                 ),
               ),
 
-              const _VerticalDivider(),
-
-              // Status pills
-              for (final entry in const [
-                (null, 'Hammasi'),
-                ('open', 'Ochiq'),
-                ('paid', "To'langan"),
-                ('cancelled', 'Bekor'),
-              ])
-                _AdminFilterPill(
-                  label: entry.$2,
-                  isActive: _statusFilter == entry.$1,
-                  activeColor: switch (entry.$1) {
-                    'open' => const Color(0xFFFB6633),
-                    'paid' => const Color(0xFF16A34A),
-                    'cancelled' => const Color(0xFFDC2626),
-                    _ => const Color(0xFF0F172A),
-                  },
-                  onTap: () =>
-                      _applyFilters(status: entry.$1, type: _orderTypeFilter),
+              // Pills (scroll horizontally on narrow windows)
+              Expanded(
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    spacing: 6,
+                    children: [
+                      const SizedBox(width: 6),
+                      const _VerticalDivider(),
+                      for (final entry in const [
+                        (null, 'Hammasi'),
+                        ('open', 'Ochiq'),
+                        ('paid', "To'langan"),
+                        ('cancelled', 'Bekor'),
+                      ])
+                        _AdminFilterPill(
+                          label: entry.$2,
+                          isActive: _statusFilter == entry.$1,
+                          activeColor: switch (entry.$1) {
+                            'open' => const Color(0xFFFB6633),
+                            'paid' => const Color(0xFF16A34A),
+                            'cancelled' => const Color(0xFFDC2626),
+                            _ => const Color(0xFF0F172A),
+                          },
+                          onTap: () => _applyFilters(
+                            status: entry.$1,
+                            type: _orderTypeFilter,
+                          ),
+                        ),
+                      const _VerticalDivider(),
+                      for (final entry in const [
+                        (null, 'Barchasi'),
+                        ('dine_in', 'Zalda'),
+                        ('takeaway', 'Olib ketish'),
+                      ])
+                        _AdminFilterPill(
+                          label: entry.$2,
+                          isActive: _orderTypeFilter == entry.$1,
+                          activeColor: const Color(0xFF0F172A),
+                          onTap: () => _applyFilters(
+                            status: _statusFilter,
+                            type: entry.$1,
+                          ),
+                        ),
+                    ],
+                  ),
                 ),
+              ),
 
-              const _VerticalDivider(),
-
-              // Type pills
-              for (final entry in const [
-                (null, 'Barchasi'),
-                ('dine_in', 'Zalda'),
-                ('takeaway', 'Olib ketish'),
-              ])
-                _AdminFilterPill(
-                  label: entry.$2,
-                  isActive: _orderTypeFilter == entry.$1,
-                  activeColor: const Color(0xFF0F172A),
-                  onTap: () =>
-                      _applyFilters(status: _statusFilter, type: entry.$1),
-                ),
-
-              const Spacer(),
+              const SizedBox(width: 8),
 
               // Jami count
               Text(
@@ -1402,6 +1412,8 @@ class _AdminOrdersArchiveBodyState extends State<_AdminOrdersArchiveBody> {
                   fontFamily: 'Inter',
                 ),
               ),
+
+              const SizedBox(width: 6),
 
               // Refresh
               GestureDetector(

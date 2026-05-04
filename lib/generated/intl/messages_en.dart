@@ -47,6 +47,7 @@ class MessageLookup extends MessageLookupByLibrary {
   static Map<String, Function> _notInlinedMessages(_) => <String, Function>{
         "all": MessageLookupByLibrary.simpleMessage("All"),
         "month": MessageLookupByLibrary.simpleMessage("Month"),
+        "strAcceptedAmount": MessageLookupByLibrary.simpleMessage("Accepted"),
         "strAccessRestricted":
             MessageLookupByLibrary.simpleMessage("Access restricted"),
         "strActionColumnHeader": MessageLookupByLibrary.simpleMessage("Action"),
@@ -90,10 +91,13 @@ class MessageLookup extends MessageLookupByLibrary {
         "strBackToScreen": MessageLookupByLibrary.simpleMessage("Go back"),
         "strBillSuffix": MessageLookupByLibrary.simpleMessage("bill"),
         "strBusy": MessageLookupByLibrary.simpleMessage("Busy"),
+        "strBusyShort": MessageLookupByLibrary.simpleMessage("busy"),
         "strCable": MessageLookupByLibrary.simpleMessage("Cable"),
         "strCancel": MessageLookupByLibrary.simpleMessage("Cancel"),
         "strCancelShort": MessageLookupByLibrary.simpleMessage("Cancel"),
         "strCancelled": MessageLookupByLibrary.simpleMessage("Cancelled"),
+        "strCannotTransfer":
+            MessageLookupByLibrary.simpleMessage("Cannot transfer"),
         "strCapacityPersons":
             MessageLookupByLibrary.simpleMessage("Capacity (persons)"),
         "strCard": MessageLookupByLibrary.simpleMessage("Card"),
@@ -104,6 +108,7 @@ class MessageLookup extends MessageLookupByLibrary {
         "strCashierRole": MessageLookupByLibrary.simpleMessage("Cashier"),
         "strCategory": MessageLookupByLibrary.simpleMessage("Category"),
         "strChange": MessageLookupByLibrary.simpleMessage("Change"),
+        "strChangeTable": MessageLookupByLibrary.simpleMessage("Change table"),
         "strCheckForDetails": MessageLookupByLibrary.simpleMessage(
             "Tap on a check to see details!"),
         "strCheckInternetConnection": MessageLookupByLibrary.simpleMessage(
@@ -115,7 +120,10 @@ class MessageLookup extends MessageLookupByLibrary {
         "strCheckPrinter":
             MessageLookupByLibrary.simpleMessage("Check printer"),
         "strClear": MessageLookupByLibrary.simpleMessage("Clear"),
+        "strClearSelection":
+            MessageLookupByLibrary.simpleMessage("Clear selection"),
         "strClient": MessageLookupByLibrary.simpleMessage("Client"),
+        "strClose": MessageLookupByLibrary.simpleMessage("Close"),
         "strCloseAction": MessageLookupByLibrary.simpleMessage("Close"),
         "strCloseShift": MessageLookupByLibrary.simpleMessage("Close shift"),
         "strCloseShiftInstruction": MessageLookupByLibrary.simpleMessage(
@@ -126,6 +134,7 @@ class MessageLookup extends MessageLookupByLibrary {
         "strClosedToday": MessageLookupByLibrary.simpleMessage("Closed today"),
         "strCompounds": MessageLookupByLibrary.simpleMessage("Compounds"),
         "strCompoundsCount": m0,
+        "strConfirm": MessageLookupByLibrary.simpleMessage("Confirm"),
         "strConfirmCardPayment": MessageLookupByLibrary.simpleMessage(
             "Confirm that customer paid by card"),
         "strConfirmDelete":
@@ -138,6 +147,8 @@ class MessageLookup extends MessageLookupByLibrary {
             MessageLookupByLibrary.simpleMessage("Connection type"),
         "strContinue": MessageLookupByLibrary.simpleMessage("Continue"),
         "strCooking": MessageLookupByLibrary.simpleMessage("Cooking"),
+        "strCurrentOrder":
+            MessageLookupByLibrary.simpleMessage("Current order"),
         "strCurrentShift":
             MessageLookupByLibrary.simpleMessage("Current shift"),
         "strCustomer": MessageLookupByLibrary.simpleMessage("Customer"),
@@ -186,6 +197,8 @@ class MessageLookup extends MessageLookupByLibrary {
         "strEnterPinCode":
             MessageLookupByLibrary.simpleMessage("Enter 2-6 digits"),
         "strError": MessageLookupByLibrary.simpleMessage("Error"),
+        "strErrorOccurred":
+            MessageLookupByLibrary.simpleMessage("An error occurred"),
         "strEscPosDevices":
             MessageLookupByLibrary.simpleMessage("ESC/POS devices"),
         "strExactAmount": MessageLookupByLibrary.simpleMessage("Exact amount"),
@@ -254,6 +267,7 @@ class MessageLookup extends MessageLookupByLibrary {
         "strHeightShort": MessageLookupByLibrary.simpleMessage("Height (m)"),
         "strHotter": MessageLookupByLibrary.simpleMessage("Hotter"),
         "strHourly": MessageLookupByLibrary.simpleMessage("Hourly"),
+        "strHourlyPayment": MessageLookupByLibrary.simpleMessage("Hourly fee"),
         "strHourlyPrice":
             MessageLookupByLibrary.simpleMessage("Hourly price (som)"),
         "strHourlySalesDynamics":
@@ -293,6 +307,7 @@ class MessageLookup extends MessageLookupByLibrary {
         "strLogout": MessageLookupByLibrary.simpleMessage("Logout"),
         "strLogoutConfirm": MessageLookupByLibrary.simpleMessage(
             "Are you sure you want to logout?"),
+        "strManualInput": MessageLookupByLibrary.simpleMessage("Manual input"),
         "strMap": MessageLookupByLibrary.simpleMessage("Map"),
         "strMapView": MessageLookupByLibrary.simpleMessage("Map view"),
         "strMarch": MessageLookupByLibrary.simpleMessage("March"),
@@ -324,6 +339,9 @@ class MessageLookup extends MessageLookupByLibrary {
             MessageLookupByLibrary.simpleMessage("No internet connection"),
         "strNoOrdersInShift":
             MessageLookupByLibrary.simpleMessage("No orders in this shift yet"),
+        "strNoOtherTablesInHall": MessageLookupByLibrary.simpleMessage(
+            "No other tables in this hall"),
+        "strNoPauses": MessageLookupByLibrary.simpleMessage("No pauses yet"),
         "strNoPrintersYet":
             MessageLookupByLibrary.simpleMessage("No printers yet"),
         "strNoSalesData":
@@ -351,13 +369,21 @@ class MessageLookup extends MessageLookupByLibrary {
         "strOpenBills": MessageLookupByLibrary.simpleMessage("Open bills"),
         "strOpenShift": MessageLookupByLibrary.simpleMessage("Open shift"),
         "strOpenedAt": MessageLookupByLibrary.simpleMessage("Opened"),
+        "strOpenedAtLabel": MessageLookupByLibrary.simpleMessage("Opened:"),
         "strOpeningBalance":
             MessageLookupByLibrary.simpleMessage("Opening balance"),
+        "strOrder": MessageLookupByLibrary.simpleMessage("Order"),
         "strOrderDetails":
             MessageLookupByLibrary.simpleMessage("Order details"),
+        "strOrderNotFound":
+            MessageLookupByLibrary.simpleMessage("Order not found"),
         "strOrderNumber": MessageLookupByLibrary.simpleMessage("# Order"),
+        "strOrderOrTableNotFound":
+            MessageLookupByLibrary.simpleMessage("Order or table not found"),
         "strOrderSuccessCreated":
             MessageLookupByLibrary.simpleMessage("Order successfully created"),
+        "strOrderTransferred": MessageLookupByLibrary.simpleMessage(
+            "Order moved to another table"),
         "strOrderType": MessageLookupByLibrary.simpleMessage("Order type"),
         "strOrders": MessageLookupByLibrary.simpleMessage("Orders"),
         "strOrdersCountShort": m7,
@@ -373,7 +399,11 @@ class MessageLookup extends MessageLookupByLibrary {
         "strPasswordsNotSame":
             MessageLookupByLibrary.simpleMessage("Passwords do not match"),
         "strPauseAction": MessageLookupByLibrary.simpleMessage("Pause"),
+        "strPauseHistory":
+            MessageLookupByLibrary.simpleMessage("Pause history"),
         "strPayment": MessageLookupByLibrary.simpleMessage("Payment"),
+        "strPaymentAmount":
+            MessageLookupByLibrary.simpleMessage("Payment amount"),
         "strPaymentInfoNotFound":
             MessageLookupByLibrary.simpleMessage("Payment info not found"),
         "strPaymentLabel": MessageLookupByLibrary.simpleMessage("Payment:"),
@@ -386,6 +416,7 @@ class MessageLookup extends MessageLookupByLibrary {
             MessageLookupByLibrary.simpleMessage("+998 (__) ___ __ __"),
         "strPhoneOrPasswordWrong": MessageLookupByLibrary.simpleMessage(
             "Wrong phone number or password"),
+        "strPiecesSuffix": MessageLookupByLibrary.simpleMessage("pcs"),
         "strPinOptional":
             MessageLookupByLibrary.simpleMessage("PIN code (optional)"),
         "strPort": MessageLookupByLibrary.simpleMessage("Port"),
@@ -452,8 +483,12 @@ class MessageLookup extends MessageLookupByLibrary {
         "strSelectFile": MessageLookupByLibrary.simpleMessage("Select file"),
         "strSelectFoodsNotFound": MessageLookupByLibrary.simpleMessage(
             "No orders. Tap a dish to add"),
+        "strSelectFreeTableForTransfer": MessageLookupByLibrary.simpleMessage(
+            "Select a free table to move the order to"),
         "strSelectGuestsCount":
             MessageLookupByLibrary.simpleMessage("Set number of guests"),
+        "strSelectedTableIsBusy":
+            MessageLookupByLibrary.simpleMessage("Selected table is busy"),
         "strSemiFinished":
             MessageLookupByLibrary.simpleMessage("Semi-finished"),
         "strSeptember": MessageLookupByLibrary.simpleMessage("September"),
@@ -478,7 +513,10 @@ class MessageLookup extends MessageLookupByLibrary {
         "strShowProductImages": MessageLookupByLibrary.simpleMessage(
             "Show images in product cards"),
         "strShrink": MessageLookupByLibrary.simpleMessage("Zoom out"),
+        "strSidebarEmptyTitle":
+            MessageLookupByLibrary.simpleMessage("Your order is empty"),
         "strSom": MessageLookupByLibrary.simpleMessage("sum"),
+        "strSpecialNote": MessageLookupByLibrary.simpleMessage("Special note"),
         "strSquare": MessageLookupByLibrary.simpleMessage("Square"),
         "strStaffRoles":
             MessageLookupByLibrary.simpleMessage("Staff and roles"),
@@ -487,6 +525,7 @@ class MessageLookup extends MessageLookupByLibrary {
             "Press the button below to start work."),
         "strStatusColumn": MessageLookupByLibrary.simpleMessage("Status"),
         "strStatusColumnHeader": MessageLookupByLibrary.simpleMessage("Status"),
+        "strSubtotal": MessageLookupByLibrary.simpleMessage("Subtotal"),
         "strSunday": MessageLookupByLibrary.simpleMessage("Sunday"),
         "strTable": MessageLookupByLibrary.simpleMessage("Table"),
         "strTableHall": MessageLookupByLibrary.simpleMessage("Table / Hall"),
@@ -506,11 +545,13 @@ class MessageLookup extends MessageLookupByLibrary {
             MessageLookupByLibrary.simpleMessage("Total capacity"),
         "strTotalColon": MessageLookupByLibrary.simpleMessage("Total:"),
         "strTotalLabel": MessageLookupByLibrary.simpleMessage("Total:"),
+        "strTotalPause": MessageLookupByLibrary.simpleMessage("Total pause:"),
         "strTotalRevenueLabel":
             MessageLookupByLibrary.simpleMessage("Total revenue"),
         "strTotalSales": MessageLookupByLibrary.simpleMessage("Total sales"),
         "strTotalSum": MessageLookupByLibrary.simpleMessage("Total"),
         "strTotalTables": MessageLookupByLibrary.simpleMessage("Total tables"),
+        "strTransfer": MessageLookupByLibrary.simpleMessage("Move"),
         "strTuesday": MessageLookupByLibrary.simpleMessage("Tuesday"),
         "strTypeColumnHeader": MessageLookupByLibrary.simpleMessage("Type"),
         "strUmumiySumma": MessageLookupByLibrary.simpleMessage("Total amount"),
@@ -539,19 +580,6 @@ class MessageLookup extends MessageLookupByLibrary {
         "strYouWantLeaveOrderScreen": MessageLookupByLibrary.simpleMessage(
             "Are you sure you want to leave? Foods will be cancelled."),
         "today": MessageLookupByLibrary.simpleMessage("Today"),
-        "week": MessageLookupByLibrary.simpleMessage("Week"),
-        "strOrder": MessageLookupByLibrary.simpleMessage("Order"),
-        "strAcceptedAmount": MessageLookupByLibrary.simpleMessage("Accepted"),
-        "strManualInput":
-            MessageLookupByLibrary.simpleMessage("Manual input"),
-        "strPaymentAmount":
-            MessageLookupByLibrary.simpleMessage("Payment amount"),
-        "strSubtotal": MessageLookupByLibrary.simpleMessage("Subtotal"),
-        "strHourlyPayment":
-            MessageLookupByLibrary.simpleMessage("Hourly fee"),
-        "strOrderNotFound":
-            MessageLookupByLibrary.simpleMessage("Order not found"),
-        "strConfirm": MessageLookupByLibrary.simpleMessage("Confirm"),
-        "strPiecesSuffix": MessageLookupByLibrary.simpleMessage("pcs")
+        "week": MessageLookupByLibrary.simpleMessage("Week")
       };
 }

@@ -101,7 +101,7 @@ class CreateOrderBloc extends Bloc<CreateOrderEvent, CreateOrderState> {
             'order_id': _activeOrderId,
             'items': event.orders
                 .map((o) => {
-                      'comment': '',
+                      'comment': o.comment,
                       'good_id': o.goods.id,
                       'quantity': o.quantity,
                     })
@@ -177,7 +177,7 @@ class CreateOrderBloc extends Bloc<CreateOrderEvent, CreateOrderState> {
       final payload = {
         'items': orders
             .map((o) => {
-                  'comment': '',
+                  'comment': o.comment,
                   'good_id': o.goods.id,
                   'quantity': o.quantity,
                 })

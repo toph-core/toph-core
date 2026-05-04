@@ -277,6 +277,7 @@ class DetailBloc extends Bloc<DetailEvent, DetailState> {
           ),
           quantity: g.quantity,
           commet: g.status,
+          comment: g.comment,
           createdAt: ts,
         );
       }
@@ -430,7 +431,7 @@ class DetailBloc extends Bloc<DetailEvent, DetailState> {
       List<OrderItem> orders = List.from(state.selectedGoods);
       orders[id] = orders[id].copyWith(
         goods: orders[id].goods.copyWith(additionals: event.additionals),
-        commet: event.comment,
+        comment: event.comment,
       );
       emit(state.copyWith(selectedGoods: orders));
     }

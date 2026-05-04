@@ -3809,6 +3809,196 @@ class S {
       args: [],
     );
   }
+
+  /// `Change table`
+  String get strChangeTable {
+    return Intl.message(
+      'Change table',
+      name: 'strChangeTable',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Select a free table to move the order to`
+  String get strSelectFreeTableForTransfer {
+    return Intl.message(
+      'Select a free table to move the order to',
+      name: 'strSelectFreeTableForTransfer',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Move`
+  String get strTransfer {
+    return Intl.message(
+      'Move',
+      name: 'strTransfer',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `No other tables in this hall`
+  String get strNoOtherTablesInHall {
+    return Intl.message(
+      'No other tables in this hall',
+      name: 'strNoOtherTablesInHall',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `busy`
+  String get strBusyShort {
+    return Intl.message(
+      'busy',
+      name: 'strBusyShort',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Selected table is busy`
+  String get strSelectedTableIsBusy {
+    return Intl.message(
+      'Selected table is busy',
+      name: 'strSelectedTableIsBusy',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Order or table not found`
+  String get strOrderOrTableNotFound {
+    return Intl.message(
+      'Order or table not found',
+      name: 'strOrderOrTableNotFound',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Cannot transfer`
+  String get strCannotTransfer {
+    return Intl.message(
+      'Cannot transfer',
+      name: 'strCannotTransfer',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `An error occurred`
+  String get strErrorOccurred {
+    return Intl.message(
+      'An error occurred',
+      name: 'strErrorOccurred',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Order moved to another table`
+  String get strOrderTransferred {
+    return Intl.message(
+      'Order moved to another table',
+      name: 'strOrderTransferred',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Clear selection`
+  String get strClearSelection {
+    return Intl.message(
+      'Clear selection',
+      name: 'strClearSelection',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Current order`
+  String get strCurrentOrder {
+    return Intl.message(
+      'Current order',
+      name: 'strCurrentOrder',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Pause history`
+  String get strPauseHistory {
+    return Intl.message(
+      'Pause history',
+      name: 'strPauseHistory',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Opened:`
+  String get strOpenedAtLabel {
+    return Intl.message(
+      'Opened:',
+      name: 'strOpenedAtLabel',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Total pause:`
+  String get strTotalPause {
+    return Intl.message(
+      'Total pause:',
+      name: 'strTotalPause',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `No pauses yet`
+  String get strNoPauses {
+    return Intl.message(
+      'No pauses yet',
+      name: 'strNoPauses',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Special note`
+  String get strSpecialNote {
+    return Intl.message(
+      'Special note',
+      name: 'strSpecialNote',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Close`
+  String get strClose {
+    return Intl.message(
+      'Close',
+      name: 'strClose',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Your order is empty`
+  String get strSidebarEmptyTitle {
+    return Intl.message(
+      'Your order is empty',
+      name: 'strSidebarEmptyTitle',
+      desc: '',
+      args: [],
+    );
+  }
 }
 
 class AppLocalizationDelegate extends LocalizationsDelegate<S> {

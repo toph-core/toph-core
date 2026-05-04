@@ -28,7 +28,7 @@ class CreateOrderRequestModel with _$CreateOrderRequestModel {
     "items": List.generate(
       foods.length,
       (index) => {
-        "comment": comment,
+        "comment": foods[index].comment,
         "good_id": foods[index].goods.id,
         "quantity": foods[index].quantity,
       },
@@ -44,7 +44,7 @@ class CreateOrderRequestModel with _$CreateOrderRequestModel {
     "items": List.generate(
       foods.length,
       (index) => {
-        "comment": comment,
+        "comment": foods[index].comment,
         "good_id": foods[index].goods.id,
         "quantity": foods[index].quantity,
       },
