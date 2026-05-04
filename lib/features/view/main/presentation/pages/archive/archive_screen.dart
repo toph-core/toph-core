@@ -76,7 +76,7 @@ class _ArchiveBody extends StatelessWidget {
 
                   // Inline metrics (no card containers — Rule 4: anti-card overuse)
                   Padding(
-                    padding: const EdgeInsets.fromLTRB(24, 4, 24, 18),
+                    padding: const EdgeInsets.fromLTRB(16, 4, 16, 14),
                     child: _InlineStatsRow(
                       count: archives.length,
                       revenue: revenue,
@@ -91,7 +91,7 @@ class _ArchiveBody extends StatelessWidget {
                   // Table + optional detail sidebar
                   Expanded(
                     child: Padding(
-                      padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
+                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         spacing: 16,
@@ -252,7 +252,7 @@ class _MetricDivider extends StatelessWidget {
     return Container(
       width: 1,
       height: 36,
-      margin: const EdgeInsets.symmetric(horizontal: 24),
+      margin: const EdgeInsets.symmetric(horizontal: 16),
       color: const Color(0xFFE2E8F0),
     );
   }
@@ -298,10 +298,8 @@ class _ArchiveTable extends StatelessWidget {
                 _ThCell(label: S.current.strTimeColumnHeader, flex: 2),
                 _ThCell(label: S.current.strTypeColumnHeader, flex: 2),
                 const _ThCell(label: 'Stol', flex: 1),
-                _ThCell(label: S.current.strDishesColumn, flex: 2),
                 _ThCell(label: S.current.strAmountColumnHeader, flex: 3),
                 _ThCell(label: S.current.strStatusColumnHeader, flex: 2),
-                _ThCell(label: S.current.strActionColumnHeader, flex: 1),
               ],
             ),
           ),
@@ -386,13 +384,13 @@ class _ArchiveFilterBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Row(
-        spacing: 10,
+        spacing: 8,
         children: [
           // Search
           SizedBox(
-            width: 260,
+            width: 200,
             height: 36,
             child: TextField(
               controller: state.textController,
@@ -454,7 +452,7 @@ class _ArchiveFilterBar extends StatelessWidget {
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 150),
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 14,
+                      horizontal: 10,
                       vertical: 6,
                     ),
                     decoration: BoxDecoration(
@@ -490,69 +488,124 @@ class _ArchiveFilterBar extends StatelessWidget {
           const Spacer(),
 
           // Date range picker
+          _DateRangeButton(state: state),
+
+          // Export CSV
+          _ExportCsvButton(archives: state.archives?.archives ?? const []),
+        ],
+      ),
+    );
+  }
+}
+
+// ─── Date range picker button ────────────────────────────────────────────────
+
+class _DateRangeButton extends StatelessWidget {
+  final ArchivesState state;
+  const _DateRangeButton({required this.state});
+
+  bool get _isActive => state.filterType == ArchivesFilterType.date;
+
+  String get _label {
+    if (!_isActive || state.startFilterDate == null) return 'Sana';
+    final s = state.startFilterDate!;
+    final e = state.endFilterDate;
+    final start =
+        '${s.day.toString().padLeft(2, '0')}.${s.month.toString().padLeft(2, '0')}';
+    if (e == null || (e.day == s.day && e.month == s.month && e.year == s.year)) {
+      return start;
+    }
+    final end =
+        '${e.day.toString().padLeft(2, '0')}.${e.month.toString().padLeft(2, '0')}';
+    return '$start — $end';
+  }
+
+  Future<void> _pick(BuildContext context) async {
+    final bloc = context.read<ArchivesBloc>();
+    final picked = await showDateRangePicker(
+      context: context,
+      initialDateRange: DateTimeRange(
+        start: state.startFilterDate ?? DateTime.now(),
+        end: state.endFilterDate ?? DateTime.now(),
+      ),
+      firstDate: DateTime(2000),
+      lastDate: DateTime.now().add(const Duration(days: 365)),
+      initialEntryMode: DatePickerEntryMode.calendarOnly,
+      builder: (context, child) => Theme(
+        data: Theme.of(context).copyWith(
+          colorScheme: Theme.of(context).colorScheme.copyWith(
+            primary: const Color(0xFFFB6633),
+            onPrimary: Colors.white,
+            surface: Colors.white,
+          ),
+          textButtonTheme: TextButtonThemeData(
+            style: TextButton.styleFrom(
+              foregroundColor: const Color(0xFFFB6633),
+            ),
+          ),
+        ),
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 420, maxHeight: 580),
+            child: child,
+          ),
+        ),
+      ),
+    );
+    if (picked != null) {
+      bloc.add(
+        ArchivesEvent.updateFilterDateRange(
+          startDate: picked.start,
+          endDate: picked.end,
+        ),
+      );
+    }
+  }
+
+  void _clear(BuildContext context) {
+    context.read<ArchivesBloc>().add(
+      const ArchivesEvent.updateFilterType(type: ArchivesFilterType.All),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 150),
+      height: 36,
+      decoration: BoxDecoration(
+        color: _isActive ? const Color(0xFFFFF3EE) : Colors.white,
+        border: Border.all(
+          color: _isActive ? const Color(0xFFFB6633) : const Color(0xFFE2E8F0),
+        ),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
           GestureDetector(
-            onTap: () async {
-              final bloc = context.read<ArchivesBloc>();
-              final picked = await showDateRangePicker(
-                context: context,
-                initialDateRange: DateTimeRange(
-                  start: state.startFilterDate ?? DateTime.now(),
-                  end: state.endFilterDate ?? DateTime.now(),
-                ),
-                firstDate: DateTime(2000),
-                lastDate: DateTime.now().add(const Duration(days: 365)),
-                initialEntryMode: DatePickerEntryMode.calendarOnly,
-                builder: (context, child) => Center(
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(
-                      maxWidth: 400,
-                      maxHeight: 600,
-                    ),
-                    child: child,
-                  ),
-                ),
-              );
-              if (picked != null) {
-                bloc.add(
-                  ArchivesEvent.updateFilterDateRange(
-                    startDate: picked.start,
-                    endDate: picked.end,
-                  ),
-                );
-              }
-            },
-            child: Container(
-              height: 36,
+            onTap: () => _pick(context),
+            child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 12),
-              decoration: BoxDecoration(
-                color: state.filterType == ArchivesFilterType.date
-                    ? const Color(0xFFFFF3EE)
-                    : Colors.white,
-                border: Border.all(
-                  color: state.filterType == ArchivesFilterType.date
-                      ? const Color(0xFFFB6633)
-                      : const Color(0xFFE2E8F0),
-                ),
-                borderRadius: BorderRadius.circular(10),
-              ),
               child: Row(
-                spacing: 8,
+                mainAxisSize: MainAxisSize.min,
+                spacing: 6,
                 children: [
                   Icon(
                     Icons.calendar_today_rounded,
-                    size: 14,
-                    color: state.filterType == ArchivesFilterType.date
+                    size: 13,
+                    color: _isActive
                         ? const Color(0xFFFB6633)
                         : const Color(0xFF64748B),
                   ),
                   Text(
-                    state.filterType == ArchivesFilterType.date &&
-                            state.startFilterDate != null
-                        ? '${state.startFilterDate!.day}.${state.startFilterDate!.month.toString().padLeft(2, '0')}'
-                        : 'Sana',
+                    _label,
                     style: TextStyle(
                       fontSize: 13,
-                      color: state.filterType == ArchivesFilterType.date
+                      fontWeight: _isActive
+                          ? FontWeight.w600
+                          : FontWeight.w400,
+                      color: _isActive
                           ? const Color(0xFFFB6633)
                           : const Color(0xFF64748B),
                       fontFamily: 'Inter',
@@ -562,22 +615,24 @@ class _ArchiveFilterBar extends StatelessWidget {
               ),
             ),
           ),
-
-          // Total count (subtle)
-          Text(
-            "Jami ${state.archives?.pagination.total ?? 0} ta",
-            style: const TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-              color: Color(0xFF94A3B8),
-              fontFamily: 'Inter',
+          if (_isActive) ...[
+            Container(
+              width: 1,
+              height: 18,
+              color: const Color(0xFFFB6633).withValues(alpha: 0.3),
             ),
-          ),
-
-          const SizedBox(width: 6),
-
-          // Export CSV
-          _ExportCsvButton(archives: state.archives?.archives ?? const []),
+            GestureDetector(
+              onTap: () => _clear(context),
+              child: const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 8),
+                child: Icon(
+                  Icons.close_rounded,
+                  size: 14,
+                  color: Color(0xFFFB6633),
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -664,14 +719,17 @@ class _ThCell extends StatelessWidget {
     return Expanded(
       flex: flex,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 14),
+        padding: const EdgeInsets.symmetric(horizontal: 10),
         child: Text(
           label,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
           style: const TextStyle(
-            fontSize: 12,
+            fontSize: 11,
             fontWeight: FontWeight.w600,
             color: Color(0xFF64748B),
             fontFamily: 'Inter',
+            letterSpacing: 0.2,
           ),
         ),
       ),
@@ -729,9 +787,11 @@ class _ArchiveRowState extends State<_ArchiveRow> {
               Expanded(
                 flex: 2,
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 14),
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
                   child: Text(
                     '#${archive.bilNumber}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
@@ -748,9 +808,11 @@ class _ArchiveRowState extends State<_ArchiveRow> {
               Expanded(
                 flex: 2,
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 14),
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
                   child: Text(
                     time,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
                       fontSize: 13,
                       color: Color(0xFF64748B),
@@ -764,18 +826,23 @@ class _ArchiveRowState extends State<_ArchiveRow> {
               Expanded(
                 flex: 2,
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 14),
-                  child: _TypeChip(isTakeaway: isTakeaway),
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
+                    child: _TypeChip(isTakeaway: isTakeaway),
+                  ),
                 ),
               ),
               // Stol
               Expanded(
                 flex: 1,
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 14),
+                  padding: const EdgeInsets.symmetric(horizontal: 6),
                   child: isTakeaway
                       ? const Text(
                           '—',
+                          maxLines: 1,
                           style: TextStyle(
                             fontSize: 13,
                             color: Color(0xFF94A3B8),
@@ -783,15 +850,16 @@ class _ArchiveRowState extends State<_ArchiveRow> {
                           ),
                         )
                       : Container(
-                          width: 30,
-                          height: 30,
+                          width: 28,
+                          height: 28,
                           decoration: BoxDecoration(
                             color: const Color(0xFFF1F5F9),
-                            borderRadius: BorderRadius.circular(8),
+                            borderRadius: BorderRadius.circular(7),
                           ),
                           alignment: Alignment.center,
                           child: Text(
                             '${archive.tableNumber}',
+                            maxLines: 1,
                             style: const TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.w600,
@@ -802,29 +870,15 @@ class _ArchiveRowState extends State<_ArchiveRow> {
                         ),
                 ),
               ),
-              // Taomlar
-              Expanded(
-                flex: 2,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 14),
-                  child: Text(
-                    '${archive.goodsQuantity} ta',
-                    style: const TextStyle(
-                      fontSize: 13,
-                      color: Color(0xFF0F172A),
-                      fontFamily: 'Inter',
-                      fontFeatures: [FontFeature.tabularFigures()],
-                    ),
-                  ),
-                ),
-              ),
               // Summa
               Expanded(
                 flex: 3,
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 14),
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
                   child: Text(
                     archive.totalPrice.formatN,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w700,
@@ -839,36 +893,11 @@ class _ArchiveRowState extends State<_ArchiveRow> {
               Expanded(
                 flex: 2,
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 14),
-                  child: _StatusBadge(status: archive.status),
-                ),
-              ),
-              // Amal
-              Expanded(
-                flex: 1,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 14),
-                  child: Container(
-                    width: 32,
-                    height: 32,
-                    decoration: BoxDecoration(
-                      color: widget.isSelected
-                          ? const Color(0xFFFB6633)
-                          : Colors.white,
-                      border: Border.all(
-                        color: widget.isSelected
-                            ? const Color(0xFFFB6633)
-                            : const Color(0xFFE2E8F0),
-                      ),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Icon(
-                      Icons.remove_red_eye_outlined,
-                      size: 15,
-                      color: widget.isSelected
-                          ? Colors.white
-                          : const Color(0xFF64748B),
-                    ),
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
+                    child: _StatusBadge(status: archive.status),
                   ),
                 ),
               ),

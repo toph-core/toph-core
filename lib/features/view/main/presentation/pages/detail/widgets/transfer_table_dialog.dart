@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mary_ai_pos/core/api/dio_client.dart';
 import 'package:mary_ai_pos/core/api/list_api.dart';
 import 'package:mary_ai_pos/core/components/flush_bars.dart';
+import 'package:mary_ai_pos/core/services/cache/cache_service.dart';
 import 'package:mary_ai_pos/di.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/cafe_tables/cafe_tables_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/hall/hall_model.dart';
@@ -59,20 +60,26 @@ class _TransferTableDialogState extends State<_TransferTableDialog> {
     final targetId = _selectedTableId;
     if (targetId == null || _submitting) return;
     setState(() => _submitting = true);
+    // async gap dan oldin context-ga bog'liq narsalarni olamiz
+    final main = context.read<MainCubit>();
+    final nav = Navigator.of(context);
     try {
       final dio = inject<DioClient>().dio;
       await dio.post(
         ListAPI.orderTransfer(widget.orderId),
         data: {'target_table_id': targetId},
       );
+      // Eski cache-ni o'chiramiz: keyingi ochilishda server ma'lumoti olinadi.
+      final cache = inject<CacheService>();
+      await cache.evictOrderDetail(widget.sourceTableId);
+      await cache.evictOrderDetail(targetId);
       if (!mounted) return;
       // Stol holatlarini darhol yangilab, broadcast qilamiz —
       // boshqa POS qurilmalari ham real-time ko'rishi uchun.
-      final main = context.read<MainCubit>();
       main.broadcastTableStatus(widget.sourceTableId, TableStatus.free);
       main.broadcastTableStatus(targetId, TableStatus.busy);
-      Navigator.of(context).pop(true);
-      showInfoMessage(context, S.current.strOrderTransferred);
+      nav.pop(true);
+      if (mounted) showInfoMessage(context, S.current.strOrderTransferred);
     } on DioException catch (e) {
       if (!mounted) return;
       setState(() => _submitting = false);

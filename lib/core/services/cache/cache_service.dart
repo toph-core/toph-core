@@ -59,6 +59,13 @@ class CacheService {
     }
   }
 
+  /// Transfer yoki checkout keyin stol cache-ni o'chiradi.
+  /// Keyingi `fetchBillOrders` chaqiruvi throttle'ni chetlab o'tib
+  /// serverdan yangi ma'lumot oladi.
+  Future<void> evictOrderDetail(String tableId) async {
+    await _box.delete('$_orderDetailPrefix$tableId');
+  }
+
   // ─── Order Item Timestamps ────────────────────────────────────
   // `name -> earliestCreatedAt` map'i orderId bo'yicha cache'lanadi.
   // Offline'da bill ekrani ochilganda ham vaqtlar ko'rinishi uchun.

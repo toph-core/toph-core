@@ -68,16 +68,16 @@ class MainHeader extends StatelessWidget {
                   : const SizedBox.shrink()),
           const Spacer(),
           // Right: optional extra trailing
-          if (trailing != null) ...[trailing!, const SizedBox(width: PosDimensions.s + 2)],
+          if (trailing != null) ...[trailing!, const SizedBox(width: PosDimensions.s)],
           // Shift chip
           const _ShiftChip(),
-          const SizedBox(width: PosDimensions.s),
+          const SizedBox(width: 6),
           // Cashier chip
           const _CashierChip(),
-          const SizedBox(width: PosDimensions.s),
+          const SizedBox(width: 6),
           // Clock
           const _ClockChip(),
-          const SizedBox(width: PosDimensions.s),
+          const SizedBox(width: 6),
           // Language toggle
           const _LangToggle(),
         ],
@@ -97,8 +97,8 @@ class _ShiftChip extends StatelessWidget {
         context.select((ShiftBloc b) => b.state.shift);
     final openedAt = shift?.openedAt;
     final timeStr = openedAt != null
-        ? '${openedAt.hour.toString().padLeft(2, '0')}:${openedAt.minute.toString().padLeft(2, '0')} — hozir'
-        : '— hozir';
+        ? '${openedAt.hour.toString().padLeft(2, '0')}:${openedAt.minute.toString().padLeft(2, '0')}'
+        : '--:--';
 
     return _Chip(
       child: Row(
@@ -346,8 +346,7 @@ class _LangToggle extends StatelessWidget {
                 .saveAppLang(context, languageCode: code),
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 150),
-              // POS-friendly tap zone — barmoq uchun yetarli
-              constraints: const BoxConstraints(minWidth: 48),
+              constraints: const BoxConstraints(minWidth: 40),
               padding: const EdgeInsets.symmetric(
                 horizontal: PosDimensions.s + 2,
                 vertical: PosDimensions.xs,

@@ -22,6 +22,11 @@ const _kS500 = Color(0xFF64748B);
 const _kS400 = Color(0xFF94A3B8);
 const _kBrand = Color(0xFFFB6633);
 const _kRed = Color(0xFFDC2626);
+const _kIndigo = Color(0xFF6366F1);
+const _kIndigoBg = Color(0xFFEEF2FF);
+const _kIndigoBorder = Color(0xFFC7D2FE);
+const _kS50 = Color(0xFFF8FAFC);
+const _kS200 = Color(0xFFE2E8F0);
 
 class PaymentScreen extends StatefulWidget {
   const PaymentScreen({super.key});
@@ -32,6 +37,7 @@ class PaymentScreen extends StatefulWidget {
 
 class _PaymentScreenState extends State<PaymentScreen> {
   final _discountFocused = ValueNotifier<bool>(false);
+  bool _includeService = true;
 
   late final args =
       ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>;
@@ -48,6 +54,9 @@ class _PaymentScreenState extends State<PaymentScreen> {
   late final int _timerTotalSec = (args['timer_total_sec'] as int?) ?? 0;
   late final String? _timerPricePerHour =
       args['timer_price_per_hour'] as String?;
+  // Navigatsiyadan kelgan service_percent (bills endpoint qaytarmasa fallback)
+  late final double _servicePercent =
+      (args['service_percent'] as num?)?.toDouble() ?? 0.0;
 
   @override
   void dispose() {
@@ -124,6 +133,23 @@ class _PaymentScreenState extends State<PaymentScreen> {
               if (finalTotal < 0) finalTotal = 0;
               finalTotal += state.hourPrice.toInt();
 
+              // Service toggle — compute effective service amount, subtract if excluded
+              final det = state.detail!;
+              final servicePct = det.servicePercent > 0
+                  ? det.servicePercent.toDouble()
+                  : _servicePercent;
+              final foodSumForService = det.goods
+                  .where((g) => g.status != 'cancelled')
+                  .fold(0.0, (s, g) => s + g.price * g.quantity);
+              final serviceToggleAmt = (det.serviceAmount > 0.01
+                      ? det.serviceAmount
+                      : foodSumForService * servicePct / 100)
+                  .toInt();
+              if (!_includeService && serviceToggleAmt > 0) {
+                finalTotal =
+                    (finalTotal - serviceToggleAmt).clamp(0, finalTotal);
+              }
+
               // Compact (1024–1366): kichikroq side panellar — numpad uchun joy
               final sidePanelW = PosBreakpoints.pick<double>(
                 context,
@@ -143,6 +169,25 @@ class _PaymentScreenState extends State<PaymentScreen> {
                           child: _OrderSummaryColumn(
                             detail: state.detail!,
                             tableId: tableId,
+                            servicePercentFallback: _servicePercent,
+                            includeService: _includeService,
+                            onToggleService: (v) {
+                              final bloc = context.read<PaymentBloc>();
+                              final entered =
+                                  int.tryParse(bloc.state.enterSum) ?? 0;
+                              // Toggle direction: adding or removing service
+                              final delta =
+                                  v ? serviceToggleAmt : -serviceToggleAmt;
+                              final newTotal =
+                                  (finalTotal + delta).clamp(0, 999999999);
+                              setState(() => _includeService = v);
+                              // Sync numpad only if it still shows the exact total
+                              if (entered == 0 || entered == finalTotal) {
+                                bloc.add(PaymentEvent.updateEnterSum(
+                                  symbol: 'set:$newTotal',
+                                ));
+                              }
+                            },
                           ),
                         ),
                         // Center column (flex) — payment + numpad
@@ -181,8 +226,17 @@ class _PaymentScreenState extends State<PaymentScreen> {
 class _OrderSummaryColumn extends StatelessWidget {
   final dynamic detail;
   final String? tableId;
+  final double servicePercentFallback;
+  final bool includeService;
+  final ValueChanged<bool> onToggleService;
 
-  const _OrderSummaryColumn({required this.detail, required this.tableId});
+  const _OrderSummaryColumn({
+    required this.detail,
+    required this.tableId,
+    this.servicePercentFallback = 0,
+    this.includeService = true,
+    required this.onToggleService,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -217,7 +271,12 @@ class _OrderSummaryColumn extends StatelessWidget {
             child: _ItemsList(detail: detail, tableId: tableId),
           ),
           // Totals footer: Oraliq jami + Xizmat haqi (simplified per spec)
-          _SummaryFooter(detail: detail),
+          _SummaryFooter(
+            detail: detail,
+            servicePercentFallback: servicePercentFallback,
+            includeService: includeService,
+            onToggleService: onToggleService,
+          ),
         ],
       ),
     );
@@ -455,7 +514,16 @@ class _OrderLineRow extends StatelessWidget {
 
 class _SummaryFooter extends StatelessWidget {
   final dynamic detail;
-  const _SummaryFooter({required this.detail});
+  final double servicePercentFallback;
+  final bool includeService;
+  final ValueChanged<bool> onToggleService;
+
+  const _SummaryFooter({
+    required this.detail,
+    this.servicePercentFallback = 0,
+    this.includeService = true,
+    required this.onToggleService,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -467,23 +535,90 @@ class _SummaryFooter extends StatelessWidget {
       ),
       child: BlocBuilder<PaymentBloc, PaymentState>(
         builder: (context, state) {
-          final effective = PaymentBloc.effectiveTotal(state.detail!);
-          final serviceAmt = state.detail!.serviceAmount.toInt();
-          final servicePct = state.detail!.servicePercent.toInt();
+          final detail = state.detail!;
+          // API servicePercent 0 qaytarsa — navigatsiyadan kelgan fallback ishlatiladi
+          final servicePct = detail.servicePercent > 0
+              ? detail.servicePercent
+              : servicePercentFallback;
+          final foodSum = detail.goods
+              .where((g) => g.status != 'cancelled')
+              .fold(0.0, (s, g) => s + g.price * g.quantity);
+          final rawServiceAmt = detail.serviceAmount > 0.01
+              ? detail.serviceAmount
+              : foodSum * servicePct / 100;
+          final serviceAmt = rawServiceAmt.toInt();
+          final foodOnly = foodSum.toInt();
+          final pctLabel = servicePct > 0
+              ? '${S.current.strServiceCharge} (${servicePct.toInt()}%)'
+              : S.current.strServiceCharge;
 
           return Column(
             children: [
               _SummaryLine(
                 label: S.current.strSubtotal,
-                value: effective.formatNWithoutS,
+                value: foodOnly.formatNWithoutS,
               ),
               if (serviceAmt > 0) ...[
                 const SizedBox(height: 8),
-                _SummaryLine(
-                  label: servicePct > 0
-                      ? '${S.current.strServiceCharge} ($servicePct%)'
-                      : S.current.strServiceCharge,
-                  value: serviceAmt.formatNWithoutS,
+                // Tappable service toggle row
+                GestureDetector(
+                  onTap: () => onToggleService(!includeService),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 120),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 10, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: includeService ? _kIndigoBg : _kS50,
+                      border: Border.all(
+                        color:
+                            includeService ? _kIndigoBorder : _kS200,
+                      ),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          includeService
+                              ? Icons.check_box_rounded
+                              : Icons.check_box_outline_blank_rounded,
+                          size: 14,
+                          color: includeService ? _kIndigo : _kS500,
+                        ),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text(
+                            pctLabel,
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: includeService ? _kIndigo : _kS500,
+                              fontFamily: 'Inter',
+                            ),
+                          ),
+                        ),
+                        Text(
+                          serviceAmt.formatNWithoutS,
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: includeService ? _kIndigo : _kS900,
+                            fontFamily: 'Inter',
+                            fontFeatures: const [
+                              FontFeature.tabularFigures()
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 3),
+                        Text(
+                          S.current.strSom,
+                          style: const TextStyle(
+                            fontSize: 11,
+                            color: _kS500,
+                            fontFamily: 'Inter',
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
               ],
               if (state.hourPrice > 0) ...[

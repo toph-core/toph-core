@@ -51,8 +51,6 @@ class OrderActionsBar extends StatefulWidget {
 
 class _OrderActionsBarState extends State<OrderActionsBar>
     with DetailScreenMixin {
-  bool _includeService = true;
-
   String? get tableId => widget.tableId;
   int get guestCount => widget.guestCount;
   TableStatus get tableStatus => widget.tableStatus;
@@ -93,7 +91,7 @@ class _OrderActionsBarState extends State<OrderActionsBar>
                       .round();
               final detail = context.read<DetailBloc>().lastDetail;
               final servicePercent = detail?.servicePercent ?? 0;
-              final serviceAmt = _includeService && servicePercent > 0
+              final serviceAmt = servicePercent > 0
                   ? (foodTotal * servicePercent / 100).round()
                   : 0;
               final total = foodTotal + timerAmt + serviceAmt;
@@ -106,16 +104,6 @@ class _OrderActionsBarState extends State<OrderActionsBar>
                     total: total,
                   ),
                   const SizedBox(width: 14),
-
-                  // ── Service toggle ─────────────────────────────────
-                  if (servicePercent > 0)
-                    _ServiceToggle(
-                      percent: servicePercent,
-                      amount: serviceAmt,
-                      included: _includeService,
-                      onToggle: (v) => setState(() => _includeService = v),
-                    ),
-                  if (servicePercent > 0) const SizedBox(width: 10),
 
                   // ── Timer (compact) ────────────────────────────────
                   if (timerState.shouldShow)
@@ -271,82 +259,6 @@ class _TotalBlock extends StatelessWidget {
           ],
         ),
       ],
-    );
-  }
-}
-
-// ─── Service toggle ──────────────────────────────────────────────────────────
-class _ServiceToggle extends StatelessWidget {
-  final double percent;
-  final int amount;
-  final bool included;
-  final ValueChanged<bool> onToggle;
-
-  const _ServiceToggle({
-    required this.percent,
-    required this.amount,
-    required this.included,
-    required this.onToggle,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final pct = percent == percent.roundToDouble()
-        ? percent.round().toString()
-        : percent.toStringAsFixed(1);
-    return GestureDetector(
-      onTap: () => onToggle(!included),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 120),
-        height: 56,
-        padding: const EdgeInsets.symmetric(horizontal: 12),
-        decoration: BoxDecoration(
-          color: included ? const Color(0xFFEEF2FF) : _kS50,
-          border: Border.all(
-            color: included ? const Color(0xFFC7D2FE) : _kS200,
-          ),
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              included
-                  ? Icons.check_box_rounded
-                  : Icons.check_box_outline_blank_rounded,
-              size: 16,
-              color: included ? _indigo : _kS500,
-            ),
-            const SizedBox(width: 6),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  '${S.current.strService} $pct%',
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w500,
-                    color: included ? _indigo : _kS500,
-                    fontFamily: 'Inter',
-                  ),
-                ),
-                if (amount > 0)
-                  Text(
-                    '+${amount.formatN}',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                      color: included ? _indigo : _kS900,
-                      fontFamily: 'Inter',
-                      fontFeatures: const [FontFeature.tabularFigures()],
-                    ),
-                  ),
-              ],
-            ),
-          ],
-        ),
-      ),
     );
   }
 }
@@ -1055,6 +967,10 @@ class _ActionButtons extends StatelessWidget {
                             timerData?.totalActiveSec ??
                             0,
                         'timer_price_per_hour': timerData?.pricePerHour,
+                        // bills endpoint open order uchun service_percent
+                        // qaytarmasligi mumkin — shu yerdan fallback uzatamiz
+                        'service_percent':
+                            context.read<DetailBloc>().lastDetail?.servicePercent ?? 0,
                       },
                     );
                   },

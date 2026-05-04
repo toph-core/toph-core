@@ -515,12 +515,25 @@ class MainDataSourcesImpl implements MainDataSources {
     String id,
   ) async {
     try {
-      final orderId = await getOrderIdWithTableId(tableId: id);
+      // orders/table endpoint — orderIdni VA service_percentni birga olamiz
+      final ordersRes = await _client.dio.get(ListAPI.orderWithTableId(id));
+      final orderData =
+          ordersRes.data['data'][0] as Map<String, dynamic>? ?? {};
+      final orderId = orderData['id'] as String? ?? '';
       if (orderId.isEmpty) {
         throw "To'lov ma'lumotlarini olishda xatolik yuzaga keldi";
       }
+      final rawSp = orderData['service_percent'];
+      final orderServicePercent = rawSp is num ? rawSp.toDouble() : 0.0;
+
       final response = await _client.dio.get(ListAPI.archiveWithId(orderId));
-      return Right(ArchiveDetailModel.fromJson(response.data['data']));
+      var detail = ArchiveDetailModel.fromJson(response.data['data']);
+      // bills endpoint open order uchun service_percent qaytarmasligi mumkin —
+      // orders/table javobidagini fallback sifatida ishlatamiz
+      if (detail.servicePercent == 0.0 && orderServicePercent > 0) {
+        detail = detail.copyWith(servicePercent: orderServicePercent);
+      }
+      return Right(detail);
     } on DioException catch (exception) {
       return Left(handleDioException(exception));
     } on FormatException catch (e, st) {

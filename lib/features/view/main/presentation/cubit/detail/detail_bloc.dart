@@ -153,7 +153,11 @@ class DetailBloc extends Bloc<DetailEvent, DetailState> {
     // chaqiriqlari bloklanadi (widget rebuild dan kelgan duplicate eventlarni yutadi).
     // `force: true` — user mutatsiyasi (item qo'shildi/bekor qilindi) dan keyin
     // throttle'ni chetlab o'tamiz, yangi state darhol yuklanishi kerak.
+    // Agar cache yo'q bo'lsa (masalan transfer keyin evict qilindi) — ham
+    // throttle'ni chetlab o'tamiz, serverdan yangi ma'lumot olish shart.
+    final cacheWasAbsent = cached == null;
     if (!event.force &&
+        !cacheWasAbsent &&
         _lastBillFetchTableId == event.billId &&
         _lastBillFetchAt != null &&
         DateTime.now().difference(_lastBillFetchAt!) < _billFetchThrottle) {
