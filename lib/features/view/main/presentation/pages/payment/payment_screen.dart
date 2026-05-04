@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mary_ai_pos/core/api/api.dart';
+import 'package:mary_ai_pos/core/design_system/pos_design_system.dart';
 import 'package:mary_ai_pos/core/extension/for_context.dart';
 import 'package:mary_ai_pos/core/extension/number_formatter.dart';
 import 'package:mary_ai_pos/core/services/cache/cache_service.dart';
@@ -123,6 +124,12 @@ class _PaymentScreenState extends State<PaymentScreen> {
               if (finalTotal < 0) finalTotal = 0;
               finalTotal += state.hourPrice.toInt();
 
+              // Compact (1024–1366): kichikroq side panellar — numpad uchun joy
+              final sidePanelW = PosBreakpoints.pick<double>(
+                context,
+                compact: 240,
+                comfortable: 300,
+              );
               return Column(
                 children: [
                   const PaymentTopBar(),
@@ -130,9 +137,9 @@ class _PaymentScreenState extends State<PaymentScreen> {
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        // Left column (280px) — order summary
+                        // Left column — order summary
                         SizedBox(
-                          width: 280,
+                          width: sidePanelW,
                           child: _OrderSummaryColumn(
                             detail: state.detail!,
                             tableId: tableId,
@@ -145,9 +152,9 @@ class _PaymentScreenState extends State<PaymentScreen> {
                             discountFocused: _discountFocused,
                           ),
                         ),
-                        // Right column (280px) — discount + total + actions
+                        // Right column — discount + total + actions
                         SizedBox(
-                          width: 280,
+                          width: sidePanelW,
                           child: PaymentRightSideBar(
                             detail: state.detail!,
                             finalTotal: finalTotal,

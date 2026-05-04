@@ -534,25 +534,27 @@ class _OutlinedActionButtonState extends State<_OutlinedActionButton> {
       onEnter: (_) => setState(() => _hovered = true),
       onExit: (_) => setState(() => _hovered = false),
       child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
         onTap: widget.onTap,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 120),
-          height: 44,
+          // POS minimum touch target
+          height: 56,
           decoration: BoxDecoration(
             color: _hovered ? _kS50 : Colors.white,
             border: Border.all(color: _kS200),
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(12),
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(widget.icon, size: 16, color: _kS500),
+              Icon(widget.icon, size: 18, color: _kS500),
               const SizedBox(width: 8),
               Text(
                 widget.label,
                 style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
+                  fontSize: 15, // PosTypography.bodyMd
+                  fontWeight: FontWeight.w600,
                   color: _kS900,
                   fontFamily: 'Inter',
                 ),
@@ -580,6 +582,7 @@ class _ConfirmButton extends StatelessWidget {
     final canConfirm = state.status != Status.LOADING && cashOk;
 
     return GestureDetector(
+      behavior: HitTestBehavior.opaque,
       onTap: canConfirm
           ? () => context.read<PaymentBloc>().add(
                 const PaymentEvent.payment(),
@@ -587,10 +590,11 @@ class _ConfirmButton extends StatelessWidget {
           : null,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 120),
-        height: 52,
+        // POS primary CTA — comfortable touch target
+        height: 64,
         decoration: BoxDecoration(
           color: canConfirm ? _kBrand : _kBrand.withOpacity(0.4),
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(12),
         ),
         child: Center(
           child: state.status == Status.LOADING
@@ -614,8 +618,8 @@ class _ConfirmButton extends StatelessWidget {
                     Text(
                       S.current.strConfirm,
                       style: const TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
+                        fontSize: 18, // PosTypography.buttonLg
+                        fontWeight: FontWeight.w700,
                         color: Colors.white,
                         fontFamily: 'Inter',
                         letterSpacing: -0.2,

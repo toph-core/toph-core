@@ -285,7 +285,8 @@ class _QuickAmountPills extends StatelessWidget {
     ];
 
     return SizedBox(
-      height: 36,
+      // POS minimum touch zone — barmoqqa qulay
+      height: 48,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         physics: const BouncingScrollPhysics(),
@@ -324,10 +325,11 @@ class _QuickPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
+      behavior: HitTestBehavior.opaque,
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 120),
-        padding: const EdgeInsets.symmetric(horizontal: 16),
+        padding: const EdgeInsets.symmetric(horizontal: 18),
         alignment: Alignment.center,
         decoration: BoxDecoration(
           color: isActive ? _kBrand : Colors.white,
@@ -337,10 +339,11 @@ class _QuickPill extends StatelessWidget {
         child: Text(
           label,
           style: TextStyle(
-            fontSize: 13,
+            fontSize: 15, // PosTypography.bodyMd
             fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
             color: isActive ? Colors.white : _kS700,
             fontFamily: 'Inter',
+            fontFeatures: const [FontFeature.tabularFigures()],
           ),
         ),
       ),

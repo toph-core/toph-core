@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:mary_ai_pos/core/design_system/pos_design_system.dart';
 import 'package:mary_ai_pos/core/extension/for_context.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/payment/payment_bloc.dart';
 import 'package:mary_ai_pos/generated/l10n.dart';
@@ -14,33 +15,40 @@ class PaymentTopBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final hPad = PosBreakpoints.pick<double>(
+      context,
+      compact: PosDimensions.l, // 16
+      comfortable: PosDimensions.xl, // 20
+    );
     return Container(
-      height: 64,
+      height: PosDimensions.appBarHeight, // 64
       decoration: BoxDecoration(
         color: Colors.white,
         border: Border(bottom: BorderSide(color: context.colors.border)),
       ),
-      padding: const EdgeInsets.symmetric(horizontal: 20),
+      padding: EdgeInsets.symmetric(horizontal: hPad),
       child: Row(
         children: [
           GestureDetector(
+            behavior: HitTestBehavior.opaque,
             onTap: () => Navigator.pop(context),
             child: Container(
-              width: 40,
-              height: 40,
+              // POS minimum touch target
+              width: PosDimensions.touchTargetMin, // 56
+              height: PosDimensions.touchTargetMin,
               decoration: BoxDecoration(
                 color: _kS50,
                 border: Border.all(color: _kS200),
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(PosDimensions.radiusMd),
               ),
               child: const Icon(
                 Icons.arrow_back_ios_new_rounded,
-                size: 16,
+                size: 18,
                 color: _kS900,
               ),
             ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: PosDimensions.m),
           BlocBuilder<PaymentBloc, PaymentState>(
             builder: (context, state) {
               final tableNumber = state.detail?.tableNumber;
@@ -58,10 +66,10 @@ class PaymentTopBar extends StatelessWidget {
                   Text(
                     S.current.strOrder,
                     style: const TextStyle(
-                      fontSize: 20,
+                      fontSize: PosTypography.headlineSm, // 20
                       fontWeight: FontWeight.w700,
                       color: _kS900,
-                      fontFamily: 'Inter',
+                      fontFamily: PosTypography.family,
                       height: 1.1,
                       letterSpacing: -0.3,
                     ),
@@ -72,9 +80,9 @@ class PaymentTopBar extends StatelessWidget {
                         ? '$tableLabel · #$codeShort'
                         : tableLabel,
                     style: const TextStyle(
-                      fontSize: 13,
+                      fontSize: PosTypography.bodySm, // 13
                       color: _kS500,
-                      fontFamily: 'Inter',
+                      fontFamily: PosTypography.family,
                     ),
                   ),
                 ],
