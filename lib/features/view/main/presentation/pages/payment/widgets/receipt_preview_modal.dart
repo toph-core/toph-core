@@ -9,6 +9,7 @@ import 'package:mary_ai_pos/core/service/printer/printer_service.dart';
 import 'package:mary_ai_pos/core/service/receipt/receipt_info_storage.dart';
 import 'package:mary_ai_pos/di.dart';
 import 'package:mary_ai_pos/features/view/auth/presentation/cubit/bloc/user_bloc.dart';
+import 'package:mary_ai_pos/features/view/main/data/models/table_timer/table_timer_response_model.dart';
 import 'package:mary_ai_pos/features/view/main/domain/entities/archive_detail_entity.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/payment/payment_bloc.dart';
 import 'package:mary_ai_pos/generated/l10n.dart';
@@ -25,11 +26,19 @@ const _kBrand = Color(0xFFFB6633);
 class ReceiptPreviewModal extends StatelessWidget {
   final ArchiveDetailEntity detail;
   final int finalTotal;
+  final DateTime? timerStartedAt;
+  final List<PauseInterval> timerPauses;
+  final int timerTotalSec;
+  final String? timerPricePerHour;
 
   const ReceiptPreviewModal({
     super.key,
     required this.detail,
     required this.finalTotal,
+    this.timerStartedAt,
+    this.timerPauses = const [],
+    this.timerTotalSec = 0,
+    this.timerPricePerHour,
   });
 
   @override
@@ -63,6 +72,10 @@ class ReceiptPreviewModal extends StatelessWidget {
                   finalTotal: finalTotal,
                   discountAmount: discountAmt,
                   discountType: paymentState.discountType,
+                  timerStartedAt: timerStartedAt,
+                  timerPauses: timerPauses,
+                  timerTotalSec: timerTotalSec,
+                  timerPricePerHour: timerPricePerHour,
                 ),
               ),
             ),
@@ -145,6 +158,10 @@ class _ReceiptCard extends StatelessWidget {
   final int finalTotal;
   final int discountAmount;
   final DiscountType discountType;
+  final DateTime? timerStartedAt;
+  final List<PauseInterval> timerPauses;
+  final int timerTotalSec;
+  final String? timerPricePerHour;
 
   const _ReceiptCard({
     required this.detail,
@@ -152,7 +169,32 @@ class _ReceiptCard extends StatelessWidget {
     required this.finalTotal,
     required this.discountAmount,
     required this.discountType,
+    this.timerStartedAt,
+    this.timerPauses = const [],
+    this.timerTotalSec = 0,
+    this.timerPricePerHour,
   });
+
+  bool get _hasTimerData =>
+      timerStartedAt != null || timerTotalSec > 0 || timerPauses.isNotEmpty;
+
+  int get _totalPauseSec =>
+      timerPauses.fold<int>(0, (s, p) => s + p.durationSec);
+
+  static String _fmtClock(DateTime dt) {
+    final l = dt.toLocal();
+    return '${l.hour.toString().padLeft(2, '0')}:${l.minute.toString().padLeft(2, '0')}';
+  }
+
+  static String _fmtDuration(int totalSec) {
+    final h = totalSec ~/ 3600;
+    final m = (totalSec % 3600) ~/ 60;
+    final s = totalSec % 60;
+    if (h > 0 && m > 0) return '${h}h ${m}min';
+    if (h > 0) return '${h}h 0min';
+    if (m > 0) return '${m}min ${s}s';
+    return '${s}s';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -208,6 +250,52 @@ class _ReceiptCard extends StatelessWidget {
           _KVRow('Sana:', dateStr),
           if (tableNum > 0) _KVRow('Stol:', '№$tableNum$guests'),
           _KVRow('Kassir:', cashierShort),
+
+          // ── Soatlik jadval (faqat time-based stol uchun) ──
+          if (_hasTimerData) ...[
+            const SizedBox(height: 10),
+            const _Dashed(),
+            const SizedBox(height: 8),
+            const Center(
+              child: Text(
+                'SOATLIK JADVAL',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: _kS900,
+                  fontFamily: 'JetBrainsMono',
+                  letterSpacing: 0.5,
+                ),
+              ),
+            ),
+            const SizedBox(height: 6),
+            if (timerStartedAt != null)
+              _KVRow('Ochildi:', _fmtClock(timerStartedAt!)),
+            for (int i = 0; i < timerPauses.length; i++) ...[
+              _KVRow(
+                'Pause ${i + 1} bo\'ldi:',
+                _fmtClock(timerPauses[i].startedAt),
+              ),
+              if (timerPauses[i].endedAt != null)
+                _KVRow(
+                  'To\'xtatildi:',
+                  _fmtClock(timerPauses[i].endedAt!),
+                ),
+              if (timerPauses[i].durationSec > 0)
+                _KVRow(
+                  'Pause vaqti:',
+                  _fmtDuration(timerPauses[i].durationSec),
+                ),
+            ],
+            if (timerTotalSec > 0)
+              _KVRow('Faol vaqt:', _fmtDuration(timerTotalSec)),
+            if (_totalPauseSec > 0)
+              _KVRow('Umumiy pauza:', _fmtDuration(_totalPauseSec)),
+            if (timerPricePerHour != null && timerPricePerHour!.isNotEmpty)
+              _KVRow('Soatlik narx:',
+                  '${(int.tryParse(timerPricePerHour!.replaceAll(RegExp(r'[^0-9]'), '')) ?? 0).formatNWithoutS} so\'m'),
+          ],
+
           const SizedBox(height: 10),
           const _Dashed(),
           const SizedBox(height: 10),

@@ -39,11 +39,13 @@ class PaymentCenterColumn extends StatelessWidget with PaymentScreenMixin {
               _PayTypeTabs(state: state),
               const SizedBox(height: 18),
 
-              // Amount entry block
+              // Amount entry block — bosilganda numpad qabul qilingan summa
+              // rejimiga qaytadi (chegirma rejimidan chiqish)
               _AmountEntry(
                 entered: entered,
                 change: change,
                 showChange: state.paymentType == PaymentType.cash && change > 0,
+                onTap: () => discountFocused.value = false,
               ),
               const SizedBox(height: 14),
 
@@ -174,16 +176,21 @@ class _AmountEntry extends StatelessWidget {
   final int entered;
   final int change;
   final bool showChange;
+  final VoidCallback? onTap;
 
   const _AmountEntry({
     required this.entered,
     required this.change,
     required this.showChange,
+    this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: onTap,
+      child: Container(
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(20, 14, 20, 14),
       decoration: BoxDecoration(
@@ -261,6 +268,7 @@ class _AmountEntry extends StatelessWidget {
           ],
         ],
       ),
+    ),
     );
   }
 }

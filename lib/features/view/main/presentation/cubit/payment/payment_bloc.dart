@@ -42,6 +42,12 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
   int _timerTotalSec = 0;
   String? _timerPricePerHour;
 
+  // Public read-only getters for UI (preview modal)
+  DateTime? get timerStartedAt => _timerStartedAt;
+  List<PauseInterval> get timerPauses => _timerPauses;
+  int get timerTotalSec => _timerTotalSec;
+  String? get timerPricePerHour => _timerPricePerHour;
+
   void setTimerInfo({
     DateTime? startedAt,
     List<PauseInterval> pauses = const [],

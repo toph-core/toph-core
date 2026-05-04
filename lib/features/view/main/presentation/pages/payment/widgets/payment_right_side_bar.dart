@@ -76,6 +76,10 @@ class PaymentRightSideBar extends StatelessWidget {
                             child: ReceiptPreviewModal(
                               detail: detail,
                               finalTotal: finalTotal,
+                              timerStartedAt: bloc.timerStartedAt,
+                              timerPauses: bloc.timerPauses,
+                              timerTotalSec: bloc.timerTotalSec,
+                              timerPricePerHour: bloc.timerPricePerHour,
                             ),
                           ),
                         );
