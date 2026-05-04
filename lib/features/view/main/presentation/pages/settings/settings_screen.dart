@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:mary_ai_pos/core/design_system/pos_design_system.dart';
 import 'package:mary_ai_pos/core/extension/for_context.dart';
 import 'package:mary_ai_pos/core/routes/app_routes.dart';
 import 'package:mary_ai_pos/core/theme/tokens/theme_colors.dart';
@@ -224,25 +225,34 @@ class _SettingsSideNav extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.colors;
     return Container(
-      width: 260,
+      width: PosBreakpoints.pick<double>(
+        context,
+        compact: 220,
+        comfortable: 280,
+      ),
       decoration: BoxDecoration(
         color: colors.bgSecondary,
         border: Border(right: BorderSide(color: colors.border)),
       ),
-      padding: const EdgeInsets.fromLTRB(16, 24, 16, 16),
+      padding: const EdgeInsets.fromLTRB(
+        PosDimensions.l,
+        PosDimensions.xxl,
+        PosDimensions.l,
+        PosDimensions.l,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Padding(
-            padding: const EdgeInsets.only(left: 6, bottom: 12),
+            padding: const EdgeInsets.only(left: 6, bottom: PosDimensions.m),
             child: Text(
               S.current.strSettings.toUpperCase(),
               style: TextStyle(
-                fontSize: 11,
+                fontSize: PosTypography.captionSm, // 12
                 fontWeight: FontWeight.w700,
                 letterSpacing: 1.2,
                 color: colors.textSecondary,
-                fontFamily: 'Inter',
+                fontFamily: PosTypography.family,
               ),
             ),
           ),
@@ -307,25 +317,28 @@ class _NavItemState extends State<_NavItem> {
               borderRadius: BorderRadius.circular(12),
               onTap: widget.onTap,
               child: Padding(
+                // POS-friendly tap zone (~56dp height)
                 padding: const EdgeInsets.symmetric(
-                    horizontal: 10, vertical: 10),
+                    horizontal: PosDimensions.m, vertical: PosDimensions.m),
                 child: Row(
                   children: [
                     AnimatedContainer(
                       duration: const Duration(milliseconds: 140),
-                      width: 34,
-                      height: 34,
+                      // POS-friendly icon container
+                      width: 40,
+                      height: 40,
                       decoration: BoxDecoration(
                         color: iconBg,
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius:
+                            BorderRadius.circular(PosDimensions.radiusSm),
                         border: selected
                             ? null
                             : Border.all(color: colors.border),
                       ),
                       child: Icon(widget.section.icon,
-                          size: 18, color: iconColor),
+                          size: 20, color: iconColor),
                     ),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: PosDimensions.m),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -333,20 +346,20 @@ class _NavItemState extends State<_NavItem> {
                           Text(
                             widget.section.label,
                             style: TextStyle(
-                              fontSize: 13,
+                              fontSize: PosTypography.bodyMd, // 15
                               fontWeight: FontWeight.w600,
                               color: titleColor,
-                              fontFamily: 'Inter',
+                              fontFamily: PosTypography.family,
                             ),
                           ),
-                          const SizedBox(height: 1),
+                          const SizedBox(height: 2),
                           Text(
                             widget.section.description,
                             style: TextStyle(
-                              fontSize: 11,
+                              fontSize: PosTypography.captionSm, // 12
                               fontWeight: FontWeight.w500,
                               color: colors.textSecondary,
-                              fontFamily: 'Inter',
+                              fontFamily: PosTypography.family,
                             ),
                           ),
                         ],
@@ -354,7 +367,7 @@ class _NavItemState extends State<_NavItem> {
                     ),
                     if (selected)
                       Icon(Icons.chevron_right_rounded,
-                          size: 18, color: colors.buttonBrand),
+                          size: 20, color: colors.buttonBrand),
                   ],
                 ),
               ),

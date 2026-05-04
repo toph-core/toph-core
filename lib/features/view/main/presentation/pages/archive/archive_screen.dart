@@ -2,6 +2,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mary_ai_pos/core/api/api.dart';
 import 'package:mary_ai_pos/core/components/flush_bars.dart';
+import 'package:mary_ai_pos/core/design_system/pos_design_system.dart';
 import 'package:mary_ai_pos/core/extension/for_context.dart';
 import 'package:mary_ai_pos/core/extension/number_formatter.dart';
 import 'package:mary_ai_pos/core/routes/app_routes.dart';
@@ -1244,8 +1245,14 @@ class _AdminOrdersArchiveBodyState extends State<_AdminOrdersArchiveBody> {
       children: [
         // ── Page header ──────────────────────────────────────────────────
         Container(
-          height: 58,
-          padding: const EdgeInsets.symmetric(horizontal: 24),
+          height: PosDimensions.appBarHeight, // 64
+          padding: EdgeInsets.symmetric(
+            horizontal: PosBreakpoints.pick<double>(
+              context,
+              compact: PosDimensions.l, // 16
+              comfortable: PosDimensions.xxl, // 24
+            ),
+          ),
           decoration: const BoxDecoration(
             color: Colors.white,
             border: Border(bottom: BorderSide(color: Color(0xFFE2E8F0))),
@@ -1255,32 +1262,34 @@ class _AdminOrdersArchiveBodyState extends State<_AdminOrdersArchiveBody> {
               const Text(
                 'Barcha buyurtmalar',
                 style: TextStyle(
-                  fontSize: 17,
+                  fontSize: PosTypography.bodyLg, // 17
                   fontWeight: FontWeight.w700,
                   color: Color(0xFF0F172A),
-                  fontFamily: 'Inter',
+                  fontFamily: PosTypography.family,
                   letterSpacing: -0.3,
                 ),
               ),
               const Spacer(),
               GestureDetector(
+                behavior: HitTestBehavior.opaque,
                 onTap: _orders.isNotEmpty ? () => _exportCsvAdmin(context) : null,
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 120),
-                  height: 36,
-                  padding: const EdgeInsets.symmetric(horizontal: 14),
+                  // POS minimum touch zone
+                  height: 48,
+                  padding: const EdgeInsets.symmetric(horizontal: PosDimensions.l),
                   decoration: BoxDecoration(
                     color: Colors.white,
                     border: Border.all(color: const Color(0xFFE2E8F0)),
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(PosDimensions.radiusMd),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
-                    spacing: 8,
+                    spacing: PosDimensions.s,
                     children: [
                       Icon(
                         Icons.file_download_outlined,
-                        size: 15,
+                        size: 18,
                         color: _orders.isNotEmpty
                             ? const Color(0xFF0F172A)
                             : const Color(0xFF94A3B8),
@@ -1288,12 +1297,12 @@ class _AdminOrdersArchiveBodyState extends State<_AdminOrdersArchiveBody> {
                       Text(
                         'Eksport CSV',
                         style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w500,
+                          fontSize: PosTypography.bodyMd, // 15
+                          fontWeight: FontWeight.w600,
                           color: _orders.isNotEmpty
                               ? const Color(0xFF0F172A)
                               : const Color(0xFF94A3B8),
-                          fontFamily: 'Inter',
+                          fontFamily: PosTypography.family,
                         ),
                       ),
                     ],
@@ -1306,46 +1315,58 @@ class _AdminOrdersArchiveBodyState extends State<_AdminOrdersArchiveBody> {
 
         // ── Filter bar ────────────────────────────────────────────────────
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
+          padding: EdgeInsets.symmetric(
+            horizontal: PosBreakpoints.pick<double>(
+              context,
+              compact: PosDimensions.l,
+              comfortable: PosDimensions.xxl,
+            ),
+            vertical: PosDimensions.s, // 8
+          ),
           color: Colors.white,
           child: Row(
             children: [
               // Search
               SizedBox(
-                width: 220,
-                height: 34,
+                width: PosBreakpoints.pick<double>(
+                  context,
+                  compact: 200,
+                  comfortable: 240,
+                ),
+                // POS-friendly height
+                height: 48,
                 child: TextField(
                   decoration: InputDecoration(
                     hintText: S.current.strSearch,
                     hintStyle: const TextStyle(
-                      fontSize: 13,
+                      fontSize: PosTypography.bodyMd, // 15
                       color: Color(0xFF94A3B8),
-                      fontFamily: 'Inter',
+                      fontFamily: PosTypography.family,
                     ),
                     prefixIcon: const Icon(
                       Icons.search_rounded,
-                      size: 16,
+                      size: 18,
                       color: Color(0xFF94A3B8),
                     ),
                     filled: true,
                     fillColor: const Color(0xFFF8FAFC),
                     contentPadding: EdgeInsets.zero,
                     border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(9),
+                      borderRadius: BorderRadius.circular(PosDimensions.radiusMd),
                       borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
                     ),
                     enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(9),
+                      borderRadius: BorderRadius.circular(PosDimensions.radiusMd),
                       borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
                     ),
                     focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(9),
+                      borderRadius: BorderRadius.circular(PosDimensions.radiusMd),
                       borderSide: const BorderSide(color: Color(0xFFFB6633)),
                     ),
                   ),
                   style: const TextStyle(
-                    fontSize: 13,
-                    fontFamily: 'Inter',
+                    fontSize: PosTypography.bodyMd,
+                    fontFamily: PosTypography.family,
                     color: Color(0xFF0F172A),
                   ),
                 ),
@@ -1417,20 +1438,22 @@ class _AdminOrdersArchiveBodyState extends State<_AdminOrdersArchiveBody> {
 
               // Refresh
               GestureDetector(
+                behavior: HitTestBehavior.opaque,
                 onTap: _loading ? null : () => _load(page: 1),
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 120),
-                  width: 34,
-                  height: 34,
+                  // POS minimum touch zone
+                  width: 48,
+                  height: 48,
                   decoration: BoxDecoration(
                     color: const Color(0xFFF8FAFC),
                     border: Border.all(color: const Color(0xFFE2E8F0)),
-                    borderRadius: BorderRadius.circular(9),
+                    borderRadius: BorderRadius.circular(PosDimensions.radiusMd),
                   ),
                   child: Center(
                     child: Icon(
                       Icons.refresh_rounded,
-                      size: 16,
+                      size: 20,
                       color: _loading
                           ? const Color(0xFFCBD5E1)
                           : const Color(0xFF64748B),
@@ -1599,7 +1622,7 @@ class _AdminOrdersArchiveBodyState extends State<_AdminOrdersArchiveBody> {
             ),
             child: SizedBox(
               width: 372,
-              height: 44,
+              height: 48,
               child: NumberPaginator(
                 controller: _paginatorController,
                 numberPages: totalPages,
@@ -1609,7 +1632,7 @@ class _AdminOrdersArchiveBodyState extends State<_AdminOrdersArchiveBody> {
                   _load(page: pageIndex + 1);
                 },
                 child: const SizedBox(
-                  height: 40,
+                  height: 48,
                   child: Row(
                     children: [
                       PrevButton(),
@@ -1622,11 +1645,11 @@ class _AdminOrdersArchiveBodyState extends State<_AdminOrdersArchiveBody> {
             ),
           ),
           Container(
-            height: 40,
-            padding: const EdgeInsets.symmetric(horizontal: 10),
+            height: 48,
+            padding: const EdgeInsets.symmetric(horizontal: 12),
             decoration: BoxDecoration(
               color: colors.bgSecondary,
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(PosDimensions.radiusMd),
               border: Border.all(color: colors.border),
             ),
             child: DropdownButtonHideUnderline(
@@ -1813,12 +1836,14 @@ class _AdminFilterPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
+      behavior: HitTestBehavior.opaque,
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 140),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        // POS-friendly tap zone (~44dp height including padding)
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: BoxDecoration(
-          color: isActive ? activeColor.withOpacity(0.08) : Colors.transparent,
+          color: isActive ? activeColor.withOpacity(0.10) : Colors.transparent,
           border: Border.all(
             color: isActive ? activeColor.withOpacity(0.4) : Colors.transparent,
           ),
@@ -1827,10 +1852,10 @@ class _AdminFilterPill extends StatelessWidget {
         child: Text(
           label,
           style: TextStyle(
-            fontSize: 13,
-            fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
+            fontSize: PosTypography.bodyMd, // 15
+            fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
             color: isActive ? activeColor : const Color(0xFF64748B),
-            fontFamily: 'Inter',
+            fontFamily: PosTypography.family,
           ),
         ),
       ),
