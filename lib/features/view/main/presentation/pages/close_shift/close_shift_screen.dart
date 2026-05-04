@@ -1,5 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mary_ai_pos/core/api/api.dart';
+import 'package:mary_ai_pos/core/design_system/pos_design_system.dart';
 import 'package:mary_ai_pos/core/extension/number_formatter.dart';
 import 'package:mary_ai_pos/core/routes/app_routes.dart';
 import 'package:mary_ai_pos/core/widgets/app_scaffold.dart';
@@ -153,21 +154,23 @@ class _SyncButtonState extends State<_SyncButton>
     return MouseRegion(
       cursor: SystemMouseCursors.click,
       child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
         onTap: widget.onTap,
         child: Container(
-          height: 40,
-          width: 40,
+          // POS minimum touch zone
+          height: PosDimensions.touchTargetMin, // 56
+          width: PosDimensions.touchTargetMin,
           decoration: BoxDecoration(
             color: Colors.white,
             border: Border.all(color: _kS200),
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(PosDimensions.radiusMd),
           ),
           alignment: Alignment.center,
           child: RotationTransition(
             turns: _ctrl,
             child: const Icon(
               Icons.refresh_rounded,
-              size: 18,
+              size: 22,
               color: _kS700,
             ),
           ),
@@ -687,27 +690,29 @@ class _OutlinedIconButtonState extends State<_OutlinedIconButton> {
       onEnter: (_) => setState(() => _hovered = true),
       onExit: (_) => setState(() => _hovered = false),
       child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
         onTap: widget.onTap,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 120),
-          height: 40,
-          padding: const EdgeInsets.symmetric(horizontal: 14),
+          // POS-friendly button height
+          height: PosDimensions.touchTargetMin, // 56
+          padding: const EdgeInsets.symmetric(horizontal: PosDimensions.l),
           decoration: BoxDecoration(
             color: _hovered ? _kS50 : Colors.white,
             border: Border.all(color: _kS200),
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(PosDimensions.radiusMd),
           ),
           child: Row(
             children: [
-              Icon(widget.icon, size: 16, color: _kS500),
-              const SizedBox(width: 8),
+              Icon(widget.icon, size: 18, color: _kS500),
+              const SizedBox(width: PosDimensions.s),
               Text(
                 widget.label,
                 style: const TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
+                  fontSize: PosTypography.bodyMd, // 15
+                  fontWeight: FontWeight.w600,
                   color: _kS900,
-                  fontFamily: 'Inter',
+                  fontFamily: PosTypography.family,
                 ),
               ),
             ],

@@ -3,6 +3,7 @@ import 'package:keyboard_dismisser/keyboard_dismisser.dart';
 import 'package:mary_ai_pos/core/api/api.dart';
 import 'package:mary_ai_pos/core/auth/models/brand_id_token_pair/brand_id_token_pair.dart';
 import 'package:mary_ai_pos/core/common/custom_button.dart';
+import 'package:mary_ai_pos/core/design_system/pos_design_system.dart';
 import 'package:mary_ai_pos/core/components/flush_bars.dart';
 import 'package:mary_ai_pos/core/extension/for_context.dart';
 import 'package:mary_ai_pos/core/extension/widget_extension.dart';
@@ -187,7 +188,13 @@ class _OnlineOfflineStudentScreenState extends State<LoginScreen>
                       ),
                     ),
                     child: SizedBox(
-                      width: 400,
+                      // POS desktop'da kengroq forma — katta ekranda kichik
+                      // qolib ketmasin
+                      width: PosBreakpoints.pick<double>(
+                        context,
+                        compact: 400,
+                        comfortable: 460,
+                      ),
                       child: SafeArea(
                         child: Column(
                           mainAxisSize: MainAxisSize.min,

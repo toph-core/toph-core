@@ -1,5 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mary_ai_pos/core/api/api.dart';
+import 'package:mary_ai_pos/core/design_system/pos_design_system.dart';
 import 'package:mary_ai_pos/core/routes/app_routes.dart';
 import 'package:mary_ai_pos/core/widgets/app_scaffold.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/notification/notification_bloc.dart';
@@ -57,64 +58,73 @@ class _NotificationBodyState extends State<_NotificationBody> {
                 children: [
                   // Search field
                   SizedBox(
-                    width: 260,
-                    height: 36,
+                    width: PosBreakpoints.pick<double>(
+                      context,
+                      compact: 220,
+                      comfortable: 280,
+                    ),
+                    // POS-friendly height
+                    height: 48,
                     child: TextField(
                       controller: _searchController,
                       decoration: InputDecoration(
                         hintText: S.current.strSearch,
                         hintStyle: TextStyle(
-                          fontSize: 13,
+                          fontSize: PosTypography.bodyMd, // 15
                           color: colors.textSecondary,
-                          fontFamily: 'Inter',
+                          fontFamily: PosTypography.family,
                         ),
                         prefixIcon: Icon(
                           Icons.search_rounded,
-                          size: 18,
+                          size: 20,
                           color: colors.textSecondary,
                         ),
                         filled: true,
                         fillColor: const Color(0xFFF8FAFC),
                         contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 12,
+                          horizontal: PosDimensions.m,
                           vertical: 0,
                         ),
                         border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10),
+                          borderRadius:
+                              BorderRadius.circular(PosDimensions.radiusMd),
                           borderSide: const BorderSide(
                             color: Color(0xFFE2E8F0),
                           ),
                         ),
                         enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10),
+                          borderRadius:
+                              BorderRadius.circular(PosDimensions.radiusMd),
                           borderSide: const BorderSide(
                             color: Color(0xFFE2E8F0),
                           ),
                         ),
                         focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10),
+                          borderRadius:
+                              BorderRadius.circular(PosDimensions.radiusMd),
                           borderSide: const BorderSide(
                             color: Color(0xFFFB6633),
                           ),
                         ),
                       ),
                       style: const TextStyle(
-                        fontSize: 13,
-                        fontFamily: 'Inter',
+                        fontSize: PosTypography.bodyMd,
+                        fontFamily: PosTypography.family,
                         color: Color(0xFF0F172A),
                       ),
                       onChanged: (_) => setState(() {}),
                     ),
                   ),
                   const Spacer(),
-                  // Filter tabs
+                  // Filter tabs — POS touch zone
                   Container(
-                    height: 36,
+                    height: 48,
                     decoration: BoxDecoration(
                       color: const Color(0xFFF8FAFC),
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius:
+                          BorderRadius.circular(PosDimensions.radiusMd),
                     ),
-                    padding: const EdgeInsets.all(4),
+                    padding: const EdgeInsets.all(PosDimensions.xs),
                     child: Row(
                       spacing: 4,
                       children: [
