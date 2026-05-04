@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:mary_ai_pos/core/design_system/pos_design_system.dart';
 import 'package:mary_ai_pos/core/routes/app_routes.dart';
 import 'package:mary_ai_pos/core/constants/constants.dart';
 import 'package:mary_ai_pos/core/utils/user_role_permissions.dart';
@@ -24,7 +25,12 @@ class AppSidebar extends StatelessWidget {
     final canAccessSettings = role.canAccessSettings;
 
     return Container(
-      width: 92,
+      // Compact ekranlarda kichikroq sidebar — products grid'ga joy beradi
+      width: PosBreakpoints.pick<double>(
+        context,
+        compact: 88,
+        comfortable: 100,
+      ),
       decoration: const BoxDecoration(
         color: Colors.white,
         border: Border(right: BorderSide(color: _kSlate200)),
@@ -33,17 +39,17 @@ class AppSidebar extends StatelessWidget {
         children: [
           // Logo — ichki kontainer yo'q, faqat o'zi
           Padding(
-            padding: const EdgeInsets.symmetric(vertical: 18),
+            padding: const EdgeInsets.symmetric(vertical: PosDimensions.l + 2),
             child: Image.asset(
               AppImages.imgBrandLogo,
-              width: 56,
-              height: 56,
+              width: PosDimensions.touchTargetMin, // 56
+              height: PosDimensions.touchTargetMin,
               fit: BoxFit.contain,
               filterQuality: FilterQuality.high,
             ),
           ),
           Container(height: 1, color: _kSlate200),
-          const SizedBox(height: 12),
+          const SizedBox(height: PosDimensions.m),
 
           // Nav items
           Expanded(
@@ -168,15 +174,22 @@ class _NavItemState extends State<_NavItem> {
       onExit: (_) => setState(() => _hovered = false),
       cursor: SystemMouseCursors.click,
       child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
         onTap: widget.onTap,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 150),
-          width: 76,
-          margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          padding: const EdgeInsets.symmetric(vertical: 12),
+          // POS minimum touch zone (icon + label)
+          margin: const EdgeInsets.symmetric(
+            horizontal: PosDimensions.s,
+            vertical: PosDimensions.xs,
+          ),
+          padding: const EdgeInsets.symmetric(
+            vertical: PosDimensions.m,
+            horizontal: PosDimensions.xs,
+          ),
           decoration: BoxDecoration(
             color: bgColor,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(PosDimensions.radiusMd),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -185,15 +198,17 @@ class _NavItemState extends State<_NavItem> {
                 data: IconThemeData(color: iconColor, size: 26),
                 child: widget.icon,
               ),
-              const SizedBox(height: 6),
+              const SizedBox(height: PosDimensions.xs + 2),
               Text(
                 widget.label,
+                textAlign: TextAlign.center,
                 style: TextStyle(
-                  fontSize: 11,
+                  // POS minimum readable size — 11→12
+                  fontSize: PosTypography.captionSm, // 12
                   fontWeight:
                       widget.isActive ? FontWeight.w600 : FontWeight.w500,
                   color: labelColor,
-                  fontFamily: 'Inter',
+                  fontFamily: PosTypography.family,
                   letterSpacing: 0.1,
                 ),
               ),

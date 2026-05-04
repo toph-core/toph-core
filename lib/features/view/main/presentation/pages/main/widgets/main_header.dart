@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mary_ai_pos/core/constants/constants.dart';
+import 'package:mary_ai_pos/core/design_system/pos_design_system.dart';
 import 'package:mary_ai_pos/features/view/auth/presentation/cubit/bloc/user_bloc.dart';
 import 'package:mary_ai_pos/features/view/auth/presentation/cubit/settings/settings_cubit.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/shift/shift_bloc.dart';
@@ -30,8 +31,16 @@ class MainHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
+      // POS-grade header: 72dp asosiy height (DS subBar 56 emas — chip'lar ko'p)
       height: 72,
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+      padding: EdgeInsets.symmetric(
+        horizontal: PosBreakpoints.pick<double>(
+          context,
+          compact: PosDimensions.l, // 16
+          comfortable: PosDimensions.xl, // 20
+        ),
+        vertical: PosDimensions.m, // 12
+      ),
       decoration: const BoxDecoration(
         color: Colors.white,
         border: Border(bottom: BorderSide(color: _kSlate200)),
@@ -39,17 +48,17 @@ class MainHeader extends StatelessWidget {
       child: Row(
         children: [
           // Left: leading + title
-          if (leading != null) ...[leading!, const SizedBox(width: 8)],
+          if (leading != null) ...[leading!, const SizedBox(width: PosDimensions.s)],
           titleWidget ??
               (title.isNotEmpty
                   ? Flexible(
                       child: Text(
                         title,
                         style: const TextStyle(
-                          fontSize: 20,
+                          fontSize: PosTypography.headlineSm, // 20
                           fontWeight: FontWeight.w700,
                           color: _kSlate900,
-                          fontFamily: 'Inter',
+                          fontFamily: PosTypography.family,
                           letterSpacing: -0.3,
                         ),
                         maxLines: 1,
@@ -59,16 +68,16 @@ class MainHeader extends StatelessWidget {
                   : const SizedBox.shrink()),
           const Spacer(),
           // Right: optional extra trailing
-          if (trailing != null) ...[trailing!, const SizedBox(width: 10)],
+          if (trailing != null) ...[trailing!, const SizedBox(width: PosDimensions.s + 2)],
           // Shift chip
           const _ShiftChip(),
-          const SizedBox(width: 8),
+          const SizedBox(width: PosDimensions.s),
           // Cashier chip
           const _CashierChip(),
-          const SizedBox(width: 8),
+          const SizedBox(width: PosDimensions.s),
           // Clock
           const _ClockChip(),
-          const SizedBox(width: 8),
+          const SizedBox(width: PosDimensions.s),
           // Language toggle
           const _LangToggle(),
         ],
@@ -331,16 +340,21 @@ class _LangToggle extends StatelessWidget {
         children: ['uz', 'ru'].map((code) {
           final selected = lang == code;
           return GestureDetector(
+            behavior: HitTestBehavior.opaque,
             onTap: () => context
                 .read<SettingsCubit>()
                 .saveAppLang(context, languageCode: code),
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 150),
-              constraints: const BoxConstraints(minWidth: 38),
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              // POS-friendly tap zone — barmoq uchun yetarli
+              constraints: const BoxConstraints(minWidth: 48),
+              padding: const EdgeInsets.symmetric(
+                horizontal: PosDimensions.s + 2,
+                vertical: PosDimensions.xs,
+              ),
               decoration: BoxDecoration(
                 color: selected ? Colors.white : Colors.transparent,
-                borderRadius: BorderRadius.circular(7),
+                borderRadius: BorderRadius.circular(PosDimensions.radiusSm - 1),
                 boxShadow: selected
                     ? [
                         BoxShadow(
@@ -355,10 +369,10 @@ class _LangToggle extends StatelessWidget {
                 code.toUpperCase(),
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
+                  fontSize: PosTypography.bodySm, // 13
+                  fontWeight: FontWeight.w600,
                   color: selected ? _kSlate900 : _kSlate500,
-                  fontFamily: 'Inter',
+                  fontFamily: PosTypography.family,
                   letterSpacing: 0.3,
                 ),
               ),
