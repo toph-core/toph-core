@@ -245,6 +245,7 @@ class _TransferTableDialogState extends State<_TransferTableDialog> {
                               return _TableTile(
                                 number: t.number,
                                 status: t.status,
+                                tableType: t.tableType,
                                 isSelected: isSelected,
                                 onTap: isFree
                                     ? () => setState(
@@ -357,12 +358,14 @@ class _HallChip extends StatelessWidget {
 class _TableTile extends StatelessWidget {
   final int number;
   final TableStatus status;
+  final String? tableType;
   final bool isSelected;
   final VoidCallback? onTap;
 
   const _TableTile({
     required this.number,
     required this.status,
+    required this.tableType,
     required this.isSelected,
     required this.onTap,
   });
@@ -370,6 +373,7 @@ class _TableTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isFree = status == TableStatus.free;
+    final isTimeBased = tableType?.toLowerCase() == 'time_based';
     final Color bg, border, text;
     if (isSelected) {
       bg = const Color(0xFFFB6633);
@@ -384,6 +388,10 @@ class _TableTile extends StatelessWidget {
       border = const Color(0xFFE2E8F0);
       text = const Color(0xFF0F172A);
     }
+    // Indigo tint — time-based stol indikatori (yuqori-o'ngda kichik soat)
+    final timerIconColor = isSelected
+        ? Colors.white.withOpacity(0.9)
+        : (isFree ? const Color(0xFF6366F1) : const Color(0xFFCBD5E1));
     return Opacity(
       opacity: isFree || isSelected ? 1 : 0.6,
       child: GestureDetector(
@@ -395,34 +403,51 @@ class _TableTile extends StatelessWidget {
             border: Border.all(color: border, width: isSelected ? 2 : 1),
             borderRadius: BorderRadius.circular(10),
           ),
-          child: Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  '$number',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                    color: text,
-                    fontFamily: 'Inter',
-                    fontFeatures: const [FontFeature.tabularFigures()],
-                  ),
-                ),
-                if (!isFree && !isSelected)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 2),
-                    child: Text(
-                      S.current.strBusyShort,
-                      style: const TextStyle(
-                        fontSize: 9,
-                        color: Color(0xFF94A3B8),
-                        fontFamily: 'Inter',
-                      ),
+          child: Stack(
+            children: [
+              if (isTimeBased)
+                Positioned(
+                  top: 4,
+                  right: 4,
+                  child: Tooltip(
+                    message: 'Soatlik xona',
+                    child: Icon(
+                      Icons.schedule_rounded,
+                      size: 12,
+                      color: timerIconColor,
                     ),
                   ),
-              ],
-            ),
+                ),
+              Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      '$number',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                        color: text,
+                        fontFamily: 'Inter',
+                        fontFeatures: const [FontFeature.tabularFigures()],
+                      ),
+                    ),
+                    if (!isFree && !isSelected)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 2),
+                        child: Text(
+                          S.current.strBusyShort,
+                          style: const TextStyle(
+                            fontSize: 9,
+                            color: Color(0xFF94A3B8),
+                            fontFamily: 'Inter',
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ],
           ),
         ),
       ),

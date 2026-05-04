@@ -76,6 +76,7 @@ class ReceiptPreviewModal extends StatelessWidget {
                   timerPauses: timerPauses,
                   timerTotalSec: timerTotalSec,
                   timerPricePerHour: timerPricePerHour,
+                  hourAmount: paymentState.hourPrice.toInt(),
                 ),
               ),
             ),
@@ -162,6 +163,7 @@ class _ReceiptCard extends StatelessWidget {
   final List<PauseInterval> timerPauses;
   final int timerTotalSec;
   final String? timerPricePerHour;
+  final int hourAmount;
 
   const _ReceiptCard({
     required this.detail,
@@ -173,6 +175,7 @@ class _ReceiptCard extends StatelessWidget {
     this.timerPauses = const [],
     this.timerTotalSec = 0,
     this.timerPricePerHour,
+    this.hourAmount = 0,
   });
 
   bool get _hasTimerData =>
@@ -317,6 +320,8 @@ class _ReceiptCard extends StatelessWidget {
 
           // Totals
           _KVRow('Oraliq jami', subtotal.formatNWithoutS),
+          if (hourAmount > 0)
+            _KVRow('Soatlik haq', hourAmount.formatNWithoutS),
           if (service > 0)
             _KVRow(
               servicePct > 0 ? 'Xizmat ($servicePct%)' : 'Xizmat',
@@ -537,14 +542,21 @@ class _ActionsRow extends StatelessWidget {
   const _ActionsRow({required this.detail});
 
   void _print(BuildContext context) {
-    final payment = context.read<PaymentBloc>().state;
+    final bloc = context.read<PaymentBloc>();
+    final payment = bloc.state;
     final discountAmt = int.tryParse(payment.discountAmount) ?? 0;
     final isPercent = payment.discountType == DiscountType.percent;
     unawaited(
       inject<PrinterService>().printCashierReceiptFromDetail(
         detail: detail,
+        // Soatlik haq + timer history — Yakunlash bilan bir xil chek
+        hourAmount: payment.hourPrice,
         discountPercent: isPercent ? discountAmt.toDouble() : 0,
         discountAmount: isPercent ? 0 : discountAmt.toDouble(),
+        timerStartedAt: bloc.timerStartedAt,
+        timerPauses: bloc.timerPauses,
+        timerTotalSec: bloc.timerTotalSec,
+        timerPricePerHour: bloc.timerPricePerHour,
       ),
     );
     showInfoMessage(
