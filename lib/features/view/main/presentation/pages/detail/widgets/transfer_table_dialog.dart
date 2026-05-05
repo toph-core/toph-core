@@ -20,6 +20,7 @@ Future<bool?> showTransferTableDialog(
   BuildContext context, {
   required String orderId,
   required String sourceTableId,
+  String? sourceTableType,
 }) {
   return showDialog<bool>(
     context: context,
@@ -27,6 +28,7 @@ Future<bool?> showTransferTableDialog(
     builder: (_) => _TransferTableDialog(
       orderId: orderId,
       sourceTableId: sourceTableId,
+      sourceTableType: sourceTableType,
     ),
   );
 }
@@ -34,10 +36,12 @@ Future<bool?> showTransferTableDialog(
 class _TransferTableDialog extends StatefulWidget {
   final String orderId;
   final String sourceTableId;
+  final String? sourceTableType;
 
   const _TransferTableDialog({
     required this.orderId,
     required this.sourceTableId,
+    this.sourceTableType,
   });
 
   @override
@@ -49,6 +53,20 @@ class _TransferTableDialogState extends State<_TransferTableDialog> {
   String? _selectedTableId;
   bool _submitting = false;
   final ScrollController _gridCtrl = ScrollController();
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final main = context.read<MainCubit>();
+      if ((main.state.halls ?? []).isEmpty) {
+        main.getHalls();
+      } else {
+        main.loadAllHallsTables();
+      }
+    });
+  }
 
   @override
   void dispose() {
@@ -111,6 +129,9 @@ class _TransferTableDialogState extends State<_TransferTableDialog> {
         final hallId =
             _selectedHallId ?? (halls.isNotEmpty ? halls.first.id : null);
 
+        final isSourceTimeBased =
+            widget.sourceTableType?.toLowerCase() == 'time_based';
+
         // Tanlangan zaldagi stollar (joriy stol istisno qilinadi)
         final hallTables = tables
             .where((t) => t.hallId == hallId && t.id != widget.sourceTableId)
@@ -124,7 +145,7 @@ class _TransferTableDialogState extends State<_TransferTableDialog> {
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 560, maxHeight: 600),
             child: Column(
-              mainAxisSize: MainAxisSize.min,
+              mainAxisSize: MainAxisSize.max,
               children: [
                 // Header
                 Padding(
@@ -248,13 +269,20 @@ class _TransferTableDialogState extends State<_TransferTableDialog> {
                             itemBuilder: (_, i) {
                               final t = hallTables[i];
                               final isFree = t.status == TableStatus.free;
+                              final isTargetTimeBased =
+                                  t.tableType?.toLowerCase() == 'time_based';
+                              final isSelectable = isFree &&
+                                  (!isSourceTimeBased || isTargetTimeBased);
                               final isSelected = _selectedTableId == t.id;
                               return _TableTile(
                                 number: t.number,
                                 status: t.status,
                                 tableType: t.tableType,
                                 isSelected: isSelected,
-                                onTap: isFree
+                                blockedByType: isFree &&
+                                    isSourceTimeBased &&
+                                    !isTargetTimeBased,
+                                onTap: isSelectable
                                     ? () => setState(
                                           () => _selectedTableId = t.id,
                                         )
@@ -367,6 +395,7 @@ class _TableTile extends StatelessWidget {
   final TableStatus status;
   final String? tableType;
   final bool isSelected;
+  final bool blockedByType;
   final VoidCallback? onTap;
 
   const _TableTile({
@@ -374,6 +403,7 @@ class _TableTile extends StatelessWidget {
     required this.status,
     required this.tableType,
     required this.isSelected,
+    this.blockedByType = false,
     required this.onTap,
   });
 
@@ -386,7 +416,7 @@ class _TableTile extends StatelessWidget {
       bg = const Color(0xFFFB6633);
       border = const Color(0xFFFB6633);
       text = Colors.white;
-    } else if (!isFree) {
+    } else if (!isFree || blockedByType) {
       bg = const Color(0xFFF1F5F9);
       border = const Color(0xFFE2E8F0);
       text = const Color(0xFFCBD5E1);
@@ -398,9 +428,11 @@ class _TableTile extends StatelessWidget {
     // Indigo tint — time-based stol indikatori (yuqori-o'ngda kichik soat)
     final timerIconColor = isSelected
         ? Colors.white.withOpacity(0.9)
-        : (isFree ? const Color(0xFF6366F1) : const Color(0xFFCBD5E1));
+        : (isFree && !blockedByType
+            ? const Color(0xFF6366F1)
+            : const Color(0xFFCBD5E1));
     return Opacity(
-      opacity: isFree || isSelected ? 1 : 0.6,
+      opacity: isFree && !blockedByType || isSelected ? 1 : 0.6,
       child: GestureDetector(
         onTap: onTap,
         child: AnimatedContainer(
@@ -439,7 +471,19 @@ class _TableTile extends StatelessWidget {
                         fontFeatures: const [FontFeature.tabularFigures()],
                       ),
                     ),
-                    if (!isFree && !isSelected)
+                    if (blockedByType && !isSelected)
+                      const Padding(
+                        padding: EdgeInsets.only(top: 2),
+                        child: Text(
+                          '—',
+                          style: TextStyle(
+                            fontSize: 9,
+                            color: Color(0xFF94A3B8),
+                            fontFamily: 'Inter',
+                          ),
+                        ),
+                      )
+                    else if (!isFree && !isSelected)
                       Padding(
                         padding: const EdgeInsets.only(top: 2),
                         child: Text(

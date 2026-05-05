@@ -77,6 +77,12 @@ class _OrderActionsBarState extends State<OrderActionsBar>
             vertical: PosDimensions.s, // 8
           ),
           child: BlocBuilder<TableTimerCubit, TableTimerState>(
+            buildWhen: (p, c) =>
+                p.shouldShow != c.shouldShow ||
+                p.isMutating != c.isMutating ||
+                p.timer?.currentAmount != c.timer?.currentAmount ||
+                p.timer?.stateNormalized != c.timer?.stateNormalized ||
+                p.billPauses.length != c.billPauses.length,
             builder: (ctx, timerState) {
               final existingTotal = calculateTotalPrice(
                 state.existingGoods.where((g) => g.commet != 'cancelled').toList(),
@@ -119,7 +125,7 @@ class _OrderActionsBarState extends State<OrderActionsBar>
                               );
                         }
                       },
-                      child: _TimerCompact(timerState: timerState),
+                      child: const RepaintBoundary(child: _TimerCompact()),
                     ),
 
                   const Spacer(),
@@ -139,6 +145,7 @@ class _OrderActionsBarState extends State<OrderActionsBar>
                           context,
                           orderId: orderId,
                           sourceTableId: tableId!,
+                          sourceTableType: widget.cafeTable?.tableType,
                         );
                         if (res == true && context.mounted) {
                           Navigator.of(context).pop();
@@ -264,184 +271,186 @@ class _TotalBlock extends StatelessWidget {
 }
 
 // ─── Timer (compact) ─────────────────────────────────────────────────────────
-class _TimerCompact extends StatefulWidget {
-  final TableTimerState timerState;
-  const _TimerCompact({required this.timerState});
+class _TimerCompact extends StatelessWidget {
+  const _TimerCompact();
 
-  @override
-  State<_TimerCompact> createState() => _TimerCompactState();
-}
-
-class _TimerCompactState extends State<_TimerCompact> {
   @override
   Widget build(BuildContext context) {
-    final t = widget.timerState.timer;
-    final displaySec =
-        widget.timerState.displayActiveSec ?? t?.totalActiveSec ?? 0;
-    final isRunning = t?.stateNormalized == 'running';
-    final isPaused = t?.stateNormalized == 'paused';
-    final isNone = t == null || t.stateNormalized == 'none';
-    final accent = isPaused
-        ? const Color(0xFFF59E0B)
-        : isRunning
-            ? _indigo
-            : _indigo.withOpacity(0.5);
-    final rawAmt = widget.timerState.effectiveCurrentAmount ?? '';
-    final amount = rawAmt.isNotEmpty ? _fmtAmount(rawAmt) : '';
-    final pauses = widget.timerState.billPauses.isNotEmpty
-        ? widget.timerState.billPauses
-        : (t?.pauses ?? const <PauseInterval>[]);
+    return BlocBuilder<TableTimerCubit, TableTimerState>(
+      builder: (context, timerState) {
+        final t = timerState.timer;
+        final displaySec =
+            timerState.displayActiveSec ?? t?.totalActiveSec ?? 0;
+        final isRunning = t?.stateNormalized == 'running';
+        final isPaused = t?.stateNormalized == 'paused';
+        final isNone = t == null || t.stateNormalized == 'none';
+        final accent = isPaused
+            ? const Color(0xFFF59E0B)
+            : isRunning
+                ? _indigo
+                : _indigo.withOpacity(0.5);
+        final rawAmt = timerState.effectiveCurrentAmount ?? '';
+        final amount = rawAmt.isNotEmpty ? _fmtAmount(rawAmt) : '';
+        final pauses = timerState.billPauses.isNotEmpty
+            ? timerState.billPauses
+            : (t?.pauses ?? const <PauseInterval>[]);
 
-    return MouseRegion(
-      cursor: SystemMouseCursors.click,
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: () => showDialog<void>(
-          context: context,
-          builder: (_) => _PauseHistoryDialog(
-            pauses: pauses,
-            startedAt: t?.startedAt,
-          ),
-        ),
-        child: Container(
-      height: 56,
-      padding: const EdgeInsets.symmetric(horizontal: 10),
-      decoration: BoxDecoration(
-        color: accent.withOpacity(0.06),
-        border: Border.all(color: accent.withOpacity(0.25)),
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 8,
-            height: 8,
-            decoration: BoxDecoration(
-              color: isRunning
-                  ? const Color(0xFF22C55E)
-                  : isPaused
-                      ? const Color(0xFFF59E0B)
-                      : const Color(0xFFCBD5E1),
-              shape: BoxShape.circle,
-              boxShadow: isRunning
-                  ? [
-                      BoxShadow(
-                        color: const Color(0xFF22C55E).withOpacity(0.5),
-                        blurRadius: 5,
-                      ),
-                    ]
-                  : null,
-            ),
-          ),
-          const SizedBox(width: 8),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                _fmtTime(displaySec),
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w800,
-                  color: accent,
-                  fontFamily: 'Inter',
-                  letterSpacing: 0.4,
-                  height: 1.0,
-                  fontFeatures: const [FontFeature.tabularFigures()],
-                ),
+        return MouseRegion(
+          cursor: SystemMouseCursors.click,
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: () => showDialog<void>(
+              context: context,
+              builder: (_) => _PauseHistoryDialog(
+                pauses: pauses,
+                startedAt: t?.startedAt,
               ),
-              if (amount.isNotEmpty)
-                Padding(
-                  padding: const EdgeInsets.only(top: 2),
-                  child: Text(
-                    '$amount so\'m',
-                    style: TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.w600,
-                      color: accent.withOpacity(0.75),
-                      fontFamily: 'Inter',
-                    ),
-                  ),
-                ),
-            ],
-          ),
-          if (pauses.isNotEmpty) ...[
-            const SizedBox(width: 8),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+            ),
+            child: Container(
+              height: 56,
+              padding: const EdgeInsets.symmetric(horizontal: 10),
               decoration: BoxDecoration(
-                color: const Color(0xFFF59E0B).withOpacity(0.15),
-                borderRadius: BorderRadius.circular(6),
+                color: accent.withOpacity(0.06),
+                border: Border.all(color: accent.withOpacity(0.25)),
+                borderRadius: BorderRadius.circular(10),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(
-                    Icons.pause_circle_outline_rounded,
-                    size: 12,
-                    color: Color(0xFFF59E0B),
-                  ),
-                  const SizedBox(width: 3),
-                  Text(
-                    '${pauses.length}',
-                    style: const TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                      color: Color(0xFFF59E0B),
-                      fontFamily: 'Inter',
+                  Container(
+                    width: 8,
+                    height: 8,
+                    decoration: BoxDecoration(
+                      color: isRunning
+                          ? const Color(0xFF22C55E)
+                          : isPaused
+                              ? const Color(0xFFF59E0B)
+                              : const Color(0xFFCBD5E1),
+                      shape: BoxShape.circle,
+                      boxShadow: isRunning
+                          ? [
+                              BoxShadow(
+                                color:
+                                    const Color(0xFF22C55E).withOpacity(0.5),
+                                blurRadius: 5,
+                              ),
+                            ]
+                          : null,
                     ),
                   ),
+                  const SizedBox(width: 8),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        _fmtTime(displaySec),
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w800,
+                          color: accent,
+                          fontFamily: 'Inter',
+                          letterSpacing: 0.4,
+                          height: 1.0,
+                          fontFeatures: const [FontFeature.tabularFigures()],
+                        ),
+                      ),
+                      if (amount.isNotEmpty)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 2),
+                          child: Text(
+                            '$amount so\'m',
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w600,
+                              color: accent.withOpacity(0.75),
+                              fontFamily: 'Inter',
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                  if (pauses.isNotEmpty) ...[
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 6, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF59E0B).withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(
+                            Icons.pause_circle_outline_rounded,
+                            size: 12,
+                            color: Color(0xFFF59E0B),
+                          ),
+                          const SizedBox(width: 3),
+                          Text(
+                            '${pauses.length}',
+                            style: const TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xFFF59E0B),
+                              fontFamily: 'Inter',
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                  if (isRunning || isPaused || isNone) ...[
+                    const SizedBox(width: 8),
+                    GestureDetector(
+                      onTap: timerState.isMutating
+                          ? null
+                          : () => isRunning
+                              ? context.read<TableTimerCubit>().pauseTimer()
+                              : context.read<TableTimerCubit>().resumeTimer(),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 150),
+                        width: 48,
+                        height: 48,
+                        decoration: BoxDecoration(
+                          color: isRunning
+                              ? _indigo.withOpacity(0.10)
+                              : const Color(0xFF22C55E).withOpacity(0.10),
+                          borderRadius:
+                              BorderRadius.circular(PosDimensions.radiusSm),
+                        ),
+                        child: Center(
+                          child: timerState.isMutating
+                              ? SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: isRunning
+                                        ? _indigo
+                                        : const Color(0xFF22C55E),
+                                  ),
+                                )
+                              : Icon(
+                                  isRunning
+                                      ? Icons.pause_rounded
+                                      : Icons.play_arrow_rounded,
+                                  size: 24,
+                                  color: isRunning
+                                      ? _indigo
+                                      : const Color(0xFF22C55E),
+                                ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),
-          ],
-          if (isRunning || isPaused || isNone) ...[
-            const SizedBox(width: 8),
-            GestureDetector(
-              onTap: widget.timerState.isMutating
-                  ? null
-                  : () => isRunning
-                      ? context.read<TableTimerCubit>().pauseTimer()
-                      : context.read<TableTimerCubit>().resumeTimer(),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 150),
-                // Pause/resume — POS touch zone 48dp
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: isRunning
-                      ? _indigo.withOpacity(0.10)
-                      : const Color(0xFF22C55E).withOpacity(0.10),
-                  borderRadius: BorderRadius.circular(PosDimensions.radiusSm),
-                ),
-                child: Center(
-                  child: widget.timerState.isMutating
-                      ? SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: isRunning
-                                ? _indigo
-                                : const Color(0xFF22C55E),
-                          ),
-                        )
-                      : Icon(
-                          isRunning
-                              ? Icons.pause_rounded
-                              : Icons.play_arrow_rounded,
-                          size: 24,
-                          color: isRunning ? _indigo : const Color(0xFF22C55E),
-                        ),
-                ),
-              ),
-            ),
-          ],
-        ],
-      ),
-    ),
-    ),
+          ),
+        );
+      },
     );
   }
 
@@ -943,7 +952,7 @@ class _ActionButtons extends StatelessWidget {
                   trailingAmount: total.formatN,
                   onTap: () async {
                     final timerCubit = context.read<TableTimerCubit>();
-                    if (cafeTable?.tableType == 'time_based' &&
+                    if (cafeTable?.tableType?.toLowerCase() == 'time_based' &&
                         timerCubit.state.timer?.isRunning == true) {
                       await timerCubit.pauseTimer();
                     }

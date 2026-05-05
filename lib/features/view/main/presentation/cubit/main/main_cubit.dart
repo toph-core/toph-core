@@ -222,6 +222,13 @@ class MainCubit extends Cubit<MainState> {
     if (all.isEmpty && failureCount > 0 && allCached.isNotEmpty) {
       return;
     }
+    // O'chirilgan stollar uchun order detail cache'ni tozalaymiz —
+    // aks holda timer 404-loopda qolib ketadi.
+    final oldIds = allCached.map((t) => t.id).toSet();
+    final newIds = all.map((t) => t.id).toSet();
+    for (final id in oldIds.difference(newIds)) {
+      await _cache.evictOrderDetail(id);
+    }
     _cache.saveTables(all.map((t) => t.toJson()).toList());
     emit(state.copyWith(tables: all, status: Status.SUCCESS));
   }

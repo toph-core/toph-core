@@ -30,6 +30,7 @@ class SettingsCubit extends Cubit<SettingsState> {
       showErrorMessage(context, failure.getLocalizedMessage(context));
       emit(state.copyWith(failure: failure));
     }, (lang) => emit(state.copyWith(language: lang, status: Status.UNKNOWN)));
+    return null;
   }
 
   void loadAppLang() async {

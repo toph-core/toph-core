@@ -57,7 +57,6 @@ class WaiterFloorPlanScreen extends StatefulWidget {
 }
 
 class _WaiterFloorPlanScreenState extends State<WaiterFloorPlanScreen> {
-  Timer? _elapsedTicker;
   Timer? _bgRefreshTimer;
 
   static const _bgRefreshInterval = Duration(minutes: 2);
@@ -65,12 +64,6 @@ class _WaiterFloorPlanScreenState extends State<WaiterFloorPlanScreen> {
   @override
   void initState() {
     super.initState();
-    _elapsedTicker = Timer.periodic(const Duration(seconds: 30), (_) {
-      if (mounted) setState(() {});
-    });
-    // `MainCubit.getHalls()` allaqachon halls + barcha stollarni cache-first
-    // va 30s throttle bilan yuklaydi — bu yerda qayta chaqirmaymiz.
-    // Orqa fonda stollar statusini yangilab turadi — faqat floor plan ochiq paytda
     _bgRefreshTimer = Timer.periodic(_bgRefreshInterval, (_) {
       if (inject<ConnectivityCubit>().isOnline && mounted) {
         context.read<MainCubit>().refreshTables();
@@ -80,7 +73,6 @@ class _WaiterFloorPlanScreenState extends State<WaiterFloorPlanScreen> {
 
   @override
   void dispose() {
-    _elapsedTicker?.cancel();
     _bgRefreshTimer?.cancel();
     super.dispose();
   }
@@ -109,23 +101,7 @@ class _WaiterFloorPlanScreenState extends State<WaiterFloorPlanScreen> {
           final halls = state.halls ?? [];
           final tables = state.tables ?? [];
 
-          // Saved orders — price + timestamp tracking
-          final savedOrders = context.watch<SavedOrdersBloc>().state.order;
-          final savedIds = savedOrders
-              .map((o) => o.createOrderRequest.tableId)
-              .toSet();
-          final savedTotalsByTable = <String, int>{
-            for (final o in savedOrders)
-              o.createOrderRequest.tableId:
-                  o.createOrderRequest.foods.fold<int>(
-                0,
-                (sum, f) =>
-                    sum + (int.tryParse(f.goods.price) ?? 0) * f.quantity,
-              ),
-          };
-          _syncOpenedAt(savedIds);
-
-          // Status counts (across currently loaded tables).
+          // Status counts — only MainCubit data, SavedOrders handled below
           final freeCount =
               tables.where((t) => t.status == TableStatus.free).length;
           final busyCount =
@@ -176,14 +152,34 @@ class _WaiterFloorPlanScreenState extends State<WaiterFloorPlanScreen> {
                           valueColor: AlwaysStoppedAnimation(colors.textBrand),
                         ),
                       )
-                    : _GridView(
-                        halls: halls,
-                        tables: tables,
-                        savedIds: savedIds,
-                        totalsByTable: savedTotalsByTable,
-                        openedAtByTable: _openedAtByTable,
-                        selectedHallId: state.selectedHallId,
-                        onTap: (table) => _handleTableTap(context, table),
+                    : BlocBuilder<SavedOrdersBloc, SavedOrdersState>(
+                        builder: (context, savedState) {
+                          final savedOrders = savedState.order;
+                          final savedIds = savedOrders
+                              .map((o) => o.createOrderRequest.tableId)
+                              .toSet();
+                          final savedTotalsByTable = <String, int>{
+                            for (final o in savedOrders)
+                              o.createOrderRequest.tableId:
+                                  o.createOrderRequest.foods.fold<int>(
+                                0,
+                                (sum, f) =>
+                                    sum +
+                                    (int.tryParse(f.goods.price) ?? 0) *
+                                        f.quantity,
+                              ),
+                          };
+                          _syncOpenedAt(savedIds);
+                          return _GridView(
+                            halls: halls,
+                            tables: tables,
+                            savedIds: savedIds,
+                            totalsByTable: savedTotalsByTable,
+                            openedAtByTable: _openedAtByTable,
+                            selectedHallId: state.selectedHallId,
+                            onTap: (table) => _handleTableTap(context, table),
+                          );
+                        },
                       ),
               ),
             ],
@@ -830,7 +826,6 @@ class _BusyCardContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final hasPrice = (savedTotal ?? 0) > 0;
-    final elapsedLabel = _elapsedLabel(openedAt);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -865,39 +860,9 @@ class _BusyCardContent extends StatelessWidget {
             ),
           ),
         const Spacer(),
-        if (elapsedLabel != null)
-          Row(
-            children: [
-              const Icon(
-                Icons.access_time_rounded,
-                size: 13,
-                color: _kS500,
-              ),
-              const SizedBox(width: 4),
-              Text(
-                elapsedLabel,
-                style: const TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
-                  color: _kS500,
-                  fontFamily: 'Inter',
-                ),
-              ),
-            ],
-          ),
+        _ElapsedLabel(openedAt: openedAt),
       ],
     );
-  }
-
-  static String? _elapsedLabel(DateTime? openedAt) {
-    if (openedAt == null) return null;
-    final diff = DateTime.now().difference(openedAt);
-    if (diff.isNegative) return null;
-    final h = diff.inHours;
-    final m = diff.inMinutes % 60;
-    if (h <= 0 && diff.inMinutes < 1) return '< 1 daqiqa';
-    if (h <= 0) return '${diff.inMinutes} daqiqa';
-    return '$h soat ${m.toString().padLeft(2, '0')} daqiqa';
   }
 }
 
@@ -909,6 +874,68 @@ String _fmtSom(int v) {
     buf.write(s[i]);
   }
   return buf.toString();
+}
+
+// ── Elapsed label (self-refreshing every 30s) ────────────────────────────
+
+class _ElapsedLabel extends StatefulWidget {
+  final DateTime? openedAt;
+  const _ElapsedLabel({required this.openedAt});
+
+  @override
+  State<_ElapsedLabel> createState() => _ElapsedLabelState();
+}
+
+class _ElapsedLabelState extends State<_ElapsedLabel> {
+  Timer? _ticker;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.openedAt != null) {
+      _ticker = Timer.periodic(const Duration(seconds: 30), (_) {
+        if (mounted) setState(() {});
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _ticker?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final label = _calcLabel(widget.openedAt);
+    if (label == null) return const SizedBox.shrink();
+    return Row(
+      children: [
+        const Icon(Icons.access_time_rounded, size: 13, color: _kS500),
+        const SizedBox(width: 4),
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+            color: _kS500,
+            fontFamily: 'Inter',
+          ),
+        ),
+      ],
+    );
+  }
+
+  static String? _calcLabel(DateTime? openedAt) {
+    if (openedAt == null) return null;
+    final diff = DateTime.now().difference(openedAt);
+    if (diff.isNegative) return null;
+    final h = diff.inHours;
+    final m = diff.inMinutes % 60;
+    if (h <= 0 && diff.inMinutes < 1) return '< 1 daqiqa';
+    if (h <= 0) return '${diff.inMinutes} daqiqa';
+    return '$h soat ${m.toString().padLeft(2, '0')} daqiqa';
+  }
 }
 
 // ── Reserved card ────────────────────────────────────────────────────

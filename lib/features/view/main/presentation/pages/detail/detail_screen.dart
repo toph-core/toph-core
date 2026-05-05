@@ -65,8 +65,8 @@ class _DetailScreenState extends State<DetailScreen> with DetailScreenMixin {
       _detailBloc.add(DetailEvent.fetchBillOrders(billId: cafeTable!.id));
     }
 
-    if (cafeTable?.tableType == 'time_based' &&
-        tableStatus == TableStatus.free) {
+    final isTimeBased = cafeTable?.tableType?.toLowerCase() == 'time_based';
+    if (isTimeBased && tableStatus == TableStatus.free) {
       WidgetsBinding.instance
           .addPostFrameCallback((_) => _autoStartTimedOrder());
     }
@@ -113,9 +113,18 @@ class _DetailScreenState extends State<DetailScreen> with DetailScreenMixin {
         BlocProvider.value(value: _timerCubit),
       ],
       child: KeyboardDismisser(
-        child: Scaffold(
-          backgroundColor: context.colors.bgSecondary,
-          body: Stack(
+        child: BlocListener<DetailBloc, DetailState>(
+          listenWhen: (prev, curr) =>
+              prev.activeOrderId != curr.activeOrderId &&
+              curr.activeOrderId != null &&
+              cafeTable?.tableType?.toLowerCase() == 'time_based' &&
+              !_timerCubit.state.shouldShow,
+          listener: (context, state) {
+            _timerCubit.fetchTimer(orderId: state.activeOrderId!);
+          },
+          child: Scaffold(
+            backgroundColor: context.colors.bgSecondary,
+            body: Stack(
             children: [
               GestureDetector(
                 onTap: () {
@@ -202,6 +211,7 @@ class _DetailScreenState extends State<DetailScreen> with DetailScreenMixin {
           ),
         ),
       ),
-    );
+    ),
+  );
   }
 }

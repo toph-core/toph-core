@@ -47,7 +47,7 @@ class _OrderSidebarState extends State<OrderSidebar> with DetailScreenMixin {
       listenWhen: (p, c) =>
           p.activeOrderId != c.activeOrderId && c.activeOrderId != null,
       listener: (ctx, s) {
-        if (cafeTable?.tableType == 'time_based') {
+        if (cafeTable?.tableType?.toLowerCase() == 'time_based') {
           final timerCubit = ctx.read<TableTimerCubit>();
           timerCubit.fetchTimer(orderId: s.activeOrderId!);
         }

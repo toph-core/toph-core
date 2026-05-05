@@ -193,11 +193,13 @@ class TableTimerCubit extends Cubit<TableTimerState> {
       if (isClosed) return;
       if (_activeOrderId != orderId) return;
       if (e.response?.statusCode == 400 || e.response?.statusCode == 404) {
+        _cancelTimers();
+        _activeOrderId = null;
         emit(state.copyWith(
           isLoading: false,
-          shouldShow: true,
+          shouldShow: false,
           clearTimer: true,
-          displayActiveSec: 0,
+          clearDisplayActiveSec: true,
         ));
         return;
       }

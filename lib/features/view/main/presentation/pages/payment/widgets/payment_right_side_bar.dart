@@ -398,6 +398,7 @@ class _DarkTotalCard extends StatelessWidget {
     final itemCount =
         activeGoods.fold<int>(0, (sum, g) => sum + g.quantity);
     final guestCount = detail.guestCount.toInt();
+    final timerTotalSec = context.read<PaymentBloc>().timerTotalSec;
 
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 18, 20, 18),
@@ -474,9 +475,42 @@ class _DarkTotalCard extends StatelessWidget {
               ),
             ],
           ),
+          if (timerTotalSec > 0) ...[
+            const SizedBox(height: 12),
+            Container(height: 1, color: Colors.white.withOpacity(0.08)),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                const Icon(
+                  Icons.schedule_rounded,
+                  size: 14,
+                  color: Color(0xFF94A3B8),
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  _fmtDuration(timerTotalSec),
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                    fontFamily: 'Inter',
+                  ),
+                ),
+              ],
+            ),
+          ],
         ],
       ),
     );
+  }
+
+  static String _fmtDuration(int totalSec) {
+    final minutes = totalSec ~/ 60;
+    if (minutes < 60) return '$minutes daqiqa';
+    final hours = minutes ~/ 60;
+    final mins = minutes % 60;
+    if (mins == 0) return '$hours soat';
+    return '$hours soat $mins daqiqa';
   }
 }
 
