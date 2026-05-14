@@ -47,6 +47,11 @@ class DioClient {
         requestBody: true,
         responseBody: true,
         enabled: kDebugMode,
+        filter: (options, args) {
+          if (args.hasUint8ListData) return false;
+          if (args.data is FormData) return false;
+          return true;
+        },
       ),
     );
   }

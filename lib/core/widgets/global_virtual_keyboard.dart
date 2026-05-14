@@ -284,15 +284,15 @@ class _KeyboardPanel extends StatelessWidget {
               ),
             ),
             Expanded(
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  final h = constraints.maxHeight.isFinite
-                      ? constraints.maxHeight
-                      : 200.0;
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 10, vertical: 4),
-                    child: VirtualKeyboard(
+              child: Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final h = constraints.maxHeight.isFinite
+                        ? constraints.maxHeight
+                        : 200.0;
+                    return VirtualKeyboard(
                       height: h,
                       textColor: const Color(0xFF0F172A),
                       fontSize: 22,
@@ -303,9 +303,9 @@ class _KeyboardPanel extends StatelessWidget {
                         [VirtualKeyboardDefaultLayouts.English],
                       ),
                       postKeyPress: onKeyPress,
-                    ),
-                  );
-                },
+                    );
+                  },
+                ),
               ),
             ),
           ],

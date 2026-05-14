@@ -20,6 +20,7 @@ class CustomCachedNetworkImage extends StatelessWidget {
   final BoxFit? fit;
   final String? errorIcon;
   final BorderRadius? borderRadius;
+  final Widget? errorWidget;
 
   const CustomCachedNetworkImage({
     super.key,
@@ -33,6 +34,7 @@ class CustomCachedNetworkImage extends StatelessWidget {
     this.fit,
     this.errorIcon,
     this.borderRadius,
+    this.errorWidget,
   }) : assert(
          imageUrl != null || minioObjectName != null,
          "Either imageUrl or minioObjectName must be provided",
@@ -58,11 +60,13 @@ class CustomCachedNetworkImage extends StatelessWidget {
                 width: width,
                 fit: fit ?? BoxFit.cover,
                 gaplessPlayback: true,
+                errorBuilder: (context, error, stack) =>
+                    _resolveErrorWidget(context),
               ),
             );
           }
 
-          return _errorWidget(context);
+          return _resolveErrorWidget(context);
         },
       );
     }
@@ -75,10 +79,13 @@ class CustomCachedNetworkImage extends StatelessWidget {
         width: width,
         fit: fit ?? BoxFit.cover,
         placeholder: (context, url) => _placeholder(),
-        errorWidget: (context, url, error) => _errorWidget(context),
+        errorWidget: (context, url, error) => _resolveErrorWidget(context),
       ),
     );
   }
+
+  Widget _resolveErrorWidget(BuildContext context) =>
+      errorWidget ?? _errorWidget(context);
 
   Widget _placeholder() =>
       CustomShimmerBox(h: height, w: width, borderRadius: borderRadius);

@@ -939,6 +939,7 @@ class _GoodCardState extends State<_GoodCard> {
                               fit: BoxFit.cover,
                               width: double.infinity,
                               height: double.infinity,
+                              errorWidget: _InitialPlaceholder(initial: initial),
                             )
                           : _InitialPlaceholder(initial: initial),
                     ),
