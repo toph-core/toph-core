@@ -23,6 +23,7 @@ import 'package:mary_ai_pos/features/view/auth/presentation/cubit/bloc/user_bloc
 import 'package:mary_ai_pos/features/view/auth/presentation/cubit/settings/settings_cubit.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/main/main_cubit.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/orders/orders_bloc.dart';
+import 'package:mary_ai_pos/features/view/main/presentation/cubit/service_charge/service_charge_cubit.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/shift/shift_bloc.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/ui_prefs/ui_prefs_cubit.dart';
 import 'package:mary_ai_pos/generated/l10n.dart';
@@ -123,6 +124,7 @@ class MyApp extends StatelessWidget {
         BlocProvider(
           create: (_) => inject<ShiftBloc>()..add(const ShiftEvent.started()),
         ),
+        BlocProvider(create: (_) => inject<ServiceChargeCubit>()),
       ],
       child: BlocBuilder<SettingsCubit, SettingsState>(
         buildWhen: (p, c) => p.language != c.language,

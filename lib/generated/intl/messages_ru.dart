@@ -512,6 +512,12 @@ class MessageLookup extends MessageLookupByLibrary {
         "strService": MessageLookupByLibrary.simpleMessage("Обслуживание"),
         "strServiceCharge":
             MessageLookupByLibrary.simpleMessage("Сервисный сбор"),
+        "strServiceChargeHint": MessageLookupByLibrary.simpleMessage(
+            "Процент, добавляемый к заказу автоматически"),
+        "strServiceChargeInvalid": MessageLookupByLibrary.simpleMessage(
+            "Введите значение от 0 до 100"),
+        "strServiceChargeSaved":
+            MessageLookupByLibrary.simpleMessage("Сервисный сбор сохранён"),
         "strSettings": MessageLookupByLibrary.simpleMessage("Настройки"),
         "strSettingsAdminOnly": MessageLookupByLibrary.simpleMessage(
             "Только администратор или менеджер может войти в настройки."),

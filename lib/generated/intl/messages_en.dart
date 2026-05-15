@@ -496,6 +496,12 @@ class MessageLookup extends MessageLookupByLibrary {
         "strService": MessageLookupByLibrary.simpleMessage("Service"),
         "strServiceCharge":
             MessageLookupByLibrary.simpleMessage("Service charge"),
+        "strServiceChargeHint": MessageLookupByLibrary.simpleMessage(
+            "Percent added to the order automatically"),
+        "strServiceChargeInvalid": MessageLookupByLibrary.simpleMessage(
+            "Enter a value between 0 and 100"),
+        "strServiceChargeSaved":
+            MessageLookupByLibrary.simpleMessage("Service charge saved"),
         "strSettings": MessageLookupByLibrary.simpleMessage("Settings"),
         "strSettingsAdminOnly": MessageLookupByLibrary.simpleMessage(
             "Only administrator or manager can access settings."),

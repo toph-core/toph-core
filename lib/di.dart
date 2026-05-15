@@ -41,6 +41,7 @@ import 'package:mary_ai_pos/features/view/main/presentation/cubit/keyboard/keybo
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/notification/notification_bloc.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/orders/orders_bloc.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/payment/payment_bloc.dart';
+import 'package:mary_ai_pos/features/view/main/presentation/cubit/service_charge/service_charge_cubit.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/shift/shift_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:get_it/get_it.dart';
@@ -177,6 +178,7 @@ void _cubit() {
   );
   inject.registerLazySingleton(() => SettingsCubit(inject(), inject()));
   inject.registerLazySingleton(() => UiPrefsCubit(inject()));
+  inject.registerLazySingleton(() => ServiceChargeCubit(inject()));
   inject.registerLazySingleton(
     () => MainCubit(inject(), inject(), inject(), inject(), inject()),
   );

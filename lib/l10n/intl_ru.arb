@@ -126,6 +126,11 @@
   "strAppliesToAllUsers": "Применяется для всех пользователей",
   "strMenuImages": "Изображения меню",
   "strShowProductImages": "Показывать изображения в карточках товаров",
+  "strServiceCharge": "Сервисный сбор",
+  "strServiceChargeHint": "Процент, добавляемый к заказу автоматически",
+  "strSave": "Сохранить",
+  "strServiceChargeSaved": "Сервисный сбор сохранён",
+  "strServiceChargeInvalid": "Введите значение от 0 до 100",
   "strUzbek": "O'zbek",
   "strRussian": "Русский",
 

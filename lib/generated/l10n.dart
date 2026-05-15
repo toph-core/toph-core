@@ -1260,6 +1260,46 @@ class S {
     );
   }
 
+  /// `Service charge`
+  String get strServiceCharge {
+    return Intl.message(
+      'Service charge',
+      name: 'strServiceCharge',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Percent added to the order automatically`
+  String get strServiceChargeHint {
+    return Intl.message(
+      'Percent added to the order automatically',
+      name: 'strServiceChargeHint',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Service charge saved`
+  String get strServiceChargeSaved {
+    return Intl.message(
+      'Service charge saved',
+      name: 'strServiceChargeSaved',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Enter a value between 0 and 100`
+  String get strServiceChargeInvalid {
+    return Intl.message(
+      'Enter a value between 0 and 100',
+      name: 'strServiceChargeInvalid',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `O'zbek`
   String get strUzbek {
     return Intl.message(
@@ -2255,16 +2295,6 @@ class S {
     return Intl.message(
       'Total sales',
       name: 'strTotalSales',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Service charge`
-  String get strServiceCharge {
-    return Intl.message(
-      'Service charge',
-      name: 'strServiceCharge',
       desc: '',
       args: [],
     );

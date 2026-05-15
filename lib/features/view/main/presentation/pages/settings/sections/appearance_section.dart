@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:mary_ai_pos/core/components/flush_bars.dart';
 import 'package:mary_ai_pos/core/extension/for_context.dart';
+import 'package:mary_ai_pos/features/view/auth/presentation/cubit/bloc/user_bloc.dart';
 import 'package:mary_ai_pos/features/view/auth/presentation/cubit/settings/settings_cubit.dart';
+import 'package:mary_ai_pos/features/view/main/presentation/cubit/service_charge/service_charge_cubit.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/ui_prefs/ui_prefs_cubit.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/settings/widgets/section_shell.dart';
 import 'package:mary_ai_pos/generated/l10n.dart';
@@ -49,8 +53,265 @@ class AppearanceSection extends StatelessWidget {
                   context.read<UiPrefsCubit>().setMenuShowImages(v),
             ),
           ),
+          const SizedBox(height: 14),
+          const _ServiceChargeCard(),
           // Mavzu tanlovi vaqtincha o'chirilgan — faqat yorug' ishlatilmoqda.
         ],
+      ),
+    );
+  }
+}
+
+class _ServiceChargeCard extends StatefulWidget {
+  const _ServiceChargeCard();
+
+  @override
+  State<_ServiceChargeCard> createState() => _ServiceChargeCardState();
+}
+
+class _ServiceChargeCardState extends State<_ServiceChargeCard> {
+  final TextEditingController _controller = TextEditingController();
+  final FocusNode _focusNode = FocusNode();
+  double? _syncedValue;
+
+  String get _branchId =>
+      context.read<UserBloc>().state.userMOdel?.branchId ?? '';
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final id = _branchId;
+      if (id.isNotEmpty) {
+        context.read<ServiceChargeCubit>().load(id);
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    _focusNode.dispose();
+    super.dispose();
+  }
+
+  void _syncControllerWith(double value) {
+    final formatted = value == value.truncateToDouble()
+        ? value.toStringAsFixed(0)
+        : value.toString();
+    _controller.text = formatted;
+    _controller.selection = TextSelection.fromPosition(
+      TextPosition(offset: _controller.text.length),
+    );
+    _syncedValue = value;
+  }
+
+  Future<void> _save() async {
+    final raw = _controller.text.replaceAll(',', '.').trim();
+    final parsed = double.tryParse(raw);
+    if (parsed == null || parsed < 0 || parsed > 100) {
+      showErrorMessage(context, S.current.strServiceChargeInvalid);
+      return;
+    }
+    final ok = await context.read<ServiceChargeCubit>().save(
+      _branchId,
+      parsed,
+    );
+    if (!mounted) return;
+    if (ok) {
+      _syncedValue = parsed;
+      showSuccessMessage(context, S.current.strServiceChargeSaved);
+      _focusNode.unfocus();
+      setState(() {});
+    } else {
+      showErrorMessage(context, S.current.strServiceChargeInvalid);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    final state = context.watch<ServiceChargeCubit>().state;
+
+    if (state.value != null && state.value != _syncedValue) {
+      _syncControllerWith(state.value!);
+    }
+
+    return SoftCard(
+      padding: const EdgeInsets.all(18),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: colors.buttonBrand.withOpacity(0.10),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(
+              Icons.percent_rounded,
+              color: colors.buttonBrand,
+              size: 22,
+            ),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  S.current.strServiceCharge,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: colors.textDefault,
+                    fontFamily: 'Inter',
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  S.current.strServiceChargeHint,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: colors.textSecondary,
+                    fontFamily: 'Inter',
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 16),
+          if (state.loading)
+            SizedBox(
+              width: 22,
+              height: 22,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: colors.buttonBrand,
+              ),
+            )
+          else ...[
+            _PercentInput(
+              controller: _controller,
+              focusNode: _focusNode,
+              enabled: !state.saving,
+              onChanged: (_) => setState(() {}),
+            ),
+            const SizedBox(width: 10),
+            _SaveButton(saving: state.saving, onTap: _save),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _PercentInput extends StatelessWidget {
+  final TextEditingController controller;
+  final FocusNode focusNode;
+  final bool enabled;
+  final ValueChanged<String> onChanged;
+
+  const _PercentInput({
+    required this.controller,
+    required this.focusNode,
+    required this.enabled,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    return SizedBox(
+      width: 80,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.end,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          IntrinsicWidth(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(minWidth: 28),
+              child: TextField(
+                controller: controller,
+                focusNode: focusNode,
+                enabled: enabled,
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
+                inputFormatters: [
+                  FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]')),
+                ],
+                onChanged: onChanged,
+                textAlign: TextAlign.right,
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: colors.textDefault,
+                  fontFamily: 'Inter',
+                ),
+                decoration: const InputDecoration(
+                  isCollapsed: true,
+                  border: InputBorder.none,
+                  enabledBorder: InputBorder.none,
+                  focusedBorder: InputBorder.none,
+                  contentPadding: EdgeInsets.zero,
+                  hintText: '0',
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 4),
+          Text(
+            '%',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: colors.textSecondary,
+              fontFamily: 'Inter',
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SaveButton extends StatelessWidget {
+  final bool saving;
+  final VoidCallback onTap;
+  const _SaveButton({required this.saving, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    return Material(
+      color: colors.buttonBrand,
+      borderRadius: BorderRadius.circular(12),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: saving ? null : onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          child: saving
+              ? SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: colors.textOnBrand,
+                  ),
+                )
+              : Text(
+                  S.current.strSave,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: colors.textOnBrand,
+                    fontFamily: 'Inter',
+                  ),
+                ),
+        ),
       ),
     );
   }

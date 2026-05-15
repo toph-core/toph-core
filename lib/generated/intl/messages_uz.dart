@@ -521,6 +521,12 @@ class MessageLookup extends MessageLookupByLibrary {
         "strSeptember": MessageLookupByLibrary.simpleMessage("Sentabr"),
         "strService": MessageLookupByLibrary.simpleMessage("Xizmat"),
         "strServiceCharge": MessageLookupByLibrary.simpleMessage("Xizmat haqi"),
+        "strServiceChargeHint": MessageLookupByLibrary.simpleMessage(
+            "Buyurtmaga avtomatik qo\'shiladigan foiz"),
+        "strServiceChargeInvalid": MessageLookupByLibrary.simpleMessage(
+            "0 dan 100 gacha qiymat kiriting"),
+        "strServiceChargeSaved":
+            MessageLookupByLibrary.simpleMessage("Xizmat haqi saqlandi"),
         "strSettings": MessageLookupByLibrary.simpleMessage("Sozlamalar"),
         "strSettingsAdminOnly": MessageLookupByLibrary.simpleMessage(
             "Sozlamalarga faqat administrator yoki menejer kira oladi."),

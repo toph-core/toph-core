@@ -126,6 +126,11 @@
   "strAppliesToAllUsers": "Applied to all users",
   "strMenuImages": "Menu images",
   "strShowProductImages": "Show images in product cards",
+  "strServiceCharge": "Service charge",
+  "strServiceChargeHint": "Percent added to the order automatically",
+  "strSave": "Save",
+  "strServiceChargeSaved": "Service charge saved",
+  "strServiceChargeInvalid": "Enter a value between 0 and 100",
   "strUzbek": "O'zbek",
   "strRussian": "Русский",
 

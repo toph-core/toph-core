@@ -81,4 +81,7 @@ class ListAPI {
 
   //! POS printers (ESC/POS TCP) — `data`: printer yozuvlari massivi
   static const String printerSettings = "api/v1/settings/printer-settings";
+
+  //! Branches — branch settings (default service percent, etc.)
+  static String branchById(String id) => "/api/v1/branches/$id";
 }

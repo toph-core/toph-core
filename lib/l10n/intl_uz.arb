@@ -130,6 +130,11 @@
   "strAppliesToAllUsers": "Barcha foydalanuvchilar uchun qo'llaniladi",
   "strMenuImages": "Menyu rasmlari",
   "strShowProductImages": "Mahsulot kartochkalarida rasm ko'rsatish",
+  "strServiceCharge": "Xizmat haqi",
+  "strServiceChargeHint": "Buyurtmaga avtomatik qo'shiladigan foiz",
+  "strSave": "Saqlash",
+  "strServiceChargeSaved": "Xizmat haqi saqlandi",
+  "strServiceChargeInvalid": "0 dan 100 gacha qiymat kiriting",
   "strUzbek": "O'zbek",
   "strRussian": "Русский",
 
