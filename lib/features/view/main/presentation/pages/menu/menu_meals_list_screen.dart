@@ -3,11 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mary_ai_pos/core/api/dio_client.dart';
 import 'package:mary_ai_pos/core/api/list_api.dart';
-import 'package:mary_ai_pos/core/common/custom_network_image.dart';
 import 'package:mary_ai_pos/core/components/flush_bars.dart';
 import 'package:mary_ai_pos/core/design_system/pos_design_system.dart';
 import 'package:mary_ai_pos/core/extension/for_context.dart';
-import 'package:mary_ai_pos/core/utils/app_formatter.dart';
 import 'package:mary_ai_pos/core/utils/user_role_permissions.dart';
 import 'package:mary_ai_pos/core/routes/app_routes.dart';
 import 'package:mary_ai_pos/core/widgets/app_scaffold.dart';
@@ -16,6 +14,7 @@ import 'package:mary_ai_pos/features/view/auth/presentation/cubit/bloc/user_bloc
 import 'package:mary_ai_pos/features/view/main/data/models/category/category_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/goods/goods_model.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/main/widgets/main_header.dart';
+import 'package:mary_ai_pos/features/view/main/presentation/widgets/product_grid_card.dart';
 import 'package:mary_ai_pos/generated/l10n.dart';
 import 'package:number_paginator/number_paginator.dart';
 import 'package:virtual_keyboard_multi_language/virtual_keyboard_multi_language.dart';
@@ -755,10 +754,10 @@ class _GoodsPanel extends StatelessWidget {
                                 .firstOrNull
                                 ?.name ??
                             '';
-                        return _GoodCard(
+                        return ProductGridCard(
                           good: g,
                           categoryName: catNameLocal,
-                          onEdit: () => onEdit(g),
+                          onTap: () => onEdit(g),
                         );
                       },
                     );
@@ -777,218 +776,6 @@ class _GoodsPanel extends StatelessWidget {
             onPageSizeChange: onPageSizeChange,
           ),
       ],
-    );
-  }
-}
-
-// ═══════════════════════════════════════════════════════
-// Premium product card (grid tile) — image + name + price
-// ═══════════════════════════════════════════════════════
-
-class _GoodCard extends StatefulWidget {
-  final GoodsModel good;
-  final String categoryName;
-  final VoidCallback onEdit;
-
-  const _GoodCard({
-    required this.good,
-    required this.categoryName,
-    required this.onEdit,
-  });
-
-  @override
-  State<_GoodCard> createState() => _GoodCardState();
-}
-
-class _GoodCardState extends State<_GoodCard> {
-  bool _hovered = false;
-
-  @override
-  Widget build(BuildContext context) {
-    final c = context.colors;
-    final pic = widget.good.pictureUrl;
-    final hasImage = pic != null && pic.isNotEmpty;
-    final initial = widget.good.name.isNotEmpty
-        ? widget.good.name[0].toUpperCase()
-        : '•';
-
-    return MouseRegion(
-      cursor: SystemMouseCursors.click,
-      onEnter: (_) => setState(() => _hovered = true),
-      onExit: (_) => setState(() => _hovered = false),
-      child: GestureDetector(
-        onTap: widget.onEdit,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 180),
-          curve: Curves.easeOut,
-          transform: Matrix4.translationValues(0, _hovered ? -2 : 0, 0),
-          decoration: BoxDecoration(
-            color: c.bgDefault,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: _hovered ? c.textBrand.withOpacity(0.4) : c.border,
-              width: _hovered ? 1.2 : 1,
-            ),
-            boxShadow: _hovered
-                ? [
-                    BoxShadow(
-                      color: c.textBrand.withOpacity(0.10),
-                      blurRadius: 14,
-                      offset: const Offset(0, 4),
-                    ),
-                  ]
-                : null,
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // ── Image area ──
-              Expanded(
-                flex: 4,
-                child: Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    ClipRRect(
-                      borderRadius: const BorderRadius.vertical(
-                        top: Radius.circular(11),
-                      ),
-                      child: hasImage
-                          ? CustomCachedNetworkImage(
-                              minioObjectName: pic,
-                              fit: BoxFit.cover,
-                              width: double.infinity,
-                              height: double.infinity,
-                              errorWidget: _InitialPlaceholder(
-                                initial: initial,
-                              ),
-                            )
-                          : _InitialPlaceholder(initial: initial),
-                    ),
-                    // Category flag
-                    if (widget.categoryName.isNotEmpty)
-                      Positioned(
-                        left: 8,
-                        bottom: 8,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 7,
-                            vertical: 3,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.94),
-                            borderRadius: BorderRadius.circular(5),
-                          ),
-                          child: Text(
-                            widget.categoryName,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              fontSize: 9.5,
-                              fontWeight: FontWeight.w600,
-                              color: c.textSecondary,
-                              fontFamily: 'Inter',
-                              letterSpacing: 0.2,
-                            ),
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-              // ── Footer: name + price ──
-              Padding(
-                padding: const EdgeInsets.fromLTRB(
-                  PosDimensions.s + 2, // 10
-                  PosDimensions.s, // 8
-                  PosDimensions.s + 2,
-                  PosDimensions.s + 2, // 10
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      widget.good.name,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: c.textDefault,
-                        fontFamily: PosTypography.family,
-                        height: 1.2,
-                        letterSpacing: -0.1,
-                      ),
-                    ),
-                    const SizedBox(height: PosDimensions.xs), // 4
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.baseline,
-                      textBaseline: TextBaseline.alphabetic,
-                      children: [
-                        Text(
-                          AppFormatter.formatAmountWithSpaces(
-                            widget.good.price,
-                          ),
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w700,
-                            color: c.textBrand,
-                            fontFamily: PosTypography.family,
-                            letterSpacing: -0.2,
-                            fontFeatures: PosTypography.tabularFigures,
-                          ),
-                        ),
-                        const SizedBox(width: 3),
-                        Text(
-                          "so'm",
-                          style: TextStyle(
-                            fontSize: 10,
-                            color: c.textSecondary,
-                            fontFamily: PosTypography.family,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _InitialPlaceholder extends StatelessWidget {
-  final String initial;
-
-  const _InitialPlaceholder({required this.initial});
-
-  @override
-  Widget build(BuildContext context) {
-    final c = context.colors;
-    return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            c.textBrand.withOpacity(0.05),
-            c.textBrand.withOpacity(0.12),
-          ],
-        ),
-      ),
-      alignment: Alignment.center,
-      child: Text(
-        initial,
-        style: TextStyle(
-          fontSize: 42,
-          fontWeight: FontWeight.w700,
-          color: c.textBrand.withOpacity(0.55),
-          fontFamily: 'Inter',
-          letterSpacing: -1,
-        ),
-      ),
     );
   }
 }

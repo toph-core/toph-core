@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mary_ai_pos/core/constants/constants.dart';
 import 'package:mary_ai_pos/core/extension/for_context.dart';
-import 'package:mary_ai_pos/core/extension/number_formatter.dart';
 import 'package:mary_ai_pos/core/theme/tokens/theme_colors.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/goods/goods_model.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/detail/detail_bloc.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/detail/widgets/detail_tab_widget.dart';
+import 'package:mary_ai_pos/features/view/main/presentation/widgets/product_grid_card.dart';
 import 'package:mary_ai_pos/generated/l10n.dart';
 import 'package:number_paginator/number_paginator.dart';
 
@@ -96,11 +96,11 @@ class _ProductGridWidgetState extends State<ProductGridWidget> {
                         controller: _scrollCtrl,
                         padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
                         gridDelegate:
-                            const SliverGridDelegateWithMaxCrossAxisExtent(
-                          maxCrossAxisExtent: 260,
-                          crossAxisSpacing: 16,
-                          mainAxisSpacing: 20,
-                          childAspectRatio: 0.88,
+                            const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 4,
+                          crossAxisSpacing: 12,
+                          mainAxisSpacing: 12,
+                          childAspectRatio: 0.92,
                         ),
                         itemCount: pageItems.length,
                         itemBuilder: (context, index) =>
@@ -204,163 +204,31 @@ class _ProductGridWidgetState extends State<ProductGridWidget> {
   }
 }
 
-class _ProductCard extends StatefulWidget {
+class _ProductCard extends StatelessWidget {
   final GoodsModel product;
   const _ProductCard({required this.product});
 
   @override
-  State<_ProductCard> createState() => _ProductCardState();
-}
-
-class _ProductCardState extends State<_ProductCard> {
-  bool _hovered = false;
-
-  @override
   Widget build(BuildContext context) {
-    // Cart quantity for this product (selected + existing).
     final cartQty = context.select<DetailBloc, int>((b) {
       final s = b.state;
       final selected = s.selectedGoods
-          .where((g) => g.goods.id == widget.product.id)
+          .where((g) => g.goods.id == product.id)
           .fold<int>(0, (sum, g) => sum + g.quantity);
       final existing = s.existingGoods
           .where(
-            (g) =>
-                g.goods.id == widget.product.id && g.commet != 'cancelled',
+            (g) => g.goods.id == product.id && g.commet != 'cancelled',
           )
           .fold<int>(0, (sum, g) => sum + g.quantity);
       return selected + existing;
     });
 
-    final letter = widget.product.name.isNotEmpty
-        ? widget.product.name[0].toUpperCase()
-        : '?';
-
-    return MouseRegion(
-      onEnter: (_) => setState(() => _hovered = true),
-      onExit: (_) => setState(() => _hovered = false),
-      cursor: SystemMouseCursors.click,
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: () => context.read<DetailBloc>().add(
-          DetailEvent.selectGood(good: widget.product),
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            // Circle avatar with cart badge overlay
-            Stack(
-              clipBehavior: Clip.none,
-              children: [
-                AnimatedContainer(
-                  duration: const Duration(milliseconds: 150),
-                  width: 88,
-                  height: 88,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFFFE4D4),
-                    shape: BoxShape.circle,
-                    boxShadow: _hovered
-                        ? [
-                            BoxShadow(
-                              color: const Color(0xFFFB6633).withOpacity(0.2),
-                              blurRadius: 16,
-                              offset: const Offset(0, 4),
-                            ),
-                          ]
-                        : null,
-                  ),
-                  alignment: Alignment.center,
-                  child: Text(
-                    letter,
-                    style: const TextStyle(
-                      fontSize: 40,
-                      fontWeight: FontWeight.w700,
-                      color: Color(0xFFFB6633),
-                      fontFamily: 'Inter',
-                      height: 1,
-                    ),
-                  ),
-                ),
-                if (cartQty > 0)
-                  Positioned(
-                    top: -4,
-                    right: -4,
-                    child: _CartQtyBadge(qty: cartQty),
-                  ),
-              ],
-            ),
-            const SizedBox(height: 10),
-            // Product name
-            Text(
-              widget.product.name,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: Color(0xFF0F172A),
-                fontFamily: 'Inter',
-                height: 1.2,
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-            const SizedBox(height: 3),
-            // Price
-            FittedBox(
-              fit: BoxFit.scaleDown,
-              child: Text(
-                num.parse(widget.product.price).formatN,
-                textAlign: TextAlign.center,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                softWrap: false,
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFFFB6633),
-                  fontFamily: 'Inter',
-                ),
-              ),
-            ),
-          ],
-        ),
+    return ProductGridCard(
+      good: product,
+      onTap: () => context.read<DetailBloc>().add(
+        DetailEvent.selectGood(good: product),
       ),
-    );
-  }
-}
-
-class _CartQtyBadge extends StatelessWidget {
-  final int qty;
-  const _CartQtyBadge({required this.qty});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      constraints: const BoxConstraints(minWidth: 22, minHeight: 22),
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-      decoration: BoxDecoration(
-        color: const Color(0xFFFB6633),
-        borderRadius: BorderRadius.circular(11),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.12),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      alignment: Alignment.center,
-      child: Text(
-        '$qty',
-        style: const TextStyle(
-          fontSize: 12,
-          fontWeight: FontWeight.w700,
-          color: Colors.white,
-          fontFamily: 'Inter',
-          height: 1,
-        ),
-      ),
+      topRightBadge: cartQty > 0 ? ProductCartQtyBadge(qty: cartQty) : null,
     );
   }
 }
