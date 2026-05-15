@@ -18,6 +18,7 @@ import 'package:mary_ai_pos/features/view/main/data/models/goods/goods_model.dar
 import 'package:mary_ai_pos/features/view/main/presentation/pages/main/widgets/main_header.dart';
 import 'package:mary_ai_pos/generated/l10n.dart';
 import 'package:number_paginator/number_paginator.dart';
+import 'package:virtual_keyboard_multi_language/virtual_keyboard_multi_language.dart';
 
 /// Admin/manager: kategoriyalar + taomlar ikkita panel ko'rinishida.
 class MenuMealsListScreen extends StatefulWidget {
@@ -32,6 +33,9 @@ class _MenuMealsListScreenState extends State<MenuMealsListScreen> {
   final NumberPaginatorController _paginatorController =
       NumberPaginatorController();
   final TextEditingController _searchCtrl = TextEditingController();
+  final TextEditingController _catSearchCtrl = TextEditingController();
+  // null = klaviatura yashirin. Non-null = qaysi controller'ga yozish kerakligi.
+  final ValueNotifier<TextEditingController?> _kbTarget = ValueNotifier(null);
 
   static const List<int> _pageSizeOptions = [20, 50, 100];
   int _pageSize = 20;
@@ -67,6 +71,8 @@ class _MenuMealsListScreenState extends State<MenuMealsListScreen> {
   void dispose() {
     _paginatorController.dispose();
     _searchCtrl.dispose();
+    _catSearchCtrl.dispose();
+    _kbTarget.dispose();
     super.dispose();
   }
 
@@ -247,83 +253,125 @@ class _MenuMealsListScreenState extends State<MenuMealsListScreen> {
   Widget build(BuildContext context) {
     return AppScaffold(
       activeRoute: AppRoutes.menuMealsScreen,
-      body: Column(
+      body: Stack(
         children: [
-          MainHeader(title: S.current.strMenu),
-          Expanded(
-            child: BlocBuilder<UserBloc, UserState>(
-              buildWhen: (p, c) => p.userMOdel?.role != c.userMOdel?.role,
-              builder: (context, userState) {
-                final allowed = userState.userMOdel?.role.canManageMenu ?? false;
-                final colors = context.colors;
-                if (!allowed) {
-                  return Center(
-                    child: Text(
-                      'Faqat admin, menejer va superadmin kirishi mumkin',
-                      style: TextStyle(color: colors.textSecondary),
-                    ),
-                  );
-                }
-                return Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // ── Chap panel: Kategoriyalar ──
-                      SizedBox(
-                        width: 260,
-                        child: _CategoriesPanel(
-                          categories: _categories,
-                          loading: _loadingCategories,
-                          selectedId: _selectedCategoryId,
-                          onSelect: (id) {
-                            setState(() {
-                              _selectedCategoryId = id;
-                              _searchQuery = '';
-                              _searchCtrl.clear();
-                            });
-                            _loadGoods(page: 1);
-                          },
-                          onAdd: () => _openCategoryDialog(),
-                        ),
-                      ),
-                      VerticalDivider(
-                        width: 1,
-                        thickness: 1,
-                        color: colors.border,
-                      ),
-                      // ── O'ng panel: Taomlar ──
-                      Expanded(
-                        child: _GoodsPanel(
-                          goods: _goods,
-                          categories: _categories,
-                          loading: _loadingGoods,
-                          error: _errorGoods,
-                          page: _page,
-                          totalCount: _totalCount ?? 0,
-                          totalPages: _totalPages,
-                          pageSize: _pageSize,
-                          pageSizeOptions: _pageSizeOptions,
-                          paginatorController: _paginatorController,
-                          searchCtrl: _searchCtrl,
-                          selectedCategoryId: _selectedCategoryId,
-                          onSearch: (q) {
-                            setState(() => _searchQuery = q);
-                            _loadGoods(page: 1);
-                          },
-                          onPageChange: (p) => _loadGoods(page: p),
-                          onPageSizeChange: (sz) {
-                            setState(() => _pageSize = sz);
-                            _loadGoods(page: 1);
-                          },
-                          onEdit: (g) => _openManage(mealId: g.id),
-                          onDelete: _confirmDeleteGood,
-                          onNew: () => _openManage(),
-                          onRetry: () => _loadGoods(page: _page),
-                        ),
-                      ),
-                    ],
-                  );
-              },
+          GestureDetector(
+            behavior: HitTestBehavior.translucent,
+            onTap: () {
+              if (_kbTarget.value != null) _kbTarget.value = null;
+            },
+            child: Column(
+              children: [
+                MainHeader(title: S.current.strMenu),
+                Expanded(
+                  child: BlocBuilder<UserBloc, UserState>(
+                    buildWhen: (p, c) =>
+                        p.userMOdel?.role != c.userMOdel?.role,
+                    builder: (context, userState) {
+                      final allowed =
+                          userState.userMOdel?.role.canManageMenu ?? false;
+                      final colors = context.colors;
+                      if (!allowed) {
+                        return Center(
+                          child: Text(
+                            'Faqat admin, menejer va superadmin kirishi mumkin',
+                            style: TextStyle(color: colors.textSecondary),
+                          ),
+                        );
+                      }
+                      return Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // ── Chap panel: Kategoriyalar ──
+                          SizedBox(
+                            width: 260,
+                            child: _CategoriesPanel(
+                              categories: _categories,
+                              loading: _loadingCategories,
+                              selectedId: _selectedCategoryId,
+                              searchCtrl: _catSearchCtrl,
+                              keyboardTarget: _kbTarget,
+                              onSelect: (id) {
+                                setState(() {
+                                  _selectedCategoryId = id;
+                                  _searchQuery = '';
+                                  _searchCtrl.clear();
+                                });
+                                _loadGoods(page: 1);
+                              },
+                              onAdd: () => _openCategoryDialog(),
+                            ),
+                          ),
+                          VerticalDivider(
+                            width: 1,
+                            thickness: 1,
+                            color: colors.border,
+                          ),
+                          // ── O'ng panel: Taomlar ──
+                          Expanded(
+                            child: _GoodsPanel(
+                              goods: _goods,
+                              categories: _categories,
+                              loading: _loadingGoods,
+                              error: _errorGoods,
+                              page: _page,
+                              totalCount: _totalCount ?? 0,
+                              totalPages: _totalPages,
+                              pageSize: _pageSize,
+                              pageSizeOptions: _pageSizeOptions,
+                              paginatorController: _paginatorController,
+                              searchCtrl: _searchCtrl,
+                              keyboardTarget: _kbTarget,
+                              selectedCategoryId: _selectedCategoryId,
+                              onSearch: (q) {
+                                setState(() => _searchQuery = q);
+                                _loadGoods(page: 1);
+                              },
+                              onPageChange: (p) => _loadGoods(page: p),
+                              onPageSizeChange: (sz) {
+                                setState(() => _pageSize = sz);
+                                _loadGoods(page: 1);
+                              },
+                              onEdit: (g) => _openManage(mealId: g.id),
+                              onDelete: _confirmDeleteGood,
+                              onNew: () => _openManage(),
+                              onRetry: () => _loadGoods(page: _page),
+                            ),
+                          ),
+                        ],
+                      );
+                    },
+                  ),
+                ),
+              ],
             ),
+          ),
+          // Virtual keyboard overlay
+          ValueListenableBuilder<TextEditingController?>(
+            valueListenable: _kbTarget,
+            builder: (context, ctrl, _) {
+              if (ctrl == null) return const SizedBox.shrink();
+              return Positioned(
+                bottom: 0,
+                left: 0,
+                right: 0,
+                child: DecoratedBox(
+                  decoration: BoxDecoration(color: context.colors.bgSecondary),
+                  child: SafeArea(
+                    child: VirtualKeyboard(
+                      height: context.h * .3,
+                      customLayoutKeys: VirtualKeyboardDefaultLayoutKeys([
+                        VirtualKeyboardDefaultLayouts.English,
+                      ]),
+                      textColor: Colors.black,
+                      fontSize: 24,
+                      textController: ctrl,
+                      type: VirtualKeyboardType.Alphanumeric,
+                    ),
+                  ),
+                ),
+              );
+            },
           ),
         ],
       ),
@@ -339,6 +387,8 @@ class _CategoriesPanel extends StatefulWidget {
   final List<CategoryModel> categories;
   final bool loading;
   final String? selectedId;
+  final TextEditingController searchCtrl;
+  final ValueNotifier<TextEditingController?> keyboardTarget;
   final void Function(String? id) onSelect;
   final VoidCallback onAdd;
 
@@ -346,6 +396,8 @@ class _CategoriesPanel extends StatefulWidget {
     required this.categories,
     required this.loading,
     required this.selectedId,
+    required this.searchCtrl,
+    required this.keyboardTarget,
     required this.onSelect,
     required this.onAdd,
   });
@@ -402,6 +454,8 @@ class _CategoriesPanelState extends State<_CategoriesPanel> {
             child: _SearchField(
               hint: 'Qidirish...',
               large: true,
+              controller: widget.searchCtrl,
+              keyboardTarget: widget.keyboardTarget,
               onChanged: (v) => setState(() => _catSearch = v),
             ),
           ),
@@ -583,6 +637,7 @@ class _GoodsPanel extends StatelessWidget {
   final List<int> pageSizeOptions;
   final NumberPaginatorController paginatorController;
   final TextEditingController searchCtrl;
+  final ValueNotifier<TextEditingController?> keyboardTarget;
   final String? selectedCategoryId;
   final void Function(String) onSearch;
   final void Function(int) onPageChange;
@@ -604,6 +659,7 @@ class _GoodsPanel extends StatelessWidget {
     required this.pageSizeOptions,
     required this.paginatorController,
     required this.searchCtrl,
+    required this.keyboardTarget,
     required this.selectedCategoryId,
     required this.onSearch,
     required this.onPageChange,
@@ -667,6 +723,7 @@ class _GoodsPanel extends StatelessWidget {
                 width: 280,
                 child: _SearchField(
                   controller: searchCtrl,
+                  keyboardTarget: keyboardTarget,
                   hint: 'Taom qidirish...',
                   onChanged: onSearch,
                 ),
@@ -1566,29 +1623,66 @@ class _ConfirmDialog extends StatelessWidget {
 // Shared micro-widgets
 // ═══════════════════════════════════════════════════════
 
-class _SearchField extends StatelessWidget {
+class _SearchField extends StatefulWidget {
   final String hint;
   final void Function(String) onChanged;
   final TextEditingController? controller;
+  final ValueNotifier<TextEditingController?>? keyboardTarget;
   final bool large;
 
   const _SearchField({
     required this.hint,
     required this.onChanged,
     this.controller,
+    this.keyboardTarget,
     this.large = false,
   });
 
   @override
+  State<_SearchField> createState() => _SearchFieldState();
+}
+
+class _SearchFieldState extends State<_SearchField> {
+  late final TextEditingController _ctrl;
+  late final bool _ownsCtrl;
+  String _last = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _ownsCtrl = widget.controller == null;
+    _ctrl = widget.controller ?? TextEditingController();
+    _last = _ctrl.text;
+    // Virtual keyboard `controller.value` ni dasturiy o'zgartiradi —
+    // TextField.onChanged buni TUTMAYDI. Shuning uchun listener orqali
+    // kuzatamiz (fizik ham, virtual ham klaviatura uchun ishlaydi).
+    _ctrl.addListener(_onTextChanged);
+  }
+
+  @override
+  void dispose() {
+    _ctrl.removeListener(_onTextChanged);
+    if (_ownsCtrl) _ctrl.dispose();
+    super.dispose();
+  }
+
+  void _onTextChanged() {
+    final cur = _ctrl.text;
+    if (cur == _last) return;
+    _last = cur;
+    widget.onChanged(cur);
+  }
+
+  @override
   Widget build(BuildContext context) {
     final c = context.colors;
-    final fontSize = large ? 16.0 : 13.0;
-    final iconSize = large ? 22.0 : 18.0;
-    final vPad = large ? 16.0 : 9.0;
-    final radius = large ? 12.0 : 8.0;
+    final fontSize = widget.large ? 16.0 : 13.0;
+    final iconSize = widget.large ? 22.0 : 18.0;
+    final vPad = widget.large ? 16.0 : 9.0;
+    final radius = widget.large ? 12.0 : 8.0;
     return TextField(
-      controller: controller,
-      onChanged: onChanged,
+      controller: _ctrl,
+      onTap: () => widget.keyboardTarget?.value = _ctrl,
       textInputAction: TextInputAction.search,
       keyboardType: TextInputType.text,
       enableInteractiveSelection: true,
@@ -1598,7 +1692,7 @@ class _SearchField extends StatelessWidget {
         fontFamily: 'Inter',
       ),
       decoration: InputDecoration(
-        hintText: hint,
+        hintText: widget.hint,
         hintStyle: TextStyle(fontSize: fontSize, color: c.textSecondary),
         prefixIcon:
             Icon(Icons.search_rounded, size: iconSize, color: c.textTertiary),
