@@ -11,6 +11,24 @@ class GlobalVirtualKeyboard extends StatefulWidget {
 
   const GlobalVirtualKeyboard({super.key, required this.child});
 
+  /// Eng yangi (top of stack) `GlobalVirtualKeyboard`'ni topib, klaviaturani
+  /// berilgan controller uchun ochadi. Search inputlardan to'g'ridan-to'g'ri
+  /// chaqirish uchun ishlatiladi — FocusManager'ga qaramasdan ishlaydi.
+  static void open(TextEditingController controller, {bool numeric = false}) {
+    if (_stack.isNotEmpty) {
+      _stack.last._openExplicit(controller, numeric);
+    }
+  }
+
+  /// Klaviaturani majburiy yopadi.
+  static void close() {
+    if (_stack.isNotEmpty) {
+      _stack.last._closeExplicit();
+    }
+  }
+
+  static final List<_GlobalVirtualKeyboardState> _stack = [];
+
   @override
   State<GlobalVirtualKeyboard> createState() => _GlobalVirtualKeyboardState();
 }
@@ -21,6 +39,7 @@ class _GlobalVirtualKeyboardState extends State<GlobalVirtualKeyboard> {
   bool _numericOnly = false;
   TextEditingController? _controller;
   VoidCallback? _controllerListener;
+
   // Fokuslangan EditableText widget'i. Matn yozilgandan keyin uning
   // `onChanged` callback'ini sinxron chaqiramiz — aks holda TextField.onChanged
   // faqat fizik klaviaturada ishlaydi (Flutter'ning cheklovi).
@@ -30,13 +49,41 @@ class _GlobalVirtualKeyboardState extends State<GlobalVirtualKeyboard> {
   void initState() {
     super.initState();
     FocusManager.instance.addListener(_onFocusChange);
+    GlobalVirtualKeyboard._stack.add(this);
   }
 
   @override
   void dispose() {
+    GlobalVirtualKeyboard._stack.remove(this);
     FocusManager.instance.removeListener(_onFocusChange);
     _detachController();
     super.dispose();
+  }
+
+  /// Explicit API — `GlobalVirtualKeyboard.open(controller)` orqali chaqiriladi.
+  void _openExplicit(TextEditingController controller, bool numeric) {
+    if (!mounted) return;
+    if (_controller != controller) {
+      _detachController();
+      _controller = controller;
+      _controllerListener = () {};
+      controller.addListener(_controllerListener!);
+    }
+    if (!_open || _numericOnly != numeric) {
+      setState(() {
+        _open = true;
+        _numericOnly = numeric;
+      });
+    }
+  }
+
+  void _closeExplicit() {
+    if (!mounted || !_open) return;
+    _detachController();
+    setState(() {
+      _open = false;
+      _shift = false;
+    });
   }
 
   void _detachController() {
@@ -82,7 +129,8 @@ class _GlobalVirtualKeyboardState extends State<GlobalVirtualKeyboard> {
     if (editable != null && isSearch) {
       final ctrl = editable.controller;
       final kt = editable.keyboardType;
-      final numeric = kt == TextInputType.number ||
+      final numeric =
+          kt == TextInputType.number ||
           kt == TextInputType.phone ||
           kt == const TextInputType.numberWithOptions(decimal: true) ||
           kt == const TextInputType.numberWithOptions(signed: true) ||
@@ -190,8 +238,10 @@ class _GlobalVirtualKeyboardState extends State<GlobalVirtualKeyboard> {
   Widget build(BuildContext context) {
     final screenH = MediaQuery.of(context).size.height;
     // Ekran balandligiga qarab klaviatura balandligi — 220..320 oraliq.
-    final kbHeight = (_numericOnly ? screenH * 0.30 : screenH * 0.36)
-        .clamp(220.0, 340.0);
+    final kbHeight = (_numericOnly ? screenH * 0.30 : screenH * 0.36).clamp(
+      220.0,
+      340.0,
+    );
 
     return Stack(
       children: [
@@ -280,9 +330,7 @@ class _KeyboardPanel extends StatelessWidget {
       child: Container(
         decoration: BoxDecoration(
           color: const Color(0xFFF8FAFC),
-          border: const Border(
-            top: BorderSide(color: Color(0xFFE2E8F0)),
-          ),
+          border: const Border(top: BorderSide(color: Color(0xFFE2E8F0))),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.06),
@@ -313,8 +361,10 @@ class _KeyboardPanel extends StatelessWidget {
             ),
             Expanded(
               child: Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
                 child: LayoutBuilder(
                   builder: (context, constraints) {
                     final h = constraints.maxHeight.isFinite
@@ -327,9 +377,9 @@ class _KeyboardPanel extends StatelessWidget {
                       type: numericOnly
                           ? VirtualKeyboardType.Numeric
                           : VirtualKeyboardType.Alphanumeric,
-                      customLayoutKeys: VirtualKeyboardDefaultLayoutKeys(
-                        [VirtualKeyboardDefaultLayouts.English],
-                      ),
+                      customLayoutKeys: VirtualKeyboardDefaultLayoutKeys([
+                        VirtualKeyboardDefaultLayouts.English,
+                      ]),
                       postKeyPress: onKeyPress,
                     );
                   },
@@ -345,6 +395,7 @@ class _KeyboardPanel extends StatelessWidget {
 
 class _CloseBtn extends StatefulWidget {
   final VoidCallback onTap;
+
   const _CloseBtn({required this.onTap});
 
   @override

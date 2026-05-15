@@ -16,12 +16,14 @@ const _kS50 = Color(0xFFF8FAFC);
 
 class TopBarWidget extends StatelessWidget {
   final CafeTableModel? cafeTable;
+  final ValueNotifier<bool> showKeyboard;
   final TextEditingController textEditingController;
   final int guestCount;
 
   const TopBarWidget({
     super.key,
     this.cafeTable,
+    required this.showKeyboard,
     required this.textEditingController,
     required this.guestCount,
   });
@@ -75,17 +77,18 @@ class TopBarWidget extends StatelessWidget {
                   constraints: BoxConstraints(
                     minWidth: PosBreakpoints.pick<double>(
                       context,
-                      compact: 252,
-                      comfortable: 308,
+                      compact: 140,
+                      comfortable: 160,
                     ),
                     maxWidth: PosBreakpoints.pick<double>(
                       context,
-                      compact: 364,
-                      comfortable: 476,
+                      compact: 220,
+                      comfortable: 280,
                     ),
                   ),
                   child: _SearchInput(
                     controller: textEditingController,
+                    showKeyboard: showKeyboard,
                   ),
                 ),
               ),
@@ -303,8 +306,9 @@ class _TakeawayHeader extends StatelessWidget {
 
 class _SearchInput extends StatefulWidget {
   final TextEditingController controller;
+  final ValueNotifier<bool> showKeyboard;
 
-  const _SearchInput({required this.controller});
+  const _SearchInput({required this.controller, required this.showKeyboard});
 
   @override
   State<_SearchInput> createState() => _SearchInputState();
@@ -343,45 +347,33 @@ class _SearchInputState extends State<_SearchInput> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 52,
+      // Touch target ≥ 48 dp
+      height: 48,
       decoration: BoxDecoration(
         color: _kS50,
         border: Border.all(color: _kS200),
         borderRadius: BorderRadius.circular(PosDimensions.radiusMd),
       ),
-      padding: const EdgeInsets.symmetric(horizontal: 12),
-      child: Row(
-        children: [
-          const Icon(Icons.search, size: 20, color: _kS500),
-          const SizedBox(width: 8),
-          Expanded(
-            child: TextField(
-              controller: widget.controller,
-              textInputAction: TextInputAction.search,
-              keyboardType: TextInputType.text,
-              style: const TextStyle(
-                fontSize: PosTypography.bodyMd,
-                color: _kS900,
-                fontFamily: PosTypography.family,
-              ),
-              decoration: InputDecoration(
-                hintText: S.current.strSearchHint,
-                hintStyle: const TextStyle(
-                  fontSize: PosTypography.bodyMd,
-                  color: _kS500,
-                  fontFamily: PosTypography.family,
-                ),
-                filled: false,
-                fillColor: Colors.transparent,
-                border: InputBorder.none,
-                enabledBorder: InputBorder.none,
-                focusedBorder: InputBorder.none,
-                isCollapsed: true,
-                contentPadding: EdgeInsets.zero,
-              ),
-            ),
+      child: TextField(
+        controller: widget.controller,
+        onTap: () => widget.showKeyboard.value = true,
+        style: const TextStyle(
+          fontSize: PosTypography.bodyMd, // 15
+          color: _kS900,
+          fontFamily: PosTypography.family,
+        ),
+        decoration: InputDecoration(
+          hintText: S.current.strSearchHint,
+          hintStyle: const TextStyle(
+            fontSize: PosTypography.bodyMd,
+            color: _kS500,
+            fontFamily: PosTypography.family,
           ),
-        ],
+          prefixIcon: const Icon(Icons.search, size: 20, color: _kS500),
+          border: InputBorder.none,
+          contentPadding: const EdgeInsets.symmetric(vertical: PosDimensions.s),
+          isDense: true,
+        ),
       ),
     );
   }
