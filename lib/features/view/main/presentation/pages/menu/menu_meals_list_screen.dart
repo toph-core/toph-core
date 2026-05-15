@@ -405,13 +405,13 @@ class _CategoriesPanelState extends State<_CategoriesPanel> {
         children: [
           // Header
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 14, 12, 8),
+            padding: const EdgeInsets.fromLTRB(16, 16, 10, 10),
             child: Row(
               children: [
                 Text(
                   'Kategoriyalar',
                   style: TextStyle(
-                    fontSize: 13,
+                    fontSize: 18,
                     fontWeight: FontWeight.w700,
                     color: c.textDefault,
                     fontFamily: 'Inter',
@@ -422,6 +422,7 @@ class _CategoriesPanelState extends State<_CategoriesPanel> {
                   icon: Icons.add_rounded,
                   tooltip: S.current.strAddCategory,
                   color: c.textBrand,
+                  size: 26,
                   onTap: widget.onAdd,
                 ),
               ],
@@ -1071,15 +1072,27 @@ class _CategoryDialog extends StatefulWidget {
 class _CategoryDialogState extends State<_CategoryDialog> {
   late final TextEditingController _nameCtrl;
   bool _saving = false;
+  bool _hasText = false;
+  bool _showKeyboard = false;
 
   @override
   void initState() {
     super.initState();
     _nameCtrl = TextEditingController(text: widget.existing?.name ?? '');
+    _hasText = _nameCtrl.text.trim().isNotEmpty;
+    _nameCtrl.addListener(_onTextChanged);
+  }
+
+  void _onTextChanged() {
+    final has = _nameCtrl.text.trim().isNotEmpty;
+    if (has != _hasText && mounted) {
+      setState(() => _hasText = has);
+    }
   }
 
   @override
   void dispose() {
+    _nameCtrl.removeListener(_onTextChanged);
     _nameCtrl.dispose();
     super.dispose();
   }
@@ -1107,103 +1120,167 @@ class _CategoryDialogState extends State<_CategoryDialog> {
     final isEdit = widget.existing != null;
     return Dialog(
       backgroundColor: c.bgDefault,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      elevation: 8,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 380),
+        constraints: const BoxConstraints(maxWidth: 560),
         child: Padding(
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.fromLTRB(28, 26, 28, 24),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                isEdit ? 'Kategoriyani tahrirlash' : "Kategoriya qo'shish",
-                style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600,
-                  color: c.textDefault,
-                  fontFamily: 'Inter',
-                ),
+              Row(
+                children: [
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: c.textBrand.withOpacity(0.12),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(
+                      isEdit ? Icons.edit_rounded : Icons.category_rounded,
+                      size: 24,
+                      color: c.textBrand,
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Text(
+                      isEdit
+                          ? 'Kategoriyani tahrirlash'
+                          : "Kategoriya qo'shish",
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w700,
+                        color: c.textDefault,
+                        fontFamily: 'Inter',
+                      ),
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 22),
               Text(
                 'Nomi *',
                 style: TextStyle(
-                  fontSize: 12,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
                   color: c.textTertiary,
                   fontFamily: 'Inter',
                 ),
               ),
-              const SizedBox(height: 6),
+              const SizedBox(height: 8),
               TextField(
                 controller: _nameCtrl,
-                autofocus: true,
+                readOnly: true,
+                showCursor: true,
+                onTap: () => setState(() => _showKeyboard = true),
                 style: TextStyle(
-                  fontSize: 13,
+                  fontSize: 16,
                   color: c.textDefault,
                   fontFamily: 'Inter',
                 ),
-                onSubmitted: (_) => _submit(),
                 decoration: InputDecoration(
                   isDense: true,
                   contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 10,
+                    horizontal: 16,
+                    vertical: 16,
                   ),
                   filled: true,
                   fillColor: c.bgSecondary,
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(12),
                     borderSide: BorderSide(color: c.border),
                   ),
                   enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(12),
                     borderSide: BorderSide(color: c.border),
                   ),
                   focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide: BorderSide(color: c.borderBrand),
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: c.borderBrand, width: 1.5),
                   ),
                 ),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 28),
               Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                spacing: 8,
+                spacing: 12,
                 children: [
-                  TextButton(
-                    onPressed: () => Navigator.pop(context),
-                    child: Text(
-                      'Bekor',
-                      style: TextStyle(color: c.textSecondary),
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.pop(context),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 18),
+                        side: BorderSide(color: c.border),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        foregroundColor: c.textDefault,
+                      ),
+                      child: const Text(
+                        'Bekor qilish',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
                     ),
                   ),
-                  FilledButton(
-                    onPressed: _saving ? null : _submit,
-                    style: FilledButton.styleFrom(
-                      backgroundColor: c.buttonBrand,
-                      foregroundColor: c.textOnBrand,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 18,
-                        vertical: 10,
+                  Expanded(
+                    child: FilledButton(
+                      onPressed: (_saving || !_hasText) ? null : _submit,
+                      style: FilledButton.styleFrom(
+                        backgroundColor: c.buttonBrand,
+                        foregroundColor: Colors.white,
+                        disabledBackgroundColor: c.buttonBrand.withOpacity(
+                          0.40,
+                        ),
+                        disabledForegroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 18),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        textStyle: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                        ),
+                        elevation: 0,
                       ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
+                      child: _saving
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : Text(isEdit ? 'Saqlash' : "Qo'shish"),
                     ),
-                    child: _saving
-                        ? const SizedBox(
-                            width: 14,
-                            height: 14,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.white,
-                            ),
-                          )
-                        : Text(isEdit ? 'Saqlash' : "Qo'shish"),
                   ),
                 ],
               ),
+              if (_showKeyboard) ...[
+                const SizedBox(height: 16),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: ColoredBox(
+                    color: c.bgSecondary,
+                    child: VirtualKeyboard(
+                      height: 260,
+                      customLayoutKeys: VirtualKeyboardDefaultLayoutKeys([
+                        VirtualKeyboardDefaultLayouts.English,
+                      ]),
+                      textColor: c.textDefault,
+                      fontSize: 22,
+                      textController: _nameCtrl,
+                      type: VirtualKeyboardType.Alphanumeric,
+                    ),
+                  ),
+                ),
+              ],
             ],
           ),
         ),
@@ -1393,8 +1470,9 @@ class _IconBtnState extends State<_IconBtn> {
         onExit: (_) => setState(() => _hovered = false),
         child: GestureDetector(
           onTap: widget.onTap,
+          behavior: HitTestBehavior.opaque,
           child: Padding(
-            padding: const EdgeInsets.all(5),
+            padding: EdgeInsets.all(widget.size >= 22 ? 10 : 5),
             child: Icon(
               widget.icon,
               size: widget.size,
