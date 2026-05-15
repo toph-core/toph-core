@@ -9,9 +9,23 @@ import 'package:mary_ai_pos/features/view/main/presentation/cubit/service_charge
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/ui_prefs/ui_prefs_cubit.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/settings/widgets/section_shell.dart';
 import 'package:mary_ai_pos/generated/l10n.dart';
+import 'package:virtual_keyboard_multi_language/virtual_keyboard_multi_language.dart';
 
-class AppearanceSection extends StatelessWidget {
+class AppearanceSection extends StatefulWidget {
   const AppearanceSection({super.key});
+
+  @override
+  State<AppearanceSection> createState() => _AppearanceSectionState();
+}
+
+class _AppearanceSectionState extends State<AppearanceSection> {
+  final ValueNotifier<TextEditingController?> _kbTarget = ValueNotifier(null);
+
+  @override
+  void dispose() {
+    _kbTarget.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -19,51 +33,90 @@ class AppearanceSection extends StatelessWidget {
     final showImages = context.select(
       (UiPrefsCubit c) => c.state.menuShowImages,
     );
+    final colors = context.colors;
 
-    return SectionShell(
-      title: S.current.strSettings,
-      subtitle: S.current.strInterfaceSettings,
-      child: ListView(
-        padding: EdgeInsets.zero,
-        children: [
-          _SettingCard(
-            icon: Icons.language_rounded,
-            title: S.current.strInterfaceLanguage,
-            subtitle: S.current.strAppliesToAllUsers,
-            control: _SegmentedPicker<String>(
-              value: language,
-              options: const [
-                _Option(value: 'uz', label: 'O\'zbek', flag: '🇺🇿'),
-                _Option(value: 'ru', label: 'Русский', flag: '🇷🇺'),
+    return Stack(
+      children: [
+        GestureDetector(
+          behavior: HitTestBehavior.translucent,
+          onTap: () {
+            if (_kbTarget.value != null) {
+              _kbTarget.value = null;
+              FocusManager.instance.primaryFocus?.unfocus();
+            }
+          },
+          child: SectionShell(
+            title: S.current.strSettings,
+            subtitle: S.current.strInterfaceSettings,
+            child: ListView(
+              padding: EdgeInsets.zero,
+              children: [
+                _SettingCard(
+                  icon: Icons.language_rounded,
+                  title: S.current.strInterfaceLanguage,
+                  subtitle: S.current.strAppliesToAllUsers,
+                  control: _SegmentedPicker<String>(
+                    value: language,
+                    options: const [
+                      _Option(value: 'uz', label: 'O\'zbek', flag: '🇺🇿'),
+                      _Option(value: 'ru', label: 'Русский', flag: '🇷🇺'),
+                    ],
+                    onChanged: (v) => context
+                        .read<SettingsCubit>()
+                        .saveAppLang(context, languageCode: v),
+                  ),
+                ),
+                const SizedBox(height: 14),
+                _SettingCard(
+                  icon: Icons.image_outlined,
+                  title: S.current.strMenuImages,
+                  subtitle: S.current.strShowProductImages,
+                  control: _StyledSwitch(
+                    value: showImages,
+                    onChanged: (v) =>
+                        context.read<UiPrefsCubit>().setMenuShowImages(v),
+                  ),
+                ),
+                const SizedBox(height: 14),
+                _ServiceChargeCard(kbTarget: _kbTarget),
               ],
-              onChanged: (v) => context.read<SettingsCubit>().saveAppLang(
-                context,
-                languageCode: v,
+            ),
+          ),
+        ),
+        ValueListenableBuilder<TextEditingController?>(
+          valueListenable: _kbTarget,
+          builder: (context, ctrl, _) {
+            if (ctrl == null) return const SizedBox.shrink();
+            return Positioned(
+              bottom: 0,
+              left: 0,
+              right: 0,
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  color: colors.bgSecondary,
+                  border: Border(top: BorderSide(color: colors.border)),
+                ),
+                child: SafeArea(
+                  child: VirtualKeyboard(
+                    height: 280,
+                    textColor: colors.textDefault,
+                    fontSize: 22,
+                    textController: ctrl,
+                    type: VirtualKeyboardType.Numeric,
+                  ),
+                ),
               ),
-            ),
-          ),
-          const SizedBox(height: 14),
-          _SettingCard(
-            icon: Icons.image_outlined,
-            title: S.current.strMenuImages,
-            subtitle: S.current.strShowProductImages,
-            control: _StyledSwitch(
-              value: showImages,
-              onChanged: (v) =>
-                  context.read<UiPrefsCubit>().setMenuShowImages(v),
-            ),
-          ),
-          const SizedBox(height: 14),
-          const _ServiceChargeCard(),
-          // Mavzu tanlovi vaqtincha o'chirilgan — faqat yorug' ishlatilmoqda.
-        ],
-      ),
+            );
+          },
+        ),
+      ],
     );
   }
 }
 
 class _ServiceChargeCard extends StatefulWidget {
-  const _ServiceChargeCard();
+  final ValueNotifier<TextEditingController?> kbTarget;
+  const _ServiceChargeCard({required this.kbTarget});
 
   @override
   State<_ServiceChargeCard> createState() => _ServiceChargeCardState();
@@ -80,19 +133,27 @@ class _ServiceChargeCardState extends State<_ServiceChargeCard> {
   @override
   void initState() {
     super.initState();
+    _controller.addListener(_onControllerChange);
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
       final id = _branchId;
-      if (id.isNotEmpty) {
-        context.read<ServiceChargeCubit>().load(id);
+      final cubit = context.read<ServiceChargeCubit>();
+      if (id.isNotEmpty && cubit.state.value == null) {
+        cubit.load(id);
       }
     });
   }
 
   @override
   void dispose() {
+    _controller.removeListener(_onControllerChange);
     _controller.dispose();
     _focusNode.dispose();
     super.dispose();
+  }
+
+  void _onControllerChange() {
+    if (mounted) setState(() {});
   }
 
   void _syncControllerWith(double value) {
@@ -122,6 +183,7 @@ class _ServiceChargeCardState extends State<_ServiceChargeCard> {
       _syncedValue = parsed;
       showSuccessMessage(context, S.current.strServiceChargeSaved);
       _focusNode.unfocus();
+      widget.kbTarget.value = null;
       setState(() {});
     } else {
       showErrorMessage(context, S.current.strServiceChargeInvalid);
@@ -196,6 +258,7 @@ class _ServiceChargeCardState extends State<_ServiceChargeCard> {
               controller: _controller,
               focusNode: _focusNode,
               enabled: !state.saving,
+              kbTarget: widget.kbTarget,
               onChanged: (_) => setState(() {}),
             ),
             const SizedBox(width: 10),
@@ -207,65 +270,110 @@ class _ServiceChargeCardState extends State<_ServiceChargeCard> {
   }
 }
 
-class _PercentInput extends StatelessWidget {
+class _PercentInput extends StatefulWidget {
   final TextEditingController controller;
   final FocusNode focusNode;
   final bool enabled;
+  final ValueNotifier<TextEditingController?> kbTarget;
   final ValueChanged<String> onChanged;
 
   const _PercentInput({
     required this.controller,
     required this.focusNode,
     required this.enabled,
+    required this.kbTarget,
     required this.onChanged,
   });
 
   @override
+  State<_PercentInput> createState() => _PercentInputState();
+}
+
+class _PercentInputState extends State<_PercentInput> {
+  @override
+  void initState() {
+    super.initState();
+    widget.focusNode.addListener(_onFocusChange);
+  }
+
+  @override
+  void dispose() {
+    widget.focusNode.removeListener(_onFocusChange);
+    super.dispose();
+  }
+
+  void _onFocusChange() {
+    if (mounted) setState(() {});
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final controller = widget.controller;
+    final focusNode = widget.focusNode;
+    final enabled = widget.enabled;
+    final onChanged = widget.onChanged;
     final colors = context.colors;
-    return SizedBox(
-      width: 80,
+    final focused = focusNode.hasFocus;
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 180),
+      curve: Curves.easeOutCubic,
+      width: 160,
+      height: 56,
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      decoration: BoxDecoration(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: focused ? colors.buttonBrand : colors.border,
+          width: focused ? 1.6 : 1,
+        ),
+      ),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.end,
-        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          IntrinsicWidth(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(minWidth: 28),
-              child: TextField(
-                controller: controller,
-                focusNode: focusNode,
-                enabled: enabled,
-                keyboardType: const TextInputType.numberWithOptions(
-                  decimal: true,
-                ),
-                inputFormatters: [
-                  FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]')),
-                ],
-                onChanged: onChanged,
-                textAlign: TextAlign.right,
-                style: TextStyle(
-                  fontSize: 18,
+          Expanded(
+            child: TextField(
+              controller: controller,
+              focusNode: focusNode,
+              enabled: enabled,
+              readOnly: true,
+              showCursor: true,
+              cursorColor: colors.buttonBrand,
+              keyboardType: TextInputType.none,
+              inputFormatters: [
+                FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]')),
+              ],
+              onTap: () => widget.kbTarget.value = controller,
+              onChanged: onChanged,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.w700,
+                color: colors.textDefault,
+                fontFamily: 'Inter',
+              ),
+              decoration: InputDecoration(
+                isCollapsed: true,
+                border: InputBorder.none,
+                enabledBorder: InputBorder.none,
+                focusedBorder: InputBorder.none,
+                contentPadding: EdgeInsets.zero,
+                hintText: '0',
+                hintStyle: TextStyle(
+                  fontSize: 22,
                   fontWeight: FontWeight.w700,
-                  color: colors.textDefault,
+                  color: colors.textTertiary,
                   fontFamily: 'Inter',
                 ),
-                decoration: const InputDecoration(
-                  isCollapsed: true,
-                  border: InputBorder.none,
-                  enabledBorder: InputBorder.none,
-                  focusedBorder: InputBorder.none,
-                  contentPadding: EdgeInsets.zero,
-                  hintText: '0',
-                ),
+                filled: false,
               ),
             ),
           ),
-          const SizedBox(width: 4),
+          const SizedBox(width: 6),
           Text(
             '%',
             style: TextStyle(
-              fontSize: 16,
+              fontSize: 18,
               fontWeight: FontWeight.w600,
               color: colors.textSecondary,
               fontFamily: 'Inter',
