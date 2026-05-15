@@ -439,6 +439,7 @@ class MessageLookup extends MessageLookupByLibrary {
         "strPositionY": MessageLookupByLibrary.simpleMessage("Позиция Y (м)"),
         "strPositionsSaved":
             MessageLookupByLibrary.simpleMessage("Позиции сохранены"),
+        "strPrice": MessageLookupByLibrary.simpleMessage("Цена"),
         "strPrint": MessageLookupByLibrary.simpleMessage("Печать"),
         "strPrinterSettings":
             MessageLookupByLibrary.simpleMessage("Настройки принтера"),
@@ -559,6 +560,7 @@ class MessageLookup extends MessageLookupByLibrary {
         "strTimeColumnHeader": MessageLookupByLibrary.simpleMessage("Время"),
         "strTodayRevenue":
             MessageLookupByLibrary.simpleMessage("Выручка за сегодня"),
+        "strTotal": MessageLookupByLibrary.simpleMessage("Итого"),
         "strTotalCapacity":
             MessageLookupByLibrary.simpleMessage("Общая вместимость"),
         "strTotalColon": MessageLookupByLibrary.simpleMessage("Итого:"),

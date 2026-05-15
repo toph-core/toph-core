@@ -5,7 +5,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mary_ai_pos/core/constants/constants.dart';
 import 'package:mary_ai_pos/core/design_system/pos_design_system.dart';
 import 'package:mary_ai_pos/core/extension/for_context.dart';
-import 'package:mary_ai_pos/core/components/flush_bars.dart';
 import 'package:mary_ai_pos/core/routes/app_routes.dart';
 import 'package:mary_ai_pos/core/services/connectivity/connectivity_cubit.dart';
 import 'package:mary_ai_pos/core/widgets/app_scaffold.dart';
@@ -231,12 +230,7 @@ bool _requireOpenShift(BuildContext context) {
   final shift = context.read<ShiftBloc>().state.shift;
   if (shift != null) return true;
 
-  showErrorMessage(context, S.current.strShiftNotOpenError);
-  // 300ms dan keyin smena sahifasiga o'tamiz — toast ko'rinsin deb
-  Future.delayed(const Duration(milliseconds: 300), () {
-    if (!context.mounted) return;
-    Navigator.pushNamed(context, AppRoutes.closeShiftScreen);
-  });
+  Navigator.pushNamed(context, AppRoutes.closeShiftScreen);
   return false;
 }
 

@@ -447,6 +447,7 @@ class MessageLookup extends MessageLookupByLibrary {
         "strPositionY": MessageLookupByLibrary.simpleMessage("Pozitsiya Y (m)"),
         "strPositionsSaved":
             MessageLookupByLibrary.simpleMessage("Pozitsiyalar saqlandi"),
+        "strPrice": MessageLookupByLibrary.simpleMessage("Narxi"),
         "strPrint": MessageLookupByLibrary.simpleMessage("Chop etish"),
         "strPrinterSettings":
             MessageLookupByLibrary.simpleMessage("Printer sozlamalari"),
@@ -567,6 +568,7 @@ class MessageLookup extends MessageLookupByLibrary {
         "strTimeColumnHeader": MessageLookupByLibrary.simpleMessage("Vaqt"),
         "strTodayRevenue":
             MessageLookupByLibrary.simpleMessage("Bugungi tushum"),
+        "strTotal": MessageLookupByLibrary.simpleMessage("Jami"),
         "strTotalCapacity":
             MessageLookupByLibrary.simpleMessage("Umumiy sig\'im"),
         "strTotalColon": MessageLookupByLibrary.simpleMessage("Jami:"),

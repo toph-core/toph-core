@@ -33,4 +33,38 @@ class DetailEvent with _$DetailEvent {
     required String itemId,
     required String tableId,
   }) = _CancelOrderItem;
+
+  /// Mavjud (serverda saqlangan) item miqdorini +1 oshiradi.
+  /// `itemKey` — UI `OrderItem.uniqueId` (grouped item identifier).
+  const factory DetailEvent.incrementExistingItem({
+    required String itemKey,
+    required String tableId,
+  }) = _IncrementExistingItem;
+
+  /// Mavjud item miqdorini -1 kamaytiradi. Agar 1 da bo'lsa — itemni o'chiradi.
+  const factory DetailEvent.decrementExistingItem({
+    required String itemKey,
+    required String tableId,
+  }) = _DecrementExistingItem;
+
+  /// Mavjud itemni to'liq o'chiradi (barcha tegishli line-itemlarni bekor qiladi).
+  const factory DetailEvent.deleteExistingItem({
+    required String itemKey,
+    required String tableId,
+  }) = _DeleteExistingItem;
+
+  /// Mavjud itemning miqdorini bevosita berilgan qiymatga o'rnatadi va
+  /// backendga darhol (debouncesiz) sinxronlaydi. Edit-modaldan "Save"
+  /// bosilganda chaqiriladi.
+  const factory DetailEvent.setExistingItemQuantity({
+    required String itemKey,
+    required String tableId,
+    required int quantity,
+  }) = _SetExistingItemQuantity;
+
+  /// Internal: debounce vaqti tugagandan keyin backendga sinxronlash.
+  const factory DetailEvent.syncExistingItem({
+    required String itemKey,
+    required String tableId,
+  }) = _SyncExistingItem;
 }

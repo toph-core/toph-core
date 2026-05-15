@@ -33,6 +33,15 @@ mixin _$DetailEvent {
     required TResult Function(String billId, bool force) fetchBillOrders,
     required TResult Function(String orderId) setActiveOrderId,
     required TResult Function(String itemId, String tableId) cancelOrderItem,
+    required TResult Function(String itemKey, String tableId)
+        incrementExistingItem,
+    required TResult Function(String itemKey, String tableId)
+        decrementExistingItem,
+    required TResult Function(String itemKey, String tableId)
+        deleteExistingItem,
+    required TResult Function(String itemKey, String tableId, int quantity)
+        setExistingItemQuantity,
+    required TResult Function(String itemKey, String tableId) syncExistingItem,
   }) =>
       throw _privateConstructorUsedError;
   @optionalTypeArgs
@@ -52,6 +61,12 @@ mixin _$DetailEvent {
     TResult? Function(String billId, bool force)? fetchBillOrders,
     TResult? Function(String orderId)? setActiveOrderId,
     TResult? Function(String itemId, String tableId)? cancelOrderItem,
+    TResult? Function(String itemKey, String tableId)? incrementExistingItem,
+    TResult? Function(String itemKey, String tableId)? decrementExistingItem,
+    TResult? Function(String itemKey, String tableId)? deleteExistingItem,
+    TResult? Function(String itemKey, String tableId, int quantity)?
+        setExistingItemQuantity,
+    TResult? Function(String itemKey, String tableId)? syncExistingItem,
   }) =>
       throw _privateConstructorUsedError;
   @optionalTypeArgs
@@ -71,6 +86,12 @@ mixin _$DetailEvent {
     TResult Function(String billId, bool force)? fetchBillOrders,
     TResult Function(String orderId)? setActiveOrderId,
     TResult Function(String itemId, String tableId)? cancelOrderItem,
+    TResult Function(String itemKey, String tableId)? incrementExistingItem,
+    TResult Function(String itemKey, String tableId)? decrementExistingItem,
+    TResult Function(String itemKey, String tableId)? deleteExistingItem,
+    TResult Function(String itemKey, String tableId, int quantity)?
+        setExistingItemQuantity,
+    TResult Function(String itemKey, String tableId)? syncExistingItem,
     required TResult orElse(),
   }) =>
       throw _privateConstructorUsedError;
@@ -90,6 +111,14 @@ mixin _$DetailEvent {
     required TResult Function(_FetchBillOrders value) fetchBillOrders,
     required TResult Function(_SetActiveOrderId value) setActiveOrderId,
     required TResult Function(_CancelOrderItem value) cancelOrderItem,
+    required TResult Function(_IncrementExistingItem value)
+        incrementExistingItem,
+    required TResult Function(_DecrementExistingItem value)
+        decrementExistingItem,
+    required TResult Function(_DeleteExistingItem value) deleteExistingItem,
+    required TResult Function(_SetExistingItemQuantity value)
+        setExistingItemQuantity,
+    required TResult Function(_SyncExistingItem value) syncExistingItem,
   }) =>
       throw _privateConstructorUsedError;
   @optionalTypeArgs
@@ -107,6 +136,11 @@ mixin _$DetailEvent {
     TResult? Function(_FetchBillOrders value)? fetchBillOrders,
     TResult? Function(_SetActiveOrderId value)? setActiveOrderId,
     TResult? Function(_CancelOrderItem value)? cancelOrderItem,
+    TResult? Function(_IncrementExistingItem value)? incrementExistingItem,
+    TResult? Function(_DecrementExistingItem value)? decrementExistingItem,
+    TResult? Function(_DeleteExistingItem value)? deleteExistingItem,
+    TResult? Function(_SetExistingItemQuantity value)? setExistingItemQuantity,
+    TResult? Function(_SyncExistingItem value)? syncExistingItem,
   }) =>
       throw _privateConstructorUsedError;
   @optionalTypeArgs
@@ -124,6 +158,11 @@ mixin _$DetailEvent {
     TResult Function(_FetchBillOrders value)? fetchBillOrders,
     TResult Function(_SetActiveOrderId value)? setActiveOrderId,
     TResult Function(_CancelOrderItem value)? cancelOrderItem,
+    TResult Function(_IncrementExistingItem value)? incrementExistingItem,
+    TResult Function(_DecrementExistingItem value)? decrementExistingItem,
+    TResult Function(_DeleteExistingItem value)? deleteExistingItem,
+    TResult Function(_SetExistingItemQuantity value)? setExistingItemQuantity,
+    TResult Function(_SyncExistingItem value)? syncExistingItem,
     required TResult orElse(),
   }) =>
       throw _privateConstructorUsedError;
@@ -200,6 +239,15 @@ class _$StartedImpl implements _Started {
     required TResult Function(String billId, bool force) fetchBillOrders,
     required TResult Function(String orderId) setActiveOrderId,
     required TResult Function(String itemId, String tableId) cancelOrderItem,
+    required TResult Function(String itemKey, String tableId)
+        incrementExistingItem,
+    required TResult Function(String itemKey, String tableId)
+        decrementExistingItem,
+    required TResult Function(String itemKey, String tableId)
+        deleteExistingItem,
+    required TResult Function(String itemKey, String tableId, int quantity)
+        setExistingItemQuantity,
+    required TResult Function(String itemKey, String tableId) syncExistingItem,
   }) {
     return started();
   }
@@ -222,6 +270,12 @@ class _$StartedImpl implements _Started {
     TResult? Function(String billId, bool force)? fetchBillOrders,
     TResult? Function(String orderId)? setActiveOrderId,
     TResult? Function(String itemId, String tableId)? cancelOrderItem,
+    TResult? Function(String itemKey, String tableId)? incrementExistingItem,
+    TResult? Function(String itemKey, String tableId)? decrementExistingItem,
+    TResult? Function(String itemKey, String tableId)? deleteExistingItem,
+    TResult? Function(String itemKey, String tableId, int quantity)?
+        setExistingItemQuantity,
+    TResult? Function(String itemKey, String tableId)? syncExistingItem,
   }) {
     return started?.call();
   }
@@ -244,6 +298,12 @@ class _$StartedImpl implements _Started {
     TResult Function(String billId, bool force)? fetchBillOrders,
     TResult Function(String orderId)? setActiveOrderId,
     TResult Function(String itemId, String tableId)? cancelOrderItem,
+    TResult Function(String itemKey, String tableId)? incrementExistingItem,
+    TResult Function(String itemKey, String tableId)? decrementExistingItem,
+    TResult Function(String itemKey, String tableId)? deleteExistingItem,
+    TResult Function(String itemKey, String tableId, int quantity)?
+        setExistingItemQuantity,
+    TResult Function(String itemKey, String tableId)? syncExistingItem,
     required TResult orElse(),
   }) {
     if (started != null) {
@@ -269,6 +329,14 @@ class _$StartedImpl implements _Started {
     required TResult Function(_FetchBillOrders value) fetchBillOrders,
     required TResult Function(_SetActiveOrderId value) setActiveOrderId,
     required TResult Function(_CancelOrderItem value) cancelOrderItem,
+    required TResult Function(_IncrementExistingItem value)
+        incrementExistingItem,
+    required TResult Function(_DecrementExistingItem value)
+        decrementExistingItem,
+    required TResult Function(_DeleteExistingItem value) deleteExistingItem,
+    required TResult Function(_SetExistingItemQuantity value)
+        setExistingItemQuantity,
+    required TResult Function(_SyncExistingItem value) syncExistingItem,
   }) {
     return started(this);
   }
@@ -289,6 +357,11 @@ class _$StartedImpl implements _Started {
     TResult? Function(_FetchBillOrders value)? fetchBillOrders,
     TResult? Function(_SetActiveOrderId value)? setActiveOrderId,
     TResult? Function(_CancelOrderItem value)? cancelOrderItem,
+    TResult? Function(_IncrementExistingItem value)? incrementExistingItem,
+    TResult? Function(_DecrementExistingItem value)? decrementExistingItem,
+    TResult? Function(_DeleteExistingItem value)? deleteExistingItem,
+    TResult? Function(_SetExistingItemQuantity value)? setExistingItemQuantity,
+    TResult? Function(_SyncExistingItem value)? syncExistingItem,
   }) {
     return started?.call(this);
   }
@@ -309,6 +382,11 @@ class _$StartedImpl implements _Started {
     TResult Function(_FetchBillOrders value)? fetchBillOrders,
     TResult Function(_SetActiveOrderId value)? setActiveOrderId,
     TResult Function(_CancelOrderItem value)? cancelOrderItem,
+    TResult Function(_IncrementExistingItem value)? incrementExistingItem,
+    TResult Function(_DecrementExistingItem value)? decrementExistingItem,
+    TResult Function(_DeleteExistingItem value)? deleteExistingItem,
+    TResult Function(_SetExistingItemQuantity value)? setExistingItemQuantity,
+    TResult Function(_SyncExistingItem value)? syncExistingItem,
     required TResult orElse(),
   }) {
     if (started != null) {
@@ -375,6 +453,15 @@ class _$GetCategoriesImpl implements _GetCategories {
     required TResult Function(String billId, bool force) fetchBillOrders,
     required TResult Function(String orderId) setActiveOrderId,
     required TResult Function(String itemId, String tableId) cancelOrderItem,
+    required TResult Function(String itemKey, String tableId)
+        incrementExistingItem,
+    required TResult Function(String itemKey, String tableId)
+        decrementExistingItem,
+    required TResult Function(String itemKey, String tableId)
+        deleteExistingItem,
+    required TResult Function(String itemKey, String tableId, int quantity)
+        setExistingItemQuantity,
+    required TResult Function(String itemKey, String tableId) syncExistingItem,
   }) {
     return getCategories();
   }
@@ -397,6 +484,12 @@ class _$GetCategoriesImpl implements _GetCategories {
     TResult? Function(String billId, bool force)? fetchBillOrders,
     TResult? Function(String orderId)? setActiveOrderId,
     TResult? Function(String itemId, String tableId)? cancelOrderItem,
+    TResult? Function(String itemKey, String tableId)? incrementExistingItem,
+    TResult? Function(String itemKey, String tableId)? decrementExistingItem,
+    TResult? Function(String itemKey, String tableId)? deleteExistingItem,
+    TResult? Function(String itemKey, String tableId, int quantity)?
+        setExistingItemQuantity,
+    TResult? Function(String itemKey, String tableId)? syncExistingItem,
   }) {
     return getCategories?.call();
   }
@@ -419,6 +512,12 @@ class _$GetCategoriesImpl implements _GetCategories {
     TResult Function(String billId, bool force)? fetchBillOrders,
     TResult Function(String orderId)? setActiveOrderId,
     TResult Function(String itemId, String tableId)? cancelOrderItem,
+    TResult Function(String itemKey, String tableId)? incrementExistingItem,
+    TResult Function(String itemKey, String tableId)? decrementExistingItem,
+    TResult Function(String itemKey, String tableId)? deleteExistingItem,
+    TResult Function(String itemKey, String tableId, int quantity)?
+        setExistingItemQuantity,
+    TResult Function(String itemKey, String tableId)? syncExistingItem,
     required TResult orElse(),
   }) {
     if (getCategories != null) {
@@ -444,6 +543,14 @@ class _$GetCategoriesImpl implements _GetCategories {
     required TResult Function(_FetchBillOrders value) fetchBillOrders,
     required TResult Function(_SetActiveOrderId value) setActiveOrderId,
     required TResult Function(_CancelOrderItem value) cancelOrderItem,
+    required TResult Function(_IncrementExistingItem value)
+        incrementExistingItem,
+    required TResult Function(_DecrementExistingItem value)
+        decrementExistingItem,
+    required TResult Function(_DeleteExistingItem value) deleteExistingItem,
+    required TResult Function(_SetExistingItemQuantity value)
+        setExistingItemQuantity,
+    required TResult Function(_SyncExistingItem value) syncExistingItem,
   }) {
     return getCategories(this);
   }
@@ -464,6 +571,11 @@ class _$GetCategoriesImpl implements _GetCategories {
     TResult? Function(_FetchBillOrders value)? fetchBillOrders,
     TResult? Function(_SetActiveOrderId value)? setActiveOrderId,
     TResult? Function(_CancelOrderItem value)? cancelOrderItem,
+    TResult? Function(_IncrementExistingItem value)? incrementExistingItem,
+    TResult? Function(_DecrementExistingItem value)? decrementExistingItem,
+    TResult? Function(_DeleteExistingItem value)? deleteExistingItem,
+    TResult? Function(_SetExistingItemQuantity value)? setExistingItemQuantity,
+    TResult? Function(_SyncExistingItem value)? syncExistingItem,
   }) {
     return getCategories?.call(this);
   }
@@ -484,6 +596,11 @@ class _$GetCategoriesImpl implements _GetCategories {
     TResult Function(_FetchBillOrders value)? fetchBillOrders,
     TResult Function(_SetActiveOrderId value)? setActiveOrderId,
     TResult Function(_CancelOrderItem value)? cancelOrderItem,
+    TResult Function(_IncrementExistingItem value)? incrementExistingItem,
+    TResult Function(_DecrementExistingItem value)? decrementExistingItem,
+    TResult Function(_DeleteExistingItem value)? deleteExistingItem,
+    TResult Function(_SetExistingItemQuantity value)? setExistingItemQuantity,
+    TResult Function(_SyncExistingItem value)? syncExistingItem,
     required TResult orElse(),
   }) {
     if (getCategories != null) {
@@ -585,6 +702,15 @@ class _$InitSavedGoodsImpl implements _InitSavedGoods {
     required TResult Function(String billId, bool force) fetchBillOrders,
     required TResult Function(String orderId) setActiveOrderId,
     required TResult Function(String itemId, String tableId) cancelOrderItem,
+    required TResult Function(String itemKey, String tableId)
+        incrementExistingItem,
+    required TResult Function(String itemKey, String tableId)
+        decrementExistingItem,
+    required TResult Function(String itemKey, String tableId)
+        deleteExistingItem,
+    required TResult Function(String itemKey, String tableId, int quantity)
+        setExistingItemQuantity,
+    required TResult Function(String itemKey, String tableId) syncExistingItem,
   }) {
     return initSavedGoods(savedGoods);
   }
@@ -607,6 +733,12 @@ class _$InitSavedGoodsImpl implements _InitSavedGoods {
     TResult? Function(String billId, bool force)? fetchBillOrders,
     TResult? Function(String orderId)? setActiveOrderId,
     TResult? Function(String itemId, String tableId)? cancelOrderItem,
+    TResult? Function(String itemKey, String tableId)? incrementExistingItem,
+    TResult? Function(String itemKey, String tableId)? decrementExistingItem,
+    TResult? Function(String itemKey, String tableId)? deleteExistingItem,
+    TResult? Function(String itemKey, String tableId, int quantity)?
+        setExistingItemQuantity,
+    TResult? Function(String itemKey, String tableId)? syncExistingItem,
   }) {
     return initSavedGoods?.call(savedGoods);
   }
@@ -629,6 +761,12 @@ class _$InitSavedGoodsImpl implements _InitSavedGoods {
     TResult Function(String billId, bool force)? fetchBillOrders,
     TResult Function(String orderId)? setActiveOrderId,
     TResult Function(String itemId, String tableId)? cancelOrderItem,
+    TResult Function(String itemKey, String tableId)? incrementExistingItem,
+    TResult Function(String itemKey, String tableId)? decrementExistingItem,
+    TResult Function(String itemKey, String tableId)? deleteExistingItem,
+    TResult Function(String itemKey, String tableId, int quantity)?
+        setExistingItemQuantity,
+    TResult Function(String itemKey, String tableId)? syncExistingItem,
     required TResult orElse(),
   }) {
     if (initSavedGoods != null) {
@@ -654,6 +792,14 @@ class _$InitSavedGoodsImpl implements _InitSavedGoods {
     required TResult Function(_FetchBillOrders value) fetchBillOrders,
     required TResult Function(_SetActiveOrderId value) setActiveOrderId,
     required TResult Function(_CancelOrderItem value) cancelOrderItem,
+    required TResult Function(_IncrementExistingItem value)
+        incrementExistingItem,
+    required TResult Function(_DecrementExistingItem value)
+        decrementExistingItem,
+    required TResult Function(_DeleteExistingItem value) deleteExistingItem,
+    required TResult Function(_SetExistingItemQuantity value)
+        setExistingItemQuantity,
+    required TResult Function(_SyncExistingItem value) syncExistingItem,
   }) {
     return initSavedGoods(this);
   }
@@ -674,6 +820,11 @@ class _$InitSavedGoodsImpl implements _InitSavedGoods {
     TResult? Function(_FetchBillOrders value)? fetchBillOrders,
     TResult? Function(_SetActiveOrderId value)? setActiveOrderId,
     TResult? Function(_CancelOrderItem value)? cancelOrderItem,
+    TResult? Function(_IncrementExistingItem value)? incrementExistingItem,
+    TResult? Function(_DecrementExistingItem value)? decrementExistingItem,
+    TResult? Function(_DeleteExistingItem value)? deleteExistingItem,
+    TResult? Function(_SetExistingItemQuantity value)? setExistingItemQuantity,
+    TResult? Function(_SyncExistingItem value)? syncExistingItem,
   }) {
     return initSavedGoods?.call(this);
   }
@@ -694,6 +845,11 @@ class _$InitSavedGoodsImpl implements _InitSavedGoods {
     TResult Function(_FetchBillOrders value)? fetchBillOrders,
     TResult Function(_SetActiveOrderId value)? setActiveOrderId,
     TResult Function(_CancelOrderItem value)? cancelOrderItem,
+    TResult Function(_IncrementExistingItem value)? incrementExistingItem,
+    TResult Function(_DecrementExistingItem value)? decrementExistingItem,
+    TResult Function(_DeleteExistingItem value)? deleteExistingItem,
+    TResult Function(_SetExistingItemQuantity value)? setExistingItemQuantity,
+    TResult Function(_SyncExistingItem value)? syncExistingItem,
     required TResult orElse(),
   }) {
     if (initSavedGoods != null) {
@@ -794,6 +950,15 @@ class _$SetSelectedCategoryIdImpl implements _SetSelectedCategoryId {
     required TResult Function(String billId, bool force) fetchBillOrders,
     required TResult Function(String orderId) setActiveOrderId,
     required TResult Function(String itemId, String tableId) cancelOrderItem,
+    required TResult Function(String itemKey, String tableId)
+        incrementExistingItem,
+    required TResult Function(String itemKey, String tableId)
+        decrementExistingItem,
+    required TResult Function(String itemKey, String tableId)
+        deleteExistingItem,
+    required TResult Function(String itemKey, String tableId, int quantity)
+        setExistingItemQuantity,
+    required TResult Function(String itemKey, String tableId) syncExistingItem,
   }) {
     return setSelectedCategoryId(id);
   }
@@ -816,6 +981,12 @@ class _$SetSelectedCategoryIdImpl implements _SetSelectedCategoryId {
     TResult? Function(String billId, bool force)? fetchBillOrders,
     TResult? Function(String orderId)? setActiveOrderId,
     TResult? Function(String itemId, String tableId)? cancelOrderItem,
+    TResult? Function(String itemKey, String tableId)? incrementExistingItem,
+    TResult? Function(String itemKey, String tableId)? decrementExistingItem,
+    TResult? Function(String itemKey, String tableId)? deleteExistingItem,
+    TResult? Function(String itemKey, String tableId, int quantity)?
+        setExistingItemQuantity,
+    TResult? Function(String itemKey, String tableId)? syncExistingItem,
   }) {
     return setSelectedCategoryId?.call(id);
   }
@@ -838,6 +1009,12 @@ class _$SetSelectedCategoryIdImpl implements _SetSelectedCategoryId {
     TResult Function(String billId, bool force)? fetchBillOrders,
     TResult Function(String orderId)? setActiveOrderId,
     TResult Function(String itemId, String tableId)? cancelOrderItem,
+    TResult Function(String itemKey, String tableId)? incrementExistingItem,
+    TResult Function(String itemKey, String tableId)? decrementExistingItem,
+    TResult Function(String itemKey, String tableId)? deleteExistingItem,
+    TResult Function(String itemKey, String tableId, int quantity)?
+        setExistingItemQuantity,
+    TResult Function(String itemKey, String tableId)? syncExistingItem,
     required TResult orElse(),
   }) {
     if (setSelectedCategoryId != null) {
@@ -863,6 +1040,14 @@ class _$SetSelectedCategoryIdImpl implements _SetSelectedCategoryId {
     required TResult Function(_FetchBillOrders value) fetchBillOrders,
     required TResult Function(_SetActiveOrderId value) setActiveOrderId,
     required TResult Function(_CancelOrderItem value) cancelOrderItem,
+    required TResult Function(_IncrementExistingItem value)
+        incrementExistingItem,
+    required TResult Function(_DecrementExistingItem value)
+        decrementExistingItem,
+    required TResult Function(_DeleteExistingItem value) deleteExistingItem,
+    required TResult Function(_SetExistingItemQuantity value)
+        setExistingItemQuantity,
+    required TResult Function(_SyncExistingItem value) syncExistingItem,
   }) {
     return setSelectedCategoryId(this);
   }
@@ -883,6 +1068,11 @@ class _$SetSelectedCategoryIdImpl implements _SetSelectedCategoryId {
     TResult? Function(_FetchBillOrders value)? fetchBillOrders,
     TResult? Function(_SetActiveOrderId value)? setActiveOrderId,
     TResult? Function(_CancelOrderItem value)? cancelOrderItem,
+    TResult? Function(_IncrementExistingItem value)? incrementExistingItem,
+    TResult? Function(_DecrementExistingItem value)? decrementExistingItem,
+    TResult? Function(_DeleteExistingItem value)? deleteExistingItem,
+    TResult? Function(_SetExistingItemQuantity value)? setExistingItemQuantity,
+    TResult? Function(_SyncExistingItem value)? syncExistingItem,
   }) {
     return setSelectedCategoryId?.call(this);
   }
@@ -903,6 +1093,11 @@ class _$SetSelectedCategoryIdImpl implements _SetSelectedCategoryId {
     TResult Function(_FetchBillOrders value)? fetchBillOrders,
     TResult Function(_SetActiveOrderId value)? setActiveOrderId,
     TResult Function(_CancelOrderItem value)? cancelOrderItem,
+    TResult Function(_IncrementExistingItem value)? incrementExistingItem,
+    TResult Function(_DecrementExistingItem value)? decrementExistingItem,
+    TResult Function(_DeleteExistingItem value)? deleteExistingItem,
+    TResult Function(_SetExistingItemQuantity value)? setExistingItemQuantity,
+    TResult Function(_SyncExistingItem value)? syncExistingItem,
     required TResult orElse(),
   }) {
     if (setSelectedCategoryId != null) {
@@ -1031,6 +1226,15 @@ class _$AddFoodAdditionalImpl implements _AddFoodAdditional {
     required TResult Function(String billId, bool force) fetchBillOrders,
     required TResult Function(String orderId) setActiveOrderId,
     required TResult Function(String itemId, String tableId) cancelOrderItem,
+    required TResult Function(String itemKey, String tableId)
+        incrementExistingItem,
+    required TResult Function(String itemKey, String tableId)
+        decrementExistingItem,
+    required TResult Function(String itemKey, String tableId)
+        deleteExistingItem,
+    required TResult Function(String itemKey, String tableId, int quantity)
+        setExistingItemQuantity,
+    required TResult Function(String itemKey, String tableId) syncExistingItem,
   }) {
     return addFoodAdditional(additionals, orderId, comment);
   }
@@ -1053,6 +1257,12 @@ class _$AddFoodAdditionalImpl implements _AddFoodAdditional {
     TResult? Function(String billId, bool force)? fetchBillOrders,
     TResult? Function(String orderId)? setActiveOrderId,
     TResult? Function(String itemId, String tableId)? cancelOrderItem,
+    TResult? Function(String itemKey, String tableId)? incrementExistingItem,
+    TResult? Function(String itemKey, String tableId)? decrementExistingItem,
+    TResult? Function(String itemKey, String tableId)? deleteExistingItem,
+    TResult? Function(String itemKey, String tableId, int quantity)?
+        setExistingItemQuantity,
+    TResult? Function(String itemKey, String tableId)? syncExistingItem,
   }) {
     return addFoodAdditional?.call(additionals, orderId, comment);
   }
@@ -1075,6 +1285,12 @@ class _$AddFoodAdditionalImpl implements _AddFoodAdditional {
     TResult Function(String billId, bool force)? fetchBillOrders,
     TResult Function(String orderId)? setActiveOrderId,
     TResult Function(String itemId, String tableId)? cancelOrderItem,
+    TResult Function(String itemKey, String tableId)? incrementExistingItem,
+    TResult Function(String itemKey, String tableId)? decrementExistingItem,
+    TResult Function(String itemKey, String tableId)? deleteExistingItem,
+    TResult Function(String itemKey, String tableId, int quantity)?
+        setExistingItemQuantity,
+    TResult Function(String itemKey, String tableId)? syncExistingItem,
     required TResult orElse(),
   }) {
     if (addFoodAdditional != null) {
@@ -1100,6 +1316,14 @@ class _$AddFoodAdditionalImpl implements _AddFoodAdditional {
     required TResult Function(_FetchBillOrders value) fetchBillOrders,
     required TResult Function(_SetActiveOrderId value) setActiveOrderId,
     required TResult Function(_CancelOrderItem value) cancelOrderItem,
+    required TResult Function(_IncrementExistingItem value)
+        incrementExistingItem,
+    required TResult Function(_DecrementExistingItem value)
+        decrementExistingItem,
+    required TResult Function(_DeleteExistingItem value) deleteExistingItem,
+    required TResult Function(_SetExistingItemQuantity value)
+        setExistingItemQuantity,
+    required TResult Function(_SyncExistingItem value) syncExistingItem,
   }) {
     return addFoodAdditional(this);
   }
@@ -1120,6 +1344,11 @@ class _$AddFoodAdditionalImpl implements _AddFoodAdditional {
     TResult? Function(_FetchBillOrders value)? fetchBillOrders,
     TResult? Function(_SetActiveOrderId value)? setActiveOrderId,
     TResult? Function(_CancelOrderItem value)? cancelOrderItem,
+    TResult? Function(_IncrementExistingItem value)? incrementExistingItem,
+    TResult? Function(_DecrementExistingItem value)? decrementExistingItem,
+    TResult? Function(_DeleteExistingItem value)? deleteExistingItem,
+    TResult? Function(_SetExistingItemQuantity value)? setExistingItemQuantity,
+    TResult? Function(_SyncExistingItem value)? syncExistingItem,
   }) {
     return addFoodAdditional?.call(this);
   }
@@ -1140,6 +1369,11 @@ class _$AddFoodAdditionalImpl implements _AddFoodAdditional {
     TResult Function(_FetchBillOrders value)? fetchBillOrders,
     TResult Function(_SetActiveOrderId value)? setActiveOrderId,
     TResult Function(_CancelOrderItem value)? cancelOrderItem,
+    TResult Function(_IncrementExistingItem value)? incrementExistingItem,
+    TResult Function(_DecrementExistingItem value)? decrementExistingItem,
+    TResult Function(_DeleteExistingItem value)? deleteExistingItem,
+    TResult Function(_SetExistingItemQuantity value)? setExistingItemQuantity,
+    TResult Function(_SyncExistingItem value)? syncExistingItem,
     required TResult orElse(),
   }) {
     if (addFoodAdditional != null) {
@@ -1252,6 +1486,15 @@ class _$SelectGoodImpl implements _SelectGood {
     required TResult Function(String billId, bool force) fetchBillOrders,
     required TResult Function(String orderId) setActiveOrderId,
     required TResult Function(String itemId, String tableId) cancelOrderItem,
+    required TResult Function(String itemKey, String tableId)
+        incrementExistingItem,
+    required TResult Function(String itemKey, String tableId)
+        decrementExistingItem,
+    required TResult Function(String itemKey, String tableId)
+        deleteExistingItem,
+    required TResult Function(String itemKey, String tableId, int quantity)
+        setExistingItemQuantity,
+    required TResult Function(String itemKey, String tableId) syncExistingItem,
   }) {
     return selectGood(good);
   }
@@ -1274,6 +1517,12 @@ class _$SelectGoodImpl implements _SelectGood {
     TResult? Function(String billId, bool force)? fetchBillOrders,
     TResult? Function(String orderId)? setActiveOrderId,
     TResult? Function(String itemId, String tableId)? cancelOrderItem,
+    TResult? Function(String itemKey, String tableId)? incrementExistingItem,
+    TResult? Function(String itemKey, String tableId)? decrementExistingItem,
+    TResult? Function(String itemKey, String tableId)? deleteExistingItem,
+    TResult? Function(String itemKey, String tableId, int quantity)?
+        setExistingItemQuantity,
+    TResult? Function(String itemKey, String tableId)? syncExistingItem,
   }) {
     return selectGood?.call(good);
   }
@@ -1296,6 +1545,12 @@ class _$SelectGoodImpl implements _SelectGood {
     TResult Function(String billId, bool force)? fetchBillOrders,
     TResult Function(String orderId)? setActiveOrderId,
     TResult Function(String itemId, String tableId)? cancelOrderItem,
+    TResult Function(String itemKey, String tableId)? incrementExistingItem,
+    TResult Function(String itemKey, String tableId)? decrementExistingItem,
+    TResult Function(String itemKey, String tableId)? deleteExistingItem,
+    TResult Function(String itemKey, String tableId, int quantity)?
+        setExistingItemQuantity,
+    TResult Function(String itemKey, String tableId)? syncExistingItem,
     required TResult orElse(),
   }) {
     if (selectGood != null) {
@@ -1321,6 +1576,14 @@ class _$SelectGoodImpl implements _SelectGood {
     required TResult Function(_FetchBillOrders value) fetchBillOrders,
     required TResult Function(_SetActiveOrderId value) setActiveOrderId,
     required TResult Function(_CancelOrderItem value) cancelOrderItem,
+    required TResult Function(_IncrementExistingItem value)
+        incrementExistingItem,
+    required TResult Function(_DecrementExistingItem value)
+        decrementExistingItem,
+    required TResult Function(_DeleteExistingItem value) deleteExistingItem,
+    required TResult Function(_SetExistingItemQuantity value)
+        setExistingItemQuantity,
+    required TResult Function(_SyncExistingItem value) syncExistingItem,
   }) {
     return selectGood(this);
   }
@@ -1341,6 +1604,11 @@ class _$SelectGoodImpl implements _SelectGood {
     TResult? Function(_FetchBillOrders value)? fetchBillOrders,
     TResult? Function(_SetActiveOrderId value)? setActiveOrderId,
     TResult? Function(_CancelOrderItem value)? cancelOrderItem,
+    TResult? Function(_IncrementExistingItem value)? incrementExistingItem,
+    TResult? Function(_DecrementExistingItem value)? decrementExistingItem,
+    TResult? Function(_DeleteExistingItem value)? deleteExistingItem,
+    TResult? Function(_SetExistingItemQuantity value)? setExistingItemQuantity,
+    TResult? Function(_SyncExistingItem value)? syncExistingItem,
   }) {
     return selectGood?.call(this);
   }
@@ -1361,6 +1629,11 @@ class _$SelectGoodImpl implements _SelectGood {
     TResult Function(_FetchBillOrders value)? fetchBillOrders,
     TResult Function(_SetActiveOrderId value)? setActiveOrderId,
     TResult Function(_CancelOrderItem value)? cancelOrderItem,
+    TResult Function(_IncrementExistingItem value)? incrementExistingItem,
+    TResult Function(_DecrementExistingItem value)? decrementExistingItem,
+    TResult Function(_DeleteExistingItem value)? deleteExistingItem,
+    TResult Function(_SetExistingItemQuantity value)? setExistingItemQuantity,
+    TResult Function(_SyncExistingItem value)? syncExistingItem,
     required TResult orElse(),
   }) {
     if (selectGood != null) {
@@ -1460,6 +1733,15 @@ class _$IncrementQuantityImpl implements _IncrementQuantity {
     required TResult Function(String billId, bool force) fetchBillOrders,
     required TResult Function(String orderId) setActiveOrderId,
     required TResult Function(String itemId, String tableId) cancelOrderItem,
+    required TResult Function(String itemKey, String tableId)
+        incrementExistingItem,
+    required TResult Function(String itemKey, String tableId)
+        decrementExistingItem,
+    required TResult Function(String itemKey, String tableId)
+        deleteExistingItem,
+    required TResult Function(String itemKey, String tableId, int quantity)
+        setExistingItemQuantity,
+    required TResult Function(String itemKey, String tableId) syncExistingItem,
   }) {
     return incrementQuantity(goodsId);
   }
@@ -1482,6 +1764,12 @@ class _$IncrementQuantityImpl implements _IncrementQuantity {
     TResult? Function(String billId, bool force)? fetchBillOrders,
     TResult? Function(String orderId)? setActiveOrderId,
     TResult? Function(String itemId, String tableId)? cancelOrderItem,
+    TResult? Function(String itemKey, String tableId)? incrementExistingItem,
+    TResult? Function(String itemKey, String tableId)? decrementExistingItem,
+    TResult? Function(String itemKey, String tableId)? deleteExistingItem,
+    TResult? Function(String itemKey, String tableId, int quantity)?
+        setExistingItemQuantity,
+    TResult? Function(String itemKey, String tableId)? syncExistingItem,
   }) {
     return incrementQuantity?.call(goodsId);
   }
@@ -1504,6 +1792,12 @@ class _$IncrementQuantityImpl implements _IncrementQuantity {
     TResult Function(String billId, bool force)? fetchBillOrders,
     TResult Function(String orderId)? setActiveOrderId,
     TResult Function(String itemId, String tableId)? cancelOrderItem,
+    TResult Function(String itemKey, String tableId)? incrementExistingItem,
+    TResult Function(String itemKey, String tableId)? decrementExistingItem,
+    TResult Function(String itemKey, String tableId)? deleteExistingItem,
+    TResult Function(String itemKey, String tableId, int quantity)?
+        setExistingItemQuantity,
+    TResult Function(String itemKey, String tableId)? syncExistingItem,
     required TResult orElse(),
   }) {
     if (incrementQuantity != null) {
@@ -1529,6 +1823,14 @@ class _$IncrementQuantityImpl implements _IncrementQuantity {
     required TResult Function(_FetchBillOrders value) fetchBillOrders,
     required TResult Function(_SetActiveOrderId value) setActiveOrderId,
     required TResult Function(_CancelOrderItem value) cancelOrderItem,
+    required TResult Function(_IncrementExistingItem value)
+        incrementExistingItem,
+    required TResult Function(_DecrementExistingItem value)
+        decrementExistingItem,
+    required TResult Function(_DeleteExistingItem value) deleteExistingItem,
+    required TResult Function(_SetExistingItemQuantity value)
+        setExistingItemQuantity,
+    required TResult Function(_SyncExistingItem value) syncExistingItem,
   }) {
     return incrementQuantity(this);
   }
@@ -1549,6 +1851,11 @@ class _$IncrementQuantityImpl implements _IncrementQuantity {
     TResult? Function(_FetchBillOrders value)? fetchBillOrders,
     TResult? Function(_SetActiveOrderId value)? setActiveOrderId,
     TResult? Function(_CancelOrderItem value)? cancelOrderItem,
+    TResult? Function(_IncrementExistingItem value)? incrementExistingItem,
+    TResult? Function(_DecrementExistingItem value)? decrementExistingItem,
+    TResult? Function(_DeleteExistingItem value)? deleteExistingItem,
+    TResult? Function(_SetExistingItemQuantity value)? setExistingItemQuantity,
+    TResult? Function(_SyncExistingItem value)? syncExistingItem,
   }) {
     return incrementQuantity?.call(this);
   }
@@ -1569,6 +1876,11 @@ class _$IncrementQuantityImpl implements _IncrementQuantity {
     TResult Function(_FetchBillOrders value)? fetchBillOrders,
     TResult Function(_SetActiveOrderId value)? setActiveOrderId,
     TResult Function(_CancelOrderItem value)? cancelOrderItem,
+    TResult Function(_IncrementExistingItem value)? incrementExistingItem,
+    TResult Function(_DecrementExistingItem value)? decrementExistingItem,
+    TResult Function(_DeleteExistingItem value)? deleteExistingItem,
+    TResult Function(_SetExistingItemQuantity value)? setExistingItemQuantity,
+    TResult Function(_SyncExistingItem value)? syncExistingItem,
     required TResult orElse(),
   }) {
     if (incrementQuantity != null) {
@@ -1668,6 +1980,15 @@ class _$DecrementQuantityImpl implements _DecrementQuantity {
     required TResult Function(String billId, bool force) fetchBillOrders,
     required TResult Function(String orderId) setActiveOrderId,
     required TResult Function(String itemId, String tableId) cancelOrderItem,
+    required TResult Function(String itemKey, String tableId)
+        incrementExistingItem,
+    required TResult Function(String itemKey, String tableId)
+        decrementExistingItem,
+    required TResult Function(String itemKey, String tableId)
+        deleteExistingItem,
+    required TResult Function(String itemKey, String tableId, int quantity)
+        setExistingItemQuantity,
+    required TResult Function(String itemKey, String tableId) syncExistingItem,
   }) {
     return decrementQuantity(goodsId);
   }
@@ -1690,6 +2011,12 @@ class _$DecrementQuantityImpl implements _DecrementQuantity {
     TResult? Function(String billId, bool force)? fetchBillOrders,
     TResult? Function(String orderId)? setActiveOrderId,
     TResult? Function(String itemId, String tableId)? cancelOrderItem,
+    TResult? Function(String itemKey, String tableId)? incrementExistingItem,
+    TResult? Function(String itemKey, String tableId)? decrementExistingItem,
+    TResult? Function(String itemKey, String tableId)? deleteExistingItem,
+    TResult? Function(String itemKey, String tableId, int quantity)?
+        setExistingItemQuantity,
+    TResult? Function(String itemKey, String tableId)? syncExistingItem,
   }) {
     return decrementQuantity?.call(goodsId);
   }
@@ -1712,6 +2039,12 @@ class _$DecrementQuantityImpl implements _DecrementQuantity {
     TResult Function(String billId, bool force)? fetchBillOrders,
     TResult Function(String orderId)? setActiveOrderId,
     TResult Function(String itemId, String tableId)? cancelOrderItem,
+    TResult Function(String itemKey, String tableId)? incrementExistingItem,
+    TResult Function(String itemKey, String tableId)? decrementExistingItem,
+    TResult Function(String itemKey, String tableId)? deleteExistingItem,
+    TResult Function(String itemKey, String tableId, int quantity)?
+        setExistingItemQuantity,
+    TResult Function(String itemKey, String tableId)? syncExistingItem,
     required TResult orElse(),
   }) {
     if (decrementQuantity != null) {
@@ -1737,6 +2070,14 @@ class _$DecrementQuantityImpl implements _DecrementQuantity {
     required TResult Function(_FetchBillOrders value) fetchBillOrders,
     required TResult Function(_SetActiveOrderId value) setActiveOrderId,
     required TResult Function(_CancelOrderItem value) cancelOrderItem,
+    required TResult Function(_IncrementExistingItem value)
+        incrementExistingItem,
+    required TResult Function(_DecrementExistingItem value)
+        decrementExistingItem,
+    required TResult Function(_DeleteExistingItem value) deleteExistingItem,
+    required TResult Function(_SetExistingItemQuantity value)
+        setExistingItemQuantity,
+    required TResult Function(_SyncExistingItem value) syncExistingItem,
   }) {
     return decrementQuantity(this);
   }
@@ -1757,6 +2098,11 @@ class _$DecrementQuantityImpl implements _DecrementQuantity {
     TResult? Function(_FetchBillOrders value)? fetchBillOrders,
     TResult? Function(_SetActiveOrderId value)? setActiveOrderId,
     TResult? Function(_CancelOrderItem value)? cancelOrderItem,
+    TResult? Function(_IncrementExistingItem value)? incrementExistingItem,
+    TResult? Function(_DecrementExistingItem value)? decrementExistingItem,
+    TResult? Function(_DeleteExistingItem value)? deleteExistingItem,
+    TResult? Function(_SetExistingItemQuantity value)? setExistingItemQuantity,
+    TResult? Function(_SyncExistingItem value)? syncExistingItem,
   }) {
     return decrementQuantity?.call(this);
   }
@@ -1777,6 +2123,11 @@ class _$DecrementQuantityImpl implements _DecrementQuantity {
     TResult Function(_FetchBillOrders value)? fetchBillOrders,
     TResult Function(_SetActiveOrderId value)? setActiveOrderId,
     TResult Function(_CancelOrderItem value)? cancelOrderItem,
+    TResult Function(_IncrementExistingItem value)? incrementExistingItem,
+    TResult Function(_DecrementExistingItem value)? decrementExistingItem,
+    TResult Function(_DeleteExistingItem value)? deleteExistingItem,
+    TResult Function(_SetExistingItemQuantity value)? setExistingItemQuantity,
+    TResult Function(_SyncExistingItem value)? syncExistingItem,
     required TResult orElse(),
   }) {
     if (decrementQuantity != null) {
@@ -1849,6 +2200,15 @@ class _$ClearGoodsImpl implements _ClearGoods {
     required TResult Function(String billId, bool force) fetchBillOrders,
     required TResult Function(String orderId) setActiveOrderId,
     required TResult Function(String itemId, String tableId) cancelOrderItem,
+    required TResult Function(String itemKey, String tableId)
+        incrementExistingItem,
+    required TResult Function(String itemKey, String tableId)
+        decrementExistingItem,
+    required TResult Function(String itemKey, String tableId)
+        deleteExistingItem,
+    required TResult Function(String itemKey, String tableId, int quantity)
+        setExistingItemQuantity,
+    required TResult Function(String itemKey, String tableId) syncExistingItem,
   }) {
     return clearGoods();
   }
@@ -1871,6 +2231,12 @@ class _$ClearGoodsImpl implements _ClearGoods {
     TResult? Function(String billId, bool force)? fetchBillOrders,
     TResult? Function(String orderId)? setActiveOrderId,
     TResult? Function(String itemId, String tableId)? cancelOrderItem,
+    TResult? Function(String itemKey, String tableId)? incrementExistingItem,
+    TResult? Function(String itemKey, String tableId)? decrementExistingItem,
+    TResult? Function(String itemKey, String tableId)? deleteExistingItem,
+    TResult? Function(String itemKey, String tableId, int quantity)?
+        setExistingItemQuantity,
+    TResult? Function(String itemKey, String tableId)? syncExistingItem,
   }) {
     return clearGoods?.call();
   }
@@ -1893,6 +2259,12 @@ class _$ClearGoodsImpl implements _ClearGoods {
     TResult Function(String billId, bool force)? fetchBillOrders,
     TResult Function(String orderId)? setActiveOrderId,
     TResult Function(String itemId, String tableId)? cancelOrderItem,
+    TResult Function(String itemKey, String tableId)? incrementExistingItem,
+    TResult Function(String itemKey, String tableId)? decrementExistingItem,
+    TResult Function(String itemKey, String tableId)? deleteExistingItem,
+    TResult Function(String itemKey, String tableId, int quantity)?
+        setExistingItemQuantity,
+    TResult Function(String itemKey, String tableId)? syncExistingItem,
     required TResult orElse(),
   }) {
     if (clearGoods != null) {
@@ -1918,6 +2290,14 @@ class _$ClearGoodsImpl implements _ClearGoods {
     required TResult Function(_FetchBillOrders value) fetchBillOrders,
     required TResult Function(_SetActiveOrderId value) setActiveOrderId,
     required TResult Function(_CancelOrderItem value) cancelOrderItem,
+    required TResult Function(_IncrementExistingItem value)
+        incrementExistingItem,
+    required TResult Function(_DecrementExistingItem value)
+        decrementExistingItem,
+    required TResult Function(_DeleteExistingItem value) deleteExistingItem,
+    required TResult Function(_SetExistingItemQuantity value)
+        setExistingItemQuantity,
+    required TResult Function(_SyncExistingItem value) syncExistingItem,
   }) {
     return clearGoods(this);
   }
@@ -1938,6 +2318,11 @@ class _$ClearGoodsImpl implements _ClearGoods {
     TResult? Function(_FetchBillOrders value)? fetchBillOrders,
     TResult? Function(_SetActiveOrderId value)? setActiveOrderId,
     TResult? Function(_CancelOrderItem value)? cancelOrderItem,
+    TResult? Function(_IncrementExistingItem value)? incrementExistingItem,
+    TResult? Function(_DecrementExistingItem value)? decrementExistingItem,
+    TResult? Function(_DeleteExistingItem value)? deleteExistingItem,
+    TResult? Function(_SetExistingItemQuantity value)? setExistingItemQuantity,
+    TResult? Function(_SyncExistingItem value)? syncExistingItem,
   }) {
     return clearGoods?.call(this);
   }
@@ -1958,6 +2343,11 @@ class _$ClearGoodsImpl implements _ClearGoods {
     TResult Function(_FetchBillOrders value)? fetchBillOrders,
     TResult Function(_SetActiveOrderId value)? setActiveOrderId,
     TResult Function(_CancelOrderItem value)? cancelOrderItem,
+    TResult Function(_IncrementExistingItem value)? incrementExistingItem,
+    TResult Function(_DecrementExistingItem value)? decrementExistingItem,
+    TResult Function(_DeleteExistingItem value)? deleteExistingItem,
+    TResult Function(_SetExistingItemQuantity value)? setExistingItemQuantity,
+    TResult Function(_SyncExistingItem value)? syncExistingItem,
     required TResult orElse(),
   }) {
     if (clearGoods != null) {
@@ -2051,6 +2441,15 @@ class _$SearchTextChangedImpl implements _SearchTextChanged {
     required TResult Function(String billId, bool force) fetchBillOrders,
     required TResult Function(String orderId) setActiveOrderId,
     required TResult Function(String itemId, String tableId) cancelOrderItem,
+    required TResult Function(String itemKey, String tableId)
+        incrementExistingItem,
+    required TResult Function(String itemKey, String tableId)
+        decrementExistingItem,
+    required TResult Function(String itemKey, String tableId)
+        deleteExistingItem,
+    required TResult Function(String itemKey, String tableId, int quantity)
+        setExistingItemQuantity,
+    required TResult Function(String itemKey, String tableId) syncExistingItem,
   }) {
     return searchTextChanged(text);
   }
@@ -2073,6 +2472,12 @@ class _$SearchTextChangedImpl implements _SearchTextChanged {
     TResult? Function(String billId, bool force)? fetchBillOrders,
     TResult? Function(String orderId)? setActiveOrderId,
     TResult? Function(String itemId, String tableId)? cancelOrderItem,
+    TResult? Function(String itemKey, String tableId)? incrementExistingItem,
+    TResult? Function(String itemKey, String tableId)? decrementExistingItem,
+    TResult? Function(String itemKey, String tableId)? deleteExistingItem,
+    TResult? Function(String itemKey, String tableId, int quantity)?
+        setExistingItemQuantity,
+    TResult? Function(String itemKey, String tableId)? syncExistingItem,
   }) {
     return searchTextChanged?.call(text);
   }
@@ -2095,6 +2500,12 @@ class _$SearchTextChangedImpl implements _SearchTextChanged {
     TResult Function(String billId, bool force)? fetchBillOrders,
     TResult Function(String orderId)? setActiveOrderId,
     TResult Function(String itemId, String tableId)? cancelOrderItem,
+    TResult Function(String itemKey, String tableId)? incrementExistingItem,
+    TResult Function(String itemKey, String tableId)? decrementExistingItem,
+    TResult Function(String itemKey, String tableId)? deleteExistingItem,
+    TResult Function(String itemKey, String tableId, int quantity)?
+        setExistingItemQuantity,
+    TResult Function(String itemKey, String tableId)? syncExistingItem,
     required TResult orElse(),
   }) {
     if (searchTextChanged != null) {
@@ -2120,6 +2531,14 @@ class _$SearchTextChangedImpl implements _SearchTextChanged {
     required TResult Function(_FetchBillOrders value) fetchBillOrders,
     required TResult Function(_SetActiveOrderId value) setActiveOrderId,
     required TResult Function(_CancelOrderItem value) cancelOrderItem,
+    required TResult Function(_IncrementExistingItem value)
+        incrementExistingItem,
+    required TResult Function(_DecrementExistingItem value)
+        decrementExistingItem,
+    required TResult Function(_DeleteExistingItem value) deleteExistingItem,
+    required TResult Function(_SetExistingItemQuantity value)
+        setExistingItemQuantity,
+    required TResult Function(_SyncExistingItem value) syncExistingItem,
   }) {
     return searchTextChanged(this);
   }
@@ -2140,6 +2559,11 @@ class _$SearchTextChangedImpl implements _SearchTextChanged {
     TResult? Function(_FetchBillOrders value)? fetchBillOrders,
     TResult? Function(_SetActiveOrderId value)? setActiveOrderId,
     TResult? Function(_CancelOrderItem value)? cancelOrderItem,
+    TResult? Function(_IncrementExistingItem value)? incrementExistingItem,
+    TResult? Function(_DecrementExistingItem value)? decrementExistingItem,
+    TResult? Function(_DeleteExistingItem value)? deleteExistingItem,
+    TResult? Function(_SetExistingItemQuantity value)? setExistingItemQuantity,
+    TResult? Function(_SyncExistingItem value)? syncExistingItem,
   }) {
     return searchTextChanged?.call(this);
   }
@@ -2160,6 +2584,11 @@ class _$SearchTextChangedImpl implements _SearchTextChanged {
     TResult Function(_FetchBillOrders value)? fetchBillOrders,
     TResult Function(_SetActiveOrderId value)? setActiveOrderId,
     TResult Function(_CancelOrderItem value)? cancelOrderItem,
+    TResult Function(_IncrementExistingItem value)? incrementExistingItem,
+    TResult Function(_DecrementExistingItem value)? decrementExistingItem,
+    TResult Function(_DeleteExistingItem value)? deleteExistingItem,
+    TResult Function(_SetExistingItemQuantity value)? setExistingItemQuantity,
+    TResult Function(_SyncExistingItem value)? syncExistingItem,
     required TResult orElse(),
   }) {
     if (searchTextChanged != null) {
@@ -2268,6 +2697,15 @@ class _$FetchBillOrdersImpl implements _FetchBillOrders {
     required TResult Function(String billId, bool force) fetchBillOrders,
     required TResult Function(String orderId) setActiveOrderId,
     required TResult Function(String itemId, String tableId) cancelOrderItem,
+    required TResult Function(String itemKey, String tableId)
+        incrementExistingItem,
+    required TResult Function(String itemKey, String tableId)
+        decrementExistingItem,
+    required TResult Function(String itemKey, String tableId)
+        deleteExistingItem,
+    required TResult Function(String itemKey, String tableId, int quantity)
+        setExistingItemQuantity,
+    required TResult Function(String itemKey, String tableId) syncExistingItem,
   }) {
     return fetchBillOrders(billId, force);
   }
@@ -2290,6 +2728,12 @@ class _$FetchBillOrdersImpl implements _FetchBillOrders {
     TResult? Function(String billId, bool force)? fetchBillOrders,
     TResult? Function(String orderId)? setActiveOrderId,
     TResult? Function(String itemId, String tableId)? cancelOrderItem,
+    TResult? Function(String itemKey, String tableId)? incrementExistingItem,
+    TResult? Function(String itemKey, String tableId)? decrementExistingItem,
+    TResult? Function(String itemKey, String tableId)? deleteExistingItem,
+    TResult? Function(String itemKey, String tableId, int quantity)?
+        setExistingItemQuantity,
+    TResult? Function(String itemKey, String tableId)? syncExistingItem,
   }) {
     return fetchBillOrders?.call(billId, force);
   }
@@ -2312,6 +2756,12 @@ class _$FetchBillOrdersImpl implements _FetchBillOrders {
     TResult Function(String billId, bool force)? fetchBillOrders,
     TResult Function(String orderId)? setActiveOrderId,
     TResult Function(String itemId, String tableId)? cancelOrderItem,
+    TResult Function(String itemKey, String tableId)? incrementExistingItem,
+    TResult Function(String itemKey, String tableId)? decrementExistingItem,
+    TResult Function(String itemKey, String tableId)? deleteExistingItem,
+    TResult Function(String itemKey, String tableId, int quantity)?
+        setExistingItemQuantity,
+    TResult Function(String itemKey, String tableId)? syncExistingItem,
     required TResult orElse(),
   }) {
     if (fetchBillOrders != null) {
@@ -2337,6 +2787,14 @@ class _$FetchBillOrdersImpl implements _FetchBillOrders {
     required TResult Function(_FetchBillOrders value) fetchBillOrders,
     required TResult Function(_SetActiveOrderId value) setActiveOrderId,
     required TResult Function(_CancelOrderItem value) cancelOrderItem,
+    required TResult Function(_IncrementExistingItem value)
+        incrementExistingItem,
+    required TResult Function(_DecrementExistingItem value)
+        decrementExistingItem,
+    required TResult Function(_DeleteExistingItem value) deleteExistingItem,
+    required TResult Function(_SetExistingItemQuantity value)
+        setExistingItemQuantity,
+    required TResult Function(_SyncExistingItem value) syncExistingItem,
   }) {
     return fetchBillOrders(this);
   }
@@ -2357,6 +2815,11 @@ class _$FetchBillOrdersImpl implements _FetchBillOrders {
     TResult? Function(_FetchBillOrders value)? fetchBillOrders,
     TResult? Function(_SetActiveOrderId value)? setActiveOrderId,
     TResult? Function(_CancelOrderItem value)? cancelOrderItem,
+    TResult? Function(_IncrementExistingItem value)? incrementExistingItem,
+    TResult? Function(_DecrementExistingItem value)? decrementExistingItem,
+    TResult? Function(_DeleteExistingItem value)? deleteExistingItem,
+    TResult? Function(_SetExistingItemQuantity value)? setExistingItemQuantity,
+    TResult? Function(_SyncExistingItem value)? syncExistingItem,
   }) {
     return fetchBillOrders?.call(this);
   }
@@ -2377,6 +2840,11 @@ class _$FetchBillOrdersImpl implements _FetchBillOrders {
     TResult Function(_FetchBillOrders value)? fetchBillOrders,
     TResult Function(_SetActiveOrderId value)? setActiveOrderId,
     TResult Function(_CancelOrderItem value)? cancelOrderItem,
+    TResult Function(_IncrementExistingItem value)? incrementExistingItem,
+    TResult Function(_DecrementExistingItem value)? decrementExistingItem,
+    TResult Function(_DeleteExistingItem value)? deleteExistingItem,
+    TResult Function(_SetExistingItemQuantity value)? setExistingItemQuantity,
+    TResult Function(_SyncExistingItem value)? syncExistingItem,
     required TResult orElse(),
   }) {
     if (fetchBillOrders != null) {
@@ -2477,6 +2945,15 @@ class _$SetActiveOrderIdImpl implements _SetActiveOrderId {
     required TResult Function(String billId, bool force) fetchBillOrders,
     required TResult Function(String orderId) setActiveOrderId,
     required TResult Function(String itemId, String tableId) cancelOrderItem,
+    required TResult Function(String itemKey, String tableId)
+        incrementExistingItem,
+    required TResult Function(String itemKey, String tableId)
+        decrementExistingItem,
+    required TResult Function(String itemKey, String tableId)
+        deleteExistingItem,
+    required TResult Function(String itemKey, String tableId, int quantity)
+        setExistingItemQuantity,
+    required TResult Function(String itemKey, String tableId) syncExistingItem,
   }) {
     return setActiveOrderId(orderId);
   }
@@ -2499,6 +2976,12 @@ class _$SetActiveOrderIdImpl implements _SetActiveOrderId {
     TResult? Function(String billId, bool force)? fetchBillOrders,
     TResult? Function(String orderId)? setActiveOrderId,
     TResult? Function(String itemId, String tableId)? cancelOrderItem,
+    TResult? Function(String itemKey, String tableId)? incrementExistingItem,
+    TResult? Function(String itemKey, String tableId)? decrementExistingItem,
+    TResult? Function(String itemKey, String tableId)? deleteExistingItem,
+    TResult? Function(String itemKey, String tableId, int quantity)?
+        setExistingItemQuantity,
+    TResult? Function(String itemKey, String tableId)? syncExistingItem,
   }) {
     return setActiveOrderId?.call(orderId);
   }
@@ -2521,6 +3004,12 @@ class _$SetActiveOrderIdImpl implements _SetActiveOrderId {
     TResult Function(String billId, bool force)? fetchBillOrders,
     TResult Function(String orderId)? setActiveOrderId,
     TResult Function(String itemId, String tableId)? cancelOrderItem,
+    TResult Function(String itemKey, String tableId)? incrementExistingItem,
+    TResult Function(String itemKey, String tableId)? decrementExistingItem,
+    TResult Function(String itemKey, String tableId)? deleteExistingItem,
+    TResult Function(String itemKey, String tableId, int quantity)?
+        setExistingItemQuantity,
+    TResult Function(String itemKey, String tableId)? syncExistingItem,
     required TResult orElse(),
   }) {
     if (setActiveOrderId != null) {
@@ -2546,6 +3035,14 @@ class _$SetActiveOrderIdImpl implements _SetActiveOrderId {
     required TResult Function(_FetchBillOrders value) fetchBillOrders,
     required TResult Function(_SetActiveOrderId value) setActiveOrderId,
     required TResult Function(_CancelOrderItem value) cancelOrderItem,
+    required TResult Function(_IncrementExistingItem value)
+        incrementExistingItem,
+    required TResult Function(_DecrementExistingItem value)
+        decrementExistingItem,
+    required TResult Function(_DeleteExistingItem value) deleteExistingItem,
+    required TResult Function(_SetExistingItemQuantity value)
+        setExistingItemQuantity,
+    required TResult Function(_SyncExistingItem value) syncExistingItem,
   }) {
     return setActiveOrderId(this);
   }
@@ -2566,6 +3063,11 @@ class _$SetActiveOrderIdImpl implements _SetActiveOrderId {
     TResult? Function(_FetchBillOrders value)? fetchBillOrders,
     TResult? Function(_SetActiveOrderId value)? setActiveOrderId,
     TResult? Function(_CancelOrderItem value)? cancelOrderItem,
+    TResult? Function(_IncrementExistingItem value)? incrementExistingItem,
+    TResult? Function(_DecrementExistingItem value)? decrementExistingItem,
+    TResult? Function(_DeleteExistingItem value)? deleteExistingItem,
+    TResult? Function(_SetExistingItemQuantity value)? setExistingItemQuantity,
+    TResult? Function(_SyncExistingItem value)? syncExistingItem,
   }) {
     return setActiveOrderId?.call(this);
   }
@@ -2586,6 +3088,11 @@ class _$SetActiveOrderIdImpl implements _SetActiveOrderId {
     TResult Function(_FetchBillOrders value)? fetchBillOrders,
     TResult Function(_SetActiveOrderId value)? setActiveOrderId,
     TResult Function(_CancelOrderItem value)? cancelOrderItem,
+    TResult Function(_IncrementExistingItem value)? incrementExistingItem,
+    TResult Function(_DecrementExistingItem value)? decrementExistingItem,
+    TResult Function(_DeleteExistingItem value)? deleteExistingItem,
+    TResult Function(_SetExistingItemQuantity value)? setExistingItemQuantity,
+    TResult Function(_SyncExistingItem value)? syncExistingItem,
     required TResult orElse(),
   }) {
     if (setActiveOrderId != null) {
@@ -2693,6 +3200,15 @@ class _$CancelOrderItemImpl implements _CancelOrderItem {
     required TResult Function(String billId, bool force) fetchBillOrders,
     required TResult Function(String orderId) setActiveOrderId,
     required TResult Function(String itemId, String tableId) cancelOrderItem,
+    required TResult Function(String itemKey, String tableId)
+        incrementExistingItem,
+    required TResult Function(String itemKey, String tableId)
+        decrementExistingItem,
+    required TResult Function(String itemKey, String tableId)
+        deleteExistingItem,
+    required TResult Function(String itemKey, String tableId, int quantity)
+        setExistingItemQuantity,
+    required TResult Function(String itemKey, String tableId) syncExistingItem,
   }) {
     return cancelOrderItem(itemId, tableId);
   }
@@ -2715,6 +3231,12 @@ class _$CancelOrderItemImpl implements _CancelOrderItem {
     TResult? Function(String billId, bool force)? fetchBillOrders,
     TResult? Function(String orderId)? setActiveOrderId,
     TResult? Function(String itemId, String tableId)? cancelOrderItem,
+    TResult? Function(String itemKey, String tableId)? incrementExistingItem,
+    TResult? Function(String itemKey, String tableId)? decrementExistingItem,
+    TResult? Function(String itemKey, String tableId)? deleteExistingItem,
+    TResult? Function(String itemKey, String tableId, int quantity)?
+        setExistingItemQuantity,
+    TResult? Function(String itemKey, String tableId)? syncExistingItem,
   }) {
     return cancelOrderItem?.call(itemId, tableId);
   }
@@ -2737,6 +3259,12 @@ class _$CancelOrderItemImpl implements _CancelOrderItem {
     TResult Function(String billId, bool force)? fetchBillOrders,
     TResult Function(String orderId)? setActiveOrderId,
     TResult Function(String itemId, String tableId)? cancelOrderItem,
+    TResult Function(String itemKey, String tableId)? incrementExistingItem,
+    TResult Function(String itemKey, String tableId)? decrementExistingItem,
+    TResult Function(String itemKey, String tableId)? deleteExistingItem,
+    TResult Function(String itemKey, String tableId, int quantity)?
+        setExistingItemQuantity,
+    TResult Function(String itemKey, String tableId)? syncExistingItem,
     required TResult orElse(),
   }) {
     if (cancelOrderItem != null) {
@@ -2762,6 +3290,14 @@ class _$CancelOrderItemImpl implements _CancelOrderItem {
     required TResult Function(_FetchBillOrders value) fetchBillOrders,
     required TResult Function(_SetActiveOrderId value) setActiveOrderId,
     required TResult Function(_CancelOrderItem value) cancelOrderItem,
+    required TResult Function(_IncrementExistingItem value)
+        incrementExistingItem,
+    required TResult Function(_DecrementExistingItem value)
+        decrementExistingItem,
+    required TResult Function(_DeleteExistingItem value) deleteExistingItem,
+    required TResult Function(_SetExistingItemQuantity value)
+        setExistingItemQuantity,
+    required TResult Function(_SyncExistingItem value) syncExistingItem,
   }) {
     return cancelOrderItem(this);
   }
@@ -2782,6 +3318,11 @@ class _$CancelOrderItemImpl implements _CancelOrderItem {
     TResult? Function(_FetchBillOrders value)? fetchBillOrders,
     TResult? Function(_SetActiveOrderId value)? setActiveOrderId,
     TResult? Function(_CancelOrderItem value)? cancelOrderItem,
+    TResult? Function(_IncrementExistingItem value)? incrementExistingItem,
+    TResult? Function(_DecrementExistingItem value)? decrementExistingItem,
+    TResult? Function(_DeleteExistingItem value)? deleteExistingItem,
+    TResult? Function(_SetExistingItemQuantity value)? setExistingItemQuantity,
+    TResult? Function(_SyncExistingItem value)? syncExistingItem,
   }) {
     return cancelOrderItem?.call(this);
   }
@@ -2802,6 +3343,11 @@ class _$CancelOrderItemImpl implements _CancelOrderItem {
     TResult Function(_FetchBillOrders value)? fetchBillOrders,
     TResult Function(_SetActiveOrderId value)? setActiveOrderId,
     TResult Function(_CancelOrderItem value)? cancelOrderItem,
+    TResult Function(_IncrementExistingItem value)? incrementExistingItem,
+    TResult Function(_DecrementExistingItem value)? decrementExistingItem,
+    TResult Function(_DeleteExistingItem value)? deleteExistingItem,
+    TResult Function(_SetExistingItemQuantity value)? setExistingItemQuantity,
+    TResult Function(_SyncExistingItem value)? syncExistingItem,
     required TResult orElse(),
   }) {
     if (cancelOrderItem != null) {
@@ -2820,6 +3366,1310 @@ abstract class _CancelOrderItem implements DetailEvent {
   String get tableId;
   @JsonKey(ignore: true)
   _$$CancelOrderItemImplCopyWith<_$CancelOrderItemImpl> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class _$$IncrementExistingItemImplCopyWith<$Res> {
+  factory _$$IncrementExistingItemImplCopyWith(
+          _$IncrementExistingItemImpl value,
+          $Res Function(_$IncrementExistingItemImpl) then) =
+      __$$IncrementExistingItemImplCopyWithImpl<$Res>;
+  @useResult
+  $Res call({String itemKey, String tableId});
+}
+
+/// @nodoc
+class __$$IncrementExistingItemImplCopyWithImpl<$Res>
+    extends _$DetailEventCopyWithImpl<$Res, _$IncrementExistingItemImpl>
+    implements _$$IncrementExistingItemImplCopyWith<$Res> {
+  __$$IncrementExistingItemImplCopyWithImpl(_$IncrementExistingItemImpl _value,
+      $Res Function(_$IncrementExistingItemImpl) _then)
+      : super(_value, _then);
+
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? itemKey = null,
+    Object? tableId = null,
+  }) {
+    return _then(_$IncrementExistingItemImpl(
+      itemKey: null == itemKey
+          ? _value.itemKey
+          : itemKey // ignore: cast_nullable_to_non_nullable
+              as String,
+      tableId: null == tableId
+          ? _value.tableId
+          : tableId // ignore: cast_nullable_to_non_nullable
+              as String,
+    ));
+  }
+}
+
+/// @nodoc
+
+class _$IncrementExistingItemImpl implements _IncrementExistingItem {
+  const _$IncrementExistingItemImpl(
+      {required this.itemKey, required this.tableId});
+
+  @override
+  final String itemKey;
+  @override
+  final String tableId;
+
+  @override
+  String toString() {
+    return 'DetailEvent.incrementExistingItem(itemKey: $itemKey, tableId: $tableId)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$IncrementExistingItemImpl &&
+            (identical(other.itemKey, itemKey) || other.itemKey == itemKey) &&
+            (identical(other.tableId, tableId) || other.tableId == tableId));
+  }
+
+  @override
+  int get hashCode => Object.hash(runtimeType, itemKey, tableId);
+
+  @JsonKey(ignore: true)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$IncrementExistingItemImplCopyWith<_$IncrementExistingItemImpl>
+      get copyWith => __$$IncrementExistingItemImplCopyWithImpl<
+          _$IncrementExistingItemImpl>(this, _$identity);
+
+  @override
+  @optionalTypeArgs
+  TResult when<TResult extends Object?>({
+    required TResult Function() started,
+    required TResult Function() getCategories,
+    required TResult Function(List<OrderItem> savedGoods) initSavedGoods,
+    required TResult Function(String id) setSelectedCategoryId,
+    required TResult Function(List<FoodAdditionalModel> additionals,
+            String orderId, String comment)
+        addFoodAdditional,
+    required TResult Function(GoodsModel good) selectGood,
+    required TResult Function(String goodsId) incrementQuantity,
+    required TResult Function(String goodsId) decrementQuantity,
+    required TResult Function() clearGoods,
+    required TResult Function(String text) searchTextChanged,
+    required TResult Function(String billId, bool force) fetchBillOrders,
+    required TResult Function(String orderId) setActiveOrderId,
+    required TResult Function(String itemId, String tableId) cancelOrderItem,
+    required TResult Function(String itemKey, String tableId)
+        incrementExistingItem,
+    required TResult Function(String itemKey, String tableId)
+        decrementExistingItem,
+    required TResult Function(String itemKey, String tableId)
+        deleteExistingItem,
+    required TResult Function(String itemKey, String tableId, int quantity)
+        setExistingItemQuantity,
+    required TResult Function(String itemKey, String tableId) syncExistingItem,
+  }) {
+    return incrementExistingItem(itemKey, tableId);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult? whenOrNull<TResult extends Object?>({
+    TResult? Function()? started,
+    TResult? Function()? getCategories,
+    TResult? Function(List<OrderItem> savedGoods)? initSavedGoods,
+    TResult? Function(String id)? setSelectedCategoryId,
+    TResult? Function(List<FoodAdditionalModel> additionals, String orderId,
+            String comment)?
+        addFoodAdditional,
+    TResult? Function(GoodsModel good)? selectGood,
+    TResult? Function(String goodsId)? incrementQuantity,
+    TResult? Function(String goodsId)? decrementQuantity,
+    TResult? Function()? clearGoods,
+    TResult? Function(String text)? searchTextChanged,
+    TResult? Function(String billId, bool force)? fetchBillOrders,
+    TResult? Function(String orderId)? setActiveOrderId,
+    TResult? Function(String itemId, String tableId)? cancelOrderItem,
+    TResult? Function(String itemKey, String tableId)? incrementExistingItem,
+    TResult? Function(String itemKey, String tableId)? decrementExistingItem,
+    TResult? Function(String itemKey, String tableId)? deleteExistingItem,
+    TResult? Function(String itemKey, String tableId, int quantity)?
+        setExistingItemQuantity,
+    TResult? Function(String itemKey, String tableId)? syncExistingItem,
+  }) {
+    return incrementExistingItem?.call(itemKey, tableId);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult maybeWhen<TResult extends Object?>({
+    TResult Function()? started,
+    TResult Function()? getCategories,
+    TResult Function(List<OrderItem> savedGoods)? initSavedGoods,
+    TResult Function(String id)? setSelectedCategoryId,
+    TResult Function(List<FoodAdditionalModel> additionals, String orderId,
+            String comment)?
+        addFoodAdditional,
+    TResult Function(GoodsModel good)? selectGood,
+    TResult Function(String goodsId)? incrementQuantity,
+    TResult Function(String goodsId)? decrementQuantity,
+    TResult Function()? clearGoods,
+    TResult Function(String text)? searchTextChanged,
+    TResult Function(String billId, bool force)? fetchBillOrders,
+    TResult Function(String orderId)? setActiveOrderId,
+    TResult Function(String itemId, String tableId)? cancelOrderItem,
+    TResult Function(String itemKey, String tableId)? incrementExistingItem,
+    TResult Function(String itemKey, String tableId)? decrementExistingItem,
+    TResult Function(String itemKey, String tableId)? deleteExistingItem,
+    TResult Function(String itemKey, String tableId, int quantity)?
+        setExistingItemQuantity,
+    TResult Function(String itemKey, String tableId)? syncExistingItem,
+    required TResult orElse(),
+  }) {
+    if (incrementExistingItem != null) {
+      return incrementExistingItem(itemKey, tableId);
+    }
+    return orElse();
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult map<TResult extends Object?>({
+    required TResult Function(_Started value) started,
+    required TResult Function(_GetCategories value) getCategories,
+    required TResult Function(_InitSavedGoods value) initSavedGoods,
+    required TResult Function(_SetSelectedCategoryId value)
+        setSelectedCategoryId,
+    required TResult Function(_AddFoodAdditional value) addFoodAdditional,
+    required TResult Function(_SelectGood value) selectGood,
+    required TResult Function(_IncrementQuantity value) incrementQuantity,
+    required TResult Function(_DecrementQuantity value) decrementQuantity,
+    required TResult Function(_ClearGoods value) clearGoods,
+    required TResult Function(_SearchTextChanged value) searchTextChanged,
+    required TResult Function(_FetchBillOrders value) fetchBillOrders,
+    required TResult Function(_SetActiveOrderId value) setActiveOrderId,
+    required TResult Function(_CancelOrderItem value) cancelOrderItem,
+    required TResult Function(_IncrementExistingItem value)
+        incrementExistingItem,
+    required TResult Function(_DecrementExistingItem value)
+        decrementExistingItem,
+    required TResult Function(_DeleteExistingItem value) deleteExistingItem,
+    required TResult Function(_SetExistingItemQuantity value)
+        setExistingItemQuantity,
+    required TResult Function(_SyncExistingItem value) syncExistingItem,
+  }) {
+    return incrementExistingItem(this);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult? mapOrNull<TResult extends Object?>({
+    TResult? Function(_Started value)? started,
+    TResult? Function(_GetCategories value)? getCategories,
+    TResult? Function(_InitSavedGoods value)? initSavedGoods,
+    TResult? Function(_SetSelectedCategoryId value)? setSelectedCategoryId,
+    TResult? Function(_AddFoodAdditional value)? addFoodAdditional,
+    TResult? Function(_SelectGood value)? selectGood,
+    TResult? Function(_IncrementQuantity value)? incrementQuantity,
+    TResult? Function(_DecrementQuantity value)? decrementQuantity,
+    TResult? Function(_ClearGoods value)? clearGoods,
+    TResult? Function(_SearchTextChanged value)? searchTextChanged,
+    TResult? Function(_FetchBillOrders value)? fetchBillOrders,
+    TResult? Function(_SetActiveOrderId value)? setActiveOrderId,
+    TResult? Function(_CancelOrderItem value)? cancelOrderItem,
+    TResult? Function(_IncrementExistingItem value)? incrementExistingItem,
+    TResult? Function(_DecrementExistingItem value)? decrementExistingItem,
+    TResult? Function(_DeleteExistingItem value)? deleteExistingItem,
+    TResult? Function(_SetExistingItemQuantity value)? setExistingItemQuantity,
+    TResult? Function(_SyncExistingItem value)? syncExistingItem,
+  }) {
+    return incrementExistingItem?.call(this);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult maybeMap<TResult extends Object?>({
+    TResult Function(_Started value)? started,
+    TResult Function(_GetCategories value)? getCategories,
+    TResult Function(_InitSavedGoods value)? initSavedGoods,
+    TResult Function(_SetSelectedCategoryId value)? setSelectedCategoryId,
+    TResult Function(_AddFoodAdditional value)? addFoodAdditional,
+    TResult Function(_SelectGood value)? selectGood,
+    TResult Function(_IncrementQuantity value)? incrementQuantity,
+    TResult Function(_DecrementQuantity value)? decrementQuantity,
+    TResult Function(_ClearGoods value)? clearGoods,
+    TResult Function(_SearchTextChanged value)? searchTextChanged,
+    TResult Function(_FetchBillOrders value)? fetchBillOrders,
+    TResult Function(_SetActiveOrderId value)? setActiveOrderId,
+    TResult Function(_CancelOrderItem value)? cancelOrderItem,
+    TResult Function(_IncrementExistingItem value)? incrementExistingItem,
+    TResult Function(_DecrementExistingItem value)? decrementExistingItem,
+    TResult Function(_DeleteExistingItem value)? deleteExistingItem,
+    TResult Function(_SetExistingItemQuantity value)? setExistingItemQuantity,
+    TResult Function(_SyncExistingItem value)? syncExistingItem,
+    required TResult orElse(),
+  }) {
+    if (incrementExistingItem != null) {
+      return incrementExistingItem(this);
+    }
+    return orElse();
+  }
+}
+
+abstract class _IncrementExistingItem implements DetailEvent {
+  const factory _IncrementExistingItem(
+      {required final String itemKey,
+      required final String tableId}) = _$IncrementExistingItemImpl;
+
+  String get itemKey;
+  String get tableId;
+  @JsonKey(ignore: true)
+  _$$IncrementExistingItemImplCopyWith<_$IncrementExistingItemImpl>
+      get copyWith => throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class _$$DecrementExistingItemImplCopyWith<$Res> {
+  factory _$$DecrementExistingItemImplCopyWith(
+          _$DecrementExistingItemImpl value,
+          $Res Function(_$DecrementExistingItemImpl) then) =
+      __$$DecrementExistingItemImplCopyWithImpl<$Res>;
+  @useResult
+  $Res call({String itemKey, String tableId});
+}
+
+/// @nodoc
+class __$$DecrementExistingItemImplCopyWithImpl<$Res>
+    extends _$DetailEventCopyWithImpl<$Res, _$DecrementExistingItemImpl>
+    implements _$$DecrementExistingItemImplCopyWith<$Res> {
+  __$$DecrementExistingItemImplCopyWithImpl(_$DecrementExistingItemImpl _value,
+      $Res Function(_$DecrementExistingItemImpl) _then)
+      : super(_value, _then);
+
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? itemKey = null,
+    Object? tableId = null,
+  }) {
+    return _then(_$DecrementExistingItemImpl(
+      itemKey: null == itemKey
+          ? _value.itemKey
+          : itemKey // ignore: cast_nullable_to_non_nullable
+              as String,
+      tableId: null == tableId
+          ? _value.tableId
+          : tableId // ignore: cast_nullable_to_non_nullable
+              as String,
+    ));
+  }
+}
+
+/// @nodoc
+
+class _$DecrementExistingItemImpl implements _DecrementExistingItem {
+  const _$DecrementExistingItemImpl(
+      {required this.itemKey, required this.tableId});
+
+  @override
+  final String itemKey;
+  @override
+  final String tableId;
+
+  @override
+  String toString() {
+    return 'DetailEvent.decrementExistingItem(itemKey: $itemKey, tableId: $tableId)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$DecrementExistingItemImpl &&
+            (identical(other.itemKey, itemKey) || other.itemKey == itemKey) &&
+            (identical(other.tableId, tableId) || other.tableId == tableId));
+  }
+
+  @override
+  int get hashCode => Object.hash(runtimeType, itemKey, tableId);
+
+  @JsonKey(ignore: true)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$DecrementExistingItemImplCopyWith<_$DecrementExistingItemImpl>
+      get copyWith => __$$DecrementExistingItemImplCopyWithImpl<
+          _$DecrementExistingItemImpl>(this, _$identity);
+
+  @override
+  @optionalTypeArgs
+  TResult when<TResult extends Object?>({
+    required TResult Function() started,
+    required TResult Function() getCategories,
+    required TResult Function(List<OrderItem> savedGoods) initSavedGoods,
+    required TResult Function(String id) setSelectedCategoryId,
+    required TResult Function(List<FoodAdditionalModel> additionals,
+            String orderId, String comment)
+        addFoodAdditional,
+    required TResult Function(GoodsModel good) selectGood,
+    required TResult Function(String goodsId) incrementQuantity,
+    required TResult Function(String goodsId) decrementQuantity,
+    required TResult Function() clearGoods,
+    required TResult Function(String text) searchTextChanged,
+    required TResult Function(String billId, bool force) fetchBillOrders,
+    required TResult Function(String orderId) setActiveOrderId,
+    required TResult Function(String itemId, String tableId) cancelOrderItem,
+    required TResult Function(String itemKey, String tableId)
+        incrementExistingItem,
+    required TResult Function(String itemKey, String tableId)
+        decrementExistingItem,
+    required TResult Function(String itemKey, String tableId)
+        deleteExistingItem,
+    required TResult Function(String itemKey, String tableId, int quantity)
+        setExistingItemQuantity,
+    required TResult Function(String itemKey, String tableId) syncExistingItem,
+  }) {
+    return decrementExistingItem(itemKey, tableId);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult? whenOrNull<TResult extends Object?>({
+    TResult? Function()? started,
+    TResult? Function()? getCategories,
+    TResult? Function(List<OrderItem> savedGoods)? initSavedGoods,
+    TResult? Function(String id)? setSelectedCategoryId,
+    TResult? Function(List<FoodAdditionalModel> additionals, String orderId,
+            String comment)?
+        addFoodAdditional,
+    TResult? Function(GoodsModel good)? selectGood,
+    TResult? Function(String goodsId)? incrementQuantity,
+    TResult? Function(String goodsId)? decrementQuantity,
+    TResult? Function()? clearGoods,
+    TResult? Function(String text)? searchTextChanged,
+    TResult? Function(String billId, bool force)? fetchBillOrders,
+    TResult? Function(String orderId)? setActiveOrderId,
+    TResult? Function(String itemId, String tableId)? cancelOrderItem,
+    TResult? Function(String itemKey, String tableId)? incrementExistingItem,
+    TResult? Function(String itemKey, String tableId)? decrementExistingItem,
+    TResult? Function(String itemKey, String tableId)? deleteExistingItem,
+    TResult? Function(String itemKey, String tableId, int quantity)?
+        setExistingItemQuantity,
+    TResult? Function(String itemKey, String tableId)? syncExistingItem,
+  }) {
+    return decrementExistingItem?.call(itemKey, tableId);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult maybeWhen<TResult extends Object?>({
+    TResult Function()? started,
+    TResult Function()? getCategories,
+    TResult Function(List<OrderItem> savedGoods)? initSavedGoods,
+    TResult Function(String id)? setSelectedCategoryId,
+    TResult Function(List<FoodAdditionalModel> additionals, String orderId,
+            String comment)?
+        addFoodAdditional,
+    TResult Function(GoodsModel good)? selectGood,
+    TResult Function(String goodsId)? incrementQuantity,
+    TResult Function(String goodsId)? decrementQuantity,
+    TResult Function()? clearGoods,
+    TResult Function(String text)? searchTextChanged,
+    TResult Function(String billId, bool force)? fetchBillOrders,
+    TResult Function(String orderId)? setActiveOrderId,
+    TResult Function(String itemId, String tableId)? cancelOrderItem,
+    TResult Function(String itemKey, String tableId)? incrementExistingItem,
+    TResult Function(String itemKey, String tableId)? decrementExistingItem,
+    TResult Function(String itemKey, String tableId)? deleteExistingItem,
+    TResult Function(String itemKey, String tableId, int quantity)?
+        setExistingItemQuantity,
+    TResult Function(String itemKey, String tableId)? syncExistingItem,
+    required TResult orElse(),
+  }) {
+    if (decrementExistingItem != null) {
+      return decrementExistingItem(itemKey, tableId);
+    }
+    return orElse();
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult map<TResult extends Object?>({
+    required TResult Function(_Started value) started,
+    required TResult Function(_GetCategories value) getCategories,
+    required TResult Function(_InitSavedGoods value) initSavedGoods,
+    required TResult Function(_SetSelectedCategoryId value)
+        setSelectedCategoryId,
+    required TResult Function(_AddFoodAdditional value) addFoodAdditional,
+    required TResult Function(_SelectGood value) selectGood,
+    required TResult Function(_IncrementQuantity value) incrementQuantity,
+    required TResult Function(_DecrementQuantity value) decrementQuantity,
+    required TResult Function(_ClearGoods value) clearGoods,
+    required TResult Function(_SearchTextChanged value) searchTextChanged,
+    required TResult Function(_FetchBillOrders value) fetchBillOrders,
+    required TResult Function(_SetActiveOrderId value) setActiveOrderId,
+    required TResult Function(_CancelOrderItem value) cancelOrderItem,
+    required TResult Function(_IncrementExistingItem value)
+        incrementExistingItem,
+    required TResult Function(_DecrementExistingItem value)
+        decrementExistingItem,
+    required TResult Function(_DeleteExistingItem value) deleteExistingItem,
+    required TResult Function(_SetExistingItemQuantity value)
+        setExistingItemQuantity,
+    required TResult Function(_SyncExistingItem value) syncExistingItem,
+  }) {
+    return decrementExistingItem(this);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult? mapOrNull<TResult extends Object?>({
+    TResult? Function(_Started value)? started,
+    TResult? Function(_GetCategories value)? getCategories,
+    TResult? Function(_InitSavedGoods value)? initSavedGoods,
+    TResult? Function(_SetSelectedCategoryId value)? setSelectedCategoryId,
+    TResult? Function(_AddFoodAdditional value)? addFoodAdditional,
+    TResult? Function(_SelectGood value)? selectGood,
+    TResult? Function(_IncrementQuantity value)? incrementQuantity,
+    TResult? Function(_DecrementQuantity value)? decrementQuantity,
+    TResult? Function(_ClearGoods value)? clearGoods,
+    TResult? Function(_SearchTextChanged value)? searchTextChanged,
+    TResult? Function(_FetchBillOrders value)? fetchBillOrders,
+    TResult? Function(_SetActiveOrderId value)? setActiveOrderId,
+    TResult? Function(_CancelOrderItem value)? cancelOrderItem,
+    TResult? Function(_IncrementExistingItem value)? incrementExistingItem,
+    TResult? Function(_DecrementExistingItem value)? decrementExistingItem,
+    TResult? Function(_DeleteExistingItem value)? deleteExistingItem,
+    TResult? Function(_SetExistingItemQuantity value)? setExistingItemQuantity,
+    TResult? Function(_SyncExistingItem value)? syncExistingItem,
+  }) {
+    return decrementExistingItem?.call(this);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult maybeMap<TResult extends Object?>({
+    TResult Function(_Started value)? started,
+    TResult Function(_GetCategories value)? getCategories,
+    TResult Function(_InitSavedGoods value)? initSavedGoods,
+    TResult Function(_SetSelectedCategoryId value)? setSelectedCategoryId,
+    TResult Function(_AddFoodAdditional value)? addFoodAdditional,
+    TResult Function(_SelectGood value)? selectGood,
+    TResult Function(_IncrementQuantity value)? incrementQuantity,
+    TResult Function(_DecrementQuantity value)? decrementQuantity,
+    TResult Function(_ClearGoods value)? clearGoods,
+    TResult Function(_SearchTextChanged value)? searchTextChanged,
+    TResult Function(_FetchBillOrders value)? fetchBillOrders,
+    TResult Function(_SetActiveOrderId value)? setActiveOrderId,
+    TResult Function(_CancelOrderItem value)? cancelOrderItem,
+    TResult Function(_IncrementExistingItem value)? incrementExistingItem,
+    TResult Function(_DecrementExistingItem value)? decrementExistingItem,
+    TResult Function(_DeleteExistingItem value)? deleteExistingItem,
+    TResult Function(_SetExistingItemQuantity value)? setExistingItemQuantity,
+    TResult Function(_SyncExistingItem value)? syncExistingItem,
+    required TResult orElse(),
+  }) {
+    if (decrementExistingItem != null) {
+      return decrementExistingItem(this);
+    }
+    return orElse();
+  }
+}
+
+abstract class _DecrementExistingItem implements DetailEvent {
+  const factory _DecrementExistingItem(
+      {required final String itemKey,
+      required final String tableId}) = _$DecrementExistingItemImpl;
+
+  String get itemKey;
+  String get tableId;
+  @JsonKey(ignore: true)
+  _$$DecrementExistingItemImplCopyWith<_$DecrementExistingItemImpl>
+      get copyWith => throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class _$$DeleteExistingItemImplCopyWith<$Res> {
+  factory _$$DeleteExistingItemImplCopyWith(_$DeleteExistingItemImpl value,
+          $Res Function(_$DeleteExistingItemImpl) then) =
+      __$$DeleteExistingItemImplCopyWithImpl<$Res>;
+  @useResult
+  $Res call({String itemKey, String tableId});
+}
+
+/// @nodoc
+class __$$DeleteExistingItemImplCopyWithImpl<$Res>
+    extends _$DetailEventCopyWithImpl<$Res, _$DeleteExistingItemImpl>
+    implements _$$DeleteExistingItemImplCopyWith<$Res> {
+  __$$DeleteExistingItemImplCopyWithImpl(_$DeleteExistingItemImpl _value,
+      $Res Function(_$DeleteExistingItemImpl) _then)
+      : super(_value, _then);
+
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? itemKey = null,
+    Object? tableId = null,
+  }) {
+    return _then(_$DeleteExistingItemImpl(
+      itemKey: null == itemKey
+          ? _value.itemKey
+          : itemKey // ignore: cast_nullable_to_non_nullable
+              as String,
+      tableId: null == tableId
+          ? _value.tableId
+          : tableId // ignore: cast_nullable_to_non_nullable
+              as String,
+    ));
+  }
+}
+
+/// @nodoc
+
+class _$DeleteExistingItemImpl implements _DeleteExistingItem {
+  const _$DeleteExistingItemImpl(
+      {required this.itemKey, required this.tableId});
+
+  @override
+  final String itemKey;
+  @override
+  final String tableId;
+
+  @override
+  String toString() {
+    return 'DetailEvent.deleteExistingItem(itemKey: $itemKey, tableId: $tableId)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$DeleteExistingItemImpl &&
+            (identical(other.itemKey, itemKey) || other.itemKey == itemKey) &&
+            (identical(other.tableId, tableId) || other.tableId == tableId));
+  }
+
+  @override
+  int get hashCode => Object.hash(runtimeType, itemKey, tableId);
+
+  @JsonKey(ignore: true)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$DeleteExistingItemImplCopyWith<_$DeleteExistingItemImpl> get copyWith =>
+      __$$DeleteExistingItemImplCopyWithImpl<_$DeleteExistingItemImpl>(
+          this, _$identity);
+
+  @override
+  @optionalTypeArgs
+  TResult when<TResult extends Object?>({
+    required TResult Function() started,
+    required TResult Function() getCategories,
+    required TResult Function(List<OrderItem> savedGoods) initSavedGoods,
+    required TResult Function(String id) setSelectedCategoryId,
+    required TResult Function(List<FoodAdditionalModel> additionals,
+            String orderId, String comment)
+        addFoodAdditional,
+    required TResult Function(GoodsModel good) selectGood,
+    required TResult Function(String goodsId) incrementQuantity,
+    required TResult Function(String goodsId) decrementQuantity,
+    required TResult Function() clearGoods,
+    required TResult Function(String text) searchTextChanged,
+    required TResult Function(String billId, bool force) fetchBillOrders,
+    required TResult Function(String orderId) setActiveOrderId,
+    required TResult Function(String itemId, String tableId) cancelOrderItem,
+    required TResult Function(String itemKey, String tableId)
+        incrementExistingItem,
+    required TResult Function(String itemKey, String tableId)
+        decrementExistingItem,
+    required TResult Function(String itemKey, String tableId)
+        deleteExistingItem,
+    required TResult Function(String itemKey, String tableId, int quantity)
+        setExistingItemQuantity,
+    required TResult Function(String itemKey, String tableId) syncExistingItem,
+  }) {
+    return deleteExistingItem(itemKey, tableId);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult? whenOrNull<TResult extends Object?>({
+    TResult? Function()? started,
+    TResult? Function()? getCategories,
+    TResult? Function(List<OrderItem> savedGoods)? initSavedGoods,
+    TResult? Function(String id)? setSelectedCategoryId,
+    TResult? Function(List<FoodAdditionalModel> additionals, String orderId,
+            String comment)?
+        addFoodAdditional,
+    TResult? Function(GoodsModel good)? selectGood,
+    TResult? Function(String goodsId)? incrementQuantity,
+    TResult? Function(String goodsId)? decrementQuantity,
+    TResult? Function()? clearGoods,
+    TResult? Function(String text)? searchTextChanged,
+    TResult? Function(String billId, bool force)? fetchBillOrders,
+    TResult? Function(String orderId)? setActiveOrderId,
+    TResult? Function(String itemId, String tableId)? cancelOrderItem,
+    TResult? Function(String itemKey, String tableId)? incrementExistingItem,
+    TResult? Function(String itemKey, String tableId)? decrementExistingItem,
+    TResult? Function(String itemKey, String tableId)? deleteExistingItem,
+    TResult? Function(String itemKey, String tableId, int quantity)?
+        setExistingItemQuantity,
+    TResult? Function(String itemKey, String tableId)? syncExistingItem,
+  }) {
+    return deleteExistingItem?.call(itemKey, tableId);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult maybeWhen<TResult extends Object?>({
+    TResult Function()? started,
+    TResult Function()? getCategories,
+    TResult Function(List<OrderItem> savedGoods)? initSavedGoods,
+    TResult Function(String id)? setSelectedCategoryId,
+    TResult Function(List<FoodAdditionalModel> additionals, String orderId,
+            String comment)?
+        addFoodAdditional,
+    TResult Function(GoodsModel good)? selectGood,
+    TResult Function(String goodsId)? incrementQuantity,
+    TResult Function(String goodsId)? decrementQuantity,
+    TResult Function()? clearGoods,
+    TResult Function(String text)? searchTextChanged,
+    TResult Function(String billId, bool force)? fetchBillOrders,
+    TResult Function(String orderId)? setActiveOrderId,
+    TResult Function(String itemId, String tableId)? cancelOrderItem,
+    TResult Function(String itemKey, String tableId)? incrementExistingItem,
+    TResult Function(String itemKey, String tableId)? decrementExistingItem,
+    TResult Function(String itemKey, String tableId)? deleteExistingItem,
+    TResult Function(String itemKey, String tableId, int quantity)?
+        setExistingItemQuantity,
+    TResult Function(String itemKey, String tableId)? syncExistingItem,
+    required TResult orElse(),
+  }) {
+    if (deleteExistingItem != null) {
+      return deleteExistingItem(itemKey, tableId);
+    }
+    return orElse();
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult map<TResult extends Object?>({
+    required TResult Function(_Started value) started,
+    required TResult Function(_GetCategories value) getCategories,
+    required TResult Function(_InitSavedGoods value) initSavedGoods,
+    required TResult Function(_SetSelectedCategoryId value)
+        setSelectedCategoryId,
+    required TResult Function(_AddFoodAdditional value) addFoodAdditional,
+    required TResult Function(_SelectGood value) selectGood,
+    required TResult Function(_IncrementQuantity value) incrementQuantity,
+    required TResult Function(_DecrementQuantity value) decrementQuantity,
+    required TResult Function(_ClearGoods value) clearGoods,
+    required TResult Function(_SearchTextChanged value) searchTextChanged,
+    required TResult Function(_FetchBillOrders value) fetchBillOrders,
+    required TResult Function(_SetActiveOrderId value) setActiveOrderId,
+    required TResult Function(_CancelOrderItem value) cancelOrderItem,
+    required TResult Function(_IncrementExistingItem value)
+        incrementExistingItem,
+    required TResult Function(_DecrementExistingItem value)
+        decrementExistingItem,
+    required TResult Function(_DeleteExistingItem value) deleteExistingItem,
+    required TResult Function(_SetExistingItemQuantity value)
+        setExistingItemQuantity,
+    required TResult Function(_SyncExistingItem value) syncExistingItem,
+  }) {
+    return deleteExistingItem(this);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult? mapOrNull<TResult extends Object?>({
+    TResult? Function(_Started value)? started,
+    TResult? Function(_GetCategories value)? getCategories,
+    TResult? Function(_InitSavedGoods value)? initSavedGoods,
+    TResult? Function(_SetSelectedCategoryId value)? setSelectedCategoryId,
+    TResult? Function(_AddFoodAdditional value)? addFoodAdditional,
+    TResult? Function(_SelectGood value)? selectGood,
+    TResult? Function(_IncrementQuantity value)? incrementQuantity,
+    TResult? Function(_DecrementQuantity value)? decrementQuantity,
+    TResult? Function(_ClearGoods value)? clearGoods,
+    TResult? Function(_SearchTextChanged value)? searchTextChanged,
+    TResult? Function(_FetchBillOrders value)? fetchBillOrders,
+    TResult? Function(_SetActiveOrderId value)? setActiveOrderId,
+    TResult? Function(_CancelOrderItem value)? cancelOrderItem,
+    TResult? Function(_IncrementExistingItem value)? incrementExistingItem,
+    TResult? Function(_DecrementExistingItem value)? decrementExistingItem,
+    TResult? Function(_DeleteExistingItem value)? deleteExistingItem,
+    TResult? Function(_SetExistingItemQuantity value)? setExistingItemQuantity,
+    TResult? Function(_SyncExistingItem value)? syncExistingItem,
+  }) {
+    return deleteExistingItem?.call(this);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult maybeMap<TResult extends Object?>({
+    TResult Function(_Started value)? started,
+    TResult Function(_GetCategories value)? getCategories,
+    TResult Function(_InitSavedGoods value)? initSavedGoods,
+    TResult Function(_SetSelectedCategoryId value)? setSelectedCategoryId,
+    TResult Function(_AddFoodAdditional value)? addFoodAdditional,
+    TResult Function(_SelectGood value)? selectGood,
+    TResult Function(_IncrementQuantity value)? incrementQuantity,
+    TResult Function(_DecrementQuantity value)? decrementQuantity,
+    TResult Function(_ClearGoods value)? clearGoods,
+    TResult Function(_SearchTextChanged value)? searchTextChanged,
+    TResult Function(_FetchBillOrders value)? fetchBillOrders,
+    TResult Function(_SetActiveOrderId value)? setActiveOrderId,
+    TResult Function(_CancelOrderItem value)? cancelOrderItem,
+    TResult Function(_IncrementExistingItem value)? incrementExistingItem,
+    TResult Function(_DecrementExistingItem value)? decrementExistingItem,
+    TResult Function(_DeleteExistingItem value)? deleteExistingItem,
+    TResult Function(_SetExistingItemQuantity value)? setExistingItemQuantity,
+    TResult Function(_SyncExistingItem value)? syncExistingItem,
+    required TResult orElse(),
+  }) {
+    if (deleteExistingItem != null) {
+      return deleteExistingItem(this);
+    }
+    return orElse();
+  }
+}
+
+abstract class _DeleteExistingItem implements DetailEvent {
+  const factory _DeleteExistingItem(
+      {required final String itemKey,
+      required final String tableId}) = _$DeleteExistingItemImpl;
+
+  String get itemKey;
+  String get tableId;
+  @JsonKey(ignore: true)
+  _$$DeleteExistingItemImplCopyWith<_$DeleteExistingItemImpl> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class _$$SetExistingItemQuantityImplCopyWith<$Res> {
+  factory _$$SetExistingItemQuantityImplCopyWith(
+          _$SetExistingItemQuantityImpl value,
+          $Res Function(_$SetExistingItemQuantityImpl) then) =
+      __$$SetExistingItemQuantityImplCopyWithImpl<$Res>;
+  @useResult
+  $Res call({String itemKey, String tableId, int quantity});
+}
+
+/// @nodoc
+class __$$SetExistingItemQuantityImplCopyWithImpl<$Res>
+    extends _$DetailEventCopyWithImpl<$Res, _$SetExistingItemQuantityImpl>
+    implements _$$SetExistingItemQuantityImplCopyWith<$Res> {
+  __$$SetExistingItemQuantityImplCopyWithImpl(
+      _$SetExistingItemQuantityImpl _value,
+      $Res Function(_$SetExistingItemQuantityImpl) _then)
+      : super(_value, _then);
+
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? itemKey = null,
+    Object? tableId = null,
+    Object? quantity = null,
+  }) {
+    return _then(_$SetExistingItemQuantityImpl(
+      itemKey: null == itemKey
+          ? _value.itemKey
+          : itemKey // ignore: cast_nullable_to_non_nullable
+              as String,
+      tableId: null == tableId
+          ? _value.tableId
+          : tableId // ignore: cast_nullable_to_non_nullable
+              as String,
+      quantity: null == quantity
+          ? _value.quantity
+          : quantity // ignore: cast_nullable_to_non_nullable
+              as int,
+    ));
+  }
+}
+
+/// @nodoc
+
+class _$SetExistingItemQuantityImpl implements _SetExistingItemQuantity {
+  const _$SetExistingItemQuantityImpl(
+      {required this.itemKey, required this.tableId, required this.quantity});
+
+  @override
+  final String itemKey;
+  @override
+  final String tableId;
+  @override
+  final int quantity;
+
+  @override
+  String toString() {
+    return 'DetailEvent.setExistingItemQuantity(itemKey: $itemKey, tableId: $tableId, quantity: $quantity)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$SetExistingItemQuantityImpl &&
+            (identical(other.itemKey, itemKey) || other.itemKey == itemKey) &&
+            (identical(other.tableId, tableId) || other.tableId == tableId) &&
+            (identical(other.quantity, quantity) ||
+                other.quantity == quantity));
+  }
+
+  @override
+  int get hashCode => Object.hash(runtimeType, itemKey, tableId, quantity);
+
+  @JsonKey(ignore: true)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$SetExistingItemQuantityImplCopyWith<_$SetExistingItemQuantityImpl>
+      get copyWith => __$$SetExistingItemQuantityImplCopyWithImpl<
+          _$SetExistingItemQuantityImpl>(this, _$identity);
+
+  @override
+  @optionalTypeArgs
+  TResult when<TResult extends Object?>({
+    required TResult Function() started,
+    required TResult Function() getCategories,
+    required TResult Function(List<OrderItem> savedGoods) initSavedGoods,
+    required TResult Function(String id) setSelectedCategoryId,
+    required TResult Function(List<FoodAdditionalModel> additionals,
+            String orderId, String comment)
+        addFoodAdditional,
+    required TResult Function(GoodsModel good) selectGood,
+    required TResult Function(String goodsId) incrementQuantity,
+    required TResult Function(String goodsId) decrementQuantity,
+    required TResult Function() clearGoods,
+    required TResult Function(String text) searchTextChanged,
+    required TResult Function(String billId, bool force) fetchBillOrders,
+    required TResult Function(String orderId) setActiveOrderId,
+    required TResult Function(String itemId, String tableId) cancelOrderItem,
+    required TResult Function(String itemKey, String tableId)
+        incrementExistingItem,
+    required TResult Function(String itemKey, String tableId)
+        decrementExistingItem,
+    required TResult Function(String itemKey, String tableId)
+        deleteExistingItem,
+    required TResult Function(String itemKey, String tableId, int quantity)
+        setExistingItemQuantity,
+    required TResult Function(String itemKey, String tableId) syncExistingItem,
+  }) {
+    return setExistingItemQuantity(itemKey, tableId, quantity);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult? whenOrNull<TResult extends Object?>({
+    TResult? Function()? started,
+    TResult? Function()? getCategories,
+    TResult? Function(List<OrderItem> savedGoods)? initSavedGoods,
+    TResult? Function(String id)? setSelectedCategoryId,
+    TResult? Function(List<FoodAdditionalModel> additionals, String orderId,
+            String comment)?
+        addFoodAdditional,
+    TResult? Function(GoodsModel good)? selectGood,
+    TResult? Function(String goodsId)? incrementQuantity,
+    TResult? Function(String goodsId)? decrementQuantity,
+    TResult? Function()? clearGoods,
+    TResult? Function(String text)? searchTextChanged,
+    TResult? Function(String billId, bool force)? fetchBillOrders,
+    TResult? Function(String orderId)? setActiveOrderId,
+    TResult? Function(String itemId, String tableId)? cancelOrderItem,
+    TResult? Function(String itemKey, String tableId)? incrementExistingItem,
+    TResult? Function(String itemKey, String tableId)? decrementExistingItem,
+    TResult? Function(String itemKey, String tableId)? deleteExistingItem,
+    TResult? Function(String itemKey, String tableId, int quantity)?
+        setExistingItemQuantity,
+    TResult? Function(String itemKey, String tableId)? syncExistingItem,
+  }) {
+    return setExistingItemQuantity?.call(itemKey, tableId, quantity);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult maybeWhen<TResult extends Object?>({
+    TResult Function()? started,
+    TResult Function()? getCategories,
+    TResult Function(List<OrderItem> savedGoods)? initSavedGoods,
+    TResult Function(String id)? setSelectedCategoryId,
+    TResult Function(List<FoodAdditionalModel> additionals, String orderId,
+            String comment)?
+        addFoodAdditional,
+    TResult Function(GoodsModel good)? selectGood,
+    TResult Function(String goodsId)? incrementQuantity,
+    TResult Function(String goodsId)? decrementQuantity,
+    TResult Function()? clearGoods,
+    TResult Function(String text)? searchTextChanged,
+    TResult Function(String billId, bool force)? fetchBillOrders,
+    TResult Function(String orderId)? setActiveOrderId,
+    TResult Function(String itemId, String tableId)? cancelOrderItem,
+    TResult Function(String itemKey, String tableId)? incrementExistingItem,
+    TResult Function(String itemKey, String tableId)? decrementExistingItem,
+    TResult Function(String itemKey, String tableId)? deleteExistingItem,
+    TResult Function(String itemKey, String tableId, int quantity)?
+        setExistingItemQuantity,
+    TResult Function(String itemKey, String tableId)? syncExistingItem,
+    required TResult orElse(),
+  }) {
+    if (setExistingItemQuantity != null) {
+      return setExistingItemQuantity(itemKey, tableId, quantity);
+    }
+    return orElse();
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult map<TResult extends Object?>({
+    required TResult Function(_Started value) started,
+    required TResult Function(_GetCategories value) getCategories,
+    required TResult Function(_InitSavedGoods value) initSavedGoods,
+    required TResult Function(_SetSelectedCategoryId value)
+        setSelectedCategoryId,
+    required TResult Function(_AddFoodAdditional value) addFoodAdditional,
+    required TResult Function(_SelectGood value) selectGood,
+    required TResult Function(_IncrementQuantity value) incrementQuantity,
+    required TResult Function(_DecrementQuantity value) decrementQuantity,
+    required TResult Function(_ClearGoods value) clearGoods,
+    required TResult Function(_SearchTextChanged value) searchTextChanged,
+    required TResult Function(_FetchBillOrders value) fetchBillOrders,
+    required TResult Function(_SetActiveOrderId value) setActiveOrderId,
+    required TResult Function(_CancelOrderItem value) cancelOrderItem,
+    required TResult Function(_IncrementExistingItem value)
+        incrementExistingItem,
+    required TResult Function(_DecrementExistingItem value)
+        decrementExistingItem,
+    required TResult Function(_DeleteExistingItem value) deleteExistingItem,
+    required TResult Function(_SetExistingItemQuantity value)
+        setExistingItemQuantity,
+    required TResult Function(_SyncExistingItem value) syncExistingItem,
+  }) {
+    return setExistingItemQuantity(this);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult? mapOrNull<TResult extends Object?>({
+    TResult? Function(_Started value)? started,
+    TResult? Function(_GetCategories value)? getCategories,
+    TResult? Function(_InitSavedGoods value)? initSavedGoods,
+    TResult? Function(_SetSelectedCategoryId value)? setSelectedCategoryId,
+    TResult? Function(_AddFoodAdditional value)? addFoodAdditional,
+    TResult? Function(_SelectGood value)? selectGood,
+    TResult? Function(_IncrementQuantity value)? incrementQuantity,
+    TResult? Function(_DecrementQuantity value)? decrementQuantity,
+    TResult? Function(_ClearGoods value)? clearGoods,
+    TResult? Function(_SearchTextChanged value)? searchTextChanged,
+    TResult? Function(_FetchBillOrders value)? fetchBillOrders,
+    TResult? Function(_SetActiveOrderId value)? setActiveOrderId,
+    TResult? Function(_CancelOrderItem value)? cancelOrderItem,
+    TResult? Function(_IncrementExistingItem value)? incrementExistingItem,
+    TResult? Function(_DecrementExistingItem value)? decrementExistingItem,
+    TResult? Function(_DeleteExistingItem value)? deleteExistingItem,
+    TResult? Function(_SetExistingItemQuantity value)? setExistingItemQuantity,
+    TResult? Function(_SyncExistingItem value)? syncExistingItem,
+  }) {
+    return setExistingItemQuantity?.call(this);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult maybeMap<TResult extends Object?>({
+    TResult Function(_Started value)? started,
+    TResult Function(_GetCategories value)? getCategories,
+    TResult Function(_InitSavedGoods value)? initSavedGoods,
+    TResult Function(_SetSelectedCategoryId value)? setSelectedCategoryId,
+    TResult Function(_AddFoodAdditional value)? addFoodAdditional,
+    TResult Function(_SelectGood value)? selectGood,
+    TResult Function(_IncrementQuantity value)? incrementQuantity,
+    TResult Function(_DecrementQuantity value)? decrementQuantity,
+    TResult Function(_ClearGoods value)? clearGoods,
+    TResult Function(_SearchTextChanged value)? searchTextChanged,
+    TResult Function(_FetchBillOrders value)? fetchBillOrders,
+    TResult Function(_SetActiveOrderId value)? setActiveOrderId,
+    TResult Function(_CancelOrderItem value)? cancelOrderItem,
+    TResult Function(_IncrementExistingItem value)? incrementExistingItem,
+    TResult Function(_DecrementExistingItem value)? decrementExistingItem,
+    TResult Function(_DeleteExistingItem value)? deleteExistingItem,
+    TResult Function(_SetExistingItemQuantity value)? setExistingItemQuantity,
+    TResult Function(_SyncExistingItem value)? syncExistingItem,
+    required TResult orElse(),
+  }) {
+    if (setExistingItemQuantity != null) {
+      return setExistingItemQuantity(this);
+    }
+    return orElse();
+  }
+}
+
+abstract class _SetExistingItemQuantity implements DetailEvent {
+  const factory _SetExistingItemQuantity(
+      {required final String itemKey,
+      required final String tableId,
+      required final int quantity}) = _$SetExistingItemQuantityImpl;
+
+  String get itemKey;
+  String get tableId;
+  int get quantity;
+  @JsonKey(ignore: true)
+  _$$SetExistingItemQuantityImplCopyWith<_$SetExistingItemQuantityImpl>
+      get copyWith => throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class _$$SyncExistingItemImplCopyWith<$Res> {
+  factory _$$SyncExistingItemImplCopyWith(_$SyncExistingItemImpl value,
+          $Res Function(_$SyncExistingItemImpl) then) =
+      __$$SyncExistingItemImplCopyWithImpl<$Res>;
+  @useResult
+  $Res call({String itemKey, String tableId});
+}
+
+/// @nodoc
+class __$$SyncExistingItemImplCopyWithImpl<$Res>
+    extends _$DetailEventCopyWithImpl<$Res, _$SyncExistingItemImpl>
+    implements _$$SyncExistingItemImplCopyWith<$Res> {
+  __$$SyncExistingItemImplCopyWithImpl(_$SyncExistingItemImpl _value,
+      $Res Function(_$SyncExistingItemImpl) _then)
+      : super(_value, _then);
+
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? itemKey = null,
+    Object? tableId = null,
+  }) {
+    return _then(_$SyncExistingItemImpl(
+      itemKey: null == itemKey
+          ? _value.itemKey
+          : itemKey // ignore: cast_nullable_to_non_nullable
+              as String,
+      tableId: null == tableId
+          ? _value.tableId
+          : tableId // ignore: cast_nullable_to_non_nullable
+              as String,
+    ));
+  }
+}
+
+/// @nodoc
+
+class _$SyncExistingItemImpl implements _SyncExistingItem {
+  const _$SyncExistingItemImpl({required this.itemKey, required this.tableId});
+
+  @override
+  final String itemKey;
+  @override
+  final String tableId;
+
+  @override
+  String toString() {
+    return 'DetailEvent.syncExistingItem(itemKey: $itemKey, tableId: $tableId)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$SyncExistingItemImpl &&
+            (identical(other.itemKey, itemKey) || other.itemKey == itemKey) &&
+            (identical(other.tableId, tableId) || other.tableId == tableId));
+  }
+
+  @override
+  int get hashCode => Object.hash(runtimeType, itemKey, tableId);
+
+  @JsonKey(ignore: true)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$SyncExistingItemImplCopyWith<_$SyncExistingItemImpl> get copyWith =>
+      __$$SyncExistingItemImplCopyWithImpl<_$SyncExistingItemImpl>(
+          this, _$identity);
+
+  @override
+  @optionalTypeArgs
+  TResult when<TResult extends Object?>({
+    required TResult Function() started,
+    required TResult Function() getCategories,
+    required TResult Function(List<OrderItem> savedGoods) initSavedGoods,
+    required TResult Function(String id) setSelectedCategoryId,
+    required TResult Function(List<FoodAdditionalModel> additionals,
+            String orderId, String comment)
+        addFoodAdditional,
+    required TResult Function(GoodsModel good) selectGood,
+    required TResult Function(String goodsId) incrementQuantity,
+    required TResult Function(String goodsId) decrementQuantity,
+    required TResult Function() clearGoods,
+    required TResult Function(String text) searchTextChanged,
+    required TResult Function(String billId, bool force) fetchBillOrders,
+    required TResult Function(String orderId) setActiveOrderId,
+    required TResult Function(String itemId, String tableId) cancelOrderItem,
+    required TResult Function(String itemKey, String tableId)
+        incrementExistingItem,
+    required TResult Function(String itemKey, String tableId)
+        decrementExistingItem,
+    required TResult Function(String itemKey, String tableId)
+        deleteExistingItem,
+    required TResult Function(String itemKey, String tableId, int quantity)
+        setExistingItemQuantity,
+    required TResult Function(String itemKey, String tableId) syncExistingItem,
+  }) {
+    return syncExistingItem(itemKey, tableId);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult? whenOrNull<TResult extends Object?>({
+    TResult? Function()? started,
+    TResult? Function()? getCategories,
+    TResult? Function(List<OrderItem> savedGoods)? initSavedGoods,
+    TResult? Function(String id)? setSelectedCategoryId,
+    TResult? Function(List<FoodAdditionalModel> additionals, String orderId,
+            String comment)?
+        addFoodAdditional,
+    TResult? Function(GoodsModel good)? selectGood,
+    TResult? Function(String goodsId)? incrementQuantity,
+    TResult? Function(String goodsId)? decrementQuantity,
+    TResult? Function()? clearGoods,
+    TResult? Function(String text)? searchTextChanged,
+    TResult? Function(String billId, bool force)? fetchBillOrders,
+    TResult? Function(String orderId)? setActiveOrderId,
+    TResult? Function(String itemId, String tableId)? cancelOrderItem,
+    TResult? Function(String itemKey, String tableId)? incrementExistingItem,
+    TResult? Function(String itemKey, String tableId)? decrementExistingItem,
+    TResult? Function(String itemKey, String tableId)? deleteExistingItem,
+    TResult? Function(String itemKey, String tableId, int quantity)?
+        setExistingItemQuantity,
+    TResult? Function(String itemKey, String tableId)? syncExistingItem,
+  }) {
+    return syncExistingItem?.call(itemKey, tableId);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult maybeWhen<TResult extends Object?>({
+    TResult Function()? started,
+    TResult Function()? getCategories,
+    TResult Function(List<OrderItem> savedGoods)? initSavedGoods,
+    TResult Function(String id)? setSelectedCategoryId,
+    TResult Function(List<FoodAdditionalModel> additionals, String orderId,
+            String comment)?
+        addFoodAdditional,
+    TResult Function(GoodsModel good)? selectGood,
+    TResult Function(String goodsId)? incrementQuantity,
+    TResult Function(String goodsId)? decrementQuantity,
+    TResult Function()? clearGoods,
+    TResult Function(String text)? searchTextChanged,
+    TResult Function(String billId, bool force)? fetchBillOrders,
+    TResult Function(String orderId)? setActiveOrderId,
+    TResult Function(String itemId, String tableId)? cancelOrderItem,
+    TResult Function(String itemKey, String tableId)? incrementExistingItem,
+    TResult Function(String itemKey, String tableId)? decrementExistingItem,
+    TResult Function(String itemKey, String tableId)? deleteExistingItem,
+    TResult Function(String itemKey, String tableId, int quantity)?
+        setExistingItemQuantity,
+    TResult Function(String itemKey, String tableId)? syncExistingItem,
+    required TResult orElse(),
+  }) {
+    if (syncExistingItem != null) {
+      return syncExistingItem(itemKey, tableId);
+    }
+    return orElse();
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult map<TResult extends Object?>({
+    required TResult Function(_Started value) started,
+    required TResult Function(_GetCategories value) getCategories,
+    required TResult Function(_InitSavedGoods value) initSavedGoods,
+    required TResult Function(_SetSelectedCategoryId value)
+        setSelectedCategoryId,
+    required TResult Function(_AddFoodAdditional value) addFoodAdditional,
+    required TResult Function(_SelectGood value) selectGood,
+    required TResult Function(_IncrementQuantity value) incrementQuantity,
+    required TResult Function(_DecrementQuantity value) decrementQuantity,
+    required TResult Function(_ClearGoods value) clearGoods,
+    required TResult Function(_SearchTextChanged value) searchTextChanged,
+    required TResult Function(_FetchBillOrders value) fetchBillOrders,
+    required TResult Function(_SetActiveOrderId value) setActiveOrderId,
+    required TResult Function(_CancelOrderItem value) cancelOrderItem,
+    required TResult Function(_IncrementExistingItem value)
+        incrementExistingItem,
+    required TResult Function(_DecrementExistingItem value)
+        decrementExistingItem,
+    required TResult Function(_DeleteExistingItem value) deleteExistingItem,
+    required TResult Function(_SetExistingItemQuantity value)
+        setExistingItemQuantity,
+    required TResult Function(_SyncExistingItem value) syncExistingItem,
+  }) {
+    return syncExistingItem(this);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult? mapOrNull<TResult extends Object?>({
+    TResult? Function(_Started value)? started,
+    TResult? Function(_GetCategories value)? getCategories,
+    TResult? Function(_InitSavedGoods value)? initSavedGoods,
+    TResult? Function(_SetSelectedCategoryId value)? setSelectedCategoryId,
+    TResult? Function(_AddFoodAdditional value)? addFoodAdditional,
+    TResult? Function(_SelectGood value)? selectGood,
+    TResult? Function(_IncrementQuantity value)? incrementQuantity,
+    TResult? Function(_DecrementQuantity value)? decrementQuantity,
+    TResult? Function(_ClearGoods value)? clearGoods,
+    TResult? Function(_SearchTextChanged value)? searchTextChanged,
+    TResult? Function(_FetchBillOrders value)? fetchBillOrders,
+    TResult? Function(_SetActiveOrderId value)? setActiveOrderId,
+    TResult? Function(_CancelOrderItem value)? cancelOrderItem,
+    TResult? Function(_IncrementExistingItem value)? incrementExistingItem,
+    TResult? Function(_DecrementExistingItem value)? decrementExistingItem,
+    TResult? Function(_DeleteExistingItem value)? deleteExistingItem,
+    TResult? Function(_SetExistingItemQuantity value)? setExistingItemQuantity,
+    TResult? Function(_SyncExistingItem value)? syncExistingItem,
+  }) {
+    return syncExistingItem?.call(this);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult maybeMap<TResult extends Object?>({
+    TResult Function(_Started value)? started,
+    TResult Function(_GetCategories value)? getCategories,
+    TResult Function(_InitSavedGoods value)? initSavedGoods,
+    TResult Function(_SetSelectedCategoryId value)? setSelectedCategoryId,
+    TResult Function(_AddFoodAdditional value)? addFoodAdditional,
+    TResult Function(_SelectGood value)? selectGood,
+    TResult Function(_IncrementQuantity value)? incrementQuantity,
+    TResult Function(_DecrementQuantity value)? decrementQuantity,
+    TResult Function(_ClearGoods value)? clearGoods,
+    TResult Function(_SearchTextChanged value)? searchTextChanged,
+    TResult Function(_FetchBillOrders value)? fetchBillOrders,
+    TResult Function(_SetActiveOrderId value)? setActiveOrderId,
+    TResult Function(_CancelOrderItem value)? cancelOrderItem,
+    TResult Function(_IncrementExistingItem value)? incrementExistingItem,
+    TResult Function(_DecrementExistingItem value)? decrementExistingItem,
+    TResult Function(_DeleteExistingItem value)? deleteExistingItem,
+    TResult Function(_SetExistingItemQuantity value)? setExistingItemQuantity,
+    TResult Function(_SyncExistingItem value)? syncExistingItem,
+    required TResult orElse(),
+  }) {
+    if (syncExistingItem != null) {
+      return syncExistingItem(this);
+    }
+    return orElse();
+  }
+}
+
+abstract class _SyncExistingItem implements DetailEvent {
+  const factory _SyncExistingItem(
+      {required final String itemKey,
+      required final String tableId}) = _$SyncExistingItemImpl;
+
+  String get itemKey;
+  String get tableId;
+  @JsonKey(ignore: true)
+  _$$SyncExistingItemImplCopyWith<_$SyncExistingItemImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }
 
@@ -3090,7 +4940,12 @@ mixin _$DetailState {
   String? get selectedCategoryId => throw _privateConstructorUsedError;
   List<OrderItem> get selectedGoods => throw _privateConstructorUsedError;
   List<OrderItem> get existingGoods => throw _privateConstructorUsedError;
-  String? get activeOrderId => throw _privateConstructorUsedError;
+  String? get activeOrderId =>
+      throw _privateConstructorUsedError; // Hozir backend bilan sinxron qilinayotgan mavjud itemlarning nomlari.
+// `goods.name` bo'yicha kalitlangan (refetch dan keyin uniqueId o'zgaradi,
+// lekin name saqlanadi). UI shu set ichidagi itemlarda +/-/X ni disable
+// qiladi.
+  Set<String> get existingSyncingNames => throw _privateConstructorUsedError;
 
   @JsonKey(ignore: true)
   $DetailStateCopyWith<DetailState> get copyWith =>
@@ -3112,7 +4967,8 @@ abstract class $DetailStateCopyWith<$Res> {
       String? selectedCategoryId,
       List<OrderItem> selectedGoods,
       List<OrderItem> existingGoods,
-      String? activeOrderId});
+      String? activeOrderId,
+      Set<String> existingSyncingNames});
 }
 
 /// @nodoc
@@ -3137,6 +4993,7 @@ class _$DetailStateCopyWithImpl<$Res, $Val extends DetailState>
     Object? selectedGoods = null,
     Object? existingGoods = null,
     Object? activeOrderId = freezed,
+    Object? existingSyncingNames = null,
   }) {
     return _then(_value.copyWith(
       status: null == status
@@ -3175,6 +5032,10 @@ class _$DetailStateCopyWithImpl<$Res, $Val extends DetailState>
           ? _value.activeOrderId
           : activeOrderId // ignore: cast_nullable_to_non_nullable
               as String?,
+      existingSyncingNames: null == existingSyncingNames
+          ? _value.existingSyncingNames
+          : existingSyncingNames // ignore: cast_nullable_to_non_nullable
+              as Set<String>,
     ) as $Val);
   }
 }
@@ -3196,7 +5057,8 @@ abstract class _$$DetailStateImplCopyWith<$Res>
       String? selectedCategoryId,
       List<OrderItem> selectedGoods,
       List<OrderItem> existingGoods,
-      String? activeOrderId});
+      String? activeOrderId,
+      Set<String> existingSyncingNames});
 }
 
 /// @nodoc
@@ -3219,6 +5081,7 @@ class __$$DetailStateImplCopyWithImpl<$Res>
     Object? selectedGoods = null,
     Object? existingGoods = null,
     Object? activeOrderId = freezed,
+    Object? existingSyncingNames = null,
   }) {
     return _then(_$DetailStateImpl(
       status: null == status
@@ -3257,6 +5120,10 @@ class __$$DetailStateImplCopyWithImpl<$Res>
           ? _value.activeOrderId
           : activeOrderId // ignore: cast_nullable_to_non_nullable
               as String?,
+      existingSyncingNames: null == existingSyncingNames
+          ? _value._existingSyncingNames
+          : existingSyncingNames // ignore: cast_nullable_to_non_nullable
+              as Set<String>,
     ));
   }
 }
@@ -3273,11 +5140,13 @@ class _$DetailStateImpl implements _DetailState {
       this.selectedCategoryId,
       final List<OrderItem> selectedGoods = const [],
       final List<OrderItem> existingGoods = const [],
-      this.activeOrderId})
+      this.activeOrderId,
+      final Set<String> existingSyncingNames = const <String>{}})
       : _categories = categories,
         _goods = goods,
         _selectedGoods = selectedGoods,
-        _existingGoods = existingGoods;
+        _existingGoods = existingGoods,
+        _existingSyncingNames = existingSyncingNames;
 
   @override
   @JsonKey()
@@ -3329,10 +5198,27 @@ class _$DetailStateImpl implements _DetailState {
 
   @override
   final String? activeOrderId;
+// Hozir backend bilan sinxron qilinayotgan mavjud itemlarning nomlari.
+// `goods.name` bo'yicha kalitlangan (refetch dan keyin uniqueId o'zgaradi,
+// lekin name saqlanadi). UI shu set ichidagi itemlarda +/-/X ni disable
+// qiladi.
+  final Set<String> _existingSyncingNames;
+// Hozir backend bilan sinxron qilinayotgan mavjud itemlarning nomlari.
+// `goods.name` bo'yicha kalitlangan (refetch dan keyin uniqueId o'zgaradi,
+// lekin name saqlanadi). UI shu set ichidagi itemlarda +/-/X ni disable
+// qiladi.
+  @override
+  @JsonKey()
+  Set<String> get existingSyncingNames {
+    if (_existingSyncingNames is EqualUnmodifiableSetView)
+      return _existingSyncingNames;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableSetView(_existingSyncingNames);
+  }
 
   @override
   String toString() {
-    return 'DetailState(status: $status, failure: $failure, textController: $textController, categories: $categories, goods: $goods, selectedCategoryId: $selectedCategoryId, selectedGoods: $selectedGoods, existingGoods: $existingGoods, activeOrderId: $activeOrderId)';
+    return 'DetailState(status: $status, failure: $failure, textController: $textController, categories: $categories, goods: $goods, selectedCategoryId: $selectedCategoryId, selectedGoods: $selectedGoods, existingGoods: $existingGoods, activeOrderId: $activeOrderId, existingSyncingNames: $existingSyncingNames)';
   }
 
   @override
@@ -3354,7 +5240,9 @@ class _$DetailStateImpl implements _DetailState {
             const DeepCollectionEquality()
                 .equals(other._existingGoods, _existingGoods) &&
             (identical(other.activeOrderId, activeOrderId) ||
-                other.activeOrderId == activeOrderId));
+                other.activeOrderId == activeOrderId) &&
+            const DeepCollectionEquality()
+                .equals(other._existingSyncingNames, _existingSyncingNames));
   }
 
   @override
@@ -3368,7 +5256,8 @@ class _$DetailStateImpl implements _DetailState {
       selectedCategoryId,
       const DeepCollectionEquality().hash(_selectedGoods),
       const DeepCollectionEquality().hash(_existingGoods),
-      activeOrderId);
+      activeOrderId,
+      const DeepCollectionEquality().hash(_existingSyncingNames));
 
   @JsonKey(ignore: true)
   @override
@@ -3387,7 +5276,8 @@ abstract class _DetailState implements DetailState {
       final String? selectedCategoryId,
       final List<OrderItem> selectedGoods,
       final List<OrderItem> existingGoods,
-      final String? activeOrderId}) = _$DetailStateImpl;
+      final String? activeOrderId,
+      final Set<String> existingSyncingNames}) = _$DetailStateImpl;
 
   @override
   Status get status;
@@ -3407,6 +5297,11 @@ abstract class _DetailState implements DetailState {
   List<OrderItem> get existingGoods;
   @override
   String? get activeOrderId;
+  @override // Hozir backend bilan sinxron qilinayotgan mavjud itemlarning nomlari.
+// `goods.name` bo'yicha kalitlangan (refetch dan keyin uniqueId o'zgaradi,
+// lekin name saqlanadi). UI shu set ichidagi itemlarda +/-/X ni disable
+// qiladi.
+  Set<String> get existingSyncingNames;
   @override
   @JsonKey(ignore: true)
   _$$DetailStateImplCopyWith<_$DetailStateImpl> get copyWith =>

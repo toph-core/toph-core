@@ -422,5 +422,7 @@
   "strService": "Обслуживание",
   "strSpecialNote": "Особое примечание",
   "strClose": "Закрыть",
-  "strSidebarEmptyTitle": "Ваш заказ пуст"
+  "strSidebarEmptyTitle": "Ваш заказ пуст",
+  "strPrice": "Цена",
+  "strTotal": "Итого"
 }

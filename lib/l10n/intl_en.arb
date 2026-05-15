@@ -422,5 +422,7 @@
   "strService": "Service",
   "strSpecialNote": "Special note",
   "strClose": "Close",
-  "strSidebarEmptyTitle": "Your order is empty"
+  "strSidebarEmptyTitle": "Your order is empty",
+  "strPrice": "Price",
+  "strTotal": "Total"
 }

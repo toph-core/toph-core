@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
@@ -57,6 +59,19 @@ class DetailBloc extends Bloc<DetailEvent, DetailState> {
   String? _lastCategoryFetchId;
   static const _categoryFetchThrottle = Duration(seconds: 10);
 
+  // Existing item +/- backend sinxronizatsiya uchun:
+  // - `_existingLineInfo`: UI itemining goods.name → underlying line item id'lari,
+  //   good_id, va serverdagi joriy qty. Har bir /bills/{id} refetch dan keyin
+  //   `_enrichExistingGoodsWithLineDetails` da yangilanadi.
+  // - `_existingSnapshots`: foydalanuvchi tugmani bosgan paytdagi server holati
+  //   (debounce davomida saqlanadi). Debounce tugagach, joriy UI qty bilan
+  //   solishtirib net delta hisoblanadi.
+  // - `_existingSyncTimers`: har bir item uchun debounce taymeri.
+  final Map<String, _ExistingLineInfo> _existingLineInfo = {};
+  final Map<String, _ExistingSnapshot> _existingSnapshots = {};
+  final Map<String, Timer> _existingSyncTimers = {};
+  static const _existingSyncDebounce = Duration(milliseconds: 500);
+
   DetailBloc(
     this._getCategoriesUsecase,
     this._getGoodsByCategoryIdUseCase,
@@ -75,6 +90,11 @@ class DetailBloc extends Bloc<DetailEvent, DetailState> {
     on<_SelectGood>(_onSelectGood);
     on<_IncrementQuantity>(_onIncrementQuantity);
     on<_DecrementQuantity>(_onDecrementQuantity);
+    on<_IncrementExistingItem>(_onIncrementExistingItem);
+    on<_DecrementExistingItem>(_onDecrementExistingItem);
+    on<_DeleteExistingItem>(_onDeleteExistingItem);
+    on<_SetExistingItemQuantity>(_onSetExistingItemQuantity);
+    on<_SyncExistingItem>(_onSyncExistingItem);
     on<_ClearGoods>(_onClearGoods);
 
     // Debounce the search events so we don't spam the API or local filter directly
@@ -143,9 +163,12 @@ class DetailBloc extends Bloc<DetailEvent, DetailState> {
     _FetchBillOrders event,
     Emitter<DetailState> emit,
   ) async {
-    // Cache-first: avval saqlangan detalni ko'rsat
+    // Cache-first: avval saqlangan detalni ko'rsat.
+    // `force: true` paytida cache-first emit qilmaymiz — bu mutatsiya
+    // (item +/- yoki delete) dan keyingi refetch. Cache hali eski qty saqlasa,
+    // optimistik UI ustidan eski qiymat qisqacha "miltillab" ko'rinardi.
     final cached = _cache.getOrderDetail(event.billId);
-    if (cached != null) {
+    if (cached != null && !event.force) {
       _applyDetailToState(ArchiveDetailModel.fromJson(cached), event.billId, emit);
     }
 
@@ -205,21 +228,57 @@ class DetailBloc extends Bloc<DetailEvent, DetailState> {
               : const []);
       // name -> earliest createdAt
       final tsByName = <String, DateTime>{};
+      // name -> aggregated server-side info (line ids, good_id, total qty)
+      // /api/v1/order-items/order/{id} har bir line uchun good_id qaytaradi —
+      // increment/decrement uchun zarur (bekor qilish + qayta yaratish).
+      final infoByName = <String, _ExistingLineInfo>{};
       for (final entry in list.whereType<Map>()) {
         final m = Map<String, dynamic>.from(entry);
         final name = (m['good_name'] ?? m['name'] ?? '').toString();
         if (name.isEmpty) continue;
+        final status = (m['status'] ?? '').toString().toLowerCase();
+        if (status == 'cancelled') continue; // bekor qilingan — ko'rsatmaymiz
+        final lineId = (m['id'] ?? '').toString();
+        final goodId = (m['good_id'] ?? '').toString();
+        final qty = (m['quantity'] as num?)?.toInt() ?? 0;
+        final comment = (m['comment'] ?? '').toString();
+
         final rawDate = m['created_at'] ?? m['createdAt'];
         DateTime? created;
         if (rawDate is String && rawDate.isNotEmpty) {
           created = DateTime.tryParse(rawDate)?.toLocal();
         }
-        if (created == null) continue;
-        final existing = tsByName[name];
-        if (existing == null || created.isBefore(existing)) {
-          tsByName[name] = created;
+        if (created != null) {
+          final existingTs = tsByName[name];
+          if (existingTs == null || created.isBefore(existingTs)) {
+            tsByName[name] = created;
+          }
+        }
+
+        if (lineId.isEmpty || goodId.isEmpty) continue;
+        final existing = infoByName[name];
+        if (existing == null) {
+          infoByName[name] = _ExistingLineInfo(
+            goodId: goodId,
+            comment: comment,
+            lineIds: [lineId],
+            totalQuantity: qty,
+          );
+        } else {
+          existing.lineIds.add(lineId);
+          infoByName[name] = existing.copyWith(
+            totalQuantity: existing.totalQuantity + qty,
+            // Birinchi line'ning comment'ini saqlaymiz (oddiy holatda barcha
+            // line'lar bir xil mahsulot uchun bir xil good_id ga ega).
+          );
         }
       }
+
+      // Line-info xaritasi — debounce snapshot lardan tashqari foydalaniladi
+      _existingLineInfo
+        ..clear()
+        ..addAll(infoByName);
+
       if (tsByName.isEmpty || isClosed) return;
 
       // Cache'ga saqlaymiz — offline'da ham itemlar uchun vaqt ko'rinadi
@@ -345,33 +404,345 @@ class DetailBloc extends Bloc<DetailEvent, DetailState> {
     }
   }
 
+  /// Legacy event — `_DeleteExistingItem` bilan bir xil ishlaydi (UI shu eventni
+  /// yuborib mahsulotni to'liq o'chiradi). Eski kod yo'llari uchun saqlandi.
   Future<void> _onCancelOrderItem(
     _CancelOrderItem event,
     Emitter<DetailState> emit,
   ) async {
+    await _deleteExistingByKey(
+      itemKey: event.itemId,
+      tableId: event.tableId,
+      emit: emit,
+    );
+  }
+
+  // ─── Existing item +/- / delete (backend bilan sinxron) ──────────────
+
+  /// Optimistic +1. Server bilan sinxronlash debounce orqali keyinroq.
+  /// `existingSyncingNames` darhol set qilinadi — UI tugmalar zudlik bilan
+  /// disable bo'ladi, refetch tugaguncha boshqa click qabul qilinmaydi.
+  void _onIncrementExistingItem(
+    _IncrementExistingItem event,
+    Emitter<DetailState> emit,
+  ) {
+    final idx = state.existingGoods.indexWhere(
+      (g) => g.uniqueId == event.itemKey,
+    );
+    if (idx == -1) return;
+    final item = state.existingGoods[idx];
+    if (item.commet == 'cancelled' || item.commet == 'pending_offline') return;
+    if (state.existingSyncingNames.contains(item.goods.name)) return;
+    _captureSnapshotIfNeeded(item);
+    final updated = List<OrderItem>.from(state.existingGoods);
+    updated[idx] = item.copyWith(quantity: item.quantity + 1);
+    emit(state.copyWith(
+      existingGoods: updated,
+      existingSyncingNames: {
+        ...state.existingSyncingNames,
+        item.goods.name,
+      },
+    ));
+    _scheduleExistingSync(event.itemKey, event.tableId);
+  }
+
+  /// Optimistic -1. Agar qty 1 da bo'lsa — itemni listdan olib tashlaymiz va
+  /// server'ga delete yuborish uchun snapshot saqlanib qoladi (sync handler
+  /// barcha line'larni bekor qiladi).
+  void _onDecrementExistingItem(
+    _DecrementExistingItem event,
+    Emitter<DetailState> emit,
+  ) {
+    final idx = state.existingGoods.indexWhere(
+      (g) => g.uniqueId == event.itemKey,
+    );
+    if (idx == -1) return;
+    final item = state.existingGoods[idx];
+    if (item.commet == 'cancelled' || item.commet == 'pending_offline') return;
+    if (state.existingSyncingNames.contains(item.goods.name)) return;
+    _captureSnapshotIfNeeded(item);
+    final newQty = item.quantity - 1;
+    final updated = List<OrderItem>.from(state.existingGoods);
+    if (newQty <= 0) {
+      updated.removeAt(idx);
+    } else {
+      updated[idx] = item.copyWith(quantity: newQty);
+    }
+    emit(state.copyWith(
+      existingGoods: updated,
+      existingSyncingNames: {
+        ...state.existingSyncingNames,
+        item.goods.name,
+      },
+    ));
+    _scheduleExistingSync(event.itemKey, event.tableId);
+  }
+
+  Future<void> _onDeleteExistingItem(
+    _DeleteExistingItem event,
+    Emitter<DetailState> emit,
+  ) async {
+    await _deleteExistingByKey(
+      itemKey: event.itemKey,
+      tableId: event.tableId,
+      emit: emit,
+    );
+  }
+
+  /// Edit-modaldan "Saqlash" bosilganda — yangi miqdorni darhol qo'llaydi va
+  /// backendga sinxronlash uchun `_SyncExistingItem` ni navbatga qo'yadi
+  /// (debouncesiz, chunki user aniq tasdiq berdi).
+  void _onSetExistingItemQuantity(
+    _SetExistingItemQuantity event,
+    Emitter<DetailState> emit,
+  ) {
+    final idx = state.existingGoods.indexWhere(
+      (g) => g.uniqueId == event.itemKey,
+    );
+    if (idx == -1) return;
+    final item = state.existingGoods[idx];
+    if (item.commet == 'cancelled' || item.commet == 'pending_offline') return;
+    if (state.existingSyncingNames.contains(item.goods.name)) return;
+    if (event.quantity == item.quantity) return;
+    if (event.quantity < 1) return;
+
+    _captureSnapshotIfNeeded(item);
+    final updated = List<OrderItem>.from(state.existingGoods);
+    updated[idx] = item.copyWith(quantity: event.quantity);
+    emit(state.copyWith(
+      existingGoods: updated,
+      existingSyncingNames: {
+        ...state.existingSyncingNames,
+        item.goods.name,
+      },
+    ));
+
+    _existingSyncTimers.remove(event.itemKey)?.cancel();
+    add(DetailEvent.syncExistingItem(
+      itemKey: event.itemKey,
+      tableId: event.tableId,
+    ));
+  }
+
+  Future<void> _deleteExistingByKey({
+    required String itemKey,
+    required String tableId,
+    required Emitter<DetailState> emit,
+  }) async {
+    final idx = state.existingGoods.indexWhere((g) => g.uniqueId == itemKey);
+    if (idx == -1) return;
+    final item = state.existingGoods[idx];
+
+    // Har qanday kutilayotgan +/- sinxronni bekor qilamiz — to'liq o'chirish
+    // ustun.
+    _existingSyncTimers.remove(itemKey)?.cancel();
+    _existingSnapshots.remove(itemKey);
+
+    // Optimistic remove
+    final updated = List<OrderItem>.from(state.existingGoods)..removeAt(idx);
+    emit(state.copyWith(existingGoods: updated));
+
+    // Delete davomida shu nomdagi item disable (item allaqachon listdan
+    // olib tashlangan, lekin agar refetch'da qaytib ko'rinsa ham clicklarni
+    // bloklaymiz).
+    final itemName = item.goods.name;
+    emit(state.copyWith(
+      existingSyncingNames: {...state.existingSyncingNames, itemName},
+    ));
+
+    final lineIds = _resolveLineIds(item);
+    final dio = inject<DioClient>().dio;
     try {
-      final dio = inject<DioClient>().dio;
-      await dio.post(ListAPI.orderItemCancel(event.itemId));
-      // Optimistic: darhol cancelled deb belgilaymiz
-      final updated = state.existingGoods.map((g) {
-        if (g.uniqueId == event.itemId) return g.copyWith(commet: 'cancelled');
-        return g;
-      }).toList();
-      emit(state.copyWith(existingGoods: updated));
-      // Serverdan ham yangilaymiz
-      add(DetailEvent.fetchBillOrders(billId: event.tableId));
-    } on DioException catch (e) {
-      final msg = e.response?.data?['message']?.toString() ??
-          e.message ??
-          'Xato yuz berdi';
-      if (navigatorKey.currentContext != null) {
-        showErrorMessage(navigatorKey.currentContext!, msg);
+      for (final id in lineIds) {
+        try {
+          await dio.post(ListAPI.orderItemCancel(id));
+        } on DioException catch (e) {
+          // 404 — line allaqachon yo'q (boshqa client bekor qilgan) — davom etamiz
+          if (e.response?.statusCode != 404) rethrow;
+        }
       }
-    } catch (e) {
-      if (navigatorKey.currentContext != null) {
-        showErrorMessage(navigatorKey.currentContext!, e.toString());
+    } catch (_) {
+      // Toast'ni global Dio interceptor (dio_interceptor.dart) o'zi ko'rsatadi —
+      // bu yerda takror chaqirmaymiz, aks holda 2 ta snackbar chiqib ketadi.
+    } finally {
+      if (!isClosed) {
+        await _fetchBillOrdersInline(tableId, emit);
+        if (!isClosed) {
+          final next = Set<String>.from(state.existingSyncingNames)
+            ..remove(itemName);
+          emit(state.copyWith(existingSyncingNames: next));
+        }
       }
     }
+  }
+
+  /// Snapshot — bu item bilan birinchi marta o'zaro ta'sirda qachon bo'lganda
+  /// saqlanadi. Net delta sync vaqtida shu snapshot bilan solishtiriladi.
+  ///
+  /// Diqqat: `OrderItem.goods.id` mavjud (saqlangan) itemlar uchun line item
+  /// id ni saqlaydi, mahsulot id ni emas. Shuning uchun goodId ni faqat
+  /// `_existingLineInfo` map'idan olamiz (u /order-items/order/{id} dan
+  /// to'planadi). Agar map bo'sh bo'lsa — snapshot.goodId bo'sh qoladi va sync
+  /// vaqtida operatsiya bekor qilinadi (UI refetch orqali revert qilinadi).
+  void _captureSnapshotIfNeeded(OrderItem item) {
+    if (_existingSnapshots.containsKey(item.uniqueId)) return;
+    final info = _existingLineInfo[item.goods.name];
+    _existingSnapshots[item.uniqueId] = _ExistingSnapshot(
+      goodId: info?.goodId ?? '',
+      comment: item.comment,
+      originalQty: item.quantity,
+      originalLineIds:
+          info != null ? List<String>.from(info.lineIds) : <String>[],
+    );
+  }
+
+  void _scheduleExistingSync(String itemKey, String tableId) {
+    _existingSyncTimers.remove(itemKey)?.cancel();
+    _existingSyncTimers[itemKey] = Timer(_existingSyncDebounce, () {
+      if (isClosed) return;
+      add(DetailEvent.syncExistingItem(
+        itemKey: itemKey,
+        tableId: tableId,
+      ));
+    });
+  }
+
+  Future<void> _onSyncExistingItem(
+    _SyncExistingItem event,
+    Emitter<DetailState> emit,
+  ) async {
+    final snapshot = _existingSnapshots.remove(event.itemKey);
+    _existingSyncTimers.remove(event.itemKey)?.cancel();
+
+    // Sync paytida UI'da +/-/X disable bo'lishi uchun nomni topamiz. Disable
+    // flag allaqachon increment/decrement handler'da set qilingan — bu yerda
+    // try/finally bilan TOZALAB chiqamiz (har qanday early return holatda
+    // ham flag yopiq qolib ketmasligi uchun).
+    String? itemName;
+    for (final g in state.existingGoods) {
+      if (g.uniqueId == event.itemKey) {
+        itemName = g.goods.name;
+        break;
+      }
+    }
+
+    try {
+      if (snapshot == null) return;
+      if (state.activeOrderId == null || state.activeOrderId!.isEmpty) {
+        await _fetchBillOrdersInline(event.tableId, emit);
+        return;
+      }
+
+      OrderItem? current;
+      for (final g in state.existingGoods) {
+        if (g.uniqueId == event.itemKey) {
+          current = g;
+          break;
+        }
+      }
+      final desiredQty = current?.quantity ?? 0;
+      final delta = desiredQty - snapshot.originalQty;
+      if (delta == 0) {
+        await _fetchBillOrdersInline(event.tableId, emit);
+        return;
+      }
+
+      if (snapshot.goodId.isEmpty) {
+        // /order-items/order/{id} hali yuklanmagan yoki bo'sh — to'g'ri sync
+        // qila olmaymiz. Refetch orqali UI'ni revert qilamiz.
+        if (navigatorKey.currentContext != null) {
+          showErrorMessage(
+            navigatorKey.currentContext!,
+            'Ma\'lumot yuklanmagan. Yana urinib ko\'ring.',
+          );
+        }
+        await _fetchBillOrdersInline(event.tableId, emit);
+        return;
+      }
+
+      final dio = inject<DioClient>().dio;
+      try {
+        if (delta > 0) {
+          // Plus: yangi line item qo'shamiz
+          await dio.post(
+            ListAPI.orderItemsCreate,
+            data: {
+              'order_id': state.activeOrderId,
+              'items': [
+                {
+                  'good_id': snapshot.goodId,
+                  'quantity': delta,
+                  'comment': snapshot.comment,
+                },
+              ],
+            },
+          );
+        } else {
+          // Minus: barcha original line'larni bekor qilamiz, qolgan qty bo'lsa
+          // bitta yangi line yaratamiz. Backend bitta line'ni bo'lish API
+          // qilmaydi — shu yo'l yagona to'g'ri ish.
+          for (final id in snapshot.originalLineIds) {
+            try {
+              await dio.post(ListAPI.orderItemCancel(id));
+            } on DioException catch (e) {
+              if (e.response?.statusCode != 404) rethrow;
+            }
+          }
+          if (desiredQty > 0) {
+            await dio.post(
+              ListAPI.orderItemsCreate,
+              data: {
+                'order_id': state.activeOrderId,
+                'items': [
+                  {
+                    'good_id': snapshot.goodId,
+                    'quantity': desiredQty,
+                    'comment': snapshot.comment,
+                  },
+                ],
+              },
+            );
+          }
+        }
+      } catch (_) {
+        // Toast global Dio interceptor (dio_interceptor.dart) tomonidan
+        // ko'rsatiladi — bu yerda takror chaqirmaymiz.
+      }
+
+      if (!isClosed) {
+        await _fetchBillOrdersInline(event.tableId, emit);
+      }
+    } finally {
+      if (itemName != null && !isClosed) {
+        final next = Set<String>.from(state.existingSyncingNames)
+          ..remove(itemName);
+        emit(state.copyWith(existingSyncingNames: next));
+      }
+    }
+  }
+
+  /// `_onFetchBillOrders` ni shu yerdan to'g'ridan-to'g'ri (`emit` bilan)
+  /// chaqirish — refetch tugaguncha kutib turish va undan keyin sync flag'ini
+  /// tozalash uchun zarur. `add()` orqali yuborilsa kuta olmaymiz.
+  Future<void> _fetchBillOrdersInline(
+    String tableId,
+    Emitter<DetailState> emit,
+  ) async {
+    await _onFetchBillOrders(
+      _FetchBillOrders(billId: tableId, force: true),
+      emit,
+    );
+  }
+
+  /// Item uchun underlying server line id'larini topadi. Avval
+  /// `_existingLineInfo` map'iga (bills+order-items dan to'plangan), agar
+  /// topilmasa — `OrderItem.uniqueId` ni o'zini single id deb hisoblaymiz.
+  List<String> _resolveLineIds(OrderItem item) {
+    final info = _existingLineInfo[item.goods.name];
+    if (info != null && info.lineIds.isNotEmpty) {
+      return List<String>.from(info.lineIds);
+    }
+    return item.uniqueId.isNotEmpty ? <String>[item.uniqueId] : <String>[];
   }
 
   Future<void> _onSetSelectedCategoryId(
@@ -547,6 +918,12 @@ class DetailBloc extends Bloc<DetailEvent, DetailState> {
 
   @override
   Future<void> close() {
+    for (final t in _existingSyncTimers.values) {
+      t.cancel();
+    }
+    _existingSyncTimers.clear();
+    _existingSnapshots.clear();
+    _existingLineInfo.clear();
     state.textController?.dispose();
     return super.close();
   }
@@ -559,4 +936,49 @@ class DetailBloc extends Bloc<DetailEvent, DetailState> {
     if (b == null) return a;
     return a.isBefore(b) ? a : b;
   }
+}
+
+/// Mavjud (saqlangan) itemning serverdagi aggregatlangan ko'rinishi.
+/// `/api/v1/order-items/order/{id}` natijalaridan to'planadi.
+class _ExistingLineInfo {
+  final String goodId;
+  final String comment;
+  final List<String> lineIds; // underlying server line ids
+  final int totalQuantity;
+
+  _ExistingLineInfo({
+    required this.goodId,
+    required this.comment,
+    required this.lineIds,
+    required this.totalQuantity,
+  });
+
+  _ExistingLineInfo copyWith({
+    String? goodId,
+    String? comment,
+    List<String>? lineIds,
+    int? totalQuantity,
+  }) =>
+      _ExistingLineInfo(
+        goodId: goodId ?? this.goodId,
+        comment: comment ?? this.comment,
+        lineIds: lineIds ?? this.lineIds,
+        totalQuantity: totalQuantity ?? this.totalQuantity,
+      );
+}
+
+/// Foydalanuvchi +/- bosgan paytdagi server snapshot. Debounce tugagach,
+/// joriy UI qty bilan solishtirib backend sinxron qilinadi.
+class _ExistingSnapshot {
+  final String goodId;
+  final String comment;
+  final int originalQty;
+  final List<String> originalLineIds;
+
+  _ExistingSnapshot({
+    required this.goodId,
+    required this.comment,
+    required this.originalQty,
+    required this.originalLineIds,
+  });
 }

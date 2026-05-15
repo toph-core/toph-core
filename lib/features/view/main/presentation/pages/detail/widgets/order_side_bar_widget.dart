@@ -55,7 +55,8 @@ class _OrderSidebarState extends State<OrderSidebar> with DetailScreenMixin {
       child: BlocBuilder<DetailBloc, DetailState>(
         buildWhen: (p, c) =>
             p.selectedGoods != c.selectedGoods ||
-            p.existingGoods != c.existingGoods,
+            p.existingGoods != c.existingGoods ||
+            p.existingSyncingNames != c.existingSyncingNames,
         builder: (context, state) {
           return Container(
             decoration: BoxDecoration(
@@ -90,6 +91,8 @@ class _OrderSidebarState extends State<OrderSidebar> with DetailScreenMixin {
                                     child: _ReadonlyOrderItem(
                                       item: item,
                                       tableId: cafeTable?.id,
+                                      isSyncing: state.existingSyncingNames
+                                          .contains(item.goods.name),
                                     ),
                                   ),
                                 ),
@@ -447,287 +450,596 @@ class _SectionLabel extends StatelessWidget {
 class _ReadonlyOrderItem extends StatelessWidget {
   final OrderItem item;
   final String? tableId;
-  const _ReadonlyOrderItem({required this.item, this.tableId});
+  final bool isSyncing;
+  const _ReadonlyOrderItem({
+    required this.item,
+    this.tableId,
+    this.isSyncing = false,
+  });
 
-  void _showCommentDialog(BuildContext context) {
-    showDialog<void>(
+  Future<void> _openEditDialog(BuildContext context) async {
+    final bloc = context.read<DetailBloc>();
+    final newQty = await showDialog<int>(
       context: context,
-      builder: (_) => AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(14),
-        ),
-        title: Text(
-          item.goods.name,
-          style: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w700,
-            color: Color(0xFF0F172A),
-            fontFamily: 'Inter',
-          ),
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              S.current.strSpecialNote,
-              style: const TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-                color: Color(0xFF94A3B8),
-                fontFamily: 'Inter',
-                letterSpacing: 0.3,
-              ),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              item.comment,
-              style: const TextStyle(
-                fontSize: 14,
-                color: Color(0xFF0F172A),
-                fontFamily: 'Inter',
-                height: 1.4,
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: Text(S.current.strClose),
-          ),
-        ],
-      ),
+      barrierDismissible: true,
+      barrierColor: PosTheme.colors.textPrimary.withOpacity(0.45),
+      builder: (_) => _EditExistingOrderItemDialog(item: item),
     );
+    if (newQty == null || newQty == item.quantity || tableId == null) return;
+    if (newQty <= 0) {
+      bloc.add(
+        DetailEvent.deleteExistingItem(
+          itemKey: item.uniqueId,
+          tableId: tableId!,
+        ),
+      );
+    } else {
+      bloc.add(
+        DetailEvent.setExistingItemQuantity(
+          itemKey: item.uniqueId,
+          tableId: tableId!,
+          quantity: newQty,
+        ),
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    const colors = PosTheme.colors;
     final isCancelled = item.commet == 'cancelled';
     final isOfflinePending = item.commet == 'pending_offline';
     final hasComment = item.comment.trim().isNotEmpty;
-    final textColor = isCancelled
-        ? const Color(0xFFCBD5E1)
-        : const Color(0xFF0F172A);
-    Color bgColor = const Color(0xFFF8FAFC);
-    if (isCancelled) bgColor = const Color(0xFFFEE2E2);
+    final canEdit = tableId != null && !isCancelled && !isOfflinePending;
+    final tappable = canEdit && !isSyncing;
+    final textColor = isCancelled ? colors.textDisabled : colors.textPrimary;
+
+    final perUnit = double.tryParse(item.goods.price) ?? 0;
+    final total = perUnit * item.quantity;
+
+    Color bgColor = colors.surface;
+    if (isCancelled) bgColor = colors.errorSoft;
     if (isOfflinePending) bgColor = const Color(0xFFF5F3FF);
+
     return Opacity(
       opacity: isCancelled ? 0.6 : 1.0,
       child: GestureDetector(
-        onTap: hasComment ? () => _showCommentDialog(context) : null,
-        child: Container(
-        padding: const EdgeInsets.all(10),
-        decoration: BoxDecoration(
-          color: bgColor,
-          borderRadius: BorderRadius.circular(10),
-          border: isOfflinePending
-              ? Border.all(color: const Color(0xFFFB6633).withOpacity(0.4))
-              : null,
-        ),
-        child: Row(
-          spacing: 10,
-          children: [
-            Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Center(
-                child: Text(
-                  item.goods.name.isNotEmpty
-                      ? item.goods.name[0].toUpperCase()
-                      : '?',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                    color: isCancelled
-                        ? const Color(0xFFCBD5E1)
-                        : const Color(0xFF64748B),
-                    fontFamily: 'Inter',
-                  ),
-                ),
+        behavior: HitTestBehavior.opaque,
+        onTap: tappable ? () => _openEditDialog(context) : null,
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(PosDimensions.radiusMd),
+          child: Container(
+            decoration: BoxDecoration(
+              color: bgColor,
+              borderRadius: BorderRadius.circular(PosDimensions.radiusMd),
+              border: Border.all(
+                color: isOfflinePending
+                    ? colors.brand.withOpacity(0.4)
+                    : colors.border,
               ),
             ),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+            child: IntrinsicHeight(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Text(
-                    item.goods.name,
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w500,
-                      color: textColor,
-                      fontFamily: 'Inter',
-                      decoration: isCancelled
-                          ? TextDecoration.lineThrough
-                          : null,
-                      decorationColor: const Color(0xFFCBD5E1),
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                  // Left brand accent — full card height
+                  Container(
+                    width: 4,
+                    color: isCancelled ? colors.borderStrong : colors.brand,
                   ),
-                  const SizedBox(height: 2),
-                  if (isCancelled)
-                    const Text(
-                      'Bekor qilindi',
-                      style: TextStyle(
-                        fontSize: 10,
-                        color: Color(0xFFDC2626),
-                        fontFamily: 'Inter',
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(
+                        PosDimensions.s,
+                        PosDimensions.s,
+                        PosDimensions.s,
+                        PosDimensions.s,
                       ),
-                    )
-                  else if (isOfflinePending)
-                    const Text(
-                      '⏳ Yuborilmoqda...',
-                      style: TextStyle(
-                        fontSize: 10,
-                        color: Color(0xFFFB6633),
-                        fontFamily: 'Inter',
-                      ),
-                    )
-                  else ...[
-                    Text(
-                      (double.tryParse(item.goods.price) ?? 0).formatN,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w500,
-                        color: Color(0xFF64748B),
-                        fontFamily: 'Inter',
-                      ),
-                    ),
-                    if (item.createdAt != null) ...[
-                      const SizedBox(height: 1),
-                      Text(
-                        _fmtHm(item.createdAt!),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w500,
-                          color: Color(0xFF94A3B8),
-                          fontFamily: 'Inter',
-                          fontFeatures: [FontFeature.tabularFigures()],
-                        ),
-                      ),
-                    ],
-                    if (hasComment) ...[
-                      const SizedBox(height: 2),
-                      Row(
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
-                          const Icon(
-                            Icons.chat_bubble_outline_rounded,
-                            size: 11,
-                            color: Color(0xFFFB6633),
-                          ),
-                          const SizedBox(width: 4),
-                          Flexible(
-                            child: Text(
-                              item.comment.trim(),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                fontSize: 10,
-                                fontStyle: FontStyle.italic,
-                                color: Color(0xFFFB6633),
-                                fontFamily: 'Inter',
+                          // Avatar — Qo'shimchalar item bilan bir o'lchamda (36)
+                          Container(
+                            width: 36,
+                            height: 36,
+                            decoration: BoxDecoration(
+                              color: colors.brandSoft,
+                              borderRadius:
+                                  BorderRadius.circular(PosDimensions.radiusSm),
+                            ),
+                            child: Center(
+                              child: Text(
+                                item.goods.name.isNotEmpty
+                                    ? item.goods.name[0].toUpperCase()
+                                    : '?',
+                                style: TextStyle(
+                                  fontSize: PosTypography.bodyMd,
+                                  fontWeight: FontWeight.w700,
+                                  color: isCancelled
+                                      ? colors.textDisabled
+                                      : colors.brand,
+                                  fontFamily: PosTypography.family,
+                                ),
                               ),
                             ),
                           ),
+                          const SizedBox(width: PosDimensions.s + 2),
+                          // Left side: name on top, time below
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  item.goods.name,
+                                  style: TextStyle(
+                                    fontSize: PosTypography.bodyMd,
+                                    fontWeight: FontWeight.w600,
+                                    color: textColor,
+                                    fontFamily: PosTypography.family,
+                                    height: 1.2,
+                                    letterSpacing: -0.1,
+                                    decoration: isCancelled
+                                        ? TextDecoration.lineThrough
+                                        : null,
+                                    decorationColor: colors.textDisabled,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                const SizedBox(height: 2),
+                                if (isCancelled)
+                                  Text(
+                                    S.current.strCancelled,
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      color: colors.error,
+                                      fontFamily: PosTypography.family,
+                                    ),
+                                  )
+                                else if (isOfflinePending)
+                                  Text(
+                                    '⏳ ${S.current.strSavedBadge}…',
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      color: colors.brand,
+                                      fontFamily: PosTypography.family,
+                                    ),
+                                  )
+                                else if (item.createdAt != null)
+                                  Text(
+                                    _fmtHm(item.createdAt!),
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w500,
+                                      color: colors.textTertiary,
+                                      fontFamily: PosTypography.family,
+                                      fontFeatures: const [
+                                        FontFeature.tabularFigures(),
+                                      ],
+                                    ),
+                                  ),
+                                if (hasComment && !isCancelled) ...[
+                                  const SizedBox(height: 2),
+                                  Row(
+                                    children: [
+                                      Icon(
+                                        Icons.chat_bubble_outline_rounded,
+                                        size: 11,
+                                        color: colors.brand,
+                                      ),
+                                      const SizedBox(width: 3),
+                                      Flexible(
+                                        child: Text(
+                                          item.comment.trim(),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: TextStyle(
+                                            fontSize: 11,
+                                            fontStyle: FontStyle.italic,
+                                            color: colors.brand,
+                                            fontFamily: PosTypography.family,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: PosDimensions.s),
+                          // Right side: "perUnit × qty" on top, total below
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                '${perUnit.formatN} × ${item.quantity}',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w500,
+                                  color: isCancelled
+                                      ? colors.textDisabled
+                                      : colors.textSecondary,
+                                  fontFamily: PosTypography.family,
+                                  fontFeatures: PosTypography.tabularFigures,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                total.formatN,
+                                style: TextStyle(
+                                  fontSize: PosTypography.bodyMd,
+                                  fontWeight: FontWeight.w700,
+                                  color: isCancelled
+                                      ? colors.textDisabled
+                                      : colors.brand,
+                                  fontFamily: PosTypography.family,
+                                  letterSpacing: -0.1,
+                                  fontFeatures: PosTypography.tabularFigures,
+                                  decoration: isCancelled
+                                      ? TextDecoration.lineThrough
+                                      : null,
+                                  decorationColor: colors.textDisabled,
+                                ),
+                              ),
+                            ],
+                          ),
                         ],
                       ),
-                    ],
-                  ],
+                    ),
+                  ),
                 ],
               ),
             ),
-            Text(
-              'x${item.quantity}',
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: isCancelled
-                    ? const Color(0xFFCBD5E1)
-                    : const Color(0xFF64748B),
-                fontFamily: 'Inter',
-                decoration: isCancelled ? TextDecoration.lineThrough : null,
-                decorationColor: const Color(0xFFCBD5E1),
-              ),
-            ),
-            Text(
-              ((double.tryParse(item.goods.price) ?? 0) * item.quantity)
-                  .formatN,
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w700,
-                color: textColor,
-                fontFamily: 'Inter',
-                decoration: isCancelled ? TextDecoration.lineThrough : null,
-                decorationColor: const Color(0xFFCBD5E1),
-              ),
-            ),
-            if (tableId != null && !isOfflinePending && !isCancelled)
-              GestureDetector(
-                onTap: () async {
-                  final bloc = context.read<DetailBloc>();
-                  final confirmed = await showDialog<bool>(
-                    context: context,
-                    builder: (_) => AlertDialog(
-                      title: Text(
-                        S.current.strConfirmDelete,
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      content: Text(
-                        S.current.strConfirmDeleteItem(item.goods.name),
-                        style: const TextStyle(fontSize: 14),
-                      ),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(context, false),
-                          child: Text(S.current.strNo),
-                        ),
-                        TextButton(
-                          onPressed: () => Navigator.pop(context, true),
-                          child: Text(
-                            S.current.strYes,
-                            style: const TextStyle(color: Color(0xFFDC2626)),
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                  if (confirmed == true) {
-                    bloc.add(
-                      DetailEvent.cancelOrderItem(
-                        itemId: item.uniqueId,
-                        tableId: tableId!,
-                      ),
-                    );
-                  }
-                },
-                child: Container(
-                  padding: const EdgeInsets.all(6),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFFEE2E2),
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: const Icon(
-                    Icons.close,
-                    size: 14,
-                    color: Color(0xFFDC2626),
-                  ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Edit dialog: tap mavjud item → name, narx, soni, jami, save/cancel ─────
+//
+// Lokal state: dialog ichida +/- bosilganda backendga so'rov ketmaydi —
+// faqat "Saqlash" tugmasi yangi miqdor bilan bloc'ga
+// `setExistingItemQuantity` event yuboradi.
+class _EditExistingOrderItemDialog extends StatefulWidget {
+  final OrderItem item;
+  const _EditExistingOrderItemDialog({required this.item});
+
+  @override
+  State<_EditExistingOrderItemDialog> createState() =>
+      _EditExistingOrderItemDialogState();
+}
+
+class _EditExistingOrderItemDialogState
+    extends State<_EditExistingOrderItemDialog> {
+  late int _qty;
+
+  @override
+  void initState() {
+    super.initState();
+    _qty = widget.item.quantity;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    const colors = PosTheme.colors;
+    final perUnit = double.tryParse(widget.item.goods.price) ?? 0;
+    final total = perUnit * _qty;
+    final dirty = _qty != widget.item.quantity;
+
+    return Dialog(
+      backgroundColor: colors.surface,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 56, vertical: 32),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(PosDimensions.radiusLg),
+      ),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 600),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(
+            PosDimensions.xxl,
+            PosDimensions.xl,
+            PosDimensions.xxl,
+            PosDimensions.xxl,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // ── Header: faqat name (close X kerak emas, "Bekor qilish" bor)
+              Text(
+                widget.item.goods.name,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: PosTypography.headlineLg,
+                  fontWeight: FontWeight.w700,
+                  color: colors.textPrimary,
+                  fontFamily: PosTypography.family,
+                  letterSpacing: -0.3,
+                  height: 1.2,
                 ),
               ),
-          ],
+              const SizedBox(height: PosDimensions.m),
+              Divider(height: 1, thickness: 1, color: colors.border),
+              const SizedBox(height: PosDimensions.xl),
+
+              // ── Price row ───────────────────────────────────────────
+              _RowKV(
+                label: S.current.strPrice,
+                value: perUnit.formatN,
+                valueColor: colors.textPrimary,
+                valueWeight: FontWeight.w600,
+              ),
+              const SizedBox(height: PosDimensions.l),
+
+              // ── Quantity row (label + qty stepper) ──────────────────
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Expanded(
+                    child: Text(
+                      S.current.strQuantity,
+                      style: TextStyle(
+                        fontSize: PosTypography.bodyLg,
+                        fontWeight: FontWeight.w500,
+                        color: colors.textSecondary,
+                        fontFamily: PosTypography.family,
+                      ),
+                    ),
+                  ),
+                  _DialogQtyStepper(
+                    quantity: _qty,
+                    onDecrement: _qty > 0
+                        ? () => setState(() => _qty -= 1)
+                        : null,
+                    onIncrement: () => setState(() => _qty += 1),
+                  ),
+                ],
+              ),
+              const SizedBox(height: PosDimensions.l),
+
+              // ── Total row ───────────────────────────────────────────
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: PosDimensions.l,
+                  vertical: PosDimensions.l,
+                ),
+                decoration: BoxDecoration(
+                  color: colors.surfaceTinted,
+                  borderRadius:
+                      BorderRadius.circular(PosDimensions.radiusMd),
+                  border: Border.all(color: colors.border),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        S.current.strTotal,
+                        style: TextStyle(
+                          fontSize: PosTypography.bodyLg,
+                          fontWeight: FontWeight.w600,
+                          color: colors.textSecondary,
+                          fontFamily: PosTypography.family,
+                        ),
+                      ),
+                    ),
+                    Text(
+                      total.formatN,
+                      style: TextStyle(
+                        fontSize: PosTypography.headlineMd,
+                        fontWeight: FontWeight.w700,
+                        color: colors.brand,
+                        fontFamily: PosTypography.family,
+                        letterSpacing: -0.3,
+                        fontFeatures: PosTypography.tabularFigures,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: PosDimensions.xxl),
+
+              // ── Actions: Cancel + Save ──────────────────────────────
+              Row(
+                children: [
+                  Expanded(
+                    child: SizedBox(
+                      height: PosDimensions.buttonHeightLg,
+                      child: OutlinedButton(
+                        onPressed: () => Navigator.of(context).pop(),
+                        style: OutlinedButton.styleFrom(
+                          side: BorderSide(color: colors.border),
+                          foregroundColor: colors.textPrimary,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(
+                                PosDimensions.radiusMd),
+                          ),
+                        ),
+                        child: Text(
+                          S.current.strCancel,
+                          style: TextStyle(
+                            fontSize: PosTypography.buttonLg,
+                            fontWeight: FontWeight.w600,
+                            color: colors.textPrimary,
+                            fontFamily: PosTypography.family,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: PosDimensions.m),
+                  Expanded(
+                    child: SizedBox(
+                      height: PosDimensions.buttonHeightLg,
+                      child: FilledButton(
+                        onPressed: dirty
+                            ? () => Navigator.of(context).pop(_qty)
+                            : null,
+                        style: FilledButton.styleFrom(
+                          backgroundColor: colors.brand,
+                          disabledBackgroundColor:
+                              colors.brand.withOpacity(0.4),
+                          foregroundColor: colors.textOnBrand,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(
+                                PosDimensions.radiusMd),
+                          ),
+                        ),
+                        child: Text(
+                          S.current.strSave,
+                          style: TextStyle(
+                            fontSize: PosTypography.buttonLg,
+                            fontWeight: FontWeight.w700,
+                            color: colors.textOnBrand,
+                            fontFamily: PosTypography.family,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
+      ),
+    );
+  }
+}
+
+class _RowKV extends StatelessWidget {
+  final String label;
+  final String value;
+  final Color valueColor;
+  final FontWeight valueWeight;
+  const _RowKV({
+    required this.label,
+    required this.value,
+    required this.valueColor,
+    this.valueWeight = FontWeight.w600,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    const colors = PosTheme.colors;
+    return Row(
+      children: [
+        Expanded(
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: PosTypography.bodyLg,
+              fontWeight: FontWeight.w500,
+              color: colors.textSecondary,
+              fontFamily: PosTypography.family,
+            ),
+          ),
+        ),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: PosTypography.bodyLg,
+            fontWeight: valueWeight,
+            color: valueColor,
+            fontFamily: PosTypography.family,
+            fontFeatures: PosTypography.tabularFigures,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _DialogQtyStepper extends StatelessWidget {
+  final int quantity;
+  final VoidCallback? onIncrement;
+  final VoidCallback? onDecrement;
+
+  const _DialogQtyStepper({
+    required this.quantity,
+    required this.onIncrement,
+    required this.onDecrement,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    const colors = PosTheme.colors;
+    return Container(
+      decoration: BoxDecoration(
+        color: colors.surfaceTinted,
+        borderRadius: BorderRadius.circular(PosDimensions.radiusMd),
+        border: Border.all(color: colors.border),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _DialogStepperBtn(icon: Icons.remove, onTap: onDecrement),
+          Container(
+            width: 72,
+            height: 64,
+            alignment: Alignment.center,
+            child: Text(
+              '$quantity',
+              style: TextStyle(
+                fontSize: PosTypography.headlineMd,
+                fontWeight: FontWeight.w700,
+                color: colors.textPrimary,
+                fontFamily: PosTypography.family,
+                fontFeatures: PosTypography.tabularFigures,
+              ),
+            ),
+          ),
+          _DialogStepperBtn(icon: Icons.add, onTap: onIncrement),
+        ],
+      ),
+    );
+  }
+}
+
+class _DialogStepperBtn extends StatefulWidget {
+  final IconData icon;
+  final VoidCallback? onTap;
+  const _DialogStepperBtn({required this.icon, required this.onTap});
+
+  @override
+  State<_DialogStepperBtn> createState() => _DialogStepperBtnState();
+}
+
+class _DialogStepperBtnState extends State<_DialogStepperBtn> {
+  bool _pressed = false;
+
+  @override
+  Widget build(BuildContext context) {
+    const colors = PosTheme.colors;
+    final disabled = widget.onTap == null;
+    return GestureDetector(
+      onTap: widget.onTap,
+      onTapDown: disabled ? null : (_) => setState(() => _pressed = true),
+      onTapUp: disabled ? null : (_) => setState(() => _pressed = false),
+      onTapCancel: disabled ? null : () => setState(() => _pressed = false),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 100),
+        width: 64,
+        height: 64,
+        decoration: BoxDecoration(
+          color: _pressed ? colors.brand : Colors.transparent,
+          borderRadius: BorderRadius.circular(PosDimensions.radiusSm),
+        ),
+        child: Icon(
+          widget.icon,
+          size: 26,
+          color: disabled
+              ? colors.textDisabled
+              : _pressed
+                  ? colors.textOnBrand
+                  : colors.textPrimary,
         ),
       ),
     );

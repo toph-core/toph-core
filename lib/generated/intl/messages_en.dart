@@ -424,6 +424,7 @@ class MessageLookup extends MessageLookupByLibrary {
         "strPositionY": MessageLookupByLibrary.simpleMessage("Position Y (m)"),
         "strPositionsSaved":
             MessageLookupByLibrary.simpleMessage("Positions saved"),
+        "strPrice": MessageLookupByLibrary.simpleMessage("Price"),
         "strPrint": MessageLookupByLibrary.simpleMessage("Print"),
         "strPrinterSettings":
             MessageLookupByLibrary.simpleMessage("Printer settings"),
@@ -541,6 +542,7 @@ class MessageLookup extends MessageLookupByLibrary {
         "strTimeColumnHeader": MessageLookupByLibrary.simpleMessage("Time"),
         "strTodayRevenue":
             MessageLookupByLibrary.simpleMessage("Today\'s revenue"),
+        "strTotal": MessageLookupByLibrary.simpleMessage("Total"),
         "strTotalCapacity":
             MessageLookupByLibrary.simpleMessage("Total capacity"),
         "strTotalColon": MessageLookupByLibrary.simpleMessage("Total:"),

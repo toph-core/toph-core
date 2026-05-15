@@ -30,5 +30,10 @@ class DetailState with _$DetailState {
     @Default([]) List<OrderItem> selectedGoods,
     @Default([]) List<OrderItem> existingGoods,
     String? activeOrderId,
+    // Hozir backend bilan sinxron qilinayotgan mavjud itemlarning nomlari.
+    // `goods.name` bo'yicha kalitlangan (refetch dan keyin uniqueId o'zgaradi,
+    // lekin name saqlanadi). UI shu set ichidagi itemlarda +/-/X ni disable
+    // qiladi.
+    @Default(<String>{}) Set<String> existingSyncingNames,
   }) = _DetailState;
 }

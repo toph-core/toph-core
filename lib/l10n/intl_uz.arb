@@ -422,5 +422,7 @@
   "strService": "Xizmat",
   "strSpecialNote": "Maxsus izoh",
   "strClose": "Yopish",
-  "strSidebarEmptyTitle": "Buyurtmangiz bo'sh"
+  "strSidebarEmptyTitle": "Buyurtmangiz bo'sh",
+  "strPrice": "Narxi",
+  "strTotal": "Jami"
 }

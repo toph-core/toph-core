@@ -12,7 +12,8 @@ part of 'brand_id_token_pair.dart';
 T _$identity<T>(T value) => value;
 
 final _privateConstructorUsedError = UnsupportedError(
-    'It seems like you constructed your class using `MyClass._()`. This constructor is only meant to be used by freezed and you are not supposed to need it nor use it.\nPlease check the documentation here for more information: https://github.com/rrousselGit/freezed#adding-getters-and-methods-to-our-models');
+  'It seems like you constructed your class using `MyClass._()`. This constructor is only meant to be used by freezed and you are not supposed to need it nor use it.\nPlease check the documentation here for more information: https://github.com/rrousselGit/freezed#adding-getters-and-methods-to-our-models',
+);
 
 BrandIdTokenPair _$BrandIdTokenPairFromJson(Map<String, dynamic> json) {
   return _BrandIdTokenPair.fromJson(json);
@@ -21,9 +22,11 @@ BrandIdTokenPair _$BrandIdTokenPairFromJson(Map<String, dynamic> json) {
 /// @nodoc
 mixin _$BrandIdTokenPair {
   String get brandId => throw _privateConstructorUsedError;
+
   String get password => throw _privateConstructorUsedError;
 
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
+
   @JsonKey(ignore: true)
   $BrandIdTokenPairCopyWith<BrandIdTokenPair> get copyWith =>
       throw _privateConstructorUsedError;
@@ -32,8 +35,10 @@ mixin _$BrandIdTokenPair {
 /// @nodoc
 abstract class $BrandIdTokenPairCopyWith<$Res> {
   factory $BrandIdTokenPairCopyWith(
-          BrandIdTokenPair value, $Res Function(BrandIdTokenPair) then) =
-      _$BrandIdTokenPairCopyWithImpl<$Res, BrandIdTokenPair>;
+    BrandIdTokenPair value,
+    $Res Function(BrandIdTokenPair) then,
+  ) = _$BrandIdTokenPairCopyWithImpl<$Res, BrandIdTokenPair>;
+
   @useResult
   $Res call({String brandId, String password});
 }
@@ -45,34 +50,37 @@ class _$BrandIdTokenPairCopyWithImpl<$Res, $Val extends BrandIdTokenPair>
 
   // ignore: unused_field
   final $Val _value;
+
   // ignore: unused_field
   final $Res Function($Val) _then;
 
   @pragma('vm:prefer-inline')
   @override
-  $Res call({
-    Object? brandId = null,
-    Object? password = null,
-  }) {
-    return _then(_value.copyWith(
-      brandId: null == brandId
-          ? _value.brandId
-          : brandId // ignore: cast_nullable_to_non_nullable
-              as String,
-      password: null == password
-          ? _value.password
-          : password // ignore: cast_nullable_to_non_nullable
-              as String,
-    ) as $Val);
+  $Res call({Object? brandId = null, Object? password = null}) {
+    return _then(
+      _value.copyWith(
+            brandId: null == brandId
+                ? _value.brandId
+                : brandId // ignore: cast_nullable_to_non_nullable
+                      as String,
+            password: null == password
+                ? _value.password
+                : password // ignore: cast_nullable_to_non_nullable
+                      as String,
+          )
+          as $Val,
+    );
   }
 }
 
 /// @nodoc
 abstract class _$$BrandIdTokenPairImplCopyWith<$Res>
     implements $BrandIdTokenPairCopyWith<$Res> {
-  factory _$$BrandIdTokenPairImplCopyWith(_$BrandIdTokenPairImpl value,
-          $Res Function(_$BrandIdTokenPairImpl) then) =
-      __$$BrandIdTokenPairImplCopyWithImpl<$Res>;
+  factory _$$BrandIdTokenPairImplCopyWith(
+    _$BrandIdTokenPairImpl value,
+    $Res Function(_$BrandIdTokenPairImpl) then,
+  ) = __$$BrandIdTokenPairImplCopyWithImpl<$Res>;
+
   @override
   @useResult
   $Res call({String brandId, String password});
@@ -82,26 +90,26 @@ abstract class _$$BrandIdTokenPairImplCopyWith<$Res>
 class __$$BrandIdTokenPairImplCopyWithImpl<$Res>
     extends _$BrandIdTokenPairCopyWithImpl<$Res, _$BrandIdTokenPairImpl>
     implements _$$BrandIdTokenPairImplCopyWith<$Res> {
-  __$$BrandIdTokenPairImplCopyWithImpl(_$BrandIdTokenPairImpl _value,
-      $Res Function(_$BrandIdTokenPairImpl) _then)
-      : super(_value, _then);
+  __$$BrandIdTokenPairImplCopyWithImpl(
+    _$BrandIdTokenPairImpl _value,
+    $Res Function(_$BrandIdTokenPairImpl) _then,
+  ) : super(_value, _then);
 
   @pragma('vm:prefer-inline')
   @override
-  $Res call({
-    Object? brandId = null,
-    Object? password = null,
-  }) {
-    return _then(_$BrandIdTokenPairImpl(
-      brandId: null == brandId
-          ? _value.brandId
-          : brandId // ignore: cast_nullable_to_non_nullable
-              as String,
-      password: null == password
-          ? _value.password
-          : password // ignore: cast_nullable_to_non_nullable
-              as String,
-    ));
+  $Res call({Object? brandId = null, Object? password = null}) {
+    return _then(
+      _$BrandIdTokenPairImpl(
+        brandId: null == brandId
+            ? _value.brandId
+            : brandId // ignore: cast_nullable_to_non_nullable
+                  as String,
+        password: null == password
+            ? _value.password
+            : password // ignore: cast_nullable_to_non_nullable
+                  as String,
+      ),
+    );
   }
 }
 
@@ -142,28 +150,31 @@ class _$BrandIdTokenPairImpl implements _BrandIdTokenPair {
   @pragma('vm:prefer-inline')
   _$$BrandIdTokenPairImplCopyWith<_$BrandIdTokenPairImpl> get copyWith =>
       __$$BrandIdTokenPairImplCopyWithImpl<_$BrandIdTokenPairImpl>(
-          this, _$identity);
+        this,
+        _$identity,
+      );
 
   @override
   Map<String, dynamic> toJson() {
-    return _$$BrandIdTokenPairImplToJson(
-      this,
-    );
+    return _$$BrandIdTokenPairImplToJson(this);
   }
 }
 
 abstract class _BrandIdTokenPair implements BrandIdTokenPair {
-  const factory _BrandIdTokenPair(
-      {required final String brandId,
-      required final String password}) = _$BrandIdTokenPairImpl;
+  const factory _BrandIdTokenPair({
+    required final String brandId,
+    required final String password,
+  }) = _$BrandIdTokenPairImpl;
 
   factory _BrandIdTokenPair.fromJson(Map<String, dynamic> json) =
       _$BrandIdTokenPairImpl.fromJson;
 
   @override
   String get brandId;
+
   @override
   String get password;
+
   @override
   @JsonKey(ignore: true)
   _$$BrandIdTokenPairImplCopyWith<_$BrandIdTokenPairImpl> get copyWith =>

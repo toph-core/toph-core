@@ -3999,6 +3999,26 @@ class S {
       args: [],
     );
   }
+
+  /// `Price`
+  String get strPrice {
+    return Intl.message(
+      'Price',
+      name: 'strPrice',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Total`
+  String get strTotal {
+    return Intl.message(
+      'Total',
+      name: 'strTotal',
+      desc: '',
+      args: [],
+    );
+  }
 }
 
 class AppLocalizationDelegate extends LocalizationsDelegate<S> {
