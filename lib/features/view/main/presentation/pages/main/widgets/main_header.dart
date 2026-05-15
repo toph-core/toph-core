@@ -48,14 +48,18 @@ class MainHeader extends StatelessWidget {
       child: Row(
         children: [
           // Left: leading + title
-          if (leading != null) ...[leading!, const SizedBox(width: PosDimensions.s)],
+          if (leading != null) ...[
+            leading!,
+            const SizedBox(width: PosDimensions.s),
+          ],
           titleWidget ??
               (title.isNotEmpty
                   ? Flexible(
                       child: Text(
                         title,
                         style: const TextStyle(
-                          fontSize: PosTypography.headlineSm, // 20
+                          fontSize: PosTypography.headlineSm,
+                          // 20
                           fontWeight: FontWeight.w700,
                           color: _kSlate900,
                           fontFamily: PosTypography.family,
@@ -68,7 +72,10 @@ class MainHeader extends StatelessWidget {
                   : const SizedBox.shrink()),
           const Spacer(),
           // Right: optional extra trailing
-          if (trailing != null) ...[trailing!, const SizedBox(width: PosDimensions.s)],
+          if (trailing != null) ...[
+            trailing!,
+            const SizedBox(width: PosDimensions.s),
+          ],
           // Shift chip
           const _ShiftChip(),
           const SizedBox(width: 6),
@@ -93,8 +100,7 @@ class _ShiftChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final shift =
-        context.select((ShiftBloc b) => b.state.shift);
+    final shift = context.select((ShiftBloc b) => b.state.shift);
     final openedAt = shift?.openedAt;
     final timeStr = openedAt != null
         ? '${openedAt.hour.toString().padLeft(2, '0')}:${openedAt.minute.toString().padLeft(2, '0')}'
@@ -157,8 +163,7 @@ class _CashierChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final user =
-        context.select((UserBloc b) => b.state.userMOdel);
+    final user = context.select((UserBloc b) => b.state.userMOdel);
     if (user == null) return const SizedBox.shrink();
 
     final name = user.fullName;
@@ -166,8 +171,8 @@ class _CashierChip extends StatelessWidget {
     final initials = parts.length >= 2
         ? '${parts[0][0]}${parts[1][0]}'.toUpperCase()
         : name.isNotEmpty
-            ? name.substring(0, name.length.clamp(0, 2)).toUpperCase()
-            : '?';
+        ? name.substring(0, name.length.clamp(0, 2)).toUpperCase()
+        : '?';
     final shortName = parts.isNotEmpty
         ? '${parts[0]}${parts.length > 1 ? ' ${parts[1][0]}.' : ''}'
         : name;
@@ -312,8 +317,18 @@ class _ClockChipState extends State<_ClockChip> {
 
   String _monthShort(int m) {
     const months = [
-      'yan', 'fev', 'mar', 'apr', 'may', 'iyn',
-      'iyl', 'avg', 'sen', 'okt', 'noy', 'dek',
+      'yan',
+      'fev',
+      'mar',
+      'apr',
+      'may',
+      'iyn',
+      'iyl',
+      'avg',
+      'sen',
+      'okt',
+      'noy',
+      'dek',
     ];
     return months[m - 1];
   }
@@ -341,9 +356,10 @@ class _LangToggle extends StatelessWidget {
           final selected = lang == code;
           return GestureDetector(
             behavior: HitTestBehavior.opaque,
-            onTap: () => context
-                .read<SettingsCubit>()
-                .saveAppLang(context, languageCode: code),
+            onTap: () => context.read<SettingsCubit>().saveAppLang(
+              context,
+              languageCode: code,
+            ),
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 150),
               constraints: const BoxConstraints(minWidth: 40),
@@ -368,7 +384,8 @@ class _LangToggle extends StatelessWidget {
                 code.toUpperCase(),
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  fontSize: PosTypography.bodySm, // 13
+                  fontSize: PosTypography.bodySm,
+                  // 13
                   fontWeight: FontWeight.w600,
                   color: selected ? _kSlate900 : _kSlate500,
                   fontFamily: PosTypography.family,
@@ -395,8 +412,8 @@ class _Chip extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       height: 48,
-      padding: padding ??
-          const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      padding:
+          padding ?? const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
       decoration: BoxDecoration(
         color: const Color(0xFFF8FAFC),
         borderRadius: BorderRadius.circular(10),

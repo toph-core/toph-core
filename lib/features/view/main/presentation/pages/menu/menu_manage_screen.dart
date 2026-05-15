@@ -76,7 +76,9 @@ class _MenuManageScreenState extends State<MenuManageScreen> {
   }
 
   double? _parsePriceField() {
-    final raw = _priceCtrl.text.replaceAll(RegExp(r'\s'), '').replaceAll(',', '.');
+    final raw = _priceCtrl.text
+        .replaceAll(RegExp(r'\s'), '')
+        .replaceAll(',', '.');
     return double.tryParse(raw);
   }
 
@@ -137,7 +139,10 @@ class _MenuManageScreenState extends State<MenuManageScreen> {
     setState(() => _uploadingImage = true);
     try {
       final name = picked.name.isNotEmpty ? picked.name : 'image.jpg';
-      final url = await MinioService.instance.postImageBytes(bytes, filename: name);
+      final url = await MinioService.instance.postImageBytes(
+        bytes,
+        filename: name,
+      );
       if (!mounted) return;
       if (url != null && url.isNotEmpty) {
         _pictureUrlCtrl.text = url;
@@ -374,7 +379,8 @@ class _MenuManageScreenState extends State<MenuManageScreen> {
     }
     // Web `enrichMeal`: `include=translations` bo‘lmasa `name_translation` kelmaydi —
     // shunda ham `name_i18n` + translations list yoki kamida `name` bilan to‘ldiramiz.
-    final needEnRuFallback = tName is! Map<String, dynamic> ||
+    final needEnRuFallback =
+        tName is! Map<String, dynamic> ||
         (_nameEnCtrl.text.trim().isEmpty && _nameRuCtrl.text.trim().isEmpty);
     if (needEnRuFallback) {
       _applyNameEnRuFromTranslationCache(good);
@@ -553,6 +559,39 @@ class _MenuManageScreenState extends State<MenuManageScreen> {
           ? (e.response!.data['message']?.toString() ?? 'Ошибка сохранения')
           : 'Ошибка сохранения';
       showErrorMessage(context, message);
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
+    }
+  }
+
+  Future<void> _confirmDelete() async {
+    final id = _editMealId;
+    if (id == null || id.isEmpty) return;
+    final ok = await showDialog<bool>(
+      context: context,
+      barrierColor: Colors.black.withOpacity(0.55),
+      builder: (_) => _DeleteMealDialog(mealName: _nameCtrl.text.trim()),
+    );
+    if (ok != true) return;
+    if (!mounted) return;
+    setState(() => _isSubmitting = true);
+    try {
+      await _client.delete(ListAPI.goodById(id));
+      if (!mounted) return;
+      showSuccessMessage(context, "O'chirildi");
+      await Future<void>.delayed(const Duration(milliseconds: 350));
+      if (!mounted) return;
+      if (Navigator.canPop(context)) {
+        Navigator.of(context).pop(true);
+      } else {
+        navigatorKey.currentState?.pop(true);
+      }
+    } on DioException catch (e) {
+      if (!mounted) return;
+      final msg = e.response?.data is Map
+          ? (e.response!.data['message']?.toString() ?? "O'chirilmadi")
+          : "O'chirilmadi";
+      showErrorMessage(context, msg);
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
     }
@@ -893,7 +932,9 @@ class _MenuManageScreenState extends State<MenuManageScreen> {
                 ? const Center(child: CircularProgressIndicator.adaptive())
                 : Padding(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 12, vertical: 8),
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       mainAxisSize: MainAxisSize.min,
@@ -903,8 +944,9 @@ class _MenuManageScreenState extends State<MenuManageScreen> {
                           height: compact ? 40 : 56,
                           decoration: BoxDecoration(
                             color: Colors.white,
-                            borderRadius:
-                                BorderRadius.circular(compact ? 12 : 16),
+                            borderRadius: BorderRadius.circular(
+                              compact ? 12 : 16,
+                            ),
                             boxShadow: [
                               BoxShadow(
                                 color: colors.textBrand.withOpacity(0.12),
@@ -954,12 +996,22 @@ class _MenuManageScreenState extends State<MenuManageScreen> {
   Widget _formBody() {
     final colors = context.colors;
     final totalPreview = _parsePriceField() ?? 0;
-    final totalFormatted =
-        AppFormatter.formatAmountWithSpaces(totalPreview.toString());
+    final totalFormatted = AppFormatter.formatAmountWithSpaces(
+      totalPreview.toString(),
+    );
     return SingleChildScrollView(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          if (_isEditMode) ...[
+            Align(
+              alignment: Alignment.centerRight,
+              child: _HeaderDeleteButton(
+                onTap: _isSubmitting ? null : _confirmDelete,
+              ),
+            ),
+            const SizedBox(height: 14),
+          ],
           // ── Basic info card ──
           Container(
             width: double.infinity,
@@ -1018,10 +1070,7 @@ class _MenuManageScreenState extends State<MenuManageScreen> {
                       ),
                     ),
                     const SizedBox(width: 20),
-                    SizedBox(
-                      width: 240,
-                      child: _mealImagePanel(colors),
-                    ),
+                    SizedBox(width: 240, child: _mealImagePanel(colors)),
                   ],
                 ),
               ],
@@ -1077,9 +1126,17 @@ class _MenuManageScreenState extends State<MenuManageScreen> {
           // ── Footer action bar ──
           Row(
             children: [
-              _Tag(label: S.current.strIngredientsCount(_ingredientCalculations.length)),
+              _Tag(
+                label: S.current.strIngredientsCount(
+                  _ingredientCalculations.length,
+                ),
+              ),
               const SizedBox(width: 10),
-              _Tag(label: S.current.strCompoundsCount(_compoundCalculations.length)),
+              _Tag(
+                label: S.current.strCompoundsCount(
+                  _compoundCalculations.length,
+                ),
+              ),
               const SizedBox(width: 10),
               _Tag(label: 'Total: $totalFormatted'),
               const Spacer(),
@@ -1102,9 +1159,7 @@ class _MenuManageScreenState extends State<MenuManageScreen> {
                 label: _isSubmitting
                     ? 'Saving...'
                     : (_isEditMode ? 'Update' : 'Save'),
-                bg: _isSubmitting
-                    ? colors.buttonDisabledBg
-                    : colors.textBrand,
+                bg: _isSubmitting ? colors.buttonDisabledBg : colors.textBrand,
                 fg: Colors.white,
                 onTap: _isSubmitting
                     ? null
@@ -1519,11 +1574,17 @@ class _MenuManageScreenState extends State<MenuManageScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx, false),
-              child: Text(S.current.strCancel, style: TextStyle(color: c.textSecondary)),
+              child: Text(
+                S.current.strCancel,
+                style: TextStyle(color: c.textSecondary),
+              ),
             ),
             TextButton(
               onPressed: () => Navigator.pop(ctx, true),
-              child: Text(S.current.strOK, style: TextStyle(color: c.textBrand)),
+              child: Text(
+                S.current.strOK,
+                style: TextStyle(color: c.textBrand),
+              ),
             ),
           ],
         );
@@ -1687,12 +1748,14 @@ class _MenuManageScreenState extends State<MenuManageScreen> {
 
 class _FetchAttempt {
   final String path;
+
   const _FetchAttempt({required this.path});
 }
 
 class _CalculationBuckets {
   final List<Map<String, dynamic>> ingredients;
   final List<Map<String, dynamic>> compounds;
+
   const _CalculationBuckets({
     required this.ingredients,
     required this.compounds,
@@ -1701,6 +1764,7 @@ class _CalculationBuckets {
 
 class _SectionTitle extends StatelessWidget {
   final String text;
+
   const _SectionTitle(this.text);
 
   @override
@@ -1720,6 +1784,7 @@ class _SectionTitle extends StatelessWidget {
 
 class _FieldLabel extends StatelessWidget {
   final String text;
+
   const _FieldLabel(this.text);
 
   @override
@@ -1739,6 +1804,7 @@ class _FieldLabel extends StatelessWidget {
 
 class _Tag extends StatelessWidget {
   final String label;
+
   const _Tag({required this.label});
 
   @override
@@ -1772,6 +1838,7 @@ class _ActionBtn extends StatefulWidget {
   final Color bg;
   final Color fg;
   final VoidCallback? onTap;
+
   const _ActionBtn({
     required this.label,
     required this.bg,
@@ -1830,6 +1897,7 @@ class _ActionBtnState extends State<_ActionBtn> {
 
 class _MealImagePreview extends StatelessWidget {
   final String pictureRef;
+
   const _MealImagePreview({required this.pictureRef});
 
   @override
@@ -1887,10 +1955,7 @@ class _MealImagePreview extends StatelessWidget {
             border: Border.all(color: colors.border),
           ),
           clipBehavior: Clip.antiAlias,
-          child: Image.memory(
-            bytes,
-            fit: BoxFit.contain,
-          ),
+          child: Image.memory(bytes, fit: BoxFit.contain),
         );
       },
     );
@@ -1919,6 +1984,7 @@ class _StyledInput extends StatelessWidget {
   final int maxLines;
   final TextInputType? keyboardType;
   final List<TextInputFormatter>? inputFormatters;
+
   const _StyledInput({
     required this.controller,
     required this.hint,
@@ -1966,6 +2032,380 @@ class _StyledInput extends StatelessWidget {
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide(color: colors.borderBrand, width: 1.5),
+        ),
+      ),
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// Header delete button (top-right, destructive)
+// ═══════════════════════════════════════════════════════
+
+const Color _kDangerRed = Color(0xFFDC2626);
+const Color _kDangerRedDark = Color(0xFFB91C1C);
+const Color _kDangerRedSoft = Color(0xFFFEE2E2);
+
+class _HeaderDeleteButton extends StatefulWidget {
+  final VoidCallback? onTap;
+
+  const _HeaderDeleteButton({required this.onTap});
+
+  @override
+  State<_HeaderDeleteButton> createState() => _HeaderDeleteButtonState();
+}
+
+class _HeaderDeleteButtonState extends State<_HeaderDeleteButton> {
+  bool _hovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final disabled = widget.onTap == null;
+    final fg = disabled ? _kDangerRed.withOpacity(0.5) : _kDangerRed;
+    return MouseRegion(
+      cursor: disabled ? SystemMouseCursors.basic : SystemMouseCursors.click,
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: widget.onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 140),
+          curve: Curves.easeOut,
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+          decoration: BoxDecoration(
+            color: _hovered && !disabled
+                ? _kDangerRedSoft
+                : _kDangerRedSoft.withOpacity(0.55),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+              color: disabled
+                  ? _kDangerRed.withOpacity(0.35)
+                  : _kDangerRed.withOpacity(_hovered ? 0.85 : 0.6),
+              width: 1.2,
+            ),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.delete_outline_rounded,
+                color: fg,
+                size: 18,
+              ),
+              const SizedBox(width: 6),
+              Text(
+                S.current.strDelete,
+                style: TextStyle(
+                  color: fg,
+                  fontFamily: 'Inter',
+                  fontWeight: FontWeight.w600,
+                  fontSize: 13.5,
+                  letterSpacing: -0.1,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// Pretty delete-confirmation modal
+// ═══════════════════════════════════════════════════════
+
+class _DeleteMealDialog extends StatefulWidget {
+  final String mealName;
+
+  const _DeleteMealDialog({required this.mealName});
+
+  @override
+  State<_DeleteMealDialog> createState() => _DeleteMealDialogState();
+}
+
+class _DeleteMealDialogState extends State<_DeleteMealDialog> {
+  bool _hoverCancel = false;
+  bool _hoverConfirm = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    final displayName = widget.mealName.isEmpty
+        ? S.current.strDeleteMeal
+        : widget.mealName;
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 520),
+        child: Container(
+          decoration: BoxDecoration(
+            color: colors.bgDefault,
+            borderRadius: BorderRadius.circular(24),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.25),
+                blurRadius: 40,
+                offset: const Offset(0, 16),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // ── Hero banner ──
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.fromLTRB(28, 28, 28, 24),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      _kDangerRedSoft,
+                      _kDangerRedSoft.withOpacity(0.55),
+                    ],
+                  ),
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(24),
+                  ),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      width: 56,
+                      height: 56,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: _kDangerRed.withOpacity(0.18),
+                            blurRadius: 12,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: const Icon(
+                        Icons.delete_outline_rounded,
+                        color: _kDangerRed,
+                        size: 30,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            S.current.strDeleteMeal,
+                            style: const TextStyle(
+                              fontSize: 19,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xFF0F172A),
+                              fontFamily: 'Inter',
+                              letterSpacing: -0.3,
+                              height: 1.2,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            "Bu amalni qaytarib bo'lmaydi.",
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: colors.textSecondary,
+                              fontFamily: 'Inter',
+                              height: 1.3,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              // ── Body ──
+              Padding(
+                padding: const EdgeInsets.fromLTRB(28, 22, 28, 8),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    RichText(
+                      text: TextSpan(
+                        style: TextStyle(
+                          fontSize: 14.5,
+                          color: colors.textDefault,
+                          fontFamily: 'Inter',
+                          height: 1.45,
+                        ),
+                        children: [
+                          const TextSpan(
+                            text:
+                                'Quyidagi taomni butunlay o\'chirmoqchimisiz: ',
+                          ),
+                          TextSpan(
+                            text: '"$displayName"',
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w700,
+                              color: _kDangerRed,
+                            ),
+                          ),
+                          const TextSpan(text: '?'),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: _kDangerRedSoft.withOpacity(0.45),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: _kDangerRed.withOpacity(0.18),
+                        ),
+                      ),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Icon(
+                            Icons.info_outline_rounded,
+                            color: _kDangerRed,
+                            size: 18,
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              "Taomning barcha ingredientlari va sozlamalari ham o'chiriladi.",
+                              style: TextStyle(
+                                fontSize: 12.5,
+                                color: colors.textDefault,
+                                fontFamily: 'Inter',
+                                height: 1.35,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              // ── Actions ──
+              Padding(
+                padding: const EdgeInsets.fromLTRB(28, 18, 28, 24),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: _DialogActionBtn(
+                        label: S.current.strCancel,
+                        onTap: () => Navigator.pop(context, false),
+                        bg: colors.bgSecondary,
+                        fg: colors.textDefault,
+                        borderColor: colors.border,
+                        hovered: _hoverCancel,
+                        onHover: (v) => setState(() => _hoverCancel = v),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      flex: 2,
+                      child: _DialogActionBtn(
+                        label: S.current.strDelete,
+                        icon: Icons.delete_outline_rounded,
+                        onTap: () => Navigator.pop(context, true),
+                        bg: _hoverConfirm ? _kDangerRedDark : _kDangerRed,
+                        fg: Colors.white,
+                        hovered: _hoverConfirm,
+                        onHover: (v) => setState(() => _hoverConfirm = v),
+                        elevated: true,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _DialogActionBtn extends StatelessWidget {
+  final String label;
+  final IconData? icon;
+  final VoidCallback onTap;
+  final Color bg;
+  final Color fg;
+  final Color? borderColor;
+  final bool hovered;
+  final ValueChanged<bool> onHover;
+  final bool elevated;
+
+  const _DialogActionBtn({
+    required this.label,
+    required this.onTap,
+    required this.bg,
+    required this.fg,
+    required this.hovered,
+    required this.onHover,
+    this.icon,
+    this.borderColor,
+    this.elevated = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      onEnter: (_) => onHover(true),
+      onExit: (_) => onHover(false),
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 140),
+          height: 48,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: bg,
+            borderRadius: BorderRadius.circular(12),
+            border: borderColor != null
+                ? Border.all(color: borderColor!)
+                : null,
+            boxShadow: elevated
+                ? [
+                    BoxShadow(
+                      color: _kDangerRed.withOpacity(hovered ? 0.35 : 0.22),
+                      blurRadius: hovered ? 16 : 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ]
+                : null,
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              if (icon != null) ...[
+                Icon(icon, color: fg, size: 18),
+                const SizedBox(width: 8),
+              ],
+              Text(
+                label,
+                style: TextStyle(
+                  color: fg,
+                  fontFamily: 'Inter',
+                  fontWeight: FontWeight.w600,
+                  fontSize: 14,
+                  letterSpacing: -0.1,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

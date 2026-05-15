@@ -34,6 +34,7 @@ class _MenuMealsListScreenState extends State<MenuMealsListScreen> {
       NumberPaginatorController();
   final TextEditingController _searchCtrl = TextEditingController();
   final TextEditingController _catSearchCtrl = TextEditingController();
+
   // null = klaviatura yashirin. Non-null = qaysi controller'ga yozish kerakligi.
   final ValueNotifier<TextEditingController?> _kbTarget = ValueNotifier(null);
 
@@ -118,10 +119,12 @@ class _MenuMealsListScreenState extends State<MenuMealsListScreen> {
             await _createCategory(name);
           } catch (e) {
             if (!mounted) return;
-            _showSnack(e is DioException
-                ? (e.response?.data['message']?.toString() ??
-                    "Kategoriya qo'shilmadi")
-                : "Kategoriya qo'shilmadi");
+            _showSnack(
+              e is DioException
+                  ? (e.response?.data['message']?.toString() ??
+                        "Kategoriya qo'shilmadi")
+                  : "Kategoriya qo'shilmadi",
+            );
           }
         },
       ),
@@ -182,31 +185,6 @@ class _MenuMealsListScreenState extends State<MenuMealsListScreen> {
     await _loadGoods(page: _page);
   }
 
-  Future<void> _confirmDeleteGood(GoodsModel g) async {
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (_) => _ConfirmDialog(
-        title: S.current.strDeleteMeal,
-        body: '"${g.name}" taomini o\'chirasizmi?',
-        confirmLabel: S.current.strDelete,
-        confirmColor: const Color(0xFFEF4444),
-        onConfirm: null,
-      ),
-    );
-    if (ok != true) return;
-    try {
-      await _client.delete(ListAPI.goodById(g.id));
-      if (!mounted) return;
-      _showSnack("O'chirildi", success: true);
-      await _loadGoods(page: _page);
-    } on DioException catch (e) {
-      if (!mounted) return;
-      _showSnack(e.response?.data is Map
-          ? (e.response!.data['message']?.toString() ?? "O'chirilmadi")
-          : "O'chirilmadi");
-    }
-  }
-
   void _showSnack(String msg, {bool success = false}) {
     if (success) {
       showSuccessMessage(context, msg);
@@ -218,10 +196,12 @@ class _MenuMealsListScreenState extends State<MenuMealsListScreen> {
   List<GoodsModel> _extractGoodsList(dynamic raw) {
     dynamic source = raw;
     if (source is Map<String, dynamic>) {
-      source = source['data'] ?? source['items'] ?? source['results'] ?? const [];
+      source =
+          source['data'] ?? source['items'] ?? source['results'] ?? const [];
     }
     if (source is Map<String, dynamic>) {
-      source = source['items'] ?? source['results'] ?? source['data'] ?? const [];
+      source =
+          source['items'] ?? source['results'] ?? source['data'] ?? const [];
     }
     if (source is! List) return const [];
     return source
@@ -265,8 +245,7 @@ class _MenuMealsListScreenState extends State<MenuMealsListScreen> {
                 MainHeader(title: S.current.strMenu),
                 Expanded(
                   child: BlocBuilder<UserBloc, UserState>(
-                    buildWhen: (p, c) =>
-                        p.userMOdel?.role != c.userMOdel?.role,
+                    buildWhen: (p, c) => p.userMOdel?.role != c.userMOdel?.role,
                     builder: (context, userState) {
                       final allowed =
                           userState.userMOdel?.role.canManageMenu ?? false;
@@ -333,7 +312,6 @@ class _MenuMealsListScreenState extends State<MenuMealsListScreen> {
                                 _loadGoods(page: 1);
                               },
                               onEdit: (g) => _openManage(mealId: g.id),
-                              onDelete: _confirmDeleteGood,
                               onNew: () => _openManage(),
                               onRetry: () => _loadGoods(page: _page),
                             ),
@@ -415,9 +393,11 @@ class _CategoriesPanelState extends State<_CategoriesPanel> {
     final filtered = _catSearch.isEmpty
         ? widget.categories
         : widget.categories
-            .where((cat) =>
-                cat.name.toLowerCase().contains(_catSearch.toLowerCase()))
-            .toList();
+              .where(
+                (cat) =>
+                    cat.name.toLowerCase().contains(_catSearch.toLowerCase()),
+              )
+              .toList();
 
     return Container(
       color: c.bgDefault,
@@ -471,29 +451,29 @@ class _CategoriesPanelState extends State<_CategoriesPanel> {
             child: widget.loading
                 ? const Center(child: CircularProgressIndicator.adaptive())
                 : filtered.isEmpty
-                    ? Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Text(
-                          'Kategoriya topilmadi',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: c.textSecondary,
-                            fontFamily: 'Inter',
-                          ),
-                        ),
-                      )
-                    : ListView.builder(
-                        padding: const EdgeInsets.symmetric(vertical: 4),
-                        itemCount: filtered.length,
-                        itemBuilder: (_, i) {
-                          final cat = filtered[i];
-                          return _CatItemWithActions(
-                            cat: cat,
-                            selected: widget.selectedId == cat.id,
-                            onTap: () => widget.onSelect(cat.id),
-                          );
-                        },
+                ? Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Text(
+                      'Kategoriya topilmadi',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: c.textSecondary,
+                        fontFamily: 'Inter',
                       ),
+                    ),
+                  )
+                : ListView.builder(
+                    padding: const EdgeInsets.symmetric(vertical: 4),
+                    itemCount: filtered.length,
+                    itemBuilder: (_, i) {
+                      final cat = filtered[i];
+                      return _CatItemWithActions(
+                        cat: cat,
+                        selected: widget.selectedId == cat.id,
+                        onTap: () => widget.onSelect(cat.id),
+                      );
+                    },
+                  ),
           ),
         ],
       ),
@@ -574,8 +554,7 @@ class _CatItemWithActions extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.colors;
-    final bg =
-        selected ? c.textBrand.withOpacity(0.10) : Colors.transparent;
+    final bg = selected ? c.textBrand.withOpacity(0.10) : Colors.transparent;
 
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
@@ -595,9 +574,7 @@ class _CatItemWithActions extends StatelessWidget {
               margin: const EdgeInsets.only(right: 12),
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: selected
-                    ? c.textBrand
-                    : c.textTertiary.withOpacity(0.5),
+                color: selected ? c.textBrand : c.textTertiary.withOpacity(0.5),
               ),
             ),
             Expanded(
@@ -643,7 +620,6 @@ class _GoodsPanel extends StatelessWidget {
   final void Function(int) onPageChange;
   final void Function(int) onPageSizeChange;
   final void Function(GoodsModel) onEdit;
-  final Future<void> Function(GoodsModel) onDelete;
   final VoidCallback onNew;
   final VoidCallback onRetry;
 
@@ -665,7 +641,6 @@ class _GoodsPanel extends StatelessWidget {
     required this.onPageChange,
     required this.onPageSizeChange,
     required this.onEdit,
-    required this.onDelete,
     required this.onNew,
     required this.onRetry,
   });
@@ -676,10 +651,10 @@ class _GoodsPanel extends StatelessWidget {
     final catName = selectedCategoryId == null
         ? S.current.strAllDishes
         : categories
-                .where((cat) => cat.id == selectedCategoryId)
-                .firstOrNull
-                ?.name ??
-            '';
+                  .where((cat) => cat.id == selectedCategoryId)
+                  .firstOrNull
+                  ?.name ??
+              '';
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -742,55 +717,53 @@ class _GoodsPanel extends StatelessWidget {
           child: loading
               ? const _GoodsSkeleton()
               : error != null
-                  ? _GoodsErrorState(message: error!, onRetry: onRetry)
-                  : goods.isEmpty
-                      ? _GoodsEmptyState(onNew: onNew)
-                      : LayoutBuilder(
-                          builder: (context, constraints) {
-                            // Grid: 3–7 ustun ekran kengligiga qarab
-                            // Compact ekranlarda kichikroq min width (ko'p ustun)
-                            final minCardW = PosBreakpoints.pick<double>(
-                              context,
-                              compact: PosDimensions.gridItemMinWidth, // 160
-                              comfortable: PosDimensions.gridItemMinWidthLg, // 200
-                            );
-                            const gap = PosDimensions.s + 2; // 10
-                            final w = constraints.maxWidth -
-                                PosDimensions.xxl * 2; // 24+24
-                            final cols =
-                                (w / (minCardW + gap)).floor().clamp(3, 7);
-                            return GridView.builder(
-                              padding: const EdgeInsets.fromLTRB(
-                                PosDimensions.xxl, // 24
-                                0,
-                                PosDimensions.xxl,
-                                PosDimensions.l, // 16
-                              ),
-                              itemCount: goods.length,
-                              gridDelegate:
-                                  SliverGridDelegateWithFixedCrossAxisCount(
-                                crossAxisCount: cols,
-                                crossAxisSpacing: gap,
-                                mainAxisSpacing: gap,
-                                childAspectRatio: 0.92,
-                              ),
-                              itemBuilder: (context, i) {
-                                final g = goods[i];
-                                final catNameLocal = categories
-                                        .where((c) => c.id == g.categoryId)
-                                        .firstOrNull
-                                        ?.name ??
-                                    '';
-                                return _GoodCard(
-                                  good: g,
-                                  categoryName: catNameLocal,
-                                  onEdit: () => onEdit(g),
-                                  onDelete: () => onDelete(g),
-                                );
-                              },
-                            );
-                          },
-                        ),
+              ? _GoodsErrorState(message: error!, onRetry: onRetry)
+              : goods.isEmpty
+              ? _GoodsEmptyState(onNew: onNew)
+              : LayoutBuilder(
+                  builder: (context, constraints) {
+                    // Grid: 3–7 ustun ekran kengligiga qarab
+                    // Compact ekranlarda kichikroq min width (ko'p ustun)
+                    final minCardW = PosBreakpoints.pick<double>(
+                      context,
+                      compact: PosDimensions.gridItemMinWidth, // 160
+                      comfortable: PosDimensions.gridItemMinWidthLg, // 200
+                    );
+                    const gap = PosDimensions.s + 2; // 10
+                    final w =
+                        constraints.maxWidth - PosDimensions.xxl * 2; // 24+24
+                    final cols = (w / (minCardW + gap)).floor().clamp(3, 7);
+                    return GridView.builder(
+                      padding: const EdgeInsets.fromLTRB(
+                        PosDimensions.xxl, // 24
+                        0,
+                        PosDimensions.xxl,
+                        PosDimensions.l, // 16
+                      ),
+                      itemCount: goods.length,
+                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: cols,
+                        crossAxisSpacing: gap,
+                        mainAxisSpacing: gap,
+                        childAspectRatio: 0.92,
+                      ),
+                      itemBuilder: (context, i) {
+                        final g = goods[i];
+                        final catNameLocal =
+                            categories
+                                .where((c) => c.id == g.categoryId)
+                                .firstOrNull
+                                ?.name ??
+                            '';
+                        return _GoodCard(
+                          good: g,
+                          categoryName: catNameLocal,
+                          onEdit: () => onEdit(g),
+                        );
+                      },
+                    );
+                  },
+                ),
         ),
         // ── Pagination ──
         if (!loading && error == null)
@@ -816,13 +789,11 @@ class _GoodCard extends StatefulWidget {
   final GoodsModel good;
   final String categoryName;
   final VoidCallback onEdit;
-  final VoidCallback onDelete;
 
   const _GoodCard({
     required this.good,
     required this.categoryName,
     required this.onEdit,
-    required this.onDelete,
   });
 
   @override
@@ -837,8 +808,9 @@ class _GoodCardState extends State<_GoodCard> {
     final c = context.colors;
     final pic = widget.good.pictureUrl;
     final hasImage = pic != null && pic.isNotEmpty;
-    final initial =
-        widget.good.name.isNotEmpty ? widget.good.name[0].toUpperCase() : '•';
+    final initial = widget.good.name.isNotEmpty
+        ? widget.good.name[0].toUpperCase()
+        : '•';
 
     return MouseRegion(
       cursor: SystemMouseCursors.click,
@@ -886,33 +858,12 @@ class _GoodCardState extends State<_GoodCard> {
                               fit: BoxFit.cover,
                               width: double.infinity,
                               height: double.infinity,
-                              errorWidget: _InitialPlaceholder(initial: initial),
+                              errorWidget: _InitialPlaceholder(
+                                initial: initial,
+                              ),
                             )
                           : _InitialPlaceholder(initial: initial),
                     ),
-                    // Hover actions overlay
-                    if (_hovered)
-                      Positioned(
-                        top: 6,
-                        right: 6,
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            _OverlayIconBtn(
-                              icon: Icons.edit_outlined,
-                              tooltip: S.current.strEdit,
-                              onTap: widget.onEdit,
-                            ),
-                            const SizedBox(width: 4),
-                            _OverlayIconBtn(
-                              icon: Icons.delete_outline_rounded,
-                              tooltip: S.current.strDelete,
-                              onTap: widget.onDelete,
-                              destructive: true,
-                            ),
-                          ],
-                        ),
-                      ),
                     // Category flag
                     if (widget.categoryName.isNotEmpty)
                       Positioned(
@@ -975,7 +926,8 @@ class _GoodCardState extends State<_GoodCard> {
                       children: [
                         Text(
                           AppFormatter.formatAmountWithSpaces(
-                              widget.good.price),
+                            widget.good.price,
+                          ),
                           style: TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.w700,
@@ -1009,6 +961,7 @@ class _GoodCardState extends State<_GoodCard> {
 
 class _InitialPlaceholder extends StatelessWidget {
   final String initial;
+
   const _InitialPlaceholder({required this.initial});
 
   @override
@@ -1034,64 +987,6 @@ class _InitialPlaceholder extends StatelessWidget {
           color: c.textBrand.withOpacity(0.55),
           fontFamily: 'Inter',
           letterSpacing: -1,
-        ),
-      ),
-    );
-  }
-}
-
-class _OverlayIconBtn extends StatefulWidget {
-  final IconData icon;
-  final String tooltip;
-  final VoidCallback onTap;
-  final bool destructive;
-
-  const _OverlayIconBtn({
-    required this.icon,
-    required this.tooltip,
-    required this.onTap,
-    this.destructive = false,
-  });
-
-  @override
-  State<_OverlayIconBtn> createState() => _OverlayIconBtnState();
-}
-
-class _OverlayIconBtnState extends State<_OverlayIconBtn> {
-  bool _hovered = false;
-
-  @override
-  Widget build(BuildContext context) {
-    final c = context.colors;
-    final iconColor =
-        widget.destructive ? const Color(0xFFDC2626) : c.textDefault;
-    return Tooltip(
-      message: widget.tooltip,
-      child: MouseRegion(
-        cursor: SystemMouseCursors.click,
-        onEnter: (_) => setState(() => _hovered = true),
-        onExit: (_) => setState(() => _hovered = false),
-        child: GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          onTap: widget.onTap,
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 120),
-            width: 26,
-            height: 26,
-            decoration: BoxDecoration(
-              color: _hovered ? Colors.white : Colors.white.withOpacity(0.92),
-              borderRadius: BorderRadius.circular(7),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.08),
-                  blurRadius: 5,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            alignment: Alignment.center,
-            child: Icon(widget.icon, size: 13, color: iconColor),
-          ),
         ),
       ),
     );
@@ -1179,6 +1074,7 @@ class _GoodsSkeleton extends StatelessWidget {
 
 class _GoodsEmptyState extends StatelessWidget {
   final VoidCallback onNew;
+
   const _GoodsEmptyState({required this.onNew});
 
   @override
@@ -1237,6 +1133,7 @@ class _GoodsEmptyState extends StatelessWidget {
 class _GoodsErrorState extends StatelessWidget {
   final String message;
   final VoidCallback onRetry;
+
   const _GoodsErrorState({required this.message, required this.onRetry});
 
   @override
@@ -1301,9 +1198,9 @@ class _PaginationBar extends StatelessWidget {
           Theme(
             data: Theme.of(context).copyWith(
               colorScheme: Theme.of(context).colorScheme.copyWith(
-                    secondary: c.buttonBrand,
-                    onSecondary: c.textOnBrand,
-                  ),
+                secondary: c.buttonBrand,
+                onSecondary: c.textOnBrand,
+              ),
             ),
             child: SizedBox(
               width: 320,
@@ -1350,10 +1247,12 @@ class _PaginationBar extends StatelessWidget {
                   fontFamily: 'Inter',
                 ),
                 items: pageSizeOptions
-                    .map((s) => DropdownMenuItem(
-                          value: s,
-                          child: Text(S.current.strPageSize(s)),
-                        ))
+                    .map(
+                      (s) => DropdownMenuItem(
+                        value: s,
+                        child: Text(S.current.strPageSize(s)),
+                      ),
+                    )
                     .toList(),
                 onChanged: (v) {
                   if (v != null && v != pageSize) onPageSizeChange(v);
@@ -1376,11 +1275,7 @@ class _CategoryDialog extends StatefulWidget {
   final Future<void> Function(String name)? onCreate;
   final Future<void> Function(String name)? onUpdate;
 
-  const _CategoryDialog({
-    this.existing,
-    this.onCreate,
-    this.onUpdate,
-  });
+  const _CategoryDialog({this.existing, this.onCreate, this.onUpdate});
 
   @override
   State<_CategoryDialog> createState() => _CategoryDialogState();
@@ -1502,7 +1397,9 @@ class _CategoryDialogState extends State<_CategoryDialog> {
                       backgroundColor: c.buttonBrand,
                       foregroundColor: c.textOnBrand,
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 18, vertical: 10),
+                        horizontal: 18,
+                        vertical: 10,
+                      ),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(8),
                       ),
@@ -1530,95 +1427,6 @@ class _CategoryDialogState extends State<_CategoryDialog> {
 
 /// Umumiy tasdiqlash dialogi. [onConfirm] null bo'lsa — tugma bosilganda
 /// `Navigator.pop(context, true)` qaytaradi.
-class _ConfirmDialog extends StatelessWidget {
-  final String title;
-  final String body;
-  final String confirmLabel;
-  final Color confirmColor;
-  final Future<void> Function()? onConfirm;
-
-  const _ConfirmDialog({
-    required this.title,
-    required this.body,
-    required this.confirmLabel,
-    required this.confirmColor,
-    required this.onConfirm,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final c = context.colors;
-    return Dialog(
-      backgroundColor: c.bgDefault,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 380),
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600,
-                  color: c.textDefault,
-                  fontFamily: 'Inter',
-                ),
-              ),
-              const SizedBox(height: 10),
-              Text(
-                body,
-                style: TextStyle(
-                  fontSize: 13,
-                  color: c.textSecondary,
-                  fontFamily: 'Inter',
-                ),
-              ),
-              const SizedBox(height: 20),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                spacing: 8,
-                children: [
-                  TextButton(
-                    onPressed: () => Navigator.pop(context, false),
-                    child: Text(
-                      'Bekor',
-                      style: TextStyle(color: c.textSecondary),
-                    ),
-                  ),
-                  FilledButton(
-                    onPressed: () {
-                      if (onConfirm == null) {
-                        Navigator.pop(context, true);
-                      } else {
-                        Navigator.pop(context);
-                        onConfirm!();
-                      }
-                    },
-                    style: FilledButton.styleFrom(
-                      backgroundColor: confirmColor,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 18, vertical: 10),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                    child: Text(confirmLabel),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 // ═══════════════════════════════════════════════════════
 // Shared micro-widgets
 // ═══════════════════════════════════════════════════════
@@ -1694,8 +1502,11 @@ class _SearchFieldState extends State<_SearchField> {
       decoration: InputDecoration(
         hintText: widget.hint,
         hintStyle: TextStyle(fontSize: fontSize, color: c.textSecondary),
-        prefixIcon:
-            Icon(Icons.search_rounded, size: iconSize, color: c.textTertiary),
+        prefixIcon: Icon(
+          Icons.search_rounded,
+          size: iconSize,
+          color: c.textTertiary,
+        ),
         isDense: true,
         contentPadding: EdgeInsets.symmetric(vertical: vPad),
         filled: true,
@@ -1800,9 +1611,7 @@ class _IconBtnState extends State<_IconBtn> {
             child: Icon(
               widget.icon,
               size: widget.size,
-              color: _hovered
-                  ? widget.color
-                  : widget.color.withOpacity(0.7),
+              color: _hovered ? widget.color : widget.color.withOpacity(0.7),
             ),
           ),
         ),
