@@ -177,6 +177,7 @@ class _NavItemState extends State<_NavItem> {
         behavior: HitTestBehavior.opaque,
         onTap: widget.onTap,
         child: AnimatedContainer(
+          width: double.infinity,
           duration: const Duration(milliseconds: 150),
           // POS minimum touch zone (icon + label)
           margin: const EdgeInsets.symmetric(
