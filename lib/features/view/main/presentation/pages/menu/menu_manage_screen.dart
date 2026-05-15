@@ -859,10 +859,11 @@ class _MenuManageScreenState extends State<MenuManageScreen> {
 
   Widget _mealImagePanel(ThemeColors colors) {
     final ref = _pictureUrlCtrl.text.trim();
+    final compact = ref.isNotEmpty;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        if (ref.isNotEmpty)
+        if (compact)
           Padding(
             padding: const EdgeInsets.only(bottom: 12),
             child: _MealImagePreview(pictureRef: ref),
@@ -872,7 +873,7 @@ class _MenuManageScreenState extends State<MenuManageScreen> {
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 180),
             curve: Curves.easeOut,
-            height: ref.isNotEmpty ? 110 : 220,
+            height: compact ? 110 : 220,
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
@@ -890,51 +891,59 @@ class _MenuManageScreenState extends State<MenuManageScreen> {
             ),
             child: _uploadingImage
                 ? const Center(child: CircularProgressIndicator.adaptive())
-                : Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Container(
-                        width: 56,
-                        height: 56,
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(16),
-                          boxShadow: [
-                            BoxShadow(
-                              color: colors.textBrand.withOpacity(0.12),
-                              blurRadius: 12,
-                              offset: const Offset(0, 4),
+                : Padding(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 12, vertical: 8),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: compact ? 40 : 56,
+                          height: compact ? 40 : 56,
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius:
+                                BorderRadius.circular(compact ? 12 : 16),
+                            boxShadow: [
+                              BoxShadow(
+                                color: colors.textBrand.withOpacity(0.12),
+                                blurRadius: 12,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: Icon(
+                            Icons.cloud_upload_outlined,
+                            color: colors.textBrand,
+                            size: compact ? 20 : 26,
+                          ),
+                        ),
+                        SizedBox(height: compact ? 8 : 14),
+                        Text(
+                          'Rasm yuklash',
+                          style: TextStyle(
+                            fontSize: compact ? 13 : 15,
+                            fontWeight: FontWeight.w600,
+                            color: colors.textDefault,
+                            fontFamily: 'Inter',
+                            letterSpacing: -0.1,
+                          ),
+                        ),
+                        if (!compact) ...[
+                          const SizedBox(height: 4),
+                          Text(
+                            'JPG · PNG · GIF · 5 MB gacha',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: colors.textSecondary,
+                              fontFamily: 'Inter',
                             ),
-                          ],
-                        ),
-                        child: Icon(
-                          Icons.cloud_upload_outlined,
-                          color: colors.textBrand,
-                          size: 26,
-                        ),
-                      ),
-                      const SizedBox(height: 14),
-                      Text(
-                        'Rasm yuklash',
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w600,
-                          color: colors.textDefault,
-                          fontFamily: 'Inter',
-                          letterSpacing: -0.1,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'JPG · PNG · GIF · 5 MB gacha',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: colors.textSecondary,
-                          fontFamily: 'Inter',
-                        ),
-                      ),
-                    ],
+                          ),
+                        ],
+                      ],
+                    ),
                   ),
           ),
         ),
@@ -1005,8 +1014,6 @@ class _MenuManageScreenState extends State<MenuManageScreen> {
                             _descriptionCtrl,
                             maxLines: 2,
                           ),
-                          const SizedBox(height: 16),
-                          _labeledInput('Image URL', _pictureUrlCtrl),
                         ],
                       ),
                     ),
@@ -1832,19 +1839,21 @@ class _MealImagePreview extends StatelessWidget {
     if (ref.isEmpty) return const SizedBox.shrink();
 
     if (ref.startsWith('http://') || ref.startsWith('https://')) {
-      return ClipRRect(
-        borderRadius: BorderRadius.circular(8),
+      return Container(
+        height: 180,
+        width: double.infinity,
+        decoration: BoxDecoration(
+          color: colors.bgSecondary,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: colors.border),
+        ),
+        clipBehavior: Clip.antiAlias,
         child: CachedNetworkImage(
           imageUrl: ref,
-          height: 120,
-          width: double.infinity,
-          fit: BoxFit.cover,
-          placeholder: (context, url) => SizedBox(
-            height: 120,
-            child: Center(
-              child: CircularProgressIndicator.adaptive(
-                valueColor: AlwaysStoppedAnimation<Color>(colors.textTertiary),
-              ),
+          fit: BoxFit.contain,
+          placeholder: (context, url) => Center(
+            child: CircularProgressIndicator.adaptive(
+              valueColor: AlwaysStoppedAnimation<Color>(colors.textTertiary),
             ),
           ),
           errorWidget: (context, url, error) => _mealImageError(colors),
@@ -1857,7 +1866,7 @@ class _MealImagePreview extends StatelessWidget {
       builder: (context, snap) {
         if (snap.connectionState == ConnectionState.waiting) {
           return SizedBox(
-            height: 120,
+            height: 180,
             child: Center(
               child: CircularProgressIndicator.adaptive(
                 valueColor: AlwaysStoppedAnimation<Color>(colors.textTertiary),
@@ -1869,13 +1878,18 @@ class _MealImagePreview extends StatelessWidget {
         if (bytes == null || bytes.isEmpty) {
           return _mealImageError(colors);
         }
-        return ClipRRect(
-          borderRadius: BorderRadius.circular(8),
+        return Container(
+          height: 180,
+          width: double.infinity,
+          decoration: BoxDecoration(
+            color: colors.bgSecondary,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: colors.border),
+          ),
+          clipBehavior: Clip.antiAlias,
           child: Image.memory(
             bytes,
-            height: 120,
-            width: double.infinity,
-            fit: BoxFit.cover,
+            fit: BoxFit.contain,
           ),
         );
       },
@@ -1884,11 +1898,11 @@ class _MealImagePreview extends StatelessWidget {
 
   Widget _mealImageError(ThemeColors colors) {
     return Container(
-      height: 120,
+      height: 180,
       alignment: Alignment.center,
       decoration: BoxDecoration(
         color: colors.bgDefault,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: colors.border),
       ),
       child: Text(

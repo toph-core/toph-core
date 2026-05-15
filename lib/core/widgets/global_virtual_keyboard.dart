@@ -48,12 +48,40 @@ class _GlobalVirtualKeyboardState extends State<GlobalVirtualKeyboard> {
     _editableText = null;
   }
 
+  /// Fokuslangan FocusNode'ning context'idan `EditableText` widget'ini topadi.
+  /// Avval to'g'ridan-to'g'ri tekshiradi (eski Flutter), keyin ajdod
+  /// elementlar ichidan qidiradi (yangi Flutter — TextField'da EditableText
+  /// `Focus` widget'i ichida bo'ladi). Avlodlarga kirmaymiz — aks holda
+  /// FocusScope kabi keng kontekstda boshqa, fokuslanmagan TextField'lar
+  /// topilib qolishi mumkin.
+  EditableText? _findEditableTextFromFocus() {
+    final node = FocusManager.instance.primaryFocus;
+    if (node == null) return null;
+    final ctx = node.context;
+    if (ctx == null) return null;
+    final direct = ctx.widget;
+    if (direct is EditableText) return direct;
+    // Ajdod elementlar ichidan qidiramiz — fokus context'i odatda
+    // EditableText'ning ichki widget'i (Focus/Listener) bo'ladi.
+    EditableText? found;
+    ctx.visitAncestorElements((el) {
+      if (el.widget is EditableText) {
+        found = el.widget as EditableText;
+        return false;
+      }
+      return true;
+    });
+    return found;
+  }
+
   void _onFocusChange() {
-    final focus = FocusManager.instance.primaryFocus;
-    final widget = focus?.context?.widget;
-    if (widget is EditableText) {
-      final ctrl = widget.controller;
-      final kt = widget.keyboardType;
+    final editable = _findEditableTextFromFocus();
+    // Virtual klaviatura faqat qidiruv (search) input'larida chiqishi kerak.
+    // TextInputAction.search bo'lgan TextField'lar — qidiruv maydonlari.
+    final isSearch = editable?.textInputAction == TextInputAction.search;
+    if (editable != null && isSearch) {
+      final ctrl = editable.controller;
+      final kt = editable.keyboardType;
       final numeric = kt == TextInputType.number ||
           kt == TextInputType.phone ||
           kt == const TextInputType.numberWithOptions(decimal: true) ||
@@ -70,7 +98,7 @@ class _GlobalVirtualKeyboardState extends State<GlobalVirtualKeyboard> {
         ctrl.addListener(_controllerListener!);
       }
       // Fokuslangan widget — keyinchalik uning onChanged'ini chaqirish uchun saqlaymiz
-      _editableText = widget;
+      _editableText = editable;
 
       if (!_open || _numericOnly != numeric) {
         setState(() {

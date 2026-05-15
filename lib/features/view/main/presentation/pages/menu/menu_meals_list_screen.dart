@@ -103,27 +103,10 @@ class _MenuMealsListScreenState extends State<MenuMealsListScreen> {
     await _loadCategories();
   }
 
-  Future<void> _updateCategory(String id, String name) async {
-    await _client.put(ListAPI.categoryById(id), data: {'name': name});
-    await _loadCategories();
-  }
-
-  Future<void> _deleteCategory(String id) async {
-    await _client.delete(ListAPI.categoryById(id));
-    if (!mounted) return;
-    if (_selectedCategoryId == id) {
-      setState(() => _selectedCategoryId = null);
-    }
-    await _loadCategories();
-    if (!mounted) return;
-    await _loadGoods(page: 1);
-  }
-
-  void _openCategoryDialog({CategoryModel? existing}) {
+  void _openCategoryDialog() {
     showDialog<void>(
       context: context,
       builder: (_) => _CategoryDialog(
-        existing: existing,
         onCreate: (name) async {
           try {
             await _createCategory(name);
@@ -133,36 +116,6 @@ class _MenuMealsListScreenState extends State<MenuMealsListScreen> {
                 ? (e.response?.data['message']?.toString() ??
                     "Kategoriya qo'shilmadi")
                 : "Kategoriya qo'shilmadi");
-          }
-        },
-        onUpdate: existing == null
-            ? null
-            : (name) async {
-                try {
-                  await _updateCategory(existing.id, name);
-                } catch (e) {
-                  if (!mounted) return;
-                  _showSnack('Saqlanmadi');
-                }
-              },
-      ),
-    );
-  }
-
-  void _confirmDeleteCategory(CategoryModel c) {
-    showDialog<void>(
-      context: context,
-      builder: (_) => _ConfirmDialog(
-        title: S.current.strDeleteCategory,
-        body: '"${c.name}" kategoriyasini o\'chirasizmi?',
-        confirmLabel: S.current.strDelete,
-        confirmColor: const Color(0xFFEF4444),
-        onConfirm: () async {
-          try {
-            await _deleteCategory(c.id);
-          } catch (_) {
-            if (!mounted) return;
-            _showSnack("O'chirilmadi");
           }
         },
       ),
@@ -330,8 +283,6 @@ class _MenuMealsListScreenState extends State<MenuMealsListScreen> {
                             _loadGoods(page: 1);
                           },
                           onAdd: () => _openCategoryDialog(),
-                          onEdit: (c) => _openCategoryDialog(existing: c),
-                          onDelete: _confirmDeleteCategory,
                         ),
                       ),
                       VerticalDivider(
@@ -390,8 +341,6 @@ class _CategoriesPanel extends StatefulWidget {
   final String? selectedId;
   final void Function(String? id) onSelect;
   final VoidCallback onAdd;
-  final void Function(CategoryModel) onEdit;
-  final void Function(CategoryModel) onDelete;
 
   const _CategoriesPanel({
     required this.categories,
@@ -399,8 +348,6 @@ class _CategoriesPanel extends StatefulWidget {
     required this.selectedId,
     required this.onSelect,
     required this.onAdd,
-    required this.onEdit,
-    required this.onDelete,
   });
 
   @override
@@ -451,9 +398,10 @@ class _CategoriesPanelState extends State<_CategoriesPanel> {
           ),
           // Search
           Padding(
-            padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+            padding: const EdgeInsets.fromLTRB(12, 0, 12, 10),
             child: _SearchField(
               hint: 'Qidirish...',
+              large: true,
               onChanged: (v) => setState(() => _catSearch = v),
             ),
           ),
@@ -489,8 +437,6 @@ class _CategoriesPanelState extends State<_CategoriesPanel> {
                             cat: cat,
                             selected: widget.selectedId == cat.id,
                             onTap: () => widget.onSelect(cat.id),
-                            onEdit: () => widget.onEdit(cat),
-                            onDelete: () => widget.onDelete(cat),
                           );
                         },
                       ),
@@ -501,7 +447,7 @@ class _CategoriesPanelState extends State<_CategoriesPanel> {
   }
 }
 
-class _CatItem extends StatefulWidget {
+class _CatItem extends StatelessWidget {
   final String label;
   final IconData? icon;
   final bool selected;
@@ -515,162 +461,106 @@ class _CatItem extends StatefulWidget {
   });
 
   @override
-  State<_CatItem> createState() => _CatItemState();
-}
-
-class _CatItemState extends State<_CatItem> {
-  bool _hovered = false;
-
-  @override
   Widget build(BuildContext context) {
     final c = context.colors;
-    final bg = widget.selected
-        ? c.textBrand.withOpacity(0.10)
-        : _hovered
-            ? c.bgSecondary
-            : Colors.transparent;
+    final bg = selected ? c.textBrand.withOpacity(0.10) : Colors.transparent;
 
-    return MouseRegion(
-      cursor: SystemMouseCursors.click,
-      onEnter: (_) => setState(() => _hovered = true),
-      onExit: (_) => setState(() => _hovered = false),
-      child: GestureDetector(
-        onTap: widget.onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 140),
-          margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-          decoration: BoxDecoration(
-            color: bg,
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: Row(
-            children: [
-              if (widget.icon != null) ...[
-                Icon(
-                  widget.icon!,
-                  size: 16,
-                  color: widget.selected ? c.textBrand : c.textSecondary,
-                ),
-                const SizedBox(width: 10),
-              ],
-              Expanded(
-                child: Text(
-                  widget.label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: widget.selected
-                        ? FontWeight.w600
-                        : FontWeight.w500,
-                    color: widget.selected ? c.textBrand : c.textDefault,
-                    fontFamily: 'Inter',
-                    letterSpacing: -0.1,
-                  ),
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: onTap,
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
+        decoration: BoxDecoration(
+          color: bg,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          children: [
+            if (icon != null) ...[
+              Icon(
+                icon!,
+                size: 20,
+                color: selected ? c.textBrand : c.textSecondary,
+              ),
+              const SizedBox(width: 12),
+            ],
+            Expanded(
+              child: Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+                  color: selected ? c.textBrand : c.textDefault,
+                  fontFamily: 'Inter',
+                  letterSpacing: -0.1,
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
   }
 }
 
-class _CatItemWithActions extends StatefulWidget {
+class _CatItemWithActions extends StatelessWidget {
   final CategoryModel cat;
   final bool selected;
   final VoidCallback onTap;
-  final VoidCallback onEdit;
-  final VoidCallback onDelete;
 
   const _CatItemWithActions({
     required this.cat,
     required this.selected,
     required this.onTap,
-    required this.onEdit,
-    required this.onDelete,
   });
-
-  @override
-  State<_CatItemWithActions> createState() => _CatItemWithActionsState();
-}
-
-class _CatItemWithActionsState extends State<_CatItemWithActions> {
-  bool _hovered = false;
 
   @override
   Widget build(BuildContext context) {
     final c = context.colors;
-    final bg = widget.selected
-        ? c.textBrand.withOpacity(0.10)
-        : _hovered
-            ? c.bgSecondary
-            : Colors.transparent;
+    final bg =
+        selected ? c.textBrand.withOpacity(0.10) : Colors.transparent;
 
-    return MouseRegion(
-      cursor: SystemMouseCursors.click,
-      onEnter: (_) => setState(() => _hovered = true),
-      onExit: (_) => setState(() => _hovered = false),
-      child: GestureDetector(
-        onTap: widget.onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 140),
-          margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
-          decoration: BoxDecoration(
-            color: bg,
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: Row(
-            children: [
-              // Color swatch dot
-              Container(
-                width: 8,
-                height: 8,
-                margin: const EdgeInsets.only(right: 10),
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: widget.selected
-                      ? c.textBrand
-                      : c.textTertiary.withOpacity(0.5),
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: onTap,
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
+        decoration: BoxDecoration(
+          color: bg,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 10,
+              height: 10,
+              margin: const EdgeInsets.only(right: 12),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: selected
+                    ? c.textBrand
+                    : c.textTertiary.withOpacity(0.5),
+              ),
+            ),
+            Expanded(
+              child: Text(
+                cat.name,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+                  color: selected ? c.textBrand : c.textDefault,
+                  fontFamily: 'Inter',
+                  letterSpacing: -0.1,
                 ),
               ),
-              Expanded(
-                child: Text(
-                  widget.cat.name,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: widget.selected
-                        ? FontWeight.w600
-                        : FontWeight.w500,
-                    color: widget.selected ? c.textBrand : c.textDefault,
-                    fontFamily: 'Inter',
-                    letterSpacing: -0.1,
-                  ),
-                ),
-              ),
-              if (_hovered || widget.selected) ...[
-                _IconBtn(
-                  icon: Icons.edit_outlined,
-                  tooltip: S.current.strEdit,
-                  color: c.textSecondary,
-                  size: 15,
-                  onTap: widget.onEdit,
-                ),
-                _IconBtn(
-                  icon: Icons.delete_outline_rounded,
-                  tooltip: S.current.strDelete,
-                  color: const Color(0xFFEF4444),
-                  size: 15,
-                  onTap: widget.onDelete,
-                ),
-              ],
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
@@ -1680,38 +1570,52 @@ class _SearchField extends StatelessWidget {
   final String hint;
   final void Function(String) onChanged;
   final TextEditingController? controller;
+  final bool large;
 
   const _SearchField({
     required this.hint,
     required this.onChanged,
     this.controller,
+    this.large = false,
   });
 
   @override
   Widget build(BuildContext context) {
     final c = context.colors;
+    final fontSize = large ? 16.0 : 13.0;
+    final iconSize = large ? 22.0 : 18.0;
+    final vPad = large ? 16.0 : 9.0;
+    final radius = large ? 12.0 : 8.0;
     return TextField(
       controller: controller,
       onChanged: onChanged,
-      style: TextStyle(fontSize: 13, color: c.textDefault, fontFamily: 'Inter'),
+      textInputAction: TextInputAction.search,
+      keyboardType: TextInputType.text,
+      enableInteractiveSelection: true,
+      style: TextStyle(
+        fontSize: fontSize,
+        color: c.textDefault,
+        fontFamily: 'Inter',
+      ),
       decoration: InputDecoration(
         hintText: hint,
-        hintStyle: TextStyle(fontSize: 13, color: c.textSecondary),
-        prefixIcon: Icon(Icons.search_rounded, size: 18, color: c.textTertiary),
+        hintStyle: TextStyle(fontSize: fontSize, color: c.textSecondary),
+        prefixIcon:
+            Icon(Icons.search_rounded, size: iconSize, color: c.textTertiary),
         isDense: true,
-        contentPadding: const EdgeInsets.symmetric(vertical: 9),
+        contentPadding: EdgeInsets.symmetric(vertical: vPad),
         filled: true,
         fillColor: c.bgSecondary,
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(radius),
           borderSide: BorderSide(color: c.border),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(radius),
           borderSide: BorderSide(color: c.border),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(radius),
           borderSide: BorderSide(color: c.borderBrand),
         ),
       ),

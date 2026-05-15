@@ -14,7 +14,7 @@ import 'package:mary_ai_pos/features/view/main/presentation/pages/detail/widgets
 import 'package:mary_ai_pos/features/view/main/presentation/pages/detail/widgets/order_side_bar_widget.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/detail/widgets/produc_grid_widget.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/detail/widgets/top_bar_widget.dart';
-import 'package:virtual_keyboard_multi_language/virtual_keyboard_multi_language.dart';
+import 'package:mary_ai_pos/core/widgets/global_virtual_keyboard.dart';
 
 class DetailScreen extends StatefulWidget {
   const DetailScreen({super.key});
@@ -30,7 +30,6 @@ class _DetailScreenState extends State<DetailScreen> with DetailScreenMixin {
   late final int guestCount = args['guest_count'] ?? 0;
   late final SaveOrderEntity? savedOrders = args['saved_orders'];
 
-  late ValueNotifier<bool> showVirtualKeyboard = ValueNotifier<bool>(false);
   final TextEditingController controller = TextEditingController();
 
   // Hold blocs directly so _autoStartTimedOrder can call them without
@@ -76,7 +75,6 @@ class _DetailScreenState extends State<DetailScreen> with DetailScreenMixin {
   void dispose() {
     _timerCubit.close();
     _detailBloc.close();
-    showVirtualKeyboard.dispose();
     controller.dispose();
     super.dispose();
   }
@@ -124,94 +122,53 @@ class _DetailScreenState extends State<DetailScreen> with DetailScreenMixin {
           },
           child: Scaffold(
             backgroundColor: context.colors.bgSecondary,
-            body: Stack(
-            children: [
-              GestureDetector(
-                onTap: () {
-                  if (showVirtualKeyboard.value) {
-                    showVirtualKeyboard.value = false;
-                  }
-                },
-                child: Column(
-                  children: [
-                    TopBarWidget(
-                      cafeTable: cafeTable,
-                      showKeyboard: showVirtualKeyboard,
-                      textEditingController: controller,
-                      guestCount: guestCount,
-                    ),
-                    OrderActionsBar(
-                      tableId: cafeTable?.id,
-                      guestCount: guestCount,
-                      tableStatus: tableStatus,
-                      cafeTable: cafeTable,
-                      onTableStatusChanged: (s) =>
-                          setState(() => tableStatus = s),
-                    ),
-                    Expanded(
-                      child: Builder(
-                        builder: (context) {
-                          // Compact (1024–1366): kichikroq sidebar — joy tejash
-                          // Comfortable (1366+): kengroq, qulayroq item kartochkalari
-                          final sidebarW = PosBreakpoints.pickThree<double>(
-                            context,
-                            compact: PosDimensions.cartPanelCompact, // 320
-                            comfortable: PosDimensions.cartPanelComfortable, // 400
-                            large: 440.0,
-                          );
-                          return Row(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              const Expanded(child: ProductGridWidget()),
-                              SizedBox(
-                                width: sidebarW,
-                                child: OrderSidebar(
-                                  tableId: cafeTable?.id,
-                                  cafeTable: cafeTable,
-                                ),
+            body: GlobalVirtualKeyboard(
+              child: Column(
+                children: [
+                  TopBarWidget(
+                    cafeTable: cafeTable,
+                    textEditingController: controller,
+                    guestCount: guestCount,
+                  ),
+                  OrderActionsBar(
+                    tableId: cafeTable?.id,
+                    guestCount: guestCount,
+                    tableStatus: tableStatus,
+                    cafeTable: cafeTable,
+                    onTableStatusChanged: (s) =>
+                        setState(() => tableStatus = s),
+                  ),
+                  Expanded(
+                    child: Builder(
+                      builder: (context) {
+                        final sidebarW = PosBreakpoints.pickThree<double>(
+                          context,
+                          compact: PosDimensions.cartPanelCompact,
+                          comfortable: PosDimensions.cartPanelComfortable,
+                          large: 440.0,
+                        );
+                        return Row(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            const Expanded(child: ProductGridWidget()),
+                            SizedBox(
+                              width: sidebarW,
+                              child: OrderSidebar(
+                                tableId: cafeTable?.id,
+                                cafeTable: cafeTable,
                               ),
-                            ],
-                          );
-                        },
-                      ),
+                            ),
+                          ],
+                        );
+                      },
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-              // Virtual keyboard overlay
-              ValueListenableBuilder(
-                valueListenable: showVirtualKeyboard,
-                builder: (context, value, _) {
-                  if (!value) return const SizedBox.shrink();
-                  return Positioned(
-                    bottom: 0,
-                    left: 0,
-                    right: 0,
-                    child: DecoratedBox(
-                      decoration: BoxDecoration(
-                        color: context.colors.bgSecondary,
-                      ),
-                      child: SafeArea(
-                        child: VirtualKeyboard(
-                          height: context.h * .3,
-                          customLayoutKeys: VirtualKeyboardDefaultLayoutKeys([
-                            VirtualKeyboardDefaultLayouts.English,
-                          ]),
-                          textColor: Colors.black,
-                          fontSize: 24,
-                          textController: controller,
-                          type: VirtualKeyboardType.Alphanumeric,
-                        ),
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ],
+            ),
           ),
         ),
       ),
-    ),
-  );
+    );
   }
 }
