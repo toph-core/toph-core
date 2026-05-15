@@ -77,13 +77,13 @@ class TopBarWidget extends StatelessWidget {
                   constraints: BoxConstraints(
                     minWidth: PosBreakpoints.pick<double>(
                       context,
-                      compact: 140,
-                      comfortable: 160,
+                      compact: 252,
+                      comfortable: 308,
                     ),
                     maxWidth: PosBreakpoints.pick<double>(
                       context,
-                      compact: 220,
-                      comfortable: 280,
+                      compact: 364,
+                      comfortable: 476,
                     ),
                   ),
                   child: _SearchInput(
@@ -347,33 +347,44 @@ class _SearchInputState extends State<_SearchInput> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      // Touch target ≥ 48 dp
-      height: 48,
+      height: 52,
       decoration: BoxDecoration(
         color: _kS50,
         border: Border.all(color: _kS200),
         borderRadius: BorderRadius.circular(PosDimensions.radiusMd),
       ),
-      child: TextField(
-        controller: widget.controller,
-        onTap: () => widget.showKeyboard.value = true,
-        style: const TextStyle(
-          fontSize: PosTypography.bodyMd, // 15
-          color: _kS900,
-          fontFamily: PosTypography.family,
-        ),
-        decoration: InputDecoration(
-          hintText: S.current.strSearchHint,
-          hintStyle: const TextStyle(
-            fontSize: PosTypography.bodyMd,
-            color: _kS500,
-            fontFamily: PosTypography.family,
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      child: Row(
+        children: [
+          const Icon(Icons.search, size: 20, color: _kS500),
+          const SizedBox(width: 8),
+          Expanded(
+            child: TextField(
+              controller: widget.controller,
+              onTap: () => widget.showKeyboard.value = true,
+              style: const TextStyle(
+                fontSize: PosTypography.bodyMd,
+                color: _kS900,
+                fontFamily: PosTypography.family,
+              ),
+              decoration: InputDecoration(
+                hintText: S.current.strSearchHint,
+                hintStyle: const TextStyle(
+                  fontSize: PosTypography.bodyMd,
+                  color: _kS500,
+                  fontFamily: PosTypography.family,
+                ),
+                filled: false,
+                fillColor: Colors.transparent,
+                border: InputBorder.none,
+                enabledBorder: InputBorder.none,
+                focusedBorder: InputBorder.none,
+                isCollapsed: true,
+                contentPadding: EdgeInsets.zero,
+              ),
+            ),
           ),
-          prefixIcon: const Icon(Icons.search, size: 20, color: _kS500),
-          border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(vertical: PosDimensions.s),
-          isDense: true,
-        ),
+        ],
       ),
     );
   }
