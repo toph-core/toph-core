@@ -63,14 +63,24 @@ class TableTimerCubit extends Cubit<TableTimerState> {
   void _applyTimer(TableTimerResponse t, {bool forceBillPauses = false}) {
     _lastSyncAt = DateTime.now();
     _baseTotalActiveSec = t.totalActiveSec;
-    emit(state.copyWith(
-      isLoading: false,
-      shouldShow: true,
-      timer: t,
-      displayActiveSec: t.totalActiveSec,
-      errorMessage: null,
-    ));
-    _ensureServerSync();
+    emit(
+      state.copyWith(
+        isLoading: false,
+        shouldShow: true,
+        timer: t,
+        displayActiveSec: t.totalActiveSec,
+        errorMessage: null,
+      ),
+    );
+    // Terminal yopiq holatda 60s polling shart emas — timer endi o'zgarmaydi.
+    // Frozen state-ni faqat tasodifiy server tomonida tiklash uchun emas,
+    // resurslarni tejash uchun ham polling to'xtatamiz.
+    if (t.stateNormalized == 'closed') {
+      _serverSyncTimer?.cancel();
+      _serverSyncTimer = null;
+    } else {
+      _ensureServerSync();
+    }
     _startUiTickIfRunning(t);
     // Bill API-dan pause_periods-ni yangilash
     _fetchBillPauses(force: forceBillPauses);
@@ -138,9 +148,12 @@ class TableTimerCubit extends Cubit<TableTimerState> {
       return;
     }
 
-    // `GET/POST .../table-timer` faqat `table_type == time_based` uchun.
-    // `table_type` kelmasa yoki boshqa qiymat bo‘lsa — hech qanday murojaat qilinmaydi.
-    if (!order.isTimeBasedTable) {
+    // `GET/POST .../table-timer` ikki holatda chaqiriladi:
+    //   1) Stol time_based — live timer ko'rsatish uchun.
+    //   2) Order time-based stoldan simple stolga ko'chirilgan va
+    //      `table_amount` muzlatilgan — frozen UI ko'rsatish uchun.
+    // Ikkalasi ham bo'lmasa, GET yubormaymiz (400 spam yo'q).
+    if (!order.isTimeBasedTable && !order.hasFrozenTableAmount) {
       emit(const TableTimerState(shouldShow: false));
       return;
     }
@@ -169,22 +182,32 @@ class TableTimerCubit extends Cubit<TableTimerState> {
       if (_activeOrderId != orderId) return;
       final raw = res.data['data'];
       if (raw is! Map<String, dynamic>) {
-        emit(state.copyWith(
-          isLoading: false,
-          shouldShow: false,
-          clearTimer: true,
-          clearDisplayActiveSec: true,
-        ));
+        emit(
+          state.copyWith(
+            isLoading: false,
+            shouldShow: false,
+            clearTimer: true,
+            clearDisplayActiveSec: true,
+          ),
+        );
         return;
       }
       final t = TableTimerResponse.fromJson(raw);
-      if (!t.isTimeBasedTable) {
-        emit(state.copyWith(
-          isLoading: false,
-          shouldShow: false,
-          clearTimer: true,
-          clearDisplayActiveSec: true,
-        ));
+      // Order time-based stoldan simple-ga ko'chirilgan bo'lsa, hozirgi
+      // `table_type` `simple` keladi, lekin `state == closed` + `final_amount`
+      // muzlatilgan summani saqlaydi. Bu holatda block-ni yashirmasdan
+      // frozen UI ko'rsatish kerak.
+      final hasFrozenAmount =
+          t.isFrozenClosed && parseAmountToInt(t.finalAmount) > 0;
+      if (!t.isTimeBasedTable && !hasFrozenAmount) {
+        emit(
+          state.copyWith(
+            isLoading: false,
+            shouldShow: false,
+            clearTimer: true,
+            clearDisplayActiveSec: true,
+          ),
+        );
         _cancelTimers();
         return;
       }
@@ -195,28 +218,34 @@ class TableTimerCubit extends Cubit<TableTimerState> {
       if (e.response?.statusCode == 400 || e.response?.statusCode == 404) {
         _cancelTimers();
         _activeOrderId = null;
-        emit(state.copyWith(
+        emit(
+          state.copyWith(
+            isLoading: false,
+            shouldShow: false,
+            clearTimer: true,
+            clearDisplayActiveSec: true,
+          ),
+        );
+        return;
+      }
+      emit(
+        state.copyWith(
+          isLoading: false,
+          errorMessage: e.message ?? 'Table timer xatosi',
+        ),
+      );
+    } catch (e) {
+      if (isClosed) return;
+      if (_activeOrderId != orderId) return;
+      emit(
+        state.copyWith(
           isLoading: false,
           shouldShow: false,
           clearTimer: true,
           clearDisplayActiveSec: true,
-        ));
-        return;
-      }
-      emit(state.copyWith(
-        isLoading: false,
-        errorMessage: e.message ?? 'Table timer xatosi',
-      ));
-    } catch (e) {
-      if (isClosed) return;
-      if (_activeOrderId != orderId) return;
-      emit(state.copyWith(
-        isLoading: false,
-        shouldShow: false,
-        clearTimer: true,
-        clearDisplayActiveSec: true,
-        errorMessage: e.toString(),
-      ));
+          errorMessage: e.toString(),
+        ),
+      );
     }
   }
 
@@ -233,22 +262,28 @@ class TableTimerCubit extends Cubit<TableTimerState> {
     _activeOrderId = null;
     _lastSyncAt = null;
     _baseTotalActiveSec = 0;
-    emit(state.copyWith(shouldShow: true, isLoading: true, displayActiveSec: 0));
+    emit(
+      state.copyWith(shouldShow: true, isLoading: true, displayActiveSec: 0),
+    );
     try {
-      final orderRes = await _client.post(ListAPI.orders, data: {
-        'table_id': tableId,
-        'guest_count': guestCount,
-        'items': <dynamic>[],
-        'status': 'open',
-        'order_type': 'dine_in',
-        'comment': '',
-      });
+      final orderRes = await _client.post(
+        ListAPI.orders,
+        data: {
+          'table_id': tableId,
+          'guest_count': guestCount,
+          'items': <dynamic>[],
+          'status': 'open',
+          'order_type': 'dine_in',
+          'comment': '',
+        },
+      );
       final data = orderRes.data['data'];
       final orderId = (data is Map<String, dynamic>)
           ? (data['id'] as String? ?? data['order_id'] as String?)
           : null;
       if (orderId == null || orderId.isEmpty) {
-        if (!isClosed) emit(state.copyWith(isLoading: false, shouldShow: false));
+        if (!isClosed)
+          emit(state.copyWith(isLoading: false, shouldShow: false));
         return null;
       }
       _activeOrderId = orderId;
@@ -260,7 +295,9 @@ class TableTimerCubit extends Cubit<TableTimerState> {
       // Javob: {"error": "stol already has an active buyurtma: <uuid>", ...}
       if (e.response?.statusCode == 409) {
         final raw = e.response?.data;
-        final msg = raw is Map ? (raw['error'] ?? raw['message']).toString() : '';
+        final msg = raw is Map
+            ? (raw['error'] ?? raw['message']).toString()
+            : '';
         final uuidMatch = RegExp(
           r'[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}',
         ).firstMatch(msg);
@@ -274,20 +311,24 @@ class TableTimerCubit extends Cubit<TableTimerState> {
         }
       }
       if (!isClosed) {
-        emit(state.copyWith(
-          isLoading: false,
-          shouldShow: false,
-          errorMessage: e.message ?? 'Order yaratishda xato',
-        ));
+        emit(
+          state.copyWith(
+            isLoading: false,
+            shouldShow: false,
+            errorMessage: e.message ?? 'Order yaratishda xato',
+          ),
+        );
       }
       return null;
     } catch (e) {
       if (!isClosed) {
-        emit(state.copyWith(
-          isLoading: false,
-          shouldShow: false,
-          errorMessage: e.toString(),
-        ));
+        emit(
+          state.copyWith(
+            isLoading: false,
+            shouldShow: false,
+            errorMessage: e.toString(),
+          ),
+        );
       }
       return null;
     }
@@ -311,10 +352,12 @@ class TableTimerCubit extends Cubit<TableTimerState> {
       }
     } on DioException catch (e) {
       if (isClosed || _activeOrderId != id) return;
-      emit(state.copyWith(
-        isMutating: false,
-        errorMessage: e.message ?? 'Start xatosi',
-      ));
+      emit(
+        state.copyWith(
+          isMutating: false,
+          errorMessage: e.message ?? 'Start xatosi',
+        ),
+      );
     } catch (e) {
       if (isClosed || _activeOrderId != id) return;
       emit(state.copyWith(isMutating: false, errorMessage: e.toString()));
@@ -339,10 +382,12 @@ class TableTimerCubit extends Cubit<TableTimerState> {
       }
     } on DioException catch (e) {
       if (isClosed || _activeOrderId != id) return;
-      emit(state.copyWith(
-        isMutating: false,
-        errorMessage: e.message ?? 'Pause xatosi',
-      ));
+      emit(
+        state.copyWith(
+          isMutating: false,
+          errorMessage: e.message ?? 'Pause xatosi',
+        ),
+      );
     } catch (e) {
       if (isClosed || _activeOrderId != id) return;
       emit(state.copyWith(isMutating: false, errorMessage: e.toString()));
@@ -372,10 +417,12 @@ class TableTimerCubit extends Cubit<TableTimerState> {
       }
     } on DioException catch (e) {
       if (isClosed || _activeOrderId != id) return;
-      emit(state.copyWith(
-        isMutating: false,
-        errorMessage: e.message ?? 'Resume xatosi',
-      ));
+      emit(
+        state.copyWith(
+          isMutating: false,
+          errorMessage: e.message ?? 'Resume xatosi',
+        ),
+      );
     } catch (e) {
       if (isClosed || _activeOrderId != id) return;
       emit(state.copyWith(isMutating: false, errorMessage: e.toString()));

@@ -198,6 +198,7 @@ class MessageLookup extends MessageLookupByLibrary {
             MessageLookupByLibrary.simpleMessage("Taomni tahrirlash"),
         "strEditPrinter":
             MessageLookupByLibrary.simpleMessage("Printerni tahrirlash"),
+        "strElapsedTime": MessageLookupByLibrary.simpleMessage("O\'tgan vaqt"),
         "strEmail": MessageLookupByLibrary.simpleMessage("Email"),
         "strEnlarge": MessageLookupByLibrary.simpleMessage("Kattalashtirish"),
         "strEnterBrandID":
@@ -261,7 +262,16 @@ class MessageLookup extends MessageLookupByLibrary {
         "strFoodsColumn": MessageLookupByLibrary.simpleMessage("Taomlar"),
         "strForNotes": MessageLookupByLibrary.simpleMessage("Izoh uchun"),
         "strFree": MessageLookupByLibrary.simpleMessage("Bo\'sh"),
+        "strFreezeAndTransfer":
+            MessageLookupByLibrary.simpleMessage("Muzlatib ko\'chirish"),
+        "strFreezeTimerBody": MessageLookupByLibrary.simpleMessage(
+            "Buyurtma oddiy stolga ko\'chiriladi. Hozirgacha yig\'ilgan vaqt va summa saqlanadi, lekin keyingi vaqt uchun pul hisoblanmaydi."),
+        "strFreezeTimerTitle":
+            MessageLookupByLibrary.simpleMessage("Vaqt to\'lovini muzlatish"),
         "strFriday": MessageLookupByLibrary.simpleMessage("Juma"),
+        "strFrozenAmount":
+            MessageLookupByLibrary.simpleMessage("Muzlatilgan summa"),
+        "strFrozenShort": MessageLookupByLibrary.simpleMessage("MUZLATILDI"),
         "strFullName": MessageLookupByLibrary.simpleMessage("To\'liq ism"),
         "strGiven": MessageLookupByLibrary.simpleMessage("Berilgan"),
         "strGoToPayment":

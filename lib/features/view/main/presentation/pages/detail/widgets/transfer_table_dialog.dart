@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mary_ai_pos/core/api/dio_client.dart';
 import 'package:mary_ai_pos/core/api/list_api.dart';
+import 'package:mary_ai_pos/core/common/dialog_action_buttons.dart';
 import 'package:mary_ai_pos/core/components/flush_bars.dart';
 import 'package:mary_ai_pos/core/services/cache/cache_service.dart';
 import 'package:mary_ai_pos/di.dart';
@@ -77,8 +78,8 @@ class _TransferTableDialogState extends State<_TransferTableDialog> {
   Future<void> _submit() async {
     final targetId = _selectedTableId;
     if (targetId == null || _submitting) return;
+
     setState(() => _submitting = true);
-    // async gap dan oldin context-ga bog'liq narsalarni olamiz
     final main = context.read<MainCubit>();
     final nav = Navigator.of(context);
     try {
@@ -104,7 +105,7 @@ class _TransferTableDialogState extends State<_TransferTableDialog> {
       final code = e.response?.statusCode;
       final detail = e.response?.data is Map
           ? (e.response?.data['details']?.toString() ??
-              e.response?.data['message']?.toString())
+                e.response?.data['message']?.toString())
           : null;
       final msg = switch (code) {
         409 => S.current.strSelectedTableIsBusy,
@@ -129,14 +130,14 @@ class _TransferTableDialogState extends State<_TransferTableDialog> {
         final hallId =
             _selectedHallId ?? (halls.isNotEmpty ? halls.first.id : null);
 
-        final isSourceTimeBased =
-            widget.sourceTableType?.toLowerCase() == 'time_based';
-
         // Tanlangan zaldagi stollar (joriy stol istisno qilinadi)
-        final hallTables = tables
-            .where((t) => t.hallId == hallId && t.id != widget.sourceTableId)
-            .toList()
-          ..sort((a, b) => a.number.compareTo(b.number));
+        final hallTables =
+            tables
+                .where(
+                  (t) => t.hallId == hallId && t.id != widget.sourceTableId,
+                )
+                .toList()
+              ..sort((a, b) => a.number.compareTo(b.number));
 
         return Dialog(
           shape: RoundedRectangleBorder(
@@ -146,44 +147,32 @@ class _TransferTableDialogState extends State<_TransferTableDialog> {
             constraints: const BoxConstraints(maxWidth: 560, maxHeight: 600),
             child: Column(
               mainAxisSize: MainAxisSize.max,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 // Header
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 18, 12, 14),
-                  child: Row(
+                  padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              S.current.strChangeTable,
-                              style: const TextStyle(
-                                fontSize: 17,
-                                fontWeight: FontWeight.w700,
-                                color: Color(0xFF0F172A),
-                                fontFamily: 'Inter',
-                                letterSpacing: -0.2,
-                              ),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              S.current.strSelectFreeTableForTransfer,
-                              style: const TextStyle(
-                                fontSize: 12,
-                                color: Color(0xFF64748B),
-                                fontFamily: 'Inter',
-                              ),
-                            ),
-                          ],
+                      Text(
+                        S.current.strChangeTable,
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF0F172A),
+                          fontFamily: 'Inter',
+                          letterSpacing: -0.2,
                         ),
                       ),
-                      IconButton(
-                        icon: const Icon(Icons.close_rounded, size: 20),
-                        color: const Color(0xFF64748B),
-                        onPressed: _submitting
-                            ? null
-                            : () => Navigator.of(context).pop(false),
+                      const SizedBox(height: 4),
+                      Text(
+                        S.current.strSelectFreeTableForTransfer,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          color: Color(0xFF64748B),
+                          fontFamily: 'Inter',
+                        ),
                       ),
                     ],
                   ),
@@ -193,13 +182,13 @@ class _TransferTableDialogState extends State<_TransferTableDialog> {
                 // Hall chips
                 if (halls.length > 1)
                   Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+                    padding: const EdgeInsets.fromLTRB(20, 12, 20, 4),
                     child: SizedBox(
-                      height: 34,
+                      height: 44,
                       child: ListView.separated(
                         scrollDirection: Axis.horizontal,
                         itemCount: halls.length,
-                        separatorBuilder: (_, _) => const SizedBox(width: 6),
+                        separatorBuilder: (_, _) => const SizedBox(width: 8),
                         itemBuilder: (_, i) {
                           final h = halls[i];
                           final selected = h.id == hallId;
@@ -228,8 +217,9 @@ class _TransferTableDialogState extends State<_TransferTableDialog> {
                                 height: 56,
                                 decoration: BoxDecoration(
                                   shape: BoxShape.circle,
-                                  color: const Color(0xFFFB6633)
-                                      .withOpacity(0.06),
+                                  color: const Color(
+                                    0xFFFB6633,
+                                  ).withOpacity(0.06),
                                 ),
                                 child: const Icon(
                                   Icons.table_restaurant_outlined,
@@ -256,36 +246,28 @@ class _TransferTableDialogState extends State<_TransferTableDialog> {
                           radius: const Radius.circular(8),
                           child: GridView.builder(
                             controller: _gridCtrl,
-                            padding:
-                                const EdgeInsets.fromLTRB(16, 12, 20, 12),
+                            padding: const EdgeInsets.fromLTRB(20, 12, 20, 12),
                             gridDelegate:
                                 const SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: 5,
-                              mainAxisSpacing: 8,
-                              crossAxisSpacing: 8,
-                              childAspectRatio: 1.0,
-                            ),
+                                  crossAxisCount: 4,
+                                  mainAxisSpacing: 12,
+                                  crossAxisSpacing: 12,
+                                  childAspectRatio: 1.0,
+                                ),
                             itemCount: hallTables.length,
                             itemBuilder: (_, i) {
                               final t = hallTables[i];
                               final isFree = t.status == TableStatus.free;
-                              final isTargetTimeBased =
-                                  t.tableType?.toLowerCase() == 'time_based';
-                              final isSelectable = isFree &&
-                                  (!isSourceTimeBased || isTargetTimeBased);
                               final isSelected = _selectedTableId == t.id;
                               return _TableTile(
                                 number: t.number,
                                 status: t.status,
                                 tableType: t.tableType,
                                 isSelected: isSelected,
-                                blockedByType: isFree &&
-                                    isSourceTimeBased &&
-                                    !isTargetTimeBased,
-                                onTap: isSelectable
+                                onTap: isFree
                                     ? () => setState(
-                                          () => _selectedTableId = t.id,
-                                        )
+                                        () => _selectedTableId = t.id,
+                                      )
                                     : null,
                               );
                             },
@@ -297,43 +279,12 @@ class _TransferTableDialogState extends State<_TransferTableDialog> {
 
                 // Footer
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 14),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      TextButton(
-                        onPressed: _submitting
-                            ? null
-                            : () => Navigator.of(context).pop(false),
-                        child: Text(S.current.strCancel),
-                      ),
-                      const SizedBox(width: 8),
-                      FilledButton(
-                        style: FilledButton.styleFrom(
-                          backgroundColor: const Color(0xFFFB6633),
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 12,
-                          ),
-                        ),
-                        onPressed: (_selectedTableId == null || _submitting)
-                            ? null
-                            : _submit,
-                        child: _submitting
-                            ? const SizedBox(
-                                width: 16,
-                                height: 16,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  valueColor: AlwaysStoppedAnimation<Color>(
-                                    Colors.white,
-                                  ),
-                                ),
-                              )
-                            : Text(S.current.strTransfer),
-                      ),
-                    ],
+                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+                  child: DialogActionButtons(
+                    onCancel: () => Navigator.of(context).pop(false),
+                    onConfirm: _selectedTableId == null ? null : _submit,
+                    confirmText: S.current.strTransfer,
+                    isLoading: _submitting,
                   ),
                 ),
               ],
@@ -362,7 +313,8 @@ class _HallChip extends StatelessWidget {
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 120),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+        alignment: Alignment.center,
         decoration: BoxDecoration(
           color: isActive
               ? const Color(0xFFFB6633).withOpacity(0.1)
@@ -372,16 +324,14 @@ class _HallChip extends StatelessWidget {
                 ? const Color(0xFFFB6633).withOpacity(0.4)
                 : const Color(0xFFE2E8F0),
           ),
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(12),
         ),
         child: Text(
           label,
           style: TextStyle(
-            fontSize: 13,
-            fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
-            color: isActive
-                ? const Color(0xFFFB6633)
-                : const Color(0xFF64748B),
+            fontSize: 15,
+            fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
+            color: isActive ? const Color(0xFFFB6633) : const Color(0xFF64748B),
             fontFamily: 'Inter',
           ),
         ),
@@ -395,7 +345,6 @@ class _TableTile extends StatelessWidget {
   final TableStatus status;
   final String? tableType;
   final bool isSelected;
-  final bool blockedByType;
   final VoidCallback? onTap;
 
   const _TableTile({
@@ -403,7 +352,6 @@ class _TableTile extends StatelessWidget {
     required this.status,
     required this.tableType,
     required this.isSelected,
-    this.blockedByType = false,
     required this.onTap,
   });
 
@@ -416,7 +364,7 @@ class _TableTile extends StatelessWidget {
       bg = const Color(0xFFFB6633);
       border = const Color(0xFFFB6633);
       text = Colors.white;
-    } else if (!isFree || blockedByType) {
+    } else if (!isFree) {
       bg = const Color(0xFFF1F5F9);
       border = const Color(0xFFE2E8F0);
       text = const Color(0xFFCBD5E1);
@@ -428,11 +376,9 @@ class _TableTile extends StatelessWidget {
     // Indigo tint — time-based stol indikatori (yuqori-o'ngda kichik soat)
     final timerIconColor = isSelected
         ? Colors.white.withOpacity(0.9)
-        : (isFree && !blockedByType
-            ? const Color(0xFF6366F1)
-            : const Color(0xFFCBD5E1));
+        : (isFree ? const Color(0xFF6366F1) : const Color(0xFFCBD5E1));
     return Opacity(
-      opacity: isFree && !blockedByType || isSelected ? 1 : 0.6,
+      opacity: isFree || isSelected ? 1 : 0.6,
       child: GestureDetector(
         onTap: onTap,
         child: AnimatedContainer(
@@ -440,19 +386,19 @@ class _TableTile extends StatelessWidget {
           decoration: BoxDecoration(
             color: bg,
             border: Border.all(color: border, width: isSelected ? 2 : 1),
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(16),
           ),
           child: Stack(
             children: [
               if (isTimeBased)
                 Positioned(
-                  top: 4,
-                  right: 4,
+                  top: 8,
+                  right: 8,
                   child: Tooltip(
                     message: 'Soatlik xona',
                     child: Icon(
                       Icons.schedule_rounded,
-                      size: 12,
+                      size: 16,
                       color: timerIconColor,
                     ),
                   ),
@@ -464,32 +410,20 @@ class _TableTile extends StatelessWidget {
                     Text(
                       '$number',
                       style: TextStyle(
-                        fontSize: 18,
+                        fontSize: 28,
                         fontWeight: FontWeight.w700,
                         color: text,
                         fontFamily: 'Inter',
                         fontFeatures: const [FontFeature.tabularFigures()],
                       ),
                     ),
-                    if (blockedByType && !isSelected)
-                      const Padding(
-                        padding: EdgeInsets.only(top: 2),
-                        child: Text(
-                          '—',
-                          style: TextStyle(
-                            fontSize: 9,
-                            color: Color(0xFF94A3B8),
-                            fontFamily: 'Inter',
-                          ),
-                        ),
-                      )
-                    else if (!isFree && !isSelected)
+                    if (!isFree && !isSelected)
                       Padding(
-                        padding: const EdgeInsets.only(top: 2),
+                        padding: const EdgeInsets.only(top: 4),
                         child: Text(
                           S.current.strBusyShort,
                           style: const TextStyle(
-                            fontSize: 9,
+                            fontSize: 11,
                             color: Color(0xFF94A3B8),
                             fontFamily: 'Inter',
                           ),

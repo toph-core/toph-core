@@ -196,6 +196,8 @@ class MessageLookup extends MessageLookupByLibrary {
             MessageLookupByLibrary.simpleMessage("Редактировать блюдо"),
         "strEditPrinter":
             MessageLookupByLibrary.simpleMessage("Редактировать принтер"),
+        "strElapsedTime":
+            MessageLookupByLibrary.simpleMessage("Прошло времени"),
         "strEmail": MessageLookupByLibrary.simpleMessage("Email"),
         "strEnlarge": MessageLookupByLibrary.simpleMessage("Увеличить"),
         "strEnterBrandID":
@@ -261,7 +263,16 @@ class MessageLookup extends MessageLookupByLibrary {
         "strFoodsColumn": MessageLookupByLibrary.simpleMessage("Блюда"),
         "strForNotes": MessageLookupByLibrary.simpleMessage("Для комментария"),
         "strFree": MessageLookupByLibrary.simpleMessage("Свободно"),
+        "strFreezeAndTransfer":
+            MessageLookupByLibrary.simpleMessage("Заморозить и перенести"),
+        "strFreezeTimerBody": MessageLookupByLibrary.simpleMessage(
+            "Заказ будет перенесён на обычный стол. Накопленное время и сумма сохранятся, но плата за дальнейшее время начисляться не будет."),
+        "strFreezeTimerTitle":
+            MessageLookupByLibrary.simpleMessage("Заморозить плату за время"),
         "strFriday": MessageLookupByLibrary.simpleMessage("Пятница"),
+        "strFrozenAmount":
+            MessageLookupByLibrary.simpleMessage("Замороженная сумма"),
+        "strFrozenShort": MessageLookupByLibrary.simpleMessage("ЗАМОРОЖЕНО"),
         "strFullName": MessageLookupByLibrary.simpleMessage("Полное имя"),
         "strGiven": MessageLookupByLibrary.simpleMessage("Внесено"),
         "strGoToPayment": MessageLookupByLibrary.simpleMessage("К оплате"),

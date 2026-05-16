@@ -51,24 +51,28 @@ class _DetailScreenState extends State<DetailScreen> with DetailScreenMixin {
     tableStatus = args['table_status'] as TableStatus;
 
     final hasSavedGoods =
-        savedOrders != null &&
-        savedOrders!.createOrderRequest.foods.isNotEmpty;
+        savedOrders != null && savedOrders!.createOrderRequest.foods.isNotEmpty;
 
     _detailBloc = inject<DetailBloc>()
       ..add(const DetailEvent.started())
       ..add(const DetailEvent.getCategories())
-      ..add(DetailEvent.initSavedGoods(
-        savedGoods: savedOrders?.createOrderRequest.foods ?? [],
-      ));
+      ..add(
+        DetailEvent.initSavedGoods(
+          savedGoods: savedOrders?.createOrderRequest.foods ?? [],
+        ),
+      );
 
-    if (tableStatus == TableStatus.busy && cafeTable != null && !hasSavedGoods) {
+    if (tableStatus == TableStatus.busy &&
+        cafeTable != null &&
+        !hasSavedGoods) {
       _detailBloc.add(DetailEvent.fetchBillOrders(billId: cafeTable!.id));
     }
 
     final isTimeBased = cafeTable?.tableType?.toLowerCase() == 'time_based';
     if (isTimeBased && tableStatus == TableStatus.free) {
-      WidgetsBinding.instance
-          .addPostFrameCallback((_) => _autoStartTimedOrder());
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) => _autoStartTimedOrder(),
+      );
     }
   }
 
@@ -98,11 +102,13 @@ class _DetailScreenState extends State<DetailScreen> with DetailScreenMixin {
       _detailBloc.add(DetailEvent.setActiveOrderId(orderId: orderId));
     }
     setState(() => tableStatus = TableStatus.busy);
-    context.read<MainCubit>().updateTableStatus(cafeTable!.id, TableStatus.busy);
-    _detailBloc.add(DetailEvent.fetchBillOrders(
-      billId: cafeTable!.id,
-      force: true,
-    ));
+    context.read<MainCubit>().updateTableStatus(
+      cafeTable!.id,
+      TableStatus.busy,
+    );
+    _detailBloc.add(
+      DetailEvent.fetchBillOrders(billId: cafeTable!.id, force: true),
+    );
   }
 
   @override
@@ -117,101 +123,106 @@ class _DetailScreenState extends State<DetailScreen> with DetailScreenMixin {
           listenWhen: (prev, curr) =>
               prev.activeOrderId != curr.activeOrderId &&
               curr.activeOrderId != null &&
-              cafeTable?.tableType?.toLowerCase() == 'time_based' &&
               !_timerCubit.state.shouldShow,
           listener: (context, state) {
+            // `cafeTable.tableType == time_based` gate olib tashlandi —
+            // time-based stol simple stolga transfer qilinganda ham order
+            // muzlatilgan `final_amount`'ga ega bo'lishi mumkin va
+            // bu UI ga tiklanishi kerak. Cubit 400/non-frozen javoblarda
+            // jimgina o'tib ketadi (shouldShow=false).
             _timerCubit.fetchTimer(orderId: state.activeOrderId!);
           },
           child: Scaffold(
             backgroundColor: context.colors.bgSecondary,
             body: Stack(
-            children: [
-              GestureDetector(
-                onTap: () {
-                  if (showVirtualKeyboard.value) {
-                    showVirtualKeyboard.value = false;
-                  }
-                },
-                child: Column(
-                  children: [
-                    TopBarWidget(
-                      cafeTable: cafeTable,
-                      showKeyboard: showVirtualKeyboard,
-                      textEditingController: controller,
-                      guestCount: guestCount,
-                    ),
-                    OrderActionsBar(
-                      tableId: cafeTable?.id,
-                      guestCount: guestCount,
-                      tableStatus: tableStatus,
-                      cafeTable: cafeTable,
-                      onTableStatusChanged: (s) =>
-                          setState(() => tableStatus = s),
-                    ),
-                    Expanded(
-                      child: Builder(
-                        builder: (context) {
-                          // Compact (1024–1366): kichikroq sidebar — joy tejash
-                          // Comfortable (1366+): kengroq, qulayroq item kartochkalari
-                          final sidebarW = PosBreakpoints.pickThree<double>(
-                            context,
-                            compact: PosDimensions.cartPanelCompact, // 320
-                            comfortable: PosDimensions.cartPanelComfortable, // 400
-                            large: 440.0,
-                          );
-                          return Row(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              const Expanded(child: ProductGridWidget()),
-                              SizedBox(
-                                width: sidebarW,
-                                child: OrderSidebar(
-                                  tableId: cafeTable?.id,
-                                  cafeTable: cafeTable,
+              children: [
+                GestureDetector(
+                  onTap: () {
+                    if (showVirtualKeyboard.value) {
+                      showVirtualKeyboard.value = false;
+                    }
+                  },
+                  child: Column(
+                    children: [
+                      TopBarWidget(
+                        cafeTable: cafeTable,
+                        showKeyboard: showVirtualKeyboard,
+                        textEditingController: controller,
+                        guestCount: guestCount,
+                      ),
+                      OrderActionsBar(
+                        tableId: cafeTable?.id,
+                        guestCount: guestCount,
+                        tableStatus: tableStatus,
+                        cafeTable: cafeTable,
+                        onTableStatusChanged: (s) =>
+                            setState(() => tableStatus = s),
+                      ),
+                      Expanded(
+                        child: Builder(
+                          builder: (context) {
+                            // Compact (1024–1366): kichikroq sidebar — joy tejash
+                            // Comfortable (1366+): kengroq, qulayroq item kartochkalari
+                            final sidebarW = PosBreakpoints.pickThree<double>(
+                              context,
+                              compact: PosDimensions.cartPanelCompact, // 320
+                              comfortable:
+                                  PosDimensions.cartPanelComfortable, // 400
+                              large: 440.0,
+                            );
+                            return Row(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                const Expanded(child: ProductGridWidget()),
+                                SizedBox(
+                                  width: sidebarW,
+                                  child: OrderSidebar(
+                                    tableId: cafeTable?.id,
+                                    cafeTable: cafeTable,
+                                  ),
                                 ),
-                              ),
-                            ],
-                          );
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              // Virtual keyboard overlay
-              ValueListenableBuilder(
-                valueListenable: showVirtualKeyboard,
-                builder: (context, value, _) {
-                  if (!value) return const SizedBox.shrink();
-                  return Positioned(
-                    bottom: 0,
-                    left: 0,
-                    right: 0,
-                    child: DecoratedBox(
-                      decoration: BoxDecoration(
-                        color: context.colors.bgSecondary,
-                      ),
-                      child: SafeArea(
-                        child: VirtualKeyboard(
-                          height: context.h * .3,
-                          customLayoutKeys: VirtualKeyboardDefaultLayoutKeys([
-                            VirtualKeyboardDefaultLayouts.English,
-                          ]),
-                          textColor: Colors.black,
-                          fontSize: 24,
-                          textController: controller,
-                          type: VirtualKeyboardType.Alphanumeric,
+                              ],
+                            );
+                          },
                         ),
                       ),
-                    ),
-                  );
-                },
-              ),
-            ],
+                    ],
+                  ),
+                ),
+                // Virtual keyboard overlay
+                ValueListenableBuilder(
+                  valueListenable: showVirtualKeyboard,
+                  builder: (context, value, _) {
+                    if (!value) return const SizedBox.shrink();
+                    return Positioned(
+                      bottom: 0,
+                      left: 0,
+                      right: 0,
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          color: context.colors.bgSecondary,
+                        ),
+                        child: SafeArea(
+                          child: VirtualKeyboard(
+                            height: context.h * .3,
+                            customLayoutKeys: VirtualKeyboardDefaultLayoutKeys([
+                              VirtualKeyboardDefaultLayouts.English,
+                            ]),
+                            textColor: Colors.black,
+                            fontSize: 24,
+                            textController: controller,
+                            type: VirtualKeyboardType.Alphanumeric,
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ],
+            ),
           ),
         ),
       ),
-    ),
-  );
+    );
   }
 }

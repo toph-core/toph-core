@@ -4049,6 +4049,66 @@ class S {
       args: [],
     );
   }
+
+  /// `Freeze time charge`
+  String get strFreezeTimerTitle {
+    return Intl.message(
+      'Freeze time charge',
+      name: 'strFreezeTimerTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `The order will be moved to a regular table. The elapsed time and accumulated amount will be preserved, but no further time charges will accrue.`
+  String get strFreezeTimerBody {
+    return Intl.message(
+      'The order will be moved to a regular table. The elapsed time and accumulated amount will be preserved, but no further time charges will accrue.',
+      name: 'strFreezeTimerBody',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Freeze & transfer`
+  String get strFreezeAndTransfer {
+    return Intl.message(
+      'Freeze & transfer',
+      name: 'strFreezeAndTransfer',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `FROZEN`
+  String get strFrozenShort {
+    return Intl.message(
+      'FROZEN',
+      name: 'strFrozenShort',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Elapsed time`
+  String get strElapsedTime {
+    return Intl.message(
+      'Elapsed time',
+      name: 'strElapsedTime',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Frozen amount`
+  String get strFrozenAmount {
+    return Intl.message(
+      'Frozen amount',
+      name: 'strFrozenAmount',
+      desc: '',
+      args: [],
+    );
+  }
 }
 
 class AppLocalizationDelegate extends LocalizationsDelegate<S> {

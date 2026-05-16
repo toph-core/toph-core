@@ -5,10 +5,13 @@ class TableTimerState {
   final bool isLoading;
   final bool isMutating;
   final String? errorMessage;
+
   /// UI blokini ko'rsatish: faqat `time_based` + muvaffaqiyatli javobdan keyin.
   final bool shouldShow;
+
   /// UI uchun lokal hisoblangan faol vaqt (sekund). `null` bo'lsa `timer.totalActiveSec` ishlatiladi.
   final int? displayActiveSec;
+
   /// Bill API-dan kelgan pause_periods ro'yxati.
   final List<PauseInterval> billPauses;
 
@@ -35,11 +38,37 @@ class TableTimerState {
     return amount.toStringAsFixed(2);
   }
 
-  /// `timer.currentAmount` yoki hisoblangan summa.
-  String? get effectiveCurrentAmount =>
-      (timer?.currentAmount?.isNotEmpty == true)
-          ? timer!.currentAmount
-          : computedCurrentAmount;
+  /// Timer yopilgan (`closed`) va muzlatilgan summa mavjudmi.
+  /// `true` bo'lsa UI yangi vaqt qo'shmasligi, lekin saqlangan summani
+  /// statik ko'rsatishi kerak.
+  bool get isFrozen {
+    final t = timer;
+    if (t == null) return false;
+    if (!t.isFrozenClosed) return false;
+    final amt = t.finalAmount;
+    if (amt == null || amt.isEmpty) return false;
+    final v = double.tryParse(amt.replaceAll(RegExp(r'[^0-9.]'), ''));
+    return v != null && v > 0;
+  }
+
+  /// Muzlatilgan summa integer som sifatida (UI total uchun).
+  int get frozenAmountInt {
+    final t = timer;
+    if (t == null) return 0;
+    return parseAmountToInt(t.finalAmount);
+  }
+
+  /// Ko'rsatish uchun samarali summa.
+  /// Frozen bo'lsa `finalAmount`, aks holda `currentAmount`, oxirgi navbatda hisoblangan.
+  String? get effectiveCurrentAmount {
+    final t = timer;
+    if (t != null && t.isFrozenClosed) {
+      final fin = t.finalAmount;
+      if (fin != null && fin.isNotEmpty) return fin;
+    }
+    if (t?.currentAmount?.isNotEmpty == true) return t!.currentAmount;
+    return computedCurrentAmount;
+  }
 
   TableTimerState copyWith({
     TableTimerResponse? timer,

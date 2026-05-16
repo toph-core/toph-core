@@ -18,11 +18,7 @@ class OrderSidebar extends StatefulWidget {
   final String? tableId;
   final CafeTableModel? cafeTable;
 
-  const OrderSidebar({
-    super.key,
-    this.tableId,
-    this.cafeTable,
-  });
+  const OrderSidebar({super.key, this.tableId, this.cafeTable});
 
   @override
   State<OrderSidebar> createState() => _OrderSidebarState();
@@ -47,10 +43,12 @@ class _OrderSidebarState extends State<OrderSidebar> with DetailScreenMixin {
       listenWhen: (p, c) =>
           p.activeOrderId != c.activeOrderId && c.activeOrderId != null,
       listener: (ctx, s) {
-        if (cafeTable?.tableType?.toLowerCase() == 'time_based') {
-          final timerCubit = ctx.read<TableTimerCubit>();
-          timerCubit.fetchTimer(orderId: s.activeOrderId!);
-        }
+        // time_based stoldan simple stolga transfer qilingan order
+        // muzlatilgan `final_amount`'ni ko'rsatishi uchun barcha dine_in
+        // orderlar uchun fetch chaqiramiz. Cubit 400/non-frozen javoblarda
+        // jimgina o'tib ketadi.
+        final timerCubit = ctx.read<TableTimerCubit>();
+        timerCubit.fetchTimer(orderId: s.activeOrderId!);
       },
       child: BlocBuilder<DetailBloc, DetailState>(
         buildWhen: (p, c) =>
@@ -67,7 +65,8 @@ class _OrderSidebarState extends State<OrderSidebar> with DetailScreenMixin {
               children: [
                 // Items list (sidebar = faqat itemlar)
                 Expanded(
-                  child: (state.existingGoods.isEmpty &&
+                  child:
+                      (state.existingGoods.isEmpty &&
                           state.selectedGoods.isEmpty)
                       ? _SidebarEmptyState(colors: colors)
                       : Scrollbar(
@@ -110,8 +109,8 @@ class _OrderSidebarState extends State<OrderSidebar> with DetailScreenMixin {
                                 ...state.selectedGoods.asMap().entries.map(
                                   (e) => Padding(
                                     padding: EdgeInsets.only(
-                                      bottom: e.key <
-                                              state.selectedGoods.length - 1
+                                      bottom:
+                                          e.key < state.selectedGoods.length - 1
                                           ? 8
                                           : 0,
                                     ),
@@ -123,7 +122,6 @@ class _OrderSidebarState extends State<OrderSidebar> with DetailScreenMixin {
                           ),
                         ),
                 ),
-
               ],
             ),
           );
@@ -235,9 +233,9 @@ class _OrderItem extends StatelessWidget with DetailScreenMixin {
                   Text(
                     ((item.goods.additionals.isNotEmpty
                                 ? item.goods.additionals
-                                        .map((v) => v.price)
-                                        .reduce((a, b) => a + b) +
-                                    double.parse(item.goods.price)
+                                          .map((v) => v.price)
+                                          .reduce((a, b) => a + b) +
+                                      double.parse(item.goods.price)
                                 : double.parse(item.goods.price)) *
                             item.quantity)
                         .formatN,
@@ -544,8 +542,9 @@ class _ReadonlyOrderItem extends StatelessWidget {
                             height: 36,
                             decoration: BoxDecoration(
                               color: colors.brandSoft,
-                              borderRadius:
-                                  BorderRadius.circular(PosDimensions.radiusSm),
+                              borderRadius: BorderRadius.circular(
+                                PosDimensions.radiusSm,
+                              ),
                             ),
                             child: Center(
                               child: Text(
@@ -813,8 +812,7 @@ class _EditExistingOrderItemDialogState
                 ),
                 decoration: BoxDecoration(
                   color: colors.surfaceTinted,
-                  borderRadius:
-                      BorderRadius.circular(PosDimensions.radiusMd),
+                  borderRadius: BorderRadius.circular(PosDimensions.radiusMd),
                   border: Border.all(color: colors.border),
                 ),
                 child: Row(
@@ -859,7 +857,8 @@ class _EditExistingOrderItemDialogState
                           foregroundColor: colors.textPrimary,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(
-                                PosDimensions.radiusMd),
+                              PosDimensions.radiusMd,
+                            ),
                           ),
                         ),
                         child: Text(
@@ -884,12 +883,14 @@ class _EditExistingOrderItemDialogState
                             : null,
                         style: FilledButton.styleFrom(
                           backgroundColor: colors.brand,
-                          disabledBackgroundColor:
-                              colors.brand.withOpacity(0.4),
+                          disabledBackgroundColor: colors.brand.withOpacity(
+                            0.4,
+                          ),
                           foregroundColor: colors.textOnBrand,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(
-                                PosDimensions.radiusMd),
+                              PosDimensions.radiusMd,
+                            ),
                           ),
                         ),
                         child: Text(
@@ -1038,8 +1039,8 @@ class _DialogStepperBtnState extends State<_DialogStepperBtn> {
           color: disabled
               ? colors.textDisabled
               : _pressed
-                  ? colors.textOnBrand
-                  : colors.textPrimary,
+              ? colors.textOnBrand
+              : colors.textPrimary,
         ),
       ),
     );
@@ -1144,7 +1145,9 @@ class _TimerBadgeRowState extends State<_TimerBadgeRow> {
                               fontWeight: FontWeight.w600,
                               color: accentColor.withOpacity(0.75),
                               fontFamily: 'Inter',
-                              fontFeatures: const [FontFeature.tabularFigures()],
+                              fontFeatures: const [
+                                FontFeature.tabularFigures(),
+                              ],
                             ),
                           ),
                         ),

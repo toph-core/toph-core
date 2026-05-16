@@ -10,6 +10,7 @@ import 'package:mary_ai_pos/core/utils/helper/helper_widget.dart';
 import 'package:mary_ai_pos/di.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/cafe_tables/cafe_tables_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/table_timer/table_timer_response_model.dart';
+import 'package:mary_ai_pos/features/view/main/domain/pricing/table_pricing_strategy.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/create_order/create_order_bloc.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/detail/detail_bloc.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/main/main_cubit.dart';
@@ -81,20 +82,29 @@ class _OrderActionsBarState extends State<OrderActionsBar>
                 p.shouldShow != c.shouldShow ||
                 p.isMutating != c.isMutating ||
                 p.timer?.currentAmount != c.timer?.currentAmount ||
+                p.timer?.finalAmount != c.timer?.finalAmount ||
                 p.timer?.stateNormalized != c.timer?.stateNormalized ||
+                p.displayActiveSec != c.displayActiveSec ||
                 p.billPauses.length != c.billPauses.length,
             builder: (ctx, timerState) {
               final existingTotal = calculateTotalPrice(
-                state.existingGoods.where((g) => g.commet != 'cancelled').toList(),
+                state.existingGoods
+                    .where((g) => g.commet != 'cancelled')
+                    .toList(),
               );
               final foodTotal =
                   (existingTotal + calculateTotalPrice(state.selectedGoods))
                       .round();
-              final rawAmt = timerState.timer?.currentAmount ?? '';
-              final timerAmt =
-                  (double.tryParse(rawAmt.replaceAll(RegExp(r'[^0-9.]'), '')) ??
-                          0)
-                      .round();
+              // Stol pricing strategiyasi — time-based (live), frozen, yoki simple.
+              final pricing = TablePricingResolver.resolve(
+                order: null,
+                timer: timerState.timer,
+                displayActiveSec:
+                    timerState.displayActiveSec ??
+                    timerState.timer?.totalActiveSec ??
+                    0,
+              );
+              final timerAmt = pricing.extraCharge;
               final detail = context.read<DetailBloc>().lastDetail;
               final servicePercent = detail?.servicePercent ?? 0;
               final serviceAmt = servicePercent > 0
@@ -105,10 +115,7 @@ class _OrderActionsBarState extends State<OrderActionsBar>
               return Row(
                 children: [
                   // ── Total info ─────────────────────────────────────
-                  _TotalBlock(
-                    foodTotal: foodTotal,
-                    total: total,
-                  ),
+                  _TotalBlock(foodTotal: foodTotal, total: total),
                   const SizedBox(width: 14),
 
                   // ── Timer (compact) ────────────────────────────────
@@ -118,11 +125,11 @@ class _OrderActionsBarState extends State<OrderActionsBar>
                       listener: (ctx, _) {
                         if (cafeTable != null) {
                           ctx.read<DetailBloc>().add(
-                                DetailEvent.fetchBillOrders(
-                                  billId: cafeTable!.id,
-                                  force: true,
-                                ),
-                              );
+                            DetailEvent.fetchBillOrders(
+                              billId: cafeTable!.id,
+                              force: true,
+                            ),
+                          );
                         }
                       },
                       child: const RepaintBoundary(child: _TimerCompact()),
@@ -171,8 +178,8 @@ class _OrderActionsBarState extends State<OrderActionsBar>
                           barrierDismissible: false,
                           builder: (_) => ClearDialog(
                             onSuccess: () => context.read<DetailBloc>().add(
-                                  const DetailEvent.clearGoods(),
-                                ),
+                              const DetailEvent.clearGoods(),
+                            ),
                           ),
                         );
                       },
@@ -281,14 +288,19 @@ class _TimerCompact extends StatelessWidget {
         final t = timerState.timer;
         final displaySec =
             timerState.displayActiveSec ?? t?.totalActiveSec ?? 0;
-        final isRunning = t?.stateNormalized == 'running';
-        final isPaused = t?.stateNormalized == 'paused';
-        final isNone = t == null || t.stateNormalized == 'none';
-        final accent = isPaused
+        final isFrozen = timerState.isFrozen;
+        final isRunning = !isFrozen && t?.stateNormalized == 'running';
+        final isPaused = !isFrozen && t?.stateNormalized == 'paused';
+        final isNone = !isFrozen && (t == null || t.stateNormalized == 'none');
+        // Frozen = indigo soviq tonda + barglar piktogrammasi; aks holda
+        // hozirgi pause/running ranglariga amal qilamiz.
+        final accent = isFrozen
+            ? const Color(0xFF6366F1)
+            : isPaused
             ? const Color(0xFFF59E0B)
             : isRunning
-                ? _indigo
-                : _indigo.withOpacity(0.5);
+            ? _indigo
+            : _indigo.withOpacity(0.5);
         final rawAmt = timerState.effectiveCurrentAmount ?? '';
         final amount = rawAmt.isNotEmpty ? _fmtAmount(rawAmt) : '';
         final pauses = timerState.billPauses.isNotEmpty
@@ -301,10 +313,8 @@ class _TimerCompact extends StatelessWidget {
             behavior: HitTestBehavior.opaque,
             onTap: () => showDialog<void>(
               context: context,
-              builder: (_) => _PauseHistoryDialog(
-                pauses: pauses,
-                startedAt: t?.startedAt,
-              ),
+              builder: (_) =>
+                  _PauseHistoryDialog(pauses: pauses, startedAt: t?.startedAt),
             ),
             child: Container(
               height: 56,
@@ -317,43 +327,84 @@ class _TimerCompact extends StatelessWidget {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Container(
-                    width: 8,
-                    height: 8,
-                    decoration: BoxDecoration(
-                      color: isRunning
-                          ? const Color(0xFF22C55E)
-                          : isPaused
-                              ? const Color(0xFFF59E0B)
-                              : const Color(0xFFCBD5E1),
-                      shape: BoxShape.circle,
-                      boxShadow: isRunning
-                          ? [
-                              BoxShadow(
-                                color:
-                                    const Color(0xFF22C55E).withOpacity(0.5),
-                                blurRadius: 5,
-                              ),
-                            ]
-                          : null,
+                  // Status indikatori: frozen → snowflake; aks holda nuqta
+                  if (isFrozen)
+                    const Icon(
+                      Icons.ac_unit_rounded,
+                      size: 14,
+                      color: Color(0xFF6366F1),
+                    )
+                  else
+                    Container(
+                      width: 8,
+                      height: 8,
+                      decoration: BoxDecoration(
+                        color: isRunning
+                            ? const Color(0xFF22C55E)
+                            : isPaused
+                            ? const Color(0xFFF59E0B)
+                            : const Color(0xFFCBD5E1),
+                        shape: BoxShape.circle,
+                        boxShadow: isRunning
+                            ? [
+                                BoxShadow(
+                                  color: const Color(
+                                    0xFF22C55E,
+                                  ).withOpacity(0.5),
+                                  blurRadius: 5,
+                                ),
+                              ]
+                            : null,
+                      ),
                     ),
-                  ),
                   const SizedBox(width: 8),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Text(
-                        _fmtTime(displaySec),
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w800,
-                          color: accent,
-                          fontFamily: 'Inter',
-                          letterSpacing: 0.4,
-                          height: 1.0,
-                          fontFeatures: const [FontFeature.tabularFigures()],
-                        ),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            _fmtTime(displaySec),
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w800,
+                              color: accent,
+                              fontFamily: 'Inter',
+                              letterSpacing: 0.4,
+                              height: 1.0,
+                              fontFeatures: const [
+                                FontFeature.tabularFigures(),
+                              ],
+                            ),
+                          ),
+                          if (isFrozen) ...[
+                            const SizedBox(width: 6),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 5,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: const Color(
+                                  0xFF6366F1,
+                                ).withOpacity(0.10),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Text(
+                                S.current.strFrozenShort,
+                                style: const TextStyle(
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.w700,
+                                  color: Color(0xFF6366F1),
+                                  fontFamily: 'Inter',
+                                  letterSpacing: 0.4,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
                       ),
                       if (amount.isNotEmpty)
                         Padding(
@@ -374,7 +425,9 @@ class _TimerCompact extends StatelessWidget {
                     const SizedBox(width: 8),
                     Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 6, vertical: 3),
+                        horizontal: 6,
+                        vertical: 3,
+                      ),
                       decoration: BoxDecoration(
                         color: const Color(0xFFF59E0B).withOpacity(0.15),
                         borderRadius: BorderRadius.circular(6),
@@ -407,8 +460,8 @@ class _TimerCompact extends StatelessWidget {
                       onTap: timerState.isMutating
                           ? null
                           : () => isRunning
-                              ? context.read<TableTimerCubit>().pauseTimer()
-                              : context.read<TableTimerCubit>().resumeTimer(),
+                                ? context.read<TableTimerCubit>().pauseTimer()
+                                : context.read<TableTimerCubit>().resumeTimer(),
                       child: AnimatedContainer(
                         duration: const Duration(milliseconds: 150),
                         width: 48,
@@ -417,8 +470,9 @@ class _TimerCompact extends StatelessWidget {
                           color: isRunning
                               ? _indigo.withOpacity(0.10)
                               : const Color(0xFF22C55E).withOpacity(0.10),
-                          borderRadius:
-                              BorderRadius.circular(PosDimensions.radiusSm),
+                          borderRadius: BorderRadius.circular(
+                            PosDimensions.radiusSm,
+                          ),
                         ),
                         child: Center(
                           child: timerState.isMutating
@@ -468,9 +522,9 @@ class _TimerCompact extends StatelessWidget {
     final d = double.tryParse(raw.replaceAll(RegExp(r'[^0-9.]'), ''));
     if (d == null) return raw;
     return d.round().toString().replaceAllMapped(
-          RegExp(r'(\d)(?=(\d{3})+(?!\d))'),
-          (m) => '${m[1]} ',
-        );
+      RegExp(r'(\d)(?=(\d{3})+(?!\d))'),
+      (m) => '${m[1]} ',
+    );
   }
 }
 
@@ -555,8 +609,11 @@ class _PauseHistoryDialogState extends State<_PauseHistoryDialog> {
               child: Row(
                 children: [
                   if (startedAt != null) ...[
-                    const Icon(Icons.schedule_rounded,
-                        size: 14, color: Color(0xFF64748B)),
+                    const Icon(
+                      Icons.schedule_rounded,
+                      size: 14,
+                      color: Color(0xFF64748B),
+                    ),
                     const SizedBox(width: 5),
                     Text(
                       '${S.current.strOpenedAtLabel} ${_fmtClockUtil(startedAt)}',
@@ -570,8 +627,10 @@ class _PauseHistoryDialogState extends State<_PauseHistoryDialog> {
                   ],
                   const Spacer(),
                   Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: const Color(0xFFF59E0B).withOpacity(0.12),
                       borderRadius: BorderRadius.circular(6),
@@ -606,85 +665,95 @@ class _PauseHistoryDialogState extends State<_PauseHistoryDialog> {
                 ),
               )
             else
-            Flexible(
-              child: Scrollbar(
-                controller: _ctrl,
-                thumbVisibility: true,
-                thickness: 4,
-                radius: const Radius.circular(8),
-                child: ListView.separated(
-                controller: _ctrl,
-                shrinkWrap: true,
-                padding: const EdgeInsets.fromLTRB(0, 4, 4, 4),
-                itemCount: pauses.length,
-                separatorBuilder: (_, _) =>
-                    const Divider(height: 1, color: Color(0xFFF1F5F9)),
-                itemBuilder: (_, i) {
-                  final p = pauses[i];
-                  final dur = p.durationSec > 0
-                      ? p.durationSec
-                      : (p.endedAt != null
-                          ? p.endedAt!.difference(p.startedAt).inSeconds.abs()
-                          : 0);
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 12),
-                    child: Row(
-                      children: [
-                        Container(
-                          width: 28,
-                          height: 28,
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFF59E0B).withOpacity(0.12),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Center(
-                            child: Text(
-                              '${i + 1}',
-                              style: const TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w700,
-                                color: Color(0xFFF59E0B),
-                                fontFamily: 'Inter',
+              Flexible(
+                child: Scrollbar(
+                  controller: _ctrl,
+                  thumbVisibility: true,
+                  thickness: 4,
+                  radius: const Radius.circular(8),
+                  child: ListView.separated(
+                    controller: _ctrl,
+                    shrinkWrap: true,
+                    padding: const EdgeInsets.fromLTRB(0, 4, 4, 4),
+                    itemCount: pauses.length,
+                    separatorBuilder: (_, _) =>
+                        const Divider(height: 1, color: Color(0xFFF1F5F9)),
+                    itemBuilder: (_, i) {
+                      final p = pauses[i];
+                      final dur = p.durationSec > 0
+                          ? p.durationSec
+                          : (p.endedAt != null
+                                ? p.endedAt!
+                                      .difference(p.startedAt)
+                                      .inSeconds
+                                      .abs()
+                                : 0);
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 12,
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 28,
+                              height: 28,
+                              decoration: BoxDecoration(
+                                color: const Color(
+                                  0xFFF59E0B,
+                                ).withOpacity(0.12),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Center(
+                                child: Text(
+                                  '${i + 1}',
+                                  style: const TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w700,
+                                    color: Color(0xFFF59E0B),
+                                    fontFamily: 'Inter',
+                                  ),
+                                ),
                               ),
                             ),
-                          ),
+                            const SizedBox(width: 12),
+                            _PauseChip(
+                              icon: Icons.pause_rounded,
+                              label: _fmtClockUtil(p.startedAt),
+                              color: const Color(0xFFF59E0B),
+                            ),
+                            const SizedBox(width: 8),
+                            const Icon(
+                              Icons.arrow_forward_rounded,
+                              size: 14,
+                              color: Color(0xFFCBD5E1),
+                            ),
+                            const SizedBox(width: 8),
+                            _PauseChip(
+                              icon: Icons.play_arrow_rounded,
+                              label: p.endedAt != null
+                                  ? _fmtClockUtil(p.endedAt!)
+                                  : '—',
+                              color: const Color(0xFF22C55E),
+                            ),
+                            const Spacer(),
+                            Text(
+                              dur > 0 ? _fmtDurationUtil(dur) : '—',
+                              style: const TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: Color(0xFF94A3B8),
+                                fontFamily: 'Inter',
+                                fontFeatures: [FontFeature.tabularFigures()],
+                              ),
+                            ),
+                          ],
                         ),
-                        const SizedBox(width: 12),
-                        _PauseChip(
-                          icon: Icons.pause_rounded,
-                          label: _fmtClockUtil(p.startedAt),
-                          color: const Color(0xFFF59E0B),
-                        ),
-                        const SizedBox(width: 8),
-                        const Icon(Icons.arrow_forward_rounded,
-                            size: 14, color: Color(0xFFCBD5E1)),
-                        const SizedBox(width: 8),
-                        _PauseChip(
-                          icon: Icons.play_arrow_rounded,
-                          label: p.endedAt != null
-                              ? _fmtClockUtil(p.endedAt!)
-                              : '—',
-                          color: const Color(0xFF22C55E),
-                        ),
-                        const Spacer(),
-                        Text(
-                          dur > 0 ? _fmtDurationUtil(dur) : '—',
-                          style: const TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                            color: Color(0xFF94A3B8),
-                            fontFamily: 'Inter',
-                            fontFeatures: [FontFeature.tabularFigures()],
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                },
+                      );
+                    },
+                  ),
+                ),
               ),
-              ),
-            ),
           ],
         ),
       ),
@@ -768,9 +837,7 @@ class _IconBtnState extends State<_IconBtn> {
             height: PosDimensions.touchTargetMin,
             decoration: BoxDecoration(
               color: _hovered ? widget.hoverColor : _kS50,
-              border: Border.all(
-                color: _hovered ? widget.hoverBorder : _kS200,
-              ),
+              border: Border.all(color: _hovered ? widget.hoverBorder : _kS200),
               borderRadius: BorderRadius.circular(PosDimensions.radiusMd),
             ),
             child: Icon(
@@ -813,11 +880,13 @@ class _ActionButtons extends StatelessWidget {
     if (tableId == null) {
       return BlocProvider(
         create: (_) => inject<CreateOrderBloc>()
-          ..add(const CreateOrderEvent.started(
-            tableId: null,
-            guestCount: 1,
-            tableStatus: TableStatus.free,
-          )),
+          ..add(
+            const CreateOrderEvent.started(
+              tableId: null,
+              guestCount: 1,
+              tableStatus: TableStatus.free,
+            ),
+          ),
         child: BlocBuilder<CreateOrderBloc, CreateOrderState>(
           builder: (context, createState) {
             return _PillButton(
@@ -827,8 +896,8 @@ class _ActionButtons extends StatelessWidget {
               trailingAmount: total.formatN,
               onTap: selectedGoods.isNotEmpty
                   ? () => context.read<CreateOrderBloc>().add(
-                        CreateOrderEvent.createOrder(orders: selectedGoods),
-                      )
+                      CreateOrderEvent.createOrder(orders: selectedGoods),
+                    )
                   : null,
             );
           },
@@ -840,31 +909,34 @@ class _ActionButtons extends StatelessWidget {
     if (tableStatus == TableStatus.free) {
       return BlocProvider(
         create: (_) => inject<CreateOrderBloc>()
-          ..add(CreateOrderEvent.started(
-            tableId: tableId,
-            guestCount: guestCount,
-            tableStatus: tableStatus,
-          )),
+          ..add(
+            CreateOrderEvent.started(
+              tableId: tableId,
+              guestCount: guestCount,
+              tableStatus: tableStatus,
+            ),
+          ),
         child: BlocConsumer<CreateOrderBloc, CreateOrderState>(
           listener: (context, createState) {
             if (createState.status != Status.LOADING && createState.success) {
               if (createState.tableId.isNotEmpty) {
                 context.read<SavedOrdersBloc>().add(
-                      SavedOrdersEvent.removeOrder(tableId: createState.tableId),
-                    );
+                  SavedOrdersEvent.removeOrder(tableId: createState.tableId),
+                );
               }
-              context
-                  .read<MainCubit>()
-                  .updateTableStatus(createState.tableId, TableStatus.busy);
+              context.read<MainCubit>().updateTableStatus(
+                createState.tableId,
+                TableStatus.busy,
+              );
               if (cafeTable != null) {
-                context.read<DetailBloc>().add(DetailEvent.fetchBillOrders(
-                      billId: cafeTable!.id,
-                      force: true,
-                    ));
+                context.read<DetailBloc>().add(
+                  DetailEvent.fetchBillOrders(
+                    billId: cafeTable!.id,
+                    force: true,
+                  ),
+                );
               }
-              context
-                  .read<DetailBloc>()
-                  .add(const DetailEvent.clearGoods());
+              context.read<DetailBloc>().add(const DetailEvent.clearGoods());
               showSuccessMessage(
                 navigatorKey.currentContext!,
                 S.current.strOrderSuccessCreated,
@@ -880,10 +952,14 @@ class _ActionButtons extends StatelessWidget {
               onTap: selectedGoods.isNotEmpty
                   ? () {
                       final bloc = context.read<CreateOrderBloc>();
-                      final activeId =
-                          context.read<DetailBloc>().state.activeOrderId;
+                      final activeId = context
+                          .read<DetailBloc>()
+                          .state
+                          .activeOrderId;
                       if (activeId != null) bloc.bindActiveOrder(activeId);
-                      bloc.add(CreateOrderEvent.createOrder(orders: selectedGoods));
+                      bloc.add(
+                        CreateOrderEvent.createOrder(orders: selectedGoods),
+                      );
                     }
                   : null,
             );
@@ -896,11 +972,13 @@ class _ActionButtons extends StatelessWidget {
     return BlocProvider(
       create: (ctx) {
         final bloc = inject<CreateOrderBloc>()
-          ..add(CreateOrderEvent.started(
-            tableId: tableId,
-            guestCount: guestCount,
-            tableStatus: tableStatus,
-          ));
+          ..add(
+            CreateOrderEvent.started(
+              tableId: tableId,
+              guestCount: guestCount,
+              tableStatus: tableStatus,
+            ),
+          );
         final activeId = ctx.read<DetailBloc>().state.activeOrderId;
         if (activeId != null) bloc.bindActiveOrder(activeId);
         return bloc;
@@ -919,10 +997,9 @@ class _ActionButtons extends StatelessWidget {
           listener: (context, createState) {
             if (createState.status != Status.LOADING && createState.success) {
               showSuccessMessage(context, S.current.strOrderSuccessCreated);
-              context.read<DetailBloc>().add(DetailEvent.fetchBillOrders(
-                    billId: cafeTable!.id,
-                    force: true,
-                  ));
+              context.read<DetailBloc>().add(
+                DetailEvent.fetchBillOrders(billId: cafeTable!.id, force: true),
+              );
               context.read<DetailBloc>().add(const DetailEvent.clearGoods());
             }
           },
@@ -937,10 +1014,14 @@ class _ActionButtons extends StatelessWidget {
                     isLoading: createState.status == Status.LOADING,
                     onTap: () {
                       final bloc = context.read<CreateOrderBloc>();
-                      final activeId =
-                          context.read<DetailBloc>().state.activeOrderId;
+                      final activeId = context
+                          .read<DetailBloc>()
+                          .state
+                          .activeOrderId;
                       if (activeId != null) bloc.bindActiveOrder(activeId);
-                      bloc.add(CreateOrderEvent.createOrder(orders: selectedGoods));
+                      bloc.add(
+                        CreateOrderEvent.createOrder(orders: selectedGoods),
+                      );
                     },
                   ),
                   const SizedBox(width: 8),
@@ -970,16 +1051,20 @@ class _ActionButtons extends StatelessWidget {
                         'timer_started_at': timerData?.startedAt,
                         'timer_pauses': ts.billPauses.isNotEmpty
                             ? ts.billPauses
-                            : (timerData?.pauses ??
-                                const <PauseInterval>[]),
-                        'timer_total_sec': ts.displayActiveSec ??
+                            : (timerData?.pauses ?? const <PauseInterval>[]),
+                        'timer_total_sec':
+                            ts.displayActiveSec ??
                             timerData?.totalActiveSec ??
                             0,
                         'timer_price_per_hour': timerData?.pricePerHour,
                         // bills endpoint open order uchun service_percent
                         // qaytarmasligi mumkin — shu yerdan fallback uzatamiz
                         'service_percent':
-                            context.read<DetailBloc>().lastDetail?.servicePercent ?? 0,
+                            context
+                                .read<DetailBloc>()
+                                .lastDetail
+                                ?.servicePercent ??
+                            0,
                       },
                     );
                   },
@@ -1010,8 +1095,7 @@ class _PillButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final hasTrailing =
-        trailingAmount != null && trailingAmount!.isNotEmpty;
+    final hasTrailing = trailingAmount != null && trailingAmount!.isNotEmpty;
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: onTap,

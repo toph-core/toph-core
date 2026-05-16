@@ -188,6 +188,7 @@ class MessageLookup extends MessageLookupByLibrary {
         "strEdit": MessageLookupByLibrary.simpleMessage("Edit"),
         "strEditMeal": MessageLookupByLibrary.simpleMessage("Edit meal"),
         "strEditPrinter": MessageLookupByLibrary.simpleMessage("Edit printer"),
+        "strElapsedTime": MessageLookupByLibrary.simpleMessage("Elapsed time"),
         "strEmail": MessageLookupByLibrary.simpleMessage("Email"),
         "strEnlarge": MessageLookupByLibrary.simpleMessage("Zoom in"),
         "strEnterBrandID":
@@ -250,7 +251,16 @@ class MessageLookup extends MessageLookupByLibrary {
         "strFoodsColumn": MessageLookupByLibrary.simpleMessage("Foods"),
         "strForNotes": MessageLookupByLibrary.simpleMessage("For notes"),
         "strFree": MessageLookupByLibrary.simpleMessage("Free"),
+        "strFreezeAndTransfer":
+            MessageLookupByLibrary.simpleMessage("Freeze & transfer"),
+        "strFreezeTimerBody": MessageLookupByLibrary.simpleMessage(
+            "The order will be moved to a regular table. The elapsed time and accumulated amount will be preserved, but no further time charges will accrue."),
+        "strFreezeTimerTitle":
+            MessageLookupByLibrary.simpleMessage("Freeze time charge"),
         "strFriday": MessageLookupByLibrary.simpleMessage("Friday"),
+        "strFrozenAmount":
+            MessageLookupByLibrary.simpleMessage("Frozen amount"),
+        "strFrozenShort": MessageLookupByLibrary.simpleMessage("FROZEN"),
         "strFullName": MessageLookupByLibrary.simpleMessage("Full name"),
         "strGiven": MessageLookupByLibrary.simpleMessage("Given"),
         "strGoToPayment": MessageLookupByLibrary.simpleMessage("Go to payment"),

@@ -429,5 +429,12 @@
   "strClose": "Закрыть",
   "strSidebarEmptyTitle": "Ваш заказ пуст",
   "strPrice": "Цена",
-  "strTotal": "Итого"
+  "strTotal": "Итого",
+
+  "strFreezeTimerTitle": "Заморозить плату за время",
+  "strFreezeTimerBody": "Заказ будет перенесён на обычный стол. Накопленное время и сумма сохранятся, но плата за дальнейшее время начисляться не будет.",
+  "strFreezeAndTransfer": "Заморозить и перенести",
+  "strFrozenShort": "ЗАМОРОЖЕНО",
+  "strElapsedTime": "Прошло времени",
+  "strFrozenAmount": "Замороженная сумма"
 }

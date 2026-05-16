@@ -429,5 +429,12 @@
   "strClose": "Yopish",
   "strSidebarEmptyTitle": "Buyurtmangiz bo'sh",
   "strPrice": "Narxi",
-  "strTotal": "Jami"
+  "strTotal": "Jami",
+
+  "strFreezeTimerTitle": "Vaqt to'lovini muzlatish",
+  "strFreezeTimerBody": "Buyurtma oddiy stolga ko'chiriladi. Hozirgacha yig'ilgan vaqt va summa saqlanadi, lekin keyingi vaqt uchun pul hisoblanmaydi.",
+  "strFreezeAndTransfer": "Muzlatib ko'chirish",
+  "strFrozenShort": "MUZLATILDI",
+  "strElapsedTime": "O'tgan vaqt",
+  "strFrozenAmount": "Muzlatilgan summa"
 }

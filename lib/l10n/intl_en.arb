@@ -429,5 +429,12 @@
   "strClose": "Close",
   "strSidebarEmptyTitle": "Your order is empty",
   "strPrice": "Price",
-  "strTotal": "Total"
+  "strTotal": "Total",
+
+  "strFreezeTimerTitle": "Freeze time charge",
+  "strFreezeTimerBody": "The order will be moved to a regular table. The elapsed time and accumulated amount will be preserved, but no further time charges will accrue.",
+  "strFreezeAndTransfer": "Freeze & transfer",
+  "strFrozenShort": "FROZEN",
+  "strElapsedTime": "Elapsed time",
+  "strFrozenAmount": "Frozen amount"
 }
