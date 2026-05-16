@@ -149,8 +149,8 @@ class _HallPillState extends State<_HallPill> {
         onTap: widget.onTap,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 150),
-          height: 42,
-          padding: const EdgeInsets.symmetric(horizontal: 16),
+          height: 46,
+          padding: const EdgeInsets.symmetric(horizontal: 18),
           decoration: BoxDecoration(
             color: bg,
             borderRadius: BorderRadius.circular(10),
@@ -163,7 +163,7 @@ class _HallPillState extends State<_HallPill> {
               Text(
                 widget.label,
                 style: TextStyle(
-                  fontSize: 14,
+                  fontSize: 16,
                   fontWeight: active ? FontWeight.w600 : FontWeight.w500,
                   color: textColor,
                   fontFamily: 'Inter',
@@ -174,7 +174,7 @@ class _HallPillState extends State<_HallPill> {
               Text(
                 '(${widget.count})',
                 style: TextStyle(
-                  fontSize: 13,
+                  fontSize: 15,
                   fontWeight: FontWeight.w500,
                   color: active ? Colors.white.withOpacity(0.8) : _kS500,
                   fontFamily: 'Inter',

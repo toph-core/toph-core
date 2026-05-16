@@ -33,61 +33,72 @@ class MainHeader extends StatelessWidget {
     return Container(
       // POS-grade header: 72dp asosiy height (DS subBar 56 emas — chip'lar ko'p)
       height: 72,
-      padding: EdgeInsetsDirectional.only(
-        start: PosBreakpoints.pick<double>(
+      padding: EdgeInsetsDirectional.symmetric(
+        horizontal: PosBreakpoints.pick<double>(
           context,
           compact: PosDimensions.l, // 16
           comfortable: PosDimensions.xl, // 20
         ),
-        top: PosDimensions.m, // 12
-        bottom: PosDimensions.m, // 12
+        vertical: PosDimensions.m, // 12
       ),
       decoration: const BoxDecoration(
         color: Colors.white,
         border: Border(bottom: BorderSide(color: _kSlate200)),
       ),
       child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           // Left: leading + title
-          if (leading != null) ...[
-            leading!,
-            const SizedBox(width: PosDimensions.s),
-          ],
-          titleWidget ??
-              (title.isNotEmpty
-                  ? Flexible(
-                      child: Text(
-                        title,
-                        style: const TextStyle(
-                          fontSize: PosTypography.headlineSm,
-                          // 20
-                          fontWeight: FontWeight.w700,
-                          color: _kSlate900,
-                          fontFamily: PosTypography.family,
-                          letterSpacing: -0.3,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+          Flexible(
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (leading != null) ...[
+                  leading!,
+                  const SizedBox(width: PosDimensions.s),
+                ],
+                if (titleWidget != null)
+                  Flexible(child: titleWidget!)
+                else if (title.isNotEmpty)
+                  Flexible(
+                    child: Text(
+                      title,
+                      style: const TextStyle(
+                        fontSize: PosTypography.headlineSm,
+                        // 20
+                        fontWeight: FontWeight.w700,
+                        color: _kSlate900,
+                        fontFamily: PosTypography.family,
+                        letterSpacing: -0.3,
                       ),
-                    )
-                  : const SizedBox.shrink()),
-          const Spacer(),
-          // Right: optional extra trailing
-          if (trailing != null) ...[
-            trailing!,
-            const SizedBox(width: PosDimensions.s),
-          ],
-          // Shift chip
-          const _ShiftChip(),
-          const SizedBox(width: 6),
-          // Cashier chip
-          const _CashierChip(),
-          const SizedBox(width: 6),
-          // Clock
-          const _ClockChip(),
-          const SizedBox(width: 6),
-          // Language toggle
-          const _LangToggle(),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          // Right: trailing + chips
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (trailing != null) ...[
+                trailing!,
+                const SizedBox(width: PosDimensions.s),
+              ],
+              // Shift chip
+              const _ShiftChip(),
+              const SizedBox(width: 6),
+              // Cashier chip
+              const _CashierChip(),
+              const SizedBox(width: 6),
+              // Clock
+              const _ClockChip(),
+              const SizedBox(width: 6),
+              // Language toggle
+              const _LangToggle(),
+            ],
+          ),
         ],
       ),
     );

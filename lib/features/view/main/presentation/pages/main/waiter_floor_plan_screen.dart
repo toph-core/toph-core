@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mary_ai_pos/core/constants/constants.dart';
-import 'package:mary_ai_pos/core/design_system/pos_design_system.dart';
 import 'package:mary_ai_pos/core/extension/for_context.dart';
 import 'package:mary_ai_pos/core/routes/app_routes.dart';
 import 'package:mary_ai_pos/core/services/connectivity/connectivity_cubit.dart';
@@ -81,6 +80,18 @@ class _WaiterFloorPlanScreenState extends State<WaiterFloorPlanScreen> {
     await context.read<MainCubit>().refreshTables(force: true);
   }
 
+  Future<void> _confirmRefresh() async {
+    final ok = await showDialog<bool>(
+      context: context,
+      barrierDismissible: true,
+      barrierColor: Colors.black.withOpacity(0.45),
+      builder: (_) => const _RefreshConfirmDialog(),
+    );
+    if (ok == true && mounted) {
+      await _refresh();
+    }
+  }
+
   void _syncOpenedAt(Set<String> savedIds) {
     final now = DateTime.now();
     for (final id in savedIds) {
@@ -127,7 +138,7 @@ class _WaiterFloorPlanScreenState extends State<WaiterFloorPlanScreen> {
                     const SizedBox(width: 10),
                     _RefreshButton(
                       loading: state.status == Status.LOADING,
-                      onTap: _refresh,
+                      onTap: _confirmRefresh,
                     ),
                     const SizedBox(width: 10),
                     const _TakeawayHeaderButton(),
@@ -293,24 +304,25 @@ class _StatChip extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         Container(
-          width: 8,
-          height: 8,
+          width: 10,
+          height: 10,
           decoration: BoxDecoration(color: dotColor, shape: BoxShape.circle),
         ),
-        const SizedBox(width: 6),
+        const SizedBox(width: 8),
         Text(
           label,
           style: const TextStyle(
-            fontSize: 12,
+            fontSize: 15,
+            fontWeight: FontWeight.w500,
             color: _kS500,
             fontFamily: 'Inter',
           ),
         ),
-        const SizedBox(width: 4),
+        const SizedBox(width: 6),
         Text(
           '$count',
           style: const TextStyle(
-            fontSize: 13,
+            fontSize: 17,
             fontWeight: FontWeight.w700,
             color: _kS900,
             fontFamily: 'Inter',
@@ -335,38 +347,52 @@ class _RefreshButtonState extends State<_RefreshButton> {
 
   @override
   Widget build(BuildContext context) {
+    final hovered = _hovered && !widget.loading;
     return MouseRegion(
-      cursor: SystemMouseCursors.click,
+      cursor: widget.loading
+          ? SystemMouseCursors.basic
+          : SystemMouseCursors.click,
       onEnter: (_) => setState(() => _hovered = true),
       onExit: (_) => setState(() => _hovered = false),
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTap: widget.loading ? null : widget.onTap,
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 120),
-          // POS minimum touch zone
+          duration: const Duration(milliseconds: 140),
           width: 48,
           height: 48,
           decoration: BoxDecoration(
-            color: _hovered ? _kS50 : Colors.transparent,
+            color: hovered ? _kBrandTint : _kS50,
+            borderRadius: BorderRadius.circular(10),
             border: Border.all(
-              color: _hovered ? _kS200 : Colors.transparent,
+              color: hovered ? _kBrand.withOpacity(0.45) : _kS200,
             ),
-            borderRadius: BorderRadius.circular(PosDimensions.radiusMd),
+            boxShadow: hovered
+                ? [
+                    BoxShadow(
+                      color: _kBrand.withOpacity(0.12),
+                      blurRadius: 10,
+                      offset: const Offset(0, 2),
+                    ),
+                  ]
+                : null,
           ),
-          child: widget.loading
-              ? const Padding(
-                  padding: EdgeInsets.all(12),
-                  child: CircularProgressIndicator.adaptive(
-                    strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation(_kBrand),
+          child: Center(
+            child: widget.loading
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator.adaptive(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation(_kBrand),
+                    ),
+                  )
+                : Icon(
+                    Icons.refresh_rounded,
+                    size: 22,
+                    color: hovered ? _kBrand : _kS500,
                   ),
-                )
-              : const Icon(
-                  Icons.refresh_rounded,
-                  size: 22,
-                  color: _kS500,
-                ),
+          ),
         ),
       ),
     );
@@ -509,7 +535,7 @@ class _SectionHeader extends StatelessWidget {
         Text(
           label,
           style: const TextStyle(
-            fontSize: 16,
+            fontSize: 20,
             fontWeight: FontWeight.w700,
             color: _kS900,
             fontFamily: 'Inter',
@@ -520,7 +546,7 @@ class _SectionHeader extends StatelessWidget {
         Text(
           '$count',
           style: const TextStyle(
-            fontSize: 13,
+            fontSize: 15,
             fontWeight: FontWeight.w500,
             color: _kS400,
             fontFamily: 'Inter',
@@ -616,7 +642,7 @@ class _TableCardState extends State<_TableCard> {
         onTap: widget.onTap,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 130),
-          height: 140,
+          height: 156,
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: bgColor,
@@ -713,7 +739,7 @@ class _CardHeader extends StatelessWidget {
           child: Text(
             'Stol $tableNumber',
             style: TextStyle(
-              fontSize: 16,
+              fontSize: 19,
               fontWeight: FontWeight.w700,
               color: titleColor,
               fontFamily: 'Inter',
@@ -735,7 +761,7 @@ class _CardHeader extends StatelessWidget {
             child: Text(
               statusBadgeLabel!,
               style: TextStyle(
-                fontSize: 11,
+                fontSize: 13,
                 fontWeight: FontWeight.w600,
                 color: statusBadgeFg,
                 fontFamily: 'Inter',
@@ -749,14 +775,14 @@ class _CardHeader extends StatelessWidget {
           children: [
             const Icon(
               Icons.people_outline_rounded,
-              size: 13,
+              size: 16,
               color: _kS500,
             ),
-            const SizedBox(width: 3),
+            const SizedBox(width: 4),
             Text(
               '$capacity',
               style: const TextStyle(
-                fontSize: 12,
+                fontSize: 14,
                 fontWeight: FontWeight.w500,
                 color: _kS500,
                 fontFamily: 'Inter',
@@ -790,7 +816,7 @@ class _FreeCardContent extends StatelessWidget {
           child: Text(
             S.current.strFree,
             style: const TextStyle(
-              fontSize: 14,
+              fontSize: 17,
               fontWeight: FontWeight.w600,
               color: _kGreen,
               fontFamily: 'Inter',
@@ -836,7 +862,7 @@ class _BusyCardContent extends StatelessWidget {
           Text(
             '${_fmtSom(savedTotal!)} so\'m',
             style: const TextStyle(
-              fontSize: 18,
+              fontSize: 20,
               fontWeight: FontWeight.w700,
               color: _kS900,
               fontFamily: 'Inter',
@@ -848,7 +874,7 @@ class _BusyCardContent extends StatelessWidget {
           Text(
             S.current.strWaitingForOrderStatus,
             style: const TextStyle(
-              fontSize: 13,
+              fontSize: 15,
               color: _kS500,
               fontFamily: 'Inter',
             ),
@@ -905,12 +931,12 @@ class _ElapsedLabelState extends State<_ElapsedLabel> {
     if (label == null) return const SizedBox.shrink();
     return Row(
       children: [
-        const Icon(Icons.access_time_rounded, size: 13, color: _kS500),
+        const Icon(Icons.access_time_rounded, size: 15, color: _kS500),
         const SizedBox(width: 4),
         Text(
           label,
           style: const TextStyle(
-            fontSize: 12,
+            fontSize: 14,
             fontWeight: FontWeight.w500,
             color: _kS500,
             fontFamily: 'Inter',
@@ -956,12 +982,12 @@ class _ReservedCardContent extends StatelessWidget {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.access_time_rounded, size: 14, color: _kBlue),
+              const Icon(Icons.access_time_rounded, size: 17, color: _kBlue),
               const SizedBox(width: 6),
               Text(
                 S.current.strBusy,
                 style: const TextStyle(
-                  fontSize: 13,
+                  fontSize: 16,
                   fontWeight: FontWeight.w500,
                   color: _kBlue,
                   fontFamily: 'Inter',
@@ -1021,6 +1047,250 @@ class _TakeawayHeaderButton extends StatelessWidget {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// Refresh confirmation dialog
+// ═══════════════════════════════════════════════════════
+
+class _RefreshConfirmDialog extends StatefulWidget {
+  const _RefreshConfirmDialog();
+
+  @override
+  State<_RefreshConfirmDialog> createState() => _RefreshConfirmDialogState();
+}
+
+class _RefreshConfirmDialogState extends State<_RefreshConfirmDialog> {
+  bool _hoverCancel = false;
+  bool _hoverConfirm = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 480),
+        child: Container(
+          decoration: BoxDecoration(
+            color: colors.bgDefault,
+            borderRadius: BorderRadius.circular(24),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.25),
+                blurRadius: 40,
+                offset: const Offset(0, 16),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // ── Hero banner ──
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.fromLTRB(28, 28, 28, 24),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      _kBrandTint,
+                      _kBrandTint.withOpacity(0.55),
+                    ],
+                  ),
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(24),
+                  ),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      width: 56,
+                      height: 56,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: _kBrand.withOpacity(0.18),
+                            blurRadius: 12,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: const Icon(
+                        Icons.refresh_rounded,
+                        color: _kBrand,
+                        size: 30,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            S.current.strRefresh,
+                            style: const TextStyle(
+                              fontSize: 19,
+                              fontWeight: FontWeight.w700,
+                              color: _kS900,
+                              fontFamily: 'Inter',
+                              letterSpacing: -0.3,
+                              height: 1.2,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            S.current.strRefreshing,
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: colors.textSecondary,
+                              fontFamily: 'Inter',
+                              height: 1.3,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              // ── Body ──
+              Padding(
+                padding: const EdgeInsets.fromLTRB(28, 22, 28, 8),
+                child: Text(
+                  "Stollar ma'lumotini serverdan qayta yuklashni xohlaysizmi?",
+                  style: TextStyle(
+                    fontSize: 14.5,
+                    color: colors.textDefault,
+                    fontFamily: 'Inter',
+                    height: 1.45,
+                  ),
+                ),
+              ),
+              // ── Actions ──
+              Padding(
+                padding: const EdgeInsets.fromLTRB(28, 18, 28, 24),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: _RefreshDialogBtn(
+                        label: S.current.strCancel,
+                        onTap: () => Navigator.pop(context, false),
+                        bg: colors.bgSecondary,
+                        fg: colors.textDefault,
+                        borderColor: colors.border,
+                        hovered: _hoverCancel,
+                        onHover: (v) => setState(() => _hoverCancel = v),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      flex: 2,
+                      child: _RefreshDialogBtn(
+                        label: S.current.strRefresh,
+                        icon: Icons.refresh_rounded,
+                        onTap: () => Navigator.pop(context, true),
+                        bg: _hoverConfirm
+                            ? const Color(0xFFE85522)
+                            : _kBrand,
+                        fg: Colors.white,
+                        hovered: _hoverConfirm,
+                        onHover: (v) => setState(() => _hoverConfirm = v),
+                        elevated: true,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _RefreshDialogBtn extends StatelessWidget {
+  final String label;
+  final IconData? icon;
+  final VoidCallback onTap;
+  final Color bg;
+  final Color fg;
+  final Color? borderColor;
+  final bool hovered;
+  final ValueChanged<bool> onHover;
+  final bool elevated;
+
+  const _RefreshDialogBtn({
+    required this.label,
+    required this.onTap,
+    required this.bg,
+    required this.fg,
+    required this.hovered,
+    required this.onHover,
+    this.icon,
+    this.borderColor,
+    this.elevated = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      onEnter: (_) => onHover(true),
+      onExit: (_) => onHover(false),
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 140),
+          height: 48,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: bg,
+            borderRadius: BorderRadius.circular(12),
+            border: borderColor != null
+                ? Border.all(color: borderColor!)
+                : null,
+            boxShadow: elevated
+                ? [
+                    BoxShadow(
+                      color: _kBrand.withOpacity(hovered ? 0.35 : 0.22),
+                      blurRadius: hovered ? 16 : 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ]
+                : null,
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              if (icon != null) ...[
+                Icon(icon, color: fg, size: 18),
+                const SizedBox(width: 8),
+              ],
+              Text(
+                label,
+                style: TextStyle(
+                  color: fg,
+                  fontFamily: 'Inter',
+                  fontWeight: FontWeight.w600,
+                  fontSize: 14,
+                  letterSpacing: -0.1,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

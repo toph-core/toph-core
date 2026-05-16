@@ -1,5 +1,6 @@
 {
   "permissions": {
+    "defaultMode": "acceptEdits",
     "allow": [
       "Bash(shorebird --version)",
       "Bash(shorebird account *)",
@@ -17,7 +18,14 @@
       "Bash(grep -r \"color\\\\|#[0-9a-fA-F]\\\\{3,6\\\\}\\\\|rgba\\\\|bg-\\\\|text-\" /tmp/mary_handoff/mary-ai-pos/project/src/)",
       "Bash(grep -r \"color\\\\|background\\\\|#[0-9a-fA-F]\\\\{3,6\\\\}\" /tmp/mary_handoff/mary-ai-pos/project/src/Sidebar.jsx)",
       "Bash(grep -r \"color\\\\|background\\\\|#[0-9a-fA-F]\\\\{3,6\\\\}\" /tmp/mary_handoff/mary-ai-pos/project/src/TopBar.jsx)",
-      "WebFetch(domain:api.anthropic.com)"
+      "WebFetch(domain:api.anthropic.com)",
+      "Bash(flutter analyze)",
+      "Bash(flutter analyze *)",
+      "Bash(dart analyze)",
+      "Bash(dart analyze *)",
+      "Bash(flutter test)",
+      "Bash(curl https://api.maryai.uz/swagger/doc.json)",
+      "mcp__figma__get_figma_data"
     ]
   }
 }
