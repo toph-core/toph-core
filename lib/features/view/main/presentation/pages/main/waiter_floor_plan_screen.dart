@@ -995,7 +995,8 @@ class _TakeawayHeaderButton extends StatelessWidget {
         );
       },
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        height: 48,
+        padding: const EdgeInsets.symmetric(horizontal: 14),
         decoration: BoxDecoration(
           color: const Color(0xFFFFF3EE),
           borderRadius: BorderRadius.circular(10),
@@ -1003,17 +1004,17 @@ class _TakeawayHeaderButton extends StatelessWidget {
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
-          spacing: 7,
+          spacing: 8,
           children: [
             const Icon(
               Icons.shopping_bag_outlined,
-              size: 16,
+              size: 18,
               color: Color(0xFFFB6633),
             ),
             Text(
               S.current.strTakeaway,
               style: const TextStyle(
-                fontSize: 13,
+                fontSize: 15,
                 fontWeight: FontWeight.w600,
                 color: Color(0xFFFB6633),
                 fontFamily: 'Inter',

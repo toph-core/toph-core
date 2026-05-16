@@ -33,13 +33,14 @@ class MainHeader extends StatelessWidget {
     return Container(
       // POS-grade header: 72dp asosiy height (DS subBar 56 emas — chip'lar ko'p)
       height: 72,
-      padding: EdgeInsets.symmetric(
-        horizontal: PosBreakpoints.pick<double>(
+      padding: EdgeInsetsDirectional.only(
+        start: PosBreakpoints.pick<double>(
           context,
           compact: PosDimensions.l, // 16
           comfortable: PosDimensions.xl, // 20
         ),
-        vertical: PosDimensions.m, // 12
+        top: PosDimensions.m, // 12
+        bottom: PosDimensions.m, // 12
       ),
       decoration: const BoxDecoration(
         color: Colors.white,
@@ -344,7 +345,7 @@ class _LangToggle extends StatelessWidget {
     final lang = context.select((SettingsCubit c) => c.state.language);
     return Container(
       height: 48,
-      padding: const EdgeInsets.all(3),
+      padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
         color: const Color(0xFFF1F5F9),
         borderRadius: BorderRadius.circular(10),
@@ -362,11 +363,9 @@ class _LangToggle extends StatelessWidget {
             ),
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 150),
-              constraints: const BoxConstraints(minWidth: 40),
-              padding: const EdgeInsets.symmetric(
-                horizontal: PosDimensions.s + 2,
-                vertical: PosDimensions.xs,
-              ),
+              constraints: const BoxConstraints(minWidth: 56),
+              alignment: Alignment.center,
+              padding: const EdgeInsets.symmetric(horizontal: 18),
               decoration: BoxDecoration(
                 color: selected ? Colors.white : Colors.transparent,
                 borderRadius: BorderRadius.circular(PosDimensions.radiusSm - 1),
@@ -384,9 +383,8 @@ class _LangToggle extends StatelessWidget {
                 code.toUpperCase(),
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  fontSize: PosTypography.bodySm,
-                  // 13
-                  fontWeight: FontWeight.w600,
+                  fontSize: PosTypography.bodyMd, // 15
+                  fontWeight: FontWeight.w700,
                   color: selected ? _kSlate900 : _kSlate500,
                   fontFamily: PosTypography.family,
                   letterSpacing: 0.3,
