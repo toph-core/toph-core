@@ -1456,7 +1456,7 @@ class _AdminOrdersArchiveBodyState extends State<_AdminOrdersArchiveBody> {
               Text(
                 'Jami: ${_totalCount ?? _orders.length}',
                 style: const TextStyle(
-                  fontSize: 12,
+                  fontSize: 13,
                   fontWeight: FontWeight.w500,
                   color: Color(0xFF94A3B8),
                   fontFamily: 'Inter',
@@ -1498,7 +1498,7 @@ class _AdminOrdersArchiveBodyState extends State<_AdminOrdersArchiveBody> {
 
         // ── Stats row ─────────────────────────────────────────────────────
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
           color: Colors.white,
           child: Row(
             children: [
@@ -1543,7 +1543,7 @@ class _AdminOrdersArchiveBodyState extends State<_AdminOrdersArchiveBody> {
               children: [
                 // Table header
                 Container(
-                  height: 40,
+                  height: 48,
                   padding: const EdgeInsets.symmetric(horizontal: 24),
                   decoration: const BoxDecoration(
                     color: Color(0xFFF8FAFC),
@@ -1744,7 +1744,7 @@ class _AdminOrdersArchiveBodyState extends State<_AdminOrdersArchiveBody> {
         ? const Color(0xFF16A34A)
         : secondaryTextColor;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
         color: bg,
         borderRadius: BorderRadius.circular(20),
@@ -1752,7 +1752,7 @@ class _AdminOrdersArchiveBodyState extends State<_AdminOrdersArchiveBody> {
       child: Text(
         localizedOrderStatus(context, status),
         textAlign: TextAlign.center,
-        style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: fg),
+        style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: fg),
       ),
     );
   }
@@ -1914,13 +1914,13 @@ class _AdminStatBlock extends StatelessWidget {
           Text(
             label,
             style: const TextStyle(
-              fontSize: 11,
+              fontSize: 13,
               fontWeight: FontWeight.w400,
               color: Color(0xFF94A3B8),
               fontFamily: 'Inter',
             ),
           ),
-          const SizedBox(height: 2),
+          const SizedBox(height: 4),
           Row(
             crossAxisAlignment: CrossAxisAlignment.baseline,
             textBaseline: TextBaseline.alphabetic,
@@ -1928,7 +1928,7 @@ class _AdminStatBlock extends StatelessWidget {
               Text(
                 value,
                 style: TextStyle(
-                  fontSize: 18,
+                  fontSize: 22,
                   fontWeight: FontWeight.w700,
                   color: color,
                   fontFamily: 'Inter',
@@ -1940,7 +1940,7 @@ class _AdminStatBlock extends StatelessWidget {
               Text(
                 unit,
                 style: const TextStyle(
-                  fontSize: 11,
+                  fontSize: 13,
                   fontWeight: FontWeight.w400,
                   color: Color(0xFF94A3B8),
                   fontFamily: 'Inter',
@@ -1961,7 +1961,7 @@ class _AdminStatDivider extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: 1,
-      height: 36,
+      height: 44,
       margin: const EdgeInsets.symmetric(horizontal: 20),
       color: const Color(0xFFE2E8F0),
     );
@@ -1981,7 +1981,7 @@ class _AdminThCell extends StatelessWidget {
       child: Text(
         label,
         style: const TextStyle(
-          fontSize: 11,
+          fontSize: 13,
           fontWeight: FontWeight.w600,
           color: Color(0xFF94A3B8),
           letterSpacing: 0.4,
@@ -2026,7 +2026,7 @@ class _AdminOrderRow extends StatelessWidget {
     };
 
     return Container(
-      height: 52,
+      height: 64,
       padding: const EdgeInsets.symmetric(horizontal: 24),
       child: Row(
         children: [
@@ -2040,7 +2040,7 @@ class _AdminOrderRow extends StatelessWidget {
                 Text(
                   order.bilNumber > 0 ? '#${order.bilNumber}' : '—',
                   style: const TextStyle(
-                    fontSize: 13,
+                    fontSize: 15,
                     fontWeight: FontWeight.w600,
                     color: Color(0xFF0F172A),
                     fontFamily: 'Inter',
@@ -2051,7 +2051,7 @@ class _AdminOrderRow extends StatelessWidget {
                   Text(
                     staffName,
                     style: const TextStyle(
-                      fontSize: 10,
+                      fontSize: 12,
                       color: Color(0xFF94A3B8),
                       fontFamily: 'Inter',
                     ),
@@ -2067,7 +2067,7 @@ class _AdminOrderRow extends StatelessWidget {
             child: Text(
               order.createdAtLabel,
               style: const TextStyle(
-                fontSize: 12,
+                fontSize: 14,
                 color: Color(0xFF64748B),
                 fontFamily: 'Inter',
                 fontFeatures: [FontFeature.tabularFigures()],
@@ -2080,7 +2080,7 @@ class _AdminOrderRow extends StatelessWidget {
             child: Text(
               orderTypeLabel,
               style: const TextStyle(
-                fontSize: 12,
+                fontSize: 14,
                 color: Color(0xFF64748B),
                 fontFamily: 'Inter',
               ),
@@ -2098,7 +2098,7 @@ class _AdminOrderRow extends StatelessWidget {
                         TextSpan(
                           text: 'Stol $tableNum',
                           style: const TextStyle(
-                            fontSize: 12,
+                            fontSize: 14,
                             fontWeight: FontWeight.w600,
                             color: Color(0xFF0F172A),
                             fontFamily: 'Inter',
@@ -2108,7 +2108,7 @@ class _AdminOrderRow extends StatelessWidget {
                           TextSpan(
                             text: ' · $hallName',
                             style: const TextStyle(
-                              fontSize: 12,
+                              fontSize: 14,
                               color: Color(0xFF94A3B8),
                               fontFamily: 'Inter',
                             ),
@@ -2121,7 +2121,7 @@ class _AdminOrderRow extends StatelessWidget {
                 : const Text(
                     '—',
                     style: TextStyle(
-                      fontSize: 12,
+                      fontSize: 14,
                       color: Color(0xFF94A3B8),
                       fontFamily: 'Inter',
                     ),
@@ -2133,7 +2133,7 @@ class _AdminOrderRow extends StatelessWidget {
             child: Text(
               order.goodsCount > 0 ? '${order.goodsCount} ta' : '—',
               style: const TextStyle(
-                fontSize: 12,
+                fontSize: 14,
                 color: Color(0xFF64748B),
                 fontFamily: 'Inter',
               ),
@@ -2152,7 +2152,7 @@ class _AdminOrderRow extends StatelessWidget {
                     ? '${AppFormatter.formatAmountWithSpaces(order.totalAmount)} so\'m'
                     : '—',
                 style: TextStyle(
-                  fontSize: 13,
+                  fontSize: 15,
                   fontWeight: amt > 0 ? FontWeight.w600 : FontWeight.w400,
                   color: amt > 0
                       ? const Color(0xFF0F172A)
@@ -2166,7 +2166,7 @@ class _AdminOrderRow extends StatelessWidget {
           // To'lov
           Expanded(
             flex: 1,
-            child: Icon(pmIcon, size: 16, color: pmColor),
+            child: Icon(pmIcon, size: 20, color: pmColor),
           ),
           // Holat
           Expanded(flex: 2, child: statusBadge),
@@ -2175,7 +2175,7 @@ class _AdminOrderRow extends StatelessWidget {
             flex: 1,
             child: Icon(
               Icons.chevron_right_rounded,
-              size: 16,
+              size: 20,
               color: Color(0xFFCBD5E1),
             ),
           ),

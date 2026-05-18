@@ -37,13 +37,21 @@ class AppSidebar extends StatelessWidget {
       ),
       child: Column(
         children: [
-          // Logo — ichki kontainer yo'q, faqat o'zi
+          // Logo — umumiy kvadrat (sidebar eni × sidebar eni)
           Padding(
-            padding: const EdgeInsets.symmetric(vertical: PosDimensions.l + 2),
+            padding: const EdgeInsets.symmetric(vertical: PosDimensions.s),
             child: Image.asset(
               AppImages.imgBrandLogo,
-              width: PosDimensions.touchTargetMin, // 56
-              height: PosDimensions.touchTargetMin,
+              width: PosBreakpoints.pick<double>(
+                context,
+                compact: 72,
+                comfortable: 84,
+              ),
+              height: PosBreakpoints.pick<double>(
+                context,
+                compact: 72,
+                comfortable: 84,
+              ),
               fit: BoxFit.contain,
               filterQuality: FilterQuality.high,
             ),
