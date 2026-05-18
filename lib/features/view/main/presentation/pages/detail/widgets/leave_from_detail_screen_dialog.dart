@@ -54,23 +54,6 @@ class LeaveFromDetailScreenDialog extends StatelessWidget {
                 children: [
                   Expanded(
                     child: CustomHoverEffectWidget(
-                      onTap: () => Navigator.pop(context),
-                      bgColor: const Color(0xFFF6F7F9),
-                      borderRadius: BorderRadius.circular(16),
-                      child: Text(
-                        S.current.strCancel,
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          color: Color(0xFF2D2D2D),
-                          fontSize: 16,
-                          fontFamily: 'Inter',
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ).paddingSymmetric(horizontal: 10, vertical: 12),
-                    ),
-                  ),
-                  Expanded(
-                    child: CustomHoverEffectWidget(
                       bgColor: context.colors.bgBrand,
                       borderRadius: context.radius.card,
                       onTap: () => Navigator.pop(context, true),

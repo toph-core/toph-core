@@ -1,8 +1,13 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:mary_ai_pos/core/constants/constants.dart';
 import 'package:mary_ai_pos/core/design_system/pos_design_system.dart';
 import 'package:mary_ai_pos/core/extension/for_context.dart';
+import 'package:mary_ai_pos/di.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/cafe_tables/cafe_tables_model.dart';
+import 'package:mary_ai_pos/features/view/main/presentation/cubit/create_order/create_order_bloc.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/detail/detail_bloc.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/main/main_cubit.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/orders/orders_bloc.dart';
@@ -71,40 +76,23 @@ class TopBarWidget extends StatelessWidget {
               else
                 _TakeawayHeader(),
               const Spacer(),
-              // Search input — compact'da kengligi kichikroq
-              Flexible(
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(
-                    minWidth: PosBreakpoints.pick<double>(
-                      context,
-                      compact: 252,
-                      comfortable: 308,
-                    ),
-                    maxWidth: PosBreakpoints.pick<double>(
-                      context,
-                      compact: 364,
-                      comfortable: 476,
-                    ),
-                  ),
-                  child: _SearchInput(
-                    controller: textEditingController,
-                    showKeyboard: showKeyboard,
-                  ),
+              // Search input — o'ng tomonga taqalgan, fixed width
+              SizedBox(
+                width: PosBreakpoints.pick<double>(
+                  context,
+                  compact: 280,
+                  comfortable: 340,
+                ),
+                child: _SearchInput(
+                  controller: textEditingController,
+                  showKeyboard: showKeyboard,
                 ),
               ),
-              const SizedBox(width: PosDimensions.m),
-              // Right-side order summary
-              if (itemCount > 0)
+              if (itemCount > 0) ...[
+                const SizedBox(width: PosDimensions.m),
                 _OrderSummaryChip(
                   itemCount: itemCount,
                   qtyTotal: qtyTotal,
-                ),
-              if (state.selectedGoods.isNotEmpty) ...[
-                const SizedBox(width: PosDimensions.s),
-                _TrashIconButton(
-                  onTap: () => context.read<DetailBloc>().add(
-                    const DetailEvent.clearGoods(),
-                  ),
                 ),
               ],
             ],
@@ -130,16 +118,61 @@ class _BackButton extends StatelessWidget {
     if (hasSelection && cafeTable != null) {
       final detailBloc = context.read<DetailBloc>();
       final savedOrdersBloc = context.read<SavedOrdersBloc>();
+      final mainCubit = context.read<MainCubit>();
       final navigator = Navigator.of(context);
       final value = await showDialog<bool>(
         context: context,
-        barrierDismissible: false,
+        barrierDismissible: true,
         builder: (_) => const LeaveFromDetailScreenDialog(),
       );
+      // Dialog tashqarisini bosish — null qaytaradi, ekranda qolish.
+      if (value == null) return;
+
       if (value == true) {
-        final saved = detailBloc.saveOrder(cafeTable!, guestCount);
-        if (saved != null) {
-          savedOrdersBloc.add(SavedOrdersEvent.addNewOrder(order: saved));
+        final selectedGoods = detailBloc.state.selectedGoods;
+        if (selectedGoods.isEmpty) {
+          navigator.pop();
+          return;
+        }
+        final activeOrderId = detailBloc.state.activeOrderId;
+        final tableStatus = activeOrderId != null
+            ? TableStatus.busy
+            : TableStatus.free;
+
+        final createOrderBloc = inject<CreateOrderBloc>()
+          ..add(
+            CreateOrderEvent.started(
+              tableId: cafeTable!.id,
+              guestCount: guestCount,
+              tableStatus: tableStatus,
+            ),
+          );
+        if (activeOrderId != null) {
+          createOrderBloc.bindActiveOrder(activeOrderId);
+        }
+
+        final completer = Completer<bool>();
+        late final StreamSubscription sub;
+        sub = createOrderBloc.stream.listen((s) {
+          if (s.status == Status.SUCCESS && s.success) {
+            if (!completer.isCompleted) completer.complete(true);
+          } else if (s.status == Status.ERROR) {
+            if (!completer.isCompleted) completer.complete(false);
+          }
+        });
+        createOrderBloc.add(
+          CreateOrderEvent.createOrder(orders: selectedGoods),
+        );
+
+        final ok = await completer.future;
+        await sub.cancel();
+        await createOrderBloc.close();
+
+        if (ok) {
+          mainCubit.updateTableStatus(cafeTable!.id, TableStatus.busy);
+          savedOrdersBloc.add(
+            SavedOrdersEvent.removeOrder(tableId: cafeTable!.id),
+          );
           navigator.pop();
         }
       } else if (value == false) {
@@ -237,7 +270,7 @@ class _TableHeader extends StatelessWidget {
             Text(
               subtitleParts.join(' · '),
               style: const TextStyle(
-                fontSize: 13,
+                fontSize: 15,
                 color: _kS500,
                 fontFamily: 'Inter',
               ),
@@ -270,7 +303,7 @@ class _HallBadge extends StatelessWidget {
       child: Text(
         label,
         style: const TextStyle(
-          fontSize: 11,
+          fontSize: 13,
           fontWeight: FontWeight.w500,
           color: _kS500,
           fontFamily: 'Inter',
@@ -405,7 +438,7 @@ class _OrderSummaryChip extends StatelessWidget {
         const Text(
           'Joriy buyurtma',
           style: TextStyle(
-            fontSize: 11,
+            fontSize: 13,
             color: _kS500,
             fontFamily: 'Inter',
           ),
@@ -414,7 +447,7 @@ class _OrderSummaryChip extends StatelessWidget {
         Text(
           '$itemCount taom · $qtyTotal dona',
           style: const TextStyle(
-            fontSize: 14,
+            fontSize: 16,
             fontWeight: FontWeight.w600,
             color: _kS900,
             fontFamily: 'Inter',
@@ -426,45 +459,3 @@ class _OrderSummaryChip extends StatelessWidget {
   }
 }
 
-class _TrashIconButton extends StatefulWidget {
-  final VoidCallback onTap;
-  const _TrashIconButton({required this.onTap});
-
-  @override
-  State<_TrashIconButton> createState() => _TrashIconButtonState();
-}
-
-class _TrashIconButtonState extends State<_TrashIconButton> {
-  bool _hovered = false;
-
-  @override
-  Widget build(BuildContext context) {
-    return MouseRegion(
-      cursor: SystemMouseCursors.click,
-      onEnter: (_) => setState(() => _hovered = true),
-      onExit: (_) => setState(() => _hovered = false),
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: widget.onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 120),
-          // POS minimum touch target
-          width: PosDimensions.touchTargetMin, // 56
-          height: PosDimensions.touchTargetMin,
-          decoration: BoxDecoration(
-            color: _hovered ? const Color(0xFFFEE2E2) : _kS50,
-            border: Border.all(
-              color: _hovered ? const Color(0xFFFBCDD8) : _kS200,
-            ),
-            borderRadius: BorderRadius.circular(PosDimensions.radiusMd),
-          ),
-          child: Icon(
-            Icons.delete_outline_rounded,
-            size: 20,
-            color: _hovered ? const Color(0xFFDC2626) : _kS500,
-          ),
-        ),
-      ),
-    );
-  }
-}
