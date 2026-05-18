@@ -48,11 +48,15 @@ class TimeBasedAccruingPricing extends TablePricingStrategy {
 
   @override
   int get extraCharge {
-    // Avvalo server qaytargan joriy summa
+    final price = double.tryParse(timer.pricePerHour ?? '') ?? 0;
+    // Running paytda lokal hisoblangan summa — UI har sekundda yangilanishi
+    // uchun. Server `currentAmount` 60s sync orasida muzlab qoladi.
+    if (timer.stateNormalized == 'running' && price > 0) {
+      return ((displayActiveSec / 3600.0) * price).round();
+    }
+    // Paused/closed — server qaytargan summa avtoritar.
     final fromApi = parseAmountToInt(timer.currentAmount);
     if (fromApi > 0) return fromApi;
-    // Fallback: price_per_hour × displayActiveSec / 3600
-    final price = double.tryParse(timer.pricePerHour ?? '') ?? 0;
     if (price == 0) return 0;
     return ((displayActiveSec / 3600.0) * price).round();
   }

@@ -29,19 +29,21 @@ class MessageLookup extends MessageLookupByLibrary {
 
   static String m3(count) => "${count} Ingredient";
 
-  static String m4(count, avg) => "${count} taom · o\'rt. ${avg}";
+  static String m4(count) => "Elementlar: ${count}";
 
-  static String m5(count, time) => "${count} taom · ${time}";
+  static String m5(count, avg) => "${count} taom · o\'rt. ${avg}";
 
-  static String m6(n) => "${n} ta stol";
+  static String m6(count, time) => "${count} taom · ${time}";
 
-  static String m7(count) => "${count} ta buyurtma";
+  static String m7(n) => "${n} ta stol";
 
-  static String m8(count, avg) => "${count} ta buyurtma · o\'rt. ${avg}";
+  static String m8(count) => "${count} ta buyurtma";
 
-  static String m9(size) => "${size} / sahifa";
+  static String m9(count, avg) => "${count} ta buyurtma · o\'rt. ${avg}";
 
-  static String m10(count) => "${count} ta stol saqlanmadi";
+  static String m10(size) => "${size} / sahifa";
+
+  static String m11(count) => "${count} ta stol saqlanmadi";
 
   final messages = _notInlinedMessages(_notInlinedMessages);
   static Map<String, Function> _notInlinedMessages(_) => <String, Function>{
@@ -71,6 +73,8 @@ class MessageLookup extends MessageLookupByLibrary {
         "strAddOrder":
             MessageLookupByLibrary.simpleMessage("Buyurtma qo\'shish"),
         "strAddPrinter": MessageLookupByLibrary.simpleMessage("Yangi printer"),
+        "strAddedItems":
+            MessageLookupByLibrary.simpleMessage("Qo\'shilgan elementlar"),
         "strAddress": MessageLookupByLibrary.simpleMessage("Manzil"),
         "strAllColon": MessageLookupByLibrary.simpleMessage("Hammasi:"),
         "strAllDishes": MessageLookupByLibrary.simpleMessage("Barcha taomlar"),
@@ -89,6 +93,8 @@ class MessageLookup extends MessageLookupByLibrary {
         "strArchiveEmpty":
             MessageLookupByLibrary.simpleMessage("Zakazlar topilmadi"),
         "strAugust": MessageLookupByLibrary.simpleMessage("Avgust"),
+        "strAvailableItems":
+            MessageLookupByLibrary.simpleMessage("Mavjud elementlar"),
         "strAverageCheck":
             MessageLookupByLibrary.simpleMessage("O\'rtacha chek"),
         "strAverageShort": MessageLookupByLibrary.simpleMessage("o\'rt."),
@@ -152,6 +158,7 @@ class MessageLookup extends MessageLookupByLibrary {
             MessageLookupByLibrary.simpleMessage("Ulanish turi"),
         "strContinue": MessageLookupByLibrary.simpleMessage("Davom etish"),
         "strCooking": MessageLookupByLibrary.simpleMessage("Pishirilmoqda"),
+        "strCost": MessageLookupByLibrary.simpleMessage("Narxi"),
         "strCurrentOrder":
             MessageLookupByLibrary.simpleMessage("Hozirgi buyurtma"),
         "strCurrentShift": MessageLookupByLibrary.simpleMessage("Joriy smena"),
@@ -184,7 +191,7 @@ class MessageLookup extends MessageLookupByLibrary {
         "strDiscounts": MessageLookupByLibrary.simpleMessage("Chegirmalar"),
         "strDishesColumn": MessageLookupByLibrary.simpleMessage("Taomlar"),
         "strDoYouWantClearOrders": MessageLookupByLibrary.simpleMessage(
-            "Siz rostdan ham qo'shimchalarni tozalashni hohlaysizmi?"),
+            "Siz rostdan ham qo\'shimchalarni tozalashni hohlaysizmi?"),
         "strDoYouWantSendOrdersToKitchken":
             MessageLookupByLibrary.simpleMessage(
                 "Siz rostdan ham buyurtmani oshxonaga yuborishni hohlaysizmi?"),
@@ -317,8 +324,9 @@ class MessageLookup extends MessageLookupByLibrary {
             MessageLookupByLibrary.simpleMessage("Noto\'g\'ri ism"),
         "strInvalidNumber":
             MessageLookupByLibrary.simpleMessage("Noto\'g\'ri raqam"),
-        "strItemsCountWithAvg": m4,
-        "strItemsCountWithTime": m5,
+        "strItemsCount": m4,
+        "strItemsCountWithAvg": m5,
+        "strItemsCountWithTime": m6,
         "strJanuary": MessageLookupByLibrary.simpleMessage("Yanvar"),
         "strJuly": MessageLookupByLibrary.simpleMessage("Iyul"),
         "strJune": MessageLookupByLibrary.simpleMessage("Iyun"),
@@ -335,6 +343,8 @@ class MessageLookup extends MessageLookupByLibrary {
         "strLogout": MessageLookupByLibrary.simpleMessage("Chiqish"),
         "strLogoutConfirm": MessageLookupByLibrary.simpleMessage(
             "Rostdan ham akauntdan chiqmoqchimisiz?"),
+        "strManualAdd":
+            MessageLookupByLibrary.simpleMessage("Qo\'lda qo\'shish"),
         "strManualInput":
             MessageLookupByLibrary.simpleMessage("Qo\'lda kiritish"),
         "strMap": MessageLookupByLibrary.simpleMessage("Xarita"),
@@ -349,7 +359,8 @@ class MessageLookup extends MessageLookupByLibrary {
         "strMonday": MessageLookupByLibrary.simpleMessage("Dushanba"),
         "strMoreKetchup":
             MessageLookupByLibrary.simpleMessage("Ketchup ko\'proq"),
-        "strNPeopleTable": m6,
+        "strNPeopleTable": m7,
+        "strName": MessageLookupByLibrary.simpleMessage("Nomi"),
         "strNameTooShort":
             MessageLookupByLibrary.simpleMessage("Ism juda qisqa"),
         "strNeedAttention":
@@ -359,6 +370,8 @@ class MessageLookup extends MessageLookupByLibrary {
         "strNewPrinter": MessageLookupByLibrary.simpleMessage("Yangi printer"),
         "strNewTable": MessageLookupByLibrary.simpleMessage("Yangi stol"),
         "strNo": MessageLookupByLibrary.simpleMessage("Yo\'q"),
+        "strNoCalculationsHint": MessageLookupByLibrary.simpleMessage(
+            "Qatorlar yo\'q. Ingredient yoki yarim tayyor mahsulot qo\'shing."),
         "strNoDataFound":
             MessageLookupByLibrary.simpleMessage("Ma\'lumot topilmadi"),
         "strNoDiscountYet":
@@ -420,13 +433,13 @@ class MessageLookup extends MessageLookupByLibrary {
             "Buyurtma boshqa stolga ko\'chirildi"),
         "strOrderType": MessageLookupByLibrary.simpleMessage("Buyurtma turi"),
         "strOrders": MessageLookupByLibrary.simpleMessage("Buyurtmalar"),
-        "strOrdersCountShort": m7,
-        "strOrdersCountWithAvg": m8,
+        "strOrdersCountShort": m8,
+        "strOrdersCountWithAvg": m9,
         "strOrdersEmpty":
             MessageLookupByLibrary.simpleMessage("Buyurtmalar topilmadi"),
         "strOrgName": MessageLookupByLibrary.simpleMessage("Tashkilot nomi"),
         "strOther": MessageLookupByLibrary.simpleMessage("Boshqa"),
-        "strPageSize": m9,
+        "strPageSize": m10,
         "strPassword": MessageLookupByLibrary.simpleMessage("Parol"),
         "strPasswordContainAtLeastChars": MessageLookupByLibrary.simpleMessage(
             "Parol kamida 8 ta belgidan iborat bo\'lishi kerak."),
@@ -576,7 +589,7 @@ class MessageLookup extends MessageLookupByLibrary {
         "strTableNumber": MessageLookupByLibrary.simpleMessage("Stol"),
         "strTableType": MessageLookupByLibrary.simpleMessage("Turi"),
         "strTables": MessageLookupByLibrary.simpleMessage("Stollar"),
-        "strTablesNotSavedCount": m10,
+        "strTablesNotSavedCount": m11,
         "strTakeaway": MessageLookupByLibrary.simpleMessage("Olib ketish"),
         "strTerminal": MessageLookupByLibrary.simpleMessage("Terminal"),
         "strThursday": MessageLookupByLibrary.simpleMessage("Payshanba"),
@@ -590,6 +603,7 @@ class MessageLookup extends MessageLookupByLibrary {
         "strTotalColon": MessageLookupByLibrary.simpleMessage("Jami:"),
         "strTotalLabel": MessageLookupByLibrary.simpleMessage("Jami:"),
         "strTotalPause": MessageLookupByLibrary.simpleMessage("Jami pauza:"),
+        "strTotalPrice": MessageLookupByLibrary.simpleMessage("Jami narx"),
         "strTotalRevenueLabel":
             MessageLookupByLibrary.simpleMessage("Umumiy tushum"),
         "strTotalSales": MessageLookupByLibrary.simpleMessage("Umumiy savdo"),
@@ -601,6 +615,7 @@ class MessageLookup extends MessageLookupByLibrary {
         "strUmumiySumma": MessageLookupByLibrary.simpleMessage("Umumiy summa"),
         "strUnacceptableDate":
             MessageLookupByLibrary.simpleMessage("Noto\'g\'ri sana formati"),
+        "strUnitPrice": MessageLookupByLibrary.simpleMessage("Birlik narxi"),
         "strUploadError":
             MessageLookupByLibrary.simpleMessage("Yuklash xatosi"),
         "strUploadFailed":

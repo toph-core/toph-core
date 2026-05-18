@@ -59,12 +59,19 @@ class TableTimerState {
   }
 
   /// Ko'rsatish uchun samarali summa.
-  /// Frozen bo'lsa `finalAmount`, aks holda `currentAmount`, oxirgi navbatda hisoblangan.
+  /// Frozen bo'lsa `finalAmount`, running bo'lsa lokal hisoblangan (UI har
+  /// sekundda yangilanishi uchun), aks holda server `currentAmount`.
   String? get effectiveCurrentAmount {
     final t = timer;
     if (t != null && t.isFrozenClosed) {
       final fin = t.finalAmount;
       if (fin != null && fin.isNotEmpty) return fin;
+    }
+    // Running paytda server `currentAmount` 60s syncgacha eskirib qoladi —
+    // displayActiveSec asosida lokal hisoblanganini afzal ko'ramiz.
+    if (t?.stateNormalized == 'running') {
+      final computed = computedCurrentAmount;
+      if (computed != null) return computed;
     }
     if (t?.currentAmount?.isNotEmpty == true) return t!.currentAmount;
     return computedCurrentAmount;

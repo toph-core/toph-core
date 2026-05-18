@@ -436,5 +436,20 @@
   "strFreezeAndTransfer": "Заморозить и перенести",
   "strFrozenShort": "ЗАМОРОЖЕНО",
   "strElapsedTime": "Прошло времени",
-  "strFrozenAmount": "Замороженная сумма"
+  "strFrozenAmount": "Замороженная сумма",
+
+  "strAvailableItems": "Доступные элементы",
+  "strAddedItems": "Добавленные элементы",
+  "strName": "Название",
+  "strUnitPrice": "Цена за единицу",
+  "strTotalPrice": "Итоговая цена",
+  "strCost": "Стоимость",
+  "strManualAdd": "Добавить вручную",
+  "strItemsCount": "Элементы: {count}",
+  "@strItemsCount": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "strNoCalculationsHint": "Нет строк. Добавьте ингредиент или полуфабрикат."
 }

@@ -64,7 +64,10 @@ class _MenuManageScreenState extends State<MenuManageScreen> {
   String? _availableItemsError;
   List<Map<String, dynamic>> _availableIngredients = const [];
   List<Map<String, dynamic>> _availableCompounds = const [];
-  _AvailableItemsTab _availableItemsTab = _AvailableItemsTab.ingredients;
+  _AvailableItemsTab _activeTab = _AvailableItemsTab.ingredients;
+  final TextEditingController _availableSearchCtrl = TextEditingController();
+  String _availableSearchQuery = '';
+  final Map<String, TextEditingController> _qtyCtrls = {};
   final Map<String, Map<String, dynamic>> _translationsById = {};
   bool _translationsLoading = false;
   bool _uploadingImage = false;
@@ -768,43 +771,143 @@ class _MenuManageScreenState extends State<MenuManageScreen> {
     return const <Map<String, dynamic>>[];
   }
 
-  List<Map<String, dynamic>> get _activeAvailableItems {
-    return _availableItemsTab == _AvailableItemsTab.ingredients
-        ? _availableIngredients
-        : _availableCompounds;
+  List<Map<String, dynamic>> get _filteredAvailableItems {
+    final isIng = _activeTab == _AvailableItemsTab.ingredients;
+    final source = isIng ? _availableIngredients : _availableCompounds;
+    final kind = isIng ? 'ingredient' : 'compound';
+    final combined = <Map<String, dynamic>>[
+      for (final e in source) {...e, '__kind': kind},
+    ];
+    final q = _availableSearchQuery.trim().toLowerCase();
+    if (q.isEmpty) return combined;
+    return combined.where((e) {
+      final name = (e['name'] ?? e['title'] ?? '').toString().toLowerCase();
+      return name.contains(q);
+    }).toList();
   }
 
-  void _addFromAvailable(Map<String, dynamic> source) {
-    final itemId = (source['id'] ?? '').toString();
-    if (itemId.isEmpty) return;
-    final unit = (source['unit'] ?? source['measurement'] ?? '').toString();
+  bool _isItemAdded(String id, {required bool isIngredient}) {
+    if (id.isEmpty) return false;
+    if (isIngredient) {
+      return _ingredientCalculations.any(
+        (e) => (e['ingredient_id'] ?? '').toString() == id,
+      );
+    }
+    return _compoundCalculations.any(
+      (e) => (e['compound_id'] ?? '').toString() == id,
+    );
+  }
+
+  void _toggleAvailableItem(
+    Map<String, dynamic> item, {
+    required bool isIngredient,
+  }) {
+    final id = (item['id'] ?? '').toString();
+    if (id.isEmpty) return;
+    final unit = (item['unit'] ?? item['measurement'] ?? '').toString();
     setState(() {
-      if (_availableItemsTab == _AvailableItemsTab.ingredients) {
+      if (isIngredient) {
         final exists = _ingredientCalculations.any(
-          (e) => (e['ingredient_id'] ?? '').toString() == itemId,
+          (e) => (e['ingredient_id'] ?? '').toString() == id,
         );
-        if (exists) return;
-        _ingredientCalculations = [
-          ..._ingredientCalculations,
-          {
-            'ingredient_id': itemId,
-            'quantity': '1',
-            if (unit.isNotEmpty) 'unit': unit,
-          },
-        ];
+        if (exists) {
+          _disposeQtyCtrl(_qtyKey(id: id, isIngredient: true));
+          _ingredientCalculations = _ingredientCalculations
+              .where((e) => (e['ingredient_id'] ?? '').toString() != id)
+              .toList();
+        } else {
+          _ingredientCalculations = [
+            ..._ingredientCalculations,
+            {
+              'ingredient_id': id,
+              'quantity': '1',
+              if (unit.isNotEmpty) 'unit': unit,
+            },
+          ];
+        }
       } else {
         final exists = _compoundCalculations.any(
-          (e) => (e['compound_id'] ?? '').toString() == itemId,
+          (e) => (e['compound_id'] ?? '').toString() == id,
         );
-        if (exists) return;
-        _compoundCalculations = [
-          ..._compoundCalculations,
-          {
-            'compound_id': itemId,
-            'quantity': '1',
-            if (unit.isNotEmpty) 'unit': unit,
-          },
-        ];
+        if (exists) {
+          _disposeQtyCtrl(_qtyKey(id: id, isIngredient: false));
+          _compoundCalculations = _compoundCalculations
+              .where((e) => (e['compound_id'] ?? '').toString() != id)
+              .toList();
+        } else {
+          _compoundCalculations = [
+            ..._compoundCalculations,
+            {
+              'compound_id': id,
+              'quantity': '1',
+              if (unit.isNotEmpty) 'unit': unit,
+            },
+          ];
+        }
+      }
+    });
+  }
+
+  bool get _allFilteredAdded {
+    final items = _filteredAvailableItems;
+    if (items.isEmpty) return false;
+    for (final item in items) {
+      final id = (item['id'] ?? '').toString();
+      final isIng = item['__kind'] == 'ingredient';
+      if (!_isItemAdded(id, isIngredient: isIng)) return false;
+    }
+    return true;
+  }
+
+  void _toggleSelectAllFiltered() {
+    final items = _filteredAvailableItems;
+    if (items.isEmpty) return;
+    final shouldRemoveAll = _allFilteredAdded;
+    setState(() {
+      for (final item in items) {
+        final id = (item['id'] ?? '').toString();
+        if (id.isEmpty) continue;
+        final isIng = item['__kind'] == 'ingredient';
+        final unit = (item['unit'] ?? item['measurement'] ?? '').toString();
+        if (isIng) {
+          final exists = _ingredientCalculations.any(
+            (e) => (e['ingredient_id'] ?? '').toString() == id,
+          );
+          if (shouldRemoveAll && exists) {
+            _disposeQtyCtrl(_qtyKey(id: id, isIngredient: true));
+            _ingredientCalculations = _ingredientCalculations
+                .where((e) => (e['ingredient_id'] ?? '').toString() != id)
+                .toList();
+          } else if (!shouldRemoveAll && !exists) {
+            _ingredientCalculations = [
+              ..._ingredientCalculations,
+              {
+                'ingredient_id': id,
+                'quantity': '1',
+                if (unit.isNotEmpty) 'unit': unit,
+              },
+            ];
+          }
+        } else {
+          final exists = _compoundCalculations.any(
+            (e) => (e['compound_id'] ?? '').toString() == id,
+          );
+          if (shouldRemoveAll && exists) {
+            _disposeQtyCtrl(_qtyKey(id: id, isIngredient: false));
+            _compoundCalculations = _compoundCalculations
+                .where((e) => (e['compound_id'] ?? '').toString() != id)
+                .toList();
+          } else if (!shouldRemoveAll && !exists) {
+            _compoundCalculations = [
+              ..._compoundCalculations,
+              {
+                'compound_id': id,
+                'quantity': '1',
+                if (unit.isNotEmpty) 'unit': unit,
+              },
+            ];
+          }
+        }
       }
     });
   }
@@ -817,6 +920,91 @@ class _MenuManageScreenState extends State<MenuManageScreen> {
     return list.firstWhereOrNull((e) => (e['id'] ?? '').toString() == id);
   }
 
+  String _qtyKey({required String id, required bool isIngredient}) =>
+      '${isIngredient ? 'ing' : 'cmp'}_$id';
+
+  TextEditingController _qtyCtrlFor({
+    required String key,
+    required String initial,
+  }) {
+    final existing = _qtyCtrls[key];
+    if (existing != null) return existing;
+    final ctrl = TextEditingController(text: initial);
+    _qtyCtrls[key] = ctrl;
+    return ctrl;
+  }
+
+  void _disposeQtyCtrl(String key) {
+    _qtyCtrls.remove(key)?.dispose();
+  }
+
+  void _updateRowQty({
+    required String id,
+    required String qty,
+    required bool isIngredient,
+  }) {
+    if (isIngredient) {
+      _ingredientCalculations = [
+        for (final e in _ingredientCalculations)
+          if ((e['ingredient_id'] ?? '').toString() == id)
+            {...e, 'quantity': qty}
+          else
+            e,
+      ];
+    } else {
+      _compoundCalculations = [
+        for (final e in _compoundCalculations)
+          if ((e['compound_id'] ?? '').toString() == id)
+            {...e, 'quantity': qty}
+          else
+            e,
+      ];
+    }
+    setState(() {});
+  }
+
+  double? _readPrice(Map<String, dynamic>? source) {
+    if (source == null) return null;
+    for (final key in const [
+      'price',
+      'cost_price',
+      'unit_price',
+      'purchase_price',
+      'last_purchase_price',
+      'last_price',
+      'cost',
+    ]) {
+      final raw = source[key];
+      if (raw == null) continue;
+      final parsed = double.tryParse(raw.toString().replaceAll(',', '.'));
+      if (parsed != null) return parsed;
+    }
+    return null;
+  }
+
+  double _computeTotalCost() {
+    double total = 0;
+    for (final row in _ingredientCalculations) {
+      final id = (row['ingredient_id'] ?? '').toString();
+      final source = _findAvailableById(id: id, ingredient: true);
+      final priceNum = _readPrice(source) ?? _readPrice(row);
+      final qtyNum = double.tryParse(
+        (row['quantity'] ?? '').toString().replaceAll(',', '.'),
+      );
+      if (priceNum != null && qtyNum != null) total += priceNum * qtyNum;
+    }
+    for (final row in _compoundCalculations) {
+      final id = (row['compound_id'] ?? '').toString();
+      final source = _findAvailableById(id: id, ingredient: false);
+      final priceNum = _readPrice(source) ?? _readPrice(row);
+      final qtyNum = double.tryParse(
+        (row['quantity'] ?? '').toString().replaceAll(',', '.'),
+      );
+      if (priceNum != null && qtyNum != null) total += priceNum * qtyNum;
+    }
+    return total;
+  }
+
   @override
   void dispose() {
     _nameCtrl.dispose();
@@ -827,6 +1015,11 @@ class _MenuManageScreenState extends State<MenuManageScreen> {
     _cookTimeCtrl.dispose();
     _pictureUrlCtrl.removeListener(_onPictureUrlChanged);
     _pictureUrlCtrl.dispose();
+    _availableSearchCtrl.dispose();
+    for (final c in _qtyCtrls.values) {
+      c.dispose();
+    }
+    _qtyCtrls.clear();
     super.dispose();
   }
 
@@ -995,11 +1188,9 @@ class _MenuManageScreenState extends State<MenuManageScreen> {
 
   Widget _formBody() {
     final colors = context.colors;
-    final totalPreview = _parsePriceField() ?? 0;
-    final totalFormatted = AppFormatter.formatAmountWithSpaces(
-      totalPreview.toString(),
-    );
-    return SingleChildScrollView(
+    return ScrollConfiguration(
+      behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
+      child: SingleChildScrollView(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1126,19 +1317,6 @@ class _MenuManageScreenState extends State<MenuManageScreen> {
           // ── Footer action bar ──
           Row(
             children: [
-              _Tag(
-                label: S.current.strIngredientsCount(
-                  _ingredientCalculations.length,
-                ),
-              ),
-              const SizedBox(width: 10),
-              _Tag(
-                label: S.current.strCompoundsCount(
-                  _compoundCalculations.length,
-                ),
-              ),
-              const SizedBox(width: 10),
-              _Tag(label: 'Total: $totalFormatted'),
               const Spacer(),
               _ActionBtn(
                 label: S.current.strCancel,
@@ -1173,6 +1351,7 @@ class _MenuManageScreenState extends State<MenuManageScreen> {
           const SizedBox(height: 12),
         ],
       ),
+      ),
     );
   }
 
@@ -1198,236 +1377,498 @@ class _MenuManageScreenState extends State<MenuManageScreen> {
       );
     }
 
-    return Column(
+    return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            Expanded(
-              child: _itemsTabBtn(
-                label: S.current.strIngredients,
-                selected: _availableItemsTab == _AvailableItemsTab.ingredients,
-                onTap: () => setState(
-                  () => _availableItemsTab = _AvailableItemsTab.ingredients,
-                ),
-              ),
+        Expanded(flex: 2, child: _availableItemsCard(colors)),
+        const SizedBox(width: 16),
+        Expanded(flex: 3, child: _addedItemsCard(colors)),
+      ],
+    );
+  }
+
+  Widget _availableItemsCard(ThemeColors colors) {
+    return Container(
+      decoration: BoxDecoration(
+        color: colors.bgDefault,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: colors.border),
+      ),
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            S.current.strAvailableItems,
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+              color: colors.textDefault,
             ),
-            const SizedBox(width: 6),
-            Expanded(
-              child: _itemsTabBtn(
-                label: S.current.strSemiFinished,
-                selected: _availableItemsTab == _AvailableItemsTab.semiFinished,
-                onTap: () => setState(
-                  () => _availableItemsTab = _AvailableItemsTab.semiFinished,
-                ),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        if (_availableItemsError != null)
+          ),
+          const SizedBox(height: 12),
           Container(
-            width: double.infinity,
-            margin: const EdgeInsets.only(bottom: 8),
-            padding: const EdgeInsets.all(8),
+            padding: const EdgeInsets.all(4),
             decoration: BoxDecoration(
-              color: colors.bgDefault,
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: colors.systemError.withOpacity(0.5)),
+              color: colors.bgSecondary,
+              borderRadius: BorderRadius.circular(12),
             ),
             child: Row(
               children: [
                 Expanded(
-                  child: Text(
-                    _availableItemsError!,
-                    style: TextStyle(fontSize: 12, color: colors.systemError),
+                  child: _segmentedTab(
+                    colors: colors,
+                    label: S.current.strIngredients,
+                    selected: _activeTab == _AvailableItemsTab.ingredients,
+                    onTap: () => setState(
+                      () => _activeTab = _AvailableItemsTab.ingredients,
+                    ),
                   ),
                 ),
-                TextButton(
-                  onPressed: _loadingAvailableItems
-                      ? null
-                      : _fetchAvailableItemsFromApi,
-                  child: Text(
-                    'Reload',
-                    style: TextStyle(fontSize: 12, color: colors.textBrand),
+                const SizedBox(width: 4),
+                Expanded(
+                  child: _segmentedTab(
+                    colors: colors,
+                    label: S.current.strSemiFinished,
+                    selected: _activeTab == _AvailableItemsTab.semiFinished,
+                    onTap: () => setState(
+                      () => _activeTab = _AvailableItemsTab.semiFinished,
+                    ),
                   ),
                 ),
               ],
             ),
           ),
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(child: _availableItemsPanel(colors)),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+          const SizedBox(height: 14),
+          if (_availableItemsError != null)
+            Container(
+              width: double.infinity,
+              margin: const EdgeInsets.only(bottom: 10),
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: colors.bgDefault,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(
+                  color: colors.systemError.withOpacity(0.5),
+                ),
+              ),
+              child: Row(
                 children: [
-                  Row(
-                    children: [
-                      Text(
-                        'Added Items',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                          color: colors.textDefault,
-                        ),
+                  Expanded(
+                    child: Text(
+                      _availableItemsError!,
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: colors.systemError,
                       ),
-                      const Spacer(),
-                      TextButton.icon(
-                        onPressed: _loadingItems
-                            ? null
-                            : () => _promptAddRow(
-                                isIngredient:
-                                    _availableItemsTab ==
-                                    _AvailableItemsTab.ingredients,
-                              ),
-                        icon: Icon(
-                          Icons.add,
-                          size: 16,
-                          color: colors.textBrand,
-                        ),
-                        label: Text(
-                          'Manual add',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: colors.textBrand,
-                          ),
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
-                  const SizedBox(height: 4),
-                  if (_ingredientCalculations.isNotEmpty) ...[
-                    Text(
-                      'Ingredients',
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                        color: colors.textSecondary,
-                      ),
+                  TextButton(
+                    onPressed: _loadingAvailableItems
+                        ? null
+                        : _fetchAvailableItemsFromApi,
+                    child: Text(
+                      'Reload',
+                      style: TextStyle(fontSize: 13, color: colors.textBrand),
                     ),
-                    const SizedBox(height: 6),
-                    ...List.generate(_ingredientCalculations.length, (i) {
-                      return _calculationRow(
-                        colors,
-                        _ingredientCalculations[i],
-                        idLabel: 'ingredient_id',
-                        onRemove: () => setState(() {
-                          _ingredientCalculations = List.of(
-                            _ingredientCalculations,
-                          )..removeAt(i);
-                        }),
-                      );
-                    }),
-                    const SizedBox(height: 8),
-                  ],
-                  if (_compoundCalculations.isNotEmpty) ...[
-                    Text(
-                      'Semi-finished',
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                        color: colors.textSecondary,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    ...List.generate(_compoundCalculations.length, (i) {
-                      return _calculationRow(
-                        colors,
-                        _compoundCalculations[i],
-                        idLabel: 'compound_id',
-                        onRemove: () => setState(() {
-                          _compoundCalculations = List.of(_compoundCalculations)
-                            ..removeAt(i);
-                        }),
-                      );
-                    }),
-                  ],
-                  if (_ingredientCalculations.isEmpty &&
-                      _compoundCalculations.isEmpty &&
-                      !_loadingItems)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 4),
-                      child: Text(
-                        'Нет строк. Добавьте ингредиент или полуфабрикат.',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: colors.textSecondary,
-                        ),
-                      ),
-                    ),
+                  ),
                 ],
               ),
             ),
-          ],
-        ),
-      ],
+          Row(
+            children: [
+              _selectAllCheckbox(colors),
+              const SizedBox(width: 12),
+              Expanded(child: _searchField(colors)),
+            ],
+          ),
+          const SizedBox(height: 12),
+          _availableItemsList(colors),
+        ],
+      ),
     );
   }
 
-  Widget _availableItemsPanel(ThemeColors colors) {
-    if (_loadingAvailableItems && _activeAvailableItems.isEmpty) {
+  Widget _addedItemsCard(ThemeColors colors) {
+    final hasIngredients = _ingredientCalculations.isNotEmpty;
+    final hasCompounds = _compoundCalculations.isNotEmpty;
+    final empty = !hasIngredients && !hasCompounds && !_loadingItems;
+    final totalItems =
+        _ingredientCalculations.length + _compoundCalculations.length;
+    final totalCost = _computeTotalCost();
+    final totalCostFormatted = AppFormatter.formatAmountWithSpaces(
+      totalCost.toString(),
+    );
+    return Container(
+      decoration: BoxDecoration(
+        color: colors.bgDefault,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: colors.border),
+      ),
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Text(
+                S.current.strAddedItems,
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: colors.textDefault,
+                ),
+              ),
+              const Spacer(),
+              TextButton.icon(
+                onPressed: _loadingItems
+                    ? null
+                    : () => _promptAddRow(
+                        isIngredient:
+                            _activeTab == _AvailableItemsTab.ingredients,
+                      ),
+                icon: Icon(Icons.add, size: 18, color: colors.textBrand),
+                label: Text(
+                  S.current.strManualAdd,
+                  style: TextStyle(fontSize: 14, color: colors.textBrand),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          if (!empty) ...[
+            _addedTableHeader(colors),
+            const SizedBox(height: 6),
+            Divider(height: 1, color: colors.border),
+            const SizedBox(height: 6),
+          ],
+          if (hasIngredients)
+            ...List.generate(_ingredientCalculations.length, (i) {
+              return _calculationRow(
+                colors,
+                _ingredientCalculations[i],
+                idLabel: 'ingredient_id',
+                onRemove: () {
+                  final id =
+                      (_ingredientCalculations[i]['ingredient_id'] ?? '')
+                          .toString();
+                  _disposeQtyCtrl(_qtyKey(id: id, isIngredient: true));
+                  setState(() {
+                    _ingredientCalculations = List.of(_ingredientCalculations)
+                      ..removeAt(i);
+                  });
+                },
+              );
+            }),
+          if (hasCompounds)
+            ...List.generate(_compoundCalculations.length, (i) {
+              return _calculationRow(
+                colors,
+                _compoundCalculations[i],
+                idLabel: 'compound_id',
+                onRemove: () {
+                  final id = (_compoundCalculations[i]['compound_id'] ?? '')
+                      .toString();
+                  _disposeQtyCtrl(_qtyKey(id: id, isIngredient: false));
+                  setState(() {
+                    _compoundCalculations = List.of(_compoundCalculations)
+                      ..removeAt(i);
+                  });
+                },
+              );
+            }),
+          if (empty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 24),
+              child: Center(
+                child: Text(
+                  S.current.strNoCalculationsHint,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 14, color: colors.textSecondary),
+                ),
+              ),
+            ),
+          if (!empty) ...[
+            const SizedBox(height: 6),
+            Divider(height: 1, color: colors.border),
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                Text(
+                  S.current.strItemsCount(totalItems),
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color: colors.textSecondary,
+                  ),
+                ),
+                const Spacer(),
+                Text(
+                  '${S.current.strCost}: ',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: colors.textSecondary,
+                  ),
+                ),
+                Text(
+                  totalCostFormatted,
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    color: colors.textDefault,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _addedTableHeader(ThemeColors colors) {
+    final style = TextStyle(
+      fontSize: 12,
+      fontWeight: FontWeight.w600,
+      color: colors.textSecondary,
+      letterSpacing: 0.3,
+    );
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      child: Row(
+        children: [
+          Expanded(flex: 5, child: Text(S.current.strName, style: style)),
+          const SizedBox(width: 10),
+          Expanded(
+            flex: 3,
+            child: Text(
+              S.current.strQuantity,
+              style: style,
+              textAlign: TextAlign.center,
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            flex: 3,
+            child: Text(
+              S.current.strUnitPrice,
+              style: style,
+              textAlign: TextAlign.right,
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            flex: 3,
+            child: Text(
+              S.current.strTotalPrice,
+              style: style,
+              textAlign: TextAlign.right,
+            ),
+          ),
+          const SizedBox(width: 36),
+        ],
+      ),
+    );
+  }
+
+  Widget _selectAllCheckbox(ThemeColors colors) {
+    final items = _filteredAvailableItems;
+    final enabled = items.isNotEmpty;
+    final allAdded = enabled && _allFilteredAdded;
+    return GestureDetector(
+      onTap: enabled ? _toggleSelectAllFiltered : null,
+      child: Container(
+        width: 28,
+        height: 28,
+        decoration: BoxDecoration(
+          color: allAdded ? colors.textBrand : colors.bgDefault,
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(
+            color: allAdded ? colors.textBrand : colors.border,
+            width: 1.5,
+          ),
+        ),
+        child: allAdded
+            ? const Icon(Icons.check_rounded, size: 18, color: Colors.white)
+            : null,
+      ),
+    );
+  }
+
+  Widget _searchField(ThemeColors colors) {
+    final hasText = _availableSearchQuery.isNotEmpty;
+    return Container(
+      height: 52,
+      decoration: BoxDecoration(
+        color: colors.bgSecondary,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: hasText ? colors.borderBrand : colors.border,
+          width: 1,
+        ),
+      ),
+      child: Row(
+        children: [
+          const SizedBox(width: 14),
+          Icon(
+            Icons.search_rounded,
+            size: 22,
+            color: hasText ? colors.textBrand : colors.textTertiary,
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: TextField(
+              controller: _availableSearchCtrl,
+              textInputAction: TextInputAction.search,
+              style: TextStyle(
+                fontSize: 15,
+                color: colors.textDefault,
+                height: 1.2,
+              ),
+              cursorColor: colors.textBrand,
+              onChanged: (v) => setState(() => _availableSearchQuery = v),
+              decoration: InputDecoration(
+                hintText: S.current.strSearch,
+                hintStyle: TextStyle(
+                  fontSize: 15,
+                  color: colors.textTertiary,
+                  fontWeight: FontWeight.w400,
+                ),
+                border: InputBorder.none,
+                isCollapsed: true,
+                contentPadding: const EdgeInsets.symmetric(vertical: 16),
+              ),
+            ),
+          ),
+          if (hasText)
+            GestureDetector(
+              onTap: () {
+                _availableSearchCtrl.clear();
+                setState(() => _availableSearchQuery = '');
+              },
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                child: Icon(
+                  Icons.close_rounded,
+                  size: 20,
+                  color: colors.textTertiary,
+                ),
+              ),
+            )
+          else
+            const SizedBox(width: 14),
+        ],
+      ),
+    );
+  }
+
+  Widget _availableItemsList(ThemeColors colors) {
+    if (_loadingAvailableItems && _filteredAvailableItems.isEmpty) {
       return Container(
-        height: 180,
+        height: 240,
         decoration: BoxDecoration(
           color: colors.bgDefault,
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(10),
           border: Border.all(color: colors.border),
         ),
         child: const Center(child: CircularProgressIndicator.adaptive()),
       );
     }
-    if (_activeAvailableItems.isEmpty) {
+    final items = _filteredAvailableItems;
+    if (items.isEmpty) {
       return Container(
-        height: 180,
-        padding: const EdgeInsets.all(10),
+        height: 240,
+        padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: colors.bgDefault,
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(10),
           border: Border.all(color: colors.border),
         ),
         child: Center(
           child: Text(
             'Available list bo\'sh',
-            style: TextStyle(fontSize: 12, color: colors.textSecondary),
+            style: TextStyle(fontSize: 14, color: colors.textSecondary),
           ),
         ),
       );
     }
     return Container(
-      constraints: const BoxConstraints(minHeight: 180, maxHeight: 320),
+      constraints: const BoxConstraints(minHeight: 240, maxHeight: 480),
       decoration: BoxDecoration(
         color: colors.bgDefault,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(10),
         border: Border.all(color: colors.border),
       ),
       child: ListView.separated(
-        itemCount: _activeAvailableItems.length,
+        itemCount: items.length,
         separatorBuilder: (_, i) => Divider(height: 1, color: colors.border),
         itemBuilder: (_, i) {
-          final item = _activeAvailableItems[i];
+          final item = items[i];
           final id = (item['id'] ?? '').toString();
           final name = (item['name'] ?? item['title'] ?? id).toString();
           final unit = (item['unit'] ?? item['measurement'] ?? '').toString();
-          return ListTile(
-            dense: true,
-            title: Text(
-              name,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(fontSize: 12, color: colors.textDefault),
-            ),
-            subtitle: Text(
-              unit.isEmpty ? id : '$unit · $id',
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(fontSize: 11, color: colors.textSecondary),
-            ),
-            trailing: IconButton(
-              onPressed: () => _addFromAvailable(item),
-              icon: Icon(Icons.add_circle_outline, color: colors.textBrand),
+          final isIng = item['__kind'] == 'ingredient';
+          final added = _isItemAdded(id, isIngredient: isIng);
+          return InkWell(
+            onTap: () => _toggleAvailableItem(item, isIngredient: isIng),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 14,
+                vertical: 12,
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 24,
+                    height: 24,
+                    decoration: BoxDecoration(
+                      color: added ? colors.textBrand : colors.bgDefault,
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(
+                        color: added ? colors.textBrand : colors.border,
+                        width: 1.5,
+                      ),
+                    ),
+                    child: added
+                        ? const Icon(
+                            Icons.check_rounded,
+                            size: 18,
+                            color: Colors.white,
+                          )
+                        : null,
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          name,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                            color: colors.textDefault,
+                          ),
+                        ),
+                        const SizedBox(height: 3),
+                        Text(
+                          unit.isEmpty ? id : unit,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: colors.textSecondary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  _kindBadge(isIngredient: isIng),
+                ],
+              ),
             ),
           );
         },
@@ -1435,29 +1876,61 @@ class _MenuManageScreenState extends State<MenuManageScreen> {
     );
   }
 
-  Widget _itemsTabBtn({
+  Widget _kindBadge({required bool isIngredient}) {
+    final bg = isIngredient
+        ? const Color(0xFFFDE4D2)
+        : const Color(0xFFDCE6FF);
+    final fg = isIngredient
+        ? const Color(0xFFD15B1F)
+        : const Color(0xFF3B5BDB);
+    final label = isIngredient
+        ? S.current.strIngredients
+        : S.current.strSemiFinished;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: fg),
+      ),
+    );
+  }
+
+  Widget _segmentedTab({
+    required ThemeColors colors,
     required String label,
     required bool selected,
     required VoidCallback onTap,
   }) {
-    final colors = context.colors;
     return GestureDetector(
+      behavior: HitTestBehavior.opaque,
       onTap: onTap,
-      child: Container(
-        height: 30,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        curve: Curves.easeOut,
+        height: 42,
         decoration: BoxDecoration(
-          color: selected ? colors.buttonBrandSecondary : colors.bgDefault,
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(
-            color: selected ? colors.borderBrand : colors.border,
-          ),
+          color: selected ? colors.bgDefault : Colors.transparent,
+          borderRadius: BorderRadius.circular(10),
+          boxShadow: selected
+              ? [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 6,
+                    offset: const Offset(0, 1),
+                  ),
+                ]
+              : null,
         ),
         child: Center(
           child: Text(
             label,
             style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
+              fontSize: 14,
+              fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
               color: selected ? colors.textBrand : colors.textSecondary,
             ),
           ),
@@ -1480,54 +1953,158 @@ class _MenuManageScreenState extends State<MenuManageScreen> {
     final unit =
         (row['unit'] ?? source?['unit'] ?? source?['measurement'] ?? '')
             .toString();
-    final price = (source?['price'] ?? source?['cost_price'] ?? '').toString();
-    final priceNum = double.tryParse(price);
-    final qtyNum = double.tryParse(qty);
+    final priceNum = _readPrice(source) ?? _readPrice(row);
+    final qtyNum = double.tryParse(qty.replaceAll(',', '.'));
     final totalRaw = (priceNum != null && qtyNum != null)
         ? (priceNum * qtyNum)
         : null;
-    final total = totalRaw != null
+    final priceFormatted = priceNum != null
+        ? AppFormatter.formatAmountWithSpaces(priceNum.toString())
+        : '0.00';
+    final totalFormatted = totalRaw != null
         ? AppFormatter.formatAmountWithSpaces(totalRaw.toString())
-        : '-';
+        : '0.00';
+    final qtyKey = _qtyKey(id: id, isIngredient: ingredient);
+    final qtyCtrl = _qtyCtrlFor(key: qtyKey, initial: qty);
     return Container(
-      margin: const EdgeInsets.only(bottom: 6),
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
         color: colors.bgDefault,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(10),
         border: Border.all(color: colors.border),
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            flex: 5,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                Text(
-                  name,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(fontSize: 12, color: colors.textDefault),
+                Flexible(
+                  child: Text(
+                    name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: colors.textDefault,
+                    ),
+                  ),
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  'qty: $qty ${unit.isEmpty ? '' : unit} · total: $total',
-                  style: TextStyle(fontSize: 11, color: colors.textSecondary),
-                ),
+                const SizedBox(width: 8),
+                _kindBadge(isIngredient: ingredient),
               ],
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            flex: 3,
+            child: _qtyInput(
+              colors: colors,
+              controller: qtyCtrl,
+              unit: unit,
+              onChanged: (v) => _updateRowQty(
+                id: id,
+                qty: v,
+                isIngredient: ingredient,
+              ),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            flex: 3,
+            child: Text(
+              priceFormatted,
+              textAlign: TextAlign.right,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 14,
+                color: colors.textDefault,
+                fontFeatures: const [FontFeature.tabularFigures()],
+              ),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            flex: 3,
+            child: Text(
+              totalFormatted,
+              textAlign: TextAlign.right,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: colors.textDefault,
+                fontFeatures: const [FontFeature.tabularFigures()],
+              ),
             ),
           ),
           IconButton(
             onPressed: onRemove,
             icon: Icon(
               Icons.close_rounded,
-              size: 18,
+              size: 22,
               color: colors.textSecondary,
             ),
             padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+            constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+            splashRadius: 20,
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _qtyInput({
+    required ThemeColors colors,
+    required TextEditingController controller,
+    required String unit,
+    required ValueChanged<String> onChanged,
+  }) {
+    final border = OutlineInputBorder(
+      borderRadius: BorderRadius.circular(8),
+      borderSide: BorderSide(color: colors.border),
+    );
+    return TextField(
+      controller: controller,
+      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+      textInputAction: TextInputAction.search,
+      inputFormatters: [
+        FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]')),
+      ],
+      textAlign: TextAlign.center,
+      textAlignVertical: TextAlignVertical.center,
+      onChanged: onChanged,
+      cursorColor: colors.textBrand,
+      decoration: InputDecoration(
+        filled: false,
+        suffixText: unit.isNotEmpty ? unit : null,
+        suffixStyle: TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w500,
+          color: colors.textTertiary,
+        ),
+        border: border,
+        enabledBorder: border,
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: BorderSide(color: colors.borderBrand, width: 1.2),
+        ),
+        isDense: true,
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 10,
+          vertical: 12,
+        ),
+      ),
+      style: TextStyle(
+        fontSize: 14,
+        fontWeight: FontWeight.w600,
+        color: colors.textDefault,
       ),
     );
   }
@@ -1802,36 +2379,6 @@ class _FieldLabel extends StatelessWidget {
   }
 }
 
-class _Tag extends StatelessWidget {
-  final String label;
-
-  const _Tag({required this.label});
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.colors;
-    return Container(
-      height: 44,
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      decoration: BoxDecoration(
-        color: colors.bgSecondary,
-        border: Border.all(color: colors.border),
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Center(
-        child: Text(
-          label,
-          style: TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-            color: colors.textDefault,
-            fontFamily: 'Inter',
-          ),
-        ),
-      ),
-    );
-  }
-}
 
 class _ActionBtn extends StatefulWidget {
   final String label;

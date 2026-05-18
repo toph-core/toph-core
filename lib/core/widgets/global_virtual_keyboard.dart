@@ -258,6 +258,14 @@ class _GlobalVirtualKeyboardState extends State<GlobalVirtualKeyboard> {
         ),
 
         // Klaviatura — pastdan yuqoriga suriladi.
+        //
+        // Ikkita himoya qatlami:
+        //   • ExcludeFocus — klaviatura tugmalari fokuslanmasin (aks holda
+        //     fokus EditableText'dan tugmaga o'tib ketardi).
+        //   • TapRegion(groupId: EditableText) — desktop/Windows'da EditableText'ning
+        //     default TapRegion'i tashqi bosilganda focusNode.unfocus() chaqiradi.
+        //     Klaviatura panelini xuddi shu groupId bilan o'rab qo'ysak, tugma
+        //     bosilishi "outside" hisoblanmaydi va TextField fokusi saqlanib qoladi.
         AnimatedPositioned(
           duration: const Duration(milliseconds: 260),
           curve: Curves.easeOutCubic,
@@ -265,10 +273,15 @@ class _GlobalVirtualKeyboardState extends State<GlobalVirtualKeyboard> {
           right: 0,
           bottom: _open ? 0 : -kbHeight - 32,
           height: kbHeight,
-          child: _KeyboardPanel(
-            numericOnly: _numericOnly,
-            onKeyPress: _onKeyPress,
-            onClose: _dismiss,
+          child: TapRegion(
+            groupId: EditableText,
+            child: ExcludeFocus(
+              child: _KeyboardPanel(
+                numericOnly: _numericOnly,
+                onKeyPress: _onKeyPress,
+                onClose: _dismiss,
+              ),
+            ),
           ),
         ),
       ],
@@ -291,20 +304,22 @@ class _OutsideTapCatcher extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (!enabled) return child;
-    // Listener + translucent: tegishli widget o'zini event bilan bajarishdan
-    // so'ng bu Listener ham pointer-downni oladi va fokusni yopadi.
+    // Listener har doim widget-tree'da turishi kerak — `enabled` o'zgargani uchun
+    // wrap'ni o'chirib qo'ysak, ostidagi barcha State'lar yo'qoladi (masalan,
+    // ExpansionTile expand qilingan holatini yo'qotadi). Shu sababli wrapper
+    // doimo bor, faqat callback shartli ravishda ulanadi.
     return Listener(
-      behavior: HitTestBehavior.translucent,
-      onPointerDown: (_) {
-        // Hit-test textfield yoki button uchun birinchi ishlaydi. Shu yerda
-        // yana bir kadr kutib fokus o'zgarganini tekshiramiz. Agar fokus hali
-        // ham editable'da bo'lsa — demak, yangi TextField bosilgan; tegmaymiz.
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          final w = FocusManager.instance.primaryFocus?.context?.widget;
-          if (w is! EditableText) onTapOutside();
-        });
-      },
+      behavior: enabled
+          ? HitTestBehavior.translucent
+          : HitTestBehavior.deferToChild,
+      onPointerDown: enabled
+          ? (_) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                final w = FocusManager.instance.primaryFocus?.context?.widget;
+                if (w is! EditableText) onTapOutside();
+              });
+            }
+          : null,
       child: child,
     );
   }

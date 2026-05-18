@@ -436,5 +436,20 @@
   "strFreezeAndTransfer": "Freeze & transfer",
   "strFrozenShort": "FROZEN",
   "strElapsedTime": "Elapsed time",
-  "strFrozenAmount": "Frozen amount"
+  "strFrozenAmount": "Frozen amount",
+
+  "strAvailableItems": "Available items",
+  "strAddedItems": "Added items",
+  "strName": "Name",
+  "strUnitPrice": "Unit price",
+  "strTotalPrice": "Total price",
+  "strCost": "Cost",
+  "strManualAdd": "Manual add",
+  "strItemsCount": "Items: {count}",
+  "@strItemsCount": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "strNoCalculationsHint": "No rows. Add an ingredient or semi-finished item."
 }

@@ -29,19 +29,21 @@ class MessageLookup extends MessageLookupByLibrary {
 
   static String m3(count) => "${count} Ingredients";
 
-  static String m4(count, avg) => "${count} items · avg ${avg}";
+  static String m4(count) => "Items: ${count}";
 
-  static String m5(count, time) => "${count} items · ${time}";
+  static String m5(count, avg) => "${count} items · avg ${avg}";
 
-  static String m6(n) => "${n} tables";
+  static String m6(count, time) => "${count} items · ${time}";
 
-  static String m7(count) => "${count} orders";
+  static String m7(n) => "${n} tables";
 
-  static String m8(count, avg) => "${count} orders · avg ${avg}";
+  static String m8(count) => "${count} orders";
 
-  static String m9(size) => "${size} / page";
+  static String m9(count, avg) => "${count} orders · avg ${avg}";
 
-  static String m10(count) => "${count} tables not saved";
+  static String m10(size) => "${size} / page";
+
+  static String m11(count) => "${count} tables not saved";
 
   final messages = _notInlinedMessages(_notInlinedMessages);
   static Map<String, Function> _notInlinedMessages(_) => <String, Function>{
@@ -68,6 +70,7 @@ class MessageLookup extends MessageLookupByLibrary {
         "strAddNewHall": MessageLookupByLibrary.simpleMessage("New hall"),
         "strAddOrder": MessageLookupByLibrary.simpleMessage("Add order"),
         "strAddPrinter": MessageLookupByLibrary.simpleMessage("New printer"),
+        "strAddedItems": MessageLookupByLibrary.simpleMessage("Added items"),
         "strAddress": MessageLookupByLibrary.simpleMessage("Address"),
         "strAllColon": MessageLookupByLibrary.simpleMessage("All:"),
         "strAllDishes": MessageLookupByLibrary.simpleMessage("All dishes"),
@@ -85,6 +88,8 @@ class MessageLookup extends MessageLookupByLibrary {
         "strArchiveEmpty":
             MessageLookupByLibrary.simpleMessage("Orders not found"),
         "strAugust": MessageLookupByLibrary.simpleMessage("August"),
+        "strAvailableItems":
+            MessageLookupByLibrary.simpleMessage("Available items"),
         "strAverageCheck":
             MessageLookupByLibrary.simpleMessage("Average check"),
         "strAverageShort": MessageLookupByLibrary.simpleMessage("avg"),
@@ -147,6 +152,7 @@ class MessageLookup extends MessageLookupByLibrary {
             MessageLookupByLibrary.simpleMessage("Connection type"),
         "strContinue": MessageLookupByLibrary.simpleMessage("Continue"),
         "strCooking": MessageLookupByLibrary.simpleMessage("Cooking"),
+        "strCost": MessageLookupByLibrary.simpleMessage("Cost"),
         "strCurrentOrder":
             MessageLookupByLibrary.simpleMessage("Current order"),
         "strCurrentShift":
@@ -301,8 +307,9 @@ class MessageLookup extends MessageLookupByLibrary {
         "strInvalidName": MessageLookupByLibrary.simpleMessage("Invalid name"),
         "strInvalidNumber":
             MessageLookupByLibrary.simpleMessage("Invalid number"),
-        "strItemsCountWithAvg": m4,
-        "strItemsCountWithTime": m5,
+        "strItemsCount": m4,
+        "strItemsCountWithAvg": m5,
+        "strItemsCountWithTime": m6,
         "strJanuary": MessageLookupByLibrary.simpleMessage("January"),
         "strJuly": MessageLookupByLibrary.simpleMessage("July"),
         "strJune": MessageLookupByLibrary.simpleMessage("June"),
@@ -317,6 +324,7 @@ class MessageLookup extends MessageLookupByLibrary {
         "strLogout": MessageLookupByLibrary.simpleMessage("Logout"),
         "strLogoutConfirm": MessageLookupByLibrary.simpleMessage(
             "Are you sure you want to logout?"),
+        "strManualAdd": MessageLookupByLibrary.simpleMessage("Manual add"),
         "strManualInput": MessageLookupByLibrary.simpleMessage("Manual input"),
         "strMap": MessageLookupByLibrary.simpleMessage("Map"),
         "strMapView": MessageLookupByLibrary.simpleMessage("Map view"),
@@ -329,7 +337,8 @@ class MessageLookup extends MessageLookupByLibrary {
             "This device\'s role in the LAN network"),
         "strMonday": MessageLookupByLibrary.simpleMessage("Monday"),
         "strMoreKetchup": MessageLookupByLibrary.simpleMessage("More ketchup"),
-        "strNPeopleTable": m6,
+        "strNPeopleTable": m7,
+        "strName": MessageLookupByLibrary.simpleMessage("Name"),
         "strNameTooShort":
             MessageLookupByLibrary.simpleMessage("Name is too short"),
         "strNeedAttention":
@@ -339,6 +348,8 @@ class MessageLookup extends MessageLookupByLibrary {
         "strNewPrinter": MessageLookupByLibrary.simpleMessage("New printer"),
         "strNewTable": MessageLookupByLibrary.simpleMessage("New table"),
         "strNo": MessageLookupByLibrary.simpleMessage("No"),
+        "strNoCalculationsHint": MessageLookupByLibrary.simpleMessage(
+            "No rows. Add an ingredient or semi-finished item."),
         "strNoDataFound": MessageLookupByLibrary.simpleMessage("No data found"),
         "strNoDiscountYet":
             MessageLookupByLibrary.simpleMessage("No discount yet"),
@@ -396,13 +407,13 @@ class MessageLookup extends MessageLookupByLibrary {
             "Order moved to another table"),
         "strOrderType": MessageLookupByLibrary.simpleMessage("Order type"),
         "strOrders": MessageLookupByLibrary.simpleMessage("Orders"),
-        "strOrdersCountShort": m7,
-        "strOrdersCountWithAvg": m8,
+        "strOrdersCountShort": m8,
+        "strOrdersCountWithAvg": m9,
         "strOrdersEmpty":
             MessageLookupByLibrary.simpleMessage("Orders not found"),
         "strOrgName": MessageLookupByLibrary.simpleMessage("Organization name"),
         "strOther": MessageLookupByLibrary.simpleMessage("Other"),
-        "strPageSize": m9,
+        "strPageSize": m10,
         "strPassword": MessageLookupByLibrary.simpleMessage("Password"),
         "strPasswordContainAtLeastChars": MessageLookupByLibrary.simpleMessage(
             "Password must be at least 8 characters."),
@@ -550,7 +561,7 @@ class MessageLookup extends MessageLookupByLibrary {
         "strTableNumber": MessageLookupByLibrary.simpleMessage("Table"),
         "strTableType": MessageLookupByLibrary.simpleMessage("Type"),
         "strTables": MessageLookupByLibrary.simpleMessage("Tables"),
-        "strTablesNotSavedCount": m10,
+        "strTablesNotSavedCount": m11,
         "strTakeaway": MessageLookupByLibrary.simpleMessage("Takeaway"),
         "strTerminal": MessageLookupByLibrary.simpleMessage("Terminal"),
         "strThursday": MessageLookupByLibrary.simpleMessage("Thursday"),
@@ -564,6 +575,7 @@ class MessageLookup extends MessageLookupByLibrary {
         "strTotalColon": MessageLookupByLibrary.simpleMessage("Total:"),
         "strTotalLabel": MessageLookupByLibrary.simpleMessage("Total:"),
         "strTotalPause": MessageLookupByLibrary.simpleMessage("Total pause:"),
+        "strTotalPrice": MessageLookupByLibrary.simpleMessage("Total price"),
         "strTotalRevenueLabel":
             MessageLookupByLibrary.simpleMessage("Total revenue"),
         "strTotalSales": MessageLookupByLibrary.simpleMessage("Total sales"),
@@ -575,6 +587,7 @@ class MessageLookup extends MessageLookupByLibrary {
         "strUmumiySumma": MessageLookupByLibrary.simpleMessage("Total amount"),
         "strUnacceptableDate":
             MessageLookupByLibrary.simpleMessage("Unacceptable date"),
+        "strUnitPrice": MessageLookupByLibrary.simpleMessage("Unit price"),
         "strUploadError": MessageLookupByLibrary.simpleMessage("Upload error"),
         "strUploadFailed":
             MessageLookupByLibrary.simpleMessage("Failed to upload image"),

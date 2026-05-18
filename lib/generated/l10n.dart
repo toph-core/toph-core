@@ -4109,6 +4109,96 @@ class S {
       args: [],
     );
   }
+
+  /// `Available items`
+  String get strAvailableItems {
+    return Intl.message(
+      'Available items',
+      name: 'strAvailableItems',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Added items`
+  String get strAddedItems {
+    return Intl.message(
+      'Added items',
+      name: 'strAddedItems',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Name`
+  String get strName {
+    return Intl.message(
+      'Name',
+      name: 'strName',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Unit price`
+  String get strUnitPrice {
+    return Intl.message(
+      'Unit price',
+      name: 'strUnitPrice',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Total price`
+  String get strTotalPrice {
+    return Intl.message(
+      'Total price',
+      name: 'strTotalPrice',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Cost`
+  String get strCost {
+    return Intl.message(
+      'Cost',
+      name: 'strCost',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Manual add`
+  String get strManualAdd {
+    return Intl.message(
+      'Manual add',
+      name: 'strManualAdd',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Items: {count}`
+  String strItemsCount(Object count) {
+    return Intl.message(
+      'Items: $count',
+      name: 'strItemsCount',
+      desc: '',
+      args: [count],
+    );
+  }
+
+  /// `No rows. Add an ingredient or semi-finished item.`
+  String get strNoCalculationsHint {
+    return Intl.message(
+      'No rows. Add an ingredient or semi-finished item.',
+      name: 'strNoCalculationsHint',
+      desc: '',
+      args: [],
+    );
+  }
 }
 
 class AppLocalizationDelegate extends LocalizationsDelegate<S> {

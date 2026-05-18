@@ -436,5 +436,20 @@
   "strFreezeAndTransfer": "Muzlatib ko'chirish",
   "strFrozenShort": "MUZLATILDI",
   "strElapsedTime": "O'tgan vaqt",
-  "strFrozenAmount": "Muzlatilgan summa"
+  "strFrozenAmount": "Muzlatilgan summa",
+
+  "strAvailableItems": "Mavjud elementlar",
+  "strAddedItems": "Qo'shilgan elementlar",
+  "strName": "Nomi",
+  "strUnitPrice": "Birlik narxi",
+  "strTotalPrice": "Jami narx",
+  "strCost": "Narxi",
+  "strManualAdd": "Qo'lda qo'shish",
+  "strItemsCount": "Elementlar: {count}",
+  "@strItemsCount": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "strNoCalculationsHint": "Qatorlar yo'q. Ingredient yoki yarim tayyor mahsulot qo'shing."
 }
