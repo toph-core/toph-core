@@ -181,7 +181,7 @@ class MessageLookup extends MessageLookupByLibrary {
         "strDiscounts": MessageLookupByLibrary.simpleMessage("Скидки"),
         "strDishesColumn": MessageLookupByLibrary.simpleMessage("Блюда"),
         "strDoYouWantClearOrders": MessageLookupByLibrary.simpleMessage(
-            "Вы действительно хотите очистить заказы?"),
+            "Вы действительно хотите очистить дополнения?"),
         "strDoYouWantSendOrdersToKitchken":
             MessageLookupByLibrary.simpleMessage(
                 "Вы действительно хотите отправить заказ на кухню?"),

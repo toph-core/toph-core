@@ -184,7 +184,7 @@ class MessageLookup extends MessageLookupByLibrary {
         "strDiscounts": MessageLookupByLibrary.simpleMessage("Chegirmalar"),
         "strDishesColumn": MessageLookupByLibrary.simpleMessage("Taomlar"),
         "strDoYouWantClearOrders": MessageLookupByLibrary.simpleMessage(
-            "Siz rostdan ham buyurtmalarni tozalashni hohlaysizmi?"),
+            "Siz rostdan ham qo'shimchalarni tozalashni hohlaysizmi?"),
         "strDoYouWantSendOrdersToKitchken":
             MessageLookupByLibrary.simpleMessage(
                 "Siz rostdan ham buyurtmani oshxonaga yuborishni hohlaysizmi?"),

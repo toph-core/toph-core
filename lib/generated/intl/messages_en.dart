@@ -176,7 +176,7 @@ class MessageLookup extends MessageLookupByLibrary {
         "strDiscounts": MessageLookupByLibrary.simpleMessage("Discounts"),
         "strDishesColumn": MessageLookupByLibrary.simpleMessage("Dishes"),
         "strDoYouWantClearOrders": MessageLookupByLibrary.simpleMessage(
-            "Are you sure you want to clear orders?"),
+            "Are you sure you want to clear extras?"),
         "strDoYouWantSendOrdersToKitchken":
             MessageLookupByLibrary.simpleMessage(
                 "Are you sure you want to send the order to the kitchen?"),

@@ -45,7 +45,7 @@
   "strProductNotFound": "Товары не найдены",
   "strFoodsCategoriesNotFound": "Категории блюд не найдены!",
   "strSelectFoodsNotFound": "Заказов нет. Нажмите на блюдо для добавления",
-  "strDoYouWantClearOrders": "Вы действительно хотите очистить заказы?",
+  "strDoYouWantClearOrders": "Вы действительно хотите очистить дополнения?",
   "strCancel": "Отмена",
   "strBackToScreen": "Назад",
   "strYouWantLeaveOrderScreen": "Вы уверены, что хотите выйти? Блюда будут отменены.",

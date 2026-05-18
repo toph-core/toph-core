@@ -21,7 +21,6 @@ import 'package:mary_ai_pos/features/view/main/presentation/pages/detail/widgets
 import 'package:mary_ai_pos/features/view/main/presentation/pages/detail/widgets/transfer_table_dialog.dart';
 import 'package:mary_ai_pos/generated/l10n.dart';
 
-const _indigo = Color(0xFF6366F1);
 const _kS900 = Color(0xFF0F172A);
 const _kS500 = Color(0xFF64748B);
 const _kS200 = Color(0xFFE2E8F0);
@@ -115,7 +114,7 @@ class _OrderActionsBarState extends State<OrderActionsBar>
               return Row(
                 children: [
                   // ── Total info ─────────────────────────────────────
-                  _TotalBlock(foodTotal: foodTotal, total: total),
+                  _TotalBlock(subtotal: foodTotal + timerAmt, total: total),
                   const SizedBox(width: 14),
 
                   // ── Timer (compact) ────────────────────────────────
@@ -209,10 +208,10 @@ class _OrderActionsBarState extends State<OrderActionsBar>
 
 // ─── Total & payment block (compact) ──────────────────────────────────────────
 class _TotalBlock extends StatelessWidget {
-  final int foodTotal;
+  final int subtotal;
   final int total;
 
-  const _TotalBlock({required this.foodTotal, required this.total});
+  const _TotalBlock({required this.subtotal, required this.total});
 
   @override
   Widget build(BuildContext context) {
@@ -226,16 +225,16 @@ class _TotalBlock extends StatelessWidget {
             Text(
               S.current.strTotalLabel,
               style: const TextStyle(
-                fontSize: 11,
+                fontSize: 13,
                 color: _kS500,
                 fontFamily: 'Inter',
               ),
             ),
             const SizedBox(width: 4),
             Text(
-              foodTotal.formatN,
+              subtotal.formatN,
               style: const TextStyle(
-                fontSize: 12,
+                fontSize: 14,
                 fontWeight: FontWeight.w600,
                 color: _kS900,
                 fontFamily: 'Inter',
@@ -251,7 +250,7 @@ class _TotalBlock extends StatelessWidget {
             Text(
               S.current.strPaymentLabel,
               style: const TextStyle(
-                fontSize: PosTypography.bodySm, // 13
+                fontSize: 15,
                 fontWeight: FontWeight.w500,
                 color: _kS500,
                 fontFamily: PosTypography.family,
@@ -292,15 +291,7 @@ class _TimerCompact extends StatelessWidget {
         final isRunning = !isFrozen && t?.stateNormalized == 'running';
         final isPaused = !isFrozen && t?.stateNormalized == 'paused';
         final isNone = !isFrozen && (t == null || t.stateNormalized == 'none');
-        // Frozen = indigo soviq tonda + barglar piktogrammasi; aks holda
-        // hozirgi pause/running ranglariga amal qilamiz.
-        final accent = isFrozen
-            ? const Color(0xFF6366F1)
-            : isPaused
-            ? const Color(0xFFF59E0B)
-            : isRunning
-            ? _indigo
-            : _indigo.withOpacity(0.5);
+        const primary = Color(0xFFFB6633);
         final rawAmt = timerState.effectiveCurrentAmount ?? '';
         final amount = rawAmt.isNotEmpty ? _fmtAmount(rawAmt) : '';
         final pauses = timerState.billPauses.isNotEmpty
@@ -318,93 +309,30 @@ class _TimerCompact extends StatelessWidget {
             ),
             child: Container(
               height: 56,
-              padding: const EdgeInsets.symmetric(horizontal: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 14),
               decoration: BoxDecoration(
-                color: accent.withOpacity(0.06),
-                border: Border.all(color: accent.withOpacity(0.25)),
-                borderRadius: BorderRadius.circular(10),
+                color: primary.withOpacity(0.12),
+                border: Border.all(color: primary, width: 1.2),
+                borderRadius: BorderRadius.circular(PosDimensions.radiusMd),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // Status indikatori: frozen → snowflake; aks holda nuqta
-                  if (isFrozen)
-                    const Icon(
-                      Icons.ac_unit_rounded,
-                      size: 14,
-                      color: Color(0xFF6366F1),
-                    )
-                  else
-                    Container(
-                      width: 8,
-                      height: 8,
-                      decoration: BoxDecoration(
-                        color: isRunning
-                            ? const Color(0xFF22C55E)
-                            : isPaused
-                            ? const Color(0xFFF59E0B)
-                            : const Color(0xFFCBD5E1),
-                        shape: BoxShape.circle,
-                        boxShadow: isRunning
-                            ? [
-                                BoxShadow(
-                                  color: const Color(
-                                    0xFF22C55E,
-                                  ).withOpacity(0.5),
-                                  blurRadius: 5,
-                                ),
-                              ]
-                            : null,
-                      ),
-                    ),
-                  const SizedBox(width: 8),
                   Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            _fmtTime(displaySec),
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w800,
-                              color: accent,
-                              fontFamily: 'Inter',
-                              letterSpacing: 0.4,
-                              height: 1.0,
-                              fontFeatures: const [
-                                FontFeature.tabularFigures(),
-                              ],
-                            ),
-                          ),
-                          if (isFrozen) ...[
-                            const SizedBox(width: 6),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 5,
-                                vertical: 2,
-                              ),
-                              decoration: BoxDecoration(
-                                color: const Color(
-                                  0xFF6366F1,
-                                ).withOpacity(0.10),
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                              child: Text(
-                                S.current.strFrozenShort,
-                                style: const TextStyle(
-                                  fontSize: 9,
-                                  fontWeight: FontWeight.w700,
-                                  color: Color(0xFF6366F1),
-                                  fontFamily: 'Inter',
-                                  letterSpacing: 0.4,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ],
+                      Text(
+                        _fmtTime(displaySec),
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w800,
+                          color: primary,
+                          fontFamily: 'Inter',
+                          letterSpacing: 0.4,
+                          height: 1.0,
+                          fontFeatures: [FontFeature.tabularFigures()],
+                        ),
                       ),
                       if (amount.isNotEmpty)
                         Padding(
@@ -412,9 +340,9 @@ class _TimerCompact extends StatelessWidget {
                           child: Text(
                             '$amount so\'m',
                             style: TextStyle(
-                              fontSize: 10,
+                              fontSize: 11,
                               fontWeight: FontWeight.w600,
-                              color: accent.withOpacity(0.75),
+                              color: primary.withOpacity(0.75),
                               fontFamily: 'Inter',
                             ),
                           ),
@@ -422,7 +350,7 @@ class _TimerCompact extends StatelessWidget {
                     ],
                   ),
                   if (pauses.isNotEmpty) ...[
-                    const SizedBox(width: 8),
+                    const SizedBox(width: 10),
                     Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 6,
@@ -455,7 +383,7 @@ class _TimerCompact extends StatelessWidget {
                     ),
                   ],
                   if (isRunning || isPaused || isNone) ...[
-                    const SizedBox(width: 8),
+                    const SizedBox(width: 10),
                     GestureDetector(
                       onTap: timerState.isMutating
                           ? null
@@ -464,25 +392,23 @@ class _TimerCompact extends StatelessWidget {
                                 : context.read<TableTimerCubit>().resumeTimer(),
                       child: AnimatedContainer(
                         duration: const Duration(milliseconds: 150),
-                        width: 48,
-                        height: 48,
+                        width: 40,
+                        height: 40,
                         decoration: BoxDecoration(
                           color: isRunning
-                              ? _indigo.withOpacity(0.10)
-                              : const Color(0xFF22C55E).withOpacity(0.10),
-                          borderRadius: BorderRadius.circular(
-                            PosDimensions.radiusSm,
-                          ),
+                              ? primary.withOpacity(0.20)
+                              : const Color(0xFF22C55E).withOpacity(0.20),
+                          shape: BoxShape.circle,
                         ),
                         child: Center(
                           child: timerState.isMutating
                               ? SizedBox(
-                                  width: 16,
-                                  height: 16,
+                                  width: 14,
+                                  height: 14,
                                   child: CircularProgressIndicator(
                                     strokeWidth: 2,
                                     color: isRunning
-                                        ? _indigo
+                                        ? primary
                                         : const Color(0xFF22C55E),
                                   ),
                                 )
@@ -490,9 +416,9 @@ class _TimerCompact extends StatelessWidget {
                                   isRunning
                                       ? Icons.pause_rounded
                                       : Icons.play_arrow_rounded,
-                                  size: 24,
+                                  size: 22,
                                   color: isRunning
-                                      ? _indigo
+                                      ? primary
                                       : const Color(0xFF22C55E),
                                 ),
                         ),

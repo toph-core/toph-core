@@ -500,10 +500,10 @@ class S {
     );
   }
 
-  /// `Are you sure you want to clear orders?`
+  /// `Are you sure you want to clear extras?`
   String get strDoYouWantClearOrders {
     return Intl.message(
-      'Are you sure you want to clear orders?',
+      'Are you sure you want to clear extras?',
       name: 'strDoYouWantClearOrders',
       desc: '',
       args: [],

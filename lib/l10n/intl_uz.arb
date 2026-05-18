@@ -45,7 +45,7 @@
   "strProductNotFound": "Mahsulotlar topilmadi",
   "strFoodsCategoriesNotFound": "Taomlar kategoriyasi topilmadi!",
   "strSelectFoodsNotFound": "Buyurtmalar yo'q. Qo'shish uchun ovqat ustiga bosing",
-  "strDoYouWantClearOrders": "Siz rostdan ham buyurtmalarni tozalashni hohlaysizmi?",
+  "strDoYouWantClearOrders": "Siz rostdan ham qo'shimchalarni tozalashni hohlaysizmi?",
   "strCancel": "Bekor qilish",
   "strBackToScreen": "Orqaga qaytish",
   "strYouWantLeaveOrderScreen": "Rostdan ham chiqmoqchimisiz? Chiqsangiz ovqatlar bekor qilinadi.",

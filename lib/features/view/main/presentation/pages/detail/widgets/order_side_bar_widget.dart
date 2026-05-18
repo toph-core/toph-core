@@ -289,16 +289,23 @@ class _QtyControl extends StatelessWidget {
       children: [
         _QtyBtn(icon: Icons.remove, onTap: onDecrement),
         SizedBox(
-          width: 24,
-          child: Text(
-            '$quantity',
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              fontSize: PosTypography.bodyMd, // 15
-              fontWeight: FontWeight.w700,
-              color: Color(0xFF0F172A),
-              fontFamily: PosTypography.family,
-              fontFeatures: PosTypography.tabularFigures,
+          width: 32,
+          height: 44,
+          child: Center(
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                '$quantity',
+                textAlign: TextAlign.center,
+                maxLines: 1,
+                style: const TextStyle(
+                  fontSize: PosTypography.bodyMd, // 15
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF0F172A),
+                  fontFamily: PosTypography.family,
+                  fontFeatures: PosTypography.tabularFigures,
+                ),
+              ),
             ),
           ),
         ),
@@ -400,19 +407,19 @@ class _SidebarEmptyState extends StatelessWidget {
             Text(
               S.current.strSidebarEmptyTitle,
               style: const TextStyle(
-                fontSize: 15,
+                fontSize: 18,
                 fontWeight: FontWeight.w700,
                 color: Color(0xFF0F172A),
                 fontFamily: 'Inter',
                 letterSpacing: -0.2,
               ),
             ),
-            const SizedBox(height: 6),
+            const SizedBox(height: 8),
             Text(
               S.current.strSelectFoodsNotFound,
               textAlign: TextAlign.center,
               style: const TextStyle(
-                fontSize: 12,
+                fontSize: 14,
                 height: 1.4,
                 color: Color(0xFF94A3B8),
                 fontFamily: 'Inter',
@@ -435,11 +442,11 @@ class _SectionLabel extends StatelessWidget {
     return Text(
       label,
       style: TextStyle(
-        fontSize: 11,
-        fontWeight: FontWeight.w600,
+        fontSize: 15,
+        fontWeight: FontWeight.w700,
         color: color,
         fontFamily: 'Inter',
-        letterSpacing: 0.3,
+        letterSpacing: 0.2,
       ),
     );
   }

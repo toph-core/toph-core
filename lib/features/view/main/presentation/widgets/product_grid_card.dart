@@ -234,11 +234,11 @@ class ProductCartQtyBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = context.colors;
     return Container(
-      constraints: const BoxConstraints(minWidth: 22, minHeight: 22),
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      constraints: const BoxConstraints(minWidth: 26, minHeight: 26),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
         color: c.textBrand,
-        borderRadius: BorderRadius.circular(11),
+        borderRadius: BorderRadius.circular(13),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.12),
@@ -251,7 +251,7 @@ class ProductCartQtyBadge extends StatelessWidget {
       child: Text(
         '$qty',
         style: const TextStyle(
-          fontSize: 12,
+          fontSize: 14,
           fontWeight: FontWeight.w700,
           color: Colors.white,
           fontFamily: 'Inter',

@@ -112,9 +112,9 @@ class _TabButtonState extends State<_TabButton> {
                 widget.category.name,
                 style: TextStyle(
                   color: active ? Colors.white : _kS900,
-                  fontSize: 13,
+                  fontSize: 15,
                   fontFamily: 'Inter',
-                  fontWeight: active ? FontWeight.w500 : FontWeight.w400,
+                  fontWeight: active ? FontWeight.w600 : FontWeight.w500,
                 ),
               ),
             ],
