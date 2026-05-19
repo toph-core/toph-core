@@ -48,6 +48,9 @@ jobs:
       - name: Enable Windows desktop
         run: flutter config --enable-windows-desktop
 
+      - name: Flutter clean
+        run: flutter clean
+
       - name: Flutter pub get
         run: flutter pub get
 
