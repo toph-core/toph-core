@@ -180,6 +180,56 @@ class S {
     );
   }
 
+  /// `Internal server error. Please try again in a moment.`
+  String get strServerUnreachable500 {
+    return Intl.message(
+      'Internal server error. Please try again in a moment.',
+      name: 'strServerUnreachable500',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Server is not responding. Please try again in a moment.`
+  String get strServerUnreachable502 {
+    return Intl.message(
+      'Server is not responding. Please try again in a moment.',
+      name: 'strServerUnreachable502',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Service is temporarily unavailable. Please try again in a moment.`
+  String get strServerUnreachable503 {
+    return Intl.message(
+      'Service is temporarily unavailable. Please try again in a moment.',
+      name: 'strServerUnreachable503',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Server took too long to respond. Check your internet and try again.`
+  String get strServerUnreachable504 {
+    return Intl.message(
+      'Server took too long to respond. Check your internet and try again.',
+      name: 'strServerUnreachable504',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Could not reach the server. Please try again in a moment.`
+  String get strServerUnreachableGeneric {
+    return Intl.message(
+      'Could not reach the server. Please try again in a moment.',
+      name: 'strServerUnreachableGeneric',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Please check your internet connection`
   String get strCheckInternetConnection {
     return Intl.message(
@@ -1760,11 +1810,31 @@ class S {
     );
   }
 
-  /// `Enter 2-6 digits`
+  /// `Enter PIN`
   String get strEnterPinCode {
     return Intl.message(
-      'Enter 2-6 digits',
+      'Enter PIN',
       name: 'strEnterPinCode',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `6-digit PIN`
+  String get strSwitchTo6Digit {
+    return Intl.message(
+      '6-digit PIN',
+      name: 'strSwitchTo6Digit',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `4-digit PIN`
+  String get strSwitchTo4Digit {
+    return Intl.message(
+      '4-digit PIN',
+      name: 'strSwitchTo4Digit',
       desc: '',
       args: [],
     );
@@ -3830,6 +3900,26 @@ class S {
     );
   }
 
+  /// `Enter PIN to confirm`
+  String get strConfirmWithPincode {
+    return Intl.message(
+      'Enter PIN to confirm',
+      name: 'strConfirmWithPincode',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Incorrect PIN`
+  String get strIncorrectPincode {
+    return Intl.message(
+      'Incorrect PIN',
+      name: 'strIncorrectPincode',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `pcs`
   String get strPiecesSuffix {
     return Intl.message(
@@ -4197,6 +4287,36 @@ class S {
       name: 'strNoCalculationsHint',
       desc: '',
       args: [],
+    );
+  }
+
+  /// `Shift can't be closed`
+  String get strCannotCloseShiftTitle {
+    return Intl.message(
+      'Shift can\'t be closed',
+      name: 'strCannotCloseShiftTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `All tables must be closed before you can close the shift.`
+  String get strCannotCloseShiftMessage {
+    return Intl.message(
+      'All tables must be closed before you can close the shift.',
+      name: 'strCannotCloseShiftMessage',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `{count} open tables`
+  String strOpenTablesCount(Object count) {
+    return Intl.message(
+      '$count open tables',
+      name: 'strOpenTablesCount',
+      desc: '',
+      args: [count],
     );
   }
 }

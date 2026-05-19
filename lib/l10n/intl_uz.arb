@@ -13,6 +13,12 @@
   "strFailureMessage_firebaseAuthFailure": "Firebase orqali kirishda xatolik",
   "strFailureMessage_initializingFailure": "Ilovani ishga tushirishda xatolik",
 
+  "strServerUnreachable500": "Serverda ichki xatolik. Birozdan keyin qayta urinib ko'ring.",
+  "strServerUnreachable502": "Server javob bermayapti. Birozdan keyin qayta urinib ko'ring.",
+  "strServerUnreachable503": "Xizmat vaqtincha mavjud emas. Birozdan keyin qayta urinib ko'ring.",
+  "strServerUnreachable504": "Server javob berishga ulgurmadi. Internetni tekshirib qayta urinib ko'ring.",
+  "strServerUnreachableGeneric": "Server bilan ulanib bo'lmadi. Birozdan keyin qayta urinib ko'ring.",
+
   "strCheckInternetConnection": "Internet aloqasini tekshiring",
   "strNoInternetConnection": "Internet aloqasi yo'q",
   "strYes": "Ha",
@@ -183,7 +189,9 @@
   "strNPeopleTable": "{n} ta stol",
   "strLogoutConfirm": "Rostdan ham akauntdan chiqmoqchimisiz?",
 
-  "strEnterPinCode": "2-6 raqam kiriting",
+  "strEnterPinCode": "Pinkod kiriting",
+  "strSwitchTo6Digit": "6 xonali pinkod",
+  "strSwitchTo4Digit": "4 xonali pinkod",
   "strOfflineModeMessage": "Offline rejim — ma'lumotlar internet qaytganda sync bo'ladi",
 
   "strAddOrder": "Buyurtma qo'shish",
@@ -451,5 +459,17 @@
       "count": {}
     }
   },
-  "strNoCalculationsHint": "Qatorlar yo'q. Ingredient yoki yarim tayyor mahsulot qo'shing."
+  "strNoCalculationsHint": "Qatorlar yo'q. Ingredient yoki yarim tayyor mahsulot qo'shing.",
+
+  "strCannotCloseShiftTitle": "Smenani yopib bo'lmaydi",
+  "strCannotCloseShiftMessage": "Smenani to'liq yopish uchun barcha stollar yopilgan bo'lishi kerak.",
+  "strOpenTablesCount": "{count} ta ochiq stol",
+  "@strOpenTablesCount": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+
+  "strConfirmWithPincode": "Tasdiqlash uchun pinkodni kiriting",
+  "strIncorrectPincode": "Pinkod noto'g'ri"
 }

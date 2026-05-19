@@ -112,6 +112,8 @@ class _ShiftChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Til o'zgarganda S.current ni qayta o'qish uchun SettingsCubit'ga dependency
+    context.select((SettingsCubit c) => c.state.language);
     final shift = context.select((ShiftBloc b) => b.state.shift);
     final openedAt = shift?.openedAt;
     final timeStr = openedAt != null
@@ -175,6 +177,7 @@ class _CashierChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    context.select((SettingsCubit c) => c.state.language);
     final user = context.select((UserBloc b) => b.state.userMOdel);
     if (user == null) return const SizedBox.shrink();
 
@@ -290,11 +293,11 @@ class _ClockChipState extends State<_ClockChip> {
 
   @override
   Widget build(BuildContext context) {
+    final lang = context.select((SettingsCubit c) => c.state.language);
     final hh = _now.hour.toString().padLeft(2, '0');
     final mm = _now.minute.toString().padLeft(2, '0');
-    final days = ['Du', 'Se', 'Ch', 'Pa', 'Ju', 'Sh', 'Ya'];
     final dayStr =
-        '${days[_now.weekday - 1]}, ${_now.day} ${_monthShort(_now.month)}';
+        '${_dayShort(_now.weekday, lang)}, ${_now.day} ${_monthShort(_now.month, lang)}';
 
     return _Chip(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
@@ -327,22 +330,43 @@ class _ClockChipState extends State<_ClockChip> {
     );
   }
 
-  String _monthShort(int m) {
-    const months = [
-      'yan',
-      'fev',
-      'mar',
-      'apr',
-      'may',
-      'iyn',
-      'iyl',
-      'avg',
-      'sen',
-      'okt',
-      'noy',
-      'dek',
+  String _dayShort(int weekday, String lang) {
+    const uz = ['Du', 'Se', 'Ch', 'Pa', 'Ju', 'Sh', 'Ya'];
+    const ru = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
+    const en = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
+    final idx = weekday - 1;
+    switch (lang) {
+      case 'ru':
+        return ru[idx];
+      case 'en':
+        return en[idx];
+      default:
+        return uz[idx];
+    }
+  }
+
+  String _monthShort(int m, String lang) {
+    const uz = [
+      'yan', 'fev', 'mar', 'apr', 'may', 'iyn',
+      'iyl', 'avg', 'sen', 'okt', 'noy', 'dek',
     ];
-    return months[m - 1];
+    const ru = [
+      'янв', 'фев', 'мар', 'апр', 'мая', 'июн',
+      'июл', 'авг', 'сен', 'окт', 'ноя', 'дек',
+    ];
+    const en = [
+      'jan', 'feb', 'mar', 'apr', 'may', 'jun',
+      'jul', 'aug', 'sep', 'oct', 'nov', 'dec',
+    ];
+    final idx = m - 1;
+    switch (lang) {
+      case 'ru':
+        return ru[idx];
+      case 'en':
+        return en[idx];
+      default:
+        return uz[idx];
+    }
   }
 }
 

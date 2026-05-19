@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:mary_ai_pos/core/api/api_error_overlay.dart';
 import 'package:mary_ai_pos/core/api/dio_client.dart';
 import 'package:mary_ai_pos/core/api/list_api.dart';
 import 'package:mary_ai_pos/core/components/flush_bars.dart';
@@ -75,14 +76,7 @@ class _HallsTablesSectionState extends State<HallsTablesSection> {
     }
   }
 
-  String? _readError(DioException e) {
-    final data = e.response?.data;
-    if (data is Map) {
-      final msg = data['message'] ?? data['error'];
-      if (msg != null) return msg.toString();
-    }
-    return e.message;
-  }
+  String? _readError(DioException e) => userFriendlyDioError(e);
 
   Future<void> _openHallEditor({HallModel? existing}) async {
     final branchId =
@@ -279,17 +273,11 @@ class _HallCardState extends State<_HallCard> {
         decoration: BoxDecoration(
           color: colors.bgDefault,
           borderRadius: BorderRadius.circular(16),
+          // Hover holatida faqat border ranglanadi — soya yoki fon o'zgarmaydi.
           border: Border.all(
-            color:
-                _hover ? colors.buttonBrand.withOpacity(0.35) : colors.border,
+            color: _hover ? colors.buttonBrand : colors.border,
+            width: _hover ? 1.5 : 1,
           ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(_hover ? 0.06 : 0.03),
-              blurRadius: _hover ? 20 : 12,
-              offset: Offset(0, _hover ? 8 : 4),
-            ),
-          ],
         ),
         child: Material(
           color: Colors.transparent,
@@ -347,33 +335,22 @@ class _HallCardState extends State<_HallCard> {
                       ],
                     ),
                   ),
-                  AnimatedOpacity(
-                    duration: const Duration(milliseconds: 140),
-                    opacity: _hover ? 1 : 0.5,
-                    child: Row(
-                      children: [
-                        _GhostIconButton(
-                          icon: Icons.edit_outlined,
-                          tooltip: S.current.strEdit,
-                          onTap: widget.onEdit,
-                        ),
-                        const SizedBox(width: 4),
-                        _GhostIconButton(
-                          icon: Icons.delete_outline_rounded,
-                          tooltip: S.current.strDelete,
-                          color: colors.systemError,
-                          onTap: widget.onDelete,
-                        ),
-                        const SizedBox(width: 6),
-                        Icon(
-                          Icons.chevron_right_rounded,
-                          size: 20,
-                          color: _hover
-                              ? colors.buttonBrand
-                              : colors.iconSecondary,
-                        ),
-                      ],
-                    ),
+                  Row(
+                    children: [
+                      _GhostIconButton(
+                        icon: Icons.edit_outlined,
+                        tooltip: S.current.strEdit,
+                        color: colors.buttonBrand,
+                        onTap: widget.onEdit,
+                      ),
+                      const SizedBox(width: 8),
+                      _GhostIconButton(
+                        icon: Icons.delete_outline_rounded,
+                        tooltip: S.current.strDelete,
+                        color: colors.systemError,
+                        onTap: widget.onDelete,
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -457,14 +434,7 @@ class _TablesDetailViewState extends State<_TablesDetailView> {
     }
   }
 
-  String? _readError(DioException e) {
-    final data = e.response?.data;
-    if (data is Map) {
-      final msg = data['message'] ?? data['error'];
-      if (msg != null) return msg.toString();
-    }
-    return e.message;
-  }
+  String? _readError(DioException e) => userFriendlyDioError(e);
 
   Future<void> _autoLayoutInvalid(List<CafeTableModel> all) async {
     final hallW = widget.hall.width <= 0 ? 1000.0 : widget.hall.width;
@@ -1434,14 +1404,7 @@ class _TableEditDialogState extends State<_TableEditDialog> {
     }
   }
 
-  String? _readError(DioException e) {
-    final data = e.response?.data;
-    if (data is Map) {
-      final msg = data['message'] ?? data['error'];
-      if (msg != null) return msg.toString();
-    }
-    return e.message;
-  }
+  String? _readError(DioException e) => userFriendlyDioError(e);
 
   @override
   Widget build(BuildContext context) {
@@ -2270,21 +2233,23 @@ class _GhostIconButtonState extends State<_GhostIconButton> {
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
-    final iconColor = widget.color ?? colors.iconSecondary;
+    final iconColor = widget.color ?? colors.buttonBrand;
     return Tooltip(
       message: widget.tooltip,
       child: MouseRegion(
         onEnter: (_) => setState(() => _hover = true),
         onExit: (_) => setState(() => _hover = false),
         child: Material(
-          color: _hover ? iconColor.withOpacity(0.10) : Colors.transparent,
-          borderRadius: BorderRadius.circular(10),
+          // Doimo brand soyasi — hover'da intensivlik oshadi.
+          color: iconColor.withOpacity(_hover ? 0.18 : 0.10),
+          borderRadius: BorderRadius.circular(12),
           child: InkWell(
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(12),
             onTap: widget.onTap,
-            child: Padding(
-              padding: const EdgeInsets.all(8),
-              child: Icon(widget.icon, size: 18, color: iconColor),
+            child: SizedBox(
+              width: 44,
+              height: 44,
+              child: Icon(widget.icon, size: 22, color: iconColor),
             ),
           ),
         ),
@@ -2542,14 +2507,7 @@ class _HallEditDialogState extends State<_HallEditDialog> {
     }
   }
 
-  String? _readError(DioException e) {
-    final data = e.response?.data;
-    if (data is Map) {
-      final msg = data['message'] ?? data['error'];
-      if (msg != null) return msg.toString();
-    }
-    return e.message;
-  }
+  String? _readError(DioException e) => userFriendlyDioError(e);
 
   @override
   Widget build(BuildContext context) {

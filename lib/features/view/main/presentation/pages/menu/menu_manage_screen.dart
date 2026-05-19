@@ -18,6 +18,7 @@ import 'package:mary_ai_pos/core/utils/app_formatter.dart';
 import 'package:mary_ai_pos/core/utils/user_role_permissions.dart';
 import 'package:mary_ai_pos/core/utils/helper/helper_widget.dart';
 import 'package:mary_ai_pos/core/widgets/app_scaffold.dart';
+import 'package:mary_ai_pos/core/widgets/global_virtual_keyboard.dart';
 import 'package:mary_ai_pos/di.dart';
 import 'package:mary_ai_pos/features/view/auth/data/models/user/user_model.dart';
 import 'package:mary_ai_pos/features/view/auth/presentation/cubit/bloc/user_bloc.dart';
@@ -1250,6 +1251,7 @@ class _MenuManageScreenState extends State<MenuManageScreen> {
                             'Cooking time (min)',
                             _cookTimeCtrl,
                             keyboardType: TextInputType.number,
+                            numericKeyboard: true,
                           ),
                           const SizedBox(height: 16),
                           _labeledInput(
@@ -2187,6 +2189,7 @@ class _MenuManageScreenState extends State<MenuManageScreen> {
     TextInputType? keyboardType,
     int maxLines = 1,
     List<TextInputFormatter>? inputFormatters,
+    bool numericKeyboard = false,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -2199,6 +2202,7 @@ class _MenuManageScreenState extends State<MenuManageScreen> {
           keyboardType: keyboardType,
           maxLines: maxLines,
           inputFormatters: inputFormatters,
+          numericKeyboard: numericKeyboard,
         ),
       ],
     );
@@ -2531,6 +2535,7 @@ class _StyledInput extends StatelessWidget {
   final int maxLines;
   final TextInputType? keyboardType;
   final List<TextInputFormatter>? inputFormatters;
+  final bool numericKeyboard;
 
   const _StyledInput({
     required this.controller,
@@ -2538,6 +2543,7 @@ class _StyledInput extends StatelessWidget {
     this.maxLines = 1,
     this.keyboardType,
     this.inputFormatters,
+    this.numericKeyboard = false,
   });
 
   @override
@@ -2548,6 +2554,8 @@ class _StyledInput extends StatelessWidget {
       keyboardType: keyboardType,
       maxLines: maxLines,
       inputFormatters: inputFormatters,
+      onTap: () =>
+          GlobalVirtualKeyboard.open(controller, numeric: numericKeyboard),
       style: TextStyle(
         fontSize: 15,
         color: colors.textDefault,

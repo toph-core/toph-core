@@ -37,13 +37,15 @@ class MessageLookup extends MessageLookupByLibrary {
 
   static String m7(n) => "${n} столов";
 
-  static String m8(count) => "${count} заказов";
+  static String m8(count) => "${count} открытых столов";
 
-  static String m9(count, avg) => "${count} заказов · ср. ${avg}";
+  static String m9(count) => "${count} заказов";
 
-  static String m10(size) => "${size} / стр.";
+  static String m10(count, avg) => "${count} заказов · ср. ${avg}";
 
-  static String m11(count) => "${count} столов не сохранено";
+  static String m11(size) => "${size} / стр.";
+
+  static String m12(count) => "${count} столов не сохранено";
 
   final messages = _notInlinedMessages(_notInlinedMessages);
   static Map<String, Function> _notInlinedMessages(_) => <String, Function>{
@@ -104,6 +106,10 @@ class MessageLookup extends MessageLookupByLibrary {
         "strCancel": MessageLookupByLibrary.simpleMessage("Отмена"),
         "strCancelShort": MessageLookupByLibrary.simpleMessage("Отмена"),
         "strCancelled": MessageLookupByLibrary.simpleMessage("Отменено"),
+        "strCannotCloseShiftMessage": MessageLookupByLibrary.simpleMessage(
+            "Чтобы полностью закрыть смену, все столы должны быть закрыты."),
+        "strCannotCloseShiftTitle":
+            MessageLookupByLibrary.simpleMessage("Смену нельзя закрыть"),
         "strCannotTransfer":
             MessageLookupByLibrary.simpleMessage("Невозможно перенести"),
         "strCapacityPersons":
@@ -145,6 +151,8 @@ class MessageLookup extends MessageLookupByLibrary {
         "strCompounds": MessageLookupByLibrary.simpleMessage("Композиции"),
         "strCompoundsCount": m0,
         "strConfirm": MessageLookupByLibrary.simpleMessage("Подтвердить"),
+        "strConfirmWithPincode": MessageLookupByLibrary.simpleMessage(
+            "Введите пин-код для подтверждения"),
         "strConfirmCardPayment": MessageLookupByLibrary.simpleMessage(
             "Подтвердите, что клиент оплатил картой"),
         "strConfirmDelete":
@@ -213,7 +221,7 @@ class MessageLookup extends MessageLookupByLibrary {
         "strEnterNotes":
             MessageLookupByLibrary.simpleMessage("Введите комментарий..."),
         "strEnterPinCode":
-            MessageLookupByLibrary.simpleMessage("Введите 2-6 цифр"),
+            MessageLookupByLibrary.simpleMessage("Введите пин-код"),
         "strError": MessageLookupByLibrary.simpleMessage("Ошибка"),
         "strErrorOccurred":
             MessageLookupByLibrary.simpleMessage("Произошла ошибка"),
@@ -321,6 +329,8 @@ class MessageLookup extends MessageLookupByLibrary {
         "strInvalidName": MessageLookupByLibrary.simpleMessage("Неверное имя"),
         "strInvalidNumber":
             MessageLookupByLibrary.simpleMessage("Неверный номер"),
+        "strIncorrectPincode":
+            MessageLookupByLibrary.simpleMessage("Неверный пин-код"),
         "strItemsCount": m4,
         "strItemsCountWithAvg": m5,
         "strItemsCountWithTime": m6,
@@ -407,6 +417,7 @@ class MessageLookup extends MessageLookupByLibrary {
             "Оффлайн режим — данные синхронизируются при подключении"),
         "strOpenBills": MessageLookupByLibrary.simpleMessage("Открытые счета"),
         "strOpenShift": MessageLookupByLibrary.simpleMessage("Открыть смену"),
+        "strOpenTablesCount": m8,
         "strOpenedAt": MessageLookupByLibrary.simpleMessage("Открыто"),
         "strOpenedAtLabel": MessageLookupByLibrary.simpleMessage("Открыт:"),
         "strOpeningBalance":
@@ -425,14 +436,14 @@ class MessageLookup extends MessageLookupByLibrary {
             "Заказ перенесён на другой стол"),
         "strOrderType": MessageLookupByLibrary.simpleMessage("Тип заказа"),
         "strOrders": MessageLookupByLibrary.simpleMessage("Заказы"),
-        "strOrdersCountShort": m8,
-        "strOrdersCountWithAvg": m9,
+        "strOrdersCountShort": m9,
+        "strOrdersCountWithAvg": m10,
         "strOrdersEmpty":
             MessageLookupByLibrary.simpleMessage("Заказы не найдены"),
         "strOrgName":
             MessageLookupByLibrary.simpleMessage("Название организации"),
         "strOther": MessageLookupByLibrary.simpleMessage("Другое"),
-        "strPageSize": m10,
+        "strPageSize": m11,
         "strPassword": MessageLookupByLibrary.simpleMessage("Пароль"),
         "strPasswordContainAtLeastChars": MessageLookupByLibrary.simpleMessage(
             "Пароль должен содержать не менее 8 символов."),
@@ -542,6 +553,16 @@ class MessageLookup extends MessageLookupByLibrary {
             "Введите значение от 0 до 100"),
         "strServiceChargeSaved":
             MessageLookupByLibrary.simpleMessage("Сервисный сбор сохранён"),
+        "strServerUnreachable500": MessageLookupByLibrary.simpleMessage(
+            "Внутренняя ошибка сервера. Повторите попытку чуть позже."),
+        "strServerUnreachable502": MessageLookupByLibrary.simpleMessage(
+            "Сервер не отвечает. Повторите попытку чуть позже."),
+        "strServerUnreachable503": MessageLookupByLibrary.simpleMessage(
+            "Сервис временно недоступен. Повторите попытку чуть позже."),
+        "strServerUnreachable504": MessageLookupByLibrary.simpleMessage(
+            "Сервер не успел ответить. Проверьте интернет и повторите."),
+        "strServerUnreachableGeneric": MessageLookupByLibrary.simpleMessage(
+            "Не удалось связаться с сервером. Повторите попытку чуть позже."),
         "strSettings": MessageLookupByLibrary.simpleMessage("Настройки"),
         "strSettingsAdminOnly": MessageLookupByLibrary.simpleMessage(
             "Только администратор или менеджер может войти в настройки."),
@@ -576,13 +597,17 @@ class MessageLookup extends MessageLookupByLibrary {
         "strSubtotal":
             MessageLookupByLibrary.simpleMessage("Промежуточный итог"),
         "strSunday": MessageLookupByLibrary.simpleMessage("Воскресенье"),
+        "strSwitchTo4Digit":
+            MessageLookupByLibrary.simpleMessage("4-значный пин-код"),
+        "strSwitchTo6Digit":
+            MessageLookupByLibrary.simpleMessage("6-значный пин-код"),
         "strTable": MessageLookupByLibrary.simpleMessage("Стол"),
         "strTableHall": MessageLookupByLibrary.simpleMessage("Стол / Зал"),
         "strTableLabel": MessageLookupByLibrary.simpleMessage("Стол:"),
         "strTableNumber": MessageLookupByLibrary.simpleMessage("Стол"),
         "strTableType": MessageLookupByLibrary.simpleMessage("Тип"),
         "strTables": MessageLookupByLibrary.simpleMessage("Столы"),
-        "strTablesNotSavedCount": m11,
+        "strTablesNotSavedCount": m12,
         "strTakeaway": MessageLookupByLibrary.simpleMessage("С собой"),
         "strTerminal": MessageLookupByLibrary.simpleMessage("Терминал"),
         "strThursday": MessageLookupByLibrary.simpleMessage("Четверг"),

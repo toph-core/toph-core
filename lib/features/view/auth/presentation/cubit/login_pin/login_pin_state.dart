@@ -6,5 +6,6 @@ class LoginPinState with _$LoginPinState {
     @Default(Status.UNKNOWN) Status status,
     @Default(UnknownFailure()) Failure failure,
     String? pin,
+    @Default(4) int pinLength,
   }) = _LoginPinState;
 }

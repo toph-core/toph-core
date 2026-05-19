@@ -13,6 +13,12 @@
   "strFailureMessage_firebaseAuthFailure": "Ошибка при входе через Firebase",
   "strFailureMessage_initializingFailure": "Ошибка при инициализации приложения",
 
+  "strServerUnreachable500": "Внутренняя ошибка сервера. Повторите попытку чуть позже.",
+  "strServerUnreachable502": "Сервер не отвечает. Повторите попытку чуть позже.",
+  "strServerUnreachable503": "Сервис временно недоступен. Повторите попытку чуть позже.",
+  "strServerUnreachable504": "Сервер не успел ответить. Проверьте интернет и повторите.",
+  "strServerUnreachableGeneric": "Не удалось связаться с сервером. Повторите попытку чуть позже.",
+
   "strCheckInternetConnection": "Проверьте подключение к интернету",
   "strNoInternetConnection": "Нет подключения к интернету",
   "strYes": "Да",
@@ -183,7 +189,9 @@
   "strNPeopleTable": "{n} столов",
   "strLogoutConfirm": "Вы действительно хотите выйти из аккаунта?",
 
-  "strEnterPinCode": "Введите 2-6 цифр",
+  "strEnterPinCode": "Введите пин-код",
+  "strSwitchTo6Digit": "6-значный пин-код",
+  "strSwitchTo4Digit": "4-значный пин-код",
   "strOfflineModeMessage": "Оффлайн режим — данные синхронизируются при подключении",
 
   "strAddOrder": "Добавить заказ",
@@ -451,5 +459,17 @@
       "count": {}
     }
   },
-  "strNoCalculationsHint": "Нет строк. Добавьте ингредиент или полуфабрикат."
+  "strNoCalculationsHint": "Нет строк. Добавьте ингредиент или полуфабрикат.",
+
+  "strCannotCloseShiftTitle": "Смену нельзя закрыть",
+  "strCannotCloseShiftMessage": "Чтобы полностью закрыть смену, все столы должны быть закрыты.",
+  "strOpenTablesCount": "{count} открытых столов",
+  "@strOpenTablesCount": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+
+  "strConfirmWithPincode": "Введите пин-код для подтверждения",
+  "strIncorrectPincode": "Неверный пин-код"
 }

@@ -33,19 +33,33 @@ String _sanitizeErrorText(String raw) {
       .replaceAll('&quot;', '"');
   // Ortiqcha bo'shliqlar
   s = s.replaceAll(RegExp(r'\s+'), ' ').trim();
-  // Agar "502 Bad Gateway" kabi server xatosi bo'lsa — qisqa xabar
   final low = s.toLowerCase();
-  if (low.contains('bad gateway') || low.contains('502')) {
-    return 'Server bilan ulanishda muammo (502). Birozdan so\'ng qayta urinib ko\'ring.';
+  // Dio'ning verbose exception matnini ushlab, foydalanuvchiga ko'rsatmaymiz
+  final isDioVerbose =
+      low.contains('this exception was thrown because the response has a status code') ||
+      low.contains('validatestatus was configured to throw') ||
+      low.contains('dioexception');
+  // Status code'larini matndan ajratamiz
+  final codeMatch = RegExp(r'status code of (\d{3})').firstMatch(low) ??
+      RegExp(r'\b(5\d{2}|4\d{2})\b').firstMatch(low);
+  final code = codeMatch?.group(1);
+
+  // Aniq status code asosida tarjimalangan xabar
+  if (code == '502' || low.contains('bad gateway')) {
+    return S.current.strServerUnreachable502;
   }
-  if (low.contains('gateway timeout') || low.contains('504')) {
-    return 'Server javob bermayapti (504). Internetni tekshiring.';
+  if (code == '504' || low.contains('gateway timeout')) {
+    return S.current.strServerUnreachable504;
   }
-  if (low.contains('service unavailable') || low.contains('503')) {
-    return 'Xizmat vaqtincha mavjud emas (503).';
+  if (code == '503' || low.contains('service unavailable')) {
+    return S.current.strServerUnreachable503;
   }
-  if (low.contains('internal server error') || low.contains('500')) {
-    return 'Serverda ichki xatolik (500). Admin bilan bog\'laning.';
+  if (code == '500' || low.contains('internal server error')) {
+    return S.current.strServerUnreachable500;
+  }
+  // Dio verbose xabarini fallback xabarga aylantiramiz
+  if (isDioVerbose) {
+    return S.current.strServerUnreachableGeneric;
   }
   // Umumiy holat: 200 belgidan uzun bo'lsa — qisqartirish
   if (s.length > 200) return '${s.substring(0, 197)}…';
@@ -67,23 +81,23 @@ void showErrorMessage(BuildContext bc, String error, {int duration = 4}) {
 }
 
 /// Sarlavha + paragraflar — premium overlay style, top-right.
-/// Auto-dismiss qilmaydi (printer xatolari kabi jiddiy holatlar uchun),
-/// faqat X tugmasi orqali yopiladi.
+/// Auto-dismiss qiladi (printer xatolari kabi xabarlar uchun ham), shu bilan birga
+/// X tugmasi yoki yuqoriga sudrash orqali tezroq yopilishi mumkin.
 void showStructuredErrorDismissible(
   BuildContext context, {
   required String title,
   List<String> paragraphs = const [],
   IconData icon = Icons.error_outline_rounded,
+  int durationSec = 6,
 }) {
   WidgetsBinding.instance.addPostFrameCallback((_) {
     final overlay = _resolveOverlay(context);
     if (overlay == null) return;
-    // Juda uzun duration — faqat user X bosganda yopiladi
     _ToastController.show(
       overlay: overlay,
       message: paragraphs.isEmpty ? title : paragraphs.join('\n\n'),
       variant: _ToastVariant.error,
-      autoDismissMs: const Duration(days: 365).inMilliseconds,
+      autoDismissMs: durationSec * 1000,
     );
   });
 }
@@ -314,6 +328,28 @@ class _ToastWidgetState extends State<_ToastWidget>
     super.dispose();
   }
 
+  // Swipe-up tracking
+  double _dragDy = 0;
+
+  void _onDragUpdate(DragUpdateDetails d) {
+    if (_dismissing) return;
+    // Faqat tepaga sudrashga ruxsat (dy < 0)
+    _dragDy = (_dragDy + d.delta.dy).clamp(-160.0, 0.0);
+    if (mounted) setState(() {});
+  }
+
+  void _onDragEnd(DragEndDetails d) {
+    if (_dismissing) return;
+    final flickedUp = d.velocity.pixelsPerSecond.dy < -400;
+    if (_dragDy < -56 || flickedUp) {
+      dismiss();
+    } else {
+      // Joyiga qaytarish
+      _dragDy = 0;
+      if (mounted) setState(() {});
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final palette = _ToastPalette.of(widget.variant);
@@ -330,22 +366,30 @@ class _ToastWidgetState extends State<_ToastWidget>
         child: AnimatedBuilder(
           animation: _ctrl,
           builder: (context, child) {
-            final dy = (1 - _slide.value) * -64;
+            final introDy = (1 - _slide.value) * -64;
+            // Sudrash bo'yicha qisman shaffoflik — UX feedback
+            final dragOpacity = (1 + _dragDy / 160).clamp(0.0, 1.0);
             return Opacity(
-              opacity: _fade.value.clamp(0, 1),
+              opacity: (_fade.value * dragOpacity).clamp(0.0, 1.0),
               child: Transform.translate(
-                offset: Offset(0, dy),
+                offset: Offset(0, introDy + _dragDy),
                 child: child,
               ),
             );
           },
-          child: ConstrainedBox(
-            constraints: BoxConstraints(maxWidth: isWide ? 460 : double.infinity),
-            child: _ToastCard(
-              palette: palette,
-              message: widget.message,
-              onClose: dismiss,
-              totalMs: widget.autoDismissMs,
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onVerticalDragUpdate: _onDragUpdate,
+            onVerticalDragEnd: _onDragEnd,
+            child: ConstrainedBox(
+              constraints:
+                  BoxConstraints(maxWidth: isWide ? 460 : double.infinity),
+              child: _ToastCard(
+                palette: palette,
+                message: widget.message,
+                onClose: dismiss,
+                totalMs: widget.autoDismissMs,
+              ),
             ),
           ),
         ),
@@ -403,9 +447,9 @@ class _ToastCard extends StatelessWidget {
               Container(width: 3, color: palette.accent),
               Expanded(
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(14, 13, 8, 13),
+                  padding: const EdgeInsets.fromLTRB(14, 13, 10, 13),
                   child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
                       // Icon pill
                       Container(
@@ -438,7 +482,7 @@ class _ToastCard extends StatelessWidget {
                             const SizedBox(height: 3),
                             Text(
                               message,
-                              maxLines: 3,
+                              maxLines: 4,
                               overflow: TextOverflow.ellipsis,
                               style: const TextStyle(
                                 fontSize: 13.5,
@@ -452,7 +496,7 @@ class _ToastCard extends StatelessWidget {
                           ],
                         ),
                       ),
-                      const SizedBox(width: 4),
+                      const SizedBox(width: 8),
                       _ToastCloseButton(onTap: onClose),
                     ],
                   ),
@@ -490,20 +534,21 @@ class _ToastCloseButtonState extends State<_ToastCloseButton> {
       child: GestureDetector(
         onTap: widget.onTap,
         child: Container(
-          width: 28,
-          height: 28,
+          width: 40,
+          height: 40,
+          alignment: Alignment.center,
           decoration: BoxDecoration(
             color: _hover
-                ? Colors.white.withValues(alpha: 0.06)
+                ? Colors.white.withValues(alpha: 0.08)
                 : Colors.transparent,
-            borderRadius: BorderRadius.circular(7),
+            borderRadius: BorderRadius.circular(10),
           ),
           child: Icon(
             Icons.close_rounded,
-            size: 15,
+            size: 22,
             color: _hover
                 ? const Color(0xFFF4F4F5)
-                : const Color(0xFF71717A),
+                : const Color(0xFFA1A1AA),
           ),
         ),
       ),

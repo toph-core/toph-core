@@ -35,6 +35,13 @@ class LoginPinScreen extends StatelessWidget {
           builder: (context, state) {
             final cubit = context.read<LoginPinCubit>();
 
+            final int pinLength = state.pinLength;
+            final int currentLength = state.pin?.length ?? 0;
+            final bool isLoading = state.status == Status.LOADING;
+            final String toggleLabel = pinLength == 4
+                ? S.current.strSwitchTo6Digit
+                : S.current.strSwitchTo4Digit;
+
             return Container(
               decoration: const BoxDecoration(
                 image: DecorationImage(
@@ -43,7 +50,7 @@ class LoginPinScreen extends StatelessWidget {
                 ),
               ),
               child: SafeArea(
-                child: Column( 
+                child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Align(
@@ -70,19 +77,30 @@ class LoginPinScreen extends StatelessWidget {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: List.generate(
-                        6,
+                        pinLength,
                         (i) => Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 10),
-                          child: _PinDot(filled: i < (state.pin?.length ?? 0)),
+                          child: _PinDot(filled: i < currentLength),
                         ),
                       ),
                     ),
                     const SizedBox(height: 24),
-                    Text(
-                      S.current.strEnterPinCode,
-                      style: context.textStyles.bodyMd.copyWith(
-                        color: AppColors.white,
-                        fontSize: 20,
+                    SizedBox(
+                      height: 28,
+                      child: Center(
+                        child: isLoading
+                            ? const SizedBox(
+                                width: 24,
+                                height: 24,
+                                child: LoadingWidget(color: AppColors.white),
+                              )
+                            : Text(
+                                S.current.strEnterPinCode,
+                                style: context.textStyles.bodyMd.copyWith(
+                                  color: AppColors.white,
+                                  fontSize: 20,
+                                ),
+                              ),
                       ),
                     ),
                     const SizedBox(height: 32),
@@ -98,33 +116,33 @@ class LoginPinScreen extends StatelessWidget {
                           crossAxisSpacing: 12,
                           shrinkWrap: true,
                           physics: const NeverScrollableScrollPhysics(),
-                          children:
-                              const [
-                                    '1',
-                                    '2',
-                                    '3',
-                                    '4',
-                                    '5',
-                                    '6',
-                                    '7',
-                                    '8',
-                                    '9',
-                                    '⌫',
-                                    '0',
-                                    '✓',
-                                  ]
-                                  .map(
-                                    (label) => _KeyButton(
-                                      label: label,
-                                      isLoading:
-                                          state.status == Status.LOADING &&
-                                          label == '✓',
-                                      onPressed: cubit.setPin,
-                                    ),
-                                  )
-                                  .toList(),
+                          children: [
+                            for (final label in const [
+                              '1',
+                              '2',
+                              '3',
+                              '4',
+                              '5',
+                              '6',
+                              '7',
+                              '8',
+                              '9',
+                              '⌫',
+                              '0',
+                              '✓',
+                            ])
+                              _KeyButton(
+                                label: label,
+                                onPressed: cubit.setPin,
+                              ),
+                          ],
                         ),
                       ),
+                    ),
+                    const SizedBox(height: 16),
+                    _PinLengthToggleButton(
+                      label: toggleLabel,
+                      onTap: cubit.togglePinLength,
                     ),
                   ],
                 ).paddingSymmetric(horizontal: 16),
@@ -168,14 +186,9 @@ class _PinDot extends StatelessWidget {
 
 class _KeyButton extends StatelessWidget {
   final String label;
-  final bool isLoading;
   final ValueChanged<String> onPressed;
 
-  const _KeyButton({
-    required this.label,
-    required this.onPressed,
-    this.isLoading = false,
-  });
+  const _KeyButton({required this.label, required this.onPressed});
 
   @override
   Widget build(BuildContext context) {
@@ -191,17 +204,43 @@ class _KeyButton extends StatelessWidget {
             border: Border.all(color: Colors.white, width: 0.5),
           ),
           alignment: Alignment.center,
-          child: isLoading
-              ? SizedBox(
-                  height: context.h * 0.1,
-                  child: const LoadingWidget(color: AppColors.white),
-                )
-              : Text(
-                  label,
-                  style: context.textStyles.displayLg.copyWith(
-                    color: AppColors.white,
-                  ),
-                ),
+          child: Text(
+            label,
+            style: context.textStyles.displayLg.copyWith(
+              color: AppColors.white,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _PinLengthToggleButton extends StatelessWidget {
+  final String label;
+  final VoidCallback onTap;
+
+  const _PinLengthToggleButton({required this.label, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        child: Text(
+          label,
+          textAlign: TextAlign.center,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: context.textStyles.bodyMd.copyWith(
+            color: AppColors.white,
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            decoration: TextDecoration.underline,
+            decorationColor: AppColors.white,
+          ),
         ),
       ),
     );

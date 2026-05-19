@@ -37,13 +37,15 @@ class MessageLookup extends MessageLookupByLibrary {
 
   static String m7(n) => "${n} ta stol";
 
-  static String m8(count) => "${count} ta buyurtma";
+  static String m8(count) => "${count} ta ochiq stol";
 
-  static String m9(count, avg) => "${count} ta buyurtma · o\'rt. ${avg}";
+  static String m9(count) => "${count} ta buyurtma";
 
-  static String m10(size) => "${size} / sahifa";
+  static String m10(count, avg) => "${count} ta buyurtma · o\'rt. ${avg}";
 
-  static String m11(count) => "${count} ta stol saqlanmadi";
+  static String m11(size) => "${size} / sahifa";
+
+  static String m12(count) => "${count} ta stol saqlanmadi";
 
   final messages = _notInlinedMessages(_notInlinedMessages);
   static Map<String, Function> _notInlinedMessages(_) => <String, Function>{
@@ -107,6 +109,10 @@ class MessageLookup extends MessageLookupByLibrary {
         "strCancel": MessageLookupByLibrary.simpleMessage("Bekor qilish"),
         "strCancelShort": MessageLookupByLibrary.simpleMessage("Bekor"),
         "strCancelled": MessageLookupByLibrary.simpleMessage("Bekor qilindi"),
+        "strCannotCloseShiftMessage": MessageLookupByLibrary.simpleMessage(
+            "Smenani to\'liq yopish uchun barcha stollar yopilgan bo\'lishi kerak."),
+        "strCannotCloseShiftTitle":
+            MessageLookupByLibrary.simpleMessage("Smenani yopib bo\'lmaydi"),
         "strCannotTransfer":
             MessageLookupByLibrary.simpleMessage("Ko\'chirib bo\'lmaydi"),
         "strCapacityPersons":
@@ -146,6 +152,8 @@ class MessageLookup extends MessageLookupByLibrary {
         "strCompounds": MessageLookupByLibrary.simpleMessage("Qo\'shma"),
         "strCompoundsCount": m0,
         "strConfirm": MessageLookupByLibrary.simpleMessage("Tasdiqlash"),
+        "strConfirmWithPincode": MessageLookupByLibrary.simpleMessage(
+            "Tasdiqlash uchun pinkodni kiriting"),
         "strConfirmCardPayment": MessageLookupByLibrary.simpleMessage(
             "Mijoz to\'lovni karta orqali amalga oshirganini tasdiqlang"),
         "strConfirmDelete":
@@ -213,7 +221,7 @@ class MessageLookup extends MessageLookupByLibrary {
         "strEnterCode": MessageLookupByLibrary.simpleMessage("Kodni yozing"),
         "strEnterNotes": MessageLookupByLibrary.simpleMessage("Izoh yozing..."),
         "strEnterPinCode":
-            MessageLookupByLibrary.simpleMessage("2-6 raqam kiriting"),
+            MessageLookupByLibrary.simpleMessage("Pinkod kiriting"),
         "strError": MessageLookupByLibrary.simpleMessage("Xato"),
         "strErrorOccurred":
             MessageLookupByLibrary.simpleMessage("Xato yuz berdi"),
@@ -324,6 +332,8 @@ class MessageLookup extends MessageLookupByLibrary {
             MessageLookupByLibrary.simpleMessage("Noto\'g\'ri ism"),
         "strInvalidNumber":
             MessageLookupByLibrary.simpleMessage("Noto\'g\'ri raqam"),
+        "strIncorrectPincode":
+            MessageLookupByLibrary.simpleMessage("Pinkod noto\'g\'ri"),
         "strItemsCount": m4,
         "strItemsCountWithAvg": m5,
         "strItemsCountWithTime": m6,
@@ -415,6 +425,7 @@ class MessageLookup extends MessageLookupByLibrary {
             "Offline rejim — ma\'lumotlar internet qaytganda sync bo\'ladi"),
         "strOpenBills": MessageLookupByLibrary.simpleMessage("Ochiq hisoblar"),
         "strOpenShift": MessageLookupByLibrary.simpleMessage("Smenani ochish"),
+        "strOpenTablesCount": m8,
         "strOpenedAt": MessageLookupByLibrary.simpleMessage("Ochildi"),
         "strOpenedAtLabel": MessageLookupByLibrary.simpleMessage("Ochildi:"),
         "strOpeningBalance":
@@ -433,13 +444,13 @@ class MessageLookup extends MessageLookupByLibrary {
             "Buyurtma boshqa stolga ko\'chirildi"),
         "strOrderType": MessageLookupByLibrary.simpleMessage("Buyurtma turi"),
         "strOrders": MessageLookupByLibrary.simpleMessage("Buyurtmalar"),
-        "strOrdersCountShort": m8,
-        "strOrdersCountWithAvg": m9,
+        "strOrdersCountShort": m9,
+        "strOrdersCountWithAvg": m10,
         "strOrdersEmpty":
             MessageLookupByLibrary.simpleMessage("Buyurtmalar topilmadi"),
         "strOrgName": MessageLookupByLibrary.simpleMessage("Tashkilot nomi"),
         "strOther": MessageLookupByLibrary.simpleMessage("Boshqa"),
-        "strPageSize": m10,
+        "strPageSize": m11,
         "strPassword": MessageLookupByLibrary.simpleMessage("Parol"),
         "strPasswordContainAtLeastChars": MessageLookupByLibrary.simpleMessage(
             "Parol kamida 8 ta belgidan iborat bo\'lishi kerak."),
@@ -550,6 +561,16 @@ class MessageLookup extends MessageLookupByLibrary {
             "0 dan 100 gacha qiymat kiriting"),
         "strServiceChargeSaved":
             MessageLookupByLibrary.simpleMessage("Xizmat haqi saqlandi"),
+        "strServerUnreachable500": MessageLookupByLibrary.simpleMessage(
+            "Serverda ichki xatolik. Birozdan keyin qayta urinib ko\'ring."),
+        "strServerUnreachable502": MessageLookupByLibrary.simpleMessage(
+            "Server javob bermayapti. Birozdan keyin qayta urinib ko\'ring."),
+        "strServerUnreachable503": MessageLookupByLibrary.simpleMessage(
+            "Xizmat vaqtincha mavjud emas. Birozdan keyin qayta urinib ko\'ring."),
+        "strServerUnreachable504": MessageLookupByLibrary.simpleMessage(
+            "Server javob berishga ulgurmadi. Internetni tekshirib qayta urinib ko\'ring."),
+        "strServerUnreachableGeneric": MessageLookupByLibrary.simpleMessage(
+            "Server bilan ulanib bo\'lmadi. Birozdan keyin qayta urinib ko\'ring."),
         "strSettings": MessageLookupByLibrary.simpleMessage("Sozlamalar"),
         "strSettingsAdminOnly": MessageLookupByLibrary.simpleMessage(
             "Sozlamalarga faqat administrator yoki menejer kira oladi."),
@@ -583,13 +604,17 @@ class MessageLookup extends MessageLookupByLibrary {
         "strStatusColumnHeader": MessageLookupByLibrary.simpleMessage("Holat"),
         "strSubtotal": MessageLookupByLibrary.simpleMessage("Oraliq jami"),
         "strSunday": MessageLookupByLibrary.simpleMessage("Yakshanba"),
+        "strSwitchTo4Digit":
+            MessageLookupByLibrary.simpleMessage("4 xonali pinkod"),
+        "strSwitchTo6Digit":
+            MessageLookupByLibrary.simpleMessage("6 xonali pinkod"),
         "strTable": MessageLookupByLibrary.simpleMessage("Stol"),
         "strTableHall": MessageLookupByLibrary.simpleMessage("Stol / Zal"),
         "strTableLabel": MessageLookupByLibrary.simpleMessage("Stol:"),
         "strTableNumber": MessageLookupByLibrary.simpleMessage("Stol"),
         "strTableType": MessageLookupByLibrary.simpleMessage("Turi"),
         "strTables": MessageLookupByLibrary.simpleMessage("Stollar"),
-        "strTablesNotSavedCount": m11,
+        "strTablesNotSavedCount": m12,
         "strTakeaway": MessageLookupByLibrary.simpleMessage("Olib ketish"),
         "strTerminal": MessageLookupByLibrary.simpleMessage("Terminal"),
         "strThursday": MessageLookupByLibrary.simpleMessage("Payshanba"),

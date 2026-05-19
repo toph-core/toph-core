@@ -17,6 +17,8 @@ import 'package:mary_ai_pos/features/view/main/presentation/pages/main/widgets/m
 import 'package:mary_ai_pos/features/view/main/presentation/widgets/product_grid_card.dart';
 import 'package:mary_ai_pos/generated/l10n.dart';
 import 'package:number_paginator/number_paginator.dart';
+// `_CategoryDialog` o'zining inline klaviaturasini ko'rsatadi (dialog Overlay'da —
+// AppScaffold'dagi GlobalVirtualKeyboard'ga teginmaydi).
 import 'package:virtual_keyboard_multi_language/virtual_keyboard_multi_language.dart';
 
 /// Admin/manager: kategoriyalar + taomlar ikkita panel ko'rinishida.
@@ -33,9 +35,6 @@ class _MenuMealsListScreenState extends State<MenuMealsListScreen> {
       NumberPaginatorController();
   final TextEditingController _searchCtrl = TextEditingController();
   final TextEditingController _catSearchCtrl = TextEditingController();
-
-  // null = klaviatura yashirin. Non-null = qaysi controller'ga yozish kerakligi.
-  final ValueNotifier<TextEditingController?> _kbTarget = ValueNotifier(null);
 
   static const List<int> _pageSizeOptions = [20, 50, 100];
   int _pageSize = 20;
@@ -72,7 +71,6 @@ class _MenuMealsListScreenState extends State<MenuMealsListScreen> {
     _paginatorController.dispose();
     _searchCtrl.dispose();
     _catSearchCtrl.dispose();
-    _kbTarget.dispose();
     super.dispose();
   }
 
@@ -145,7 +143,7 @@ class _MenuMealsListScreenState extends State<MenuMealsListScreen> {
         params['category_id'] = _selectedCategoryId;
       }
       if (_searchQuery.isNotEmpty) {
-        params['query'] = _searchQuery;
+        params['search'] = _searchQuery;
       }
       final res = await _client.get(ListAPI.goods, queryParameters: params);
       final list = _extractGoodsList(res.data);
@@ -232,123 +230,84 @@ class _MenuMealsListScreenState extends State<MenuMealsListScreen> {
   Widget build(BuildContext context) {
     return AppScaffold(
       activeRoute: AppRoutes.menuMealsScreen,
-      body: Stack(
+      body: Column(
         children: [
-          GestureDetector(
-            behavior: HitTestBehavior.translucent,
-            onTap: () {
-              if (_kbTarget.value != null) _kbTarget.value = null;
-            },
-            child: Column(
-              children: [
-                MainHeader(title: S.current.strMenu),
-                Expanded(
-                  child: BlocBuilder<UserBloc, UserState>(
-                    buildWhen: (p, c) => p.userMOdel?.role != c.userMOdel?.role,
-                    builder: (context, userState) {
-                      final allowed =
-                          userState.userMOdel?.role.canManageMenu ?? false;
-                      final colors = context.colors;
-                      if (!allowed) {
-                        return Center(
-                          child: Text(
-                            'Faqat admin, menejer va superadmin kirishi mumkin',
-                            style: TextStyle(color: colors.textSecondary),
-                          ),
-                        );
-                      }
-                      return Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // ── Chap panel: Kategoriyalar ──
-                          SizedBox(
-                            width: 260,
-                            child: _CategoriesPanel(
-                              categories: _categories,
-                              loading: _loadingCategories,
-                              selectedId: _selectedCategoryId,
-                              searchCtrl: _catSearchCtrl,
-                              keyboardTarget: _kbTarget,
-                              onSelect: (id) {
-                                setState(() {
-                                  _selectedCategoryId = id;
-                                  _searchQuery = '';
-                                  _searchCtrl.clear();
-                                });
-                                _loadGoods(page: 1);
-                              },
-                              onAdd: () => _openCategoryDialog(),
-                            ),
-                          ),
-                          VerticalDivider(
-                            width: 1,
-                            thickness: 1,
-                            color: colors.border,
-                          ),
-                          // ── O'ng panel: Taomlar ──
-                          Expanded(
-                            child: _GoodsPanel(
-                              goods: _goods,
-                              categories: _categories,
-                              loading: _loadingGoods,
-                              error: _errorGoods,
-                              page: _page,
-                              totalCount: _totalCount ?? 0,
-                              totalPages: _totalPages,
-                              pageSize: _pageSize,
-                              pageSizeOptions: _pageSizeOptions,
-                              paginatorController: _paginatorController,
-                              searchCtrl: _searchCtrl,
-                              keyboardTarget: _kbTarget,
-                              selectedCategoryId: _selectedCategoryId,
-                              onSearch: (q) {
-                                setState(() => _searchQuery = q);
-                                _loadGoods(page: 1);
-                              },
-                              onPageChange: (p) => _loadGoods(page: p),
-                              onPageSizeChange: (sz) {
-                                setState(() => _pageSize = sz);
-                                _loadGoods(page: 1);
-                              },
-                              onEdit: (g) => _openManage(mealId: g.id),
-                              onNew: () => _openManage(),
-                              onRetry: () => _loadGoods(page: _page),
-                            ),
-                          ),
-                        ],
-                      );
-                    },
-                  ),
-                ),
-              ],
-            ),
-          ),
-          // Virtual keyboard overlay
-          ValueListenableBuilder<TextEditingController?>(
-            valueListenable: _kbTarget,
-            builder: (context, ctrl, _) {
-              if (ctrl == null) return const SizedBox.shrink();
-              return Positioned(
-                bottom: 0,
-                left: 0,
-                right: 0,
-                child: DecoratedBox(
-                  decoration: BoxDecoration(color: context.colors.bgSecondary),
-                  child: SafeArea(
-                    child: VirtualKeyboard(
-                      height: context.h * .3,
-                      customLayoutKeys: VirtualKeyboardDefaultLayoutKeys([
-                        VirtualKeyboardDefaultLayouts.English,
-                      ]),
-                      textColor: Colors.black,
-                      fontSize: 24,
-                      textController: ctrl,
-                      type: VirtualKeyboardType.Alphanumeric,
+          MainHeader(title: S.current.strMenu),
+          Expanded(
+            child: BlocBuilder<UserBloc, UserState>(
+              buildWhen: (p, c) => p.userMOdel?.role != c.userMOdel?.role,
+              builder: (context, userState) {
+                final allowed =
+                    userState.userMOdel?.role.canManageMenu ?? false;
+                final colors = context.colors;
+                if (!allowed) {
+                  return Center(
+                    child: Text(
+                      'Faqat admin, menejer va superadmin kirishi mumkin',
+                      style: TextStyle(color: colors.textSecondary),
                     ),
-                  ),
-                ),
-              );
-            },
+                  );
+                }
+                return Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // ── Chap panel: Kategoriyalar ──
+                    SizedBox(
+                      width: 260,
+                      child: _CategoriesPanel(
+                        categories: _categories,
+                        loading: _loadingCategories,
+                        selectedId: _selectedCategoryId,
+                        searchCtrl: _catSearchCtrl,
+                        onSelect: (id) {
+                          setState(() {
+                            _selectedCategoryId = id;
+                            _searchQuery = '';
+                            _searchCtrl.clear();
+                          });
+                          _loadGoods(page: 1);
+                        },
+                        onAdd: () => _openCategoryDialog(),
+                      ),
+                    ),
+                    VerticalDivider(
+                      width: 1,
+                      thickness: 1,
+                      color: colors.border,
+                    ),
+                    // ── O'ng panel: Taomlar ──
+                    Expanded(
+                      child: _GoodsPanel(
+                        goods: _goods,
+                        categories: _categories,
+                        loading: _loadingGoods,
+                        error: _errorGoods,
+                        page: _page,
+                        totalCount: _totalCount ?? 0,
+                        totalPages: _totalPages,
+                        pageSize: _pageSize,
+                        pageSizeOptions: _pageSizeOptions,
+                        paginatorController: _paginatorController,
+                        searchCtrl: _searchCtrl,
+                        selectedCategoryId: _selectedCategoryId,
+                        onSearch: (q) {
+                          setState(() => _searchQuery = q);
+                          _loadGoods(page: 1);
+                        },
+                        onPageChange: (p) => _loadGoods(page: p),
+                        onPageSizeChange: (sz) {
+                          setState(() => _pageSize = sz);
+                          _loadGoods(page: 1);
+                        },
+                        onEdit: (g) => _openManage(mealId: g.id),
+                        onNew: () => _openManage(),
+                        onRetry: () => _loadGoods(page: _page),
+                      ),
+                    ),
+                  ],
+                );
+              },
+            ),
           ),
         ],
       ),
@@ -365,7 +324,6 @@ class _CategoriesPanel extends StatefulWidget {
   final bool loading;
   final String? selectedId;
   final TextEditingController searchCtrl;
-  final ValueNotifier<TextEditingController?> keyboardTarget;
   final void Function(String? id) onSelect;
   final VoidCallback onAdd;
 
@@ -374,7 +332,6 @@ class _CategoriesPanel extends StatefulWidget {
     required this.loading,
     required this.selectedId,
     required this.searchCtrl,
-    required this.keyboardTarget,
     required this.onSelect,
     required this.onAdd,
   });
@@ -435,7 +392,6 @@ class _CategoriesPanelState extends State<_CategoriesPanel> {
               hint: 'Qidirish...',
               large: true,
               controller: widget.searchCtrl,
-              keyboardTarget: widget.keyboardTarget,
               onChanged: (v) => setState(() => _catSearch = v),
             ),
           ),
@@ -614,7 +570,6 @@ class _GoodsPanel extends StatelessWidget {
   final List<int> pageSizeOptions;
   final NumberPaginatorController paginatorController;
   final TextEditingController searchCtrl;
-  final ValueNotifier<TextEditingController?> keyboardTarget;
   final String? selectedCategoryId;
   final void Function(String) onSearch;
   final void Function(int) onPageChange;
@@ -635,7 +590,6 @@ class _GoodsPanel extends StatelessWidget {
     required this.pageSizeOptions,
     required this.paginatorController,
     required this.searchCtrl,
-    required this.keyboardTarget,
     required this.selectedCategoryId,
     required this.onSearch,
     required this.onPageChange,
@@ -696,10 +650,11 @@ class _GoodsPanel extends StatelessWidget {
               ),
               SizedBox(
                 width: 280,
+                height: 48,
                 child: _SearchField(
                   controller: searchCtrl,
-                  keyboardTarget: keyboardTarget,
                   hint: 'Taom qidirish...',
+                  height: 48,
                   onChanged: onSearch,
                 ),
               ),
@@ -736,7 +691,7 @@ class _GoodsPanel extends StatelessWidget {
                     return GridView.builder(
                       padding: const EdgeInsets.fromLTRB(
                         PosDimensions.xxl, // 24
-                        0,
+                        PosDimensions.m, // 12 — hover lift uchun bo'sh joy
                         PosDimensions.xxl,
                         PosDimensions.l, // 16
                       ),
@@ -1299,15 +1254,15 @@ class _SearchField extends StatefulWidget {
   final String hint;
   final void Function(String) onChanged;
   final TextEditingController? controller;
-  final ValueNotifier<TextEditingController?>? keyboardTarget;
   final bool large;
+  final double? height;
 
   const _SearchField({
     required this.hint,
     required this.onChanged,
     this.controller,
-    this.keyboardTarget,
     this.large = false,
+    this.height,
   });
 
   @override
@@ -1317,7 +1272,9 @@ class _SearchField extends StatefulWidget {
 class _SearchFieldState extends State<_SearchField> {
   late final TextEditingController _ctrl;
   late final bool _ownsCtrl;
+  late final FocusNode _focusNode;
   String _last = '';
+  bool _focused = false;
 
   @override
   void initState() {
@@ -1325,6 +1282,7 @@ class _SearchFieldState extends State<_SearchField> {
     _ownsCtrl = widget.controller == null;
     _ctrl = widget.controller ?? TextEditingController();
     _last = _ctrl.text;
+    _focusNode = FocusNode()..addListener(_onFocusChange);
     // Virtual keyboard `controller.value` ni dasturiy o'zgartiradi —
     // TextField.onChanged buni TUTMAYDI. Shuning uchun listener orqali
     // kuzatamiz (fizik ham, virtual ham klaviatura uchun ishlaydi).
@@ -1335,6 +1293,9 @@ class _SearchFieldState extends State<_SearchField> {
   void dispose() {
     _ctrl.removeListener(_onTextChanged);
     if (_ownsCtrl) _ctrl.dispose();
+    _focusNode
+      ..removeListener(_onFocusChange)
+      ..dispose();
     super.dispose();
   }
 
@@ -1345,48 +1306,74 @@ class _SearchFieldState extends State<_SearchField> {
     widget.onChanged(cur);
   }
 
+  void _onFocusChange() {
+    if (_focused != _focusNode.hasFocus) {
+      setState(() => _focused = _focusNode.hasFocus);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final c = context.colors;
-    final fontSize = widget.large ? 16.0 : 13.0;
-    final iconSize = widget.large ? 22.0 : 18.0;
-    final vPad = widget.large ? 16.0 : 9.0;
+    final fontSize = widget.large ? 16.0 : 15.0;
+    final iconSize = widget.large ? 22.0 : 20.0;
     final radius = widget.large ? 12.0 : 8.0;
-    return TextField(
-      controller: _ctrl,
-      onTap: () => widget.keyboardTarget?.value = _ctrl,
-      textInputAction: TextInputAction.search,
-      keyboardType: TextInputType.text,
-      enableInteractiveSelection: true,
-      style: TextStyle(
-        fontSize: fontSize,
-        color: c.textDefault,
-        fontFamily: 'Inter',
+    // `_PrimaryBtn` (48 px) yonida joylashganda aniq mos balandlik kerak —
+    // shuning uchun `height` berilsa, TextField'ni borderless qilib
+    // Container'ga joylashtiramiz. Aks holda eski default balandlik.
+    final height = widget.height ?? (widget.large ? 50.0 : 36.0);
+    return Container(
+      height: height,
+      decoration: BoxDecoration(
+        color: c.bgSecondary,
+        border: Border.all(
+          color: _focused ? c.borderBrand : c.border,
+          width: _focused ? 1.5 : 1,
+        ),
+        borderRadius: BorderRadius.circular(radius),
       ),
-      decoration: InputDecoration(
-        hintText: widget.hint,
-        hintStyle: TextStyle(fontSize: fontSize, color: c.textSecondary),
-        prefixIcon: Icon(
-          Icons.search_rounded,
-          size: iconSize,
-          color: c.textTertiary,
-        ),
-        isDense: true,
-        contentPadding: EdgeInsets.symmetric(vertical: vPad),
-        filled: true,
-        fillColor: c.bgSecondary,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(radius),
-          borderSide: BorderSide(color: c.border),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(radius),
-          borderSide: BorderSide(color: c.border),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(radius),
-          borderSide: BorderSide(color: c.borderBrand),
-        ),
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      child: Row(
+        children: [
+          Icon(Icons.search_rounded, size: iconSize, color: c.textTertiary),
+          const SizedBox(width: 8),
+          Expanded(
+            child: TextField(
+              controller: _ctrl,
+              focusNode: _focusNode,
+              textInputAction: TextInputAction.search,
+              keyboardType: TextInputType.text,
+              enableInteractiveSelection: true,
+              cursorColor: c.textBrand,
+              style: TextStyle(
+                fontSize: fontSize,
+                color: c.textDefault,
+                fontFamily: 'Inter',
+              ),
+              // Material'ning ichki hover/focus pill'ini olib tashlaymiz —
+              // tashqi Container'dagi border yetarli.
+              decoration: InputDecoration(
+                hintText: widget.hint,
+                hintStyle: TextStyle(
+                  fontSize: fontSize,
+                  color: c.textSecondary,
+                ),
+                border: InputBorder.none,
+                enabledBorder: InputBorder.none,
+                focusedBorder: InputBorder.none,
+                disabledBorder: InputBorder.none,
+                errorBorder: InputBorder.none,
+                focusedErrorBorder: InputBorder.none,
+                filled: false,
+                fillColor: Colors.transparent,
+                hoverColor: Colors.transparent,
+                focusColor: Colors.transparent,
+                isCollapsed: true,
+                contentPadding: EdgeInsets.zero,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

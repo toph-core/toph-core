@@ -291,13 +291,18 @@ class _NavItemState extends State<_NavItem> {
   Widget build(BuildContext context) {
     final colors = context.colors;
     final selected = widget.selected;
+    // Hover holatida ham aktiv brand fonidan yumshoqroq variant ko'rsatamiz —
+    // ilgari `bgDefault` ishlatilar edi va ikona pill bilan birga "kulrang/loy"
+    // ko'rinishini hosil qilardi. Endi soya bitta brand oilasida turadi.
     final bgColor = selected
         ? colors.buttonBrand.withOpacity(0.12)
-        : (_hover ? colors.bgDefault : Colors.transparent);
+        : (_hover ? colors.buttonBrand.withOpacity(0.06) : Colors.transparent);
     final iconBg = selected
         ? colors.buttonBrand
-        : colors.bgDefault;
-    final iconColor = selected ? colors.textOnBrand : colors.textSecondary;
+        : (_hover ? colors.buttonBrand.withOpacity(0.10) : colors.bgDefault);
+    final iconColor = selected
+        ? colors.textOnBrand
+        : (_hover ? colors.buttonBrand : colors.textSecondary);
     final titleColor = selected ? colors.buttonBrand : colors.textDefault;
 
     return Padding(
@@ -333,7 +338,11 @@ class _NavItemState extends State<_NavItem> {
                             BorderRadius.circular(PosDimensions.radiusSm),
                         border: selected
                             ? null
-                            : Border.all(color: colors.border),
+                            : Border.all(
+                                color: _hover
+                                    ? colors.buttonBrand.withOpacity(0.30)
+                                    : colors.border,
+                              ),
                       ),
                       child: Icon(widget.section.icon,
                           size: 20, color: iconColor),

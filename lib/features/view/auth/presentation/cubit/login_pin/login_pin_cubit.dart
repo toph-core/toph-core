@@ -58,6 +58,7 @@ class LoginPinCubit extends Cubit<LoginPinState> {
         emit(state.copyWith(
           failure: const ConnectionFailure(),
           status: Status.ERROR,
+          pin: '',
         ));
       }
       return;
@@ -86,7 +87,7 @@ class LoginPinCubit extends Cubit<LoginPinState> {
           emit(state.copyWith(status: Status.SUCCESS));
           onSuccess();
         } else {
-          emit(state.copyWith(failure: failure, status: Status.ERROR));
+          emit(state.copyWith(failure: failure, status: Status.ERROR, pin: ''));
         }
       },
       (_) async {
@@ -99,21 +100,30 @@ class LoginPinCubit extends Cubit<LoginPinState> {
   }
 
   void setPin(String value) {
+    if (state.status == Status.LOADING) return;
+
     String pinUpdated = state.pin ?? '';
+    final int maxLength = state.pinLength;
 
     if (value == '⌫') {
       if (pinUpdated.isNotEmpty) {
         pinUpdated = pinUpdated.substring(0, pinUpdated.length - 1);
       }
-    } else if (value != '✓' && value.length < 6) {
-      pinUpdated += value;
+      emit(state.copyWith(pin: pinUpdated));
+      return;
     }
+
+    if (value == '✓') return;
+
+    if (pinUpdated.length >= maxLength) return;
+
+    pinUpdated += value;
     emit(state.copyWith(pin: pinUpdated));
 
-    if (pinUpdated.length >= 2 && value == '✓') {
-      emit(state.copyWith(pin: null));
+    if (pinUpdated.length == maxLength) {
+      final pincode = pinUpdated;
       login(
-        pincode: pinUpdated,
+        pincode: pincode,
         onSuccess: () {
           Navigator.pushNamedAndRemoveUntil(
             navigatorKey.currentContext!,
@@ -123,6 +133,12 @@ class LoginPinCubit extends Cubit<LoginPinState> {
         },
       );
     }
+  }
+
+  void togglePinLength() {
+    if (state.status == Status.LOADING) return;
+    final next = state.pinLength == 4 ? 6 : 4;
+    emit(state.copyWith(pinLength: next, pin: ''));
   }
 
   void logoutFromApp(Function() onLogout) async {

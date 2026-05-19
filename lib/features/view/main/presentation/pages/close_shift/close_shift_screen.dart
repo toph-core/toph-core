@@ -3,11 +3,15 @@ import 'package:mary_ai_pos/core/api/api.dart';
 import 'package:mary_ai_pos/core/design_system/pos_design_system.dart';
 import 'package:mary_ai_pos/core/extension/number_formatter.dart';
 import 'package:mary_ai_pos/core/routes/app_routes.dart';
+import 'package:mary_ai_pos/core/widgets/app_pincode_dialog.dart';
 import 'package:mary_ai_pos/core/widgets/app_scaffold.dart';
 import 'package:mary_ai_pos/di.dart';
 import 'package:mary_ai_pos/features/view/auth/presentation/cubit/bloc/user_bloc.dart';
+import 'package:mary_ai_pos/features/view/main/data/models/cafe_tables/cafe_tables_model.dart';
+import 'package:mary_ai_pos/features/view/main/data/models/hall/hall_model.dart';
 import 'package:mary_ai_pos/features/view/main/domain/entities/archive_entity.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/archives/archives_bloc.dart';
+import 'package:mary_ai_pos/features/view/main/presentation/cubit/main/main_cubit.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/shift/shift_bloc.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/main/widgets/main_header.dart';
 import 'package:mary_ai_pos/generated/l10n.dart';
@@ -87,7 +91,7 @@ class _CloseShiftScreenState extends State<CloseShiftScreen> {
         body: Column(
           children: [
             MainHeader(
-              title: S.current.strTerminal,
+              title: S.current.strShiftReport,
               trailing: _SyncButton(
                 spinning: _syncing,
                 onTap: _sync,
@@ -526,15 +530,6 @@ class _PageHeader extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          S.current.strShiftReport,
-          style: const TextStyle(
-            fontSize: 13,
-            color: _kS500,
-            fontFamily: 'Inter',
-          ),
-        ),
-        const SizedBox(height: 6),
         Row(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
@@ -547,7 +542,7 @@ class _PageHeader extends StatelessWidget {
                   Text(
                     dateStr,
                     style: const TextStyle(
-                      fontSize: 22,
+                      fontSize: 26,
                       fontWeight: FontWeight.w700,
                       color: _kS900,
                       fontFamily: 'Inter',
@@ -578,13 +573,13 @@ class _PageHeader extends StatelessWidget {
             ),
           ],
         ),
-        const SizedBox(height: 6),
+        const SizedBox(height: 8),
         Text(
           shortId.isEmpty
               ? '${S.current.strCashier}: $cashierName'
               : '${S.current.strCashier}: $cashierName · ${S.current.strShiftHash} #$shortId',
           style: const TextStyle(
-            fontSize: 14,
+            fontSize: 16,
             color: _kS500,
             fontFamily: 'Inter',
           ),
@@ -633,7 +628,7 @@ class _OpenShiftPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
       decoration: BoxDecoration(
         color: _kGreenTint,
         borderRadius: BorderRadius.circular(999),
@@ -642,8 +637,8 @@ class _OpenShiftPill extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            width: 8,
-            height: 8,
+            width: 9,
+            height: 9,
             decoration: const BoxDecoration(
               color: _kGreen,
               shape: BoxShape.circle,
@@ -653,7 +648,7 @@ class _OpenShiftPill extends StatelessWidget {
           Text(
             '${S.current.strShiftOpen} · $openedClock',
             style: const TextStyle(
-              fontSize: 12,
+              fontSize: 14,
               fontWeight: FontWeight.w600,
               color: _kGreen,
               fontFamily: 'Inter',
@@ -704,12 +699,12 @@ class _OutlinedIconButtonState extends State<_OutlinedIconButton> {
           ),
           child: Row(
             children: [
-              Icon(widget.icon, size: 18, color: _kS500),
+              Icon(widget.icon, size: 20, color: _kS500),
               const SizedBox(width: PosDimensions.s),
               Text(
                 widget.label,
                 style: const TextStyle(
-                  fontSize: PosTypography.bodyMd, // 15
+                  fontSize: 16,
                   fontWeight: FontWeight.w600,
                   color: _kS900,
                   fontFamily: PosTypography.family,
@@ -818,8 +813,8 @@ class _DarkStatCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 128,
-      padding: const EdgeInsets.all(20),
+      height: 148,
+      padding: const EdgeInsets.all(22),
       decoration: BoxDecoration(
         color: _kS900,
         borderRadius: BorderRadius.circular(16),
@@ -831,7 +826,7 @@ class _DarkStatCard extends StatelessWidget {
           Text(
             label,
             style: const TextStyle(
-              fontSize: 13,
+              fontSize: 15,
               color: Color(0xFF94A3B8),
               fontFamily: 'Inter',
             ),
@@ -847,7 +842,7 @@ class _DarkStatCard extends StatelessWidget {
                   child: Text(
                     value,
                     style: const TextStyle(
-                      fontSize: 32,
+                      fontSize: 36,
                       fontWeight: FontWeight.w700,
                       color: Colors.white,
                       fontFamily: 'Inter',
@@ -861,7 +856,7 @@ class _DarkStatCard extends StatelessWidget {
               Text(
                 suffix,
                 style: const TextStyle(
-                  fontSize: 13,
+                  fontSize: 15,
                   color: Color(0xFF94A3B8),
                   fontFamily: 'Inter',
                 ),
@@ -872,14 +867,14 @@ class _DarkStatCard extends StatelessWidget {
             children: [
               const Icon(
                 Icons.trending_up_rounded,
-                size: 14,
+                size: 16,
                 color: _kGrowth,
               ),
               const SizedBox(width: 4),
               Text(
                 S.current.strCurrentShift,
                 style: const TextStyle(
-                  fontSize: 12,
+                  fontSize: 14,
                   fontWeight: FontWeight.w500,
                   color: _kGrowth,
                   fontFamily: 'Inter',
@@ -913,8 +908,8 @@ class _LightStatCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 128,
-      padding: const EdgeInsets.all(20),
+      height: 148,
+      padding: const EdgeInsets.all(22),
       decoration: BoxDecoration(
         color: Colors.white,
         border: Border.all(color: _kS200),
@@ -927,20 +922,20 @@ class _LightStatCard extends StatelessWidget {
           Row(
             children: [
               Container(
-                width: 32,
-                height: 32,
+                width: 36,
+                height: 36,
                 decoration: BoxDecoration(
                   color: iconBg,
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: Icon(icon, size: 16, color: iconColor),
+                child: Icon(icon, size: 18, color: iconColor),
               ),
-              const SizedBox(width: 10),
+              const SizedBox(width: 12),
               Expanded(
                 child: Text(
                   label,
                   style: const TextStyle(
-                    fontSize: 13,
+                    fontSize: 15,
                     color: _kS500,
                     fontFamily: 'Inter',
                   ),
@@ -956,7 +951,7 @@ class _LightStatCard extends StatelessWidget {
             child: Text(
               value,
               style: const TextStyle(
-                fontSize: 22,
+                fontSize: 26,
                 fontWeight: FontWeight.w700,
                 color: _kS900,
                 fontFamily: 'Inter',
@@ -968,7 +963,7 @@ class _LightStatCard extends StatelessWidget {
           Text(
             sub,
             style: const TextStyle(
-              fontSize: 12,
+              fontSize: 14,
               color: _kS500,
               fontFamily: 'Inter',
             ),
@@ -1000,8 +995,8 @@ class _DurationStatCardState extends State<_DurationStatCard> {
         '${widget.openedAt.hour.toString().padLeft(2, '0')}:${widget.openedAt.minute.toString().padLeft(2, '0')}';
 
     return Container(
-      height: 128,
-      padding: const EdgeInsets.all(20),
+      height: 148,
+      padding: const EdgeInsets.all(22),
       decoration: BoxDecoration(
         color: Colors.white,
         border: Border.all(color: _kS200),
@@ -1014,24 +1009,24 @@ class _DurationStatCardState extends State<_DurationStatCard> {
           Row(
             children: [
               Container(
-                width: 32,
-                height: 32,
+                width: 36,
+                height: 36,
                 decoration: BoxDecoration(
                   color: _kBrandTint,
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: const Icon(
                   Icons.timer_outlined,
-                  size: 16,
+                  size: 18,
                   color: _kBrand,
                 ),
               ),
-              const SizedBox(width: 10),
+              const SizedBox(width: 12),
               Expanded(
                 child: Text(
                   S.current.strDurationLabel,
                   style: const TextStyle(
-                    fontSize: 13,
+                    fontSize: 15,
                     color: _kS500,
                     fontFamily: 'Inter',
                   ),
@@ -1042,7 +1037,7 @@ class _DurationStatCardState extends State<_DurationStatCard> {
           Text(
             value,
             style: const TextStyle(
-              fontSize: 26,
+              fontSize: 30,
               fontWeight: FontWeight.w700,
               color: _kS900,
               fontFamily: 'Inter',
@@ -1053,7 +1048,7 @@ class _DurationStatCardState extends State<_DurationStatCard> {
           Text(
             '${S.current.strOpenedAt} $startedAt',
             style: const TextStyle(
-              fontSize: 12,
+              fontSize: 14,
               color: _kS500,
               fontFamily: 'Inter',
             ),
@@ -1109,8 +1104,8 @@ class _HourlyChartPanel extends StatelessWidget {
     });
 
     return Container(
-      height: 340,
-      padding: const EdgeInsets.all(20),
+      height: 360,
+      padding: const EdgeInsets.all(22),
       decoration: BoxDecoration(
         color: Colors.white,
         border: Border.all(color: _kS200),
@@ -1122,20 +1117,20 @@ class _HourlyChartPanel extends StatelessWidget {
           Text(
             S.current.strHourlySalesDynamics,
             style: const TextStyle(
-              fontSize: 15,
+              fontSize: 17,
               fontWeight: FontWeight.w700,
               color: _kS900,
               fontFamily: 'Inter',
               letterSpacing: -0.2,
             ),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 6),
           Text(
             peakValue > 0
                 ? '${S.current.strPeakTime}: ${peakHour.toString().padLeft(2, '0')}:00 — ${peakValue.formatN}'
                 : S.current.strNoSalesData,
             style: const TextStyle(
-              fontSize: 12,
+              fontSize: 14,
               color: _kS500,
               fontFamily: 'Inter',
             ),
@@ -1175,7 +1170,7 @@ class _HourlyChart extends StatelessWidget {
         child: Text(
           S.current.strShiftJustStarted,
           style: const TextStyle(
-            fontSize: 13,
+            fontSize: 15,
             color: _kS400,
             fontFamily: 'Inter',
           ),
@@ -1185,7 +1180,7 @@ class _HourlyChart extends StatelessWidget {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        const labelHeight = 24.0;
+        const labelHeight = 28.0;
         final chartH = constraints.maxHeight - labelHeight;
         return Column(
           children: [
@@ -1218,7 +1213,7 @@ class _HourlyChart extends StatelessWidget {
                               child: Text(
                                 S.current.strNowShort,
                                 style: const TextStyle(
-                                  fontSize: 9,
+                                  fontSize: 11,
                                   fontWeight: FontWeight.w600,
                                   color: _kBrand,
                                   fontFamily: 'Inter',
@@ -1251,7 +1246,7 @@ class _HourlyChart extends StatelessWidget {
                       child: Text(
                         '${h.toString().padLeft(2, '0')}:00',
                         style: const TextStyle(
-                          fontSize: 10,
+                          fontSize: 12,
                           fontWeight: FontWeight.w500,
                           color: _kS500,
                           fontFamily: 'Inter',
@@ -1286,8 +1281,8 @@ class _CashBalancePanel extends StatelessWidget {
   Widget build(BuildContext context) {
     final expected = openingCash + cashReceived;
     return Container(
-      height: 340,
-      padding: const EdgeInsets.all(20),
+      height: 360,
+      padding: const EdgeInsets.all(22),
       decoration: BoxDecoration(
         color: Colors.white,
         border: Border.all(color: _kS200),
@@ -1299,20 +1294,20 @@ class _CashBalancePanel extends StatelessWidget {
           Text(
             S.current.strCashBalance,
             style: const TextStyle(
-              fontSize: 15,
+              fontSize: 17,
               fontWeight: FontWeight.w700,
               color: _kS900,
               fontFamily: 'Inter',
               letterSpacing: -0.2,
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 18),
           _BalanceRow(
             label: S.current.strOpeningBalance,
             value: openingCash,
             valueColor: _kS900,
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 14),
           _BalanceRow(
             label: S.current.strShiftRevenue,
             value: cashReceived,
@@ -1321,14 +1316,14 @@ class _CashBalancePanel extends StatelessWidget {
           ),
           const Spacer(),
           const Divider(color: _kS200, height: 1),
-          const SizedBox(height: 14),
+          const SizedBox(height: 16),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
                 S.current.strExpectedBalance,
                 style: const TextStyle(
-                  fontSize: 14,
+                  fontSize: 16,
                   fontWeight: FontWeight.w700,
                   color: _kS900,
                   fontFamily: 'Inter',
@@ -1341,18 +1336,18 @@ class _CashBalancePanel extends StatelessWidget {
                   Text(
                     expected.formatNWithoutS,
                     style: const TextStyle(
-                      fontSize: 18,
+                      fontSize: 22,
                       fontWeight: FontWeight.w700,
                       color: _kBrand,
                       fontFamily: 'Inter',
                       letterSpacing: -0.3,
                     ),
                   ),
-                  const SizedBox(width: 3),
+                  const SizedBox(width: 4),
                   const Text(
                     "so'm",
                     style: TextStyle(
-                      fontSize: 11,
+                      fontSize: 13,
                       color: _kS500,
                       fontFamily: 'Inter',
                     ),
@@ -1388,7 +1383,7 @@ class _BalanceRow extends StatelessWidget {
         Text(
           label,
           style: const TextStyle(
-            fontSize: 13,
+            fontSize: 15,
             color: _kS700,
             fontFamily: 'Inter',
           ),
@@ -1400,17 +1395,17 @@ class _BalanceRow extends StatelessWidget {
             Text(
               '$prefix${value.formatNWithoutS}',
               style: TextStyle(
-                fontSize: 14,
+                fontSize: 16,
                 fontWeight: FontWeight.w600,
                 color: valueColor,
                 fontFamily: 'Inter',
               ),
             ),
-            const SizedBox(width: 3),
+            const SizedBox(width: 4),
             const Text(
               "so'm",
               style: TextStyle(
-                fontSize: 11,
+                fontSize: 13,
                 color: _kS500,
                 fontFamily: 'Inter',
               ),
@@ -1514,7 +1509,7 @@ class _RecentOrdersPanel extends StatelessWidget {
         : recent.map((a) => a.totalPrice).reduce((a, b) => a > b ? a : b);
 
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(22),
       decoration: BoxDecoration(
         color: Colors.white,
         border: Border.all(color: _kS200),
@@ -1529,7 +1524,7 @@ class _RecentOrdersPanel extends StatelessWidget {
               Text(
                 S.current.strRecentOrders,
                 style: const TextStyle(
-                  fontSize: 15,
+                  fontSize: 17,
                   fontWeight: FontWeight.w700,
                   color: _kS900,
                   fontFamily: 'Inter',
@@ -1545,7 +1540,7 @@ class _RecentOrdersPanel extends StatelessWidget {
                     Text(
                       S.current.strViewAll,
                       style: const TextStyle(
-                        fontSize: 12,
+                        fontSize: 14,
                         fontWeight: FontWeight.w600,
                         color: _kBrand,
                         fontFamily: 'Inter',
@@ -1554,7 +1549,7 @@ class _RecentOrdersPanel extends StatelessWidget {
                     const SizedBox(width: 4),
                     const Icon(
                       Icons.arrow_forward_rounded,
-                      size: 14,
+                      size: 16,
                       color: _kBrand,
                     ),
                   ],
@@ -1562,42 +1557,42 @@ class _RecentOrdersPanel extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 6),
           Text(
             recent.isEmpty
                 ? S.current.strNoOrdersInShift
                 : '${S.current.strOrdersCountShort(archives.length.toString())} · ${revenue.formatN}',
             style: const TextStyle(
-              fontSize: 12,
+              fontSize: 14,
               color: _kS500,
               fontFamily: 'Inter',
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 18),
           if (recent.isEmpty)
             Padding(
-              padding: const EdgeInsets.symmetric(vertical: 32),
+              padding: const EdgeInsets.symmetric(vertical: 36),
               child: Center(
                 child: Column(
                   children: [
                     Container(
-                      width: 48,
-                      height: 48,
+                      width: 52,
+                      height: 52,
                       decoration: BoxDecoration(
                         color: _kS50,
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: const Icon(
                         Icons.receipt_long_outlined,
-                        size: 22,
+                        size: 24,
                         color: _kS400,
                       ),
                     ),
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 12),
                     Text(
                       S.current.strNotOrdered,
                       style: const TextStyle(
-                        fontSize: 13,
+                        fontSize: 15,
                         fontWeight: FontWeight.w500,
                         color: _kS500,
                         fontFamily: 'Inter',
@@ -1656,8 +1651,8 @@ class _RecentOrderRow extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         Container(
-          width: 28,
-          height: 28,
+          width: 32,
+          height: 32,
           decoration: BoxDecoration(
             color: _kS50,
             borderRadius: BorderRadius.circular(8),
@@ -1666,14 +1661,14 @@ class _RecentOrderRow extends StatelessWidget {
           child: Text(
             '$rank',
             style: const TextStyle(
-              fontSize: 12,
+              fontSize: 14,
               fontWeight: FontWeight.w700,
               color: _kS700,
               fontFamily: 'Inter',
             ),
           ),
         ),
-        const SizedBox(width: 12),
+        const SizedBox(width: 14),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -1687,7 +1682,7 @@ class _RecentOrderRow extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
-                        fontSize: 13,
+                        fontSize: 15,
                         fontWeight: FontWeight.w600,
                         color: _kS900,
                         fontFamily: 'Inter',
@@ -1698,7 +1693,7 @@ class _RecentOrderRow extends StatelessWidget {
                   Text(
                     archive.totalPrice.formatN,
                     style: const TextStyle(
-                      fontSize: 13,
+                      fontSize: 15,
                       fontWeight: FontWeight.w700,
                       color: _kS900,
                       fontFamily: 'Inter',
@@ -1707,24 +1702,24 @@ class _RecentOrderRow extends StatelessWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: 6),
+              const SizedBox(height: 8),
               ClipRRect(
                 borderRadius: BorderRadius.circular(4),
                 child: LinearProgressIndicator(
                   value: ratio.clamp(0.04, 1.0),
-                  minHeight: 4,
+                  minHeight: 5,
                   backgroundColor: _kS50,
                   valueColor: const AlwaysStoppedAnimation<Color>(_kBrand),
                 ),
               ),
-              const SizedBox(height: 4),
+              const SizedBox(height: 6),
               Text(
                 S.current.strItemsCountWithTime(
                   archive.goodsQuantity.toString(),
                   time,
                 ),
                 style: const TextStyle(
-                  fontSize: 11,
+                  fontSize: 13,
                   color: _kS500,
                   fontFamily: 'Inter',
                 ),
@@ -1762,14 +1757,14 @@ class _DiscountServicePanel extends StatelessWidget {
         Text(
           S.current.strDiscountServiceTitle,
           style: const TextStyle(
-            fontSize: 15,
+            fontSize: 17,
             fontWeight: FontWeight.w700,
             color: _kS900,
             fontFamily: 'Inter',
             letterSpacing: -0.2,
           ),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 14),
         _TintCard(
           label: S.current.strDiscounts,
           value: discountTotal.formatN,
@@ -1823,7 +1818,7 @@ class _TintCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: bg,
         border: Border.all(color: border),
@@ -1834,12 +1829,12 @@ class _TintCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(icon, size: 14, color: labelColor),
-              const SizedBox(width: 6),
+              Icon(icon, size: 16, color: labelColor),
+              const SizedBox(width: 8),
               Text(
                 label,
                 style: TextStyle(
-                  fontSize: 12,
+                  fontSize: 14,
                   fontWeight: FontWeight.w600,
                   color: labelColor,
                   fontFamily: 'Inter',
@@ -1848,22 +1843,22 @@ class _TintCard extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 10),
           Text(
             value,
             style: const TextStyle(
-              fontSize: 20,
+              fontSize: 24,
               fontWeight: FontWeight.w700,
               color: _kS900,
               fontFamily: 'Inter',
               letterSpacing: -0.3,
             ),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 6),
           Text(
             sub,
             style: const TextStyle(
-              fontSize: 12,
+              fontSize: 14,
               color: _kS500,
               fontFamily: 'Inter',
             ),
@@ -1877,6 +1872,38 @@ class _TintCard extends StatelessWidget {
 class _CloseShiftCTA extends StatelessWidget {
   const _CloseShiftCTA();
 
+  Future<void> _onTap(BuildContext context) async {
+    final mainState = context.read<MainCubit>().state;
+    final tables = mainState.tables ?? const <CafeTableModel>[];
+    final halls = mainState.halls ?? const <HallModel>[];
+    final openTables = tables
+        .where((t) => t.status == TableStatus.busy)
+        .toList()
+      ..sort((a, b) => a.number.compareTo(b.number));
+
+    if (openTables.isNotEmpty) {
+      showDialog<void>(
+        context: context,
+        barrierDismissible: true,
+        barrierColor: Colors.black.withOpacity(0.45),
+        builder: (_) => _OpenTablesBlockDialog(
+          openTables: openTables,
+          halls: halls,
+        ),
+      );
+      return;
+    }
+
+    final shiftBloc = context.read<ShiftBloc>();
+    final confirmed = await AppPincodeDialog.showWithStoredPin(
+      context,
+      subtitle: S.current.strConfirmWithPincode,
+    );
+    if (confirmed == true) {
+      shiftBloc.add(const ShiftEvent.closeShift());
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<ShiftBloc, ShiftState>(
@@ -1884,13 +1911,9 @@ class _CloseShiftCTA extends StatelessWidget {
         final loading = state.status == Status.LOADING;
         return SizedBox(
           width: double.infinity,
-          height: 56,
+          height: 62,
           child: GestureDetector(
-            onTap: loading
-                ? null
-                : () => context
-                    .read<ShiftBloc>()
-                    .add(const ShiftEvent.closeShift()),
+            onTap: loading ? null : () => _onTap(context),
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 120),
               decoration: BoxDecoration(
@@ -1900,8 +1923,8 @@ class _CloseShiftCTA extends StatelessWidget {
               child: Center(
                 child: loading
                     ? const SizedBox(
-                        width: 22,
-                        height: 22,
+                        width: 24,
+                        height: 24,
                         child: CircularProgressIndicator.adaptive(
                           strokeWidth: 2,
                           backgroundColor: Colors.white,
@@ -1911,18 +1934,18 @@ class _CloseShiftCTA extends StatelessWidget {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Container(
-                            width: 10,
-                            height: 10,
+                            width: 11,
+                            height: 11,
                             decoration: BoxDecoration(
                               color: Colors.white.withOpacity(0.9),
                               shape: BoxShape.circle,
                             ),
                           ),
-                          const SizedBox(width: 10),
+                          const SizedBox(width: 12),
                           Text(
                             S.current.strCloseShiftShort,
                             style: const TextStyle(
-                              fontSize: 15,
+                              fontSize: 17,
                               fontWeight: FontWeight.w600,
                               color: Colors.white,
                               fontFamily: 'Inter',
@@ -1936,6 +1959,260 @@ class _CloseShiftCTA extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+}
+
+// ─────────────────────────────────────────────
+// Open tables block dialog — close shift bloklanganda chiqadi
+// ─────────────────────────────────────────────
+
+class _OpenTablesBlockDialog extends StatelessWidget {
+  final List<CafeTableModel> openTables;
+  final List<HallModel> halls;
+  const _OpenTablesBlockDialog({
+    required this.openTables,
+    required this.halls,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final hallNameById = {for (final h in halls) h.id: h.name};
+    final grouped = <String, List<CafeTableModel>>{};
+    for (final t in openTables) {
+      grouped.putIfAbsent(t.hallId, () => []).add(t);
+    }
+    final sortedHallIds = grouped.keys.toList()
+      ..sort((a, b) {
+        final na = hallNameById[a] ?? '';
+        final nb = hallNameById[b] ?? '';
+        return na.toLowerCase().compareTo(nb.toLowerCase());
+      });
+
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      elevation: 0,
+      insetPadding: const EdgeInsets.all(24),
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 520),
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(24),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.08),
+                  blurRadius: 32,
+                  offset: const Offset(0, 12),
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(32, 32, 32, 0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Container(
+                        width: 72,
+                        height: 72,
+                        decoration: const BoxDecoration(
+                          color: _kBrandTint,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.table_restaurant_outlined,
+                          size: 34,
+                          color: _kBrand,
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      Text(
+                        S.current.strCannotCloseShiftTitle,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w700,
+                          color: _kS900,
+                          fontFamily: 'Inter',
+                          letterSpacing: -0.3,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        S.current.strCannotCloseShiftMessage,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          fontSize: 15,
+                          color: _kS500,
+                          fontFamily: 'Inter',
+                          height: 1.5,
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      _OpenTablesByHall(
+                        totalCount: openTables.length,
+                        groups: [
+                          for (final id in sortedHallIds)
+                            _HallGroup(
+                              hallName: hallNameById[id] ?? '—',
+                              tables: grouped[id]!
+                                ..sort(
+                                  (a, b) => a.number.compareTo(b.number),
+                                ),
+                            ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 28),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+                  child: SizedBox(
+                    width: double.infinity,
+                    height: 56,
+                    child: ElevatedButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: _kS900,
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                      ),
+                      child: Text(
+                        S.current.strClose,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white,
+                          fontFamily: 'Inter',
+                          letterSpacing: -0.2,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _HallGroup {
+  final String hallName;
+  final List<CafeTableModel> tables;
+  const _HallGroup({required this.hallName, required this.tables});
+}
+
+class _OpenTablesByHall extends StatelessWidget {
+  final int totalCount;
+  final List<_HallGroup> groups;
+  const _OpenTablesByHall({required this.totalCount, required this.groups});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: _kS50,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: _kS200),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(
+                Icons.error_outline_rounded,
+                size: 16,
+                color: _kBrand,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                S.current.strOpenTablesCount(totalCount.toString()),
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: _kS700,
+                  fontFamily: 'Inter',
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          for (var i = 0; i < groups.length; i++)
+            Padding(
+              padding: EdgeInsets.only(
+                bottom: i == groups.length - 1 ? 0 : 12,
+              ),
+              child: _HallSection(group: groups[i]),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _HallSection extends StatelessWidget {
+  final _HallGroup group;
+  const _HallSection({required this.group});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          group.hallName,
+          style: const TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+            color: _kS500,
+            fontFamily: 'Inter',
+            letterSpacing: 0.4,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            for (final t in group.tables)
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: _kS200),
+                ),
+                child: Text(
+                  '${t.number}-stol',
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: _kS900,
+                    fontFamily: 'Inter',
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ],
     );
   }
 }

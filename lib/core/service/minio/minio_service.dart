@@ -11,6 +11,19 @@ class MinioService {
 
   final DioClient _client = inject<DioClient>();
 
+  /// Tashqi URL'larni to'g'ridan-to'g'ri yuklash uchun alohida Dio.
+  /// `_client` interceptor'lari (Authorization, baseUrl, validateStatus va h.k.)
+  /// tashqi hostlarga mos kelmaydi.
+  final Dio _externalHttp = Dio(
+    BaseOptions(
+      connectTimeout: const Duration(seconds: 15),
+      receiveTimeout: const Duration(seconds: 20),
+      responseType: ResponseType.bytes,
+      followRedirects: true,
+      validateStatus: (s) => s != null && s >= 200 && s < 400,
+    ),
+  );
+
   /// Bir xil `object_name` uchun bitta Future (FutureBuilder qayta-qayta yangi Future yaratganda ham
   /// tarmoqdan qayta yuklamaslik) + muvaffaqiyatli javobni xotirada ushlab turish.
   final Map<String, Future<Uint8List?>> _imageFutureByObjectName = {};
@@ -25,13 +38,24 @@ class MinioService {
     );
   }
 
+  /// `object_name` to'liq HTTP URL bo'lsa — bu Minio kaliti emas. Backendning
+  /// `/media/image/download` proxy'si tashqi hostni yuklab bera olmaydi
+  /// (500 download_failed bilan tushadi), shuning uchun rasmni to'g'ridan-to'g'ri
+  /// olib kelamiz.
+  bool _isExternalUrl(String key) {
+    final low = key.toLowerCase();
+    return low.startsWith('http://') || low.startsWith('https://');
+  }
+
   Future<Uint8List?> _fetchImageBytesOnce(String key) async {
     try {
-      final Response response = await _client.post(
-        ListAPI.mediaImage,
-        data: {"object_name": key},
-        options: Options(responseType: ResponseType.bytes),
-      );
+      final Response response = _isExternalUrl(key)
+          ? await _externalHttp.get<List<int>>(key)
+          : await _client.post(
+              ListAPI.mediaImage,
+              data: {"object_name": key},
+              options: Options(responseType: ResponseType.bytes),
+            );
 
       final raw = response.data;
       Uint8List? bytes;

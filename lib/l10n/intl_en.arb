@@ -13,6 +13,12 @@
   "strFailureMessage_firebaseAuthFailure": "An error occurred when logging in via Firebase",
   "strFailureMessage_initializingFailure": "An error occurred while initializing the app",
 
+  "strServerUnreachable500": "Internal server error. Please try again in a moment.",
+  "strServerUnreachable502": "Server is not responding. Please try again in a moment.",
+  "strServerUnreachable503": "Service is temporarily unavailable. Please try again in a moment.",
+  "strServerUnreachable504": "Server took too long to respond. Check your internet and try again.",
+  "strServerUnreachableGeneric": "Could not reach the server. Please try again in a moment.",
+
   "strCheckInternetConnection": "Please check your internet connection",
   "strNoInternetConnection": "No internet connection",
   "strYes": "Yes",
@@ -183,7 +189,9 @@
   "strNPeopleTable": "{n} tables",
   "strLogoutConfirm": "Are you sure you want to logout?",
 
-  "strEnterPinCode": "Enter 2-6 digits",
+  "strEnterPinCode": "Enter PIN",
+  "strSwitchTo6Digit": "6-digit PIN",
+  "strSwitchTo4Digit": "4-digit PIN",
   "strOfflineModeMessage": "Offline mode — data will sync when connection returns",
 
   "strAddOrder": "Add order",
@@ -451,5 +459,17 @@
       "count": {}
     }
   },
-  "strNoCalculationsHint": "No rows. Add an ingredient or semi-finished item."
+  "strNoCalculationsHint": "No rows. Add an ingredient or semi-finished item.",
+
+  "strCannotCloseShiftTitle": "Shift can't be closed",
+  "strCannotCloseShiftMessage": "All tables must be closed before you can close the shift.",
+  "strOpenTablesCount": "{count} open tables",
+  "@strOpenTablesCount": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+
+  "strConfirmWithPincode": "Enter PIN to confirm",
+  "strIncorrectPincode": "Incorrect PIN"
 }

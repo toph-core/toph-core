@@ -6,6 +6,7 @@ class ListAPI {
   static const String refresh = "api/v1/auth/refresh";
   static const String user = "api/v1/user/me";
   static const String users = "api/v1/users";
+  static const String usersSearch = "api/v1/users/search";
   static String userById(String id) => "api/v1/users/$id";
   static const String authRegister = "api/v1/auth/register";
   static const String passwordUpdate = "api/v1/user/password-update";

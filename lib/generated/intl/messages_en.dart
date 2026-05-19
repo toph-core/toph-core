@@ -37,13 +37,15 @@ class MessageLookup extends MessageLookupByLibrary {
 
   static String m7(n) => "${n} tables";
 
-  static String m8(count) => "${count} orders";
+  static String m8(count) => "${count} open tables";
 
-  static String m9(count, avg) => "${count} orders · avg ${avg}";
+  static String m9(count) => "${count} orders";
 
-  static String m10(size) => "${size} / page";
+  static String m10(count, avg) => "${count} orders · avg ${avg}";
 
-  static String m11(count) => "${count} tables not saved";
+  static String m11(size) => "${size} / page";
+
+  static String m12(count) => "${count} tables not saved";
 
   final messages = _notInlinedMessages(_notInlinedMessages);
   static Map<String, Function> _notInlinedMessages(_) => <String, Function>{
@@ -101,6 +103,10 @@ class MessageLookup extends MessageLookupByLibrary {
         "strCancel": MessageLookupByLibrary.simpleMessage("Cancel"),
         "strCancelShort": MessageLookupByLibrary.simpleMessage("Cancel"),
         "strCancelled": MessageLookupByLibrary.simpleMessage("Cancelled"),
+        "strCannotCloseShiftMessage": MessageLookupByLibrary.simpleMessage(
+            "All tables must be closed before you can close the shift."),
+        "strCannotCloseShiftTitle":
+            MessageLookupByLibrary.simpleMessage("Shift can\'t be closed"),
         "strCannotTransfer":
             MessageLookupByLibrary.simpleMessage("Cannot transfer"),
         "strCapacityPersons":
@@ -140,6 +146,8 @@ class MessageLookup extends MessageLookupByLibrary {
         "strCompounds": MessageLookupByLibrary.simpleMessage("Compounds"),
         "strCompoundsCount": m0,
         "strConfirm": MessageLookupByLibrary.simpleMessage("Confirm"),
+        "strConfirmWithPincode":
+            MessageLookupByLibrary.simpleMessage("Enter PIN to confirm"),
         "strConfirmCardPayment": MessageLookupByLibrary.simpleMessage(
             "Confirm that customer paid by card"),
         "strConfirmDelete":
@@ -201,8 +209,7 @@ class MessageLookup extends MessageLookupByLibrary {
             MessageLookupByLibrary.simpleMessage("Enter Brand ID"),
         "strEnterCode": MessageLookupByLibrary.simpleMessage("Enter code"),
         "strEnterNotes": MessageLookupByLibrary.simpleMessage("Enter notes..."),
-        "strEnterPinCode":
-            MessageLookupByLibrary.simpleMessage("Enter 2-6 digits"),
+        "strEnterPinCode": MessageLookupByLibrary.simpleMessage("Enter PIN"),
         "strError": MessageLookupByLibrary.simpleMessage("Error"),
         "strErrorOccurred":
             MessageLookupByLibrary.simpleMessage("An error occurred"),
@@ -307,6 +314,8 @@ class MessageLookup extends MessageLookupByLibrary {
         "strInvalidName": MessageLookupByLibrary.simpleMessage("Invalid name"),
         "strInvalidNumber":
             MessageLookupByLibrary.simpleMessage("Invalid number"),
+        "strIncorrectPincode":
+            MessageLookupByLibrary.simpleMessage("Incorrect PIN"),
         "strItemsCount": m4,
         "strItemsCountWithAvg": m5,
         "strItemsCountWithTime": m6,
@@ -389,6 +398,7 @@ class MessageLookup extends MessageLookupByLibrary {
             "Offline mode — data will sync when connection returns"),
         "strOpenBills": MessageLookupByLibrary.simpleMessage("Open bills"),
         "strOpenShift": MessageLookupByLibrary.simpleMessage("Open shift"),
+        "strOpenTablesCount": m8,
         "strOpenedAt": MessageLookupByLibrary.simpleMessage("Opened"),
         "strOpenedAtLabel": MessageLookupByLibrary.simpleMessage("Opened:"),
         "strOpeningBalance":
@@ -407,13 +417,13 @@ class MessageLookup extends MessageLookupByLibrary {
             "Order moved to another table"),
         "strOrderType": MessageLookupByLibrary.simpleMessage("Order type"),
         "strOrders": MessageLookupByLibrary.simpleMessage("Orders"),
-        "strOrdersCountShort": m8,
-        "strOrdersCountWithAvg": m9,
+        "strOrdersCountShort": m9,
+        "strOrdersCountWithAvg": m10,
         "strOrdersEmpty":
             MessageLookupByLibrary.simpleMessage("Orders not found"),
         "strOrgName": MessageLookupByLibrary.simpleMessage("Organization name"),
         "strOther": MessageLookupByLibrary.simpleMessage("Other"),
-        "strPageSize": m10,
+        "strPageSize": m11,
         "strPassword": MessageLookupByLibrary.simpleMessage("Password"),
         "strPasswordContainAtLeastChars": MessageLookupByLibrary.simpleMessage(
             "Password must be at least 8 characters."),
@@ -523,6 +533,16 @@ class MessageLookup extends MessageLookupByLibrary {
             "Enter a value between 0 and 100"),
         "strServiceChargeSaved":
             MessageLookupByLibrary.simpleMessage("Service charge saved"),
+        "strServerUnreachable500": MessageLookupByLibrary.simpleMessage(
+            "Internal server error. Please try again in a moment."),
+        "strServerUnreachable502": MessageLookupByLibrary.simpleMessage(
+            "Server is not responding. Please try again in a moment."),
+        "strServerUnreachable503": MessageLookupByLibrary.simpleMessage(
+            "Service is temporarily unavailable. Please try again in a moment."),
+        "strServerUnreachable504": MessageLookupByLibrary.simpleMessage(
+            "Server took too long to respond. Check your internet and try again."),
+        "strServerUnreachableGeneric": MessageLookupByLibrary.simpleMessage(
+            "Could not reach the server. Please try again in a moment."),
         "strSettings": MessageLookupByLibrary.simpleMessage("Settings"),
         "strSettingsAdminOnly": MessageLookupByLibrary.simpleMessage(
             "Only administrator or manager can access settings."),
@@ -555,13 +575,17 @@ class MessageLookup extends MessageLookupByLibrary {
         "strStatusColumnHeader": MessageLookupByLibrary.simpleMessage("Status"),
         "strSubtotal": MessageLookupByLibrary.simpleMessage("Subtotal"),
         "strSunday": MessageLookupByLibrary.simpleMessage("Sunday"),
+        "strSwitchTo4Digit":
+            MessageLookupByLibrary.simpleMessage("4-digit PIN"),
+        "strSwitchTo6Digit":
+            MessageLookupByLibrary.simpleMessage("6-digit PIN"),
         "strTable": MessageLookupByLibrary.simpleMessage("Table"),
         "strTableHall": MessageLookupByLibrary.simpleMessage("Table / Hall"),
         "strTableLabel": MessageLookupByLibrary.simpleMessage("Table:"),
         "strTableNumber": MessageLookupByLibrary.simpleMessage("Table"),
         "strTableType": MessageLookupByLibrary.simpleMessage("Type"),
         "strTables": MessageLookupByLibrary.simpleMessage("Tables"),
-        "strTablesNotSavedCount": m11,
+        "strTablesNotSavedCount": m12,
         "strTakeaway": MessageLookupByLibrary.simpleMessage("Takeaway"),
         "strTerminal": MessageLookupByLibrary.simpleMessage("Terminal"),
         "strThursday": MessageLookupByLibrary.simpleMessage("Thursday"),

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mary_ai_pos/core/design_system/pos_design_system.dart';
 import 'package:mary_ai_pos/core/routes/app_routes.dart';
-import 'package:mary_ai_pos/core/constants/constants.dart';
 import 'package:mary_ai_pos/core/utils/user_role_permissions.dart';
 import 'package:mary_ai_pos/core/values/app_assets.dart';
 import 'package:mary_ai_pos/features/view/auth/presentation/cubit/bloc/user_bloc.dart';
@@ -23,6 +22,7 @@ class AppSidebar extends StatelessWidget {
     final role = context.select((UserBloc b) => b.state.userMOdel?.role);
     final canManageMenu = role.canManageMenu;
     final canAccessSettings = role.canAccessSettings;
+    final canManageShift = role.canManageShift;
 
     return Container(
       // Compact ekranlarda kichikroq sidebar — products grid'ga joy beradi
@@ -59,48 +59,58 @@ class AppSidebar extends StatelessWidget {
           Container(height: 1, color: _kSlate200),
           const SizedBox(height: PosDimensions.m),
 
-          // Nav items
+          // Nav items — virtual klaviatura ochilganda balandlik qisqarsa
+          // overflow bermasin uchun scroll'da ko'rinadi. Scrollbar yashirin —
+          // shunchaki sirpanadi.
           Expanded(
-            child: Column(
-              children: [
-                _NavItem(
-                  icon: _IconTables(),
-                  label: S.current.strTables,
-                  isActive: activeRoute == AppRoutes.mainScreen,
-                  onTap: () => _navigate(context, AppRoutes.mainScreen),
+            child: ScrollConfiguration(
+              behavior: ScrollConfiguration.of(context).copyWith(
+                scrollbars: false,
+                overscroll: false,
+              ),
+              child: SingleChildScrollView(
+                child: Column(
+                  children: [
+                    _NavItem(
+                      icon: _IconTables(),
+                      label: S.current.strTables,
+                      isActive: activeRoute == AppRoutes.mainScreen,
+                      onTap: () => _navigate(context, AppRoutes.mainScreen),
+                    ),
+                    _NavItem(
+                      icon: _IconArchive(),
+                      label: S.current.strArchive,
+                      isActive: activeRoute == AppRoutes.archiveScreen,
+                      onTap: () => _navigate(context, AppRoutes.archiveScreen),
+                    ),
+                    if (canManageShift)
+                      _NavItem(
+                        icon: _IconShift(),
+                        label: S.current.strShift,
+                        isActive: activeRoute == AppRoutes.closeShiftScreen,
+                        onTap: () =>
+                            _navigate(context, AppRoutes.closeShiftScreen),
+                      ),
+                    if (canManageMenu)
+                      _NavItem(
+                        icon: _IconMenu(),
+                        label: S.current.strMenu,
+                        isActive: activeRoute == AppRoutes.menuMealsScreen ||
+                            activeRoute == AppRoutes.menuManageScreen,
+                        onTap: () =>
+                            _navigate(context, AppRoutes.menuMealsScreen),
+                      ),
+                    if (canAccessSettings)
+                      _NavItem(
+                        icon: _IconSettings(),
+                        label: S.current.strSettings,
+                        isActive: activeRoute == AppRoutes.settingsScreen,
+                        onTap: () =>
+                            _navigate(context, AppRoutes.settingsScreen),
+                      ),
+                  ],
                 ),
-                _NavItem(
-                  icon: _IconArchive(),
-                  label: S.current.strArchive,
-                  isActive: activeRoute == AppRoutes.archiveScreen,
-                  onTap: () => _navigate(context, AppRoutes.archiveScreen),
-                ),
-                if (role == UserRole.cashier)
-                  _NavItem(
-                    icon: _IconShift(),
-                    label: S.current.strShift,
-                    isActive: activeRoute == AppRoutes.closeShiftScreen,
-                    onTap: () =>
-                        _navigate(context, AppRoutes.closeShiftScreen),
-                  ),
-                if (canManageMenu)
-                  _NavItem(
-                    icon: _IconMenu(),
-                    label: S.current.strMenu,
-                    isActive: activeRoute == AppRoutes.menuMealsScreen ||
-                        activeRoute == AppRoutes.menuManageScreen,
-                    onTap: () =>
-                        _navigate(context, AppRoutes.menuMealsScreen),
-                  ),
-                if (canAccessSettings)
-                  _NavItem(
-                    icon: _IconSettings(),
-                    label: S.current.strSettings,
-                    isActive: activeRoute == AppRoutes.settingsScreen,
-                    onTap: () =>
-                        _navigate(context, AppRoutes.settingsScreen),
-                  ),
-              ],
+              ),
             ),
           ),
 

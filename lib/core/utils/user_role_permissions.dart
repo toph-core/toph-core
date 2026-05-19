@@ -13,4 +13,11 @@ extension UserRolePermissions on UserRole? {
       this == UserRole.admin ||
       this == UserRole.manager ||
       this == UserRole.superadmin;
+
+  /// Smenani ko'rish/ochish/yopish huquqi — kassir, manager va admin.
+  bool get canManageShift =>
+      this == UserRole.cashier ||
+      this == UserRole.manager ||
+      this == UserRole.admin ||
+      this == UserRole.superadmin;
 }

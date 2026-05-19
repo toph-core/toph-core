@@ -123,8 +123,9 @@ class _GlobalVirtualKeyboardState extends State<GlobalVirtualKeyboard> {
 
   void _onFocusChange() {
     final editable = _findEditableTextFromFocus();
-    // Virtual klaviatura faqat qidiruv (search) input'larida chiqishi kerak.
-    // TextInputAction.search bo'lgan TextField'lar — qidiruv maydonlari.
+    // Auto-open faqat search input'lar uchun. Boshqa input'lar
+    // (forma maydonlari) `GlobalVirtualKeyboard.open(...)` orqali
+    // explicit ochiladi — bu yerda ularni yopib qo'ymaymiz.
     final isSearch = editable?.textInputAction == TextInputAction.search;
     if (editable != null && isSearch) {
       final ctrl = editable.controller;
@@ -145,7 +146,6 @@ class _GlobalVirtualKeyboardState extends State<GlobalVirtualKeyboard> {
         };
         ctrl.addListener(_controllerListener!);
       }
-      // Fokuslangan widget — keyinchalik uning onChanged'ini chaqirish uchun saqlaymiz
       _editableText = editable;
 
       if (!_open || _numericOnly != numeric) {
@@ -153,6 +153,24 @@ class _GlobalVirtualKeyboardState extends State<GlobalVirtualKeyboard> {
           _open = true;
           _numericOnly = numeric;
         });
+      }
+    } else if (editable != null) {
+      // Non-search editable fokusi. Eslatma: `FocusNode.requestFocus()`
+      // microtask'da ishlaydi, shuning uchun TextField.onTap
+      // klaviaturani ochgandan KEYIN fokus listener ishga tushadi.
+      // Agar shu yerda yopsak — `onTap`'da ochilgan klaviatura darhol yopiladi
+      // (foydalanuvchi bir marta bosgani uchun chiqmayotgandek ko'rinadi).
+      // Shu sababli yopmaymiz; agar klaviatura ochiq bo'lsa, faqat
+      // controllerni yangilab qo'yamiz (tab navigatsiyasi uchun).
+      if (_open) {
+        final ctrl = editable.controller;
+        if (_controller != ctrl) {
+          _detachController();
+          _controller = ctrl;
+          _controllerListener = () {};
+          ctrl.addListener(_controllerListener!);
+        }
+        _editableText = editable;
       }
     } else if (_open) {
       _detachController();

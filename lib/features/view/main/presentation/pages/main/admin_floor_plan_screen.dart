@@ -6,6 +6,7 @@ import 'package:mary_ai_pos/core/extension/for_context.dart';
 import 'package:mary_ai_pos/core/extension/list_extension.dart';
 import 'package:mary_ai_pos/core/routes/app_routes.dart';
 import 'package:mary_ai_pos/core/widgets/app_scaffold.dart';
+import 'package:mary_ai_pos/features/view/auth/presentation/cubit/settings/settings_cubit.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/cafe_tables/cafe_tables_model.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/main/main_cubit.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/orders/orders_bloc.dart';
@@ -121,6 +122,7 @@ class _AdminFloorPlanScreenState extends State<AdminFloorPlanScreen> {
 class _TakeawayButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+    context.select((SettingsCubit c) => c.state.language);
     return GestureDetector(
       onTap: () => Navigator.pushNamed(
         context,

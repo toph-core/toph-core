@@ -9,6 +9,7 @@ import 'package:mary_ai_pos/core/services/connectivity/connectivity_cubit.dart';
 import 'package:mary_ai_pos/core/widgets/app_scaffold.dart';
 import 'package:mary_ai_pos/di.dart';
 import 'package:mary_ai_pos/features/view/auth/presentation/cubit/bloc/user_bloc.dart';
+import 'package:mary_ai_pos/features/view/auth/presentation/cubit/settings/settings_cubit.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/cafe_tables/cafe_tables_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/hall/hall_model.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/main/main_cubit.dart';
@@ -1007,6 +1008,7 @@ class _TakeawayHeaderButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    context.select((SettingsCubit c) => c.state.language);
     return GestureDetector(
       onTap: () {
         if (!_requireOpenShift(context)) return;

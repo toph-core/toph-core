@@ -19,6 +19,7 @@ mixin _$LoginPinState {
   Status get status => throw _privateConstructorUsedError;
   Failure get failure => throw _privateConstructorUsedError;
   String? get pin => throw _privateConstructorUsedError;
+  int get pinLength => throw _privateConstructorUsedError;
 
   @JsonKey(ignore: true)
   $LoginPinStateCopyWith<LoginPinState> get copyWith =>
@@ -31,7 +32,7 @@ abstract class $LoginPinStateCopyWith<$Res> {
           LoginPinState value, $Res Function(LoginPinState) then) =
       _$LoginPinStateCopyWithImpl<$Res, LoginPinState>;
   @useResult
-  $Res call({Status status, Failure failure, String? pin});
+  $Res call({Status status, Failure failure, String? pin, int pinLength});
 }
 
 /// @nodoc
@@ -50,6 +51,7 @@ class _$LoginPinStateCopyWithImpl<$Res, $Val extends LoginPinState>
     Object? status = null,
     Object? failure = null,
     Object? pin = freezed,
+    Object? pinLength = null,
   }) {
     return _then(_value.copyWith(
       status: null == status
@@ -64,6 +66,10 @@ class _$LoginPinStateCopyWithImpl<$Res, $Val extends LoginPinState>
           ? _value.pin
           : pin // ignore: cast_nullable_to_non_nullable
               as String?,
+      pinLength: null == pinLength
+          ? _value.pinLength
+          : pinLength // ignore: cast_nullable_to_non_nullable
+              as int,
     ) as $Val);
   }
 }
@@ -76,7 +82,7 @@ abstract class _$$LoginPinStateImplCopyWith<$Res>
       __$$LoginPinStateImplCopyWithImpl<$Res>;
   @override
   @useResult
-  $Res call({Status status, Failure failure, String? pin});
+  $Res call({Status status, Failure failure, String? pin, int pinLength});
 }
 
 /// @nodoc
@@ -93,6 +99,7 @@ class __$$LoginPinStateImplCopyWithImpl<$Res>
     Object? status = null,
     Object? failure = null,
     Object? pin = freezed,
+    Object? pinLength = null,
   }) {
     return _then(_$LoginPinStateImpl(
       status: null == status
@@ -107,6 +114,10 @@ class __$$LoginPinStateImplCopyWithImpl<$Res>
           ? _value.pin
           : pin // ignore: cast_nullable_to_non_nullable
               as String?,
+      pinLength: null == pinLength
+          ? _value.pinLength
+          : pinLength // ignore: cast_nullable_to_non_nullable
+              as int,
     ));
   }
 }
@@ -117,7 +128,8 @@ class _$LoginPinStateImpl implements _LoginPinState {
   const _$LoginPinStateImpl(
       {this.status = Status.UNKNOWN,
       this.failure = const UnknownFailure(),
-      this.pin});
+      this.pin,
+      this.pinLength = 4});
 
   @override
   @JsonKey()
@@ -127,10 +139,13 @@ class _$LoginPinStateImpl implements _LoginPinState {
   final Failure failure;
   @override
   final String? pin;
+  @override
+  @JsonKey()
+  final int pinLength;
 
   @override
   String toString() {
-    return 'LoginPinState(status: $status, failure: $failure, pin: $pin)';
+    return 'LoginPinState(status: $status, failure: $failure, pin: $pin, pinLength: $pinLength)';
   }
 
   @override
@@ -140,11 +155,13 @@ class _$LoginPinStateImpl implements _LoginPinState {
             other is _$LoginPinStateImpl &&
             (identical(other.status, status) || other.status == status) &&
             (identical(other.failure, failure) || other.failure == failure) &&
-            (identical(other.pin, pin) || other.pin == pin));
+            (identical(other.pin, pin) || other.pin == pin) &&
+            (identical(other.pinLength, pinLength) ||
+                other.pinLength == pinLength));
   }
 
   @override
-  int get hashCode => Object.hash(runtimeType, status, failure, pin);
+  int get hashCode => Object.hash(runtimeType, status, failure, pin, pinLength);
 
   @JsonKey(ignore: true)
   @override
@@ -157,7 +174,8 @@ abstract class _LoginPinState implements LoginPinState {
   const factory _LoginPinState(
       {final Status status,
       final Failure failure,
-      final String? pin}) = _$LoginPinStateImpl;
+      final String? pin,
+      final int pinLength}) = _$LoginPinStateImpl;
 
   @override
   Status get status;
@@ -165,6 +183,8 @@ abstract class _LoginPinState implements LoginPinState {
   Failure get failure;
   @override
   String? get pin;
+  @override
+  int get pinLength;
   @override
   @JsonKey(ignore: true)
   _$$LoginPinStateImplCopyWith<_$LoginPinStateImpl> get copyWith =>

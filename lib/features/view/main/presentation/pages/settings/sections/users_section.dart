@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:mary_ai_pos/core/api/api_error_overlay.dart';
 import 'package:mary_ai_pos/core/api/dio_client.dart';
 import 'package:mary_ai_pos/core/api/list_api.dart';
 import 'package:mary_ai_pos/core/components/flush_bars.dart';
@@ -41,6 +44,9 @@ class _UsersSectionState extends State<UsersSection> {
   int? _totalCount;
   String? _roleFilter;
   String _searchQuery = '';
+  Timer? _searchDebounce;
+
+  bool get _isSearching => _searchQuery.trim().isNotEmpty;
 
   int get _totalPages {
     final t = _totalCount;
@@ -57,6 +63,7 @@ class _UsersSectionState extends State<UsersSection> {
 
   @override
   void dispose() {
+    _searchDebounce?.cancel();
     _paginatorController.dispose();
     _searchCtrl.dispose();
     super.dispose();
@@ -68,30 +75,41 @@ class _UsersSectionState extends State<UsersSection> {
       _error = null;
     });
     try {
+      final isSearching = _isSearching;
       final res = await _client.get(
-        ListAPI.users,
+        isSearching ? ListAPI.usersSearch : ListAPI.users,
         queryParameters: {
           'limit': _pageSize,
           'offset': (page - 1) * _pageSize,
-          if (_roleFilter != null) 'role': _roleFilter,
-          if (_searchQuery.trim().isNotEmpty) 'query': _searchQuery.trim(),
+          if (isSearching) 'query': _searchQuery.trim(),
+          // List endpoint qo'shimcha `role` filtrini qo'llaydi; search endpoint
+          // server tomonida role filtrini qabul qilmaydi — natija filtri keyin.
+          if (!isSearching && _roleFilter != null) 'role': _roleFilter,
         },
       );
       final root = res.data;
       List<dynamic> data = const [];
       int? total;
-      if (root is Map) {
+      if (root is List) {
+        // /users/search — flat array (paginatsiya wrapper'siz)
+        data = root;
+      } else if (root is Map) {
         if (root['data'] is List) data = root['data'] as List;
         if (root['pagination'] is Map) {
           final p = root['pagination'] as Map;
           total = (p['total'] as num?)?.toInt();
         }
       }
+      var parsed = data
+          .map((e) => _AdminUser.fromJson(Map<String, dynamic>.from(e as Map)))
+          .toList();
+      // Search rejimida role filtri serverda qabul qilinmagani sababli — clientda.
+      if (isSearching && _roleFilter != null) {
+        parsed = parsed.where((u) => u.role == _roleFilter).toList();
+      }
       if (!mounted) return;
       setState(() {
-        _users = data
-            .map((e) => _AdminUser.fromJson(Map<String, dynamic>.from(e as Map)))
-            .toList();
+        _users = parsed;
         _totalCount = total;
         _page = page;
         _loading = false;
@@ -111,14 +129,7 @@ class _UsersSectionState extends State<UsersSection> {
     }
   }
 
-  String? _readError(DioException e) {
-    final data = e.response?.data;
-    if (data is Map) {
-      final msg = data['message'] ?? data['error'];
-      if (msg != null) return msg.toString();
-    }
-    return e.message;
-  }
+  String? _readError(DioException e) => userFriendlyDioError(e);
 
   Future<void> _openEditor({_AdminUser? existing}) async {
     final saved = await showDialog<bool>(
@@ -190,9 +201,11 @@ class _UsersSectionState extends State<UsersSection> {
   Widget build(BuildContext context) {
     return SectionShell(
       title: S.current.strRestaurantStaff,
-      subtitle: _totalCount == null
-          ? S.current.strUsersRolesPerms
-          : 'Jami: $_totalCount ta xodim',
+      subtitle: _isSearching
+          ? 'Topildi: ${_users.length} ta xodim'
+          : (_totalCount == null
+              ? S.current.strUsersRolesPerms
+              : 'Jami: $_totalCount ta xodim'),
       trailing: SectionPrimaryButton(
         icon: Icons.person_add_alt_1_rounded,
         label: S.current.strAddNewEmployee,
@@ -208,7 +221,8 @@ class _UsersSectionState extends State<UsersSection> {
         _buildFilters(),
         const SizedBox(height: 14),
         Expanded(child: _buildList()),
-        if (_users.isNotEmpty) ...[
+        // Search rejimida server total count qaytarmaydi — paginatsiya ko'rsatilmaydi.
+        if (_users.isNotEmpty && !_isSearching) ...[
           const SizedBox(height: 8),
           _buildPaginator(),
         ],
@@ -223,17 +237,43 @@ class _UsersSectionState extends State<UsersSection> {
         Expanded(
           child: TextField(
             controller: _searchCtrl,
+            textInputAction: TextInputAction.search,
             decoration: InputDecoration(
               prefixIcon: Icon(Icons.search_rounded,
                   size: 18, color: colors.textSecondary),
+              suffixIcon: _searchCtrl.text.isEmpty
+                  ? null
+                  : IconButton(
+                      tooltip: S.current.strCancel,
+                      icon: Icon(Icons.close_rounded,
+                          size: 18, color: colors.textSecondary),
+                      onPressed: () {
+                        _searchDebounce?.cancel();
+                        _searchCtrl.clear();
+                        setState(() => _searchQuery = '');
+                        _load(page: 1);
+                      },
+                    ),
               hintText: S.current.strSearchNameOrUsername,
               isDense: true,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(10),
               ),
             ),
+            onChanged: (v) {
+              setState(() {}); // suffixIcon ko'rinishini yangilash uchun
+              _searchDebounce?.cancel();
+              _searchDebounce =
+                  Timer(const Duration(milliseconds: 350), () {
+                if (!mounted) return;
+                if (_searchQuery == v.trim()) return;
+                setState(() => _searchQuery = v.trim());
+                _load(page: 1);
+              });
+            },
             onSubmitted: (v) {
-              setState(() => _searchQuery = v);
+              _searchDebounce?.cancel();
+              setState(() => _searchQuery = v.trim());
               _load(page: 1);
             },
           ),
@@ -307,6 +347,13 @@ class _UsersSectionState extends State<UsersSection> {
       );
     }
     if (_users.isEmpty) {
+      if (_isSearching) {
+        return SectionEmptyState(
+          icon: Icons.search_off_rounded,
+          title: S.current.strNoDataFound,
+          subtitle: '"${_searchQuery.trim()}" bo\'yicha xodim topilmadi',
+        );
+      }
       return SectionEmptyState(
         icon: Icons.people_alt_outlined,
         title: S.current.strNoEmployeesYet,
@@ -445,7 +492,8 @@ class _UserCardState extends State<_UserCard> {
           color: colors.bgDefault,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
-            color: _hover ? colors.buttonBrand.withOpacity(0.35) : colors.border,
+            color: _hover ? colors.buttonBrand : colors.border,
+            width: _hover ? 1.5 : 1,
           ),
         ),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -530,17 +578,19 @@ class _UserCardState extends State<_UserCard> {
               onChanged: widget.onToggleActive,
               activeColor: colors.buttonBrand,
             ),
-            IconButton(
+            const SizedBox(width: 8),
+            _UserActionButton(
+              icon: Icons.edit_outlined,
               tooltip: S.current.strEdit,
-              icon: const Icon(Icons.edit_outlined, size: 18),
-              color: colors.textSecondary,
-              onPressed: widget.onEdit,
+              color: colors.buttonBrand,
+              onTap: widget.onEdit,
             ),
-            IconButton(
+            const SizedBox(width: 8),
+            _UserActionButton(
+              icon: Icons.delete_outline_rounded,
               tooltip: S.current.strDelete,
-              icon: const Icon(Icons.delete_outline_rounded, size: 18),
               color: colors.systemError,
-              onPressed: widget.onDelete,
+              onTap: widget.onDelete,
             ),
           ],
         ),
@@ -670,14 +720,7 @@ class _UserEditDialogState extends State<_UserEditDialog> {
     }
   }
 
-  String? _readError(DioException e) {
-    final data = e.response?.data;
-    if (data is Map) {
-      final msg = data['message'] ?? data['error'];
-      if (msg != null) return msg.toString();
-    }
-    return e.message;
-  }
+  String? _readError(DioException e) => userFriendlyDioError(e);
 
   @override
   Widget build(BuildContext context) {
@@ -1059,6 +1102,51 @@ class _AdminUser {
       isActive: json['is_active'] == true,
       email: json['email']?.toString(),
       phoneNumber: json['phone_number']?.toString(),
+    );
+  }
+}
+
+class _UserActionButton extends StatefulWidget {
+  final IconData icon;
+  final String tooltip;
+  final Color color;
+  final VoidCallback onTap;
+
+  const _UserActionButton({
+    required this.icon,
+    required this.tooltip,
+    required this.color,
+    required this.onTap,
+  });
+
+  @override
+  State<_UserActionButton> createState() => _UserActionButtonState();
+}
+
+class _UserActionButtonState extends State<_UserActionButton> {
+  bool _hover = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: widget.tooltip,
+      child: MouseRegion(
+        onEnter: (_) => setState(() => _hover = true),
+        onExit: (_) => setState(() => _hover = false),
+        child: Material(
+          color: widget.color.withOpacity(_hover ? 0.18 : 0.10),
+          borderRadius: BorderRadius.circular(12),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(12),
+            onTap: widget.onTap,
+            child: SizedBox(
+              width: 44,
+              height: 44,
+              child: Icon(widget.icon, size: 22, color: widget.color),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
