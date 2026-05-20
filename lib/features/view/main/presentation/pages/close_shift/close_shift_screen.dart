@@ -1320,39 +1320,54 @@ class _CashBalancePanel extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                S.current.strExpectedBalance,
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                  color: _kS900,
-                  fontFamily: 'Inter',
+              Flexible(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    S.current.strExpectedBalance,
+                    maxLines: 1,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: _kS900,
+                      fontFamily: 'Inter',
+                    ),
+                  ),
                 ),
               ),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.baseline,
-                textBaseline: TextBaseline.alphabetic,
-                children: [
-                  Text(
-                    expected.formatNWithoutS,
-                    style: const TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.w700,
-                      color: _kBrand,
-                      fontFamily: 'Inter',
-                      letterSpacing: -0.3,
-                    ),
+              const SizedBox(width: 8),
+              Flexible(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerRight,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.baseline,
+                    textBaseline: TextBaseline.alphabetic,
+                    children: [
+                      Text(
+                        expected.formatNWithoutS,
+                        style: const TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w700,
+                          color: _kBrand,
+                          fontFamily: 'Inter',
+                          letterSpacing: -0.3,
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      const Text(
+                        "so'm",
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: _kS500,
+                          fontFamily: 'Inter',
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: 4),
-                  const Text(
-                    "so'm",
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: _kS500,
-                      fontFamily: 'Inter',
-                    ),
-                  ),
-                ],
+                ),
               ),
             ],
           ),
@@ -1380,37 +1395,52 @@ class _BalanceRow extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 15,
-            color: _kS700,
-            fontFamily: 'Inter',
+        Flexible(
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(
+              label,
+              maxLines: 1,
+              style: const TextStyle(
+                fontSize: 15,
+                color: _kS700,
+                fontFamily: 'Inter',
+              ),
+            ),
           ),
         ),
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.baseline,
-          textBaseline: TextBaseline.alphabetic,
-          children: [
-            Text(
-              '$prefix${value.formatNWithoutS}',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: valueColor,
-                fontFamily: 'Inter',
-              ),
+        const SizedBox(width: 8),
+        Flexible(
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerRight,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.baseline,
+              textBaseline: TextBaseline.alphabetic,
+              children: [
+                Text(
+                  '$prefix${value.formatNWithoutS}',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: valueColor,
+                    fontFamily: 'Inter',
+                  ),
+                ),
+                const SizedBox(width: 4),
+                const Text(
+                  "so'm",
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: _kS500,
+                    fontFamily: 'Inter',
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(width: 4),
-            const Text(
-              "so'm",
-              style: TextStyle(
-                fontSize: 13,
-                color: _kS500,
-                fontFamily: 'Inter',
-              ),
-            ),
-          ],
+          ),
         ),
       ],
     );
