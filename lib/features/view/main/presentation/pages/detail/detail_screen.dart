@@ -50,9 +50,6 @@ class _DetailScreenState extends State<DetailScreen> with DetailScreenMixin {
 
     tableStatus = args['table_status'] as TableStatus;
 
-    final hasSavedGoods =
-        savedOrders != null && savedOrders!.createOrderRequest.foods.isNotEmpty;
-
     _detailBloc = inject<DetailBloc>()
       ..add(const DetailEvent.started())
       ..add(const DetailEvent.getCategories())
@@ -62,9 +59,12 @@ class _DetailScreenState extends State<DetailScreen> with DetailScreenMixin {
         ),
       );
 
-    if (tableStatus == TableStatus.busy &&
-        cafeTable != null &&
-        !hasSavedGoods) {
+    // Busy stol'da `existingGoods` (server'dagi mavjud buyurtmalar) har doim
+    // fetch qilinadi — RAM'dagi saqlangan qo'shimchalardan mustaqil. Ular
+    // alohida UI section'larda ko'rsatiladi:
+    //   • existingGoods → "Mavjud buyurtmalar"
+    //   • selectedGoods → "Qo'shimchalar"
+    if (tableStatus == TableStatus.busy && cafeTable != null) {
       _detailBloc.add(DetailEvent.fetchBillOrders(billId: cafeTable!.id));
     }
 

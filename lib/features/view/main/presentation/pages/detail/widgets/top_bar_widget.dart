@@ -2,12 +2,9 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:mary_ai_pos/core/constants/constants.dart';
 import 'package:mary_ai_pos/core/design_system/pos_design_system.dart';
 import 'package:mary_ai_pos/core/extension/for_context.dart';
-import 'package:mary_ai_pos/di.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/cafe_tables/cafe_tables_model.dart';
-import 'package:mary_ai_pos/features/view/main/presentation/cubit/create_order/create_order_bloc.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/detail/detail_bloc.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/main/main_cubit.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/orders/orders_bloc.dart';
@@ -118,7 +115,6 @@ class _BackButton extends StatelessWidget {
     if (hasSelection && cafeTable != null) {
       final detailBloc = context.read<DetailBloc>();
       final savedOrdersBloc = context.read<SavedOrdersBloc>();
-      final mainCubit = context.read<MainCubit>();
       final navigator = Navigator.of(context);
       final value = await showDialog<bool>(
         context: context,
@@ -129,53 +125,22 @@ class _BackButton extends StatelessWidget {
       if (value == null) return;
 
       if (value == true) {
-        final selectedGoods = detailBloc.state.selectedGoods;
-        if (selectedGoods.isEmpty) {
-          navigator.pop();
-          return;
-        }
-        final activeOrderId = detailBloc.state.activeOrderId;
-        final tableStatus = activeOrderId != null
-            ? TableStatus.busy
-            : TableStatus.free;
-
-        final createOrderBloc = inject<CreateOrderBloc>()
-          ..add(
-            CreateOrderEvent.started(
-              tableId: cafeTable!.id,
-              guestCount: guestCount,
-              tableStatus: tableStatus,
-            ),
-          );
-        if (activeOrderId != null) {
-          createOrderBloc.bindActiveOrder(activeOrderId);
-        }
-
-        final completer = Completer<bool>();
-        late final StreamSubscription sub;
-        sub = createOrderBloc.stream.listen((s) {
-          if (s.status == Status.SUCCESS && s.success) {
-            if (!completer.isCompleted) completer.complete(true);
-          } else if (s.status == Status.ERROR) {
-            if (!completer.isCompleted) completer.complete(false);
-          }
-        });
-        createOrderBloc.add(
-          CreateOrderEvent.createOrder(orders: selectedGoods),
-        );
-
-        final ok = await completer.future;
-        await sub.cancel();
-        await createOrderBloc.close();
-
-        if (ok) {
-          mainCubit.updateTableStatus(cafeTable!.id, TableStatus.busy);
+        // "Saqlash" — API'ga so'rov yuborilmaydi. selectedGoods'larni
+        // RAM'dagi SavedOrdersBloc'ga eslab qolamiz. Foydalanuvchi stolga
+        // qaytib kirsa, qo'shimchalar `args['saved_orders']` orqali
+        // DetailBloc'ga qayta yuklanadi.
+        final entity = detailBloc.saveOrder(cafeTable!, guestCount);
+        if (entity != null) {
+          savedOrdersBloc.add(SavedOrdersEvent.addNewOrder(order: entity));
+        } else {
+          // selectedGoods bo'sh — eski saqlangan qo'shimchalar ham bo'lmaydi.
           savedOrdersBloc.add(
             SavedOrdersEvent.removeOrder(tableId: cafeTable!.id),
           );
-          navigator.pop();
         }
+        navigator.pop();
       } else if (value == false) {
+        // "Chiqish" — qo'shimchalar bekor qilinadi.
         savedOrdersBloc.add(
           SavedOrdersEvent.removeOrder(tableId: cafeTable?.id ?? ''),
         );

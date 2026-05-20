@@ -39,12 +39,6 @@ const _kBlue = Color(0xFF2563EB);
 const _kBlueTint = Color(0xFFDBEAFE);
 
 // ─────────────────────────────────────────────
-// Session timestamp: tableId → first-seen saved DateTime
-// ─────────────────────────────────────────────
-
-final Map<String, DateTime> _openedAtByTable = {};
-
-// ─────────────────────────────────────────────
 // Screen
 // ─────────────────────────────────────────────
 
@@ -91,14 +85,6 @@ class _WaiterFloorPlanScreenState extends State<WaiterFloorPlanScreen> {
     if (ok == true && mounted) {
       await _refresh();
     }
-  }
-
-  void _syncOpenedAt(Set<String> savedIds) {
-    final now = DateTime.now();
-    for (final id in savedIds) {
-      _openedAtByTable.putIfAbsent(id, () => now);
-    }
-    _openedAtByTable.removeWhere((k, _) => !savedIds.contains(k));
   }
 
   @override
@@ -163,34 +149,19 @@ class _WaiterFloorPlanScreenState extends State<WaiterFloorPlanScreen> {
                           valueColor: AlwaysStoppedAnimation(colors.textBrand),
                         ),
                       )
-                    : BlocBuilder<SavedOrdersBloc, SavedOrdersState>(
-                        builder: (context, savedState) {
-                          final savedOrders = savedState.order;
-                          final savedIds = savedOrders
-                              .map((o) => o.createOrderRequest.tableId)
-                              .toSet();
-                          final savedTotalsByTable = <String, int>{
-                            for (final o in savedOrders)
-                              o.createOrderRequest.tableId:
-                                  o.createOrderRequest.foods.fold<int>(
-                                0,
-                                (sum, f) =>
-                                    sum +
-                                    (int.tryParse(f.goods.price) ?? 0) *
-                                        f.quantity,
-                              ),
-                          };
-                          _syncOpenedAt(savedIds);
-                          return _GridView(
-                            halls: halls,
-                            tables: tables,
-                            savedIds: savedIds,
-                            totalsByTable: savedTotalsByTable,
-                            openedAtByTable: _openedAtByTable,
-                            selectedHallId: state.selectedHallId,
-                            onTap: (table) => _handleTableTap(context, table),
-                          );
-                        },
+                    // SavedOrdersBloc ma'lumotlari endi karta visualiga ta'sir
+                    // qilmaydi — RAM'dagi "Qo'shimchalar" stol kartasida
+                    // alohida "Saqlangan" indikator ko'rsatmaydi (stol oddiy
+                    // band/bo'sh holatda ko'rinadi). Navigatsiya hali ham
+                    // SavedOrdersBloc'dan o'qiydi (_handleTableTap ichida).
+                    : _GridView(
+                        halls: halls,
+                        tables: tables,
+                        savedIds: const {},
+                        totalsByTable: const {},
+                        openedAtByTable: const {},
+                        selectedHallId: state.selectedHallId,
+                        onTap: (table) => _handleTableTap(context, table),
                       ),
               ),
             ],

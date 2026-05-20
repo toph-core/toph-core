@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mary_ai_pos/core/extension/for_context.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/cafe_tables/cafe_tables_model.dart';
-import 'package:mary_ai_pos/features/view/main/presentation/cubit/orders/orders_bloc.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/main/widgets/time_based_table_badge.dart';
 import 'package:mary_ai_pos/generated/l10n.dart';
 
@@ -116,20 +114,14 @@ class _EnhancedTableCardState extends State<EnhancedTableCard> {
         statusLabel = "Bron";
     }
 
-    return BlocBuilder<SavedOrdersBloc, SavedOrdersState>(
-      builder: (context, savedState) {
-        final hasSaved = savedState.order.any(
-          (v) => v.cafeTable.id == widget.table.id,
-        );
-
-        return MouseRegion(
-          onEnter: (_) => setState(() => _hovered = true),
-          onExit: (_) => setState(() => _hovered = false),
-          cursor: SystemMouseCursors.click,
-          child: GestureDetector(
-            onTap: widget.onTap,
-            onSecondaryTapDown: (details) =>
-                _showContextMenu(details.globalPosition),
+    return MouseRegion(
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
+        onTap: widget.onTap,
+        onSecondaryTapDown: (details) =>
+            _showContextMenu(details.globalPosition),
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 150),
               width: 200,
@@ -212,26 +204,8 @@ class _EnhancedTableCardState extends State<EnhancedTableCard> {
                           ),
                         ),
                       ),
-                      if (hasSaved)
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 6,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: colors.textBrand.withOpacity(0.15),
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Text(
-                            'Saqlan.',
-                            style: TextStyle(
-                              fontSize: 9,
-                              fontWeight: FontWeight.w600,
-                              color: colors.textBrand,
-                              fontFamily: 'Inter',
-                            ),
-                          ),
-                        ),
+                      // "Saqlan." badge olib tashlangan — RAM'dagi
+                      // "Qo'shimchalar" karta visualiga ta'sir qilmaydi.
                     ],
                   ),
                   const SizedBox(height: 8),
@@ -322,7 +296,5 @@ class _EnhancedTableCardState extends State<EnhancedTableCard> {
             ),
           ),
         );
-      },
-    );
   }
 }
