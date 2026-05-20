@@ -1,8 +1,16 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:get_it/get_it.dart';
+import 'package:mary_ai_pos/core/services/connectivity/connectivity_cubit.dart';
 import 'package:mary_ai_pos/core/utils/helper/helper_widget.dart';
 import 'package:mary_ai_pos/generated/l10n.dart';
+
+bool _isOffline() {
+  final getIt = GetIt.instance;
+  if (!getIt.isRegistered<ConnectivityCubit>()) return false;
+  return !getIt<ConnectivityCubit>().isOnline;
+}
 
 /// Overlay'ni topishning ishonchli yo'li. Ba'zi context'lar (masalan
 /// `navigatorKey.currentContext`) Overlay'ning ustida turadi va
@@ -67,6 +75,14 @@ String _sanitizeErrorText(String raw) {
 }
 
 void showErrorMessage(BuildContext bc, String error, {int duration = 4}) {
+  // Bo'sh xabar uchun toast ko'rsatmaymiz — Failure'lar offline holatda
+  // bo'sh xabar qaytaradi, shuning uchun bu yagona darvozada to'xtaymiz.
+  if (error.trim().isEmpty) return;
+  // Offline holatda OfflineBanner foydalanuvchini xabardor qiladi —
+  // API yoki tarmoqdan kelib chiqqan xato toast'ini takror ko'rsatmaymiz.
+  // catch (e) { showErrorMessage(ctx, e.toString()) } kabi joylar ham
+  // shu darvozada to'xtaydi.
+  if (_isOffline()) return;
   WidgetsBinding.instance.addPostFrameCallback((_) {
     final overlay = _resolveOverlay(bc);
     if (overlay == null) return;

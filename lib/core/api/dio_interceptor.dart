@@ -2,15 +2,17 @@ import 'package:mary_ai_pos/core/api/api_error_overlay.dart';
 import 'package:mary_ai_pos/core/auth/models/auth_token_pair/auth_token_pair.dart';
 import 'package:mary_ai_pos/core/auth/storage/token_storage_impl.dart';
 import 'package:mary_ai_pos/core/routes/app_routes.dart';
+import 'package:mary_ai_pos/core/services/connectivity/connectivity_cubit.dart';
 import 'package:mary_ai_pos/core/utils/helper/helper_widget.dart';
 import 'package:mary_ai_pos/features/view/auth/data/models/login/response/login_response.dart';
 
 import 'api.dart';
 
 class MySmartDioInterceptor extends Interceptor {
-  MySmartDioInterceptor(this._dio, this._tokenStorage);
+  MySmartDioInterceptor(this._dio, this._tokenStorage, this._connectivity);
   final Dio _dio;
   final AppTokenStorage _tokenStorage;
+  final ConnectivityCubit _connectivity;
 
   //? to ensure refresh future calls once
   Future<void>? _refreshFuture;
@@ -43,6 +45,12 @@ class MySmartDioInterceptor extends Interceptor {
 
   @override
   void onError(DioException err, ErrorInterceptorHandler handler) async {
+    // Offline holatda hech qanday API toast yoki token refresh urinmaymiz —
+    // OfflineBanner foydalanuvchini xabardor qiladi, write'lar queue'da turadi.
+    if (!_connectivity.isOnline || err.message == 'offline') {
+      return handler.next(err);
+    }
+
     debugPrint('⚠️ onError called: ${err.message}');
     debugPrint('⚠️ Response data: ${err.response?.data}');
 
