@@ -236,31 +236,51 @@ class ArchiveRightSiderBar extends StatelessWidget {
                         ),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  state.selectArchiveDetail!.goods[index].name,
-                                  style: context.textStyles.bold16.copyWith(
-                                    fontWeight: FontWeight.w500,
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  FittedBox(
+                                    fit: BoxFit.scaleDown,
+                                    alignment: Alignment.centerLeft,
+                                    child: Text(
+                                      state.selectArchiveDetail!.goods[index].name,
+                                      maxLines: 1,
+                                      style: context.textStyles.bold16.copyWith(
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
                                   ),
-                                ),
-                                8.hBox,
-                                Text(
-                                  "${state.selectArchiveDetail!.goods[index].name} x ${state.selectArchiveDetail!.goods[index].quantity}",
-                                  style: context.textStyles.bodySm,
-                                ),
-                              ],
+                                  8.hBox,
+                                  FittedBox(
+                                    fit: BoxFit.scaleDown,
+                                    alignment: Alignment.centerLeft,
+                                    child: Text(
+                                      "${state.selectArchiveDetail!.goods[index].name} x ${state.selectArchiveDetail!.goods[index].quantity}",
+                                      maxLines: 1,
+                                      style: context.textStyles.bodySm,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
-                            Text(
-                              state
-                                  .selectArchiveDetail!
-                                  .goods[index]
-                                  .price
-                                  .formatN,
-                              style: context.textStyles.bold16.copyWith(
-                                fontWeight: FontWeight.w500,
+                            const SizedBox(width: 8),
+                            FittedBox(
+                              fit: BoxFit.scaleDown,
+                              alignment: Alignment.centerRight,
+                              child: Text(
+                                state
+                                    .selectArchiveDetail!
+                                    .goods[index]
+                                    .price
+                                    .formatN,
+                                maxLines: 1,
+                                style: context.textStyles.bold16.copyWith(
+                                  fontWeight: FontWeight.w500,
+                                ),
                               ),
                             ),
                           ],
