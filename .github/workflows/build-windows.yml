@@ -79,7 +79,7 @@ jobs:
             build/windows/**/CMakeCache.txt
             build/windows/**/CMakeFiles/CMakeError.log
             build/windows/**/CMakeFiles/CMakeOutput.log
-          retention-days: 7
+          retention-days: 3
           if-no-files-found: warn
 
       - name: Verify Inno Setup
@@ -119,22 +119,16 @@ jobs:
           Get-ChildItem build\windows\installer\ | Format-Table Name, Length, LastWriteTime
 
       - name: Upload installer artifact
+        if: github.ref_type != 'tag' && github.event.inputs.create_release != 'true'
         uses: actions/upload-artifact@v4
         with:
-          name: MaryAIPOS-Installer-v${{ steps.version.outputs.version }}
+          name: MaryAIPOS-Installer-v${{ steps.version.outputs.version }}-${{ github.run_number }}
           path: |
             build\windows\installer\*.exe
             build\windows\installer\*.sha256
-          retention-days: 30
+          retention-days: 5
           if-no-files-found: error
-
-      - name: Upload raw build artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: MaryAIPOS-RawBuild-v${{ steps.version.outputs.version }}
-          path: build\windows\x64\runner\Release\
-          retention-days: 7
-          if-no-files-found: error
+          overwrite: true
 
       - name: Create GitHub Release
         if: startsWith(github.ref, 'refs/tags/v') || github.event.inputs.create_release == 'true'
@@ -162,7 +156,6 @@ jobs:
           - **Branch/Tag**: ${{ github.ref_name }}
 
           ### Artifacts
-          - Installer: ``MaryAIPOS-Installer-v${{ steps.version.outputs.version }}``
-          - Raw build: ``MaryAIPOS-RawBuild-v${{ steps.version.outputs.version }}``
+          - Installer: ``MaryAIPOS-Installer-v${{ steps.version.outputs.version }}-${{ github.run_number }}``
           "@
           $summary | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Encoding utf8 -Append
