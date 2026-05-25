@@ -33,17 +33,7 @@ jobs:
         with:
           flutter-version: '3.41.7'
           channel: 'stable'
-          cache: true
-
-      - name: Cache pub dependencies
-        uses: actions/cache@v4
-        with:
-          path: |
-            ${{ env.PUB_CACHE }}
-            .dart_tool
-          key: ${{ runner.os }}-pub-${{ hashFiles('**/pubspec.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-pub-
+          cache: false
 
       - name: Enable Windows desktop
         run: flutter config --enable-windows-desktop
@@ -121,6 +111,7 @@ jobs:
       - name: Upload installer artifact
         if: github.ref_type != 'tag' && github.event.inputs.create_release != 'true'
         uses: actions/upload-artifact@v4
+        continue-on-error: true
         with:
           name: MaryAIPOS-Installer-v${{ steps.version.outputs.version }}-${{ github.run_number }}
           path: |
