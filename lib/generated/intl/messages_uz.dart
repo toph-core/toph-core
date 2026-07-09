@@ -152,13 +152,13 @@ class MessageLookup extends MessageLookupByLibrary {
         "strCompounds": MessageLookupByLibrary.simpleMessage("Qo\'shma"),
         "strCompoundsCount": m0,
         "strConfirm": MessageLookupByLibrary.simpleMessage("Tasdiqlash"),
-        "strConfirmWithPincode": MessageLookupByLibrary.simpleMessage(
-            "Tasdiqlash uchun pinkodni kiriting"),
         "strConfirmCardPayment": MessageLookupByLibrary.simpleMessage(
             "Mijoz to\'lovni karta orqali amalga oshirganini tasdiqlang"),
         "strConfirmDelete":
             MessageLookupByLibrary.simpleMessage("O\'chirishni tasdiqlang"),
         "strConfirmDeleteItem": m1,
+        "strConfirmWithPincode": MessageLookupByLibrary.simpleMessage(
+            "Tasdiqlash uchun pinkodni kiriting"),
         "strConnected": MessageLookupByLibrary.simpleMessage("Ulangan"),
         "strConnectedCategories":
             MessageLookupByLibrary.simpleMessage("Bog\'langan kategoriyalar"),
@@ -316,6 +316,8 @@ class MessageLookup extends MessageLookupByLibrary {
             MessageLookupByLibrary.simpleMessage("Hub va client sozlamalari"),
         "strIPAddress": MessageLookupByLibrary.simpleMessage("IP manzil"),
         "strImages": MessageLookupByLibrary.simpleMessage("Rasmlar"),
+        "strIncorrectPincode":
+            MessageLookupByLibrary.simpleMessage("Pinkod noto\'g\'ri"),
         "strIngredients": MessageLookupByLibrary.simpleMessage("Ingredientlar"),
         "strIngredientsCount": m3,
         "strInitialBalance":
@@ -332,8 +334,6 @@ class MessageLookup extends MessageLookupByLibrary {
             MessageLookupByLibrary.simpleMessage("Noto\'g\'ri ism"),
         "strInvalidNumber":
             MessageLookupByLibrary.simpleMessage("Noto\'g\'ri raqam"),
-        "strIncorrectPincode":
-            MessageLookupByLibrary.simpleMessage("Pinkod noto\'g\'ri"),
         "strItemsCount": m4,
         "strItemsCountWithAvg": m5,
         "strItemsCountWithTime": m6,
@@ -553,14 +553,6 @@ class MessageLookup extends MessageLookupByLibrary {
             MessageLookupByLibrary.simpleMessage("Tanlangan stol band"),
         "strSemiFinished": MessageLookupByLibrary.simpleMessage("Yarim tayyor"),
         "strSeptember": MessageLookupByLibrary.simpleMessage("Sentabr"),
-        "strService": MessageLookupByLibrary.simpleMessage("Xizmat"),
-        "strServiceCharge": MessageLookupByLibrary.simpleMessage("Xizmat haqi"),
-        "strServiceChargeHint": MessageLookupByLibrary.simpleMessage(
-            "Buyurtmaga avtomatik qo\'shiladigan foiz"),
-        "strServiceChargeInvalid": MessageLookupByLibrary.simpleMessage(
-            "0 dan 100 gacha qiymat kiriting"),
-        "strServiceChargeSaved":
-            MessageLookupByLibrary.simpleMessage("Xizmat haqi saqlandi"),
         "strServerUnreachable500": MessageLookupByLibrary.simpleMessage(
             "Serverda ichki xatolik. Birozdan keyin qayta urinib ko\'ring."),
         "strServerUnreachable502": MessageLookupByLibrary.simpleMessage(
@@ -571,6 +563,14 @@ class MessageLookup extends MessageLookupByLibrary {
             "Server javob berishga ulgurmadi. Internetni tekshirib qayta urinib ko\'ring."),
         "strServerUnreachableGeneric": MessageLookupByLibrary.simpleMessage(
             "Server bilan ulanib bo\'lmadi. Birozdan keyin qayta urinib ko\'ring."),
+        "strService": MessageLookupByLibrary.simpleMessage("Xizmat"),
+        "strServiceCharge": MessageLookupByLibrary.simpleMessage("Xizmat haqi"),
+        "strServiceChargeHint": MessageLookupByLibrary.simpleMessage(
+            "Buyurtmaga avtomatik qo\'shiladigan foiz"),
+        "strServiceChargeInvalid": MessageLookupByLibrary.simpleMessage(
+            "0 dan 100 gacha qiymat kiriting"),
+        "strServiceChargeSaved":
+            MessageLookupByLibrary.simpleMessage("Xizmat haqi saqlandi"),
         "strSettings": MessageLookupByLibrary.simpleMessage("Sozlamalar"),
         "strSettingsAdminOnly": MessageLookupByLibrary.simpleMessage(
             "Sozlamalarga faqat administrator yoki menejer kira oladi."),

@@ -1,6 +1,7 @@
 import 'package:alice/alice.dart';
 import 'package:alice/model/alice_configuration.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:mary_ai_pos/core/api/app_security_context.dart';
 import 'package:mary_ai_pos/core/api/dio_client.dart';
 import 'package:mary_ai_pos/core/services/auth/offline_auth_cache.dart';
 import 'package:mary_ai_pos/core/service/receipt/receipt_info_storage.dart';
@@ -97,7 +98,12 @@ Future<void> initDi() async {
   final offlineQueue = await OfflineQueueService.init();
   inject.registerSingleton<OfflineQueueService>(offlineQueue);
 
-  final dioClient = DioClient(tokenStorage, connectivityCubit);
+  final securityContext = await buildAppSecurityContext();
+  final dioClient = DioClient(
+    tokenStorage,
+    connectivityCubit,
+    securityContext: securityContext,
+  );
   alice.addAdapter(dioClient.aliceDioAdapter);
   inject.registerSingleton<DioClient>(dioClient);
 

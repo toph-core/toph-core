@@ -153,8 +153,21 @@
       "Bash(rm -rf $HOME:*)",
       "Bash(git push --force origin main:*)",
       "Bash(git push -f origin main:*)",
-      "Bash(git push --force origin master:*)",
-      "Bash(:(){ :|:& };:)"
+      "Bash(git push --force origin master:*)"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/block-fork-bomb.py\"",
+            "statusMessage": "Checking for fork-bomb patterns"
+          }
+        ]
+      }
     ]
   }
 }
