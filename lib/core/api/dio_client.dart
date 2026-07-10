@@ -54,7 +54,7 @@ class DioClient {
     }
 
     _dio.interceptors.add(_OfflineInterceptor(_connectivity));
-    _dio.interceptors.add(MySmartDioInterceptor(_dio, _tokenStorage));
+    _dio.interceptors.add(MySmartDioInterceptor(_dio, _tokenStorage, _connectivity));
     _dio.interceptors.add(aliceDioAdapter);
 
     _dio.interceptors.add(
@@ -213,12 +213,12 @@ class _OfflineInterceptor extends Interceptor {
   final ConnectivityCubit _connectivity;
   _OfflineInterceptor(this._connectivity);
 
-  static const _readMethods = {'GET', 'HEAD'};
-
   @override
   void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
-    if (!_connectivity.isOnline &&
-        !_readMethods.contains(options.method.toUpperCase())) {
+    if (!_connectivity.isOnline) {
+      // Offline — har qanday metoddagi so'rovni jo'natmaymiz. OfflineBanner
+      // foydalanuvchini xabardor qiladi; write operatsiyalar
+      // OfflineQueueService orqali online bo'lganda qayta yuboriladi.
       handler.reject(
         DioException(
           requestOptions: options,

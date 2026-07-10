@@ -1,8 +1,16 @@
+import 'package:get_it/get_it.dart';
 import 'package:mary_ai_pos/core/components/flush_bars.dart';
+import 'package:mary_ai_pos/core/services/connectivity/connectivity_cubit.dart';
 import 'package:mary_ai_pos/core/utils/helper/helper_widget.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
 import 'package:mary_ai_pos/generated/l10n.dart';
+
+bool _isOffline() {
+  final getIt = GetIt.instance;
+  if (!getIt.isRegistered<ConnectivityCubit>()) return false;
+  return !getIt<ConnectivityCubit>().isOnline;
+}
 
 abstract class LocalizedMessage {
   String getLocalizedMessage(BuildContext context);
@@ -42,8 +50,10 @@ class UnknownFailure extends Failure {
   const UnknownFailure() : super();
 
   @override
-  String getLocalizedMessage(BuildContext context) =>
-      S.of(context).strFailureMessage_unknown;
+  String getLocalizedMessage(BuildContext context) {
+    if (_isOffline()) return '';
+    return S.of(context).strFailureMessage_unknown;
+  }
 }
 
 class ServerFailure extends Failure {
@@ -58,8 +68,12 @@ class ConnectionFailure extends Failure {
   const ConnectionFailure() : super();
 
   @override
-  String getLocalizedMessage(BuildContext context) =>
-      S.of(context).strFailureMessage_connection;
+  String getLocalizedMessage(BuildContext context) {
+    // Offline holatda OfflineBanner foydalanuvchini xabardor qiladi —
+    // toast'da takror xabar ko'rsatmaymiz.
+    if (_isOffline()) return '';
+    return S.of(context).strFailureMessage_connection;
+  }
 }
 
 class ParsingFailure extends Failure {
@@ -74,8 +88,10 @@ class TimeoutFailure extends Failure {
   const TimeoutFailure();
 
   @override
-  String getLocalizedMessage(BuildContext context) =>
-      S.of(context).strFailureMessage_timeout;
+  String getLocalizedMessage(BuildContext context) {
+    if (_isOffline()) return '';
+    return S.of(context).strFailureMessage_timeout;
+  }
 }
 
 class UnauthorizedFailure extends Failure {

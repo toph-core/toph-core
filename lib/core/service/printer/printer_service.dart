@@ -289,17 +289,16 @@ class PrinterService {
     );
   }
 
-  /// Printer’ga ulanib bytes yuboradi: cable → Windows USB API, wlan/wifi → TCP.
+  /// Printer’ga ulanib bytes yuboradi: cable → Windows USB API / macOS/Linux CUPS, wlan/wifi → TCP.
   Future<({bool ok, String? error})> _connectAndPrint(
     PrinterConfig config,
     List<int> bytes, {
     int maxRetries = 2,
   }) async {
     if (config.usesWindowsPrinter) {
-      if (!Platform.isWindows) {
-        return (ok: false, error: "USB printer faqat Windows da ishlaydi.");
-      }
-      return _printViaWindowsRaw(bytes);
+      if (Platform.isWindows) return _printViaWindowsRaw(bytes);
+      if (Platform.isMacOS || Platform.isLinux) return _printViaCupsRaw(bytes);
+      return (ok: false, error: "USB printer bu OS’da qo’llab-quvvatlanmaydi.");
     }
 
     if (!config.usesNetworkTcp) {
@@ -479,5 +478,69 @@ class PrinterService {
 
     debugPrint('[PrinterService] USB chek yuborildi → $name');
     return (ok: true, error: null);
+  }
+
+  // ── macOS / Linux CUPS printing ───────────────────────────────────────────
+
+  /// macOS / Linux: tizim CUPS'iga ulangan printerga raw ESC/POS bytes yuboradi.
+  /// `lpr -P <name> -o raw` orqali — drayver filtrini chetlab o'tib.
+  Future<({bool ok, String? error})> _printViaCupsRaw(List<int> bytes) async {
+    try {
+      final printerName = await _findCupsPrinterName();
+      if (printerName == null) {
+        return (
+          ok: false,
+          error:
+              "Tizim printeri topilmadi.\n"
+              "macOS: Sozlamalar → Printers & Scanners da printer o'rnatilganini "
+              "va default qilib qo'yilganini tekshiring.",
+        );
+      }
+
+      final proc = await Process.start('lpr', ['-P', printerName, '-o', 'raw']);
+      proc.stdin.add(bytes);
+      await proc.stdin.flush();
+      await proc.stdin.close();
+
+      final stderrBytes = <int>[];
+      final stderrSub = proc.stderr.listen(stderrBytes.addAll);
+      final exitCode = await proc.exitCode;
+      await stderrSub.cancel();
+
+      if (exitCode != 0) {
+        final err = String.fromCharCodes(stderrBytes).trim();
+        return (
+          ok: false,
+          error: 'lpr xatosi (kod $exitCode)${err.isNotEmpty ? ': $err' : ''}',
+        );
+      }
+
+      debugPrint('[PrinterService] CUPS chek yuborildi → $printerName');
+      return (ok: true, error: null);
+    } catch (e, st) {
+      debugPrint('[PrinterService] CUPS print xatosi: $e\n$st');
+      return (ok: false, error: 'CUPS print xatosi: $e');
+    }
+  }
+
+  /// Default tizim printerini topadi; topilmasa birinchi mavjud printerni.
+  Future<String?> _findCupsPrinterName() async {
+    try {
+      final d = await Process.run('lpstat', ['-d']);
+      if (d.exitCode == 0) {
+        final m = RegExp(r'destination:\s*(\S+)').firstMatch('${d.stdout}');
+        if (m != null) return m.group(1);
+      }
+      final p = await Process.run('lpstat', ['-p']);
+      if (p.exitCode == 0) {
+        for (final line in '${p.stdout}'.split('\n')) {
+          final m = RegExp(r'^printer\s+(\S+)\s').firstMatch(line);
+          if (m != null) return m.group(1);
+        }
+      }
+    } catch (e) {
+      debugPrint('[PrinterService] lpstat xatosi: $e');
+    }
+    return null;
   }
 }

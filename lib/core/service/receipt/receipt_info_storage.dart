@@ -71,7 +71,7 @@ class ReceiptInfoStorage {
     }
   }
 
-  /// Foydalanuvchi kiritgan qiymatlar (bo'sh bo'lishi mumkin).
+  
   ReceiptInfo get current => _cache;
 
   /// Chekka chiqariladigan — bo'sh bo'lsa default'lar bilan to'ldiriladi.

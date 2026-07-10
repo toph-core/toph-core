@@ -848,20 +848,8 @@ class _AdminTableItemState extends State<_AdminTableItem> {
                         compact: true,
                       ),
                     ),
-                  // Saved order badge — top-right orange dot
-                  if (widget.isSaved)
-                    Positioned(
-                      top: -4,
-                      right: -4,
-                      child: Container(
-                        width: 10,
-                        height: 10,
-                        decoration: const BoxDecoration(
-                          color: Color(0xFFFB6633),
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                    ),
+                  // Saved order badge olib tashlangan — RAM'dagi
+                  // "Qo'shimchalar" stol kartasida indikator ko'rsatmaydi.
                 ],
               ),
             ),
