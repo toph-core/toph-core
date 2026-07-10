@@ -146,13 +146,13 @@ class MessageLookup extends MessageLookupByLibrary {
         "strCompounds": MessageLookupByLibrary.simpleMessage("Compounds"),
         "strCompoundsCount": m0,
         "strConfirm": MessageLookupByLibrary.simpleMessage("Confirm"),
-        "strConfirmWithPincode":
-            MessageLookupByLibrary.simpleMessage("Enter PIN to confirm"),
         "strConfirmCardPayment": MessageLookupByLibrary.simpleMessage(
             "Confirm that customer paid by card"),
         "strConfirmDelete":
             MessageLookupByLibrary.simpleMessage("Confirm deletion"),
         "strConfirmDeleteItem": m1,
+        "strConfirmWithPincode":
+            MessageLookupByLibrary.simpleMessage("Enter PIN to confirm"),
         "strConnected": MessageLookupByLibrary.simpleMessage("Connected"),
         "strConnectedCategories":
             MessageLookupByLibrary.simpleMessage("Connected categories"),
@@ -300,6 +300,8 @@ class MessageLookup extends MessageLookupByLibrary {
             MessageLookupByLibrary.simpleMessage("Hub and client settings"),
         "strIPAddress": MessageLookupByLibrary.simpleMessage("IP address"),
         "strImages": MessageLookupByLibrary.simpleMessage("Images"),
+        "strIncorrectPincode":
+            MessageLookupByLibrary.simpleMessage("Incorrect PIN"),
         "strIngredients": MessageLookupByLibrary.simpleMessage("Ingredients"),
         "strIngredientsCount": m3,
         "strInitialBalance":
@@ -314,8 +316,6 @@ class MessageLookup extends MessageLookupByLibrary {
         "strInvalidName": MessageLookupByLibrary.simpleMessage("Invalid name"),
         "strInvalidNumber":
             MessageLookupByLibrary.simpleMessage("Invalid number"),
-        "strIncorrectPincode":
-            MessageLookupByLibrary.simpleMessage("Incorrect PIN"),
         "strItemsCount": m4,
         "strItemsCountWithAvg": m5,
         "strItemsCountWithTime": m6,
@@ -524,15 +524,6 @@ class MessageLookup extends MessageLookupByLibrary {
         "strSemiFinished":
             MessageLookupByLibrary.simpleMessage("Semi-finished"),
         "strSeptember": MessageLookupByLibrary.simpleMessage("September"),
-        "strService": MessageLookupByLibrary.simpleMessage("Service"),
-        "strServiceCharge":
-            MessageLookupByLibrary.simpleMessage("Service charge"),
-        "strServiceChargeHint": MessageLookupByLibrary.simpleMessage(
-            "Percent added to the order automatically"),
-        "strServiceChargeInvalid": MessageLookupByLibrary.simpleMessage(
-            "Enter a value between 0 and 100"),
-        "strServiceChargeSaved":
-            MessageLookupByLibrary.simpleMessage("Service charge saved"),
         "strServerUnreachable500": MessageLookupByLibrary.simpleMessage(
             "Internal server error. Please try again in a moment."),
         "strServerUnreachable502": MessageLookupByLibrary.simpleMessage(
@@ -543,6 +534,15 @@ class MessageLookup extends MessageLookupByLibrary {
             "Server took too long to respond. Check your internet and try again."),
         "strServerUnreachableGeneric": MessageLookupByLibrary.simpleMessage(
             "Could not reach the server. Please try again in a moment."),
+        "strService": MessageLookupByLibrary.simpleMessage("Service"),
+        "strServiceCharge":
+            MessageLookupByLibrary.simpleMessage("Service charge"),
+        "strServiceChargeHint": MessageLookupByLibrary.simpleMessage(
+            "Percent added to the order automatically"),
+        "strServiceChargeInvalid": MessageLookupByLibrary.simpleMessage(
+            "Enter a value between 0 and 100"),
+        "strServiceChargeSaved":
+            MessageLookupByLibrary.simpleMessage("Service charge saved"),
         "strSettings": MessageLookupByLibrary.simpleMessage("Settings"),
         "strSettingsAdminOnly": MessageLookupByLibrary.simpleMessage(
             "Only administrator or manager can access settings."),

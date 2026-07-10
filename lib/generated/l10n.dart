@@ -3900,26 +3900,6 @@ class S {
     );
   }
 
-  /// `Enter PIN to confirm`
-  String get strConfirmWithPincode {
-    return Intl.message(
-      'Enter PIN to confirm',
-      name: 'strConfirmWithPincode',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Incorrect PIN`
-  String get strIncorrectPincode {
-    return Intl.message(
-      'Incorrect PIN',
-      name: 'strIncorrectPincode',
-      desc: '',
-      args: [],
-    );
-  }
-
   /// `pcs`
   String get strPiecesSuffix {
     return Intl.message(
@@ -4317,6 +4297,26 @@ class S {
       name: 'strOpenTablesCount',
       desc: '',
       args: [count],
+    );
+  }
+
+  /// `Enter PIN to confirm`
+  String get strConfirmWithPincode {
+    return Intl.message(
+      'Enter PIN to confirm',
+      name: 'strConfirmWithPincode',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Incorrect PIN`
+  String get strIncorrectPincode {
+    return Intl.message(
+      'Incorrect PIN',
+      name: 'strIncorrectPincode',
+      desc: '',
+      args: [],
     );
   }
 }

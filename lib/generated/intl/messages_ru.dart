@@ -151,13 +151,13 @@ class MessageLookup extends MessageLookupByLibrary {
         "strCompounds": MessageLookupByLibrary.simpleMessage("Композиции"),
         "strCompoundsCount": m0,
         "strConfirm": MessageLookupByLibrary.simpleMessage("Подтвердить"),
-        "strConfirmWithPincode": MessageLookupByLibrary.simpleMessage(
-            "Введите пин-код для подтверждения"),
         "strConfirmCardPayment": MessageLookupByLibrary.simpleMessage(
             "Подтвердите, что клиент оплатил картой"),
         "strConfirmDelete":
             MessageLookupByLibrary.simpleMessage("Подтвердите удаление"),
         "strConfirmDeleteItem": m1,
+        "strConfirmWithPincode": MessageLookupByLibrary.simpleMessage(
+            "Введите пин-код для подтверждения"),
         "strConnected": MessageLookupByLibrary.simpleMessage("Подключён"),
         "strConnectedCategories":
             MessageLookupByLibrary.simpleMessage("Привязанные категории"),
@@ -315,6 +315,8 @@ class MessageLookup extends MessageLookupByLibrary {
             MessageLookupByLibrary.simpleMessage("Настройки Hub и клиентов"),
         "strIPAddress": MessageLookupByLibrary.simpleMessage("IP адрес"),
         "strImages": MessageLookupByLibrary.simpleMessage("Изображения"),
+        "strIncorrectPincode":
+            MessageLookupByLibrary.simpleMessage("Неверный пин-код"),
         "strIngredients": MessageLookupByLibrary.simpleMessage("Ингредиенты"),
         "strIngredientsCount": m3,
         "strInitialBalance":
@@ -329,8 +331,6 @@ class MessageLookup extends MessageLookupByLibrary {
         "strInvalidName": MessageLookupByLibrary.simpleMessage("Неверное имя"),
         "strInvalidNumber":
             MessageLookupByLibrary.simpleMessage("Неверный номер"),
-        "strIncorrectPincode":
-            MessageLookupByLibrary.simpleMessage("Неверный пин-код"),
         "strItemsCount": m4,
         "strItemsCountWithAvg": m5,
         "strItemsCountWithTime": m6,
@@ -544,15 +544,6 @@ class MessageLookup extends MessageLookupByLibrary {
         "strSemiFinished":
             MessageLookupByLibrary.simpleMessage("Полуфабрикаты"),
         "strSeptember": MessageLookupByLibrary.simpleMessage("Сентябрь"),
-        "strService": MessageLookupByLibrary.simpleMessage("Обслуживание"),
-        "strServiceCharge":
-            MessageLookupByLibrary.simpleMessage("Сервисный сбор"),
-        "strServiceChargeHint": MessageLookupByLibrary.simpleMessage(
-            "Процент, добавляемый к заказу автоматически"),
-        "strServiceChargeInvalid": MessageLookupByLibrary.simpleMessage(
-            "Введите значение от 0 до 100"),
-        "strServiceChargeSaved":
-            MessageLookupByLibrary.simpleMessage("Сервисный сбор сохранён"),
         "strServerUnreachable500": MessageLookupByLibrary.simpleMessage(
             "Внутренняя ошибка сервера. Повторите попытку чуть позже."),
         "strServerUnreachable502": MessageLookupByLibrary.simpleMessage(
@@ -563,6 +554,15 @@ class MessageLookup extends MessageLookupByLibrary {
             "Сервер не успел ответить. Проверьте интернет и повторите."),
         "strServerUnreachableGeneric": MessageLookupByLibrary.simpleMessage(
             "Не удалось связаться с сервером. Повторите попытку чуть позже."),
+        "strService": MessageLookupByLibrary.simpleMessage("Обслуживание"),
+        "strServiceCharge":
+            MessageLookupByLibrary.simpleMessage("Сервисный сбор"),
+        "strServiceChargeHint": MessageLookupByLibrary.simpleMessage(
+            "Процент, добавляемый к заказу автоматически"),
+        "strServiceChargeInvalid": MessageLookupByLibrary.simpleMessage(
+            "Введите значение от 0 до 100"),
+        "strServiceChargeSaved":
+            MessageLookupByLibrary.simpleMessage("Сервисный сбор сохранён"),
         "strSettings": MessageLookupByLibrary.simpleMessage("Настройки"),
         "strSettingsAdminOnly": MessageLookupByLibrary.simpleMessage(
             "Только администратор или менеджер может войти в настройки."),
