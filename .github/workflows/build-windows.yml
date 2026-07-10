@@ -21,7 +21,12 @@ permissions:
 
 jobs:
   build:
-    runs-on: windows-latest
+    # Pinned to VS 2022. windows-latest moved to VS 2026 (MSVC 14.51), whose STL
+    # turns the deprecated <experimental/coroutine> header into a hard error
+    # (STL1011), breaking flutter_local_notifications_windows and
+    # permission_handler_windows. Unpin once those plugins drop experimental
+    # coroutines (or add _SILENCE_EXPERIMENTAL_COROUTINE_DEPRECATION_WARNINGS).
+    runs-on: windows-2022
     timeout-minutes: 45
 
     steps:
