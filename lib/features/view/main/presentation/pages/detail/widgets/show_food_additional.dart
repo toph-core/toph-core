@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mary_ai_pos/core/common/custom_hover_effect_widget.dart';
+import 'package:mary_ai_pos/core/widgets/app_keyboard_layouts.dart';
+import 'package:mary_ai_pos/features/view/auth/presentation/cubit/settings/settings_cubit.dart';
 import 'package:mary_ai_pos/core/common/custom_text_field.dart';
 import 'package:mary_ai_pos/core/extension/for_context.dart';
 import 'package:mary_ai_pos/core/extension/int_extension.dart';
@@ -30,10 +33,15 @@ class _ShowFoodAdditionalState extends State<ShowFoodAdditional> {
   late final ValueNotifier<bool> keyboardOpen = ValueNotifier<bool>(false);
   late final TextEditingController textEditingController;
 
+  // Ikki tilli (Lotin/Rus) layout — stabil saqlanadi.
+  late final AppKeyboardLayoutKeys _kbLayout;
+
   @override
   void initState() {
     super.initState();
     textEditingController = TextEditingController(text: widget.comment);
+    final lang = context.read<SettingsCubit>().state.language;
+    _kbLayout = AppKeyboardLayoutKeys(initialIndex: lang == 'ru' ? 1 : 0);
   }
 
   @override
@@ -244,7 +252,15 @@ class _ShowFoodAdditionalState extends State<ShowFoodAdditional> {
                           ),
                           child: VirtualKeyboard(
                             textController: textEditingController,
+                            customLayoutKeys: _kbLayout,
                             type: VirtualKeyboardType.Alphanumeric,
+                            // Globus tugmasining butun yuzasi til almashtirsin.
+                            postKeyPress: (key) {
+                              if (key.action ==
+                                  VirtualKeyboardKeyAction.SwithLanguage) {
+                                setState(_kbLayout.switchLanguage);
+                              }
+                            },
                           ),
                         ),
                       ),

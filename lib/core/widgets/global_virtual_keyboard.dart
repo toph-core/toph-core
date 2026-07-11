@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:mary_ai_pos/core/widgets/app_keyboard_layouts.dart';
+import 'package:mary_ai_pos/features/view/auth/presentation/cubit/settings/settings_cubit.dart';
 import 'package:virtual_keyboard_multi_language/virtual_keyboard_multi_language.dart';
 
 /// KIOSK uchun global virtual klaviatura.
@@ -40,6 +43,12 @@ class _GlobalVirtualKeyboardState extends State<GlobalVirtualKeyboard> {
   TextEditingController? _controller;
   VoidCallback? _controllerListener;
 
+  // Ikki tilli layout — bir marta yaratiladi va o'zgarmas saqlanadi. Globus
+  // tugmasi (pastki qatorda) bosilganda paket shu obyektning `activeIndex` ini
+  // 0↔1 aylantiradi. Obyekt stabil bo'lgani uchun Shift/fokus rebuild'lari
+  // tanlangan tilni yo'qotmaydi.
+  late final AppKeyboardLayoutKeys _layoutKeys;
+
   // Fokuslangan EditableText widget'i. Matn yozilgandan keyin uning
   // `onChanged` callback'ini sinxron chaqiramiz — aks holda TextField.onChanged
   // faqat fizik klaviaturada ishlaydi (Flutter'ning cheklovi).
@@ -48,6 +57,9 @@ class _GlobalVirtualKeyboardState extends State<GlobalVirtualKeyboard> {
   @override
   void initState() {
     super.initState();
+    // Boshlang'ich til ilova tiliga qarab: `ru` → kirill, aks holda lotin.
+    final lang = context.read<SettingsCubit>().state.language;
+    _layoutKeys = AppKeyboardLayoutKeys(initialIndex: lang == 'ru' ? 1 : 0);
     FocusManager.instance.addListener(_onFocusChange);
     GlobalVirtualKeyboard._stack.add(this);
   }
@@ -199,6 +211,16 @@ class _GlobalVirtualKeyboardState extends State<GlobalVirtualKeyboard> {
   }
 
   void _onKeyPress(VirtualKeyboardKey key) {
+    // Til almashtirish — controllerdan mustaqil. Paket globus tugmasining
+    // faqat ikonka ustidagi kichik GestureDetector'i orqali ishlaydi; bu yerda
+    // tashqi InkWell (butun tugma yuzasi) chaqiradigan postKeyPress orqali
+    // tugmaning istalgan joyiga bossa ham til almashadi.
+    if (key.keyType == VirtualKeyboardKeyType.Action &&
+        key.action == VirtualKeyboardKeyAction.SwithLanguage) {
+      setState(() => _layoutKeys.switchLanguage());
+      return;
+    }
+
     final ctrl = _controller;
     if (ctrl == null) return;
     final text = ctrl.text;
@@ -298,6 +320,7 @@ class _GlobalVirtualKeyboardState extends State<GlobalVirtualKeyboard> {
                 numericOnly: _numericOnly,
                 onKeyPress: _onKeyPress,
                 onClose: _dismiss,
+                layoutKeys: _layoutKeys,
               ),
             ),
           ),
@@ -349,11 +372,13 @@ class _KeyboardPanel extends StatelessWidget {
   final bool numericOnly;
   final ValueChanged<VirtualKeyboardKey> onKeyPress;
   final VoidCallback onClose;
+  final VirtualKeyboardLayoutKeys layoutKeys;
 
   const _KeyboardPanel({
     required this.numericOnly,
     required this.onKeyPress,
     required this.onClose,
+    required this.layoutKeys,
   });
 
   @override
@@ -410,9 +435,7 @@ class _KeyboardPanel extends StatelessWidget {
                       type: numericOnly
                           ? VirtualKeyboardType.Numeric
                           : VirtualKeyboardType.Alphanumeric,
-                      customLayoutKeys: VirtualKeyboardDefaultLayoutKeys([
-                        VirtualKeyboardDefaultLayouts.English,
-                      ]),
+                      customLayoutKeys: layoutKeys,
                       postKeyPress: onKeyPress,
                     );
                   },

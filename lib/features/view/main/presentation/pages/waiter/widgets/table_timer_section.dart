@@ -61,7 +61,7 @@ class _TableTimerSectionState extends State<TableTimerSection> {
                   ),
                   const SizedBox(width: 8),
                   Text(
-                    'Stol taymeri…',
+                    S.current.strTableTimerLoading,
                     style: TextStyle(fontSize: 12, color: colors.textTertiary),
                   ),
                 ],
@@ -96,7 +96,7 @@ class _TableTimerSectionState extends State<TableTimerSection> {
                           size: 18, color: colors.textBrand),
                       const SizedBox(width: 6),
                       Text(
-                        'Stol (vaqt bo‘yicha)',
+                        S.current.strTimeBasedTableTitle,
                         style: context.textStyles.semibold14.copyWith(
                           fontSize: 13,
                         ),
@@ -123,12 +123,12 @@ class _TableTimerSectionState extends State<TableTimerSection> {
                   const SizedBox(height: 8),
                   if (t.pricePerHour != null && t.pricePerHour!.isNotEmpty)
                     Text(
-                      'Soat narxi: ${t.pricePerHour}',
+                      S.current.strHourlyPriceLabel(t.pricePerHour!),
                       style: TextStyle(fontSize: 11, color: colors.textSecondary),
                     ),
                   const SizedBox(height: 4),
                   Text(
-                    'Faol vaqt: ${_formatDuration(displaySec)}',
+                    S.current.strActiveTimeLabel(_formatDuration(displaySec)),
                     style: TextStyle(fontSize: 12, color: colors.textDefault),
                   ),
                   if (t.currentAmount != null &&
@@ -137,7 +137,10 @@ class _TableTimerSectionState extends State<TableTimerSection> {
                     Padding(
                       padding: const EdgeInsets.only(top: 4),
                       child: Text(
-                        'Hozirgi summa: ${double.tryParse(t.currentAmount!.replaceAll(RegExp(r'\s'), ''))?.formatN ?? t.currentAmount}',
+                        S.current.strCurrentAmountLabel(
+                          double.tryParse(t.currentAmount!.replaceAll(RegExp(r'\s'), ''))?.formatN ??
+                              t.currentAmount!,
+                        ),
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
@@ -151,7 +154,10 @@ class _TableTimerSectionState extends State<TableTimerSection> {
                     Padding(
                       padding: const EdgeInsets.only(top: 4),
                       child: Text(
-                        'Yakuniy: ${double.tryParse(t.finalAmount!.replaceAll(RegExp(r'\s'), ''))?.formatN ?? t.finalAmount}',
+                        S.current.strFinalAmountLabel(
+                          double.tryParse(t.finalAmount!.replaceAll(RegExp(r'\s'), ''))?.formatN ??
+                              t.finalAmount!,
+                        ),
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
@@ -220,7 +226,7 @@ class _TableTimerSectionState extends State<TableTimerSection> {
     final m = (sec % 3600) ~/ 60;
     final s = sec % 60;
     if (h > 0) {
-      return '${h}soat ${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
+      return '$h${S.current.strHourUnitShort} ${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
     }
     return '${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
   }

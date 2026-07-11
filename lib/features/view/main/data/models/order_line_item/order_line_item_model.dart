@@ -1,3 +1,5 @@
+import 'package:mary_ai_pos/generated/l10n.dart';
+
 /// Line item from `GET /api/v1/order-items/order/{orderId}` (va boshqa javoblar).
 /// API har bir qatorda `good_name` qaytarishi mumkin; yo‘q bo‘lsa `good` obyekti yoki `name` ishlatiladi.
 class OrderLineItemModel {
@@ -62,7 +64,7 @@ class OrderLineItemModel {
   String get displayName {
     final n = goodName?.trim();
     if (n != null && n.isNotEmpty) return n;
-    if (goodId.isNotEmpty) return 'Mahsulot';
+    if (goodId.isNotEmpty) return S.current.strDefaultGoodName;
     return '—';
   }
 
@@ -76,16 +78,16 @@ class OrderLineItemModel {
     final s = (status ?? '').toLowerCase();
     switch (s) {
       case 'pending':
-        return 'Ожидание';
+        return S.current.strWaiting;
       case 'cancelled':
-        return 'Отменён';
+        return S.current.strCancelled;
       case 'cooking':
       case 'preparing':
-        return 'Готовится';
+        return S.current.strCooking;
       case 'ready':
-        return 'Готово';
+        return S.current.strOrderStatusReady;
       case 'served':
-        return 'Подано';
+        return S.current.strOrderStatusServed;
       default:
         return status?.isNotEmpty == true ? status! : '—';
     }

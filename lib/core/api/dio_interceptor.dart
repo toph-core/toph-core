@@ -5,6 +5,7 @@ import 'package:mary_ai_pos/core/routes/app_routes.dart';
 import 'package:mary_ai_pos/core/services/connectivity/connectivity_cubit.dart';
 import 'package:mary_ai_pos/core/utils/helper/helper_widget.dart';
 import 'package:mary_ai_pos/features/view/auth/data/models/login/response/login_response.dart';
+import 'package:mary_ai_pos/generated/l10n.dart';
 
 import 'api.dart';
 
@@ -172,17 +173,17 @@ class MySmartDioInterceptor extends Interceptor {
 
   /// Backend body bo'sh bo'lsa — status kodi bo'yicha tushunarli xabar.
   String _fallbackMessageForStatus(int sc) {
-    if (sc == 500) return "Serverda ichki xatolik (500). Qayta urinib ko'ring.";
-    if (sc == 502) return "Server bilan ulanishda muammo (502).";
-    if (sc == 503) return "Xizmat vaqtincha mavjud emas (503).";
-    if (sc == 504) return "Server javob bermayapti (504). Internetni tekshiring.";
-    if (sc == 400) return "So'rov noto'g'ri (400).";
-    if (sc == 403) return "Ruxsat yo'q (403).";
-    if (sc == 404) return "Ma'lumot topilmadi (404).";
-    if (sc == 409) return "Holat mos kelmaydi (409).";
-    if (sc == 422) return "Kiritilgan ma'lumotlarda xato (422).";
-    if (sc >= 500) return "Server xatosi ($sc).";
-    return "Xatolik yuz berdi ($sc).";
+    if (sc == 500) return S.current.strServerUnreachable500;
+    if (sc == 502) return S.current.strServerUnreachable502;
+    if (sc == 503) return S.current.strServerUnreachable503;
+    if (sc == 504) return S.current.strServerUnreachable504;
+    if (sc == 400) return S.current.strApiErrorBadRequest;
+    if (sc == 403) return S.current.strApiErrorForbidden;
+    if (sc == 404) return S.current.strApiErrorNotFound;
+    if (sc == 409) return S.current.strApiErrorConflict;
+    if (sc == 422) return S.current.strApiErrorValidation;
+    if (sc >= 500) return S.current.strApiErrorServerWithCode(sc);
+    return S.current.strApiErrorGenericWithCode(sc);
   }
 
   /// Response bo'lmagan tarmoq xatolari uchun fallback (timeout, connection).
@@ -191,11 +192,11 @@ class MySmartDioInterceptor extends Interceptor {
       case DioExceptionType.connectionTimeout:
       case DioExceptionType.receiveTimeout:
       case DioExceptionType.sendTimeout:
-        return "Server javob bermayapti. Internetni tekshiring.";
+        return S.current.strFailureMessage_timeout;
       case DioExceptionType.connectionError:
-        return "Server bilan ulanib bo'lmadi. Internetni tekshiring.";
+        return S.current.strFailureMessage_connection;
       case DioExceptionType.badCertificate:
-        return "Server sertifikati noto'g'ri.";
+        return S.current.strApiErrorBadCertificate;
       case DioExceptionType.cancel:
       case DioExceptionType.badResponse:
       case DioExceptionType.unknown:

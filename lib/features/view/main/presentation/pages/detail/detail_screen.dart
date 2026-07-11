@@ -3,7 +3,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:keyboard_dismisser/keyboard_dismisser.dart';
 import 'package:mary_ai_pos/core/design_system/pos_design_system.dart';
 import 'package:mary_ai_pos/core/extension/for_context.dart';
+import 'package:mary_ai_pos/core/widgets/app_keyboard_layouts.dart';
 import 'package:mary_ai_pos/di.dart';
+import 'package:mary_ai_pos/features/view/auth/presentation/cubit/settings/settings_cubit.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/cafe_tables/cafe_tables_model.dart';
 import 'package:mary_ai_pos/features/view/main/domain/entities/save_order_entity.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/detail/detail_bloc.dart';
@@ -33,6 +35,11 @@ class _DetailScreenState extends State<DetailScreen> with DetailScreenMixin {
   late ValueNotifier<bool> showVirtualKeyboard = ValueNotifier<bool>(false);
   final TextEditingController controller = TextEditingController();
 
+  // Stol ekranidagi klaviatura uchun ikki tilli (Lotin/Rus) layout. Stabil
+  // saqlanadi — globus bilan tanlangan til klaviatura yopilib-ochilsa ham
+  // yo'qolmaydi.
+  late final AppKeyboardLayoutKeys _kbLayout;
+
   // Hold blocs directly so _autoStartTimedOrder can call them without
   // needing a child BuildContext (MultiBlocProvider is a descendant)
   late final TableTimerCubit _timerCubit = inject<TableTimerCubit>();
@@ -47,6 +54,10 @@ class _DetailScreenState extends State<DetailScreen> with DetailScreenMixin {
     super.didChangeDependencies();
     if (_initDone) return;
     _initDone = true;
+
+    // Boshlang'ich til ilova tiliga qarab: `ru` → kirill, aks holda lotin.
+    final lang = context.read<SettingsCubit>().state.language;
+    _kbLayout = AppKeyboardLayoutKeys(initialIndex: lang == 'ru' ? 1 : 0);
 
     tableStatus = args['table_status'] as TableStatus;
 
@@ -205,13 +216,19 @@ class _DetailScreenState extends State<DetailScreen> with DetailScreenMixin {
                         child: SafeArea(
                           child: VirtualKeyboard(
                             height: context.h * .3,
-                            customLayoutKeys: VirtualKeyboardDefaultLayoutKeys([
-                              VirtualKeyboardDefaultLayouts.English,
-                            ]),
+                            customLayoutKeys: _kbLayout,
                             textColor: Colors.black,
                             fontSize: 24,
                             textController: controller,
                             type: VirtualKeyboardType.Alphanumeric,
+                            // Globus tugmasining butun yuzasi til almashtirsin
+                            // (paketning o'zi faqat ikonka ustida ishlaydi).
+                            postKeyPress: (key) {
+                              if (key.action ==
+                                  VirtualKeyboardKeyAction.SwithLanguage) {
+                                setState(_kbLayout.switchLanguage);
+                              }
+                            },
                           ),
                         ),
                       ),

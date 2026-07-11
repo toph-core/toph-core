@@ -19,6 +19,15 @@
   "strServerUnreachable504": "Server javob berishga ulgurmadi. Internetni tekshirib qayta urinib ko'ring.",
   "strServerUnreachableGeneric": "Server bilan ulanib bo'lmadi. Birozdan keyin qayta urinib ko'ring.",
 
+  "strApiErrorBadRequest": "So'rov noto'g'ri.",
+  "strApiErrorForbidden": "Bu amal uchun ruxsat yo'q.",
+  "strApiErrorNotFound": "So'ralgan ma'lumot topilmadi.",
+  "strApiErrorConflict": "Amal joriy holatga mos kelmaydi.",
+  "strApiErrorValidation": "Yuborilgan ma'lumotlarda xatolik bor.",
+  "strApiErrorServerWithCode": "Server xatosi ({code}).",
+  "strApiErrorGenericWithCode": "Xatolik yuz berdi ({code}).",
+  "strApiErrorBadCertificate": "Server xavfsizlik sertifikati yaroqsiz.",
+
   "strCheckInternetConnection": "Internet aloqasini tekshiring",
   "strNoInternetConnection": "Internet aloqasi yo'q",
   "strYes": "Ha",
@@ -362,6 +371,21 @@
   "strStart": "Boshlash",
   "strPauseAction": "To'xtatish",
   "strResumeAction": "Davom ettirish",
+
+  "strOrderStatusOpen": "Ochiq",
+  "strOrderStatusReady": "Tayyor",
+  "strOrderStatusServed": "Berildi",
+  "strOrderStatusPaid": "To'landi",
+  "strOrderStatusRescheduled": "Ko'chirildi",
+  "strDefaultGoodName": "Mahsulot",
+
+  "strTableTimerLoading": "Stol taymeri…",
+  "strTimeBasedTableTitle": "Stol (vaqt bo'yicha)",
+  "strHourlyPriceLabel": "Soat narxi: {price}",
+  "strActiveTimeLabel": "Faol vaqt: {duration}",
+  "strCurrentAmountLabel": "Hozirgi summa: {amount}",
+  "strFinalAmountLabel": "Yakuniy: {amount}",
+  "strHourUnitShort": "soat",
 
   "strNotifications": "Bildirishnomalar",
   "strError": "Xato",

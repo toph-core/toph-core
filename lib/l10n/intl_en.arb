@@ -19,6 +19,15 @@
   "strServerUnreachable504": "Server took too long to respond. Check your internet and try again.",
   "strServerUnreachableGeneric": "Could not reach the server. Please try again in a moment.",
 
+  "strApiErrorBadRequest": "The request was invalid.",
+  "strApiErrorForbidden": "You don't have permission to do this.",
+  "strApiErrorNotFound": "The requested data was not found.",
+  "strApiErrorConflict": "This action conflicts with the current state.",
+  "strApiErrorValidation": "There's an error in the submitted data.",
+  "strApiErrorServerWithCode": "Server error ({code}).",
+  "strApiErrorGenericWithCode": "An error occurred ({code}).",
+  "strApiErrorBadCertificate": "The server's security certificate is invalid.",
+
   "strCheckInternetConnection": "Please check your internet connection",
   "strNoInternetConnection": "No internet connection",
   "strYes": "Yes",
@@ -362,6 +371,21 @@
   "strStart": "Start",
   "strPauseAction": "Pause",
   "strResumeAction": "Resume",
+
+  "strOrderStatusOpen": "Open",
+  "strOrderStatusReady": "Ready",
+  "strOrderStatusServed": "Served",
+  "strOrderStatusPaid": "Paid",
+  "strOrderStatusRescheduled": "Rescheduled",
+  "strDefaultGoodName": "Item",
+
+  "strTableTimerLoading": "Table timer…",
+  "strTimeBasedTableTitle": "Table (time-based)",
+  "strHourlyPriceLabel": "Hourly rate: {price}",
+  "strActiveTimeLabel": "Active time: {duration}",
+  "strCurrentAmountLabel": "Current amount: {amount}",
+  "strFinalAmountLabel": "Final: {amount}",
+  "strHourUnitShort": "h",
 
   "strNotifications": "Notifications",
   "strError": "Error",

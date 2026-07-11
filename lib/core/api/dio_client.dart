@@ -4,7 +4,6 @@ import 'dart:io';
 import 'package:alice_dio/alice_dio_adapter.dart';
 import 'package:dio/dio.dart';
 import 'package:dio/io.dart';
-import 'package:flutter/foundation.dart';
 import 'package:mary_ai_pos/core/auth/storage/token_storage_impl.dart';
 import 'package:mary_ai_pos/core/constants/constants.dart';
 import 'package:mary_ai_pos/core/api/dio_interceptor.dart';
@@ -57,12 +56,13 @@ class DioClient {
     _dio.interceptors.add(MySmartDioInterceptor(_dio, _tokenStorage, _connectivity));
     _dio.interceptors.add(aliceDioAdapter);
 
+    // API loglari o'chirilgan — konsol klaviatura loglari uchun toza qolsin.
     _dio.interceptors.add(
       PrettyDioLogger(
         requestHeader: true,
         requestBody: true,
         responseBody: true,
-        enabled: kDebugMode,
+        enabled: false,
         filter: (options, args) {
           if (args.hasUint8ListData) return false;
           if (args.data is FormData) return false;

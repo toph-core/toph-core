@@ -20,32 +20,44 @@ typedef String MessageIfAbsent(String messageStr, List<dynamic> args);
 class MessageLookup extends MessageLookupByLibrary {
   String get localeName => 'ru';
 
-  static String m0(count) => "${count} Композиций";
+  static String m0(duration) => "Активное время: ${duration}";
 
-  static String m1(item) => "Удалить \'${item}\'?";
+  static String m1(code) => "Произошла ошибка (${code}).";
 
-  static String m2(name) =>
+  static String m2(code) => "Ошибка сервера (${code}).";
+
+  static String m3(count) => "${count} Композиций";
+
+  static String m4(item) => "Удалить \'${item}\'?";
+
+  static String m5(amount) => "Текущая сумма: ${amount}";
+
+  static String m6(name) =>
       "Учётная запись ${name} будет удалена. Это действие необратимо.";
 
-  static String m3(count) => "${count} Ингредиентов";
+  static String m7(amount) => "Итого: ${amount}";
 
-  static String m4(count) => "Элементы: ${count}";
+  static String m8(price) => "Цена за час: ${price}";
 
-  static String m5(count, avg) => "${count} блюд · ср. ${avg}";
+  static String m9(count) => "${count} Ингредиентов";
 
-  static String m6(count, time) => "${count} блюд · ${time}";
+  static String m10(count) => "Элементы: ${count}";
 
-  static String m7(n) => "${n} столов";
+  static String m11(count, avg) => "${count} блюд · ср. ${avg}";
 
-  static String m8(count) => "${count} открытых столов";
+  static String m12(count, time) => "${count} блюд · ${time}";
 
-  static String m9(count) => "${count} заказов";
+  static String m13(n) => "${n} столов";
 
-  static String m10(count, avg) => "${count} заказов · ср. ${avg}";
+  static String m14(count) => "${count} открытых столов";
 
-  static String m11(size) => "${size} / стр.";
+  static String m15(count) => "${count} заказов";
 
-  static String m12(count) => "${count} столов не сохранено";
+  static String m16(count, avg) => "${count} заказов · ср. ${avg}";
+
+  static String m17(size) => "${size} / стр.";
+
+  static String m18(count) => "${count} столов не сохранено";
 
   final messages = _notInlinedMessages(_notInlinedMessages);
   static Map<String, Function> _notInlinedMessages(_) => <String, Function>{
@@ -57,6 +69,7 @@ class MessageLookup extends MessageLookupByLibrary {
         "strActionColumnHeader":
             MessageLookupByLibrary.simpleMessage("Действие"),
         "strActionsColumn": MessageLookupByLibrary.simpleMessage("Действия"),
+        "strActiveTimeLabel": m0,
         "strAdd": MessageLookupByLibrary.simpleMessage("Добавить"),
         "strAddCategory":
             MessageLookupByLibrary.simpleMessage("Добавить категорию"),
@@ -85,6 +98,20 @@ class MessageLookup extends MessageLookupByLibrary {
         "strAmountColumn": MessageLookupByLibrary.simpleMessage("Сумма"),
         "strAmountColumnHeader": MessageLookupByLibrary.simpleMessage("Сумма"),
         "strAngleDegrees": MessageLookupByLibrary.simpleMessage("Угол (°)"),
+        "strApiErrorBadCertificate": MessageLookupByLibrary.simpleMessage(
+            "Недействительный сертификат безопасности сервера."),
+        "strApiErrorBadRequest":
+            MessageLookupByLibrary.simpleMessage("Некорректный запрос."),
+        "strApiErrorConflict": MessageLookupByLibrary.simpleMessage(
+            "Действие противоречит текущему состоянию."),
+        "strApiErrorForbidden": MessageLookupByLibrary.simpleMessage(
+            "Недостаточно прав для этого действия."),
+        "strApiErrorGenericWithCode": m1,
+        "strApiErrorNotFound": MessageLookupByLibrary.simpleMessage(
+            "Запрошенные данные не найдены."),
+        "strApiErrorServerWithCode": m2,
+        "strApiErrorValidation": MessageLookupByLibrary.simpleMessage(
+            "Ошибка в отправленных данных."),
         "strAppLanguage":
             MessageLookupByLibrary.simpleMessage("Язык приложения"),
         "strAppliesToAllUsers": MessageLookupByLibrary.simpleMessage(
@@ -149,13 +176,13 @@ class MessageLookup extends MessageLookupByLibrary {
         "strClosedToday":
             MessageLookupByLibrary.simpleMessage("Закрыто сегодня"),
         "strCompounds": MessageLookupByLibrary.simpleMessage("Композиции"),
-        "strCompoundsCount": m0,
+        "strCompoundsCount": m3,
         "strConfirm": MessageLookupByLibrary.simpleMessage("Подтвердить"),
         "strConfirmCardPayment": MessageLookupByLibrary.simpleMessage(
             "Подтвердите, что клиент оплатил картой"),
         "strConfirmDelete":
             MessageLookupByLibrary.simpleMessage("Подтвердите удаление"),
-        "strConfirmDeleteItem": m1,
+        "strConfirmDeleteItem": m4,
         "strConfirmWithPincode": MessageLookupByLibrary.simpleMessage(
             "Введите пин-код для подтверждения"),
         "strConnected": MessageLookupByLibrary.simpleMessage("Подключён"),
@@ -166,6 +193,7 @@ class MessageLookup extends MessageLookupByLibrary {
         "strContinue": MessageLookupByLibrary.simpleMessage("Продолжить"),
         "strCooking": MessageLookupByLibrary.simpleMessage("Готовится"),
         "strCost": MessageLookupByLibrary.simpleMessage("Стоимость"),
+        "strCurrentAmountLabel": m5,
         "strCurrentOrder":
             MessageLookupByLibrary.simpleMessage("Текущий заказ"),
         "strCurrentShift":
@@ -174,12 +202,13 @@ class MessageLookup extends MessageLookupByLibrary {
         "strDate": MessageLookupByLibrary.simpleMessage("Дата"),
         "strDateLabel": MessageLookupByLibrary.simpleMessage("Дата:"),
         "strDecember": MessageLookupByLibrary.simpleMessage("Декабрь"),
+        "strDefaultGoodName": MessageLookupByLibrary.simpleMessage("Товар"),
         "strDelete": MessageLookupByLibrary.simpleMessage("Удалить"),
         "strDeleteCategory":
             MessageLookupByLibrary.simpleMessage("Удалить категорию"),
         "strDeleteEmployee":
             MessageLookupByLibrary.simpleMessage("Удалить сотрудника"),
-        "strDeleteEmployeeConfirm": m2,
+        "strDeleteEmployeeConfirm": m6,
         "strDeleteError":
             MessageLookupByLibrary.simpleMessage("Ошибка удаления"),
         "strDeleteHall": MessageLookupByLibrary.simpleMessage("Удалить зал"),
@@ -272,6 +301,7 @@ class MessageLookup extends MessageLookupByLibrary {
             "Это поле не может быть пустым"),
         "strFileTooLarge":
             MessageLookupByLibrary.simpleMessage("Файл не больше 5 МБ"),
+        "strFinalAmountLabel": m7,
         "strFloorMap": MessageLookupByLibrary.simpleMessage("Карта столов"),
         "strFoodsCategoriesNotFound":
             MessageLookupByLibrary.simpleMessage("Категории блюд не найдены!"),
@@ -303,11 +333,13 @@ class MessageLookup extends MessageLookupByLibrary {
         "strHeightMeters": MessageLookupByLibrary.simpleMessage("Высота (м)"),
         "strHeightShort": MessageLookupByLibrary.simpleMessage("Высота (м)"),
         "strHotter": MessageLookupByLibrary.simpleMessage("Погорячее"),
+        "strHourUnitShort": MessageLookupByLibrary.simpleMessage("ч"),
         "strHourly": MessageLookupByLibrary.simpleMessage("Почасовой"),
         "strHourlyPayment":
             MessageLookupByLibrary.simpleMessage("Почасовая оплата"),
         "strHourlyPrice":
             MessageLookupByLibrary.simpleMessage("Цена за час (сум)"),
+        "strHourlyPriceLabel": m8,
         "strHourlySalesDynamics":
             MessageLookupByLibrary.simpleMessage("Почасовая динамика продаж"),
         "strHub": MessageLookupByLibrary.simpleMessage("Hub"),
@@ -318,7 +350,7 @@ class MessageLookup extends MessageLookupByLibrary {
         "strIncorrectPincode":
             MessageLookupByLibrary.simpleMessage("Неверный пин-код"),
         "strIngredients": MessageLookupByLibrary.simpleMessage("Ингредиенты"),
-        "strIngredientsCount": m3,
+        "strIngredientsCount": m9,
         "strInitialBalance":
             MessageLookupByLibrary.simpleMessage("Начальный остаток"),
         "strInitialStatus":
@@ -331,9 +363,9 @@ class MessageLookup extends MessageLookupByLibrary {
         "strInvalidName": MessageLookupByLibrary.simpleMessage("Неверное имя"),
         "strInvalidNumber":
             MessageLookupByLibrary.simpleMessage("Неверный номер"),
-        "strItemsCount": m4,
-        "strItemsCountWithAvg": m5,
-        "strItemsCountWithTime": m6,
+        "strItemsCount": m10,
+        "strItemsCountWithAvg": m11,
+        "strItemsCountWithTime": m12,
         "strJanuary": MessageLookupByLibrary.simpleMessage("Январь"),
         "strJuly": MessageLookupByLibrary.simpleMessage("Июль"),
         "strJune": MessageLookupByLibrary.simpleMessage("Июнь"),
@@ -365,7 +397,7 @@ class MessageLookup extends MessageLookupByLibrary {
         "strMonday": MessageLookupByLibrary.simpleMessage("Понедельник"),
         "strMoreKetchup":
             MessageLookupByLibrary.simpleMessage("Больше кетчупа"),
-        "strNPeopleTable": m7,
+        "strNPeopleTable": m13,
         "strName": MessageLookupByLibrary.simpleMessage("Название"),
         "strNameTooShort":
             MessageLookupByLibrary.simpleMessage("Имя слишком короткое"),
@@ -417,7 +449,7 @@ class MessageLookup extends MessageLookupByLibrary {
             "Оффлайн режим — данные синхронизируются при подключении"),
         "strOpenBills": MessageLookupByLibrary.simpleMessage("Открытые счета"),
         "strOpenShift": MessageLookupByLibrary.simpleMessage("Открыть смену"),
-        "strOpenTablesCount": m8,
+        "strOpenTablesCount": m14,
         "strOpenedAt": MessageLookupByLibrary.simpleMessage("Открыто"),
         "strOpenedAtLabel": MessageLookupByLibrary.simpleMessage("Открыт:"),
         "strOpeningBalance":
@@ -430,20 +462,26 @@ class MessageLookup extends MessageLookupByLibrary {
         "strOrderNumber": MessageLookupByLibrary.simpleMessage("№ Заказ"),
         "strOrderOrTableNotFound":
             MessageLookupByLibrary.simpleMessage("Заказ или стол не найден"),
+        "strOrderStatusOpen": MessageLookupByLibrary.simpleMessage("Открыт"),
+        "strOrderStatusPaid": MessageLookupByLibrary.simpleMessage("Оплачен"),
+        "strOrderStatusReady": MessageLookupByLibrary.simpleMessage("Готово"),
+        "strOrderStatusRescheduled":
+            MessageLookupByLibrary.simpleMessage("Перенесён"),
+        "strOrderStatusServed": MessageLookupByLibrary.simpleMessage("Подано"),
         "strOrderSuccessCreated":
             MessageLookupByLibrary.simpleMessage("Заказ успешно создан"),
         "strOrderTransferred": MessageLookupByLibrary.simpleMessage(
             "Заказ перенесён на другой стол"),
         "strOrderType": MessageLookupByLibrary.simpleMessage("Тип заказа"),
         "strOrders": MessageLookupByLibrary.simpleMessage("Заказы"),
-        "strOrdersCountShort": m9,
-        "strOrdersCountWithAvg": m10,
+        "strOrdersCountShort": m15,
+        "strOrdersCountWithAvg": m16,
         "strOrdersEmpty":
             MessageLookupByLibrary.simpleMessage("Заказы не найдены"),
         "strOrgName":
             MessageLookupByLibrary.simpleMessage("Название организации"),
         "strOther": MessageLookupByLibrary.simpleMessage("Другое"),
-        "strPageSize": m11,
+        "strPageSize": m17,
         "strPassword": MessageLookupByLibrary.simpleMessage("Пароль"),
         "strPasswordContainAtLeastChars": MessageLookupByLibrary.simpleMessage(
             "Пароль должен содержать не менее 8 символов."),
@@ -605,12 +643,16 @@ class MessageLookup extends MessageLookupByLibrary {
         "strTableHall": MessageLookupByLibrary.simpleMessage("Стол / Зал"),
         "strTableLabel": MessageLookupByLibrary.simpleMessage("Стол:"),
         "strTableNumber": MessageLookupByLibrary.simpleMessage("Стол"),
+        "strTableTimerLoading":
+            MessageLookupByLibrary.simpleMessage("Таймер стола…"),
         "strTableType": MessageLookupByLibrary.simpleMessage("Тип"),
         "strTables": MessageLookupByLibrary.simpleMessage("Столы"),
-        "strTablesNotSavedCount": m12,
+        "strTablesNotSavedCount": m18,
         "strTakeaway": MessageLookupByLibrary.simpleMessage("С собой"),
         "strTerminal": MessageLookupByLibrary.simpleMessage("Терминал"),
         "strThursday": MessageLookupByLibrary.simpleMessage("Четверг"),
+        "strTimeBasedTableTitle":
+            MessageLookupByLibrary.simpleMessage("Стол (почасовой)"),
         "strTimeColumn": MessageLookupByLibrary.simpleMessage("Время"),
         "strTimeColumnHeader": MessageLookupByLibrary.simpleMessage("Время"),
         "strTodayRevenue":

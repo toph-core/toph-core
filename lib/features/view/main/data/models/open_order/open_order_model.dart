@@ -1,6 +1,7 @@
 import 'package:mary_ai_pos/core/extension/list_extension.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/cafe_tables/cafe_tables_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/hall/hall_model.dart';
+import 'package:mary_ai_pos/generated/l10n.dart';
 
 class OpenOrderModel {
   final String id;
@@ -211,22 +212,22 @@ extension OpenOrderStatusLabel on OpenOrderModel {
   String get statusDisplayLabel {
     switch (statusKeyNormalized) {
       case 'open':
-        return 'Открыт';
+        return S.current.strOrderStatusOpen;
       case 'cooking':
       case 'preparing':
-        return 'Готовится';
+        return S.current.strCooking;
       case 'ready':
-        return 'Готово';
+        return S.current.strOrderStatusReady;
       case 'served':
-        return 'Подано';
+        return S.current.strOrderStatusServed;
       case 'paid':
-        return 'Оплачен';
+        return S.current.strOrderStatusPaid;
       case 'cancelled':
-        return 'Отменён';
+        return S.current.strCancelled;
       case 'reserved':
-        return 'Забронирован';
+        return S.current.strReserved;
       case 'rescheduled':
-        return 'Перенесён';
+        return S.current.strOrderStatusRescheduled;
       default:
         final s = status?.trim();
         if (s != null && s.isNotEmpty) return s;

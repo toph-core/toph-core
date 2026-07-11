@@ -20,32 +20,44 @@ typedef String MessageIfAbsent(String messageStr, List<dynamic> args);
 class MessageLookup extends MessageLookupByLibrary {
   String get localeName => 'en';
 
-  static String m0(count) => "${count} Compounds";
+  static String m0(duration) => "Active time: ${duration}";
 
-  static String m1(item) => "Delete \'${item}\'?";
+  static String m1(code) => "An error occurred (${code}).";
 
-  static String m2(name) =>
+  static String m2(code) => "Server error (${code}).";
+
+  static String m3(count) => "${count} Compounds";
+
+  static String m4(item) => "Delete \'${item}\'?";
+
+  static String m5(amount) => "Current amount: ${amount}";
+
+  static String m6(name) =>
       "Account ${name} will be deleted. This action cannot be undone.";
 
-  static String m3(count) => "${count} Ingredients";
+  static String m7(amount) => "Final: ${amount}";
 
-  static String m4(count) => "Items: ${count}";
+  static String m8(price) => "Hourly rate: ${price}";
 
-  static String m5(count, avg) => "${count} items · avg ${avg}";
+  static String m9(count) => "${count} Ingredients";
 
-  static String m6(count, time) => "${count} items · ${time}";
+  static String m10(count) => "Items: ${count}";
 
-  static String m7(n) => "${n} tables";
+  static String m11(count, avg) => "${count} items · avg ${avg}";
 
-  static String m8(count) => "${count} open tables";
+  static String m12(count, time) => "${count} items · ${time}";
 
-  static String m9(count) => "${count} orders";
+  static String m13(n) => "${n} tables";
 
-  static String m10(count, avg) => "${count} orders · avg ${avg}";
+  static String m14(count) => "${count} open tables";
 
-  static String m11(size) => "${size} / page";
+  static String m15(count) => "${count} orders";
 
-  static String m12(count) => "${count} tables not saved";
+  static String m16(count, avg) => "${count} orders · avg ${avg}";
+
+  static String m17(size) => "${size} / page";
+
+  static String m18(count) => "${count} tables not saved";
 
   final messages = _notInlinedMessages(_notInlinedMessages);
   static Map<String, Function> _notInlinedMessages(_) => <String, Function>{
@@ -56,6 +68,7 @@ class MessageLookup extends MessageLookupByLibrary {
             MessageLookupByLibrary.simpleMessage("Access restricted"),
         "strActionColumnHeader": MessageLookupByLibrary.simpleMessage("Action"),
         "strActionsColumn": MessageLookupByLibrary.simpleMessage("Actions"),
+        "strActiveTimeLabel": m0,
         "strAdd": MessageLookupByLibrary.simpleMessage("Add"),
         "strAddCategory": MessageLookupByLibrary.simpleMessage("Add category"),
         "strAddFirstEmployee":
@@ -82,6 +95,20 @@ class MessageLookup extends MessageLookupByLibrary {
         "strAmountColumn": MessageLookupByLibrary.simpleMessage("Amount"),
         "strAmountColumnHeader": MessageLookupByLibrary.simpleMessage("Amount"),
         "strAngleDegrees": MessageLookupByLibrary.simpleMessage("Angle (°)"),
+        "strApiErrorBadCertificate": MessageLookupByLibrary.simpleMessage(
+            "The server\'s security certificate is invalid."),
+        "strApiErrorBadRequest":
+            MessageLookupByLibrary.simpleMessage("The request was invalid."),
+        "strApiErrorConflict": MessageLookupByLibrary.simpleMessage(
+            "This action conflicts with the current state."),
+        "strApiErrorForbidden": MessageLookupByLibrary.simpleMessage(
+            "You don\'t have permission to do this."),
+        "strApiErrorGenericWithCode": m1,
+        "strApiErrorNotFound": MessageLookupByLibrary.simpleMessage(
+            "The requested data was not found."),
+        "strApiErrorServerWithCode": m2,
+        "strApiErrorValidation": MessageLookupByLibrary.simpleMessage(
+            "There\'s an error in the submitted data."),
         "strAppLanguage": MessageLookupByLibrary.simpleMessage("App language"),
         "strAppliesToAllUsers":
             MessageLookupByLibrary.simpleMessage("Applied to all users"),
@@ -144,13 +171,13 @@ class MessageLookup extends MessageLookupByLibrary {
         "strClosedStatus": MessageLookupByLibrary.simpleMessage("Closed"),
         "strClosedToday": MessageLookupByLibrary.simpleMessage("Closed today"),
         "strCompounds": MessageLookupByLibrary.simpleMessage("Compounds"),
-        "strCompoundsCount": m0,
+        "strCompoundsCount": m3,
         "strConfirm": MessageLookupByLibrary.simpleMessage("Confirm"),
         "strConfirmCardPayment": MessageLookupByLibrary.simpleMessage(
             "Confirm that customer paid by card"),
         "strConfirmDelete":
             MessageLookupByLibrary.simpleMessage("Confirm deletion"),
-        "strConfirmDeleteItem": m1,
+        "strConfirmDeleteItem": m4,
         "strConfirmWithPincode":
             MessageLookupByLibrary.simpleMessage("Enter PIN to confirm"),
         "strConnected": MessageLookupByLibrary.simpleMessage("Connected"),
@@ -161,6 +188,7 @@ class MessageLookup extends MessageLookupByLibrary {
         "strContinue": MessageLookupByLibrary.simpleMessage("Continue"),
         "strCooking": MessageLookupByLibrary.simpleMessage("Cooking"),
         "strCost": MessageLookupByLibrary.simpleMessage("Cost"),
+        "strCurrentAmountLabel": m5,
         "strCurrentOrder":
             MessageLookupByLibrary.simpleMessage("Current order"),
         "strCurrentShift":
@@ -169,12 +197,13 @@ class MessageLookup extends MessageLookupByLibrary {
         "strDate": MessageLookupByLibrary.simpleMessage("Date"),
         "strDateLabel": MessageLookupByLibrary.simpleMessage("Date:"),
         "strDecember": MessageLookupByLibrary.simpleMessage("December"),
+        "strDefaultGoodName": MessageLookupByLibrary.simpleMessage("Item"),
         "strDelete": MessageLookupByLibrary.simpleMessage("Delete"),
         "strDeleteCategory":
             MessageLookupByLibrary.simpleMessage("Delete category"),
         "strDeleteEmployee":
             MessageLookupByLibrary.simpleMessage("Delete employee"),
-        "strDeleteEmployeeConfirm": m2,
+        "strDeleteEmployeeConfirm": m6,
         "strDeleteError": MessageLookupByLibrary.simpleMessage("Delete error"),
         "strDeleteHall": MessageLookupByLibrary.simpleMessage("Delete hall"),
         "strDeleteMeal": MessageLookupByLibrary.simpleMessage("Delete meal"),
@@ -258,6 +287,7 @@ class MessageLookup extends MessageLookupByLibrary {
             MessageLookupByLibrary.simpleMessage("This field cannot be empty"),
         "strFileTooLarge":
             MessageLookupByLibrary.simpleMessage("File must not exceed 5 MB"),
+        "strFinalAmountLabel": m7,
         "strFloorMap": MessageLookupByLibrary.simpleMessage("Floor Map"),
         "strFoodsCategoriesNotFound":
             MessageLookupByLibrary.simpleMessage("Food categories not found!"),
@@ -289,10 +319,12 @@ class MessageLookup extends MessageLookupByLibrary {
         "strHeightMeters": MessageLookupByLibrary.simpleMessage("Height (m)"),
         "strHeightShort": MessageLookupByLibrary.simpleMessage("Height (m)"),
         "strHotter": MessageLookupByLibrary.simpleMessage("Hotter"),
+        "strHourUnitShort": MessageLookupByLibrary.simpleMessage("h"),
         "strHourly": MessageLookupByLibrary.simpleMessage("Hourly"),
         "strHourlyPayment": MessageLookupByLibrary.simpleMessage("Hourly fee"),
         "strHourlyPrice":
             MessageLookupByLibrary.simpleMessage("Hourly price (som)"),
+        "strHourlyPriceLabel": m8,
         "strHourlySalesDynamics":
             MessageLookupByLibrary.simpleMessage("Hourly sales dynamics"),
         "strHub": MessageLookupByLibrary.simpleMessage("Hub"),
@@ -303,7 +335,7 @@ class MessageLookup extends MessageLookupByLibrary {
         "strIncorrectPincode":
             MessageLookupByLibrary.simpleMessage("Incorrect PIN"),
         "strIngredients": MessageLookupByLibrary.simpleMessage("Ingredients"),
-        "strIngredientsCount": m3,
+        "strIngredientsCount": m9,
         "strInitialBalance":
             MessageLookupByLibrary.simpleMessage("Initial balance"),
         "strInitialStatus":
@@ -316,9 +348,9 @@ class MessageLookup extends MessageLookupByLibrary {
         "strInvalidName": MessageLookupByLibrary.simpleMessage("Invalid name"),
         "strInvalidNumber":
             MessageLookupByLibrary.simpleMessage("Invalid number"),
-        "strItemsCount": m4,
-        "strItemsCountWithAvg": m5,
-        "strItemsCountWithTime": m6,
+        "strItemsCount": m10,
+        "strItemsCountWithAvg": m11,
+        "strItemsCountWithTime": m12,
         "strJanuary": MessageLookupByLibrary.simpleMessage("January"),
         "strJuly": MessageLookupByLibrary.simpleMessage("July"),
         "strJune": MessageLookupByLibrary.simpleMessage("June"),
@@ -346,7 +378,7 @@ class MessageLookup extends MessageLookupByLibrary {
             "This device\'s role in the LAN network"),
         "strMonday": MessageLookupByLibrary.simpleMessage("Monday"),
         "strMoreKetchup": MessageLookupByLibrary.simpleMessage("More ketchup"),
-        "strNPeopleTable": m7,
+        "strNPeopleTable": m13,
         "strName": MessageLookupByLibrary.simpleMessage("Name"),
         "strNameTooShort":
             MessageLookupByLibrary.simpleMessage("Name is too short"),
@@ -398,7 +430,7 @@ class MessageLookup extends MessageLookupByLibrary {
             "Offline mode — data will sync when connection returns"),
         "strOpenBills": MessageLookupByLibrary.simpleMessage("Open bills"),
         "strOpenShift": MessageLookupByLibrary.simpleMessage("Open shift"),
-        "strOpenTablesCount": m8,
+        "strOpenTablesCount": m14,
         "strOpenedAt": MessageLookupByLibrary.simpleMessage("Opened"),
         "strOpenedAtLabel": MessageLookupByLibrary.simpleMessage("Opened:"),
         "strOpeningBalance":
@@ -411,19 +443,25 @@ class MessageLookup extends MessageLookupByLibrary {
         "strOrderNumber": MessageLookupByLibrary.simpleMessage("# Order"),
         "strOrderOrTableNotFound":
             MessageLookupByLibrary.simpleMessage("Order or table not found"),
+        "strOrderStatusOpen": MessageLookupByLibrary.simpleMessage("Open"),
+        "strOrderStatusPaid": MessageLookupByLibrary.simpleMessage("Paid"),
+        "strOrderStatusReady": MessageLookupByLibrary.simpleMessage("Ready"),
+        "strOrderStatusRescheduled":
+            MessageLookupByLibrary.simpleMessage("Rescheduled"),
+        "strOrderStatusServed": MessageLookupByLibrary.simpleMessage("Served"),
         "strOrderSuccessCreated":
             MessageLookupByLibrary.simpleMessage("Order successfully created"),
         "strOrderTransferred": MessageLookupByLibrary.simpleMessage(
             "Order moved to another table"),
         "strOrderType": MessageLookupByLibrary.simpleMessage("Order type"),
         "strOrders": MessageLookupByLibrary.simpleMessage("Orders"),
-        "strOrdersCountShort": m9,
-        "strOrdersCountWithAvg": m10,
+        "strOrdersCountShort": m15,
+        "strOrdersCountWithAvg": m16,
         "strOrdersEmpty":
             MessageLookupByLibrary.simpleMessage("Orders not found"),
         "strOrgName": MessageLookupByLibrary.simpleMessage("Organization name"),
         "strOther": MessageLookupByLibrary.simpleMessage("Other"),
-        "strPageSize": m11,
+        "strPageSize": m17,
         "strPassword": MessageLookupByLibrary.simpleMessage("Password"),
         "strPasswordContainAtLeastChars": MessageLookupByLibrary.simpleMessage(
             "Password must be at least 8 characters."),
@@ -583,12 +621,16 @@ class MessageLookup extends MessageLookupByLibrary {
         "strTableHall": MessageLookupByLibrary.simpleMessage("Table / Hall"),
         "strTableLabel": MessageLookupByLibrary.simpleMessage("Table:"),
         "strTableNumber": MessageLookupByLibrary.simpleMessage("Table"),
+        "strTableTimerLoading":
+            MessageLookupByLibrary.simpleMessage("Table timer…"),
         "strTableType": MessageLookupByLibrary.simpleMessage("Type"),
         "strTables": MessageLookupByLibrary.simpleMessage("Tables"),
-        "strTablesNotSavedCount": m12,
+        "strTablesNotSavedCount": m18,
         "strTakeaway": MessageLookupByLibrary.simpleMessage("Takeaway"),
         "strTerminal": MessageLookupByLibrary.simpleMessage("Terminal"),
         "strThursday": MessageLookupByLibrary.simpleMessage("Thursday"),
+        "strTimeBasedTableTitle":
+            MessageLookupByLibrary.simpleMessage("Table (time-based)"),
         "strTimeColumn": MessageLookupByLibrary.simpleMessage("Time"),
         "strTimeColumnHeader": MessageLookupByLibrary.simpleMessage("Time"),
         "strTodayRevenue":

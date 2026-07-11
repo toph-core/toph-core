@@ -1347,11 +1347,12 @@ class _TableEditDialogState extends State<_TableEditDialog> {
     final width = metersToPx(double.parse(_widthCtrl.text.trim().replaceAll(',', '.')));
     final height = metersToPx(double.parse(_heightCtrl.text.trim().replaceAll(',', '.')));
     final rotation = int.parse(_rotationCtrl.text.trim());
-    // backend price_per_hour ni string kutadi
-    final pricePerHour = _type == 'time_based'
-        ? (_priceCtrl.text.trim().replaceAll(' ', '').replaceAll(',', '.').isEmpty
-            ? '0'
-            : _priceCtrl.text.trim().replaceAll(' ', '').replaceAll(',', '.'))
+    // backend price_per_hour ni son (number) kutadi — string emas.
+    // `num.parse` butun qiymatni int (120000), kasrlisini double qaytaradi.
+    final priceText =
+        _priceCtrl.text.trim().replaceAll(' ', '').replaceAll(',', '.');
+    final num? pricePerHour = _type == 'time_based'
+        ? (priceText.isEmpty ? 0 : (num.tryParse(priceText) ?? 0))
         : null;
     final existing = widget.existing;
 

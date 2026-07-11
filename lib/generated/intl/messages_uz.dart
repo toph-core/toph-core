@@ -20,32 +20,44 @@ typedef String MessageIfAbsent(String messageStr, List<dynamic> args);
 class MessageLookup extends MessageLookupByLibrary {
   String get localeName => 'uz';
 
-  static String m0(count) => "${count} Qo\'shma";
+  static String m0(duration) => "Faol vaqt: ${duration}";
 
-  static String m1(item) => "\'${item}\' ni o\'chirmoqchimisiz?";
+  static String m1(code) => "Xatolik yuz berdi (${code}).";
 
-  static String m2(name) =>
+  static String m2(code) => "Server xatosi (${code}).";
+
+  static String m3(count) => "${count} Qo\'shma";
+
+  static String m4(item) => "\'${item}\' ni o\'chirmoqchimisiz?";
+
+  static String m5(amount) => "Hozirgi summa: ${amount}";
+
+  static String m6(name) =>
       "${name} hisobi o\'chiriladi. Bu amalni qaytarib bo\'lmaydi.";
 
-  static String m3(count) => "${count} Ingredient";
+  static String m7(amount) => "Yakuniy: ${amount}";
 
-  static String m4(count) => "Elementlar: ${count}";
+  static String m8(price) => "Soat narxi: ${price}";
 
-  static String m5(count, avg) => "${count} taom · o\'rt. ${avg}";
+  static String m9(count) => "${count} Ingredient";
 
-  static String m6(count, time) => "${count} taom · ${time}";
+  static String m10(count) => "Elementlar: ${count}";
 
-  static String m7(n) => "${n} ta stol";
+  static String m11(count, avg) => "${count} taom · o\'rt. ${avg}";
 
-  static String m8(count) => "${count} ta ochiq stol";
+  static String m12(count, time) => "${count} taom · ${time}";
 
-  static String m9(count) => "${count} ta buyurtma";
+  static String m13(n) => "${n} ta stol";
 
-  static String m10(count, avg) => "${count} ta buyurtma · o\'rt. ${avg}";
+  static String m14(count) => "${count} ta ochiq stol";
 
-  static String m11(size) => "${size} / sahifa";
+  static String m15(count) => "${count} ta buyurtma";
 
-  static String m12(count) => "${count} ta stol saqlanmadi";
+  static String m16(count, avg) => "${count} ta buyurtma · o\'rt. ${avg}";
+
+  static String m17(size) => "${size} / sahifa";
+
+  static String m18(count) => "${count} ta stol saqlanmadi";
 
   final messages = _notInlinedMessages(_notInlinedMessages);
   static Map<String, Function> _notInlinedMessages(_) => <String, Function>{
@@ -57,6 +69,7 @@ class MessageLookup extends MessageLookupByLibrary {
             MessageLookupByLibrary.simpleMessage("Ruxsat cheklangan"),
         "strActionColumnHeader": MessageLookupByLibrary.simpleMessage("Amal"),
         "strActionsColumn": MessageLookupByLibrary.simpleMessage("Amallar"),
+        "strActiveTimeLabel": m0,
         "strAdd": MessageLookupByLibrary.simpleMessage("Qo\'shish"),
         "strAddCategory":
             MessageLookupByLibrary.simpleMessage("Kategoriya qo\'shish"),
@@ -87,6 +100,20 @@ class MessageLookup extends MessageLookupByLibrary {
         "strAmountColumn": MessageLookupByLibrary.simpleMessage("Summa"),
         "strAmountColumnHeader": MessageLookupByLibrary.simpleMessage("Summa"),
         "strAngleDegrees": MessageLookupByLibrary.simpleMessage("Burchak (°)"),
+        "strApiErrorBadCertificate": MessageLookupByLibrary.simpleMessage(
+            "Server xavfsizlik sertifikati yaroqsiz."),
+        "strApiErrorBadRequest":
+            MessageLookupByLibrary.simpleMessage("So\'rov noto\'g\'ri."),
+        "strApiErrorConflict": MessageLookupByLibrary.simpleMessage(
+            "Amal joriy holatga mos kelmaydi."),
+        "strApiErrorForbidden":
+            MessageLookupByLibrary.simpleMessage("Bu amal uchun ruxsat yo\'q."),
+        "strApiErrorGenericWithCode": m1,
+        "strApiErrorNotFound": MessageLookupByLibrary.simpleMessage(
+            "So\'ralgan ma\'lumot topilmadi."),
+        "strApiErrorServerWithCode": m2,
+        "strApiErrorValidation": MessageLookupByLibrary.simpleMessage(
+            "Yuborilgan ma\'lumotlarda xatolik bor."),
         "strAppLanguage": MessageLookupByLibrary.simpleMessage("Ilova tili"),
         "strAppliesToAllUsers": MessageLookupByLibrary.simpleMessage(
             "Barcha foydalanuvchilar uchun qo\'llaniladi"),
@@ -150,13 +177,13 @@ class MessageLookup extends MessageLookupByLibrary {
         "strClosedStatus": MessageLookupByLibrary.simpleMessage("Yopiq"),
         "strClosedToday": MessageLookupByLibrary.simpleMessage("Bugun yopildi"),
         "strCompounds": MessageLookupByLibrary.simpleMessage("Qo\'shma"),
-        "strCompoundsCount": m0,
+        "strCompoundsCount": m3,
         "strConfirm": MessageLookupByLibrary.simpleMessage("Tasdiqlash"),
         "strConfirmCardPayment": MessageLookupByLibrary.simpleMessage(
             "Mijoz to\'lovni karta orqali amalga oshirganini tasdiqlang"),
         "strConfirmDelete":
             MessageLookupByLibrary.simpleMessage("O\'chirishni tasdiqlang"),
-        "strConfirmDeleteItem": m1,
+        "strConfirmDeleteItem": m4,
         "strConfirmWithPincode": MessageLookupByLibrary.simpleMessage(
             "Tasdiqlash uchun pinkodni kiriting"),
         "strConnected": MessageLookupByLibrary.simpleMessage("Ulangan"),
@@ -167,6 +194,7 @@ class MessageLookup extends MessageLookupByLibrary {
         "strContinue": MessageLookupByLibrary.simpleMessage("Davom etish"),
         "strCooking": MessageLookupByLibrary.simpleMessage("Pishirilmoqda"),
         "strCost": MessageLookupByLibrary.simpleMessage("Narxi"),
+        "strCurrentAmountLabel": m5,
         "strCurrentOrder":
             MessageLookupByLibrary.simpleMessage("Hozirgi buyurtma"),
         "strCurrentShift": MessageLookupByLibrary.simpleMessage("Joriy smena"),
@@ -174,12 +202,13 @@ class MessageLookup extends MessageLookupByLibrary {
         "strDate": MessageLookupByLibrary.simpleMessage("Sana"),
         "strDateLabel": MessageLookupByLibrary.simpleMessage("Sana:"),
         "strDecember": MessageLookupByLibrary.simpleMessage("Dekabr"),
+        "strDefaultGoodName": MessageLookupByLibrary.simpleMessage("Mahsulot"),
         "strDelete": MessageLookupByLibrary.simpleMessage("O\'chirish"),
         "strDeleteCategory":
             MessageLookupByLibrary.simpleMessage("Kategoriyani o\'chirish"),
         "strDeleteEmployee":
             MessageLookupByLibrary.simpleMessage("Xodimni o\'chirish"),
-        "strDeleteEmployeeConfirm": m2,
+        "strDeleteEmployeeConfirm": m6,
         "strDeleteError":
             MessageLookupByLibrary.simpleMessage("O\'chirishda xatolik"),
         "strDeleteHall":
@@ -271,6 +300,7 @@ class MessageLookup extends MessageLookupByLibrary {
             "Bu maydon bo\'sh bo\'lishi mumkin emas"),
         "strFileTooLarge": MessageLookupByLibrary.simpleMessage(
             "Fayl 5 MB dan katta bo\'lmasligi kerak"),
+        "strFinalAmountLabel": m7,
         "strFloorMap": MessageLookupByLibrary.simpleMessage("Stollar xaritasi"),
         "strFoodsCategoriesNotFound": MessageLookupByLibrary.simpleMessage(
             "Taomlar kategoriyasi topilmadi!"),
@@ -304,11 +334,13 @@ class MessageLookup extends MessageLookupByLibrary {
             MessageLookupByLibrary.simpleMessage("Balandligi (m)"),
         "strHeightShort": MessageLookupByLibrary.simpleMessage("Balandlik (m)"),
         "strHotter": MessageLookupByLibrary.simpleMessage("Issiqroq"),
+        "strHourUnitShort": MessageLookupByLibrary.simpleMessage("soat"),
         "strHourly": MessageLookupByLibrary.simpleMessage("Soatlik"),
         "strHourlyPayment":
             MessageLookupByLibrary.simpleMessage("Soatlik to\'lov"),
         "strHourlyPrice":
             MessageLookupByLibrary.simpleMessage("Soatlik narx (so\'m)"),
+        "strHourlyPriceLabel": m8,
         "strHourlySalesDynamics":
             MessageLookupByLibrary.simpleMessage("Soatlik savdo dinamikasi"),
         "strHub": MessageLookupByLibrary.simpleMessage("Hub"),
@@ -319,7 +351,7 @@ class MessageLookup extends MessageLookupByLibrary {
         "strIncorrectPincode":
             MessageLookupByLibrary.simpleMessage("Pinkod noto\'g\'ri"),
         "strIngredients": MessageLookupByLibrary.simpleMessage("Ingredientlar"),
-        "strIngredientsCount": m3,
+        "strIngredientsCount": m9,
         "strInitialBalance":
             MessageLookupByLibrary.simpleMessage("Boshlang\'ich qoldiq"),
         "strInitialStatus":
@@ -334,9 +366,9 @@ class MessageLookup extends MessageLookupByLibrary {
             MessageLookupByLibrary.simpleMessage("Noto\'g\'ri ism"),
         "strInvalidNumber":
             MessageLookupByLibrary.simpleMessage("Noto\'g\'ri raqam"),
-        "strItemsCount": m4,
-        "strItemsCountWithAvg": m5,
-        "strItemsCountWithTime": m6,
+        "strItemsCount": m10,
+        "strItemsCountWithAvg": m11,
+        "strItemsCountWithTime": m12,
         "strJanuary": MessageLookupByLibrary.simpleMessage("Yanvar"),
         "strJuly": MessageLookupByLibrary.simpleMessage("Iyul"),
         "strJune": MessageLookupByLibrary.simpleMessage("Iyun"),
@@ -369,7 +401,7 @@ class MessageLookup extends MessageLookupByLibrary {
         "strMonday": MessageLookupByLibrary.simpleMessage("Dushanba"),
         "strMoreKetchup":
             MessageLookupByLibrary.simpleMessage("Ketchup ko\'proq"),
-        "strNPeopleTable": m7,
+        "strNPeopleTable": m13,
         "strName": MessageLookupByLibrary.simpleMessage("Nomi"),
         "strNameTooShort":
             MessageLookupByLibrary.simpleMessage("Ism juda qisqa"),
@@ -425,7 +457,7 @@ class MessageLookup extends MessageLookupByLibrary {
             "Offline rejim — ma\'lumotlar internet qaytganda sync bo\'ladi"),
         "strOpenBills": MessageLookupByLibrary.simpleMessage("Ochiq hisoblar"),
         "strOpenShift": MessageLookupByLibrary.simpleMessage("Smenani ochish"),
-        "strOpenTablesCount": m8,
+        "strOpenTablesCount": m14,
         "strOpenedAt": MessageLookupByLibrary.simpleMessage("Ochildi"),
         "strOpenedAtLabel": MessageLookupByLibrary.simpleMessage("Ochildi:"),
         "strOpeningBalance":
@@ -438,19 +470,25 @@ class MessageLookup extends MessageLookupByLibrary {
         "strOrderNumber": MessageLookupByLibrary.simpleMessage("№ Zakaz"),
         "strOrderOrTableNotFound": MessageLookupByLibrary.simpleMessage(
             "Buyurtma yoki stol topilmadi"),
+        "strOrderStatusOpen": MessageLookupByLibrary.simpleMessage("Ochiq"),
+        "strOrderStatusPaid": MessageLookupByLibrary.simpleMessage("To\'landi"),
+        "strOrderStatusReady": MessageLookupByLibrary.simpleMessage("Tayyor"),
+        "strOrderStatusRescheduled":
+            MessageLookupByLibrary.simpleMessage("Ko\'chirildi"),
+        "strOrderStatusServed": MessageLookupByLibrary.simpleMessage("Berildi"),
         "strOrderSuccessCreated": MessageLookupByLibrary.simpleMessage(
             "Buyurtma muvaffaqiyatli yaratildi"),
         "strOrderTransferred": MessageLookupByLibrary.simpleMessage(
             "Buyurtma boshqa stolga ko\'chirildi"),
         "strOrderType": MessageLookupByLibrary.simpleMessage("Buyurtma turi"),
         "strOrders": MessageLookupByLibrary.simpleMessage("Buyurtmalar"),
-        "strOrdersCountShort": m9,
-        "strOrdersCountWithAvg": m10,
+        "strOrdersCountShort": m15,
+        "strOrdersCountWithAvg": m16,
         "strOrdersEmpty":
             MessageLookupByLibrary.simpleMessage("Buyurtmalar topilmadi"),
         "strOrgName": MessageLookupByLibrary.simpleMessage("Tashkilot nomi"),
         "strOther": MessageLookupByLibrary.simpleMessage("Boshqa"),
-        "strPageSize": m11,
+        "strPageSize": m17,
         "strPassword": MessageLookupByLibrary.simpleMessage("Parol"),
         "strPasswordContainAtLeastChars": MessageLookupByLibrary.simpleMessage(
             "Parol kamida 8 ta belgidan iborat bo\'lishi kerak."),
@@ -612,12 +650,16 @@ class MessageLookup extends MessageLookupByLibrary {
         "strTableHall": MessageLookupByLibrary.simpleMessage("Stol / Zal"),
         "strTableLabel": MessageLookupByLibrary.simpleMessage("Stol:"),
         "strTableNumber": MessageLookupByLibrary.simpleMessage("Stol"),
+        "strTableTimerLoading":
+            MessageLookupByLibrary.simpleMessage("Stol taymeri…"),
         "strTableType": MessageLookupByLibrary.simpleMessage("Turi"),
         "strTables": MessageLookupByLibrary.simpleMessage("Stollar"),
-        "strTablesNotSavedCount": m12,
+        "strTablesNotSavedCount": m18,
         "strTakeaway": MessageLookupByLibrary.simpleMessage("Olib ketish"),
         "strTerminal": MessageLookupByLibrary.simpleMessage("Terminal"),
         "strThursday": MessageLookupByLibrary.simpleMessage("Payshanba"),
+        "strTimeBasedTableTitle":
+            MessageLookupByLibrary.simpleMessage("Stol (vaqt bo\'yicha)"),
         "strTimeColumn": MessageLookupByLibrary.simpleMessage("Vaqt"),
         "strTimeColumnHeader": MessageLookupByLibrary.simpleMessage("Vaqt"),
         "strTodayRevenue":

@@ -50,9 +50,7 @@ class _TableWidgetState extends State<TableWidget> {
 
     return BlocBuilder<SavedOrdersBloc, SavedOrdersState>(
       builder: (context, savedState) {
-        final hasSaved = savedState.order.any(
-          (v) => v.cafeTable.id == widget.table.id,
-        );
+        final hasSaved = savedState.order.any((v) => v.cafeTable.id == widget.table.id);
 
         return MouseRegion(
           onEnter: (_) => setState(() => _hovered = true),
@@ -67,18 +65,9 @@ class _TableWidgetState extends State<TableWidget> {
               decoration: BoxDecoration(
                 color: _hovered ? bgColor.withOpacity(0.85) : bgColor,
                 borderRadius: BorderRadius.circular(14),
-                border: Border.all(
-                  color: _hovered ? borderColor.withOpacity(0.7) : borderColor,
-                  width: 2,
-                ),
+                border: Border.all(color: _hovered ? borderColor.withOpacity(0.7) : borderColor, width: 2),
                 boxShadow: _hovered
-                    ? [
-                        BoxShadow(
-                          color: borderColor.withOpacity(0.15),
-                          blurRadius: 12,
-                          offset: const Offset(0, 4),
-                        ),
-                      ]
+                    ? [BoxShadow(color: borderColor.withOpacity(0.15), blurRadius: 12, offset: const Offset(0, 4))]
                     : null,
               ),
               padding: const EdgeInsets.all(14),
@@ -99,10 +88,7 @@ class _TableWidgetState extends State<TableWidget> {
                       ),
                       if (hasSaved)
                         Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 6,
-                            vertical: 2,
-                          ),
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                           decoration: BoxDecoration(
                             color: colors.textBrand.withOpacity(0.1),
                             borderRadius: BorderRadius.circular(6),
@@ -128,10 +114,7 @@ class _TableWidgetState extends State<TableWidget> {
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
                         Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 3,
-                          ),
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                           decoration: BoxDecoration(
                             color: statusTextColor.withOpacity(0.1),
                             borderRadius: BorderRadius.circular(6),
@@ -150,11 +133,7 @@ class _TableWidgetState extends State<TableWidget> {
                           mainAxisSize: MainAxisSize.min,
                           spacing: 3,
                           children: [
-                            Icon(
-                              Icons.people_outline,
-                              size: 13,
-                              color: colors.textTertiary,
-                            ),
+                            Icon(Icons.people_outline, size: 13, color: colors.textTertiary),
                             Text(
                               '${widget.table.capacity}',
                               style: TextStyle(

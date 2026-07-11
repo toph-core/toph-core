@@ -21,7 +21,6 @@ import 'package:mary_ai_pos/features/view/main/presentation/pages/detail/widgets
 import 'package:mary_ai_pos/features/view/main/presentation/pages/detail/widgets/transfer_table_dialog.dart';
 import 'package:mary_ai_pos/generated/l10n.dart';
 
-const _kS900 = Color(0xFF0F172A);
 const _kS500 = Color(0xFF64748B);
 const _kS200 = Color(0xFFE2E8F0);
 const _kS50 = Color(0xFFF8FAFC);
@@ -49,8 +48,7 @@ class OrderActionsBar extends StatefulWidget {
   State<OrderActionsBar> createState() => _OrderActionsBarState();
 }
 
-class _OrderActionsBarState extends State<OrderActionsBar>
-    with DetailScreenMixin {
+class _OrderActionsBarState extends State<OrderActionsBar> with DetailScreenMixin {
   String? get tableId => widget.tableId;
   int get guestCount => widget.guestCount;
   TableStatus get tableStatus => widget.tableStatus;
@@ -86,35 +84,23 @@ class _OrderActionsBarState extends State<OrderActionsBar>
                 p.displayActiveSec != c.displayActiveSec ||
                 p.billPauses.length != c.billPauses.length,
             builder: (ctx, timerState) {
-              final existingTotal = calculateTotalPrice(
-                state.existingGoods
-                    .where((g) => g.commet != 'cancelled')
-                    .toList(),
-              );
-              final foodTotal =
-                  (existingTotal + calculateTotalPrice(state.selectedGoods))
-                      .round();
+              final existingTotal = calculateTotalPrice(state.existingGoods.where((g) => g.commet != 'cancelled').toList());
+              final foodTotal = (existingTotal + calculateTotalPrice(state.selectedGoods)).round();
               // Stol pricing strategiyasi — time-based (live), frozen, yoki simple.
               final pricing = TablePricingResolver.resolve(
                 order: null,
                 timer: timerState.timer,
-                displayActiveSec:
-                    timerState.displayActiveSec ??
-                    timerState.timer?.totalActiveSec ??
-                    0,
+                displayActiveSec: timerState.displayActiveSec ?? timerState.timer?.totalActiveSec ?? 0,
               );
               final timerAmt = pricing.extraCharge;
-              final detail = context.read<DetailBloc>().lastDetail;
-              final servicePercent = detail?.servicePercent ?? 0;
-              final serviceAmt = servicePercent > 0
-                  ? (foodTotal * servicePercent / 100).round()
-                  : 0;
-              final total = foodTotal + timerAmt + serviceAmt;
+              // Servis summasi faqat to'lov ekranida qo'shiladi — bu qatorda
+              // (_TotalBlock va Payment tugmasi) faqat ovqat + taymer ko'rsatiladi.
+              final total = foodTotal + timerAmt;
 
               return Row(
                 children: [
                   // ── Total info ─────────────────────────────────────
-                  _TotalBlock(subtotal: foodTotal + timerAmt, total: total),
+                  _TotalBlock(subtotal: foodTotal + timerAmt),
                   const SizedBox(width: 14),
 
                   // ── Timer (compact) ────────────────────────────────
@@ -123,12 +109,7 @@ class _OrderActionsBarState extends State<OrderActionsBar>
                       listenWhen: (p, c) => p.isMutating && !c.isMutating,
                       listener: (ctx, _) {
                         if (cafeTable != null) {
-                          ctx.read<DetailBloc>().add(
-                            DetailEvent.fetchBillOrders(
-                              billId: cafeTable!.id,
-                              force: true,
-                            ),
-                          );
+                          ctx.read<DetailBloc>().add(DetailEvent.fetchBillOrders(billId: cafeTable!.id, force: true));
                         }
                       },
                       child: const RepaintBoundary(child: _TimerCompact()),
@@ -137,9 +118,7 @@ class _OrderActionsBarState extends State<OrderActionsBar>
                   const Spacer(),
 
                   // ── Swap (table transfer) ──────────────────────────
-                  if (tableId != null &&
-                      orderId != null &&
-                      tableStatus == TableStatus.busy)
+                  if (tableId != null && orderId != null && tableStatus == TableStatus.busy)
                     _IconBtn(
                       icon: Icons.swap_horiz_rounded,
                       tooltip: S.current.strChangeTable,
@@ -158,10 +137,7 @@ class _OrderActionsBarState extends State<OrderActionsBar>
                         }
                       },
                     ),
-                  if (tableId != null &&
-                      orderId != null &&
-                      tableStatus == TableStatus.busy)
-                    const SizedBox(width: 6),
+                  if (tableId != null && orderId != null && tableStatus == TableStatus.busy) const SizedBox(width: 6),
 
                   // ── Trash (clear selection) ────────────────────────
                   if (hasSelected)
@@ -175,11 +151,8 @@ class _OrderActionsBarState extends State<OrderActionsBar>
                         await showDialog(
                           context: context,
                           barrierDismissible: false,
-                          builder: (_) => ClearDialog(
-                            onSuccess: () => context.read<DetailBloc>().add(
-                              const DetailEvent.clearGoods(),
-                            ),
-                          ),
+                          builder: (_) =>
+                              ClearDialog(onSuccess: () => context.read<DetailBloc>().add(const DetailEvent.clearGoods())),
                         );
                       },
                     ),
@@ -209,9 +182,8 @@ class _OrderActionsBarState extends State<OrderActionsBar>
 // ─── Total & payment block (compact) ──────────────────────────────────────────
 class _TotalBlock extends StatelessWidget {
   final int subtotal;
-  final int total;
 
-  const _TotalBlock({required this.subtotal, required this.total});
+  const _TotalBlock({required this.subtotal});
 
   @override
   Widget build(BuildContext context) {
@@ -224,41 +196,11 @@ class _TotalBlock extends StatelessWidget {
           children: [
             Text(
               S.current.strTotalLabel,
-              style: const TextStyle(
-                fontSize: 13,
-                color: _kS500,
-                fontFamily: 'Inter',
-              ),
-            ),
-            const SizedBox(width: 4),
-            Text(
-              subtotal.formatN,
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: _kS900,
-                fontFamily: 'Inter',
-                fontFeatures: [FontFeature.tabularFigures()],
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 2),
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              S.current.strPaymentLabel,
-              style: const TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w500,
-                color: _kS500,
-                fontFamily: PosTypography.family,
-              ),
+              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500, color: _kS500, fontFamily: PosTypography.family),
             ),
             const SizedBox(width: PosDimensions.s),
             Text(
-              total.formatN,
+              subtotal.formatN,
               style: const TextStyle(
                 // POS uchun katta — kassir ham mijoz ham masofadan ko'rsin
                 fontSize: PosTypography.priceLg, // 24
@@ -285,8 +227,7 @@ class _TimerCompact extends StatelessWidget {
     return BlocBuilder<TableTimerCubit, TableTimerState>(
       builder: (context, timerState) {
         final t = timerState.timer;
-        final displaySec =
-            timerState.displayActiveSec ?? t?.totalActiveSec ?? 0;
+        final displaySec = timerState.displayActiveSec ?? t?.totalActiveSec ?? 0;
         final isFrozen = timerState.isFrozen;
         final isRunning = !isFrozen && t?.stateNormalized == 'running';
         final isPaused = !isFrozen && t?.stateNormalized == 'paused';
@@ -294,9 +235,7 @@ class _TimerCompact extends StatelessWidget {
         const primary = Color(0xFFFB6633);
         final rawAmt = timerState.effectiveCurrentAmount ?? '';
         final amount = rawAmt.isNotEmpty ? _fmtAmount(rawAmt) : '';
-        final pauses = timerState.billPauses.isNotEmpty
-            ? timerState.billPauses
-            : (t?.pauses ?? const <PauseInterval>[]);
+        final pauses = timerState.billPauses.isNotEmpty ? timerState.billPauses : (t?.pauses ?? const <PauseInterval>[]);
 
         return MouseRegion(
           cursor: SystemMouseCursors.click,
@@ -304,8 +243,7 @@ class _TimerCompact extends StatelessWidget {
             behavior: HitTestBehavior.opaque,
             onTap: () => showDialog<void>(
               context: context,
-              builder: (_) =>
-                  _PauseHistoryDialog(pauses: pauses, startedAt: t?.startedAt),
+              builder: (_) => _PauseHistoryDialog(pauses: pauses, startedAt: t?.startedAt),
             ),
             child: Container(
               height: 56,
@@ -352,10 +290,7 @@ class _TimerCompact extends StatelessWidget {
                   if (pauses.isNotEmpty) ...[
                     const SizedBox(width: 10),
                     Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 6,
-                        vertical: 3,
-                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
                       decoration: BoxDecoration(
                         color: const Color(0xFFF59E0B).withOpacity(0.15),
                         borderRadius: BorderRadius.circular(6),
@@ -363,11 +298,7 @@ class _TimerCompact extends StatelessWidget {
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(
-                            Icons.pause_circle_outline_rounded,
-                            size: 12,
-                            color: Color(0xFFF59E0B),
-                          ),
+                          const Icon(Icons.pause_circle_outline_rounded, size: 12, color: Color(0xFFF59E0B)),
                           const SizedBox(width: 3),
                           Text(
                             '${pauses.length}',
@@ -395,9 +326,7 @@ class _TimerCompact extends StatelessWidget {
                         width: 40,
                         height: 40,
                         decoration: BoxDecoration(
-                          color: isRunning
-                              ? primary.withOpacity(0.20)
-                              : const Color(0xFF22C55E).withOpacity(0.20),
+                          color: isRunning ? primary.withOpacity(0.20) : const Color(0xFF22C55E).withOpacity(0.20),
                           shape: BoxShape.circle,
                         ),
                         child: Center(
@@ -407,19 +336,13 @@ class _TimerCompact extends StatelessWidget {
                                   height: 14,
                                   child: CircularProgressIndicator(
                                     strokeWidth: 2,
-                                    color: isRunning
-                                        ? primary
-                                        : const Color(0xFF22C55E),
+                                    color: isRunning ? primary : const Color(0xFF22C55E),
                                   ),
                                 )
                               : Icon(
-                                  isRunning
-                                      ? Icons.pause_rounded
-                                      : Icons.play_arrow_rounded,
+                                  isRunning ? Icons.pause_rounded : Icons.play_arrow_rounded,
                                   size: 22,
-                                  color: isRunning
-                                      ? primary
-                                      : const Color(0xFF22C55E),
+                                  color: isRunning ? primary : const Color(0xFF22C55E),
                                 ),
                         ),
                       ),
@@ -447,10 +370,7 @@ class _TimerCompact extends StatelessWidget {
   static String _fmtAmount(String raw) {
     final d = double.tryParse(raw.replaceAll(RegExp(r'[^0-9.]'), ''));
     if (d == null) return raw;
-    return d.round().toString().replaceAllMapped(
-      RegExp(r'(\d)(?=(\d{3})+(?!\d))'),
-      (m) => '${m[1]} ',
-    );
+    return d.round().toString().replaceAllMapped(RegExp(r'(\d)(?=(\d{3})+(?!\d))'), (m) => '${m[1]} ');
   }
 }
 
@@ -535,11 +455,7 @@ class _PauseHistoryDialogState extends State<_PauseHistoryDialog> {
               child: Row(
                 children: [
                   if (startedAt != null) ...[
-                    const Icon(
-                      Icons.schedule_rounded,
-                      size: 14,
-                      color: Color(0xFF64748B),
-                    ),
+                    const Icon(Icons.schedule_rounded, size: 14, color: Color(0xFF64748B)),
                     const SizedBox(width: 5),
                     Text(
                       '${S.current.strOpenedAtLabel} ${_fmtClockUtil(startedAt)}',
@@ -553,10 +469,7 @@ class _PauseHistoryDialogState extends State<_PauseHistoryDialog> {
                   ],
                   const Spacer(),
                   Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
-                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
                       color: const Color(0xFFF59E0B).withOpacity(0.12),
                       borderRadius: BorderRadius.circular(6),
@@ -582,11 +495,7 @@ class _PauseHistoryDialogState extends State<_PauseHistoryDialog> {
                 child: Center(
                   child: Text(
                     S.current.strNoPauses,
-                    style: const TextStyle(
-                      fontSize: 13,
-                      color: Color(0xFF94A3B8),
-                      fontFamily: 'Inter',
-                    ),
+                    style: const TextStyle(fontSize: 13, color: Color(0xFF94A3B8), fontFamily: 'Inter'),
                   ),
                 ),
               )
@@ -602,32 +511,21 @@ class _PauseHistoryDialogState extends State<_PauseHistoryDialog> {
                     shrinkWrap: true,
                     padding: const EdgeInsets.fromLTRB(0, 4, 4, 4),
                     itemCount: pauses.length,
-                    separatorBuilder: (_, _) =>
-                        const Divider(height: 1, color: Color(0xFFF1F5F9)),
+                    separatorBuilder: (_, _) => const Divider(height: 1, color: Color(0xFFF1F5F9)),
                     itemBuilder: (_, i) {
                       final p = pauses[i];
                       final dur = p.durationSec > 0
                           ? p.durationSec
-                          : (p.endedAt != null
-                                ? p.endedAt!
-                                      .difference(p.startedAt)
-                                      .inSeconds
-                                      .abs()
-                                : 0);
+                          : (p.endedAt != null ? p.endedAt!.difference(p.startedAt).inSeconds.abs() : 0);
                       return Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 12,
-                        ),
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                         child: Row(
                           children: [
                             Container(
                               width: 28,
                               height: 28,
                               decoration: BoxDecoration(
-                                color: const Color(
-                                  0xFFF59E0B,
-                                ).withOpacity(0.12),
+                                color: const Color(0xFFF59E0B).withOpacity(0.12),
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: Center(
@@ -649,17 +547,11 @@ class _PauseHistoryDialogState extends State<_PauseHistoryDialog> {
                               color: const Color(0xFFF59E0B),
                             ),
                             const SizedBox(width: 8),
-                            const Icon(
-                              Icons.arrow_forward_rounded,
-                              size: 14,
-                              color: Color(0xFFCBD5E1),
-                            ),
+                            const Icon(Icons.arrow_forward_rounded, size: 14, color: Color(0xFFCBD5E1)),
                             const SizedBox(width: 8),
                             _PauseChip(
                               icon: Icons.play_arrow_rounded,
-                              label: p.endedAt != null
-                                  ? _fmtClockUtil(p.endedAt!)
-                                  : '—',
+                              label: p.endedAt != null ? _fmtClockUtil(p.endedAt!) : '—',
                               color: const Color(0xFF22C55E),
                             ),
                             const Spacer(),
@@ -692,11 +584,7 @@ class _PauseChip extends StatelessWidget {
   final String label;
   final Color color;
 
-  const _PauseChip({
-    required this.icon,
-    required this.label,
-    required this.color,
-  });
+  const _PauseChip({required this.icon, required this.label, required this.color});
 
   @override
   Widget build(BuildContext context) {
@@ -766,11 +654,7 @@ class _IconBtnState extends State<_IconBtn> {
               border: Border.all(color: _hovered ? widget.hoverBorder : _kS200),
               borderRadius: BorderRadius.circular(PosDimensions.radiusMd),
             ),
-            child: Icon(
-              widget.icon,
-              size: 20,
-              color: _hovered ? widget.hoverIcon : _kS500,
-            ),
+            child: Icon(widget.icon, size: 20, color: _hovered ? widget.hoverIcon : _kS500),
           ),
         ),
       ),
@@ -805,14 +689,9 @@ class _ActionButtons extends StatelessWidget {
     // Takeaway
     if (tableId == null) {
       return BlocProvider(
-        create: (_) => inject<CreateOrderBloc>()
-          ..add(
-            const CreateOrderEvent.started(
-              tableId: null,
-              guestCount: 1,
-              tableStatus: TableStatus.free,
-            ),
-          ),
+        create: (_) =>
+            inject<CreateOrderBloc>()
+              ..add(const CreateOrderEvent.started(tableId: null, guestCount: 1, tableStatus: TableStatus.free)),
         child: BlocBuilder<CreateOrderBloc, CreateOrderState>(
           builder: (context, createState) {
             return _PillButton(
@@ -821,9 +700,7 @@ class _ActionButtons extends StatelessWidget {
               isLoading: createState.status == Status.LOADING,
               trailingAmount: total.formatN,
               onTap: selectedGoods.isNotEmpty
-                  ? () => context.read<CreateOrderBloc>().add(
-                      CreateOrderEvent.createOrder(orders: selectedGoods),
-                    )
+                  ? () => context.read<CreateOrderBloc>().add(CreateOrderEvent.createOrder(orders: selectedGoods))
                   : null,
             );
           },
@@ -834,39 +711,21 @@ class _ActionButtons extends StatelessWidget {
     // Free table — Save
     if (tableStatus == TableStatus.free) {
       return BlocProvider(
-        create: (_) => inject<CreateOrderBloc>()
-          ..add(
-            CreateOrderEvent.started(
-              tableId: tableId,
-              guestCount: guestCount,
-              tableStatus: tableStatus,
-            ),
-          ),
+        create: (_) =>
+            inject<CreateOrderBloc>()
+              ..add(CreateOrderEvent.started(tableId: tableId, guestCount: guestCount, tableStatus: tableStatus)),
         child: BlocConsumer<CreateOrderBloc, CreateOrderState>(
           listener: (context, createState) {
             if (createState.status != Status.LOADING && createState.success) {
               if (createState.tableId.isNotEmpty) {
-                context.read<SavedOrdersBloc>().add(
-                  SavedOrdersEvent.removeOrder(tableId: createState.tableId),
-                );
+                context.read<SavedOrdersBloc>().add(SavedOrdersEvent.removeOrder(tableId: createState.tableId));
               }
-              context.read<MainCubit>().updateTableStatus(
-                createState.tableId,
-                TableStatus.busy,
-              );
+              context.read<MainCubit>().updateTableStatus(createState.tableId, TableStatus.busy);
               if (cafeTable != null) {
-                context.read<DetailBloc>().add(
-                  DetailEvent.fetchBillOrders(
-                    billId: cafeTable!.id,
-                    force: true,
-                  ),
-                );
+                context.read<DetailBloc>().add(DetailEvent.fetchBillOrders(billId: cafeTable!.id, force: true));
               }
               context.read<DetailBloc>().add(const DetailEvent.clearGoods());
-              showSuccessMessage(
-                navigatorKey.currentContext!,
-                S.current.strOrderSuccessCreated,
-              );
+              showSuccessMessage(navigatorKey.currentContext!, S.current.strOrderSuccessCreated);
               onTableStatusChanged(TableStatus.busy);
             }
           },
@@ -878,14 +737,9 @@ class _ActionButtons extends StatelessWidget {
               onTap: selectedGoods.isNotEmpty
                   ? () {
                       final bloc = context.read<CreateOrderBloc>();
-                      final activeId = context
-                          .read<DetailBloc>()
-                          .state
-                          .activeOrderId;
+                      final activeId = context.read<DetailBloc>().state.activeOrderId;
                       if (activeId != null) bloc.bindActiveOrder(activeId);
-                      bloc.add(
-                        CreateOrderEvent.createOrder(orders: selectedGoods),
-                      );
+                      bloc.add(CreateOrderEvent.createOrder(orders: selectedGoods));
                     }
                   : null,
             );
@@ -898,13 +752,7 @@ class _ActionButtons extends StatelessWidget {
     return BlocProvider(
       create: (ctx) {
         final bloc = inject<CreateOrderBloc>()
-          ..add(
-            CreateOrderEvent.started(
-              tableId: tableId,
-              guestCount: guestCount,
-              tableStatus: tableStatus,
-            ),
-          );
+          ..add(CreateOrderEvent.started(tableId: tableId, guestCount: guestCount, tableStatus: tableStatus));
         final activeId = ctx.read<DetailBloc>().state.activeOrderId;
         if (activeId != null) bloc.bindActiveOrder(activeId);
         return bloc;
@@ -912,8 +760,7 @@ class _ActionButtons extends StatelessWidget {
       child: MultiBlocListener(
         listeners: [
           BlocListener<DetailBloc, DetailState>(
-            listenWhen: (p, c) =>
-                p.activeOrderId != c.activeOrderId && c.activeOrderId != null,
+            listenWhen: (p, c) => p.activeOrderId != c.activeOrderId && c.activeOrderId != null,
             listener: (ctx, s) {
               ctx.read<CreateOrderBloc>().bindActiveOrder(s.activeOrderId!);
             },
@@ -923,9 +770,7 @@ class _ActionButtons extends StatelessWidget {
           listener: (context, createState) {
             if (createState.status != Status.LOADING && createState.success) {
               showSuccessMessage(context, S.current.strOrderSuccessCreated);
-              context.read<DetailBloc>().add(
-                DetailEvent.fetchBillOrders(billId: cafeTable!.id, force: true),
-              );
+              context.read<DetailBloc>().add(DetailEvent.fetchBillOrders(billId: cafeTable!.id, force: true));
               context.read<DetailBloc>().add(const DetailEvent.clearGoods());
             }
           },
@@ -940,14 +785,9 @@ class _ActionButtons extends StatelessWidget {
                     isLoading: createState.status == Status.LOADING,
                     onTap: () {
                       final bloc = context.read<CreateOrderBloc>();
-                      final activeId = context
-                          .read<DetailBloc>()
-                          .state
-                          .activeOrderId;
+                      final activeId = context.read<DetailBloc>().state.activeOrderId;
                       if (activeId != null) bloc.bindActiveOrder(activeId);
-                      bloc.add(
-                        CreateOrderEvent.createOrder(orders: selectedGoods),
-                      );
+                      bloc.add(CreateOrderEvent.createOrder(orders: selectedGoods));
                     },
                   ),
                   const SizedBox(width: 8),
@@ -959,8 +799,7 @@ class _ActionButtons extends StatelessWidget {
                   trailingAmount: total.formatN,
                   onTap: () async {
                     final timerCubit = context.read<TableTimerCubit>();
-                    if (cafeTable?.tableType?.toLowerCase() == 'time_based' &&
-                        timerCubit.state.timer?.isRunning == true) {
+                    if (cafeTable?.tableType?.toLowerCase() == 'time_based' && timerCubit.state.timer?.isRunning == true) {
                       await timerCubit.pauseTimer();
                     }
                     final ts = timerCubit.state;
@@ -975,22 +814,12 @@ class _ActionButtons extends StatelessWidget {
                         'table_type': cafeTable?.tableType ?? 'simple',
                         'hour_amount': hourAmt,
                         'timer_started_at': timerData?.startedAt,
-                        'timer_pauses': ts.billPauses.isNotEmpty
-                            ? ts.billPauses
-                            : (timerData?.pauses ?? const <PauseInterval>[]),
-                        'timer_total_sec':
-                            ts.displayActiveSec ??
-                            timerData?.totalActiveSec ??
-                            0,
+                        'timer_pauses': ts.billPauses.isNotEmpty ? ts.billPauses : (timerData?.pauses ?? const <PauseInterval>[]),
+                        'timer_total_sec': ts.displayActiveSec ?? timerData?.totalActiveSec ?? 0,
                         'timer_price_per_hour': timerData?.pricePerHour,
                         // bills endpoint open order uchun service_percent
                         // qaytarmasligi mumkin — shu yerdan fallback uzatamiz
-                        'service_percent':
-                            context
-                                .read<DetailBloc>()
-                                .lastDetail
-                                ?.servicePercent ??
-                            0,
+                        'service_percent': context.read<DetailBloc>().lastDetail?.servicePercent ?? 0,
                       },
                     );
                   },
@@ -1011,13 +840,7 @@ class _PillButton extends StatelessWidget {
   final VoidCallback? onTap;
   final String? trailingAmount;
 
-  const _PillButton({
-    required this.label,
-    required this.bgColor,
-    required this.isLoading,
-    this.onTap,
-    this.trailingAmount,
-  });
+  const _PillButton({required this.label, required this.bgColor, required this.isLoading, this.onTap, this.trailingAmount});
 
   @override
   Widget build(BuildContext context) {
@@ -1039,10 +862,7 @@ class _PillButton extends StatelessWidget {
                 child: SizedBox(
                   width: 20,
                   height: 20,
-                  child: CircularProgressIndicator.adaptive(
-                    strokeWidth: 2,
-                    backgroundColor: Colors.white,
-                  ),
+                  child: CircularProgressIndicator.adaptive(strokeWidth: 2, backgroundColor: Colors.white),
                 ),
               )
             : Row(

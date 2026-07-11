@@ -19,6 +19,15 @@
   "strServerUnreachable504": "Сервер не успел ответить. Проверьте интернет и повторите.",
   "strServerUnreachableGeneric": "Не удалось связаться с сервером. Повторите попытку чуть позже.",
 
+  "strApiErrorBadRequest": "Некорректный запрос.",
+  "strApiErrorForbidden": "Недостаточно прав для этого действия.",
+  "strApiErrorNotFound": "Запрошенные данные не найдены.",
+  "strApiErrorConflict": "Действие противоречит текущему состоянию.",
+  "strApiErrorValidation": "Ошибка в отправленных данных.",
+  "strApiErrorServerWithCode": "Ошибка сервера ({code}).",
+  "strApiErrorGenericWithCode": "Произошла ошибка ({code}).",
+  "strApiErrorBadCertificate": "Недействительный сертификат безопасности сервера.",
+
   "strCheckInternetConnection": "Проверьте подключение к интернету",
   "strNoInternetConnection": "Нет подключения к интернету",
   "strYes": "Да",
@@ -362,6 +371,21 @@
   "strStart": "Старт",
   "strPauseAction": "Пауза",
   "strResumeAction": "Продолжить",
+
+  "strOrderStatusOpen": "Открыт",
+  "strOrderStatusReady": "Готово",
+  "strOrderStatusServed": "Подано",
+  "strOrderStatusPaid": "Оплачен",
+  "strOrderStatusRescheduled": "Перенесён",
+  "strDefaultGoodName": "Товар",
+
+  "strTableTimerLoading": "Таймер стола…",
+  "strTimeBasedTableTitle": "Стол (почасовой)",
+  "strHourlyPriceLabel": "Цена за час: {price}",
+  "strActiveTimeLabel": "Активное время: {duration}",
+  "strCurrentAmountLabel": "Текущая сумма: {amount}",
+  "strFinalAmountLabel": "Итого: {amount}",
+  "strHourUnitShort": "ч",
 
   "strNotifications": "Уведомления",
   "strError": "Ошибка",

@@ -230,6 +230,86 @@ class S {
     );
   }
 
+  /// `The request was invalid.`
+  String get strApiErrorBadRequest {
+    return Intl.message(
+      'The request was invalid.',
+      name: 'strApiErrorBadRequest',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `You don't have permission to do this.`
+  String get strApiErrorForbidden {
+    return Intl.message(
+      'You don\'t have permission to do this.',
+      name: 'strApiErrorForbidden',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `The requested data was not found.`
+  String get strApiErrorNotFound {
+    return Intl.message(
+      'The requested data was not found.',
+      name: 'strApiErrorNotFound',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `This action conflicts with the current state.`
+  String get strApiErrorConflict {
+    return Intl.message(
+      'This action conflicts with the current state.',
+      name: 'strApiErrorConflict',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `There's an error in the submitted data.`
+  String get strApiErrorValidation {
+    return Intl.message(
+      'There\'s an error in the submitted data.',
+      name: 'strApiErrorValidation',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Server error ({code}).`
+  String strApiErrorServerWithCode(Object code) {
+    return Intl.message(
+      'Server error ($code).',
+      name: 'strApiErrorServerWithCode',
+      desc: '',
+      args: [code],
+    );
+  }
+
+  /// `An error occurred ({code}).`
+  String strApiErrorGenericWithCode(Object code) {
+    return Intl.message(
+      'An error occurred ($code).',
+      name: 'strApiErrorGenericWithCode',
+      desc: '',
+      args: [code],
+    );
+  }
+
+  /// `The server's security certificate is invalid.`
+  String get strApiErrorBadCertificate {
+    return Intl.message(
+      'The server\'s security certificate is invalid.',
+      name: 'strApiErrorBadCertificate',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Please check your internet connection`
   String get strCheckInternetConnection {
     return Intl.message(
@@ -3405,6 +3485,136 @@ class S {
     return Intl.message(
       'Resume',
       name: 'strResumeAction',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Open`
+  String get strOrderStatusOpen {
+    return Intl.message(
+      'Open',
+      name: 'strOrderStatusOpen',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Ready`
+  String get strOrderStatusReady {
+    return Intl.message(
+      'Ready',
+      name: 'strOrderStatusReady',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Served`
+  String get strOrderStatusServed {
+    return Intl.message(
+      'Served',
+      name: 'strOrderStatusServed',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Paid`
+  String get strOrderStatusPaid {
+    return Intl.message(
+      'Paid',
+      name: 'strOrderStatusPaid',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Rescheduled`
+  String get strOrderStatusRescheduled {
+    return Intl.message(
+      'Rescheduled',
+      name: 'strOrderStatusRescheduled',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Item`
+  String get strDefaultGoodName {
+    return Intl.message(
+      'Item',
+      name: 'strDefaultGoodName',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Table timer…`
+  String get strTableTimerLoading {
+    return Intl.message(
+      'Table timer…',
+      name: 'strTableTimerLoading',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Table (time-based)`
+  String get strTimeBasedTableTitle {
+    return Intl.message(
+      'Table (time-based)',
+      name: 'strTimeBasedTableTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Hourly rate: {price}`
+  String strHourlyPriceLabel(Object price) {
+    return Intl.message(
+      'Hourly rate: $price',
+      name: 'strHourlyPriceLabel',
+      desc: '',
+      args: [price],
+    );
+  }
+
+  /// `Active time: {duration}`
+  String strActiveTimeLabel(Object duration) {
+    return Intl.message(
+      'Active time: $duration',
+      name: 'strActiveTimeLabel',
+      desc: '',
+      args: [duration],
+    );
+  }
+
+  /// `Current amount: {amount}`
+  String strCurrentAmountLabel(Object amount) {
+    return Intl.message(
+      'Current amount: $amount',
+      name: 'strCurrentAmountLabel',
+      desc: '',
+      args: [amount],
+    );
+  }
+
+  /// `Final: {amount}`
+  String strFinalAmountLabel(Object amount) {
+    return Intl.message(
+      'Final: $amount',
+      name: 'strFinalAmountLabel',
+      desc: '',
+      args: [amount],
+    );
+  }
+
+  /// `h`
+  String get strHourUnitShort {
+    return Intl.message(
+      'h',
+      name: 'strHourUnitShort',
       desc: '',
       args: [],
     );
