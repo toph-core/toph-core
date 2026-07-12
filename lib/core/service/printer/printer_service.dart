@@ -49,8 +49,9 @@ class PrinterService {
     String? timerPricePerHour,
   }) async {
     // Summa 0 / barcha pozitsiyalar bekor — yopilgan schyot uchun bo’sh chek ham chop etiladi.
+    final config = _closeCheckConfigOrNotify('Kassir cheki chop etilmadi');
+    if (config == null) return;
     try {
-      final config = _storage.closeCheckConfigOrFallback();
       final bytes = await CashierReceiptBuilder.build(
         order: order,
         items: items,
@@ -74,7 +75,6 @@ class PrinterService {
       }
     } catch (e, st) {
       debugPrint('[PrinterService] Kassir cheki xatosi: $e\n$st');
-      final config = _storage.closeCheckConfigOrFallback();
       _notifyPrinterFailed(
         config,
         title: 'Kassir cheki tayyorlashda xato',
@@ -94,9 +94,11 @@ class PrinterService {
     List<PauseInterval> timerPauses = const [],
     int timerTotalSec = 0,
     String? timerPricePerHour,
+    String? cashierName,
   }) async {
+    final config = _closeCheckConfigOrNotify('Kassir cheki chop etilmadi');
+    if (config == null) return;
     try {
-      final config = _storage.closeCheckConfigOrFallback();
       final bytes = await CashierReceiptBuilder.buildFromDetail(
         detail: detail,
         paperSize: config.paperSize,
@@ -107,6 +109,7 @@ class PrinterService {
         timerPauses: timerPauses,
         timerTotalSec: timerTotalSec,
         timerPricePerHour: timerPricePerHour,
+        cashierName: cashierName,
       );
       final r = await _connectAndPrint(config, bytes);
       if (!r.ok) {
@@ -119,7 +122,6 @@ class PrinterService {
       }
     } catch (e, st) {
       debugPrint('[PrinterService] Kassir cheki xatosi: $e\n$st');
-      final config = _storage.closeCheckConfigOrFallback();
       _notifyPrinterFailed(
         config,
         title: 'Kassir cheki tayyorlashda xato',
@@ -136,8 +138,9 @@ class PrinterService {
     required int closingCard,
     required String cashierLabel,
   }) async {
+    final config = _closeCheckConfigOrNotify('Smena yopilish cheki chop etilmadi');
+    if (config == null) return;
     try {
-      final config = _storage.closeCheckConfigOrFallback();
       final bytes = await ShiftCloseReceiptBuilder.build(
         shiftId: shiftId,
         openedAt: openedAt,
@@ -156,7 +159,6 @@ class PrinterService {
       }
     } catch (e, st) {
       debugPrint('[PrinterService] Smena yopilish cheki: $e\n$st');
-      final config = _storage.closeCheckConfigOrFallback();
       _notifyPrinterFailed(
         config,
         title: 'Smena cheki tayyorlashda xato',
@@ -263,6 +265,35 @@ class PrinterService {
   }
 
   // ── Internal ──────────────────────────────────────────────────────────────
+
+  /// `close_check` printer konfiguratsiyasi; sozlanmagan bo'lsa aniq xabar
+  /// ko'rsatib `null` qaytaradi. Ilgari bu yerda yashirin fallback IP
+  /// (192.168.1.222) ishlatilardi — foydalanuvchi kiritmagan manzil xatoda
+  /// chiqib chalg'itardi.
+  PrinterConfig? _closeCheckConfigOrNotify(String title) {
+    final config = _storage.getCloseCheckPrinter();
+    if (config != null) return config;
+
+    final ctx = navigatorKey.currentContext;
+    if (ctx != null) {
+      showStructuredErrorDismissible(
+        ctx,
+        title: title,
+        icon: Icons.print_disabled_rounded,
+        paragraphs: _storage.hasPrinterSettingsEntries
+            ? const [
+                "Kassir (close_check) printeri sozlanmagan.",
+                "Sozlamalar → Printerlar bo'limida turi «Kassa cheki» (close_check) bo'lgan printer qo'shing.",
+              ]
+            : const [
+                'Printer sozlamalari ilovaga yuklanmagan.',
+                "Sozlamalar → Printerlar bo'limini oching (ro'yxat yuklanishi keshni yangilaydi) yoki qayta login qiling. "
+                    'Agar muammo qolsa — foydalanuvchi rolida GET /settings/printer-settings ruxsati yo\'q bo\'lishi mumkin (403).',
+              ],
+      );
+    }
+    return null;
+  }
 
   void _notifyPrinterFailed(
     PrinterConfig config, {

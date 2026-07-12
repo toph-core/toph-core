@@ -14,7 +14,6 @@ class PrinterConfigStorage {
   static const _jsonKey = 'printer_settings_entries_v2_json';
 
   static const defaultPort = 9100;
-  static const fallbackCloseCheckIp = '192.168.1.222';
 
   Future<void> applyPrinterSettingsList(List<PrinterSettingEntry> list) async {
     await _prefs.setString(_jsonKey, PrinterSettingEntry.encodeList(list));
@@ -53,10 +52,6 @@ class PrinterConfigStorage {
     }
     return null;
   }
-
-  PrinterConfig closeCheckConfigOrFallback() =>
-      getCloseCheckPrinter() ??
-      const PrinterConfig(ip: fallbackCloseCheckIp, port: defaultPort);
 
   /// Oshxona: `type=category` va `connected_entity_ids` ichida [categoryId] yoki [goodId] mos kelganda.
   /// Mos yozuv yo‘q bo‘lsa `null` — boshqa printerga «tushirish» qilinmaydi.

@@ -6,6 +6,7 @@ import 'package:mary_ai_pos/core/components/flush_bars.dart';
 import 'package:mary_ai_pos/core/constants/constants.dart';
 import 'package:mary_ai_pos/core/extension/number_formatter.dart';
 import 'package:mary_ai_pos/core/service/printer/printer_service.dart';
+import 'package:mary_ai_pos/core/service/printer/receipt/receipt_totals.dart';
 import 'package:mary_ai_pos/core/service/receipt/receipt_info_storage.dart';
 import 'package:mary_ai_pos/di.dart';
 import 'package:mary_ai_pos/features/view/auth/presentation/cubit/bloc/user_bloc.dart';
@@ -25,7 +26,6 @@ const _kBrand = Color(0xFFFB6633);
 
 class ReceiptPreviewModal extends StatelessWidget {
   final ArchiveDetailEntity detail;
-  final int finalTotal;
   final DateTime? timerStartedAt;
   final List<PauseInterval> timerPauses;
   final int timerTotalSec;
@@ -34,7 +34,6 @@ class ReceiptPreviewModal extends StatelessWidget {
   const ReceiptPreviewModal({
     super.key,
     required this.detail,
-    required this.finalTotal,
     this.timerStartedAt,
     this.timerPauses = const [],
     this.timerTotalSec = 0,
@@ -47,7 +46,12 @@ class ReceiptPreviewModal extends StatelessWidget {
       (b) => b.state.userMOdel?.fullName ?? detail.cashierName,
     );
     final paymentState = context.watch<PaymentBloc>().state;
+    // Chegirmani printer builder'ga uzatiladigan KO'RINISHDA ajratamiz
+    // (`_ActionsRow._print` bilan bir xil) — preview va chek farq qilmasin.
     final discountAmt = int.tryParse(paymentState.discountAmount) ?? 0;
+    final isPercent = paymentState.discountType == DiscountType.percent;
+    final discountPercent = isPercent ? discountAmt.toDouble() : 0.0;
+    final discountAmount = isPercent ? 0.0 : discountAmt.toDouble();
 
     return Dialog(
       backgroundColor: Colors.white,
@@ -69,21 +73,20 @@ class ReceiptPreviewModal extends StatelessWidget {
                 child: _ReceiptCard(
                   detail: detail,
                   cashierName: cashierName,
-                  finalTotal: finalTotal,
-                  discountAmount: discountAmt,
-                  discountType: paymentState.discountType,
+                  discountPercent: discountPercent,
+                  discountAmount: discountAmount,
                   timerStartedAt: timerStartedAt,
                   timerPauses: timerPauses,
                   timerTotalSec: timerTotalSec,
                   timerPricePerHour: timerPricePerHour,
-                  hourAmount: paymentState.hourPrice.toInt(),
+                  hourAmount: paymentState.hourPrice,
                 ),
               ),
             ),
 
             // Actions
             const Divider(height: 1, color: _kS200),
-            _ActionsRow(detail: detail),
+            _ActionsRow(detail: detail, cashierName: cashierName),
           ],
         ),
       ),
@@ -156,21 +159,19 @@ class _Header extends StatelessWidget {
 class _ReceiptCard extends StatelessWidget {
   final ArchiveDetailEntity detail;
   final String cashierName;
-  final int finalTotal;
-  final int discountAmount;
-  final DiscountType discountType;
+  final double discountPercent;
+  final double discountAmount;
   final DateTime? timerStartedAt;
   final List<PauseInterval> timerPauses;
   final int timerTotalSec;
   final String? timerPricePerHour;
-  final int hourAmount;
+  final double hourAmount;
 
   const _ReceiptCard({
     required this.detail,
     required this.cashierName,
-    required this.finalTotal,
+    required this.discountPercent,
     required this.discountAmount,
-    required this.discountType,
     this.timerStartedAt,
     this.timerPauses = const [],
     this.timerTotalSec = 0,
@@ -210,8 +211,14 @@ class _ReceiptCard extends StatelessWidget {
         ? ' · ${detail.guestCount.toInt()} mehmon'
         : '';
     final tableNum = detail.tableNumber.toInt();
-    final subtotal = detail.foodTotal.toInt();
-    final service = detail.serviceAmount.toInt();
+    // Chop etiladigan chek bilan AYNAN bir xil hisob (`CashierReceiptBuilder`
+    // ham shu klassni ishlatadi) — preview hech qachon farq qilmaydi.
+    final totals = ReceiptTotals.fromDetail(
+      detail,
+      hourAmount: hourAmount,
+      discountPercent: discountPercent,
+      discountAmount: discountAmount,
+    );
     final servicePct = detail.servicePercent.toInt();
 
     final cashierShort = _shortName(cashierName);
@@ -303,8 +310,8 @@ class _ReceiptCard extends StatelessWidget {
           const _Dashed(),
           const SizedBox(height: 10),
 
-          // Items
-          for (final g in detail.goods) ...[
+          // Items — chop etiladigan chekdagi kabi bekor qilinganlarsiz
+          for (final g in totals.goods) ...[
             _LineItem(
               name: g.name,
               qty: g.quantity,
@@ -319,20 +326,20 @@ class _ReceiptCard extends StatelessWidget {
           const SizedBox(height: 10),
 
           // Totals
-          _KVRow('Oraliq jami', subtotal.formatNWithoutS),
+          _KVRow('Oraliq jami', totals.subtotal.round().formatNWithoutS),
           if (hourAmount > 0)
-            _KVRow('Soatlik haq', hourAmount.formatNWithoutS),
-          if (service > 0)
+            _KVRow('Soatlik haq', hourAmount.round().formatNWithoutS),
+          if (totals.serviceAmount > 0.0001)
             _KVRow(
               servicePct > 0 ? 'Xizmat ($servicePct%)' : 'Xizmat',
-              service.formatNWithoutS,
+              totals.serviceAmount.round().formatNWithoutS,
             ),
-          if (discountAmount > 0)
+          if (totals.discountValue > 0.0001)
             _KVRow(
-              discountType == DiscountType.percent
-                  ? 'Chegirma ($discountAmount%)'
+              discountPercent > 0
+                  ? 'Chegirma (${discountPercent.toInt()}%)'
                   : 'Chegirma',
-              '-${discountAmount.formatNWithoutS}',
+              '-${totals.discountValue.round().formatNWithoutS}',
             ),
           const SizedBox(height: 10),
           const _Dashed(),
@@ -352,7 +359,7 @@ class _ReceiptCard extends StatelessWidget {
                 ),
               ),
               Text(
-                "${finalTotal.formatNWithoutS} so'm",
+                "${totals.toPay.round().formatNWithoutS} so'm",
                 style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w700,
@@ -539,7 +546,8 @@ class _LineItem extends StatelessWidget {
 
 class _ActionsRow extends StatelessWidget {
   final ArchiveDetailEntity detail;
-  const _ActionsRow({required this.detail});
+  final String cashierName;
+  const _ActionsRow({required this.detail, required this.cashierName});
 
   void _print(BuildContext context) {
     final bloc = context.read<PaymentBloc>();
@@ -557,6 +565,8 @@ class _ActionsRow extends StatelessWidget {
         timerPauses: bloc.timerPauses,
         timerTotalSec: bloc.timerTotalSec,
         timerPricePerHour: bloc.timerPricePerHour,
+        // Preview'da ko'rsatilgan ism bilan bir xil chiqsin
+        cashierName: cashierName,
       ),
     );
     showInfoMessage(

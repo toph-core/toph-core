@@ -6,6 +6,7 @@ import 'package:mary_ai_pos/core/api/dio_client.dart';
 import 'package:mary_ai_pos/core/api/list_api.dart';
 import 'package:mary_ai_pos/core/components/flush_bars.dart';
 import 'package:mary_ai_pos/core/extension/for_context.dart';
+import 'package:mary_ai_pos/core/service/printer/printer_config_storage.dart';
 import 'package:mary_ai_pos/core/service/printer/printer_setting_entry.dart';
 import 'package:mary_ai_pos/di.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/category/category_model.dart';
@@ -60,9 +61,15 @@ class _PrintersSectionState extends State<PrintersSection> {
         categoriesData = categoriesRoot;
       }
 
+      final entries = PrinterSettingEntry.listFromJsonList(printersData);
+      // Print yo'li backend'ni emas, LOKAL keshni o'qiydi (PrinterConfigStorage).
+      // Saqlash/o'chirishdan keyin _loadAll qayta chaqiriladi — shu yerda keshni
+      // yangilab qo'yamiz, aks holda yangi IP faqat qayta login'dan keyin ishlardi.
+      await inject<PrinterConfigStorage>().applyPrinterSettingsList(entries);
+
       if (!mounted) return;
       setState(() {
-        _items = PrinterSettingEntry.listFromJsonList(printersData);
+        _items = entries;
         _categories = categoriesData
             .map((e) =>
                 CategoryModel.fromJson(Map<String, dynamic>.from(e as Map)))

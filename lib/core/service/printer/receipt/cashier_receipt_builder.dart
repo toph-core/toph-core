@@ -1,10 +1,9 @@
-import 'dart:math' as math;
-
 import 'package:esc_pos_utils_plus/esc_pos_utils_plus.dart';
 import 'package:intl/intl.dart';
 import 'package:mary_ai_pos/core/service/printer/receipt/receipt_esc_pos_helper.dart';
 import 'package:mary_ai_pos/core/service/printer/receipt/receipt_notice_lines.dart';
 import 'package:mary_ai_pos/core/service/printer/receipt/receipt_som_format.dart';
+import 'package:mary_ai_pos/core/service/printer/receipt/receipt_totals.dart';
 import 'package:mary_ai_pos/core/service/receipt/receipt_info_storage.dart';
 import 'package:mary_ai_pos/di.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/open_order/open_order_model.dart';
@@ -57,14 +56,9 @@ class CashierReceiptBuilder {
     return 'Обслужение:';
   }
 
-  static double _discountValue(double preDiscount, double discountPercent, double discountAmount) {
-    if (discountPercent > 0) {
-      final v = preDiscount * discountPercent / 100.0;
-      if (v > 0.0001) return v;
-    }
-    if (discountAmount > 0.0001) return math.min(discountAmount, preDiscount);
-    return 0;
-  }
+  // Yagona chegirma hisobi — preview bilan bir xil (`ReceiptTotals`).
+  static double _discountValue(double preDiscount, double discountPercent, double discountAmount) =>
+      ReceiptTotals.discountValueOf(preDiscount, discountPercent, discountAmount);
 
   /// Pause tarixi bloki — ikkala `build` metodida qayta ishlatiladi.
   static void _appendTimerSection({
@@ -310,7 +304,16 @@ class CashierReceiptBuilder {
     List<PauseInterval> timerPauses = const [],
     int timerTotalSec = 0,
     String? timerPricePerHour,
+    // Preview modal ko'rsatgan kassir ismi — chek ham aynan shuni chiqarsin.
+    String? cashierName,
   }) async {
+    // Yagona hisob-kitob — ReceiptPreviewModal bilan bir xil.
+    final totals = ReceiptTotals.fromDetail(
+      detail,
+      hourAmount: hourAmount,
+      discountPercent: discountPercent,
+      discountAmount: discountAmount,
+    );
     final profile = await CapabilityProfile.load();
     final gen = receiptGenerator(paperSize, profile);
     final now = DateTime.now();
@@ -382,7 +385,7 @@ class CashierReceiptBuilder {
     bytes += gen.row([
       PosColumn(text: 'Kassir:', width: 5),
       PosColumn(
-        text: _shortName(detail.cashierName),
+        text: _shortName(cashierName ?? detail.cashierName),
         width: 7,
         styles: const PosStyles(align: PosAlign.right),
       ),
@@ -400,10 +403,8 @@ class CashierReceiptBuilder {
     bytes += gen.hr(ch: '-');
 
     // ─── 3) Items ────────────────────────────────────────────────────────
-    double subtotal = 0;
-    for (final g in detail.goods.where((g) => g.status != 'cancelled')) {
+    for (final g in totals.goods) {
       final lineTotal = g.price * g.quantity;
-      subtotal += lineTotal;
       // Nom — alohida qatorda, to'liq (kesilmaydi)
       bytes += gen.text(
         g.name,
@@ -433,7 +434,7 @@ class CashierReceiptBuilder {
     bytes += gen.row([
       PosColumn(text: 'Oraliq jami', width: 7),
       PosColumn(
-        text: _fmt(subtotal),
+        text: _fmt(totals.subtotal),
         width: 5,
         styles: const PosStyles(align: PosAlign.right),
       ),
@@ -450,24 +451,20 @@ class CashierReceiptBuilder {
       ]);
     }
 
-    final serviceAmt = detail.serviceAmount > 0.0001
-        ? detail.serviceAmount
-        : (detail.servicePercent > 0 ? subtotal * detail.servicePercent / 100 : 0.0);
-    if (serviceAmt > 0.0001) {
+    if (totals.serviceAmount > 0.0001) {
       final servicePct = detail.servicePercent.toInt();
       final label = servicePct > 0 ? 'Xizmat ($servicePct%)' : 'Xizmat';
       bytes += gen.row([
         PosColumn(text: label, width: 7),
         PosColumn(
-          text: _fmt(serviceAmt),
+          text: _fmt(totals.serviceAmount),
           width: 5,
           styles: const PosStyles(align: PosAlign.right),
         ),
       ]);
     }
 
-    final preDiscount = subtotal + hourAmount + serviceAmt;
-    final discVal = _discountValue(preDiscount, discountPercent, discountAmount);
+    final discVal = totals.discountValue;
     if (discVal > 0.0001) {
       final discLabel = discountPercent > 0
           ? 'Chegirma (${discountPercent.toInt()}%)'
@@ -484,7 +481,7 @@ class CashierReceiptBuilder {
 
     bytes += gen.hr(ch: '-');
 
-    final toPay = (preDiscount - discVal).clamp(0.0, double.infinity);
+    final toPay = totals.toPay;
     // ─── 5) JAMI (big, bold) ──────────────────────────────────────────────
     bytes += gen.row([
       PosColumn(

@@ -9,6 +9,7 @@ import 'package:mary_ai_pos/core/constants/constants.dart';
 import 'package:mary_ai_pos/core/error/failure.dart';
 import 'package:mary_ai_pos/core/routes/app_routes.dart';
 import 'package:mary_ai_pos/core/utils/helper/helper_widget.dart';
+import 'package:mary_ai_pos/features/view/auth/presentation/cubit/bloc/user_bloc.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/cafe_tables/cafe_tables_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/payment_pay_request/payment_pay_request_model.dart';
 import 'package:mary_ai_pos/features/view/main/domain/entities/archive_detail_entity.dart';
@@ -211,6 +212,14 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
     final discAmt = state.discountType == DiscountType.money
         ? (int.tryParse(state.discountAmount) ?? 0).toDouble()
         : 0.0;
+    // Chekda preview bilan bir xil kassir ismi chiqsin — joriy foydalanuvchi,
+    // bo'lmasa detail'dagi ism (ReceiptPreviewModal bilan bir xil fallback).
+    final cashierName = navigatorKey.currentContext!
+            .read<UserBloc>()
+            .state
+            .userMOdel
+            ?.fullName ??
+        state.detail!.cashierName;
     _printerService.printCashierReceiptFromDetail(
       detail: state.detail!,
       hourAmount: state.hourPrice,
@@ -220,6 +229,7 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
       timerPauses: _timerPauses,
       timerTotalSec: _timerTotalSec,
       timerPricePerHour: _timerPricePerHour,
+      cashierName: cashierName,
     );
     final mainCubit = navigatorKey.currentContext!.read<MainCubit>();
     if (state.tableId != null) {
