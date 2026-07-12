@@ -371,6 +371,40 @@ class _ReceiptCard extends StatelessWidget {
               ),
             ],
           ),
+
+          const SizedBox(height: 10),
+          const _Dashed(),
+          const SizedBox(height: 10),
+
+          // Footer — chop etiladigan chekdagi bilan aynan bir xil matn
+          // (receipt_notice_lines.dart + 'Rahmat!'). WYSIWYG uchun.
+          const Center(
+            child: Text(
+              'ВНИМАНИЕ: по чеку блюдо не готовить повторно.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w700,
+                color: _kS900,
+                fontFamily: 'JetBrainsMono',
+              ),
+            ),
+          ),
+          const SizedBox(height: 4),
+          const _Meta('Кухня и касса вдали от стола.'),
+          const _Meta('Повторная подача только по заказу в POS/системе.'),
+          const SizedBox(height: 8),
+          const Center(
+            child: Text(
+              'Rahmat!',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: _kS900,
+                fontFamily: 'JetBrainsMono',
+              ),
+            ),
+          ),
         ],
       ),
     );

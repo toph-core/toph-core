@@ -61,6 +61,10 @@ class CashierReceiptBuilder {
       ReceiptTotals.discountValueOf(preDiscount, discountPercent, discountAmount);
 
   /// Pause tarixi bloki — ikkala `build` metodida qayta ishlatiladi.
+  ///
+  /// MUHIM: parametr ro'yxatiga `bytes += x` yozib bo'lmaydi — Dart'da bu
+  /// lokal havolani qayta bog'laydi va chaqiruvchidagi ro'yxat o'zgarmaydi
+  /// (butun SOATLIK JADVAL bloki chekka chiqmay qolardi). Shu sabab addAll.
   static void _appendTimerSection({
     required Generator gen,
     required List<int> bytes,
@@ -72,71 +76,71 @@ class CashierReceiptBuilder {
     final hasData = timerStartedAt != null || timerTotalSec > 0 || timerPauses.isNotEmpty;
     if (!hasData) return;
 
-    bytes += gen.hr();
-    bytes += gen.text(
+    bytes.addAll(gen.hr());
+    bytes.addAll(gen.text(
       'SOATLIK JADVAL',
       styles: const PosStyles(bold: true, align: PosAlign.center),
-    );
+    ));
 
     if (timerStartedAt != null) {
-      bytes += gen.row([
+      bytes.addAll(gen.row([
         PosColumn(text: 'Ochildi:', width: 6),
         PosColumn(text: _fmtClock(timerStartedAt), width: 6,
             styles: const PosStyles(align: PosAlign.right)),
-      ]);
+      ]));
     }
 
     // Pause tarixi
     for (int i = 0; i < timerPauses.length; i++) {
       final p = timerPauses[i];
       final num = i + 1;
-      bytes += gen.row([
+      bytes.addAll(gen.row([
         PosColumn(text: 'Pause $num bo\'ldi:', width: 7),
         PosColumn(text: _fmtClock(p.startedAt), width: 5,
             styles: const PosStyles(align: PosAlign.right)),
-      ]);
+      ]));
       if (p.endedAt != null) {
-        bytes += gen.row([
+        bytes.addAll(gen.row([
           PosColumn(text: 'To\'xtatildi:', width: 7),
           PosColumn(text: _fmtClock(p.endedAt!), width: 5,
               styles: const PosStyles(align: PosAlign.right)),
-        ]);
+        ]));
       }
       if (p.durationSec > 0) {
-        bytes += gen.row([
+        bytes.addAll(gen.row([
           PosColumn(text: 'Pause vaqti:', width: 7),
           PosColumn(text: _fmtDuration(p.durationSec), width: 5,
               styles: const PosStyles(align: PosAlign.right)),
-        ]);
+        ]));
       }
     }
 
     if (timerTotalSec > 0) {
-      bytes += gen.row([
+      bytes.addAll(gen.row([
         PosColumn(text: 'Faol vaqt:', width: 7),
         PosColumn(text: _fmtDuration(timerTotalSec), width: 5,
             styles: const PosStyles(align: PosAlign.right)),
-      ]);
+      ]));
     }
 
     // Umumiy pauza vaqti
     final totalPauseSec = timerPauses.fold(0, (s, p) => s + p.durationSec);
     if (totalPauseSec > 0) {
-      bytes += gen.row([
+      bytes.addAll(gen.row([
         PosColumn(text: 'Umumiy pauza:', width: 7),
         PosColumn(text: _fmtDuration(totalPauseSec), width: 5,
             styles: const PosStyles(align: PosAlign.right)),
-      ]);
+      ]));
     }
 
     if (timerPricePerHour != null && timerPricePerHour.isNotEmpty) {
       final ph = int.tryParse(timerPricePerHour.replaceAll(RegExp(r'[^0-9]'), ''));
       if (ph != null && ph > 0) {
-        bytes += gen.row([
+        bytes.addAll(gen.row([
           PosColumn(text: 'Soatlik narx:', width: 7),
-          PosColumn(text: '${_fmt(ph)} sum', width: 5,
+          PosColumn(text: '${_fmt(ph)} so\'m', width: 5,
               styles: const PosStyles(align: PosAlign.right)),
-        ]);
+        ]));
       }
     }
   }

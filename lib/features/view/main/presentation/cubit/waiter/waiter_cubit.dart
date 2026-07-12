@@ -12,6 +12,7 @@ import 'package:mary_ai_pos/features/view/auth/data/models/user/user_model.dart'
 import 'package:mary_ai_pos/features/view/main/data/models/goods/goods_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/open_order/open_order_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/order_line_item/order_line_item_model.dart';
+import 'package:mary_ai_pos/features/view/main/domain/usecase/get_payment_detail_with_id_usecase.dart';
 import 'package:mary_ai_pos/features/view/main/domain/usecase/get_staff_waiters_usecase.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/detail/detail_bloc.dart';
 
@@ -24,11 +25,16 @@ class WaiterCubit extends Cubit<WaiterState> {
   final DioClient _client;
   final GetStaffWaitersUsecase _getStaffWaitersUsecase;
   final PrinterService _printerService;
+  final GetPaymentDetailWithIdUsecase _getPaymentDetailWithIdUsecase;
 
   OrdersListMode _ordersListMode = OrdersListMode.myOrders;
 
-  WaiterCubit(this._client, this._getStaffWaitersUsecase, this._printerService)
-      : super(const WaiterState());
+  WaiterCubit(
+    this._client,
+    this._getStaffWaitersUsecase,
+    this._printerService,
+    this._getPaymentDetailWithIdUsecase,
+  ) : super(const WaiterState());
 
   void setOrdersListModeForRole(UserRole role) {
     _ordersListMode = role == UserRole.cashier
@@ -474,12 +480,25 @@ class WaiterCubit extends Cubit<WaiterState> {
       final hourAmountForReceipt = (order.tableType == 'time_based' && base > sumLines)
           ? (base - sumLines).toDouble()
           : 0.0;
-      _printerService.printCashierReceipt(
-        order: order,
-        items: receiptItems,
-        discountPercent: discountPercent,
-        discountAmount: discountAmount,
-        hourAmount: hourAmountForReceipt,
+      // Chek — payment ekranidagi "Chek ko'rinishi" bilan AYNAN bir xil unified
+      // layout (buildFromDetail + ReceiptTotals). Yopilgan schyotni /bills/{id}
+      // dan olamiz; olinmasa — eski layout fallback (chek chiqmay qolmasin).
+      final detailRes = await _getPaymentDetailWithIdUsecase.call(orderId);
+      if (isClosed) return;
+      detailRes.fold(
+        (_) => _printerService.printCashierReceipt(
+          order: order,
+          items: receiptItems,
+          discountPercent: discountPercent,
+          discountAmount: discountAmount,
+          hourAmount: hourAmountForReceipt,
+        ),
+        (detail) => _printerService.printCashierReceiptFromDetail(
+          detail: detail,
+          hourAmount: hourAmountForReceipt,
+          discountPercent: discountPercent,
+          discountAmount: discountAmount,
+        ),
       );
       final updatedOrders =
           state.openOrders.where((o) => o.id != orderId).toList();
