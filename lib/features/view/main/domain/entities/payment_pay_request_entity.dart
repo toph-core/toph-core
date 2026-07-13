@@ -7,6 +7,7 @@ abstract class PaymentPayRequestEntity {
   final int customPaidAmount;
   final int discountAmount;
   final int discountPercent;
+  final int tableCharge;
   final PaymentType paymentType;
   final String comment;
 
@@ -17,6 +18,7 @@ abstract class PaymentPayRequestEntity {
     required this.customPaidAmount,
     required this.discountAmount,
     required this.discountPercent,
+    required this.tableCharge,
     required this.paymentType,
     required this.comment,
   });

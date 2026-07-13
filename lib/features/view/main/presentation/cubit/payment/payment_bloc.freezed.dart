@@ -18,7 +18,9 @@ final _privateConstructorUsedError = UnsupportedError(
 mixin _$PaymentEvent {
   @optionalTypeArgs
   TResult when<TResult extends Object?>({
-    required TResult Function(String? tableId, String? orderId) started,
+    required TResult Function(
+            String? tableId, String? orderId, double servicePercent)
+        started,
     required TResult Function(String symbol) updateEnterSum,
     required TResult Function() getDetail,
     required TResult Function() payment,
@@ -32,7 +34,8 @@ mixin _$PaymentEvent {
       throw _privateConstructorUsedError;
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function(String? tableId, String? orderId)? started,
+    TResult? Function(String? tableId, String? orderId, double servicePercent)?
+        started,
     TResult? Function(String symbol)? updateEnterSum,
     TResult? Function()? getDetail,
     TResult? Function()? payment,
@@ -45,7 +48,8 @@ mixin _$PaymentEvent {
       throw _privateConstructorUsedError;
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
-    TResult Function(String? tableId, String? orderId)? started,
+    TResult Function(String? tableId, String? orderId, double servicePercent)?
+        started,
     TResult Function(String symbol)? updateEnterSum,
     TResult Function()? getDetail,
     TResult Function()? payment,
@@ -123,7 +127,7 @@ abstract class _$$StartedImplCopyWith<$Res> {
           _$StartedImpl value, $Res Function(_$StartedImpl) then) =
       __$$StartedImplCopyWithImpl<$Res>;
   @useResult
-  $Res call({String? tableId, String? orderId});
+  $Res call({String? tableId, String? orderId, double servicePercent});
 }
 
 /// @nodoc
@@ -139,6 +143,7 @@ class __$$StartedImplCopyWithImpl<$Res>
   $Res call({
     Object? tableId = freezed,
     Object? orderId = freezed,
+    Object? servicePercent = null,
   }) {
     return _then(_$StartedImpl(
       tableId: freezed == tableId
@@ -149,6 +154,10 @@ class __$$StartedImplCopyWithImpl<$Res>
           ? _value.orderId
           : orderId // ignore: cast_nullable_to_non_nullable
               as String?,
+      servicePercent: null == servicePercent
+          ? _value.servicePercent
+          : servicePercent // ignore: cast_nullable_to_non_nullable
+              as double,
     ));
   }
 }
@@ -156,16 +165,19 @@ class __$$StartedImplCopyWithImpl<$Res>
 /// @nodoc
 
 class _$StartedImpl implements _Started {
-  const _$StartedImpl({this.tableId, this.orderId});
+  const _$StartedImpl({this.tableId, this.orderId, this.servicePercent = 0.0});
 
   @override
   final String? tableId;
   @override
   final String? orderId;
+  @override
+  @JsonKey()
+  final double servicePercent;
 
   @override
   String toString() {
-    return 'PaymentEvent.started(tableId: $tableId, orderId: $orderId)';
+    return 'PaymentEvent.started(tableId: $tableId, orderId: $orderId, servicePercent: $servicePercent)';
   }
 
   @override
@@ -174,11 +186,14 @@ class _$StartedImpl implements _Started {
         (other.runtimeType == runtimeType &&
             other is _$StartedImpl &&
             (identical(other.tableId, tableId) || other.tableId == tableId) &&
-            (identical(other.orderId, orderId) || other.orderId == orderId));
+            (identical(other.orderId, orderId) || other.orderId == orderId) &&
+            (identical(other.servicePercent, servicePercent) ||
+                other.servicePercent == servicePercent));
   }
 
   @override
-  int get hashCode => Object.hash(runtimeType, tableId, orderId);
+  int get hashCode =>
+      Object.hash(runtimeType, tableId, orderId, servicePercent);
 
   @JsonKey(ignore: true)
   @override
@@ -189,7 +204,9 @@ class _$StartedImpl implements _Started {
   @override
   @optionalTypeArgs
   TResult when<TResult extends Object?>({
-    required TResult Function(String? tableId, String? orderId) started,
+    required TResult Function(
+            String? tableId, String? orderId, double servicePercent)
+        started,
     required TResult Function(String symbol) updateEnterSum,
     required TResult Function() getDetail,
     required TResult Function() payment,
@@ -200,13 +217,14 @@ class _$StartedImpl implements _Started {
     required TResult Function(Map<String, DateTime> timestamps)
         itemTimestampsLoaded,
   }) {
-    return started(tableId, orderId);
+    return started(tableId, orderId, servicePercent);
   }
 
   @override
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function(String? tableId, String? orderId)? started,
+    TResult? Function(String? tableId, String? orderId, double servicePercent)?
+        started,
     TResult? Function(String symbol)? updateEnterSum,
     TResult? Function()? getDetail,
     TResult? Function()? payment,
@@ -216,13 +234,14 @@ class _$StartedImpl implements _Started {
     TResult? Function(double hourPrice)? upadeHourPrice,
     TResult? Function(Map<String, DateTime> timestamps)? itemTimestampsLoaded,
   }) {
-    return started?.call(tableId, orderId);
+    return started?.call(tableId, orderId, servicePercent);
   }
 
   @override
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
-    TResult Function(String? tableId, String? orderId)? started,
+    TResult Function(String? tableId, String? orderId, double servicePercent)?
+        started,
     TResult Function(String symbol)? updateEnterSum,
     TResult Function()? getDetail,
     TResult Function()? payment,
@@ -234,7 +253,7 @@ class _$StartedImpl implements _Started {
     required TResult orElse(),
   }) {
     if (started != null) {
-      return started(tableId, orderId);
+      return started(tableId, orderId, servicePercent);
     }
     return orElse();
   }
@@ -293,11 +312,14 @@ class _$StartedImpl implements _Started {
 }
 
 abstract class _Started implements PaymentEvent {
-  const factory _Started({final String? tableId, final String? orderId}) =
-      _$StartedImpl;
+  const factory _Started(
+      {final String? tableId,
+      final String? orderId,
+      final double servicePercent}) = _$StartedImpl;
 
   String? get tableId;
   String? get orderId;
+  double get servicePercent;
   @JsonKey(ignore: true)
   _$$StartedImplCopyWith<_$StartedImpl> get copyWith =>
       throw _privateConstructorUsedError;
@@ -368,7 +390,9 @@ class _$UpdateEnterSumImpl implements _UpdateEnterSum {
   @override
   @optionalTypeArgs
   TResult when<TResult extends Object?>({
-    required TResult Function(String? tableId, String? orderId) started,
+    required TResult Function(
+            String? tableId, String? orderId, double servicePercent)
+        started,
     required TResult Function(String symbol) updateEnterSum,
     required TResult Function() getDetail,
     required TResult Function() payment,
@@ -385,7 +409,8 @@ class _$UpdateEnterSumImpl implements _UpdateEnterSum {
   @override
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function(String? tableId, String? orderId)? started,
+    TResult? Function(String? tableId, String? orderId, double servicePercent)?
+        started,
     TResult? Function(String symbol)? updateEnterSum,
     TResult? Function()? getDetail,
     TResult? Function()? payment,
@@ -401,7 +426,8 @@ class _$UpdateEnterSumImpl implements _UpdateEnterSum {
   @override
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
-    TResult Function(String? tableId, String? orderId)? started,
+    TResult Function(String? tableId, String? orderId, double servicePercent)?
+        started,
     TResult Function(String symbol)? updateEnterSum,
     TResult Function()? getDetail,
     TResult Function()? payment,
@@ -519,7 +545,9 @@ class _$GetDetailImpl implements _GetDetail {
   @override
   @optionalTypeArgs
   TResult when<TResult extends Object?>({
-    required TResult Function(String? tableId, String? orderId) started,
+    required TResult Function(
+            String? tableId, String? orderId, double servicePercent)
+        started,
     required TResult Function(String symbol) updateEnterSum,
     required TResult Function() getDetail,
     required TResult Function() payment,
@@ -536,7 +564,8 @@ class _$GetDetailImpl implements _GetDetail {
   @override
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function(String? tableId, String? orderId)? started,
+    TResult? Function(String? tableId, String? orderId, double servicePercent)?
+        started,
     TResult? Function(String symbol)? updateEnterSum,
     TResult? Function()? getDetail,
     TResult? Function()? payment,
@@ -552,7 +581,8 @@ class _$GetDetailImpl implements _GetDetail {
   @override
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
-    TResult Function(String? tableId, String? orderId)? started,
+    TResult Function(String? tableId, String? orderId, double servicePercent)?
+        started,
     TResult Function(String symbol)? updateEnterSum,
     TResult Function()? getDetail,
     TResult Function()? payment,
@@ -664,7 +694,9 @@ class _$PaymentImpl implements _Payment {
   @override
   @optionalTypeArgs
   TResult when<TResult extends Object?>({
-    required TResult Function(String? tableId, String? orderId) started,
+    required TResult Function(
+            String? tableId, String? orderId, double servicePercent)
+        started,
     required TResult Function(String symbol) updateEnterSum,
     required TResult Function() getDetail,
     required TResult Function() payment,
@@ -681,7 +713,8 @@ class _$PaymentImpl implements _Payment {
   @override
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function(String? tableId, String? orderId)? started,
+    TResult? Function(String? tableId, String? orderId, double servicePercent)?
+        started,
     TResult? Function(String symbol)? updateEnterSum,
     TResult? Function()? getDetail,
     TResult? Function()? payment,
@@ -697,7 +730,8 @@ class _$PaymentImpl implements _Payment {
   @override
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
-    TResult Function(String? tableId, String? orderId)? started,
+    TResult Function(String? tableId, String? orderId, double servicePercent)?
+        started,
     TResult Function(String symbol)? updateEnterSum,
     TResult Function()? getDetail,
     TResult Function()? payment,
@@ -836,7 +870,9 @@ class _$DiscountTypeImpl implements _DiscountType {
   @override
   @optionalTypeArgs
   TResult when<TResult extends Object?>({
-    required TResult Function(String? tableId, String? orderId) started,
+    required TResult Function(
+            String? tableId, String? orderId, double servicePercent)
+        started,
     required TResult Function(String symbol) updateEnterSum,
     required TResult Function() getDetail,
     required TResult Function() payment,
@@ -853,7 +889,8 @@ class _$DiscountTypeImpl implements _DiscountType {
   @override
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function(String? tableId, String? orderId)? started,
+    TResult? Function(String? tableId, String? orderId, double servicePercent)?
+        started,
     TResult? Function(String symbol)? updateEnterSum,
     TResult? Function()? getDetail,
     TResult? Function()? payment,
@@ -869,7 +906,8 @@ class _$DiscountTypeImpl implements _DiscountType {
   @override
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
-    TResult Function(String? tableId, String? orderId)? started,
+    TResult Function(String? tableId, String? orderId, double servicePercent)?
+        started,
     TResult Function(String symbol)? updateEnterSum,
     TResult Function()? getDetail,
     TResult Function()? payment,
@@ -1015,7 +1053,9 @@ class _$UpdateDiscountAmountImpl implements _UpdateDiscountAmount {
   @override
   @optionalTypeArgs
   TResult when<TResult extends Object?>({
-    required TResult Function(String? tableId, String? orderId) started,
+    required TResult Function(
+            String? tableId, String? orderId, double servicePercent)
+        started,
     required TResult Function(String symbol) updateEnterSum,
     required TResult Function() getDetail,
     required TResult Function() payment,
@@ -1032,7 +1072,8 @@ class _$UpdateDiscountAmountImpl implements _UpdateDiscountAmount {
   @override
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function(String? tableId, String? orderId)? started,
+    TResult? Function(String? tableId, String? orderId, double servicePercent)?
+        started,
     TResult? Function(String symbol)? updateEnterSum,
     TResult? Function()? getDetail,
     TResult? Function()? payment,
@@ -1048,7 +1089,8 @@ class _$UpdateDiscountAmountImpl implements _UpdateDiscountAmount {
   @override
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
-    TResult Function(String? tableId, String? orderId)? started,
+    TResult Function(String? tableId, String? orderId, double servicePercent)?
+        started,
     TResult Function(String symbol)? updateEnterSum,
     TResult Function()? getDetail,
     TResult Function()? payment,
@@ -1194,7 +1236,9 @@ class _$UpdatePaymentTypeImpl implements _UpdatePaymentType {
   @override
   @optionalTypeArgs
   TResult when<TResult extends Object?>({
-    required TResult Function(String? tableId, String? orderId) started,
+    required TResult Function(
+            String? tableId, String? orderId, double servicePercent)
+        started,
     required TResult Function(String symbol) updateEnterSum,
     required TResult Function() getDetail,
     required TResult Function() payment,
@@ -1211,7 +1255,8 @@ class _$UpdatePaymentTypeImpl implements _UpdatePaymentType {
   @override
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function(String? tableId, String? orderId)? started,
+    TResult? Function(String? tableId, String? orderId, double servicePercent)?
+        started,
     TResult? Function(String symbol)? updateEnterSum,
     TResult? Function()? getDetail,
     TResult? Function()? payment,
@@ -1227,7 +1272,8 @@ class _$UpdatePaymentTypeImpl implements _UpdatePaymentType {
   @override
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
-    TResult Function(String? tableId, String? orderId)? started,
+    TResult Function(String? tableId, String? orderId, double servicePercent)?
+        started,
     TResult Function(String symbol)? updateEnterSum,
     TResult Function()? getDetail,
     TResult Function()? payment,
@@ -1373,7 +1419,9 @@ class _$UpdateHourPriceImpl implements _UpdateHourPrice {
   @override
   @optionalTypeArgs
   TResult when<TResult extends Object?>({
-    required TResult Function(String? tableId, String? orderId) started,
+    required TResult Function(
+            String? tableId, String? orderId, double servicePercent)
+        started,
     required TResult Function(String symbol) updateEnterSum,
     required TResult Function() getDetail,
     required TResult Function() payment,
@@ -1390,7 +1438,8 @@ class _$UpdateHourPriceImpl implements _UpdateHourPrice {
   @override
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function(String? tableId, String? orderId)? started,
+    TResult? Function(String? tableId, String? orderId, double servicePercent)?
+        started,
     TResult? Function(String symbol)? updateEnterSum,
     TResult? Function()? getDetail,
     TResult? Function()? payment,
@@ -1406,7 +1455,8 @@ class _$UpdateHourPriceImpl implements _UpdateHourPrice {
   @override
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
-    TResult Function(String? tableId, String? orderId)? started,
+    TResult Function(String? tableId, String? orderId, double servicePercent)?
+        started,
     TResult Function(String symbol)? updateEnterSum,
     TResult Function()? getDetail,
     TResult Function()? payment,
@@ -1561,7 +1611,9 @@ class _$ItemTimestampsLoadedImpl implements _ItemTimestampsLoaded {
   @override
   @optionalTypeArgs
   TResult when<TResult extends Object?>({
-    required TResult Function(String? tableId, String? orderId) started,
+    required TResult Function(
+            String? tableId, String? orderId, double servicePercent)
+        started,
     required TResult Function(String symbol) updateEnterSum,
     required TResult Function() getDetail,
     required TResult Function() payment,
@@ -1578,7 +1630,8 @@ class _$ItemTimestampsLoadedImpl implements _ItemTimestampsLoaded {
   @override
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function(String? tableId, String? orderId)? started,
+    TResult? Function(String? tableId, String? orderId, double servicePercent)?
+        started,
     TResult? Function(String symbol)? updateEnterSum,
     TResult? Function()? getDetail,
     TResult? Function()? payment,
@@ -1594,7 +1647,8 @@ class _$ItemTimestampsLoadedImpl implements _ItemTimestampsLoaded {
   @override
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
-    TResult Function(String? tableId, String? orderId)? started,
+    TResult Function(String? tableId, String? orderId, double servicePercent)?
+        started,
     TResult Function(String symbol)? updateEnterSum,
     TResult Function()? getDetail,
     TResult Function()? payment,
@@ -1690,6 +1744,8 @@ mixin _$PaymentState {
   int get returnAmount => throw _privateConstructorUsedError;
   DiscountType get discountType => throw _privateConstructorUsedError;
   double get hourPrice =>
+      throw _privateConstructorUsedError; // Bills endpoint service_percent qaytarmasa navigatsiyadan kelgan fallback.
+  double get servicePercentFallback =>
       throw _privateConstructorUsedError; // Item nomi -> eng erta urilgan vaqt. `/order-items/order/{id}` dan
 // olinadi; `/bills/{id}` items'da `created_at` yo'q.
   Map<String, DateTime> get itemTimestamps =>
@@ -1720,6 +1776,7 @@ abstract class $PaymentStateCopyWith<$Res> {
       int returnAmount,
       DiscountType discountType,
       double hourPrice,
+      double servicePercentFallback,
       Map<String, DateTime> itemTimestamps,
       Failure? failure});
 }
@@ -1749,6 +1806,7 @@ class _$PaymentStateCopyWithImpl<$Res, $Val extends PaymentState>
     Object? returnAmount = null,
     Object? discountType = null,
     Object? hourPrice = null,
+    Object? servicePercentFallback = null,
     Object? itemTimestamps = null,
     Object? failure = freezed,
   }) {
@@ -1801,6 +1859,10 @@ class _$PaymentStateCopyWithImpl<$Res, $Val extends PaymentState>
           ? _value.hourPrice
           : hourPrice // ignore: cast_nullable_to_non_nullable
               as double,
+      servicePercentFallback: null == servicePercentFallback
+          ? _value.servicePercentFallback
+          : servicePercentFallback // ignore: cast_nullable_to_non_nullable
+              as double,
       itemTimestamps: null == itemTimestamps
           ? _value.itemTimestamps
           : itemTimestamps // ignore: cast_nullable_to_non_nullable
@@ -1834,6 +1896,7 @@ abstract class _$$PaymentStateImplCopyWith<$Res>
       int returnAmount,
       DiscountType discountType,
       double hourPrice,
+      double servicePercentFallback,
       Map<String, DateTime> itemTimestamps,
       Failure? failure});
 }
@@ -1861,6 +1924,7 @@ class __$$PaymentStateImplCopyWithImpl<$Res>
     Object? returnAmount = null,
     Object? discountType = null,
     Object? hourPrice = null,
+    Object? servicePercentFallback = null,
     Object? itemTimestamps = null,
     Object? failure = freezed,
   }) {
@@ -1913,6 +1977,10 @@ class __$$PaymentStateImplCopyWithImpl<$Res>
           ? _value.hourPrice
           : hourPrice // ignore: cast_nullable_to_non_nullable
               as double,
+      servicePercentFallback: null == servicePercentFallback
+          ? _value.servicePercentFallback
+          : servicePercentFallback // ignore: cast_nullable_to_non_nullable
+              as double,
       itemTimestamps: null == itemTimestamps
           ? _value._itemTimestamps
           : itemTimestamps // ignore: cast_nullable_to_non_nullable
@@ -1941,6 +2009,7 @@ class _$PaymentStateImpl implements _PaymentState {
       this.returnAmount = 0,
       this.discountType = DiscountType.money,
       this.hourPrice = 0,
+      this.servicePercentFallback = 0.0,
       final Map<String, DateTime> itemTimestamps = const <String, DateTime>{},
       this.failure})
       : _itemTimestamps = itemTimestamps;
@@ -1977,6 +2046,10 @@ class _$PaymentStateImpl implements _PaymentState {
   @override
   @JsonKey()
   final double hourPrice;
+// Bills endpoint service_percent qaytarmasa navigatsiyadan kelgan fallback.
+  @override
+  @JsonKey()
+  final double servicePercentFallback;
 // Item nomi -> eng erta urilgan vaqt. `/order-items/order/{id}` dan
 // olinadi; `/bills/{id}` items'da `created_at` yo'q.
   final Map<String, DateTime> _itemTimestamps;
@@ -1995,7 +2068,7 @@ class _$PaymentStateImpl implements _PaymentState {
 
   @override
   String toString() {
-    return 'PaymentState(status: $status, detailStatus: $detailStatus, detail: $detail, tableId: $tableId, orderId: $orderId, textController: $textController, discountAmount: $discountAmount, paymentType: $paymentType, enterSum: $enterSum, returnAmount: $returnAmount, discountType: $discountType, hourPrice: $hourPrice, itemTimestamps: $itemTimestamps, failure: $failure)';
+    return 'PaymentState(status: $status, detailStatus: $detailStatus, detail: $detail, tableId: $tableId, orderId: $orderId, textController: $textController, discountAmount: $discountAmount, paymentType: $paymentType, enterSum: $enterSum, returnAmount: $returnAmount, discountType: $discountType, hourPrice: $hourPrice, servicePercentFallback: $servicePercentFallback, itemTimestamps: $itemTimestamps, failure: $failure)';
   }
 
   @override
@@ -2023,6 +2096,8 @@ class _$PaymentStateImpl implements _PaymentState {
                 other.discountType == discountType) &&
             (identical(other.hourPrice, hourPrice) ||
                 other.hourPrice == hourPrice) &&
+            (identical(other.servicePercentFallback, servicePercentFallback) ||
+                other.servicePercentFallback == servicePercentFallback) &&
             const DeepCollectionEquality()
                 .equals(other._itemTimestamps, _itemTimestamps) &&
             (identical(other.failure, failure) || other.failure == failure));
@@ -2043,6 +2118,7 @@ class _$PaymentStateImpl implements _PaymentState {
       returnAmount,
       discountType,
       hourPrice,
+      servicePercentFallback,
       const DeepCollectionEquality().hash(_itemTimestamps),
       failure);
 
@@ -2067,6 +2143,7 @@ abstract class _PaymentState implements PaymentState {
       final int returnAmount,
       final DiscountType discountType,
       final double hourPrice,
+      final double servicePercentFallback,
       final Map<String, DateTime> itemTimestamps,
       final Failure? failure}) = _$PaymentStateImpl;
 
@@ -2094,6 +2171,8 @@ abstract class _PaymentState implements PaymentState {
   DiscountType get discountType;
   @override
   double get hourPrice;
+  @override // Bills endpoint service_percent qaytarmasa navigatsiyadan kelgan fallback.
+  double get servicePercentFallback;
   @override // Item nomi -> eng erta urilgan vaqt. `/order-items/order/{id}` dan
 // olinadi; `/bills/{id}` items'da `created_at` yo'q.
   Map<String, DateTime> get itemTimestamps;

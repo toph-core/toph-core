@@ -8,6 +8,7 @@ import 'package:mary_ai_pos/core/extension/number_formatter.dart';
 import 'package:mary_ai_pos/core/services/cache/cache_service.dart';
 import 'package:mary_ai_pos/core/services/offline_queue/offline_queue_service.dart';
 import 'package:mary_ai_pos/core/services/offline_queue/pending_operation.dart';
+import 'package:mary_ai_pos/core/utils/order_totals.dart';
 import 'package:mary_ai_pos/di.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/table_timer/table_timer_response_model.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/hour_price/hour_price_bloc.dart';
@@ -74,7 +75,11 @@ class _PaymentScreenState extends State<PaymentScreen> {
           BlocProvider(
             create: (_) {
               final bloc = inject<PaymentBloc>()
-                ..add(PaymentEvent.started(tableId: tableId, orderId: orderId));
+                ..add(PaymentEvent.started(
+                  tableId: tableId,
+                  orderId: orderId,
+                  servicePercent: _servicePercent,
+                ));
               if (_passedHourAmount > 0) {
                 bloc.add(
                   PaymentEvent.upadeHourPrice(hourPrice: _passedHourAmount),
@@ -93,7 +98,23 @@ class _PaymentScreenState extends State<PaymentScreen> {
               return bloc;
             },
           ),
-          BlocProvider(create: (_) => inject<HourPriceBloc>()),
+          BlocProvider(
+            create: (_) {
+              final bloc = inject<HourPriceBloc>();
+              // Time-based stol — jonli stol haqini serverdan olamiz
+              // (guide §4: GET /orders/{id}/table-price), shunda ekran va
+              // /pay dagi table_charge server bilan aynan mos bo'ladi.
+              // Offline'da fetch xato bo'lsa nav-arg'dagi lokal taymer
+              // qiymati o'z kuchida qoladi.
+              final isTimeBased =
+                  args['table_type'] == 'time_based' || _passedHourAmount > 0;
+              final id = tableId ?? orderId;
+              if (isTimeBased && id != null) {
+                bloc.add(HourPriceEvent.started(orderId: id));
+              }
+              return bloc;
+            },
+          ),
         ],
         child: BlocListener<HourPriceBloc, HourPriceState>(
           listenWhen: (p, v) => p.price?.totalPrice != v.price?.totalPrice,
@@ -119,36 +140,33 @@ class _PaymentScreenState extends State<PaymentScreen> {
                 );
               }
 
-              final effective = PaymentBloc.effectiveTotal(state.detail!);
-              final offlineExtra = PaymentBloc.pendingOfflineExtra(
-                state.tableId,
-              );
-              final discountAmt = int.tryParse(state.discountAmount) ?? 0;
-              int finalTotal = effective + offlineExtra;
-              if (state.discountType == DiscountType.money) {
-                finalTotal -= discountAmt;
-              } else {
-                finalTotal -= (finalTotal * (discountAmt / 100)).round();
-              }
-              if (finalTotal < 0) finalTotal = 0;
-              finalTotal += state.hourPrice.toInt();
-
-              // Service toggle — compute effective service amount, subtract if excluded
-              final det = state.detail!;
-              final servicePct = det.servicePercent > 0
-                  ? det.servicePercent.toDouble()
-                  : _servicePercent;
-              final foodSumForService = det.goods
-                  .where((g) => g.status != 'cancelled')
-                  .fold(0.0, (s, g) => s + g.price * g.quantity);
-              final serviceToggleAmt = (det.serviceAmount > 0.01
-                      ? det.serviceAmount
-                      : foodSumForService * servicePct / 100)
-                  .toInt();
-              if (!_includeService && serviceToggleAmt > 0) {
-                finalTotal =
-                    (finalTotal - serviceToggleAmt).clamp(0, finalTotal);
-              }
+              // Yagona hisob — backend /pay formulasi (`OrderTotals`):
+              // xizmat (mahsulot + stol haqi) ustidan, chegirma to'liq
+              // base_total dan (guide §1/§7).
+              final discountAmt =
+                  (int.tryParse(state.discountAmount) ?? 0).toDouble();
+              OrderTotals totalsFor({required bool withService}) =>
+                  OrderTotals.fromDetail(
+                    state.detail!,
+                    tableCharge: state.hourPrice,
+                    offlineExtra: PaymentBloc.pendingOfflineExtra(
+                      state.tableId,
+                    ).toDouble(),
+                    servicePercentFallback: _servicePercent,
+                    discountPercent: state.discountType == DiscountType.percent
+                        ? discountAmt
+                        : 0,
+                    discountAmount: state.discountType == DiscountType.money
+                        ? discountAmt
+                        : 0,
+                    includeService: withService,
+                  );
+              final totalsWithService = totalsFor(withService: true);
+              final grandWithService = totalsWithService.grandTotal;
+              final grandWithoutService =
+                  totalsFor(withService: false).grandTotal;
+              final finalTotal =
+                  _includeService ? grandWithService : grandWithoutService;
 
               // Compact (1024–1366): kichikroq side panellar — numpad uchun joy
               final sidePanelW = PosBreakpoints.pick<double>(
@@ -169,17 +187,17 @@ class _PaymentScreenState extends State<PaymentScreen> {
                           child: _OrderSummaryColumn(
                             detail: state.detail!,
                             tableId: tableId,
+                            subtotal: totalsWithService.itemsAmount,
+                            serviceAmount: totalsWithService.serviceAmount,
                             servicePercentFallback: _servicePercent,
                             includeService: _includeService,
                             onToggleService: (v) {
                               final bloc = context.read<PaymentBloc>();
                               final entered =
                                   int.tryParse(bloc.state.enterSum) ?? 0;
-                              // Toggle direction: adding or removing service
-                              final delta =
-                                  v ? serviceToggleAmt : -serviceToggleAmt;
-                              final newTotal =
-                                  (finalTotal + delta).clamp(0, 999999999);
+                              final newTotal = v
+                                  ? grandWithService
+                                  : grandWithoutService;
                               setState(() => _includeService = v);
                               // Sync numpad only if it still shows the exact total
                               if (entered == 0 || entered == finalTotal) {
@@ -226,6 +244,8 @@ class _PaymentScreenState extends State<PaymentScreen> {
 class _OrderSummaryColumn extends StatelessWidget {
   final dynamic detail;
   final String? tableId;
+  final int subtotal;
+  final int serviceAmount;
   final double servicePercentFallback;
   final bool includeService;
   final ValueChanged<bool> onToggleService;
@@ -233,6 +253,8 @@ class _OrderSummaryColumn extends StatelessWidget {
   const _OrderSummaryColumn({
     required this.detail,
     required this.tableId,
+    required this.subtotal,
+    required this.serviceAmount,
     this.servicePercentFallback = 0,
     this.includeService = true,
     required this.onToggleService,
@@ -272,7 +294,8 @@ class _OrderSummaryColumn extends StatelessWidget {
           ),
           // Totals footer: Oraliq jami + Xizmat haqi (simplified per spec)
           _SummaryFooter(
-            detail: detail,
+            subtotal: subtotal,
+            serviceAmount: serviceAmount,
             servicePercentFallback: servicePercentFallback,
             includeService: includeService,
             onToggleService: onToggleService,
@@ -513,13 +536,15 @@ class _OrderLineRow extends StatelessWidget {
 }
 
 class _SummaryFooter extends StatelessWidget {
-  final dynamic detail;
+  final int subtotal;
+  final int serviceAmount;
   final double servicePercentFallback;
   final bool includeService;
   final ValueChanged<bool> onToggleService;
 
   const _SummaryFooter({
-    required this.detail,
+    required this.subtotal,
+    required this.serviceAmount,
     this.servicePercentFallback = 0,
     this.includeService = true,
     required this.onToggleService,
@@ -540,14 +565,9 @@ class _SummaryFooter extends StatelessWidget {
           final servicePct = detail.servicePercent > 0
               ? detail.servicePercent
               : servicePercentFallback;
-          final foodSum = detail.goods
-              .where((g) => g.status != 'cancelled')
-              .fold(0.0, (s, g) => s + g.price * g.quantity);
-          final rawServiceAmt = detail.serviceAmount > 0.01
-              ? detail.serviceAmount
-              : foodSum * servicePct / 100;
-          final serviceAmt = rawServiceAmt.toInt();
-          final foodOnly = foodSum.toInt();
+          // Summalar yuqorida `OrderTotals` orqali hisoblangan — bu yerda
+          // qayta hisoblamaymiz (xizmat stol haqini ham o'z ichiga oladi).
+          final serviceAmt = serviceAmount;
           final pctLabel = servicePct > 0
               ? '${S.current.strServiceCharge} (${servicePct.toInt()}%)'
               : S.current.strServiceCharge;
@@ -556,7 +576,7 @@ class _SummaryFooter extends StatelessWidget {
             children: [
               _SummaryLine(
                 label: S.current.strSubtotal,
-                value: foodOnly.formatNWithoutS,
+                value: subtotal.formatNWithoutS,
               ),
               if (serviceAmt > 0) ...[
                 const SizedBox(height: 8),

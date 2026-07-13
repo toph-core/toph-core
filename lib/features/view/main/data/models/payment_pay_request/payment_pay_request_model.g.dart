@@ -15,6 +15,7 @@ _$PaymentPayRequestModelImpl _$$PaymentPayRequestModelImplFromJson(
       customPaidAmount: (json['customer_paid_amount'] as num?)?.toInt() ?? 0,
       discountAmount: (json['discount_amount'] as num?)?.toInt() ?? 0,
       discountPercent: (json['discount_percent'] as num?)?.toInt() ?? 0,
+      tableCharge: (json['table_charge'] as num?)?.toInt() ?? 0,
       paymentType:
           $enumDecodeNullable(_$PaymentTypeEnumMap, json['payment_type']) ??
               PaymentType.cash,
@@ -30,6 +31,7 @@ Map<String, dynamic> _$$PaymentPayRequestModelImplToJson(
       'customer_paid_amount': instance.customPaidAmount,
       'discount_amount': instance.discountAmount,
       'discount_percent': instance.discountPercent,
+      'table_charge': instance.tableCharge,
       'payment_type': _$PaymentTypeEnumMap[instance.paymentType]!,
       'comment': instance.comment,
     };

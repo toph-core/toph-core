@@ -2,7 +2,7 @@ name: Build Windows
 
 on:
   push:
-    branches: [main, test, receipt]
+    branches: [main, test, receipt, order-total-calculation]
     tags:
       - 'v*'
   workflow_dispatch:

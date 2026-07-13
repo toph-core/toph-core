@@ -2,7 +2,11 @@ part of 'payment_bloc.dart';
 
 @freezed
 class PaymentEvent with _$PaymentEvent {
-  const factory PaymentEvent.started({String? tableId,String? orderId,}) = _Started;
+  const factory PaymentEvent.started({
+    String? tableId,
+    String? orderId,
+    @Default(0.0) double servicePercent,
+  }) = _Started;
   const factory PaymentEvent.updateEnterSum({required String symbol}) =
       _UpdateEnterSum;
   const factory PaymentEvent.getDetail() = _GetDetail;

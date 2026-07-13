@@ -123,8 +123,11 @@ class MainDataSourcesImpl implements MainDataSources {
     required String orderId,
   }) async {
     try {
-      final getOrderId = await getOrderIdWithTableId(tableId: orderId);
-      final response = await _client.get(ListAPI.orderHourPrice(getOrderId));
+      // Param stol IDsi bo'lishi mumkin — avval undan order topamiz;
+      // topilmasa param o'zi order ID deb qabul qilinadi (arxiv/ofitsiant yo'li).
+      final resolvedId = await getOrderIdWithTableId(tableId: orderId);
+      final effectiveId = resolvedId.isNotEmpty ? resolvedId : orderId;
+      final response = await _client.get(ListAPI.orderHourPrice(effectiveId));
       return Right(HourPriceResponseModel.fromJson(response.data['data']));
     } on DioException catch (exception) {
       return Left(handleDioException(exception));

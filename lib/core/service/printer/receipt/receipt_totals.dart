@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 
+import 'package:mary_ai_pos/core/utils/order_totals.dart';
 import 'package:mary_ai_pos/features/view/main/domain/entities/archive_detail_entity.dart';
 import 'package:mary_ai_pos/features/view/main/domain/entities/order_food_entity.dart';
 
@@ -44,25 +45,20 @@ class ReceiptTotals {
   }) {
     final goods =
         detail.goods.where((g) => g.status != 'cancelled').toList();
-    double subtotal = 0;
-    for (final g in goods) {
-      subtotal += g.price * g.quantity;
-    }
-    final serviceAmt = detail.serviceAmount > 0.0001
-        ? detail.serviceAmount
-        : (detail.servicePercent > 0
-            ? subtotal * detail.servicePercent / 100
-            : 0.0);
-    final preDiscount = subtotal + hourAmount + serviceAmt;
-    final discVal =
-        discountValueOf(preDiscount, discountPercent, discountAmount);
+    // Hisob — `OrderTotals` (backend /pay formulasi): xizmat stol haqiga ham.
+    final totals = OrderTotals.fromDetail(
+      detail,
+      tableCharge: hourAmount,
+      discountPercent: discountPercent,
+      discountAmount: discountAmount,
+    );
     return ReceiptTotals._(
       goods: goods,
-      subtotal: subtotal,
-      serviceAmount: serviceAmt,
+      subtotal: totals.itemsAmount.toDouble(),
+      serviceAmount: totals.serviceAmount.toDouble(),
       hourAmount: hourAmount,
-      discountValue: discVal,
-      toPay: (preDiscount - discVal).clamp(0.0, double.infinity),
+      discountValue: totals.discountValue.toDouble(),
+      toPay: totals.grandTotal.toDouble(),
     );
   }
 

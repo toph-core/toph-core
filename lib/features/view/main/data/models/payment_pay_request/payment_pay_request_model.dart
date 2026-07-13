@@ -18,6 +18,7 @@ class PaymentPayRequestModel
     @JsonKey(name: 'customer_paid_amount') @Default(0) int customPaidAmount,
     @JsonKey(name: 'discount_amount') @Default(0) int discountAmount,
     @JsonKey(name: 'discount_percent') @Default(0) int discountPercent,
+    @JsonKey(name: 'table_charge') @Default(0) int tableCharge,
     @JsonKey(name: 'payment_type')
     @Default(PaymentType.cash)
     PaymentType paymentType,
@@ -32,6 +33,9 @@ class PaymentPayRequestModel
     final map = <String, dynamic>{
       'customer_paid_amount': '$customPaidAmount',
       'payment_type': paymentType.name,
+      // Ko'rsatilgan stol haqini serverga ham yuboramiz — server o'zi qayta
+      // hisoblasa ekranda ko'rsatilgan summadan farq qilishi mumkin (guide §8).
+      if (tableCharge > 0) 'table_charge': '$tableCharge',
     };
     final hasDiscount = discountAmount > 0 || discountPercent > 0;
     if (hasDiscount) {

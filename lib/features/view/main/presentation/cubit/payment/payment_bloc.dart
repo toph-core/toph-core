@@ -9,6 +9,7 @@ import 'package:mary_ai_pos/core/constants/constants.dart';
 import 'package:mary_ai_pos/core/error/failure.dart';
 import 'package:mary_ai_pos/core/routes/app_routes.dart';
 import 'package:mary_ai_pos/core/utils/helper/helper_widget.dart';
+import 'package:mary_ai_pos/core/utils/order_totals.dart';
 import 'package:mary_ai_pos/features/view/auth/presentation/cubit/bloc/user_bloc.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/cafe_tables/cafe_tables_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/payment_pay_request/payment_pay_request_model.dart';
@@ -89,17 +90,36 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
     emit(state.copyWith(itemTimestamps: event.timestamps));
   }
 
+  /// Yagona hisob manbai — backend `/pay` formulasi (`OrderTotals`).
+  /// Ekran, guard, karta summasi va offline navbat SHU orqali hisoblanadi.
+  OrderTotals _totals({
+    ArchiveDetailEntity? detail,
+    bool withDiscount = true,
+    double? hourOverride,
+  }) {
+    final disc = (int.tryParse(state.discountAmount) ?? 0).toDouble();
+    return OrderTotals.fromDetail(
+      detail ?? state.detail!,
+      tableCharge: hourOverride ?? state.hourPrice,
+      offlineExtra: pendingOfflineExtra(state.tableId).toDouble(),
+      servicePercentFallback: state.servicePercentFallback,
+      discountPercent:
+          withDiscount && state.discountType == DiscountType.percent ? disc : 0,
+      discountAmount:
+          withDiscount && state.discountType == DiscountType.money ? disc : 0,
+    );
+  }
+
   void _updateHourPrice(_UpdateHourPrice event, emit) {
     // enterSum ni ham yangilash — agar kassir hali o'zgartirmagan bo'lsa
     final detail = state.detail;
-    final newHour = event.hourPrice.toInt();
     String? newEnterSum;
     if (detail != null) {
-      final base = effectiveTotal(detail);
       final currentEntered = int.tryParse(state.enterSum) ?? 0;
-      final oldExpected = base + state.hourPrice.toInt();
+      final oldExpected = _totals().grandTotal;
       if (currentEntered == 0 || currentEntered == oldExpected) {
-        newEnterSum = (base + newHour).toString();
+        newEnterSum =
+            _totals(hourOverride: event.hourPrice).grandTotal.toString();
       }
     }
     emit(state.copyWith(
@@ -133,15 +153,16 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
 
   void _payment(_Payment event, Emitter<PaymentState> emit) async {
     final enteredAmt = int.tryParse(state.enterSum) ?? 0;
-    final effectiveTot = state.detail != null
-        ? effectiveTotal(state.detail!) + state.hourPrice.toInt() + pendingOfflineExtra(state.tableId)
-        : 1;
-    final cashNeedsAmount = state.paymentType == PaymentType.cash && enteredAmt <= 0 && effectiveTot > 0;
+    final totals = state.detail != null ? _totals() : null;
+    // Guard chegirmadan OLDINGI jami bo'yicha — 100% chegirmali buyurtma
+    // baribir /pay orqali yopilishi kerak, /cancel emas.
+    final baseTotal = totals?.baseTotal ?? 1;
+    final cashNeedsAmount = state.paymentType == PaymentType.cash && enteredAmt <= 0 && baseTotal > 0;
     if (state.detail != null && !cashNeedsAmount) {
       emit(state.copyWith(status: Status.LOADING));
 
       // Total 0 bo'lsa — /pay emas /cancel
-      if (effectiveTot <= 0) {
+      if (baseTotal <= 0) {
         try {
           await inject<DioClient>().dio.post(
             ListAPI.cancelOrder(state.detail!.id),
@@ -162,12 +183,12 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
           orderId: state.detail!.id,
           // cashRegisterId: "a195f647-8cf0-4132-8464-fdaaa2d77a68",
           // cashierId: "4e25f6c1-68c0-43bd-bcb2-a130bde2e9e1",
-          // Chegirmadan oldingi jami (discount_* alohida); naqd kiritilgan sum qayta emas.
+          // Naqd — kassir kiritgan sum; karta — chegirmadan KEYINGI grand_total
+          // (guide §8: customer_paid_amount mijoz bergan haqiqiy summa).
           customPaidAmount: state.paymentType == PaymentType.cash
               ? enteredAmt
-              : effectiveTotal(state.detail!) +
-                    state.hourPrice.toInt() +
-                    pendingOfflineExtra(state.tableId),
+              : totals!.grandTotal,
+          tableCharge: state.hourPrice.round(),
           discountAmount: state.discountType == DiscountType.money
               ? int.tryParse(state.discountAmount) != null
                     ? int.parse(state.discountAmount)
@@ -246,12 +267,10 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
   }
 
   Future<void> _enqueuePayment() async {
-    final offlineExtra = pendingOfflineExtra(state.tableId);
-    final effectiveAmt =
-        effectiveTotal(state.detail!) + state.hourPrice.toInt() + offlineExtra;
     final enteredAmt = int.tryParse(state.enterSum) ?? 0;
-    final paidAmount =
-        state.paymentType == PaymentType.cash ? enteredAmt : effectiveAmt;
+    final paidAmount = state.paymentType == PaymentType.cash
+        ? enteredAmt
+        : _totals().grandTotal;
     final payload = jsonEncode({
       'order_id': state.detail!.id,
       'customer_paid_amount': paidAmount.toString(),
@@ -262,6 +281,10 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
       if ((int.tryParse(state.discountAmount) ?? 0) > 0 &&
           state.discountType == DiscountType.percent)
         'discount_percent': int.parse(state.discountAmount),
+      // Lokal stol haqini yuboramiz — sinxron paytda server qayta hisoblab
+      // kattaroq summa talab qilsa 400 bilan navbatdan yo'qolib ketardi.
+      if (state.hourPrice > 0)
+        'table_charge': state.hourPrice.round().toString(),
     });
     await inject<OfflineQueueService>().enqueue(
       PendingOperation(
@@ -306,25 +329,12 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
     return extra;
   }
 
-  static int effectiveTotal(ArchiveDetailEntity detail) {
-    final hasCancelled = detail.goods.any((g) => g.status == 'cancelled');
-    if (!hasCancelled && detail.grandTotal > 0.01) {
-      return detail.grandTotal.toInt();
-    }
-    final foodSum = detail.goods
-        .where((g) => g.status != 'cancelled')
-        .fold(0.0, (s, g) => s + g.price * g.quantity);
-    final service = detail.serviceAmount > 0.01
-        ? detail.serviceAmount
-        : foodSum * detail.servicePercent / 100;
-    return (foodSum + service).toInt();
-  }
-
   Future<void> _onStarted(_Started event, emit) async {
     emit(
       PaymentState(
         tableId: event.tableId,
         orderId: event.orderId,
+        servicePercentFallback: event.servicePercent,
         textController: TextEditingController(),
         status: Status.LOADING,
         detailStatus: Status.LOADING,
@@ -374,7 +384,7 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
           cache.saveOrderDetail(state.tableId!, (detail as ArchiveDetailModel).toJson());
           // Dastlabki to'lov oynasida "Qabul qilingan" ni aniq summa bilan
           // avtomatik to'ldirib qo'yamiz (agar kassir hali hech nima kiritmagan bo'lsa).
-          final prefill = PaymentBloc.effectiveTotal(detail) + state.hourPrice.toInt();
+          final prefill = _totals(detail: detail).grandTotal;
           final shouldPrefill =
               state.enterSum.isEmpty || state.enterSum == '0';
           emit(state.copyWith(
@@ -403,7 +413,7 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
           emit(state.copyWith(status: Status.ERROR, detailStatus: Status.ERROR, failure: failure));
         },
         (detail) {
-          final prefill = PaymentBloc.effectiveTotal(detail) + state.hourPrice.toInt();
+          final prefill = _totals(detail: detail).grandTotal;
           final shouldPrefill =
               state.enterSum.isEmpty || state.enterSum == '0';
           emit(state.copyWith(

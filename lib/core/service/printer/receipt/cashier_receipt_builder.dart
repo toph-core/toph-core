@@ -32,12 +32,16 @@ class CashierReceiptBuilder {
     return '${s}s';
   }
 
-  /// `service_amount` → `service_percent` × mahsulot → `total_amount − mahsulot`.
-  static double _servicePart(OpenOrderModel order, double subtotal) {
+  /// `service_percent` × (mahsulot + stol haqi) → `service_amount` →
+  /// `total_amount − mahsulot`. Foiz birinchi: backend /pay xizmatni stol
+  /// haqiga ham hisoblaydi (guide §5), server bergan `service_amount` esa
+  /// faqat mahsulot ustidan.
+  static double _servicePart(
+      OpenOrderModel order, double subtotal, double hourAmount) {
+    final sp = order.servicePercent;
+    if (sp != null && sp > 0) return (subtotal + hourAmount) * sp / 100.0;
     final explicit = order.serviceAmountValue;
     if (explicit > 0.0001) return explicit;
-    final sp = order.servicePercent;
-    if (sp != null && sp > 0) return subtotal * sp / 100.0;
     final tot = order.totalAmountValue;
     if (tot > subtotal + 0.01) return tot - subtotal;
     return 0;
@@ -207,6 +211,8 @@ class CashierReceiptBuilder {
 
     double subtotal = 0;
     for (final item in items) {
+      // `commet` status saqlaydi — bekor qilinganlar chekka ham, jamiga ham kirmaydi.
+      if (item.commet == 'cancelled') continue;
       final price = double.tryParse(item.goods.price) ?? 0;
       final lineTotal = price * item.quantity;
       subtotal += lineTotal;
@@ -246,7 +252,7 @@ class CashierReceiptBuilder {
       ]);
     }
 
-    final serviceRaw = _servicePart(order, subtotal);
+    final serviceRaw = _servicePart(order, subtotal, hourAmount);
     final serviceAmt = serviceRaw > 0.0001 ? serviceRaw : 0.0;
     if (serviceAmt > 0) {
       bytes += gen.row([
