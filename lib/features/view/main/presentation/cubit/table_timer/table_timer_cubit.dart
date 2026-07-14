@@ -32,6 +32,27 @@ class TableTimerCubit extends Cubit<TableTimerState> {
     _uiTickTimer = null;
   }
 
+  /// Backend buyurtma paid/cancelled bo'lgani uchun mutatsiyani rad etsa
+  /// (400), stale "paused/running" cache-ni tozalaymiz — aks holda
+  /// Resume/Pause tugmasi ko'rinishda qolib, xuddi shu so'rovni cheksiz
+  /// qayta yuboraveradi.
+  bool _handleTerminalMutationError(DioException e, String id) {
+    if (e.response?.statusCode != 400) return false;
+    if (isClosed || _activeOrderId != id) return true;
+    _cancelTimers();
+    _activeOrderId = null;
+    emit(
+      state.copyWith(
+        isMutating: false,
+        shouldShow: false,
+        clearTimer: true,
+        clearDisplayActiveSec: true,
+        errorMessage: e.message ?? 'Table timer xatosi',
+      ),
+    );
+    return true;
+  }
+
   void _ensureServerSync() {
     final id = _activeOrderId;
     if (id == null) return;
@@ -351,7 +372,7 @@ class TableTimerCubit extends Cubit<TableTimerState> {
         await _fetchBillPauses(force: true);
       }
     } on DioException catch (e) {
-      if (isClosed || _activeOrderId != id) return;
+      if (_handleTerminalMutationError(e, id)) return;
       emit(
         state.copyWith(
           isMutating: false,
@@ -381,7 +402,7 @@ class TableTimerCubit extends Cubit<TableTimerState> {
         await _fetchBillPauses(force: true);
       }
     } on DioException catch (e) {
-      if (isClosed || _activeOrderId != id) return;
+      if (_handleTerminalMutationError(e, id)) return;
       emit(
         state.copyWith(
           isMutating: false,
@@ -416,7 +437,7 @@ class TableTimerCubit extends Cubit<TableTimerState> {
         await _fetchBillPauses(force: true);
       }
     } on DioException catch (e) {
-      if (isClosed || _activeOrderId != id) return;
+      if (_handleTerminalMutationError(e, id)) return;
       emit(
         state.copyWith(
           isMutating: false,

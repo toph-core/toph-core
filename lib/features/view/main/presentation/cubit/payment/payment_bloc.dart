@@ -254,7 +254,7 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
     );
     final mainCubit = navigatorKey.currentContext!.read<MainCubit>();
     if (state.tableId != null) {
-      mainCubit.updateTableStatus(state.tableId!, TableStatus.free);
+      mainCubit.broadcastTableStatus(state.tableId!, TableStatus.free);
     }
     Navigator.pushNamedAndRemoveUntil(
       navigatorKey.currentContext!,

@@ -62,7 +62,7 @@ class _AppScaffoldState extends State<AppScaffold> {
     final queue = inject<OfflineQueueService>();
     if (!queue.hasItems) return;
     await queue.syncAll(inject<DioClient>());
-    if (mounted) context.read<MainCubit>().refreshTables();
+    if (mounted) context.read<MainCubit>().refreshTables(force: true);
   }
 
   @override

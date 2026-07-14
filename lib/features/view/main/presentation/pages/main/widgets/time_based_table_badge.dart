@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:mary_ai_pos/core/api/list_api.dart';
 import 'package:mary_ai_pos/core/api/dio_client.dart';
@@ -115,6 +116,13 @@ class _TimeBasedTableBadgeState extends State<TimeBasedTableBadge> {
             if (mounted) setState(() => _elapsedSec++);
           },
         );
+      } else if (state == 'closed') {
+        // Buyurtma to'langan/yopilgan — bu order uchun polling shart emas.
+        _stopPolling();
+      }
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 400 || e.response?.statusCode == 404) {
+        _stopPolling();
       }
     } catch (_) {}
   }
@@ -130,6 +138,19 @@ class _TimeBasedTableBadgeState extends State<TimeBasedTableBadge> {
         await dio.post(ListAPI.orderTableTimerResume(_orderId));
       }
       await _sync();
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 400) {
+        // Buyurtma allaqachon to'langan/yopilgan — stale holatni tozalab,
+        // Pause/Resume tugmasini yashiramiz, aks holda cheksiz qayta urinadi.
+        _stopPolling();
+        if (mounted) {
+          setState(() {
+            _timerState = 'none';
+            _orderId = '';
+            _loaded = false;
+          });
+        }
+      }
     } catch (_) {
     } finally {
       if (mounted) setState(() => _actionLoading = false);
