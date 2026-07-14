@@ -415,6 +415,7 @@ class MainDataSourcesImpl implements MainDataSources {
     try {
       final response = await _client.get(
         "${ListAPI.cafeTablesByHallId}/$hallId",
+        queryParameters: {'limit': 1000},
       );
 
       return Right(

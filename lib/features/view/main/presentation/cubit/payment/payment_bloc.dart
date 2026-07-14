@@ -222,8 +222,9 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
       timerPricePerHour: _timerPricePerHour,
     );
     final mainCubit = navigatorKey.currentContext!.read<MainCubit>();
-    if (state.tableId != null) {
-      mainCubit.updateTableStatus(state.tableId!, TableStatus.free);
+    final effectiveTableId = state.tableId ?? state.detail?.tableId;
+    if (effectiveTableId != null && effectiveTableId.isNotEmpty) {
+      mainCubit.broadcastTableStatus(effectiveTableId, TableStatus.free);
     }
     Navigator.pushNamedAndRemoveUntil(
       navigatorKey.currentContext!,
