@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:keyboard_dismisser/keyboard_dismisser.dart';
 import 'package:mary_ai_pos/core/design_system/pos_design_system.dart';
 import 'package:mary_ai_pos/core/extension/for_context.dart';
+import 'package:mary_ai_pos/core/widgets/styled_virtual_keyboard.dart';
 import 'package:mary_ai_pos/di.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/cafe_tables/cafe_tables_model.dart';
 import 'package:mary_ai_pos/features/view/main/domain/entities/save_order_entity.dart';
@@ -14,7 +15,6 @@ import 'package:mary_ai_pos/features/view/main/presentation/pages/detail/widgets
 import 'package:mary_ai_pos/features/view/main/presentation/pages/detail/widgets/order_side_bar_widget.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/detail/widgets/produc_grid_widget.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/detail/widgets/top_bar_widget.dart';
-import 'package:virtual_keyboard_multi_language/virtual_keyboard_multi_language.dart';
 
 class DetailScreen extends StatefulWidget {
   const DetailScreen({super.key});
@@ -53,8 +53,17 @@ class _DetailScreenState extends State<DetailScreen> with DetailScreenMixin {
     final hasSavedGoods =
         savedOrders != null && savedOrders!.createOrderRequest.foods.isNotEmpty;
 
-    _detailBloc = inject<DetailBloc>()
-      ..add(const DetailEvent.started())
+    final initialCategoryId = args['initial_category_id'] as String?;
+
+    _detailBloc = inject<DetailBloc>()..add(const DetailEvent.started());
+
+    // Pre-select category before getCategories so the default "all"
+    // selection does not race and override the caller's choice.
+    if (initialCategoryId != null && initialCategoryId.isNotEmpty) {
+      _detailBloc.add(DetailEvent.setSelectedCategoryId(id: initialCategoryId));
+    }
+
+    _detailBloc
       ..add(const DetailEvent.getCategories())
       ..add(
         DetailEvent.initSavedGoods(
@@ -198,21 +207,12 @@ class _DetailScreenState extends State<DetailScreen> with DetailScreenMixin {
                       bottom: 0,
                       left: 0,
                       right: 0,
-                      child: DecoratedBox(
-                        decoration: BoxDecoration(
-                          color: context.colors.bgSecondary,
-                        ),
-                        child: SafeArea(
-                          child: VirtualKeyboard(
-                            height: context.h * .3,
-                            customLayoutKeys: VirtualKeyboardDefaultLayoutKeys([
-                              VirtualKeyboardDefaultLayouts.English,
-                            ]),
-                            textColor: Colors.black,
-                            fontSize: 24,
-                            textController: controller,
-                            type: VirtualKeyboardType.Alphanumeric,
-                          ),
+                      child: SafeArea(
+                        top: false,
+                        child: StyledVirtualKeyboard(
+                          controller: controller,
+                          height: context.h * .32,
+                          onClose: () => showVirtualKeyboard.value = false,
                         ),
                       ),
                     );

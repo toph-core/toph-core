@@ -397,6 +397,10 @@ class TableTimerCubit extends Cubit<TableTimerState> {
   Future<void> resumeTimer() async {
     final id = _activeOrderId;
     if (id == null) return;
+    // Closed session holds accrued charge — never start a fresh timer (resets to 0).
+    if (state.timer != null && state.timer!.isFrozenClosed) {
+      return;
+    }
     // Timer hali boshlanmagan → /start chaqiramiz
     if (state.timer == null || state.timer!.stateNormalized == 'none') {
       await startTimer();

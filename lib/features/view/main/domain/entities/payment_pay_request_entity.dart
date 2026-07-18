@@ -9,6 +9,7 @@ abstract class PaymentPayRequestEntity {
   final int discountPercent;
   final PaymentType paymentType;
   final String comment;
+  final int tableCharge;
 
   PaymentPayRequestEntity({
     required this.orderId,
@@ -19,6 +20,7 @@ abstract class PaymentPayRequestEntity {
     required this.discountPercent,
     required this.paymentType,
     required this.comment,
+    this.tableCharge = 0,
   });
 
   Map<String, dynamic> request();

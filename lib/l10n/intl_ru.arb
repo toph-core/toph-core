@@ -313,6 +313,7 @@
   "strAddFirstPrinter": "Добавить первый принтер",
   "strCheckPrinter": "Принтер чеков",
   "strCategory": "Категория",
+  "strAllCategories": "Все категории",
   "strNewPrinter": "Новый принтер",
   "strEditPrinter": "Редактировать принтер",
   "strIPAddress": "IP адрес",

@@ -95,7 +95,20 @@ class _PaymentScreenState extends State<PaymentScreen> {
           ),
           BlocProvider(create: (_) => inject<HourPriceBloc>()),
         ],
-        child: BlocListener<HourPriceBloc, HourPriceState>(
+        child: Builder(
+          builder: (paymentContext) {
+            return PopScope(
+          onPopInvokedWithResult: (didPop, result) {
+            if (!didPop) return;
+            // Leaving payment without success — resume paused timer.
+            try {
+              final bloc = paymentContext.read<PaymentBloc>();
+              if (!bloc.paymentSucceeded) {
+                bloc.resumeTimerAfterFailedPay();
+              }
+            } catch (_) {}
+          },
+          child: BlocListener<HourPriceBloc, HourPriceState>(
           listenWhen: (p, v) => p.price?.totalPrice != v.price?.totalPrice,
           listener: (context, hState) {
             if (hState.price != null) {
@@ -119,7 +132,11 @@ class _PaymentScreenState extends State<PaymentScreen> {
                 );
               }
 
-              final effective = PaymentBloc.effectiveTotal(state.detail!);
+              // hourPrice is included inside effectiveTotal (and in its service base)
+              final effective = PaymentBloc.effectiveTotal(
+                state.detail!,
+                tableCharge: state.hourPrice,
+              );
               final offlineExtra = PaymentBloc.pendingOfflineExtra(
                 state.tableId,
               );
@@ -131,7 +148,6 @@ class _PaymentScreenState extends State<PaymentScreen> {
                 finalTotal -= (finalTotal * (discountAmt / 100)).round();
               }
               if (finalTotal < 0) finalTotal = 0;
-              finalTotal += state.hourPrice.toInt();
 
               // Service toggle — compute effective service amount, subtract if excluded
               final det = state.detail!;
@@ -141,10 +157,15 @@ class _PaymentScreenState extends State<PaymentScreen> {
               final foodSumForService = det.goods
                   .where((g) => g.status != 'cancelled')
                   .fold(0.0, (s, g) => s + g.price * g.quantity);
-              final serviceToggleAmt = (det.serviceAmount > 0.01
-                      ? det.serviceAmount
-                      : foodSumForService * servicePct / 100)
-                  .toInt();
+              // Service applies to (items + table_charge) per order-total-calculation.md §5
+              // When table charge is present, ignore API service_amount (read path omits it on table).
+              final baseForService = foodSumForService + state.hourPrice;
+              final serviceToggleAmt = (state.hourPrice > 0.01
+                      ? baseForService * servicePct / 100
+                      : (det.serviceAmount > 0.01
+                          ? det.serviceAmount
+                          : baseForService * servicePct / 100))
+                  .round();
               if (!_includeService && serviceToggleAmt > 0) {
                 finalTotal =
                     (finalTotal - serviceToggleAmt).clamp(0, finalTotal);
@@ -213,6 +234,9 @@ class _PaymentScreenState extends State<PaymentScreen> {
               );
             },
           ),
+        ),
+            );
+          },
         ),
       ),
     );
@@ -543,10 +567,15 @@ class _SummaryFooter extends StatelessWidget {
           final foodSum = detail.goods
               .where((g) => g.status != 'cancelled')
               .fold(0.0, (s, g) => s + g.price * g.quantity);
-          final rawServiceAmt = detail.serviceAmount > 0.01
-              ? detail.serviceAmount
-              : foodSum * servicePct / 100;
-          final serviceAmt = rawServiceAmt.toInt();
+          // Service applies to (items + table_charge) per order-total-calculation.md §5
+          // When table charge is present, ignore API service_amount (read path omits it on table).
+          final baseForService = foodSum + state.hourPrice;
+          final serviceAmt = (state.hourPrice > 0.01
+                  ? baseForService * servicePct / 100
+                  : (detail.serviceAmount > 0.01
+                      ? detail.serviceAmount
+                      : baseForService * servicePct / 100))
+              .round();
           final foodOnly = foodSum.toInt();
           final pctLabel = servicePct > 0
               ? '${S.current.strServiceCharge} (${servicePct.toInt()}%)'

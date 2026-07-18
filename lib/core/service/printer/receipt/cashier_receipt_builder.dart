@@ -33,14 +33,20 @@ class CashierReceiptBuilder {
     return '${s}s';
   }
 
-  /// `service_amount` → `service_percent` × mahsulot → `total_amount − mahsulot`.
-  static double _servicePart(OpenOrderModel order, double subtotal) {
+  /// Prefer recomputing from percent when [hourAmount] > 0 — API `service_amount`
+  /// on unpaid orders excludes service on the table charge (§7).
+  static double _servicePart(OpenOrderModel order, double subtotal, {double hourAmount = 0}) {
+    final sp = order.servicePercent;
+    final baseForService = subtotal + hourAmount;
+    if (hourAmount > 0.0001) {
+      if (sp != null && sp > 0) return baseForService * sp / 100.0;
+      return 0;
+    }
     final explicit = order.serviceAmountValue;
     if (explicit > 0.0001) return explicit;
-    final sp = order.servicePercent;
-    if (sp != null && sp > 0) return subtotal * sp / 100.0;
+    if (sp != null && sp > 0) return baseForService * sp / 100.0;
     final tot = order.totalAmountValue;
-    if (tot > subtotal + 0.01) return tot - subtotal;
+    if (tot > baseForService + 0.01) return tot - baseForService;
     return 0;
   }
 
@@ -248,7 +254,7 @@ class CashierReceiptBuilder {
       ]);
     }
 
-    final serviceRaw = _servicePart(order, subtotal);
+    final serviceRaw = _servicePart(order, subtotal, hourAmount: hourAmount);
     final serviceAmt = serviceRaw > 0.0001 ? serviceRaw : 0.0;
     if (serviceAmt > 0) {
       bytes += gen.row([
@@ -450,9 +456,18 @@ class CashierReceiptBuilder {
       ]);
     }
 
-    final serviceAmt = detail.serviceAmount > 0.0001
-        ? detail.serviceAmount
-        : (detail.servicePercent > 0 ? subtotal * detail.servicePercent / 100 : 0.0);
+    // Service applies to (items + table_charge) per order-total-calculation.md §5
+    // When table charge is present, ignore API service_amount (read path omits it on table).
+    final baseForService = subtotal + hourAmount;
+    final serviceAmt = hourAmount > 0.0001
+        ? (detail.servicePercent > 0
+            ? baseForService * detail.servicePercent / 100
+            : 0.0)
+        : (detail.serviceAmount > 0.0001
+            ? detail.serviceAmount
+            : (detail.servicePercent > 0
+                ? baseForService * detail.servicePercent / 100
+                : 0.0));
     if (serviceAmt > 0.0001) {
       final servicePct = detail.servicePercent.toInt();
       final label = servicePct > 0 ? 'Xizmat ($servicePct%)' : 'Xizmat';

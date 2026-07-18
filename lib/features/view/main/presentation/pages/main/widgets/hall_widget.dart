@@ -122,7 +122,7 @@ class HallWidget extends StatelessWidget {
         Future.delayed(
           const Duration(milliseconds: 300),
           () => navigator.pushNamed(
-            AppRoutes.detailScreen,
+            AppRoutes.departmentSelectionScreen,
             arguments: {
               "table": table,
               "guest_count": value,
@@ -140,7 +140,7 @@ class HallWidget extends StatelessWidget {
           .indexWhere((v) => v.createOrderRequest.tableId == table.id);
       Navigator.pushNamed(
         context,
-        AppRoutes.detailScreen,
+        AppRoutes.departmentSelectionScreen,
         arguments: {
           "table": table,
           "table_status": TableStatus.busy,

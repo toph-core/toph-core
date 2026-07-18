@@ -6,6 +6,7 @@ import 'package:mary_ai_pos/features/view/auth/presentation/pages/login_pin/logi
 import 'package:mary_ai_pos/features/view/auth/presentation/pages/splash/splash_screen.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/archive/archive_screen.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/close_shift/close_shift_screen.dart';
+import 'package:mary_ai_pos/features/view/main/presentation/pages/department_selection/department_selection_screen.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/detail/detail_screen.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/main/main_screen.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/menu/menu_manage_screen.dart';
@@ -29,6 +30,13 @@ class RouteGenerate {
 
       case AppRoutes.mainScreen:
         return simpleRoute(const MainScreen(), name: settings.name);
+
+      case AppRoutes.departmentSelectionScreen:
+        return simpleRoute(
+          const DepartmentSelectionScreen(),
+          args: args,
+          name: settings.name,
+        );
 
       case AppRoutes.detailScreen:
         return simpleRoute(

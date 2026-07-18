@@ -19,6 +19,7 @@ _$PaymentPayRequestModelImpl _$$PaymentPayRequestModelImplFromJson(
           $enumDecodeNullable(_$PaymentTypeEnumMap, json['payment_type']) ??
               PaymentType.cash,
       comment: json['comment'] as String? ?? '',
+      tableCharge: (json['table_charge'] as num?)?.toInt() ?? 0,
     );
 
 Map<String, dynamic> _$$PaymentPayRequestModelImplToJson(
@@ -32,6 +33,7 @@ Map<String, dynamic> _$$PaymentPayRequestModelImplToJson(
       'discount_percent': instance.discountPercent,
       'payment_type': _$PaymentTypeEnumMap[instance.paymentType]!,
       'comment': instance.comment,
+      'table_charge': instance.tableCharge,
     };
 
 const _$PaymentTypeEnumMap = {

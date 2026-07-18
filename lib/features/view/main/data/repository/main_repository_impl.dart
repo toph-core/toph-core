@@ -7,6 +7,7 @@ import 'package:mary_ai_pos/features/view/main/data/models/cafe_tables/cafe_tabl
 import 'package:mary_ai_pos/features/view/main/data/models/category/category_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/close_shift/close_shift_request_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/create_order/create_order_request_model.dart';
+import 'package:mary_ai_pos/features/view/main/data/models/department/department_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/goods/goods_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/hall/hall_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/open_shift/open_shift_model.dart';
@@ -86,6 +87,11 @@ class MainRepositoryImpl implements MainRepository {
   @override
   Future<Either<Failure, List<CategoryModel>>> getCategories() {
     return _dataSources.getCategories();
+  }
+
+  @override
+  Future<Either<Failure, List<DepartmentModel>>> getDepartments() {
+    return _dataSources.getDepartments();
   }
 
   @override

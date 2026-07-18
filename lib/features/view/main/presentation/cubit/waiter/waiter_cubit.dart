@@ -395,7 +395,8 @@ class WaiterCubit extends Cubit<WaiterState> {
     }
   }
 
-  /// Backend `total_amount` bo‘lsa — to‘lov shu summaga teng (`customer_paid_amount`).
+  /// Backend `total_amount` is safe for normal tables only.
+  /// For time-based tables, GET omits service on table_charge (§7) — recompute.
   int _payAmountSom(OpenOrderModel order, List<OrderLineItemModel> lines) {
     final sumLines = lines
         .where((l) => !l.isCancelled)
@@ -403,9 +404,21 @@ class WaiterCubit extends Cubit<WaiterState> {
           0,
           (s, l) => s + (double.tryParse(l.price) ?? 0) * l.quantity,
         );
+    final tableCharge = order.tableAmountInt.toDouble();
+    final servicePct = order.servicePercent ?? 0;
+
+    if (tableCharge > 0.01) {
+      // Service applies to (items + table_charge) per order-total-calculation.md §5
+      final serviceAmt =
+          ((sumLines + tableCharge) * servicePct / 100).round();
+      return sumLines.round() + tableCharge.round() + serviceAmt;
+    }
+
     final apiTotal = order.totalAmountValue;
     if (apiTotal > 0) return apiTotal.round();
-    return sumLines.round();
+
+    final serviceAmt = (sumLines * servicePct / 100).round();
+    return sumLines.round() + serviceAmt;
   }
 
   Future<void> closeOrder(

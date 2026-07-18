@@ -37,6 +37,10 @@ mixin _$PaymentPayRequestModel {
   PaymentType get paymentType => throw _privateConstructorUsedError;
   String get comment => throw _privateConstructorUsedError;
 
+  /// From GET table-price; sent so pay uses the same table charge as the UI.
+  @JsonKey(name: 'table_charge')
+  int get tableCharge => throw _privateConstructorUsedError;
+
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
   @JsonKey(ignore: true)
   $PaymentPayRequestModelCopyWith<PaymentPayRequestModel> get copyWith =>
@@ -57,7 +61,8 @@ abstract class $PaymentPayRequestModelCopyWith<$Res> {
       @JsonKey(name: 'discount_amount') int discountAmount,
       @JsonKey(name: 'discount_percent') int discountPercent,
       @JsonKey(name: 'payment_type') PaymentType paymentType,
-      String comment});
+      String comment,
+      @JsonKey(name: 'table_charge') int tableCharge});
 }
 
 /// @nodoc
@@ -82,6 +87,7 @@ class _$PaymentPayRequestModelCopyWithImpl<$Res,
     Object? discountPercent = null,
     Object? paymentType = null,
     Object? comment = null,
+    Object? tableCharge = null,
   }) {
     return _then(_value.copyWith(
       orderId: null == orderId
@@ -116,6 +122,10 @@ class _$PaymentPayRequestModelCopyWithImpl<$Res,
           ? _value.comment
           : comment // ignore: cast_nullable_to_non_nullable
               as String,
+      tableCharge: null == tableCharge
+          ? _value.tableCharge
+          : tableCharge // ignore: cast_nullable_to_non_nullable
+              as int,
     ) as $Val);
   }
 }
@@ -137,7 +147,8 @@ abstract class _$$PaymentPayRequestModelImplCopyWith<$Res>
       @JsonKey(name: 'discount_amount') int discountAmount,
       @JsonKey(name: 'discount_percent') int discountPercent,
       @JsonKey(name: 'payment_type') PaymentType paymentType,
-      String comment});
+      String comment,
+      @JsonKey(name: 'table_charge') int tableCharge});
 }
 
 /// @nodoc
@@ -161,6 +172,7 @@ class __$$PaymentPayRequestModelImplCopyWithImpl<$Res>
     Object? discountPercent = null,
     Object? paymentType = null,
     Object? comment = null,
+    Object? tableCharge = null,
   }) {
     return _then(_$PaymentPayRequestModelImpl(
       orderId: null == orderId
@@ -195,6 +207,10 @@ class __$$PaymentPayRequestModelImplCopyWithImpl<$Res>
           ? _value.comment
           : comment // ignore: cast_nullable_to_non_nullable
               as String,
+      tableCharge: null == tableCharge
+          ? _value.tableCharge
+          : tableCharge // ignore: cast_nullable_to_non_nullable
+              as int,
     ));
   }
 }
@@ -210,7 +226,8 @@ class _$PaymentPayRequestModelImpl extends _PaymentPayRequestModel {
       @JsonKey(name: 'discount_amount') this.discountAmount = 0,
       @JsonKey(name: 'discount_percent') this.discountPercent = 0,
       @JsonKey(name: 'payment_type') this.paymentType = PaymentType.cash,
-      this.comment = ''})
+      this.comment = '',
+      @JsonKey(name: 'table_charge') this.tableCharge = 0})
       : super._();
 
   factory _$PaymentPayRequestModelImpl.fromJson(Map<String, dynamic> json) =>
@@ -241,9 +258,14 @@ class _$PaymentPayRequestModelImpl extends _PaymentPayRequestModel {
   @JsonKey()
   final String comment;
 
+  /// From GET table-price; sent so pay uses the same table charge as the UI.
+  @override
+  @JsonKey(name: 'table_charge')
+  final int tableCharge;
+
   @override
   String toString() {
-    return 'PaymentPayRequestModel(orderId: $orderId, cashRegisterId: $cashRegisterId, cashierId: $cashierId, customPaidAmount: $customPaidAmount, discountAmount: $discountAmount, discountPercent: $discountPercent, paymentType: $paymentType, comment: $comment)';
+    return 'PaymentPayRequestModel(orderId: $orderId, cashRegisterId: $cashRegisterId, cashierId: $cashierId, customPaidAmount: $customPaidAmount, discountAmount: $discountAmount, discountPercent: $discountPercent, paymentType: $paymentType, comment: $comment, tableCharge: $tableCharge)';
   }
 
   @override
@@ -264,7 +286,9 @@ class _$PaymentPayRequestModelImpl extends _PaymentPayRequestModel {
                 other.discountPercent == discountPercent) &&
             (identical(other.paymentType, paymentType) ||
                 other.paymentType == paymentType) &&
-            (identical(other.comment, comment) || other.comment == comment));
+            (identical(other.comment, comment) || other.comment == comment) &&
+            (identical(other.tableCharge, tableCharge) ||
+                other.tableCharge == tableCharge));
   }
 
   @JsonKey(ignore: true)
@@ -278,7 +302,8 @@ class _$PaymentPayRequestModelImpl extends _PaymentPayRequestModel {
       discountAmount,
       discountPercent,
       paymentType,
-      comment);
+      comment,
+      tableCharge);
 
   @JsonKey(ignore: true)
   @override
@@ -297,14 +322,16 @@ class _$PaymentPayRequestModelImpl extends _PaymentPayRequestModel {
 
 abstract class _PaymentPayRequestModel extends PaymentPayRequestModel {
   const factory _PaymentPayRequestModel(
-      {@JsonKey(name: 'order_id') final String orderId,
-      @JsonKey(name: 'cash_register_id') final String cashRegisterId,
-      @JsonKey(name: 'cashier_id') final String cashierId,
-      @JsonKey(name: 'customer_paid_amount') final int customPaidAmount,
-      @JsonKey(name: 'discount_amount') final int discountAmount,
-      @JsonKey(name: 'discount_percent') final int discountPercent,
-      @JsonKey(name: 'payment_type') final PaymentType paymentType,
-      final String comment}) = _$PaymentPayRequestModelImpl;
+          {@JsonKey(name: 'order_id') final String orderId,
+          @JsonKey(name: 'cash_register_id') final String cashRegisterId,
+          @JsonKey(name: 'cashier_id') final String cashierId,
+          @JsonKey(name: 'customer_paid_amount') final int customPaidAmount,
+          @JsonKey(name: 'discount_amount') final int discountAmount,
+          @JsonKey(name: 'discount_percent') final int discountPercent,
+          @JsonKey(name: 'payment_type') final PaymentType paymentType,
+          final String comment,
+          @JsonKey(name: 'table_charge') final int tableCharge}) =
+      _$PaymentPayRequestModelImpl;
   const _PaymentPayRequestModel._() : super._();
 
   factory _PaymentPayRequestModel.fromJson(Map<String, dynamic> json) =
@@ -333,6 +360,11 @@ abstract class _PaymentPayRequestModel extends PaymentPayRequestModel {
   PaymentType get paymentType;
   @override
   String get comment;
+  @override
+
+  /// From GET table-price; sent so pay uses the same table charge as the UI.
+  @JsonKey(name: 'table_charge')
+  int get tableCharge;
   @override
   @JsonKey(ignore: true)
   _$$PaymentPayRequestModelImplCopyWith<_$PaymentPayRequestModelImpl>

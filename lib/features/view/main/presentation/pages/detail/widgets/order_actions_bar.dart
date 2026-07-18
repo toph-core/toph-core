@@ -959,15 +959,18 @@ class _ActionButtons extends StatelessWidget {
                   trailingAmount: total.formatN,
                   onTap: () async {
                     final timerCubit = context.read<TableTimerCubit>();
-                    if (cafeTable?.tableType?.toLowerCase() == 'time_based' &&
-                        timerCubit.state.timer?.isRunning == true) {
+                    final detailBloc = context.read<DetailBloc>();
+                    final didPause =
+                        cafeTable?.tableType?.toLowerCase() == 'time_based' &&
+                        timerCubit.state.timer?.isRunning == true;
+                    if (didPause) {
                       await timerCubit.pauseTimer();
                     }
                     final ts = timerCubit.state;
                     final timerData = ts.timer;
                     final hourAmt = ts.effectiveCurrentAmount;
                     if (!context.mounted) return;
-                    Navigator.pushNamed(
+                    await Navigator.pushNamed(
                       context,
                       AppRoutes.paymentScreen,
                       arguments: {
@@ -986,13 +989,18 @@ class _ActionButtons extends StatelessWidget {
                         // bills endpoint open order uchun service_percent
                         // qaytarmasligi mumkin — shu yerdan fallback uzatamiz
                         'service_percent':
-                            context
-                                .read<DetailBloc>()
-                                .lastDetail
-                                ?.servicePercent ??
-                            0,
+                            detailBloc.lastDetail?.servicePercent ?? 0,
                       },
                     );
+                    // Returned from payment without completing — restore timer.
+                    if (!context.mounted) return;
+                    final orderId = detailBloc.state.activeOrderId;
+                    if (orderId == null || orderId.isEmpty) return;
+                    await timerCubit.fetchTimer(orderId: orderId);
+                    if (!context.mounted) return;
+                    if (timerCubit.state.timer?.stateNormalized == 'paused') {
+                      await timerCubit.resumeTimer();
+                    }
                   },
                 ),
               ],

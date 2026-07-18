@@ -6,6 +6,7 @@ import 'package:mary_ai_pos/features/view/main/data/models/cafe_tables/cafe_tabl
 import 'package:mary_ai_pos/features/view/main/data/models/category/category_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/close_shift/close_shift_request_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/create_order/create_order_request_model.dart';
+import 'package:mary_ai_pos/features/view/main/data/models/department/department_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/goods/goods_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/hall/hall_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/open_shift/open_shift_model.dart';
@@ -50,6 +51,7 @@ abstract class MainRepository {
   });
 
   Future<Either<Failure, List<CategoryModel>>> getCategories();
+  Future<Either<Failure, List<DepartmentModel>>> getDepartments();
   Future<Either<Failure, List<GoodsModel>>> getGoodsByCategoryId(
     String categoryId,
   );

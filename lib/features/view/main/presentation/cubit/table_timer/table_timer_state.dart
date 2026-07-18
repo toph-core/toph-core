@@ -41,21 +41,25 @@ class TableTimerState {
   /// Timer yopilgan (`closed`) va muzlatilgan summa mavjudmi.
   /// `true` bo'lsa UI yangi vaqt qo'shmasligi, lekin saqlangan summani
   /// statik ko'rsatishi kerak.
+  ///
+  /// Also treat closed sessions with `current_amount` / active seconds as
+  /// frozen — a failed `/pay` can close the timer without `final_amount`.
   bool get isFrozen {
     final t = timer;
     if (t == null) return false;
     if (!t.isFrozenClosed) return false;
-    final amt = t.finalAmount;
-    if (amt == null || amt.isEmpty) return false;
-    final v = double.tryParse(amt.replaceAll(RegExp(r'[^0-9.]'), ''));
-    return v != null && v > 0;
+    if (parseAmountToInt(t.finalAmount) > 0) return true;
+    if (parseAmountToInt(t.currentAmount) > 0) return true;
+    return t.totalActiveSec > 0;
   }
 
   /// Muzlatilgan summa integer som sifatida (UI total uchun).
   int get frozenAmountInt {
     final t = timer;
     if (t == null) return 0;
-    return parseAmountToInt(t.finalAmount);
+    final fin = parseAmountToInt(t.finalAmount);
+    if (fin > 0) return fin;
+    return parseAmountToInt(t.currentAmount);
   }
 
   /// Ko'rsatish uchun samarali summa.
@@ -65,7 +69,8 @@ class TableTimerState {
     final t = timer;
     if (t != null && t.isFrozenClosed) {
       final fin = t.finalAmount;
-      if (fin != null && fin.isNotEmpty) return fin;
+      if (fin != null && fin.isNotEmpty && parseAmountToInt(fin) > 0) return fin;
+      if (t.currentAmount?.isNotEmpty == true) return t.currentAmount;
     }
     // Running paytda server `currentAmount` 60s syncgacha eskirib qoladi —
     // displayActiveSec asosida lokal hisoblanganini afzal ko'ramiz.

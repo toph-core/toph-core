@@ -749,23 +749,37 @@ class DetailBloc extends Bloc<DetailEvent, DetailState> {
     _SetSelectedCategoryId event,
     Emitter<DetailState> emit,
   ) async {
+    // Re-tapping the active category should not refetch or clear the list.
+    if (state.selectedCategoryId == event.id &&
+        state.goods != null &&
+        state.goods!.isNotEmpty) {
+      return;
+    }
+
     emit(state.copyWith(selectedCategoryId: event.id));
 
-    // Cache-first: darhol ko'rsat
+    // Cache-first: show matching items immediately when available.
     final allCached = _cache.getGoods();
+    List<GoodsModel> cachedForCategory = const [];
     if (allCached.isNotEmpty) {
-      final filtered = allCached
+      cachedForCategory = allCached
           .map((e) => GoodsModel.fromJson(e))
           .where((g) => event.id == 'all' || g.categoryId == event.id)
           .toList();
-      emit(state.copyWith(status: Status.SUCCESS, goods: filtered));
+      if (cachedForCategory.isNotEmpty) {
+        emit(
+          state.copyWith(status: Status.SUCCESS, goods: cachedForCategory),
+        );
+      } else {
+        emit(state.copyWith(status: Status.LOADING, goods: const []));
+      }
     } else {
-      emit(state.copyWith(status: Status.LOADING));
+      emit(state.copyWith(status: Status.LOADING, goods: const []));
     }
 
-    // Throttle: kassir tez-tez kategoriyani bosganda serverga burst ketmasin.
-    // Cache da goodlar bo'lsa — 10s ichida bir xil kategoriya takrorlanmaydi.
-    if (allCached.isNotEmpty &&
+    // Throttle: avoid burst requests when switching categories quickly.
+    // Only skip the network call if we already have something to show.
+    if (cachedForCategory.isNotEmpty &&
         _lastCategoryFetchId == event.id &&
         _lastCategoryFetchAt != null &&
         DateTime.now().difference(_lastCategoryFetchAt!) <
@@ -775,21 +789,24 @@ class DetailBloc extends Bloc<DetailEvent, DetailState> {
     _lastCategoryFetchId = event.id;
     _lastCategoryFetchAt = DateTime.now();
 
-    // Orqa fonda network dan yangilanadi
     final result = await _getGoodsByCategoryIdUseCase(event.id);
     if (isClosed) return;
     result.fold(
       (failure) {
-        if (allCached.isEmpty && !isClosed) {
+        if (cachedForCategory.isEmpty && !isClosed) {
           emit(state.copyWith(status: Status.ERROR, failure: failure));
         }
       },
       (goods) {
         if (isClosed) return;
-        // "all" kategoriyasi kelganda cache yangilanadi
+        // Ignore stale responses if the user already switched category.
+        if (state.selectedCategoryId != event.id) return;
+
         if (event.id == 'all') {
           _cache.saveGoods(goods.map((g) => g.toJson()).toList());
         }
+
+        // Always show the network result for the active category.
         emit(state.copyWith(status: Status.SUCCESS, goods: goods));
       },
     );

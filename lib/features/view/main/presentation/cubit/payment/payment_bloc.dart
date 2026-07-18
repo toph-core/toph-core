@@ -91,14 +91,13 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
   void _updateHourPrice(_UpdateHourPrice event, emit) {
     // enterSum ni ham yangilash — agar kassir hali o'zgartirmagan bo'lsa
     final detail = state.detail;
-    final newHour = event.hourPrice.toInt();
     String? newEnterSum;
     if (detail != null) {
-      final base = effectiveTotal(detail);
+      final oldExpected = effectiveTotal(detail, tableCharge: state.hourPrice);
+      final newExpected = effectiveTotal(detail, tableCharge: event.hourPrice);
       final currentEntered = int.tryParse(state.enterSum) ?? 0;
-      final oldExpected = base + state.hourPrice.toInt();
       if (currentEntered == 0 || currentEntered == oldExpected) {
-        newEnterSum = (base + newHour).toString();
+        newEnterSum = newExpected.toString();
       }
     }
     emit(state.copyWith(
@@ -132,19 +131,37 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
 
   void _payment(_Payment event, Emitter<PaymentState> emit) async {
     final enteredAmt = int.tryParse(state.enterSum) ?? 0;
-    final effectiveTot = state.detail != null
-        ? effectiveTotal(state.detail!) + state.hourPrice.toInt() + pendingOfflineExtra(state.tableId)
+    final dueTot = state.detail != null
+        ? effectiveTotal(state.detail!, tableCharge: state.hourPrice) +
+            pendingOfflineExtra(state.tableId)
         : 1;
-    final cashNeedsAmount = state.paymentType == PaymentType.cash && enteredAmt <= 0 && effectiveTot > 0;
+    final cashNeedsAmount =
+        state.paymentType == PaymentType.cash && enteredAmt <= 0 && dueTot > 0;
     if (state.detail != null && !cashNeedsAmount) {
+      // Cash sends entered amount; card/qr send the computed due total.
+      final paidAmount = state.paymentType == PaymentType.cash
+          ? enteredAmt
+          : dueTot;
+
+      // Never call /pay underpaid — backend closes the table timer during /pay
+      // even when it then rejects with "insufficient payment", wiping accrued time.
+      if (dueTot > 0 && paidAmount < dueTot) {
+        showErrorMessage(
+          navigatorKey.currentContext!,
+          'Yetarli emas: $paidAmount to\'landi, $dueTot kerak',
+        );
+        return;
+      }
+
       emit(state.copyWith(status: Status.LOADING));
 
       // Total 0 bo'lsa — /pay emas /cancel
-      if (effectiveTot <= 0) {
+      if (dueTot <= 0) {
         try {
           await inject<DioClient>().dio.post(
             ListAPI.cancelOrder(state.detail!.id),
           );
+          _paymentSucceeded = true;
           _onPaymentSuccess();
         } catch (e) {
           if (!isClosed) emit(state.copyWith(status: Status.ERROR));
@@ -156,17 +173,11 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
         return;
       }
 
+      final tableChargeSom = state.hourPrice.round();
       final response = await _createPaymentUsecase.call(
         PaymentPayRequestModel(
           orderId: state.detail!.id,
-          // cashRegisterId: "a195f647-8cf0-4132-8464-fdaaa2d77a68",
-          // cashierId: "4e25f6c1-68c0-43bd-bcb2-a130bde2e9e1",
-          // Chegirmadan oldingi jami (discount_* alohida); naqd kiritilgan sum qayta emas.
-          customPaidAmount: state.paymentType == PaymentType.cash
-              ? enteredAmt
-              : effectiveTotal(state.detail!) +
-                    state.hourPrice.toInt() +
-                    pendingOfflineExtra(state.tableId),
+          customPaidAmount: paidAmount,
           discountAmount: state.discountType == DiscountType.money
               ? int.tryParse(state.discountAmount) != null
                     ? int.parse(state.discountAmount)
@@ -178,6 +189,7 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
                     : 0
               : 0,
           paymentType: state.paymentType,
+          tableCharge: tableChargeSom > 0 ? tableChargeSom : 0,
         ),
       );
       response.fold(
@@ -186,17 +198,52 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
             // Internet yo'q — to'lovni offline queue ga saqla
             await _enqueuePayment();
             if (isClosed) return;
+            _paymentSucceeded = true;
             _onPaymentSuccess();
             return;
           }
+          // Failed /pay may have closed the timer server-side — resume if possible.
+          await resumeTimerAfterFailedPay();
           if (!isClosed) emit(state.copyWith(status: Status.ERROR));
           showErrorMessage(
             navigatorKey.currentContext!,
             l.getLocalizedMessage(navigatorKey.currentContext!),
           );
         },
-        (r) => _onPaymentSuccess(),
+        (r) {
+          _paymentSucceeded = true;
+          _onPaymentSuccess();
+        },
       );
+    }
+  }
+
+  bool _paymentSucceeded = false;
+  bool get paymentSucceeded => _paymentSucceeded;
+
+  /// After a failed/cancelled pay attempt, resume the table timer so accrued
+  /// time is not left paused. Never start a fresh session — that would reset
+  /// accrued time to 0 (backend may close the session on a failed /pay).
+  Future<void> resumeTimerAfterFailedPay() async {
+    if (_paymentSucceeded) return;
+    final orderId = state.detail?.id ?? state.orderId;
+    if (orderId == null || orderId.isEmpty) return;
+    if (state.hourPrice <= 0 && _timerTotalSec <= 0 && _timerStartedAt == null) {
+      return;
+    }
+    try {
+      final client = inject<DioClient>();
+      final res = await client.get(ListAPI.orderTableTimer(orderId));
+      final raw = res.data['data'];
+      if (raw is! Map) return;
+      final timerState =
+          (raw['state'] ?? raw['timer_state'])?.toString().toLowerCase() ?? '';
+      if (timerState == 'paused') {
+        await client.post(ListAPI.orderTableTimerResume(orderId));
+      }
+      // closed / none / running — leave as-is; starting fresh would wipe time.
+    } catch (_) {
+      // Best-effort — detail screen will refetch timer on return.
     }
   }
 
@@ -239,7 +286,7 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
   Future<void> _enqueuePayment() async {
     final offlineExtra = pendingOfflineExtra(state.tableId);
     final effectiveAmt =
-        effectiveTotal(state.detail!) + state.hourPrice.toInt() + offlineExtra;
+        effectiveTotal(state.detail!, tableCharge: state.hourPrice) + offlineExtra;
     final enteredAmt = int.tryParse(state.enterSum) ?? 0;
     final paidAmount =
         state.paymentType == PaymentType.cash ? enteredAmt : effectiveAmt;
@@ -297,18 +344,33 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
     return extra;
   }
 
-  static int effectiveTotal(ArchiveDetailEntity detail) {
-    final hasCancelled = detail.goods.any((g) => g.status == 'cancelled');
-    if (!hasCancelled && detail.grandTotal > 0.01) {
-      return detail.grandTotal.toInt();
-    }
+  /// Authoritative payment total (§1 / §7 of order-total-calculation.md).
+  ///
+  /// When [tableCharge] > 0, never trust API `grand_total` / `service_amount` —
+  /// the read path omits service on the table charge; `/pay` includes it.
+  static int effectiveTotal(ArchiveDetailEntity detail, {double tableCharge = 0}) {
     final foodSum = detail.goods
         .where((g) => g.status != 'cancelled')
         .fold(0.0, (s, g) => s + g.price * g.quantity);
+
+    if (tableCharge > 0.01) {
+      // Prefer explicit percent; if API left it 0, infer from food-only service_amount.
+      var pct = detail.servicePercent;
+      if (pct <= 0 && foodSum > 0.01 && detail.serviceAmount > 0.01) {
+        pct = detail.serviceAmount / foodSum * 100;
+      }
+      final service = ((foodSum + tableCharge) * pct / 100).round();
+      return (foodSum + tableCharge).round() + service;
+    }
+
+    final hasCancelled = detail.goods.any((g) => g.status == 'cancelled');
+    if (!hasCancelled && detail.grandTotal > 0.01) {
+      return detail.grandTotal.round();
+    }
     final service = detail.serviceAmount > 0.01
-        ? detail.serviceAmount
-        : foodSum * detail.servicePercent / 100;
-    return (foodSum + service).toInt();
+        ? detail.serviceAmount.round()
+        : (foodSum * detail.servicePercent / 100).round();
+    return foodSum.round() + service;
   }
 
   Future<void> _onStarted(_Started event, emit) async {
@@ -365,9 +427,13 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
           cache.saveOrderDetail(state.tableId!, (detail as ArchiveDetailModel).toJson());
           // Dastlabki to'lov oynasida "Qabul qilingan" ni aniq summa bilan
           // avtomatik to'ldirib qo'yamiz (agar kassir hali hech nima kiritmagan bo'lsa).
-          final prefill = PaymentBloc.effectiveTotal(detail) + state.hourPrice.toInt();
-          final shouldPrefill =
-              state.enterSum.isEmpty || state.enterSum == '0';
+          final prefill = PaymentBloc.effectiveTotal(detail, tableCharge: state.hourPrice);
+          final currentEntered = int.tryParse(state.enterSum) ?? 0;
+          // Prefill when empty, OR when enterSum is still the stale under-total
+          // (old formula omitted service on table charge).
+          final shouldPrefill = currentEntered <= 0 ||
+              currentEntered == prefill ||
+              (state.hourPrice > 0.01 && currentEntered < prefill);
           emit(state.copyWith(
             status: Status.SUCCESS,
             detailStatus: Status.SUCCESS,
@@ -394,9 +460,11 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
           emit(state.copyWith(status: Status.ERROR, detailStatus: Status.ERROR, failure: failure));
         },
         (detail) {
-          final prefill = PaymentBloc.effectiveTotal(detail) + state.hourPrice.toInt();
-          final shouldPrefill =
-              state.enterSum.isEmpty || state.enterSum == '0';
+          final prefill = PaymentBloc.effectiveTotal(detail, tableCharge: state.hourPrice);
+          final currentEntered = int.tryParse(state.enterSum) ?? 0;
+          final shouldPrefill = currentEntered <= 0 ||
+              currentEntered == prefill ||
+              (state.hourPrice > 0.01 && currentEntered < prefill);
           emit(state.copyWith(
             status: Status.SUCCESS,
             detailStatus: Status.SUCCESS,

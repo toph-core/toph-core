@@ -9,7 +9,6 @@ import 'package:mary_ai_pos/features/view/main/presentation/cubit/service_charge
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/ui_prefs/ui_prefs_cubit.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/settings/widgets/section_shell.dart';
 import 'package:mary_ai_pos/generated/l10n.dart';
-import 'package:virtual_keyboard_multi_language/virtual_keyboard_multi_language.dart';
 
 class AppearanceSection extends StatefulWidget {
   const AppearanceSection({super.key});
@@ -20,6 +19,19 @@ class AppearanceSection extends StatefulWidget {
 
 class _AppearanceSectionState extends State<AppearanceSection> {
   final ValueNotifier<TextEditingController?> _kbTarget = ValueNotifier(null);
+
+  /// 1.0 at compact baseline (~1024×640), 1.5 at 1920×1080 (capped).
+  static double numpadScaleOf(Size size) {
+    const minW = 1024.0, minH = 640.0;
+    const maxW = 1920.0, maxH = 1080.0;
+    final t = ((
+              ((size.width - minW) / (maxW - minW)) +
+              ((size.height - minH) / (maxH - minH))
+            ) /
+            2)
+        .clamp(0.0, 1.0);
+    return 1.0 + 0.5 * t;
+  }
 
   @override
   void dispose() {
@@ -33,7 +45,8 @@ class _AppearanceSectionState extends State<AppearanceSection> {
     final showImages = context.select(
       (UiPrefsCubit c) => c.state.menuShowImages,
     );
-    final colors = context.colors;
+    final windowSize = MediaQuery.sizeOf(context);
+    final scale = numpadScaleOf(windowSize);
 
     return Stack(
       children: [
@@ -48,38 +61,45 @@ class _AppearanceSectionState extends State<AppearanceSection> {
           child: SectionShell(
             title: S.current.strSettings,
             subtitle: S.current.strInterfaceSettings,
-            child: ListView(
-              padding: EdgeInsets.zero,
-              children: [
-                _SettingCard(
-                  icon: Icons.language_rounded,
-                  title: S.current.strInterfaceLanguage,
-                  subtitle: S.current.strAppliesToAllUsers,
-                  control: _SegmentedPicker<String>(
-                    value: language,
-                    options: const [
-                      _Option(value: 'uz', label: 'O\'zbek', flag: '🇺🇿'),
-                      _Option(value: 'ru', label: 'Русский', flag: '🇷🇺'),
-                    ],
-                    onChanged: (v) => context
-                        .read<SettingsCubit>()
-                        .saveAppLang(context, languageCode: v),
+            child: ValueListenableBuilder<TextEditingController?>(
+              valueListenable: _kbTarget,
+              builder: (context, ctrl, _) {
+                return ListView(
+                  padding: EdgeInsets.only(
+                    bottom: ctrl != null ? 240.0 * scale : 0,
                   ),
-                ),
-                const SizedBox(height: 14),
-                _SettingCard(
-                  icon: Icons.image_outlined,
-                  title: S.current.strMenuImages,
-                  subtitle: S.current.strShowProductImages,
-                  control: _StyledSwitch(
-                    value: showImages,
-                    onChanged: (v) =>
-                        context.read<UiPrefsCubit>().setMenuShowImages(v),
-                  ),
-                ),
-                const SizedBox(height: 14),
-                _ServiceChargeCard(kbTarget: _kbTarget),
-              ],
+                  children: [
+                    _SettingCard(
+                      icon: Icons.language_rounded,
+                      title: S.current.strInterfaceLanguage,
+                      subtitle: S.current.strAppliesToAllUsers,
+                      control: _SegmentedPicker<String>(
+                        value: language,
+                        options: const [
+                          _Option(value: 'uz', label: 'O\'zbek', flag: '🇺🇿'),
+                          _Option(value: 'ru', label: 'Русский', flag: '🇷🇺'),
+                        ],
+                        onChanged: (v) => context
+                            .read<SettingsCubit>()
+                            .saveAppLang(context, languageCode: v),
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    _SettingCard(
+                      icon: Icons.image_outlined,
+                      title: S.current.strMenuImages,
+                      subtitle: S.current.strShowProductImages,
+                      control: _StyledSwitch(
+                        value: showImages,
+                        onChanged: (v) =>
+                            context.read<UiPrefsCubit>().setMenuShowImages(v),
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    _ServiceChargeCard(kbTarget: _kbTarget),
+                  ],
+                );
+              },
             ),
           ),
         ),
@@ -88,28 +108,224 @@ class _AppearanceSectionState extends State<AppearanceSection> {
           builder: (context, ctrl, _) {
             if (ctrl == null) return const SizedBox.shrink();
             return Positioned(
-              bottom: 0,
-              left: 0,
-              right: 0,
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  color: colors.bgSecondary,
-                  border: Border(top: BorderSide(color: colors.border)),
-                ),
-                child: SafeArea(
-                  child: VirtualKeyboard(
-                    height: 280,
-                    textColor: colors.textDefault,
-                    fontSize: 22,
-                    textController: ctrl,
-                    type: VirtualKeyboardType.Numeric,
-                  ),
+              right: 16 * scale,
+              bottom: 16 * scale,
+              child: GestureDetector(
+                onTap: () {}, // absorb taps so backdrop dismiss doesn't fire
+                child: _CompactNumpad(
+                  controller: ctrl,
+                  scale: scale,
+                  onClose: () {
+                    _kbTarget.value = null;
+                    FocusManager.instance.primaryFocus?.unfocus();
+                  },
                 ),
               ),
             );
           },
         ),
       ],
+    );
+  }
+}
+
+class _CompactNumpad extends StatelessWidget {
+  final TextEditingController controller;
+  final VoidCallback onClose;
+  final double scale;
+
+  const _CompactNumpad({
+    required this.controller,
+    required this.onClose,
+    required this.scale,
+  });
+
+  static const _keys = [
+    ['1', '2', '3'],
+    ['4', '5', '6'],
+    ['7', '8', '9'],
+    ['.', '0', '⌫'],
+  ];
+
+  void _onKey(String key) {
+    final text = controller.text;
+    final sel = controller.selection.isValid
+        ? controller.selection
+        : TextSelection.collapsed(offset: text.length);
+
+    if (key == '⌫') {
+      if (sel.start != sel.end) {
+        final next = text.replaceRange(sel.start, sel.end, '');
+        controller.value = TextEditingValue(
+          text: next,
+          selection: TextSelection.collapsed(offset: sel.start),
+        );
+      } else if (sel.start > 0) {
+        final next = text.replaceRange(sel.start - 1, sel.start, '');
+        controller.value = TextEditingValue(
+          text: next,
+          selection: TextSelection.collapsed(offset: sel.start - 1),
+        );
+      }
+      return;
+    }
+
+    if (key == '.' && text.contains('.')) return;
+
+    final next = text.replaceRange(sel.start, sel.end, key);
+    controller.value = TextEditingValue(
+      text: next,
+      selection: TextSelection.collapsed(offset: sel.start + key.length),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    final s = scale;
+
+    final keySize = 44.0 * s;
+    final gap = 6.0 * s;
+    final pad = 10.0 * s;
+    final radius = 12.0 * s;
+    final fontSize = 18.0 * s;
+    final closeSize = 32.0 * s;
+    final iconSize = 18.0 * s;
+
+    return Material(
+      elevation: 8,
+      shadowColor: Colors.black.withOpacity(0.18),
+      borderRadius: BorderRadius.circular(radius),
+      color: colors.bgDefault,
+      child: Container(
+        padding: EdgeInsets.fromLTRB(pad, pad * 0.65, pad, pad),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(radius),
+          border: Border.all(color: colors.border),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SizedBox(
+              width: keySize * 3 + gap * 2,
+              child: Row(
+                children: [
+                  const Spacer(),
+                  Container(
+                    width: 28 * s,
+                    height: 3,
+                    decoration: BoxDecoration(
+                      color: colors.border,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                  Expanded(
+                    child: Align(
+                      alignment: Alignment.centerRight,
+                      child: SizedBox(
+                        width: closeSize,
+                        height: closeSize,
+                        child: IconButton(
+                          padding: EdgeInsets.zero,
+                          onPressed: onClose,
+                          icon: Icon(
+                            Icons.keyboard_hide_outlined,
+                            size: iconSize,
+                            color: colors.textSecondary,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            SizedBox(height: gap * 0.75),
+            for (var r = 0; r < _keys.length; r++) ...[
+              if (r > 0) SizedBox(height: gap),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  for (var c = 0; c < _keys[r].length; c++) ...[
+                    if (c > 0) SizedBox(width: gap),
+                    _NumpadKey(
+                      label: _keys[r][c],
+                      size: keySize,
+                      fontSize: fontSize,
+                      radius: radius * 0.75,
+                      onTap: () => _onKey(_keys[r][c]),
+                    ),
+                  ],
+                ],
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _NumpadKey extends StatefulWidget {
+  final String label;
+  final double size;
+  final double fontSize;
+  final double radius;
+  final VoidCallback onTap;
+
+  const _NumpadKey({
+    required this.label,
+    required this.size,
+    required this.fontSize,
+    required this.radius,
+    required this.onTap,
+  });
+
+  @override
+  State<_NumpadKey> createState() => _NumpadKeyState();
+}
+
+class _NumpadKeyState extends State<_NumpadKey> {
+  bool _pressed = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    final isBackspace = widget.label == '⌫';
+
+    return GestureDetector(
+      onTapDown: (_) => setState(() => _pressed = true),
+      onTapUp: (_) => setState(() => _pressed = false),
+      onTapCancel: () => setState(() => _pressed = false),
+      onTap: widget.onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 80),
+        width: widget.size,
+        height: widget.size,
+        decoration: BoxDecoration(
+          color: _pressed
+              ? colors.bgSecondary
+              : colors.bgSecondary.withOpacity(0.55),
+          borderRadius: BorderRadius.circular(widget.radius),
+          border: Border.all(color: colors.border),
+        ),
+        alignment: Alignment.center,
+        child: isBackspace
+            ? Icon(
+                Icons.backspace_outlined,
+                size: widget.fontSize,
+                color: colors.textDefault,
+              )
+            : Text(
+                widget.label,
+                style: TextStyle(
+                  fontSize: widget.fontSize,
+                  fontWeight: FontWeight.w600,
+                  color: colors.textDefault,
+                  fontFamily: 'Inter',
+                ),
+              ),
+      ),
     );
   }
 }

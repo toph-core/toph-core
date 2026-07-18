@@ -22,9 +22,13 @@ CategoryModel _$CategoryModelFromJson(Map<String, dynamic> json) {
 mixin _$CategoryModel {
   String get id => throw _privateConstructorUsedError;
   String get name => throw _privateConstructorUsedError;
+  @JsonKey(name: 'name_i18n')
   String? get nameI18n => throw _privateConstructorUsedError;
+  @JsonKey(name: 'picture_url')
   String? get pictureUrl => throw _privateConstructorUsedError;
+  @JsonKey(name: 'color_code')
   String? get colorCode => throw _privateConstructorUsedError;
+  @JsonKey(name: 'department_id')
   String? get departmentId => throw _privateConstructorUsedError;
 
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -42,10 +46,10 @@ abstract class $CategoryModelCopyWith<$Res> {
   $Res call(
       {String id,
       String name,
-      String? nameI18n,
-      String? pictureUrl,
-      String? colorCode,
-      String? departmentId});
+      @JsonKey(name: 'name_i18n') String? nameI18n,
+      @JsonKey(name: 'picture_url') String? pictureUrl,
+      @JsonKey(name: 'color_code') String? colorCode,
+      @JsonKey(name: 'department_id') String? departmentId});
 }
 
 /// @nodoc
@@ -108,10 +112,10 @@ abstract class _$$CategoryModelImplCopyWith<$Res>
   $Res call(
       {String id,
       String name,
-      String? nameI18n,
-      String? pictureUrl,
-      String? colorCode,
-      String? departmentId});
+      @JsonKey(name: 'name_i18n') String? nameI18n,
+      @JsonKey(name: 'picture_url') String? pictureUrl,
+      @JsonKey(name: 'color_code') String? colorCode,
+      @JsonKey(name: 'department_id') String? departmentId});
 }
 
 /// @nodoc
@@ -167,10 +171,10 @@ class _$CategoryModelImpl implements _CategoryModel {
   const _$CategoryModelImpl(
       {required this.id,
       required this.name,
-      this.nameI18n,
-      this.pictureUrl,
-      this.colorCode,
-      this.departmentId});
+      @JsonKey(name: 'name_i18n') this.nameI18n,
+      @JsonKey(name: 'picture_url') this.pictureUrl,
+      @JsonKey(name: 'color_code') this.colorCode,
+      @JsonKey(name: 'department_id') this.departmentId});
 
   factory _$CategoryModelImpl.fromJson(Map<String, dynamic> json) =>
       _$$CategoryModelImplFromJson(json);
@@ -180,12 +184,16 @@ class _$CategoryModelImpl implements _CategoryModel {
   @override
   final String name;
   @override
+  @JsonKey(name: 'name_i18n')
   final String? nameI18n;
   @override
+  @JsonKey(name: 'picture_url')
   final String? pictureUrl;
   @override
+  @JsonKey(name: 'color_code')
   final String? colorCode;
   @override
+  @JsonKey(name: 'department_id')
   final String? departmentId;
 
   @override
@@ -231,12 +239,13 @@ class _$CategoryModelImpl implements _CategoryModel {
 
 abstract class _CategoryModel implements CategoryModel {
   const factory _CategoryModel(
-      {required final String id,
-      required final String name,
-      final String? nameI18n,
-      final String? pictureUrl,
-      final String? colorCode,
-      final String? departmentId}) = _$CategoryModelImpl;
+          {required final String id,
+          required final String name,
+          @JsonKey(name: 'name_i18n') final String? nameI18n,
+          @JsonKey(name: 'picture_url') final String? pictureUrl,
+          @JsonKey(name: 'color_code') final String? colorCode,
+          @JsonKey(name: 'department_id') final String? departmentId}) =
+      _$CategoryModelImpl;
 
   factory _CategoryModel.fromJson(Map<String, dynamic> json) =
       _$CategoryModelImpl.fromJson;
@@ -246,12 +255,16 @@ abstract class _CategoryModel implements CategoryModel {
   @override
   String get name;
   @override
+  @JsonKey(name: 'name_i18n')
   String? get nameI18n;
   @override
+  @JsonKey(name: 'picture_url')
   String? get pictureUrl;
   @override
+  @JsonKey(name: 'color_code')
   String? get colorCode;
   @override
+  @JsonKey(name: 'department_id')
   String? get departmentId;
   @override
   @JsonKey(ignore: true)

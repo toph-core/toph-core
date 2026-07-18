@@ -21,6 +21,7 @@ class _ProductGridWidgetState extends State<ProductGridWidget> {
   static const List<int> _pageSizeOptions = [20, 50, 100];
   int _pageSize = 20;
   int _page = 1;
+  String? _goodsFingerprint;
   final NumberPaginatorController _paginatorController =
       NumberPaginatorController();
   final ScrollController _scrollCtrl = ScrollController();
@@ -38,26 +39,47 @@ class _ProductGridWidgetState extends State<ProductGridWidget> {
     return pages > 0 ? pages : 1;
   }
 
+  String _fingerprint(List<GoodsModel> products) {
+    if (products.isEmpty) return '0';
+    return '${products.length}:${products.first.id}:${products.last.id}';
+  }
+
+  void _goToPage(int page, int totalPages) {
+    final next = page.clamp(1, totalPages);
+    if (next == _page) return;
+    setState(() => _page = next);
+    if (_scrollCtrl.hasClients) {
+      _scrollCtrl.jumpTo(0);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
     return Column(
       children: [
         Container(
-          height: 56,
           decoration: BoxDecoration(
             color: Colors.white,
             border: Border(bottom: BorderSide(color: colors.border)),
           ),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
           child: const DetailTabFilter(),
         ),
         Expanded(
           child: BlocConsumer<DetailBloc, DetailState>(
             listenWhen: (p, c) => p.goods != c.goods,
             listener: (context, state) {
-              if (_page != 1) {
-                setState(() => _page = 1);
+              final products = state.goods;
+              if (products == null) return;
+              final fp = _fingerprint(products);
+              // Reset to page 1 only when the product set actually changes
+              // (category / search), not on every identical re-emit.
+              if (fp != _goodsFingerprint) {
+                _goodsFingerprint = fp;
+                if (_page != 1) {
+                  setState(() => _page = 1);
+                }
               }
             },
             buildWhen: (p, c) => p.goods != c.goods || p.status != c.status,
@@ -80,6 +102,13 @@ class _ProductGridWidgetState extends State<ProductGridWidget> {
               }
               final totalPages = _totalPagesFor(products.length);
               final safePage = _page.clamp(1, totalPages);
+              if (safePage != _page) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (mounted && _page != safePage) {
+                    setState(() => _page = safePage);
+                  }
+                });
+              }
               final start = (safePage - 1) * _pageSize;
               final end = (start + _pageSize).clamp(0, products.length);
               final pageItems = products.sublist(start, end);
@@ -92,23 +121,43 @@ class _ProductGridWidgetState extends State<ProductGridWidget> {
                       trackVisibility: true,
                       thickness: 6,
                       radius: const Radius.circular(4),
-                      child: GridView.builder(
-                        controller: _scrollCtrl,
-                        padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
-                        gridDelegate:
-                            const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 4,
-                          crossAxisSpacing: 12,
-                          mainAxisSpacing: 12,
-                          childAspectRatio: 0.92,
-                        ),
-                        itemCount: pageItems.length,
-                        itemBuilder: (context, index) =>
-                            _ProductCard(product: pageItems[index]),
+                      child: LayoutBuilder(
+                        builder: (context, constraints) {
+                          const maxCardWidth = 180.0;
+                          const maxCardHeight = 200.0;
+                          const spacing = 12.0;
+                          const padding = 40.0; // 20 L + 20 R
+                          final available = constraints.maxWidth - padding;
+                          final crossCount = (available / (maxCardWidth + spacing))
+                              .floor()
+                              .clamp(2, 8);
+                          final cardWidth =
+                              (available - spacing * (crossCount - 1)) /
+                                  crossCount;
+                          final cardHeight =
+                              (cardWidth / 0.92).clamp(1.0, maxCardHeight);
+                          final aspectRatio = cardWidth / cardHeight;
+
+                          return GridView.builder(
+                            controller: _scrollCtrl,
+                            padding:
+                                const EdgeInsets.fromLTRB(20, 20, 20, 20),
+                            gridDelegate:
+                                SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: crossCount,
+                              crossAxisSpacing: spacing,
+                              mainAxisSpacing: spacing,
+                              childAspectRatio: aspectRatio,
+                            ),
+                            itemCount: pageItems.length,
+                            itemBuilder: (context, index) =>
+                                _ProductCard(product: pageItems[index]),
+                          );
+                        },
                       ),
                     ),
                   ),
-                  _buildPaginationBar(colors, products.length, totalPages),
+                  _buildPaginationBar(colors, totalPages, safePage),
                 ],
               );
             },
@@ -119,7 +168,10 @@ class _ProductGridWidgetState extends State<ProductGridWidget> {
   }
 
   Widget _buildPaginationBar(
-      ThemeColors colors, int totalItems, int totalPages) {
+    ThemeColors colors,
+    int totalPages,
+    int currentPage,
+  ) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(12, 0, 12, 10),
       child: Row(
@@ -134,18 +186,14 @@ class _ProductGridWidgetState extends State<ProductGridWidget> {
             ),
             child: SizedBox(
               width: 320,
-              // POS bosish zonasi — barmoqqa qulay
               height: 48,
               child: NumberPaginator(
                 key: ValueKey('paginator-$totalPages-$_pageSize'),
                 controller: _paginatorController,
                 numberPages: totalPages,
-                initialPage: (_page - 1).clamp(0, totalPages - 1),
+                initialPage: (currentPage - 1).clamp(0, totalPages - 1),
                 onPageChange: (pageIndex) {
-                  setState(() => _page = pageIndex + 1);
-                  if (_scrollCtrl.hasClients) {
-                    _scrollCtrl.jumpTo(0);
-                  }
+                  _goToPage(pageIndex + 1, totalPages);
                 },
                 child: const SizedBox(
                   height: 48,

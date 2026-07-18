@@ -13,6 +13,7 @@ import 'package:mary_ai_pos/features/view/main/data/models/cafe_tables/cafe_tabl
 import 'package:mary_ai_pos/features/view/main/data/models/category/category_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/close_shift/close_shift_request_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/create_order/create_order_request_model.dart';
+import 'package:mary_ai_pos/features/view/main/data/models/department/department_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/goods/goods_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/hall/hall_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/hour_price/hour_price_response_model.dart';
@@ -31,6 +32,7 @@ abstract class MainDataSources {
   );
   Future<Either<Failure, List<HallModel>>> getHalls();
   Future<Either<Failure, List<CategoryModel>>> getCategories();
+  Future<Either<Failure, List<DepartmentModel>>> getDepartments();
   Future<Either<Failure, List<GoodsModel>>> getGoodsByCategoryId(
     String categoryId,
   );
@@ -489,6 +491,34 @@ class MainDataSourcesImpl implements MainDataSources {
   }
 
   @override
+  Future<Either<Failure, List<DepartmentModel>>> getDepartments() async {
+    try {
+      final response = await _client.get(
+        ListAPI.departments,
+        queryParameters: {'limit': 200, 'offset': 0},
+      );
+
+      return Right(
+        (response.data['data'] as List?)
+                ?.map((e) => DepartmentModel.fromJson(e as Map<String, dynamic>))
+                .toList() ??
+            [],
+      );
+    } on DioException catch (exception) {
+      return Left(handleDioException(exception));
+    } on FormatException catch (e, st) {
+      if (kDebugMode) print('ParsingError: $e\n$st');
+      return const Left(ParsingFailure());
+    } on TypeError catch (e, st) {
+      if (kDebugMode) print('ParsingError: $e\n$st');
+      return const Left(ParsingFailure());
+    } catch (e, st) {
+      if (kDebugMode) print('Unknown error: $e\n$st');
+      return const Left(UnknownFailure());
+    }
+  }
+
+  @override
   Future<Either<Failure, ArchiveDetailEntity>> getPaymentDetailWithId(
     String id,
   ) async {
@@ -557,14 +587,25 @@ class MainDataSourcesImpl implements MainDataSources {
   ) async {
     try {
       if (categoryId == 'all') {
-        final response = await _client.get(ListAPI.goods);
-
-        return Right(
-          (response.data['data'] as List?)
-                  ?.map((e) => GoodsModel.fromJson(e))
-                  .toList() ??
-              [],
-        );
+        // API defaults to limit=20 — pull every page so POS client pagination works.
+        const batchSize = 500;
+        var offset = 0;
+        final all = <GoodsModel>[];
+        while (true) {
+          final response = await _client.get(
+            ListAPI.goods,
+            queryParameters: {'limit': batchSize, 'offset': offset},
+          );
+          final raw = response.data['data'];
+          final List<dynamic> items = raw is List
+              ? raw
+              : (raw is Map ? (raw['data'] as List? ?? []) : []);
+          if (items.isEmpty) break;
+          all.addAll(items.map((e) => GoodsModel.fromJson(e)));
+          if (items.length < batchSize) break;
+          offset += batchSize;
+        }
+        return Right(all);
       } else {
         final response = await _client.get(ListAPI.categoriesGoods(categoryId));
 

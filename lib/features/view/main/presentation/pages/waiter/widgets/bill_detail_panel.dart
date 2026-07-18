@@ -1076,12 +1076,21 @@ double _sumActiveLines(List<OrderLineItemModel> lines) {
 }
 
 /// [total_amount] odatda xizmat bilan; qatorlar esa faqat mahsulot narxini beradi.
+/// Time-based: API service_amount omits service on table_charge (§7) — recompute.
 double _servicePartForOrder(
   OpenOrderModel order,
   double sumSubtotal,
   double totalFromOrder,
 ) {
   if (kOpenOrderServiceFeeZeroPercent) return 0;
+  final tableCharge = order.tableAmountInt.toDouble();
+  if (tableCharge > 0.01) {
+    var pct = order.servicePercent ?? 0;
+    if (pct <= 0 && sumSubtotal > 0.01 && order.serviceAmountValue > 0.01) {
+      pct = order.serviceAmountValue / sumSubtotal * 100;
+    }
+    return (sumSubtotal + tableCharge) * pct / 100;
+  }
   if (order.serviceAmountValue > 0.01) return order.serviceAmountValue;
   if (totalFromOrder > sumSubtotal + 0.01) {
     return totalFromOrder - sumSubtotal;
@@ -1093,16 +1102,21 @@ double _servicePartForOrder(
 ///
 /// [kOpenOrderServiceFeeZeroPercent] yoqilganda odatda faqat qatorlar yig‘indisi
 /// ishlatiladi (xizmatni ikki marta qo‘shmaslik). Vaqt bo‘yicha stolda esa
-/// vaqt summasi qatorlarda yo‘q — API [OpenOrderModel.totalAmountValue] kerak.
+/// payment formula: items + table + service(on both) (§1 / §7).
 double _grandTotalForCloseOrder(
   OpenOrderModel order,
   double sumLines,
   double totalFromOrder,
 ) {
-  if (kOpenOrderServiceFeeZeroPercent) {
-    if (order.isTimeBasedTable && totalFromOrder > 0) {
-      return totalFromOrder;
+  final tableCharge = order.tableAmountInt.toDouble();
+  if (tableCharge > 0.01) {
+    if (kOpenOrderServiceFeeZeroPercent) {
+      return sumLines + tableCharge;
     }
+    final service = _servicePartForOrder(order, sumLines, totalFromOrder);
+    return sumLines + tableCharge + service;
+  }
+  if (kOpenOrderServiceFeeZeroPercent) {
     return sumLines;
   }
   return totalFromOrder > 0 ? totalFromOrder : sumLines;

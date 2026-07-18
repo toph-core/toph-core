@@ -20,6 +20,9 @@ class ListAPI {
   static String categoryById(String id) => "api/v1/categories/$id";
   static String categoriesGoods(String categoryId) =>
       "api/v1/categories/$categoryId/goods";
+  static String categoriesByDepartment(String departmentId) =>
+      "api/v1/categories/department/$departmentId";
+  static const String departments = "api/v1/departments";
   static const String goods = "/api/v1/goods";
   static const String goodsWithCalculations = "/api/v1/goods/with-calculations";
   static String goodById(String id) => "/api/v1/goods/$id";

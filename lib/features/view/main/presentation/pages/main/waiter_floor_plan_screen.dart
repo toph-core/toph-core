@@ -221,7 +221,7 @@ class _WaiterFloorPlanScreenState extends State<WaiterFloorPlanScreen> {
 
     Navigator.pushNamed(
       context,
-      AppRoutes.detailScreen,
+      AppRoutes.departmentSelectionScreen,
       arguments: {
         'table': table,
         'guest_count': defaultGuestCount,
@@ -1014,7 +1014,7 @@ class _TakeawayHeaderButton extends StatelessWidget {
         if (!_requireOpenShift(context)) return;
         Navigator.pushNamed(
           context,
-          AppRoutes.detailScreen,
+          AppRoutes.departmentSelectionScreen,
           arguments: {
             'table': null,
             'table_status': TableStatus.none,

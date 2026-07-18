@@ -111,9 +111,14 @@ class TablePricingResolver {
   }) {
     if (timer != null &&
         timer.isFrozenClosed &&
-        parseAmountToInt(timer.finalAmount) > 0) {
+        (parseAmountToInt(timer.finalAmount) > 0 ||
+            parseAmountToInt(timer.currentAmount) > 0 ||
+            timer.totalActiveSec > 0)) {
+      final frozenAmt = parseAmountToInt(timer.finalAmount) > 0
+          ? parseAmountToInt(timer.finalAmount)
+          : parseAmountToInt(timer.currentAmount);
       return FrozenTimePricing(
-        frozenAmount: parseAmountToInt(timer.finalAmount),
+        frozenAmount: frozenAmt,
         frozenActiveSec: timer.totalActiveSec,
       );
     }

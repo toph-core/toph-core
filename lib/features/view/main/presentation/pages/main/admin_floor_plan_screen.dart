@@ -92,7 +92,7 @@ class _AdminFloorPlanScreenState extends State<AdminFloorPlanScreen> {
       Future.delayed(
         const Duration(milliseconds: 300),
         () => navigator.pushNamed(
-          AppRoutes.detailScreen,
+          AppRoutes.departmentSelectionScreen,
           arguments: {
             'table': table,
             'guest_count': guestCount,
@@ -108,7 +108,7 @@ class _AdminFloorPlanScreenState extends State<AdminFloorPlanScreen> {
 
       Navigator.pushNamed(
         context,
-        AppRoutes.detailScreen,
+        AppRoutes.departmentSelectionScreen,
         arguments: {
           'table': table,
           'table_status': TableStatus.busy,
@@ -126,7 +126,7 @@ class _TakeawayButton extends StatelessWidget {
     return GestureDetector(
       onTap: () => Navigator.pushNamed(
         context,
-        AppRoutes.detailScreen,
+        AppRoutes.departmentSelectionScreen,
         arguments: {
           'table': null,
           'table_status': TableStatus.none,
