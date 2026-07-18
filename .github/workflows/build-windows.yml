@@ -21,6 +21,11 @@ permissions:
 
 jobs:
   build:
+    # windows-latest uses VS 18 / MSVC 14.51, which hard-errors experimental
+    # coroutines (STL1011) in permission_handler_windows and
+    # flutter_local_notifications_windows. Mitigated in windows/CMakeLists.txt
+    # via _SILENCE_EXPERIMENTAL_COROUTINE_DEPRECATION_WARNINGS — do not patch
+    # ephemeral .plugin_symlinks (regenerated every build).
     runs-on: windows-latest
     timeout-minutes: 45
 

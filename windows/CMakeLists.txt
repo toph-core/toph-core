@@ -32,6 +32,13 @@ set(CMAKE_CXX_FLAGS_PROFILE "${CMAKE_CXX_FLAGS_RELEASE}")
 # Use Unicode for all projects.
 add_definitions(-DUNICODE -D_UNICODE)
 
+# MSVC 14.51+ (VS 18.6 / windows-latest) turns experimental coroutines into a
+# hard error (STL1011). permission_handler_windows still passes /await + C++20,
+# and flutter_local_notifications_windows 1.x pulls <experimental/coroutine>
+# via WinRT. Suppress until those plugins migrate (Baseflow#1534, MaikuB#2777).
+# Do NOT edit windows/flutter/ephemeral/.plugin_symlinks — those are regenerated.
+add_compile_definitions(_SILENCE_EXPERIMENTAL_COROUTINE_DEPRECATION_WARNINGS)
+
 # Compilation settings that should be applied to most targets.
 #
 # Be cautious about adding new options here, as plugins use this function by
