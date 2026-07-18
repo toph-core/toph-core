@@ -5,6 +5,7 @@ import 'package:mary_ai_pos/core/api/api.dart';
 import 'package:mary_ai_pos/core/design_system/pos_design_system.dart';
 import 'package:mary_ai_pos/core/extension/for_context.dart';
 import 'package:mary_ai_pos/core/extension/number_formatter.dart';
+import 'package:mary_ai_pos/core/utils/order_totals.dart';
 import 'package:mary_ai_pos/core/services/cache/cache_service.dart';
 import 'package:mary_ai_pos/core/services/offline_queue/offline_queue_service.dart';
 import 'package:mary_ai_pos/core/services/offline_queue/pending_operation.dart';
@@ -132,44 +133,23 @@ class _PaymentScreenState extends State<PaymentScreen> {
                 );
               }
 
-              // hourPrice is included inside effectiveTotal (and in its service base)
-              final effective = PaymentBloc.effectiveTotal(
+              final discountAmt = int.tryParse(state.discountAmount) ?? 0;
+              final totals = OrderTotals.fromDetail(
                 state.detail!,
                 tableCharge: state.hourPrice,
+                offlineExtra: PaymentBloc.pendingOfflineExtra(state.tableId)
+                    .toDouble(),
+                servicePercentFallback: _servicePercent,
+                discountPercent: state.discountType == DiscountType.money
+                    ? 0
+                    : discountAmt.toDouble(),
+                discountAmount: state.discountType == DiscountType.money
+                    ? discountAmt.toDouble()
+                    : 0,
+                includeService: _includeService,
               );
-              final offlineExtra = PaymentBloc.pendingOfflineExtra(
-                state.tableId,
-              );
-              final discountAmt = int.tryParse(state.discountAmount) ?? 0;
-              int finalTotal = effective + offlineExtra;
-              if (state.discountType == DiscountType.money) {
-                finalTotal -= discountAmt;
-              } else {
-                finalTotal -= (finalTotal * (discountAmt / 100)).round();
-              }
-              if (finalTotal < 0) finalTotal = 0;
-
-              // Service toggle — compute effective service amount, subtract if excluded
-              final det = state.detail!;
-              final servicePct = det.servicePercent > 0
-                  ? det.servicePercent.toDouble()
-                  : _servicePercent;
-              final foodSumForService = det.goods
-                  .where((g) => g.status != 'cancelled')
-                  .fold(0.0, (s, g) => s + g.price * g.quantity);
-              // Service applies to (items + table_charge) per order-total-calculation.md §5
-              // When table charge is present, ignore API service_amount (read path omits it on table).
-              final baseForService = foodSumForService + state.hourPrice;
-              final serviceToggleAmt = (state.hourPrice > 0.01
-                      ? baseForService * servicePct / 100
-                      : (det.serviceAmount > 0.01
-                          ? det.serviceAmount
-                          : baseForService * servicePct / 100))
-                  .round();
-              if (!_includeService && serviceToggleAmt > 0) {
-                finalTotal =
-                    (finalTotal - serviceToggleAmt).clamp(0, finalTotal);
-              }
+              final finalTotal = totals.grandTotal;
+              final serviceToggleAmt = totals.serviceAmount;
 
               // Compact (1024–1366): kichikroq side panellar — numpad uchun joy
               final sidePanelW = PosBreakpoints.pick<double>(
@@ -564,19 +544,13 @@ class _SummaryFooter extends StatelessWidget {
           final servicePct = detail.servicePercent > 0
               ? detail.servicePercent
               : servicePercentFallback;
-          final foodSum = detail.goods
-              .where((g) => g.status != 'cancelled')
-              .fold(0.0, (s, g) => s + g.price * g.quantity);
-          // Service applies to (items + table_charge) per order-total-calculation.md §5
-          // When table charge is present, ignore API service_amount (read path omits it on table).
-          final baseForService = foodSum + state.hourPrice;
-          final serviceAmt = (state.hourPrice > 0.01
-                  ? baseForService * servicePct / 100
-                  : (detail.serviceAmount > 0.01
-                      ? detail.serviceAmount
-                      : baseForService * servicePct / 100))
-              .round();
-          final foodOnly = foodSum.toInt();
+          final totals = OrderTotals.fromDetail(
+            detail,
+            tableCharge: state.hourPrice,
+            servicePercentFallback: servicePercentFallback,
+          );
+          final serviceAmt = totals.serviceAmount;
+          final foodOnly = totals.itemsAmount;
           final pctLabel = servicePct > 0
               ? '${S.current.strServiceCharge} (${servicePct.toInt()}%)'
               : S.current.strServiceCharge;

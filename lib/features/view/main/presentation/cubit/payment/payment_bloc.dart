@@ -9,6 +9,7 @@ import 'package:mary_ai_pos/core/constants/constants.dart';
 import 'package:mary_ai_pos/core/error/failure.dart';
 import 'package:mary_ai_pos/core/routes/app_routes.dart';
 import 'package:mary_ai_pos/core/utils/helper/helper_widget.dart';
+import 'package:mary_ai_pos/core/utils/order_totals.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/cafe_tables/cafe_tables_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/payment_pay_request/payment_pay_request_model.dart';
 import 'package:mary_ai_pos/features/view/main/domain/entities/archive_detail_entity.dart';
@@ -344,33 +345,12 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
     return extra;
   }
 
-  /// Authoritative payment total (§1 / §7 of order-total-calculation.md).
-  ///
-  /// When [tableCharge] > 0, never trust API `grand_total` / `service_amount` —
-  /// the read path omits service on the table charge; `/pay` includes it.
-  static int effectiveTotal(ArchiveDetailEntity detail, {double tableCharge = 0}) {
-    final foodSum = detail.goods
-        .where((g) => g.status != 'cancelled')
-        .fold(0.0, (s, g) => s + g.price * g.quantity);
-
-    if (tableCharge > 0.01) {
-      // Prefer explicit percent; if API left it 0, infer from food-only service_amount.
-      var pct = detail.servicePercent;
-      if (pct <= 0 && foodSum > 0.01 && detail.serviceAmount > 0.01) {
-        pct = detail.serviceAmount / foodSum * 100;
-      }
-      final service = ((foodSum + tableCharge) * pct / 100).round();
-      return (foodSum + tableCharge).round() + service;
-    }
-
-    final hasCancelled = detail.goods.any((g) => g.status == 'cancelled');
-    if (!hasCancelled && detail.grandTotal > 0.01) {
-      return detail.grandTotal.round();
-    }
-    final service = detail.serviceAmount > 0.01
-        ? detail.serviceAmount.round()
-        : (foodSum * detail.servicePercent / 100).round();
-    return foodSum.round() + service;
+  /// Authoritative payment total — delegates to [OrderTotals] (main formula).
+  static int effectiveTotal(
+    ArchiveDetailEntity detail, {
+    double tableCharge = 0,
+  }) {
+    return OrderTotals.fromDetail(detail, tableCharge: tableCharge).grandTotal;
   }
 
   Future<void> _onStarted(_Started event, emit) async {

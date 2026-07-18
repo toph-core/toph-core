@@ -404,6 +404,7 @@ class _TablesDetailViewState extends State<_TablesDetailView> {
     try {
       final res = await widget.client.get(
         '${ListAPI.cafeTablesByHallId}/${widget.hall.id}',
+        queryParameters: {'limit': 1000},
       );
       final root = res.data;
       List<dynamic> data = const [];
