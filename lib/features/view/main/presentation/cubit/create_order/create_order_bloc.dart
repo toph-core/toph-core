@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -6,6 +7,7 @@ import 'package:mary_ai_pos/core/api/api.dart';
 import 'package:mary_ai_pos/core/components/flush_bars.dart';
 import 'package:mary_ai_pos/core/error/failure.dart';
 import 'package:mary_ai_pos/core/routes/app_routes.dart';
+import 'package:mary_ai_pos/core/service/printer/printer_service.dart';
 import 'package:mary_ai_pos/core/services/connectivity/connectivity_cubit.dart';
 import 'package:mary_ai_pos/core/services/lan_hub/lan_hub_service.dart';
 import 'package:mary_ai_pos/core/services/offline_queue/offline_queue_service.dart';
@@ -28,11 +30,21 @@ class CreateOrderBloc extends Bloc<CreateOrderEvent, CreateOrderState> {
   final OfflineQueueService _queue;
   final LanHubService _lanHub;
   final DioClient _client;
+  final PrinterService _printerService;
 
   // Active order ID for busy tables — set via bindActiveOrder()
   String? _activeOrderId;
 
   void bindActiveOrder(String orderId) => _activeOrderId = orderId;
+
+  // Oshxona cheki header'i uchun stol raqami — bindActiveOrder() singari UI
+  // dan bog'lanadi (state freezed, regen talab qilmaslik uchun oddiy field).
+  int _tableNumber = 0;
+
+  void bindTableNumber(int number) => _tableNumber = number;
+
+  String get _kitchenTableLine =>
+      _tableNumber > 0 ? 'Стол: $_tableNumber' : 'Стол: —';
 
   CreateOrderBloc({
     required CreateOrderUsecase createOrderUsecase,
@@ -41,12 +53,14 @@ class CreateOrderBloc extends Bloc<CreateOrderEvent, CreateOrderState> {
     required OfflineQueueService queue,
     required LanHubService lanHub,
     required DioClient client,
+    required PrinterService printerService,
   })  : _createOrderUsecase = createOrderUsecase,
         _createTakeAwayOrderUsecase = createTakeAwayOrderUsecase,
         _connectivity = connectivity,
         _queue = queue,
         _lanHub = lanHub,
         _client = client,
+        _printerService = printerService,
         super(const CreateOrderState()) {
     on<_Started>(_started);
     on<_CreateOrder>(_createOrder);
@@ -72,6 +86,12 @@ class CreateOrderBloc extends Bloc<CreateOrderEvent, CreateOrderState> {
           emit(state.copyWith(status: Status.ERROR, failure: l));
         },
         (r) {
+          // Fire-and-forget: oshxona cheki (kategoriya printerlari).
+          unawaited(_printerService.printKitchenReceiptFor(
+            tableLine: 'С собой',
+            guestCount: state.guestCount,
+            items: event.orders,
+          ));
           Navigator.pushNamed(
             navigatorKey.currentContext!,
             AppRoutes.paymentScreen,
@@ -109,6 +129,12 @@ class CreateOrderBloc extends Bloc<CreateOrderEvent, CreateOrderState> {
           },
         );
         _lanHub.tableStatusChanged(state.tableId, TableStatus.busy.name);
+        // Fire-and-forget: oshxona cheki (kategoriya printerlari).
+        unawaited(_printerService.printKitchenReceiptFor(
+          tableLine: _kitchenTableLine,
+          guestCount: state.guestCount,
+          items: event.orders,
+        ));
         emit(state.copyWith(status: Status.SUCCESS, success: true));
       } on DioException catch (e) {
         if (e.type == DioExceptionType.connectionError ||
@@ -160,6 +186,12 @@ class CreateOrderBloc extends Bloc<CreateOrderEvent, CreateOrderState> {
       },
       (r) {
         _lanHub.tableStatusChanged(state.tableId, TableStatus.busy.name);
+        // Fire-and-forget: oshxona cheki (kategoriya printerlari).
+        unawaited(_printerService.printKitchenReceiptFor(
+          tableLine: _kitchenTableLine,
+          guestCount: state.guestCount,
+          items: event.orders,
+        ));
         emit(state.copyWith(status: Status.SUCCESS, success: r));
       },
     );
@@ -212,6 +244,13 @@ class CreateOrderBloc extends Bloc<CreateOrderEvent, CreateOrderState> {
 
     // Optimistic: stol band deb belgilash + LAN broadcast
     _lanHub.tableStatusChanged(tableId, TableStatus.busy.name);
+    // Backend offline bo'lsa ham LAN'dagi oshxona printeri ishlashi mumkin —
+    // chek hozir chiqadi; queue sync paytida takror chop etilmaydi.
+    unawaited(_printerService.printKitchenReceiptFor(
+      tableLine: _kitchenTableLine,
+      guestCount: state.guestCount,
+      items: orders,
+    ));
     emit(state.copyWith(status: Status.SUCCESS, success: true));
   }
 

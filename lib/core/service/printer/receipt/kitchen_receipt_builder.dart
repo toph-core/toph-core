@@ -9,9 +9,27 @@ import 'package:mary_ai_pos/features/view/main/presentation/cubit/detail/detail_
 class KitchenReceiptBuilder {
   KitchenReceiptBuilder._();
 
+  /// [OpenOrderModel] mavjud oqimlar (waiter) uchun qulaylik wrapper'i.
   static Future<List<int>> build({
     required OpenOrderModel order,
     required List<OrderItem> items,
+    PaperSize paperSize = PaperSize.mm80,
+  }) =>
+      buildWithHeader(
+        tableLine: 'Стол: ${order.tableNumber}',
+        hallName: order.hallName,
+        guestCount: order.guestCount,
+        items: items,
+        paperSize: paperSize,
+      );
+
+  /// Kassir oqimlari uchun — to'liq [OpenOrderModel] shart emas.
+  /// [tableLine] — birinchi qator matni ('Стол: 5' yoki 'С собой').
+  static Future<List<int>> buildWithHeader({
+    required String tableLine,
+    required List<OrderItem> items,
+    String hallName = '',
+    int guestCount = 0,
     PaperSize paperSize = PaperSize.mm80,
   }) async {
     final profile = await CapabilityProfile.load();
@@ -34,7 +52,7 @@ class KitchenReceiptBuilder {
 
     bytes += gen.row([
       PosColumn(
-        text: 'Стол: ${order.tableNumber}',
+        text: tableLine,
         width: 8,
         styles: const PosStyles(bold: true),
       ),
@@ -45,8 +63,8 @@ class KitchenReceiptBuilder {
       ),
     ]);
 
-    if (order.hallName.isNotEmpty) {
-      bytes += gen.text('Зал: ${order.hallName}');
+    if (hallName.isNotEmpty) {
+      bytes += gen.text('Зал: $hallName');
     }
 
     bytes += gen.hr();
@@ -70,9 +88,11 @@ class KitchenReceiptBuilder {
         ),
       ]);
 
-      if (item.commet.isNotEmpty) {
+      // Waiter oqimi izohni `commet` da, kassir oqimlari `comment` da yuboradi.
+      final note = item.commet.isNotEmpty ? item.commet : item.comment;
+      if (note.isNotEmpty) {
         bytes += gen.text(
-          '  >> ${item.commet}',
+          '  >> $note',
           styles: const PosStyles(underline: true),
         );
       }
@@ -81,7 +101,9 @@ class KitchenReceiptBuilder {
     bytes += gen.hr();
 
     // ── Footer ───────────────────────────────────────────────────────────────
-    bytes += gen.text('Гостей: ${order.guestCount}');
+    if (guestCount > 0) {
+      bytes += gen.text('Гостей: $guestCount');
+    }
     appendReceiptNoReprepNotice(gen, bytes);
     bytes += gen.feed(2);
     bytes += gen.cut();

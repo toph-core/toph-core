@@ -205,7 +205,7 @@ void _cubit() {
     ),
   );
   inject.registerFactory(() => LoginPinCubit(inject(), inject(), inject(), inject(), inject()));
-  inject.registerFactory(() => DetailBloc(inject(), inject(), inject(), inject(), inject()));
+  inject.registerFactory(() => DetailBloc(inject(), inject(), inject(), inject(), inject(), inject()));
   inject.registerFactory(() => DepartmentSelectionCubit(inject(), inject()));
   inject.registerFactory(
     () => CreateOrderBloc(
@@ -215,6 +215,7 @@ void _cubit() {
       queue: inject(),
       lanHub: inject(),
       client: inject(),
+      printerService: inject(),
     ),
   );
   inject.registerFactory(() => CounterCubit());

@@ -171,6 +171,21 @@ class PrinterService {
   Future<void> printKitchenReceipt({
     required OpenOrderModel order,
     required List<OrderItem> items,
+  }) =>
+      printKitchenReceiptFor(
+        tableLine: 'Стол: ${order.tableNumber}',
+        hallName: order.hallName,
+        guestCount: order.guestCount,
+        items: items,
+      );
+
+  /// [printKitchenReceipt] bilan bir xil, lekin to'liq [OpenOrderModel] talab
+  /// qilmaydi — kassir oqimlari (CreateOrderBloc/DetailBloc) uchun.
+  Future<void> printKitchenReceiptFor({
+    required String tableLine,
+    required List<OrderItem> items,
+    String hallName = '',
+    int guestCount = 0,
   }) async {
     if (items.isEmpty) return;
     final byKey = <String, List<OrderItem>>{};
@@ -225,8 +240,10 @@ class PrinterService {
       for (final k in byKey.keys) {
         final config = cfgByKey[k]!;
         final sub = byKey[k]!;
-        final bytes = await KitchenReceiptBuilder.build(
-          order: order,
+        final bytes = await KitchenReceiptBuilder.buildWithHeader(
+          tableLine: tableLine,
+          hallName: hallName,
+          guestCount: guestCount,
           items: sub,
           paperSize: config.paperSize,
         );

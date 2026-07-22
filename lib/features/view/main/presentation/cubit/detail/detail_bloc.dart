@@ -12,6 +12,7 @@ import 'package:mary_ai_pos/core/utils/helper/helper_widget.dart';
 import 'package:mary_ai_pos/core/constants/constants.dart';
 import 'dart:convert';
 
+import 'package:mary_ai_pos/core/service/printer/printer_service.dart';
 import 'package:mary_ai_pos/core/services/cache/cache_service.dart';
 import 'package:mary_ai_pos/core/services/offline_queue/offline_queue_service.dart';
 import 'package:mary_ai_pos/core/services/offline_queue/pending_operation.dart';
@@ -46,6 +47,7 @@ class DetailBloc extends Bloc<DetailEvent, DetailState> {
   final GetGoodsWithNameUseCase _getGoodsWithNameUseCase;
   final GetPaymentDetailWithTableIdUsecase _getPaymentDetailWithTableIdUsecase;
   final CacheService _cache;
+  final PrinterService _printerService;
 
   ArchiveDetailEntity? lastDetail;
 
@@ -78,6 +80,7 @@ class DetailBloc extends Bloc<DetailEvent, DetailState> {
     this._getGoodsWithNameUseCase,
     this._getPaymentDetailWithTableIdUsecase,
     this._cache,
+    this._printerService,
   ) : super(const DetailState()) {
     on<_Started>(_onStarted);
     on<_GetCategories>(_onGetCategories);
@@ -677,6 +680,13 @@ class DetailBloc extends Bloc<DetailEvent, DetailState> {
               ],
             },
           );
+          // Oshxona cheki: mavjud buyurtmaga qo'shilgan yangi porsiyalar.
+          _printKitchenForExistingAdd(
+            goodId: snapshot.goodId,
+            fallbackName: itemName ?? '',
+            quantity: delta,
+            comment: snapshot.comment,
+          );
         } else {
           // Minus: barcha original line'larni bekor qilamiz, qolgan qty bo'lsa
           // bitta yangi line yaratamiz. Backend bitta line'ni bo'lish API
@@ -719,6 +729,47 @@ class DetailBloc extends Bloc<DetailEvent, DetailState> {
         emit(state.copyWith(existingSyncingNames: next));
       }
     }
+  }
+
+  /// Mavjud buyurtmaga +delta qo'shilganda oshxona chekini chiqarish.
+  /// `existingGoods` dagi `goods.id` line-id ni saqlaydi (mahsulot id emas),
+  /// `categoryId` esa bo'sh — shuning uchun real good_id/category_id ni
+  /// goods cache'idan tiklaymiz; header [lastDetail] dan olinadi.
+  void _printKitchenForExistingAdd({
+    required String goodId,
+    required String fallbackName,
+    required int quantity,
+    required String comment,
+  }) {
+    if (goodId.isEmpty || quantity <= 0) return;
+    final goodJson = _cache.getGoods().firstWhere(
+          (g) => g['id'] == goodId,
+          orElse: () => <String, dynamic>{},
+        );
+    final detail = lastDetail;
+    final tableNumber = detail?.tableNumber.toInt() ?? 0;
+    unawaited(_printerService.printKitchenReceiptFor(
+      tableLine: tableNumber > 0 ? 'Стол: $tableNumber' : 'Стол: —',
+      hallName: detail?.hallName ?? '',
+      guestCount: detail?.guestCount.toInt() ?? 0,
+      items: [
+        OrderItem(
+          goods: GoodsModel(
+            id: goodId,
+            name: (goodJson['name'] as String?) ?? fallbackName,
+            price: goodJson['price']?.toString() ?? '0',
+            categoryId: goodJson['category_id']?.toString() ?? '',
+            cookTime: 0,
+            costPrice: '0',
+            description: '',
+            profit: '0',
+            profitMargin: '0',
+          ),
+          quantity: quantity,
+          comment: comment,
+        ),
+      ],
+    ));
   }
 
   /// `_onFetchBillOrders` ni shu yerdan to'g'ridan-to'g'ri (`emit` bilan)

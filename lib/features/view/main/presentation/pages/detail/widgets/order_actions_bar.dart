@@ -835,6 +835,7 @@ class _ActionButtons extends StatelessWidget {
     if (tableStatus == TableStatus.free) {
       return BlocProvider(
         create: (_) => inject<CreateOrderBloc>()
+          ..bindTableNumber(cafeTable?.number ?? 0)
           ..add(
             CreateOrderEvent.started(
               tableId: tableId,
@@ -898,6 +899,7 @@ class _ActionButtons extends StatelessWidget {
     return BlocProvider(
       create: (ctx) {
         final bloc = inject<CreateOrderBloc>()
+          ..bindTableNumber(cafeTable?.number ?? 0)
           ..add(
             CreateOrderEvent.started(
               tableId: tableId,

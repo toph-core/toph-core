@@ -140,6 +140,7 @@ class _BackButton extends StatelessWidget {
             : TableStatus.free;
 
         final createOrderBloc = inject<CreateOrderBloc>()
+          ..bindTableNumber(cafeTable!.number)
           ..add(
             CreateOrderEvent.started(
               tableId: cafeTable!.id,
