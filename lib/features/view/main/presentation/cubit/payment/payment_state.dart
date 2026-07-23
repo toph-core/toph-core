@@ -18,6 +18,7 @@ class PaymentState with _$PaymentState {
     // Item nomi -> eng erta urilgan vaqt. `/order-items/order/{id}` dan
     // olinadi; `/bills/{id}` items'da `created_at` yo'q.
     @Default(<String, DateTime>{}) Map<String, DateTime> itemTimestamps,
+    @Default(true) bool applyService,
     Failure? failure,
   }) = _PaymentState;
 }

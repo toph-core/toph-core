@@ -24,4 +24,7 @@ class PaymentEvent with _$PaymentEvent {
   const factory PaymentEvent.itemTimestampsLoaded({
     required Map<String, DateTime> timestamps,
   }) = _ItemTimestampsLoaded;
+
+  const factory PaymentEvent.updateApplyService({required bool applyService}) =
+      _UpdateApplyService;
 }

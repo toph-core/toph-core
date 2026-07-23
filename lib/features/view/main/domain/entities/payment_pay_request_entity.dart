@@ -10,6 +10,7 @@ abstract class PaymentPayRequestEntity {
   final PaymentType paymentType;
   final String comment;
   final int tableCharge;
+  final bool applyService;
 
   PaymentPayRequestEntity({
     required this.orderId,
@@ -21,6 +22,7 @@ abstract class PaymentPayRequestEntity {
     required this.paymentType,
     required this.comment,
     this.tableCharge = 0,
+    this.applyService = true,
   });
 
   Map<String, dynamic> request();

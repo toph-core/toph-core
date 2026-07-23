@@ -80,6 +80,7 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
     on<_UpdateDiscountAmount>(_updateDiscountAmount);
     on<_UpdateHourPrice>(_updateHourPrice);
     on<_ItemTimestampsLoaded>(_onItemTimestampsLoaded);
+    on<_UpdateApplyService>(_updateApplyService);
   }
 
   void _onItemTimestampsLoaded(
@@ -87,6 +88,10 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
     Emitter<PaymentState> emit,
   ) {
     emit(state.copyWith(itemTimestamps: event.timestamps));
+  }
+
+  void _updateApplyService(_UpdateApplyService event, emit) {
+    emit(state.copyWith(applyService: event.applyService));
   }
 
   void _updateHourPrice(_UpdateHourPrice event, emit) {
@@ -144,16 +149,6 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
           ? enteredAmt
           : dueTot;
 
-      // Never call /pay underpaid — backend closes the table timer during /pay
-      // even when it then rejects with "insufficient payment", wiping accrued time.
-      if (dueTot > 0 && paidAmount < dueTot) {
-        showErrorMessage(
-          navigatorKey.currentContext!,
-          'Yetarli emas: $paidAmount to\'landi, $dueTot kerak',
-        );
-        return;
-      }
-
       emit(state.copyWith(status: Status.LOADING));
 
       // Total 0 bo'lsa — /pay emas /cancel
@@ -191,6 +186,7 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
               : 0,
           paymentType: state.paymentType,
           tableCharge: tableChargeSom > 0 ? tableChargeSom : 0,
+          applyService: state.applyService,
         ),
       );
       response.fold(
@@ -295,6 +291,7 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
       'order_id': state.detail!.id,
       'customer_paid_amount': paidAmount.toString(),
       'payment_type': state.paymentType.name,
+      'apply_service': state.applyService,
       if ((int.tryParse(state.discountAmount) ?? 0) > 0 &&
           state.discountType == DiscountType.money)
         'discount_amount': int.parse(state.discountAmount),

@@ -20,6 +20,7 @@ _$PaymentPayRequestModelImpl _$$PaymentPayRequestModelImplFromJson(
               PaymentType.cash,
       comment: json['comment'] as String? ?? '',
       tableCharge: (json['table_charge'] as num?)?.toInt() ?? 0,
+      applyService: json['apply_service'] as bool? ?? true,
     );
 
 Map<String, dynamic> _$$PaymentPayRequestModelImplToJson(
@@ -34,6 +35,7 @@ Map<String, dynamic> _$$PaymentPayRequestModelImplToJson(
       'payment_type': _$PaymentTypeEnumMap[instance.paymentType]!,
       'comment': instance.comment,
       'table_charge': instance.tableCharge,
+      'apply_service': instance.applyService,
     };
 
 const _$PaymentTypeEnumMap = {

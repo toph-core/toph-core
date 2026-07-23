@@ -24,6 +24,7 @@ class PaymentPayRequestModel
     @Default('') String comment,
     /// From GET table-price; sent so pay uses the same table charge as the UI.
     @JsonKey(name: 'table_charge') @Default(0) int tableCharge,
+    @JsonKey(name: 'apply_service') @Default(true) bool applyService,
   }) = _PaymentPayRequestModel;
 
   factory PaymentPayRequestModel.fromJson(Map<String, dynamic> json) =>
@@ -34,6 +35,7 @@ class PaymentPayRequestModel
     final map = <String, dynamic>{
       'customer_paid_amount': '$customPaidAmount',
       'payment_type': paymentType.name,
+      'apply_service': applyService,
     };
     if (tableCharge > 0) {
       map['table_charge'] = '$tableCharge';

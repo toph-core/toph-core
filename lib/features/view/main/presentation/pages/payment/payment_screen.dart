@@ -182,6 +182,9 @@ class _PaymentScreenState extends State<PaymentScreen> {
                               final newTotal =
                                   (finalTotal + delta).clamp(0, 999999999);
                               setState(() => _includeService = v);
+                              bloc.add(PaymentEvent.updateApplyService(
+                                applyService: v,
+                              ));
                               // Sync numpad only if it still shows the exact total
                               if (entered == 0 || entered == finalTotal) {
                                 bloc.add(PaymentEvent.updateEnterSum(

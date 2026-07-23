@@ -28,6 +28,7 @@ mixin _$PaymentEvent {
     required TResult Function(double hourPrice) upadeHourPrice,
     required TResult Function(Map<String, DateTime> timestamps)
         itemTimestampsLoaded,
+    required TResult Function(bool applyService) updateApplyService,
   }) =>
       throw _privateConstructorUsedError;
   @optionalTypeArgs
@@ -41,6 +42,7 @@ mixin _$PaymentEvent {
     TResult? Function(PaymentType paymentType)? updatePaymentType,
     TResult? Function(double hourPrice)? upadeHourPrice,
     TResult? Function(Map<String, DateTime> timestamps)? itemTimestampsLoaded,
+    TResult? Function(bool applyService)? updateApplyService,
   }) =>
       throw _privateConstructorUsedError;
   @optionalTypeArgs
@@ -54,6 +56,7 @@ mixin _$PaymentEvent {
     TResult Function(PaymentType paymentType)? updatePaymentType,
     TResult Function(double hourPrice)? upadeHourPrice,
     TResult Function(Map<String, DateTime> timestamps)? itemTimestampsLoaded,
+    TResult Function(bool applyService)? updateApplyService,
     required TResult orElse(),
   }) =>
       throw _privateConstructorUsedError;
@@ -68,6 +71,7 @@ mixin _$PaymentEvent {
     required TResult Function(_UpdatePaymentType value) updatePaymentType,
     required TResult Function(_UpdateHourPrice value) upadeHourPrice,
     required TResult Function(_ItemTimestampsLoaded value) itemTimestampsLoaded,
+    required TResult Function(_UpdateApplyService value) updateApplyService,
   }) =>
       throw _privateConstructorUsedError;
   @optionalTypeArgs
@@ -81,6 +85,7 @@ mixin _$PaymentEvent {
     TResult? Function(_UpdatePaymentType value)? updatePaymentType,
     TResult? Function(_UpdateHourPrice value)? upadeHourPrice,
     TResult? Function(_ItemTimestampsLoaded value)? itemTimestampsLoaded,
+    TResult? Function(_UpdateApplyService value)? updateApplyService,
   }) =>
       throw _privateConstructorUsedError;
   @optionalTypeArgs
@@ -94,6 +99,7 @@ mixin _$PaymentEvent {
     TResult Function(_UpdatePaymentType value)? updatePaymentType,
     TResult Function(_UpdateHourPrice value)? upadeHourPrice,
     TResult Function(_ItemTimestampsLoaded value)? itemTimestampsLoaded,
+    TResult Function(_UpdateApplyService value)? updateApplyService,
     required TResult orElse(),
   }) =>
       throw _privateConstructorUsedError;
@@ -199,6 +205,7 @@ class _$StartedImpl implements _Started {
     required TResult Function(double hourPrice) upadeHourPrice,
     required TResult Function(Map<String, DateTime> timestamps)
         itemTimestampsLoaded,
+    required TResult Function(bool applyService) updateApplyService,
   }) {
     return started(tableId, orderId);
   }
@@ -215,6 +222,7 @@ class _$StartedImpl implements _Started {
     TResult? Function(PaymentType paymentType)? updatePaymentType,
     TResult? Function(double hourPrice)? upadeHourPrice,
     TResult? Function(Map<String, DateTime> timestamps)? itemTimestampsLoaded,
+    TResult? Function(bool applyService)? updateApplyService,
   }) {
     return started?.call(tableId, orderId);
   }
@@ -231,6 +239,7 @@ class _$StartedImpl implements _Started {
     TResult Function(PaymentType paymentType)? updatePaymentType,
     TResult Function(double hourPrice)? upadeHourPrice,
     TResult Function(Map<String, DateTime> timestamps)? itemTimestampsLoaded,
+    TResult Function(bool applyService)? updateApplyService,
     required TResult orElse(),
   }) {
     if (started != null) {
@@ -251,6 +260,7 @@ class _$StartedImpl implements _Started {
     required TResult Function(_UpdatePaymentType value) updatePaymentType,
     required TResult Function(_UpdateHourPrice value) upadeHourPrice,
     required TResult Function(_ItemTimestampsLoaded value) itemTimestampsLoaded,
+    required TResult Function(_UpdateApplyService value) updateApplyService,
   }) {
     return started(this);
   }
@@ -267,6 +277,7 @@ class _$StartedImpl implements _Started {
     TResult? Function(_UpdatePaymentType value)? updatePaymentType,
     TResult? Function(_UpdateHourPrice value)? upadeHourPrice,
     TResult? Function(_ItemTimestampsLoaded value)? itemTimestampsLoaded,
+    TResult? Function(_UpdateApplyService value)? updateApplyService,
   }) {
     return started?.call(this);
   }
@@ -283,6 +294,7 @@ class _$StartedImpl implements _Started {
     TResult Function(_UpdatePaymentType value)? updatePaymentType,
     TResult Function(_UpdateHourPrice value)? upadeHourPrice,
     TResult Function(_ItemTimestampsLoaded value)? itemTimestampsLoaded,
+    TResult Function(_UpdateApplyService value)? updateApplyService,
     required TResult orElse(),
   }) {
     if (started != null) {
@@ -378,6 +390,7 @@ class _$UpdateEnterSumImpl implements _UpdateEnterSum {
     required TResult Function(double hourPrice) upadeHourPrice,
     required TResult Function(Map<String, DateTime> timestamps)
         itemTimestampsLoaded,
+    required TResult Function(bool applyService) updateApplyService,
   }) {
     return updateEnterSum(symbol);
   }
@@ -394,6 +407,7 @@ class _$UpdateEnterSumImpl implements _UpdateEnterSum {
     TResult? Function(PaymentType paymentType)? updatePaymentType,
     TResult? Function(double hourPrice)? upadeHourPrice,
     TResult? Function(Map<String, DateTime> timestamps)? itemTimestampsLoaded,
+    TResult? Function(bool applyService)? updateApplyService,
   }) {
     return updateEnterSum?.call(symbol);
   }
@@ -410,6 +424,7 @@ class _$UpdateEnterSumImpl implements _UpdateEnterSum {
     TResult Function(PaymentType paymentType)? updatePaymentType,
     TResult Function(double hourPrice)? upadeHourPrice,
     TResult Function(Map<String, DateTime> timestamps)? itemTimestampsLoaded,
+    TResult Function(bool applyService)? updateApplyService,
     required TResult orElse(),
   }) {
     if (updateEnterSum != null) {
@@ -430,6 +445,7 @@ class _$UpdateEnterSumImpl implements _UpdateEnterSum {
     required TResult Function(_UpdatePaymentType value) updatePaymentType,
     required TResult Function(_UpdateHourPrice value) upadeHourPrice,
     required TResult Function(_ItemTimestampsLoaded value) itemTimestampsLoaded,
+    required TResult Function(_UpdateApplyService value) updateApplyService,
   }) {
     return updateEnterSum(this);
   }
@@ -446,6 +462,7 @@ class _$UpdateEnterSumImpl implements _UpdateEnterSum {
     TResult? Function(_UpdatePaymentType value)? updatePaymentType,
     TResult? Function(_UpdateHourPrice value)? upadeHourPrice,
     TResult? Function(_ItemTimestampsLoaded value)? itemTimestampsLoaded,
+    TResult? Function(_UpdateApplyService value)? updateApplyService,
   }) {
     return updateEnterSum?.call(this);
   }
@@ -462,6 +479,7 @@ class _$UpdateEnterSumImpl implements _UpdateEnterSum {
     TResult Function(_UpdatePaymentType value)? updatePaymentType,
     TResult Function(_UpdateHourPrice value)? upadeHourPrice,
     TResult Function(_ItemTimestampsLoaded value)? itemTimestampsLoaded,
+    TResult Function(_UpdateApplyService value)? updateApplyService,
     required TResult orElse(),
   }) {
     if (updateEnterSum != null) {
@@ -529,6 +547,7 @@ class _$GetDetailImpl implements _GetDetail {
     required TResult Function(double hourPrice) upadeHourPrice,
     required TResult Function(Map<String, DateTime> timestamps)
         itemTimestampsLoaded,
+    required TResult Function(bool applyService) updateApplyService,
   }) {
     return getDetail();
   }
@@ -545,6 +564,7 @@ class _$GetDetailImpl implements _GetDetail {
     TResult? Function(PaymentType paymentType)? updatePaymentType,
     TResult? Function(double hourPrice)? upadeHourPrice,
     TResult? Function(Map<String, DateTime> timestamps)? itemTimestampsLoaded,
+    TResult? Function(bool applyService)? updateApplyService,
   }) {
     return getDetail?.call();
   }
@@ -561,6 +581,7 @@ class _$GetDetailImpl implements _GetDetail {
     TResult Function(PaymentType paymentType)? updatePaymentType,
     TResult Function(double hourPrice)? upadeHourPrice,
     TResult Function(Map<String, DateTime> timestamps)? itemTimestampsLoaded,
+    TResult Function(bool applyService)? updateApplyService,
     required TResult orElse(),
   }) {
     if (getDetail != null) {
@@ -581,6 +602,7 @@ class _$GetDetailImpl implements _GetDetail {
     required TResult Function(_UpdatePaymentType value) updatePaymentType,
     required TResult Function(_UpdateHourPrice value) upadeHourPrice,
     required TResult Function(_ItemTimestampsLoaded value) itemTimestampsLoaded,
+    required TResult Function(_UpdateApplyService value) updateApplyService,
   }) {
     return getDetail(this);
   }
@@ -597,6 +619,7 @@ class _$GetDetailImpl implements _GetDetail {
     TResult? Function(_UpdatePaymentType value)? updatePaymentType,
     TResult? Function(_UpdateHourPrice value)? upadeHourPrice,
     TResult? Function(_ItemTimestampsLoaded value)? itemTimestampsLoaded,
+    TResult? Function(_UpdateApplyService value)? updateApplyService,
   }) {
     return getDetail?.call(this);
   }
@@ -613,6 +636,7 @@ class _$GetDetailImpl implements _GetDetail {
     TResult Function(_UpdatePaymentType value)? updatePaymentType,
     TResult Function(_UpdateHourPrice value)? upadeHourPrice,
     TResult Function(_ItemTimestampsLoaded value)? itemTimestampsLoaded,
+    TResult Function(_UpdateApplyService value)? updateApplyService,
     required TResult orElse(),
   }) {
     if (getDetail != null) {
@@ -674,6 +698,7 @@ class _$PaymentImpl implements _Payment {
     required TResult Function(double hourPrice) upadeHourPrice,
     required TResult Function(Map<String, DateTime> timestamps)
         itemTimestampsLoaded,
+    required TResult Function(bool applyService) updateApplyService,
   }) {
     return payment();
   }
@@ -690,6 +715,7 @@ class _$PaymentImpl implements _Payment {
     TResult? Function(PaymentType paymentType)? updatePaymentType,
     TResult? Function(double hourPrice)? upadeHourPrice,
     TResult? Function(Map<String, DateTime> timestamps)? itemTimestampsLoaded,
+    TResult? Function(bool applyService)? updateApplyService,
   }) {
     return payment?.call();
   }
@@ -706,6 +732,7 @@ class _$PaymentImpl implements _Payment {
     TResult Function(PaymentType paymentType)? updatePaymentType,
     TResult Function(double hourPrice)? upadeHourPrice,
     TResult Function(Map<String, DateTime> timestamps)? itemTimestampsLoaded,
+    TResult Function(bool applyService)? updateApplyService,
     required TResult orElse(),
   }) {
     if (payment != null) {
@@ -726,6 +753,7 @@ class _$PaymentImpl implements _Payment {
     required TResult Function(_UpdatePaymentType value) updatePaymentType,
     required TResult Function(_UpdateHourPrice value) upadeHourPrice,
     required TResult Function(_ItemTimestampsLoaded value) itemTimestampsLoaded,
+    required TResult Function(_UpdateApplyService value) updateApplyService,
   }) {
     return payment(this);
   }
@@ -742,6 +770,7 @@ class _$PaymentImpl implements _Payment {
     TResult? Function(_UpdatePaymentType value)? updatePaymentType,
     TResult? Function(_UpdateHourPrice value)? upadeHourPrice,
     TResult? Function(_ItemTimestampsLoaded value)? itemTimestampsLoaded,
+    TResult? Function(_UpdateApplyService value)? updateApplyService,
   }) {
     return payment?.call(this);
   }
@@ -758,6 +787,7 @@ class _$PaymentImpl implements _Payment {
     TResult Function(_UpdatePaymentType value)? updatePaymentType,
     TResult Function(_UpdateHourPrice value)? upadeHourPrice,
     TResult Function(_ItemTimestampsLoaded value)? itemTimestampsLoaded,
+    TResult Function(_UpdateApplyService value)? updateApplyService,
     required TResult orElse(),
   }) {
     if (payment != null) {
@@ -846,6 +876,7 @@ class _$DiscountTypeImpl implements _DiscountType {
     required TResult Function(double hourPrice) upadeHourPrice,
     required TResult Function(Map<String, DateTime> timestamps)
         itemTimestampsLoaded,
+    required TResult Function(bool applyService) updateApplyService,
   }) {
     return updateDiscountType(dicountType);
   }
@@ -862,6 +893,7 @@ class _$DiscountTypeImpl implements _DiscountType {
     TResult? Function(PaymentType paymentType)? updatePaymentType,
     TResult? Function(double hourPrice)? upadeHourPrice,
     TResult? Function(Map<String, DateTime> timestamps)? itemTimestampsLoaded,
+    TResult? Function(bool applyService)? updateApplyService,
   }) {
     return updateDiscountType?.call(dicountType);
   }
@@ -878,6 +910,7 @@ class _$DiscountTypeImpl implements _DiscountType {
     TResult Function(PaymentType paymentType)? updatePaymentType,
     TResult Function(double hourPrice)? upadeHourPrice,
     TResult Function(Map<String, DateTime> timestamps)? itemTimestampsLoaded,
+    TResult Function(bool applyService)? updateApplyService,
     required TResult orElse(),
   }) {
     if (updateDiscountType != null) {
@@ -898,6 +931,7 @@ class _$DiscountTypeImpl implements _DiscountType {
     required TResult Function(_UpdatePaymentType value) updatePaymentType,
     required TResult Function(_UpdateHourPrice value) upadeHourPrice,
     required TResult Function(_ItemTimestampsLoaded value) itemTimestampsLoaded,
+    required TResult Function(_UpdateApplyService value) updateApplyService,
   }) {
     return updateDiscountType(this);
   }
@@ -914,6 +948,7 @@ class _$DiscountTypeImpl implements _DiscountType {
     TResult? Function(_UpdatePaymentType value)? updatePaymentType,
     TResult? Function(_UpdateHourPrice value)? upadeHourPrice,
     TResult? Function(_ItemTimestampsLoaded value)? itemTimestampsLoaded,
+    TResult? Function(_UpdateApplyService value)? updateApplyService,
   }) {
     return updateDiscountType?.call(this);
   }
@@ -930,6 +965,7 @@ class _$DiscountTypeImpl implements _DiscountType {
     TResult Function(_UpdatePaymentType value)? updatePaymentType,
     TResult Function(_UpdateHourPrice value)? upadeHourPrice,
     TResult Function(_ItemTimestampsLoaded value)? itemTimestampsLoaded,
+    TResult Function(_UpdateApplyService value)? updateApplyService,
     required TResult orElse(),
   }) {
     if (updateDiscountType != null) {
@@ -1025,6 +1061,7 @@ class _$UpdateDiscountAmountImpl implements _UpdateDiscountAmount {
     required TResult Function(double hourPrice) upadeHourPrice,
     required TResult Function(Map<String, DateTime> timestamps)
         itemTimestampsLoaded,
+    required TResult Function(bool applyService) updateApplyService,
   }) {
     return updateDiscountAmount(amount);
   }
@@ -1041,6 +1078,7 @@ class _$UpdateDiscountAmountImpl implements _UpdateDiscountAmount {
     TResult? Function(PaymentType paymentType)? updatePaymentType,
     TResult? Function(double hourPrice)? upadeHourPrice,
     TResult? Function(Map<String, DateTime> timestamps)? itemTimestampsLoaded,
+    TResult? Function(bool applyService)? updateApplyService,
   }) {
     return updateDiscountAmount?.call(amount);
   }
@@ -1057,6 +1095,7 @@ class _$UpdateDiscountAmountImpl implements _UpdateDiscountAmount {
     TResult Function(PaymentType paymentType)? updatePaymentType,
     TResult Function(double hourPrice)? upadeHourPrice,
     TResult Function(Map<String, DateTime> timestamps)? itemTimestampsLoaded,
+    TResult Function(bool applyService)? updateApplyService,
     required TResult orElse(),
   }) {
     if (updateDiscountAmount != null) {
@@ -1077,6 +1116,7 @@ class _$UpdateDiscountAmountImpl implements _UpdateDiscountAmount {
     required TResult Function(_UpdatePaymentType value) updatePaymentType,
     required TResult Function(_UpdateHourPrice value) upadeHourPrice,
     required TResult Function(_ItemTimestampsLoaded value) itemTimestampsLoaded,
+    required TResult Function(_UpdateApplyService value) updateApplyService,
   }) {
     return updateDiscountAmount(this);
   }
@@ -1093,6 +1133,7 @@ class _$UpdateDiscountAmountImpl implements _UpdateDiscountAmount {
     TResult? Function(_UpdatePaymentType value)? updatePaymentType,
     TResult? Function(_UpdateHourPrice value)? upadeHourPrice,
     TResult? Function(_ItemTimestampsLoaded value)? itemTimestampsLoaded,
+    TResult? Function(_UpdateApplyService value)? updateApplyService,
   }) {
     return updateDiscountAmount?.call(this);
   }
@@ -1109,6 +1150,7 @@ class _$UpdateDiscountAmountImpl implements _UpdateDiscountAmount {
     TResult Function(_UpdatePaymentType value)? updatePaymentType,
     TResult Function(_UpdateHourPrice value)? upadeHourPrice,
     TResult Function(_ItemTimestampsLoaded value)? itemTimestampsLoaded,
+    TResult Function(_UpdateApplyService value)? updateApplyService,
     required TResult orElse(),
   }) {
     if (updateDiscountAmount != null) {
@@ -1204,6 +1246,7 @@ class _$UpdatePaymentTypeImpl implements _UpdatePaymentType {
     required TResult Function(double hourPrice) upadeHourPrice,
     required TResult Function(Map<String, DateTime> timestamps)
         itemTimestampsLoaded,
+    required TResult Function(bool applyService) updateApplyService,
   }) {
     return updatePaymentType(paymentType);
   }
@@ -1220,6 +1263,7 @@ class _$UpdatePaymentTypeImpl implements _UpdatePaymentType {
     TResult? Function(PaymentType paymentType)? updatePaymentType,
     TResult? Function(double hourPrice)? upadeHourPrice,
     TResult? Function(Map<String, DateTime> timestamps)? itemTimestampsLoaded,
+    TResult? Function(bool applyService)? updateApplyService,
   }) {
     return updatePaymentType?.call(paymentType);
   }
@@ -1236,6 +1280,7 @@ class _$UpdatePaymentTypeImpl implements _UpdatePaymentType {
     TResult Function(PaymentType paymentType)? updatePaymentType,
     TResult Function(double hourPrice)? upadeHourPrice,
     TResult Function(Map<String, DateTime> timestamps)? itemTimestampsLoaded,
+    TResult Function(bool applyService)? updateApplyService,
     required TResult orElse(),
   }) {
     if (updatePaymentType != null) {
@@ -1256,6 +1301,7 @@ class _$UpdatePaymentTypeImpl implements _UpdatePaymentType {
     required TResult Function(_UpdatePaymentType value) updatePaymentType,
     required TResult Function(_UpdateHourPrice value) upadeHourPrice,
     required TResult Function(_ItemTimestampsLoaded value) itemTimestampsLoaded,
+    required TResult Function(_UpdateApplyService value) updateApplyService,
   }) {
     return updatePaymentType(this);
   }
@@ -1272,6 +1318,7 @@ class _$UpdatePaymentTypeImpl implements _UpdatePaymentType {
     TResult? Function(_UpdatePaymentType value)? updatePaymentType,
     TResult? Function(_UpdateHourPrice value)? upadeHourPrice,
     TResult? Function(_ItemTimestampsLoaded value)? itemTimestampsLoaded,
+    TResult? Function(_UpdateApplyService value)? updateApplyService,
   }) {
     return updatePaymentType?.call(this);
   }
@@ -1288,6 +1335,7 @@ class _$UpdatePaymentTypeImpl implements _UpdatePaymentType {
     TResult Function(_UpdatePaymentType value)? updatePaymentType,
     TResult Function(_UpdateHourPrice value)? upadeHourPrice,
     TResult Function(_ItemTimestampsLoaded value)? itemTimestampsLoaded,
+    TResult Function(_UpdateApplyService value)? updateApplyService,
     required TResult orElse(),
   }) {
     if (updatePaymentType != null) {
@@ -1383,6 +1431,7 @@ class _$UpdateHourPriceImpl implements _UpdateHourPrice {
     required TResult Function(double hourPrice) upadeHourPrice,
     required TResult Function(Map<String, DateTime> timestamps)
         itemTimestampsLoaded,
+    required TResult Function(bool applyService) updateApplyService,
   }) {
     return upadeHourPrice(hourPrice);
   }
@@ -1399,6 +1448,7 @@ class _$UpdateHourPriceImpl implements _UpdateHourPrice {
     TResult? Function(PaymentType paymentType)? updatePaymentType,
     TResult? Function(double hourPrice)? upadeHourPrice,
     TResult? Function(Map<String, DateTime> timestamps)? itemTimestampsLoaded,
+    TResult? Function(bool applyService)? updateApplyService,
   }) {
     return upadeHourPrice?.call(hourPrice);
   }
@@ -1415,6 +1465,7 @@ class _$UpdateHourPriceImpl implements _UpdateHourPrice {
     TResult Function(PaymentType paymentType)? updatePaymentType,
     TResult Function(double hourPrice)? upadeHourPrice,
     TResult Function(Map<String, DateTime> timestamps)? itemTimestampsLoaded,
+    TResult Function(bool applyService)? updateApplyService,
     required TResult orElse(),
   }) {
     if (upadeHourPrice != null) {
@@ -1435,6 +1486,7 @@ class _$UpdateHourPriceImpl implements _UpdateHourPrice {
     required TResult Function(_UpdatePaymentType value) updatePaymentType,
     required TResult Function(_UpdateHourPrice value) upadeHourPrice,
     required TResult Function(_ItemTimestampsLoaded value) itemTimestampsLoaded,
+    required TResult Function(_UpdateApplyService value) updateApplyService,
   }) {
     return upadeHourPrice(this);
   }
@@ -1451,6 +1503,7 @@ class _$UpdateHourPriceImpl implements _UpdateHourPrice {
     TResult? Function(_UpdatePaymentType value)? updatePaymentType,
     TResult? Function(_UpdateHourPrice value)? upadeHourPrice,
     TResult? Function(_ItemTimestampsLoaded value)? itemTimestampsLoaded,
+    TResult? Function(_UpdateApplyService value)? updateApplyService,
   }) {
     return upadeHourPrice?.call(this);
   }
@@ -1467,6 +1520,7 @@ class _$UpdateHourPriceImpl implements _UpdateHourPrice {
     TResult Function(_UpdatePaymentType value)? updatePaymentType,
     TResult Function(_UpdateHourPrice value)? upadeHourPrice,
     TResult Function(_ItemTimestampsLoaded value)? itemTimestampsLoaded,
+    TResult Function(_UpdateApplyService value)? updateApplyService,
     required TResult orElse(),
   }) {
     if (upadeHourPrice != null) {
@@ -1571,6 +1625,7 @@ class _$ItemTimestampsLoadedImpl implements _ItemTimestampsLoaded {
     required TResult Function(double hourPrice) upadeHourPrice,
     required TResult Function(Map<String, DateTime> timestamps)
         itemTimestampsLoaded,
+    required TResult Function(bool applyService) updateApplyService,
   }) {
     return itemTimestampsLoaded(timestamps);
   }
@@ -1587,6 +1642,7 @@ class _$ItemTimestampsLoadedImpl implements _ItemTimestampsLoaded {
     TResult? Function(PaymentType paymentType)? updatePaymentType,
     TResult? Function(double hourPrice)? upadeHourPrice,
     TResult? Function(Map<String, DateTime> timestamps)? itemTimestampsLoaded,
+    TResult? Function(bool applyService)? updateApplyService,
   }) {
     return itemTimestampsLoaded?.call(timestamps);
   }
@@ -1603,6 +1659,7 @@ class _$ItemTimestampsLoadedImpl implements _ItemTimestampsLoaded {
     TResult Function(PaymentType paymentType)? updatePaymentType,
     TResult Function(double hourPrice)? upadeHourPrice,
     TResult Function(Map<String, DateTime> timestamps)? itemTimestampsLoaded,
+    TResult Function(bool applyService)? updateApplyService,
     required TResult orElse(),
   }) {
     if (itemTimestampsLoaded != null) {
@@ -1623,6 +1680,7 @@ class _$ItemTimestampsLoadedImpl implements _ItemTimestampsLoaded {
     required TResult Function(_UpdatePaymentType value) updatePaymentType,
     required TResult Function(_UpdateHourPrice value) upadeHourPrice,
     required TResult Function(_ItemTimestampsLoaded value) itemTimestampsLoaded,
+    required TResult Function(_UpdateApplyService value) updateApplyService,
   }) {
     return itemTimestampsLoaded(this);
   }
@@ -1639,6 +1697,7 @@ class _$ItemTimestampsLoadedImpl implements _ItemTimestampsLoaded {
     TResult? Function(_UpdatePaymentType value)? updatePaymentType,
     TResult? Function(_UpdateHourPrice value)? upadeHourPrice,
     TResult? Function(_ItemTimestampsLoaded value)? itemTimestampsLoaded,
+    TResult? Function(_UpdateApplyService value)? updateApplyService,
   }) {
     return itemTimestampsLoaded?.call(this);
   }
@@ -1655,6 +1714,7 @@ class _$ItemTimestampsLoadedImpl implements _ItemTimestampsLoaded {
     TResult Function(_UpdatePaymentType value)? updatePaymentType,
     TResult Function(_UpdateHourPrice value)? upadeHourPrice,
     TResult Function(_ItemTimestampsLoaded value)? itemTimestampsLoaded,
+    TResult Function(_UpdateApplyService value)? updateApplyService,
     required TResult orElse(),
   }) {
     if (itemTimestampsLoaded != null) {
@@ -1676,6 +1736,191 @@ abstract class _ItemTimestampsLoaded implements PaymentEvent {
 }
 
 /// @nodoc
+abstract class _$$UpdateApplyServiceImplCopyWith<$Res> {
+  factory _$$UpdateApplyServiceImplCopyWith(_$UpdateApplyServiceImpl value,
+          $Res Function(_$UpdateApplyServiceImpl) then) =
+      __$$UpdateApplyServiceImplCopyWithImpl<$Res>;
+  @useResult
+  $Res call({bool applyService});
+}
+
+/// @nodoc
+class __$$UpdateApplyServiceImplCopyWithImpl<$Res>
+    extends _$PaymentEventCopyWithImpl<$Res, _$UpdateApplyServiceImpl>
+    implements _$$UpdateApplyServiceImplCopyWith<$Res> {
+  __$$UpdateApplyServiceImplCopyWithImpl(_$UpdateApplyServiceImpl _value,
+      $Res Function(_$UpdateApplyServiceImpl) _then)
+      : super(_value, _then);
+
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? applyService = null,
+  }) {
+    return _then(_$UpdateApplyServiceImpl(
+      applyService: null == applyService
+          ? _value.applyService
+          : applyService // ignore: cast_nullable_to_non_nullable
+              as bool,
+    ));
+  }
+}
+
+/// @nodoc
+
+class _$UpdateApplyServiceImpl implements _UpdateApplyService {
+  const _$UpdateApplyServiceImpl({required this.applyService});
+
+  @override
+  final bool applyService;
+
+  @override
+  String toString() {
+    return 'PaymentEvent.updateApplyService(applyService: $applyService)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$UpdateApplyServiceImpl &&
+            (identical(other.applyService, applyService) ||
+                other.applyService == applyService));
+  }
+
+  @override
+  int get hashCode => Object.hash(runtimeType, applyService);
+
+  @JsonKey(ignore: true)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$UpdateApplyServiceImplCopyWith<_$UpdateApplyServiceImpl> get copyWith =>
+      __$$UpdateApplyServiceImplCopyWithImpl<_$UpdateApplyServiceImpl>(
+          this, _$identity);
+
+  @override
+  @optionalTypeArgs
+  TResult when<TResult extends Object?>({
+    required TResult Function(String? tableId, String? orderId) started,
+    required TResult Function(String symbol) updateEnterSum,
+    required TResult Function() getDetail,
+    required TResult Function() payment,
+    required TResult Function(DiscountType dicountType) updateDiscountType,
+    required TResult Function(String amount) updateDiscountAmount,
+    required TResult Function(PaymentType paymentType) updatePaymentType,
+    required TResult Function(double hourPrice) upadeHourPrice,
+    required TResult Function(Map<String, DateTime> timestamps)
+        itemTimestampsLoaded,
+    required TResult Function(bool applyService) updateApplyService,
+  }) {
+    return updateApplyService(applyService);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult? whenOrNull<TResult extends Object?>({
+    TResult? Function(String? tableId, String? orderId)? started,
+    TResult? Function(String symbol)? updateEnterSum,
+    TResult? Function()? getDetail,
+    TResult? Function()? payment,
+    TResult? Function(DiscountType dicountType)? updateDiscountType,
+    TResult? Function(String amount)? updateDiscountAmount,
+    TResult? Function(PaymentType paymentType)? updatePaymentType,
+    TResult? Function(double hourPrice)? upadeHourPrice,
+    TResult? Function(Map<String, DateTime> timestamps)? itemTimestampsLoaded,
+    TResult? Function(bool applyService)? updateApplyService,
+  }) {
+    return updateApplyService?.call(applyService);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult maybeWhen<TResult extends Object?>({
+    TResult Function(String? tableId, String? orderId)? started,
+    TResult Function(String symbol)? updateEnterSum,
+    TResult Function()? getDetail,
+    TResult Function()? payment,
+    TResult Function(DiscountType dicountType)? updateDiscountType,
+    TResult Function(String amount)? updateDiscountAmount,
+    TResult Function(PaymentType paymentType)? updatePaymentType,
+    TResult Function(double hourPrice)? upadeHourPrice,
+    TResult Function(Map<String, DateTime> timestamps)? itemTimestampsLoaded,
+    TResult Function(bool applyService)? updateApplyService,
+    required TResult orElse(),
+  }) {
+    if (updateApplyService != null) {
+      return updateApplyService(applyService);
+    }
+    return orElse();
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult map<TResult extends Object?>({
+    required TResult Function(_Started value) started,
+    required TResult Function(_UpdateEnterSum value) updateEnterSum,
+    required TResult Function(_GetDetail value) getDetail,
+    required TResult Function(_Payment value) payment,
+    required TResult Function(_DiscountType value) updateDiscountType,
+    required TResult Function(_UpdateDiscountAmount value) updateDiscountAmount,
+    required TResult Function(_UpdatePaymentType value) updatePaymentType,
+    required TResult Function(_UpdateHourPrice value) upadeHourPrice,
+    required TResult Function(_ItemTimestampsLoaded value) itemTimestampsLoaded,
+    required TResult Function(_UpdateApplyService value) updateApplyService,
+  }) {
+    return updateApplyService(this);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult? mapOrNull<TResult extends Object?>({
+    TResult? Function(_Started value)? started,
+    TResult? Function(_UpdateEnterSum value)? updateEnterSum,
+    TResult? Function(_GetDetail value)? getDetail,
+    TResult? Function(_Payment value)? payment,
+    TResult? Function(_DiscountType value)? updateDiscountType,
+    TResult? Function(_UpdateDiscountAmount value)? updateDiscountAmount,
+    TResult? Function(_UpdatePaymentType value)? updatePaymentType,
+    TResult? Function(_UpdateHourPrice value)? upadeHourPrice,
+    TResult? Function(_ItemTimestampsLoaded value)? itemTimestampsLoaded,
+    TResult? Function(_UpdateApplyService value)? updateApplyService,
+  }) {
+    return updateApplyService?.call(this);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult maybeMap<TResult extends Object?>({
+    TResult Function(_Started value)? started,
+    TResult Function(_UpdateEnterSum value)? updateEnterSum,
+    TResult Function(_GetDetail value)? getDetail,
+    TResult Function(_Payment value)? payment,
+    TResult Function(_DiscountType value)? updateDiscountType,
+    TResult Function(_UpdateDiscountAmount value)? updateDiscountAmount,
+    TResult Function(_UpdatePaymentType value)? updatePaymentType,
+    TResult Function(_UpdateHourPrice value)? upadeHourPrice,
+    TResult Function(_ItemTimestampsLoaded value)? itemTimestampsLoaded,
+    TResult Function(_UpdateApplyService value)? updateApplyService,
+    required TResult orElse(),
+  }) {
+    if (updateApplyService != null) {
+      return updateApplyService(this);
+    }
+    return orElse();
+  }
+}
+
+abstract class _UpdateApplyService implements PaymentEvent {
+  const factory _UpdateApplyService({required final bool applyService}) =
+      _$UpdateApplyServiceImpl;
+
+  bool get applyService;
+  @JsonKey(ignore: true)
+  _$$UpdateApplyServiceImplCopyWith<_$UpdateApplyServiceImpl> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+/// @nodoc
 mixin _$PaymentState {
   Status get status => throw _privateConstructorUsedError;
   Status get detailStatus => throw _privateConstructorUsedError;
@@ -1694,6 +1939,7 @@ mixin _$PaymentState {
 // olinadi; `/bills/{id}` items'da `created_at` yo'q.
   Map<String, DateTime> get itemTimestamps =>
       throw _privateConstructorUsedError;
+  bool get applyService => throw _privateConstructorUsedError;
   Failure? get failure => throw _privateConstructorUsedError;
 
   @JsonKey(ignore: true)
@@ -1721,6 +1967,7 @@ abstract class $PaymentStateCopyWith<$Res> {
       DiscountType discountType,
       double hourPrice,
       Map<String, DateTime> itemTimestamps,
+      bool applyService,
       Failure? failure});
 }
 
@@ -1750,6 +1997,7 @@ class _$PaymentStateCopyWithImpl<$Res, $Val extends PaymentState>
     Object? discountType = null,
     Object? hourPrice = null,
     Object? itemTimestamps = null,
+    Object? applyService = null,
     Object? failure = freezed,
   }) {
     return _then(_value.copyWith(
@@ -1805,6 +2053,10 @@ class _$PaymentStateCopyWithImpl<$Res, $Val extends PaymentState>
           ? _value.itemTimestamps
           : itemTimestamps // ignore: cast_nullable_to_non_nullable
               as Map<String, DateTime>,
+      applyService: null == applyService
+          ? _value.applyService
+          : applyService // ignore: cast_nullable_to_non_nullable
+              as bool,
       failure: freezed == failure
           ? _value.failure
           : failure // ignore: cast_nullable_to_non_nullable
@@ -1835,6 +2087,7 @@ abstract class _$$PaymentStateImplCopyWith<$Res>
       DiscountType discountType,
       double hourPrice,
       Map<String, DateTime> itemTimestamps,
+      bool applyService,
       Failure? failure});
 }
 
@@ -1862,6 +2115,7 @@ class __$$PaymentStateImplCopyWithImpl<$Res>
     Object? discountType = null,
     Object? hourPrice = null,
     Object? itemTimestamps = null,
+    Object? applyService = null,
     Object? failure = freezed,
   }) {
     return _then(_$PaymentStateImpl(
@@ -1917,6 +2171,10 @@ class __$$PaymentStateImplCopyWithImpl<$Res>
           ? _value._itemTimestamps
           : itemTimestamps // ignore: cast_nullable_to_non_nullable
               as Map<String, DateTime>,
+      applyService: null == applyService
+          ? _value.applyService
+          : applyService // ignore: cast_nullable_to_non_nullable
+              as bool,
       failure: freezed == failure
           ? _value.failure
           : failure // ignore: cast_nullable_to_non_nullable
@@ -1942,6 +2200,7 @@ class _$PaymentStateImpl implements _PaymentState {
       this.discountType = DiscountType.money,
       this.hourPrice = 0,
       final Map<String, DateTime> itemTimestamps = const <String, DateTime>{},
+      this.applyService = true,
       this.failure})
       : _itemTimestamps = itemTimestamps;
 
@@ -1991,11 +2250,14 @@ class _$PaymentStateImpl implements _PaymentState {
   }
 
   @override
+  @JsonKey()
+  final bool applyService;
+  @override
   final Failure? failure;
 
   @override
   String toString() {
-    return 'PaymentState(status: $status, detailStatus: $detailStatus, detail: $detail, tableId: $tableId, orderId: $orderId, textController: $textController, discountAmount: $discountAmount, paymentType: $paymentType, enterSum: $enterSum, returnAmount: $returnAmount, discountType: $discountType, hourPrice: $hourPrice, itemTimestamps: $itemTimestamps, failure: $failure)';
+    return 'PaymentState(status: $status, detailStatus: $detailStatus, detail: $detail, tableId: $tableId, orderId: $orderId, textController: $textController, discountAmount: $discountAmount, paymentType: $paymentType, enterSum: $enterSum, returnAmount: $returnAmount, discountType: $discountType, hourPrice: $hourPrice, itemTimestamps: $itemTimestamps, applyService: $applyService, failure: $failure)';
   }
 
   @override
@@ -2025,6 +2287,8 @@ class _$PaymentStateImpl implements _PaymentState {
                 other.hourPrice == hourPrice) &&
             const DeepCollectionEquality()
                 .equals(other._itemTimestamps, _itemTimestamps) &&
+            (identical(other.applyService, applyService) ||
+                other.applyService == applyService) &&
             (identical(other.failure, failure) || other.failure == failure));
   }
 
@@ -2044,6 +2308,7 @@ class _$PaymentStateImpl implements _PaymentState {
       discountType,
       hourPrice,
       const DeepCollectionEquality().hash(_itemTimestamps),
+      applyService,
       failure);
 
   @JsonKey(ignore: true)
@@ -2068,6 +2333,7 @@ abstract class _PaymentState implements PaymentState {
       final DiscountType discountType,
       final double hourPrice,
       final Map<String, DateTime> itemTimestamps,
+      final bool applyService,
       final Failure? failure}) = _$PaymentStateImpl;
 
   @override
@@ -2097,6 +2363,8 @@ abstract class _PaymentState implements PaymentState {
   @override // Item nomi -> eng erta urilgan vaqt. `/order-items/order/{id}` dan
 // olinadi; `/bills/{id}` items'da `created_at` yo'q.
   Map<String, DateTime> get itemTimestamps;
+  @override
+  bool get applyService;
   @override
   Failure? get failure;
   @override
