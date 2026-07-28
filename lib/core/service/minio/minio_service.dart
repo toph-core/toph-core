@@ -1,5 +1,6 @@
 import 'package:mary_ai_pos/core/api/api.dart';
 import 'package:mary_ai_pos/di.dart';
+import 'package:dio/io.dart';
 import 'package:flutter/foundation.dart';
 
 class MinioService {
@@ -27,6 +28,13 @@ class MinioService {
   /// Bir xil `object_name` uchun bitta Future (FutureBuilder qayta-qayta yangi Future yaratganda ham
   /// tarmoqdan qayta yuklamaslik) + muvaffaqiyatli javobni xotirada ushlab turish.
   final Map<String, Future<Uint8List?>> _imageFutureByObjectName = {};
+
+  void configure({SecurityContext? securityContext}) {
+    if (securityContext == null) return;
+    _externalHttp.httpClientAdapter = IOHttpClientAdapter(
+      createHttpClient: () => HttpClient(context: securityContext),
+    );
+  }
 
   /// `FutureBuilder` har `build`da yangi `Future` bersa ham xuddi shu instance qaytadi — qayta so‘rov yo‘q.
   Future<Uint8List?> getImageByObjectName(String objectName) {

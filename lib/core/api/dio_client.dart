@@ -1,7 +1,9 @@
 import 'dart:collection';
+import 'dart:io';
 
 import 'package:alice_dio/alice_dio_adapter.dart';
 import 'package:dio/dio.dart';
+import 'package:dio/io.dart';
 import 'package:flutter/foundation.dart';
 import 'package:mary_ai_pos/core/auth/storage/token_storage_impl.dart';
 import 'package:mary_ai_pos/core/constants/constants.dart';
@@ -27,7 +29,11 @@ class DioClient {
     return '$url?$qs';
   }
 
-  DioClient(this._tokenStorage, this._connectivity) {
+  DioClient(
+    this._tokenStorage,
+    this._connectivity, {
+    SecurityContext? securityContext,
+  }) {
     _dio = Dio(
       BaseOptions(
         baseUrl: BASE_URL,
@@ -36,6 +42,12 @@ class DioClient {
         validateStatus: (status) => status != null && status < 400,
       ),
     );
+
+    if (securityContext != null) {
+      _dio.httpClientAdapter = IOHttpClientAdapter(
+        createHttpClient: () => HttpClient(context: securityContext),
+      );
+    }
 
     _dio.interceptors.add(_OfflineInterceptor(_connectivity));
     _dio.interceptors.add(MySmartDioInterceptor(_dio, _tokenStorage));
