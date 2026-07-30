@@ -24,6 +24,7 @@ class TopBarWidget extends StatelessWidget {
   final ValueNotifier<bool> showKeyboard;
   final TextEditingController textEditingController;
   final int guestCount;
+  final ValueChanged<String> onSearchChanged;
 
   const TopBarWidget({
     super.key,
@@ -31,6 +32,7 @@ class TopBarWidget extends StatelessWidget {
     required this.showKeyboard,
     required this.textEditingController,
     required this.guestCount,
+    required this.onSearchChanged,
   });
 
   @override
@@ -86,6 +88,7 @@ class TopBarWidget extends StatelessWidget {
                 child: _SearchInput(
                   controller: textEditingController,
                   showKeyboard: showKeyboard,
+                  onChanged: onSearchChanged,
                 ),
               ),
               if (itemCount > 0) ...[
@@ -341,8 +344,13 @@ class _TakeawayHeader extends StatelessWidget {
 class _SearchInput extends StatefulWidget {
   final TextEditingController controller;
   final ValueNotifier<bool> showKeyboard;
+  final ValueChanged<String> onChanged;
 
-  const _SearchInput({required this.controller, required this.showKeyboard});
+  const _SearchInput({
+    required this.controller,
+    required this.showKeyboard,
+    required this.onChanged,
+  });
 
   @override
   State<_SearchInput> createState() => _SearchInputState();
@@ -373,9 +381,7 @@ class _SearchInputState extends State<_SearchInput> {
     if (current == _last) return;
     _last = current;
     if (!mounted) return;
-    context.read<DetailBloc>().add(
-      DetailEvent.searchTextChanged(text: current),
-    );
+    widget.onChanged(current);
   }
 
   @override

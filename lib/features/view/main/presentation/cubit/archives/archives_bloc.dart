@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:bloc/bloc.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -128,17 +130,27 @@ class ArchivesBloc extends Bloc<ArchivesEvent, ArchivesState> {
     _GetArchived event,
     Emitter<ArchivesState> emit,
   ) async {
-    emit(state.copyWith(status: Status.LOADING));
+    if (!event.silent) {
+      emit(state.copyWith(status: Status.LOADING));
+    }
+    // Silent refresh re-syncs statuses on the currently visible window from
+    // the top (offset 0) instead of paginating forward from the loaded
+    // count — it isn't a "load more", it's a resync of what's on screen.
+    final pagination = event.silent
+        ? PaginationRequestModel(
+            limit: math.max(state.archives?.archives.length ?? 20, 20),
+          )
+        : PaginationRequestModel.calculate(
+            items: state.archives?.archives.length ?? 0,
+            limit: 20,
+          );
     final response = await _getArchivesUsecase.call(
       ArchivesFilterRequestModel(
         archiveNum: int.tryParse(state.textController?.text ?? ""),
         filterType: state.filterType,
         startDate: state.startFilterDate,
         endDate: state.endFilterDate,
-        pagination: PaginationRequestModel.calculate(
-          items: state.archives?.archives.length ?? 0,
-          limit: 20,
-        ),
+        pagination: pagination,
       ),
     );
     if (isClosed) return;

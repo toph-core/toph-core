@@ -37,6 +37,8 @@ mixin _$CafeTableModel {
   TableShape get shape => throw _privateConstructorUsedError;
   @JsonKey(name: 'table_type')
   String? get tableType => throw _privateConstructorUsedError;
+  @JsonKey(name: 'price_per_hour')
+  String? get pricePerHour => throw _privateConstructorUsedError;
 
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
   @JsonKey(ignore: true)
@@ -63,7 +65,8 @@ abstract class $CafeTableModelCopyWith<$Res> {
       TableStatus status,
       @JsonKey(name: 'shape', unknownEnumValue: TableShape.rectangle)
       TableShape shape,
-      @JsonKey(name: 'table_type') String? tableType});
+      @JsonKey(name: 'table_type') String? tableType,
+      @JsonKey(name: 'price_per_hour') String? pricePerHour});
 }
 
 /// @nodoc
@@ -91,6 +94,7 @@ class _$CafeTableModelCopyWithImpl<$Res, $Val extends CafeTableModel>
     Object? status = null,
     Object? shape = null,
     Object? tableType = freezed,
+    Object? pricePerHour = freezed,
   }) {
     return _then(_value.copyWith(
       id: null == id
@@ -141,6 +145,10 @@ class _$CafeTableModelCopyWithImpl<$Res, $Val extends CafeTableModel>
           ? _value.tableType
           : tableType // ignore: cast_nullable_to_non_nullable
               as String?,
+      pricePerHour: freezed == pricePerHour
+          ? _value.pricePerHour
+          : pricePerHour // ignore: cast_nullable_to_non_nullable
+              as String?,
     ) as $Val);
   }
 }
@@ -166,7 +174,8 @@ abstract class _$$CafeTableModelImplCopyWith<$Res>
       TableStatus status,
       @JsonKey(name: 'shape', unknownEnumValue: TableShape.rectangle)
       TableShape shape,
-      @JsonKey(name: 'table_type') String? tableType});
+      @JsonKey(name: 'table_type') String? tableType,
+      @JsonKey(name: 'price_per_hour') String? pricePerHour});
 }
 
 /// @nodoc
@@ -192,6 +201,7 @@ class __$$CafeTableModelImplCopyWithImpl<$Res>
     Object? status = null,
     Object? shape = null,
     Object? tableType = freezed,
+    Object? pricePerHour = freezed,
   }) {
     return _then(_$CafeTableModelImpl(
       id: null == id
@@ -242,6 +252,10 @@ class __$$CafeTableModelImplCopyWithImpl<$Res>
           ? _value.tableType
           : tableType // ignore: cast_nullable_to_non_nullable
               as String?,
+      pricePerHour: freezed == pricePerHour
+          ? _value.pricePerHour
+          : pricePerHour // ignore: cast_nullable_to_non_nullable
+              as String?,
     ));
   }
 }
@@ -262,7 +276,8 @@ class _$CafeTableModelImpl implements _CafeTableModel {
       this.status = TableStatus.free,
       @JsonKey(name: 'shape', unknownEnumValue: TableShape.rectangle)
       this.shape = TableShape.rectangle,
-      @JsonKey(name: 'table_type') this.tableType});
+      @JsonKey(name: 'table_type') this.tableType,
+      @JsonKey(name: 'price_per_hour') this.pricePerHour});
 
   factory _$CafeTableModelImpl.fromJson(Map<String, dynamic> json) =>
       _$$CafeTableModelImplFromJson(json);
@@ -297,10 +312,13 @@ class _$CafeTableModelImpl implements _CafeTableModel {
   @override
   @JsonKey(name: 'table_type')
   final String? tableType;
+  @override
+  @JsonKey(name: 'price_per_hour')
+  final String? pricePerHour;
 
   @override
   String toString() {
-    return 'CafeTableModel(id: $id, hallId: $hallId, number: $number, posX: $posX, posY: $posY, width: $width, height: $height, rotation: $rotation, capacity: $capacity, status: $status, shape: $shape, tableType: $tableType)';
+    return 'CafeTableModel(id: $id, hallId: $hallId, number: $number, posX: $posX, posY: $posY, width: $width, height: $height, rotation: $rotation, capacity: $capacity, status: $status, shape: $shape, tableType: $tableType, pricePerHour: $pricePerHour)';
   }
 
   @override
@@ -322,13 +340,28 @@ class _$CafeTableModelImpl implements _CafeTableModel {
             (identical(other.status, status) || other.status == status) &&
             (identical(other.shape, shape) || other.shape == shape) &&
             (identical(other.tableType, tableType) ||
-                other.tableType == tableType));
+                other.tableType == tableType) &&
+            (identical(other.pricePerHour, pricePerHour) ||
+                other.pricePerHour == pricePerHour));
   }
 
   @JsonKey(ignore: true)
   @override
-  int get hashCode => Object.hash(runtimeType, id, hallId, number, posX, posY,
-      width, height, rotation, capacity, status, shape, tableType);
+  int get hashCode => Object.hash(
+      runtimeType,
+      id,
+      hallId,
+      number,
+      posX,
+      posY,
+      width,
+      height,
+      rotation,
+      capacity,
+      status,
+      shape,
+      tableType,
+      pricePerHour);
 
   @JsonKey(ignore: true)
   @override
@@ -359,7 +392,8 @@ abstract class _CafeTableModel implements CafeTableModel {
           final TableStatus status,
           @JsonKey(name: 'shape', unknownEnumValue: TableShape.rectangle)
           final TableShape shape,
-          @JsonKey(name: 'table_type') final String? tableType}) =
+          @JsonKey(name: 'table_type') final String? tableType,
+          @JsonKey(name: 'price_per_hour') final String? pricePerHour}) =
       _$CafeTableModelImpl;
 
   factory _CafeTableModel.fromJson(Map<String, dynamic> json) =
@@ -394,6 +428,9 @@ abstract class _CafeTableModel implements CafeTableModel {
   @override
   @JsonKey(name: 'table_type')
   String? get tableType;
+  @override
+  @JsonKey(name: 'price_per_hour')
+  String? get pricePerHour;
   @override
   @JsonKey(ignore: true)
   _$$CafeTableModelImplCopyWith<_$CafeTableModelImpl> get copyWith =>

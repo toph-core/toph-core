@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mary_ai_pos/core/constants/constants.dart';
+import 'package:mary_ai_pos/core/design_system/pos_breakpoints.dart';
+import 'package:mary_ai_pos/core/design_system/pos_dimensions.dart';
 import 'package:mary_ai_pos/core/extension/for_context.dart';
 import 'package:mary_ai_pos/core/routes/app_routes.dart';
 import 'package:mary_ai_pos/core/services/connectivity/connectivity_cubit.dart';
@@ -17,6 +19,7 @@ import 'package:mary_ai_pos/features/view/main/presentation/cubit/orders/orders_
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/shift/shift_bloc.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/main/widgets/main_header.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/main/widgets/tab_filter.dart';
+import 'package:mary_ai_pos/features/view/main/presentation/pages/main/widgets/time_based_table_badge.dart';
 import 'package:mary_ai_pos/generated/l10n.dart';
 
 // ─────────────────────────────────────────────
@@ -28,15 +31,19 @@ const _kS500 = Color(0xFF64748B);
 const _kS400 = Color(0xFF94A3B8);
 const _kS300 = Color(0xFFCBD5E1);
 const _kS200 = Color(0xFFE2E8F0);
+const _kS100 = Color(0xFFF1F5F9);
 const _kS50 = Color(0xFFF8FAFC);
 const _kBrand = Color(0xFFFB6633);
 const _kBrandTint = Color(0xFFFFF3EE);
+const _kBrandBorder = Color(0xFFFFD9C2);
+const _kBrandBarFill = Color(0xFFFFE4D6);
 const _kRed = Color(0xFFDC2626);
-const _kRedTint = Color(0xFFFEE2E2);
 const _kGreen = Color(0xFF16A34A);
 const _kFreeBg = Color(0xFFF0FDF4);
-const _kBlue = Color(0xFF2563EB);
-const _kBlueTint = Color(0xFFDBEAFE);
+const _kFreeBorder = Color(0xFFBBF7D0);
+const _kPurple = Color(0xFF7C3AED);
+const _kPurpleTint = Color(0xFFF5F3FF);
+const _kPurpleBorder = Color(0xFFDDD6FE);
 
 // ─────────────────────────────────────────────
 // Session timestamp: tableId → first-seen saved DateTime
@@ -113,15 +120,17 @@ class _WaiterFloorPlanScreenState extends State<WaiterFloorPlanScreen> {
           final tables = state.tables ?? [];
 
           // Status counts — only MainCubit data, SavedOrders handled below
-          final freeCount =
-              tables.where((t) => t.status == TableStatus.free).length;
-          final busyCount =
-              tables.where((t) => t.status == TableStatus.busy).length;
-          final reservedCount =
-              tables.where((t) => t.status == TableStatus.away).length;
+          final freeCount = tables
+              .where((t) => t.status == TableStatus.free)
+              .length;
+          final busyCount = tables
+              .where((t) => t.status == TableStatus.busy)
+              .length;
+          final reservedCount = tables
+              .where((t) => t.status == TableStatus.away)
+              .length;
 
-          final isLoading =
-              state.status == Status.LOADING && tables.isEmpty;
+          final isLoading = state.status == Status.LOADING && tables.isEmpty;
 
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -171,14 +180,16 @@ class _WaiterFloorPlanScreenState extends State<WaiterFloorPlanScreen> {
                               .toSet();
                           final savedTotalsByTable = <String, int>{
                             for (final o in savedOrders)
-                              o.createOrderRequest.tableId:
-                                  o.createOrderRequest.foods.fold<int>(
-                                0,
-                                (sum, f) =>
-                                    sum +
-                                    (int.tryParse(f.goods.price) ?? 0) *
-                                        f.quantity,
-                              ),
+                              o.createOrderRequest.tableId: o
+                                  .createOrderRequest
+                                  .foods
+                                  .fold<int>(
+                                    0,
+                                    (sum, f) =>
+                                        sum +
+                                        (int.tryParse(f.goods.price) ?? 0) *
+                                            f.quantity,
+                                  ),
                           };
                           _syncOpenedAt(savedIds);
                           return _GridView(
@@ -281,7 +292,7 @@ class _HeaderStatChips extends StatelessWidget {
         _StatChip(
           label: S.current.strReserved,
           count: reservedCount,
-          dotColor: _kBlue,
+          dotColor: _kPurple,
         ),
       ],
     );
@@ -490,6 +501,7 @@ class _GridView extends StatelessWidget {
               ),
             _GridOfTables(
               tables: orderedGroups[g].value,
+              hallName: orderedGroups[g].key.name,
               savedIds: savedIds,
               totalsByTable: totalsByTable,
               openedAtByTable: openedAtByTable,
@@ -510,6 +522,7 @@ class _GridView extends StatelessWidget {
               ),
             _GridOfTables(
               tables: unknown,
+              hallName: S.current.strOther,
               savedIds: savedIds,
               totalsByTable: totalsByTable,
               openedAtByTable: openedAtByTable,
@@ -560,6 +573,7 @@ class _SectionHeader extends StatelessWidget {
 
 class _GridOfTables extends StatelessWidget {
   final List<CafeTableModel> tables;
+  final String hallName;
   final Set<String> savedIds;
   final Map<String, int> totalsByTable;
   final Map<String, DateTime> openedAtByTable;
@@ -567,6 +581,7 @@ class _GridOfTables extends StatelessWidget {
 
   const _GridOfTables({
     required this.tables,
+    required this.hallName,
     required this.savedIds,
     required this.totalsByTable,
     required this.openedAtByTable,
@@ -577,8 +592,23 @@ class _GridOfTables extends StatelessWidget {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        const cols = 6;
         const gap = 12.0;
+        final targetCols = PosBreakpoints.pickThree<int>(
+          context,
+          compact: 4,
+          comfortable: 5,
+          large: 6,
+        );
+        // Safety floor: never let a card get narrower than
+        // gridItemMinWidthLg, even on an unexpectedly narrow viewport.
+        final rawCardW =
+            (constraints.maxWidth - gap * (targetCols - 1)) / targetCols;
+        final cols = rawCardW < PosDimensions.gridItemMinWidthLg
+            ? ((constraints.maxWidth + gap) /
+                      (PosDimensions.gridItemMinWidthLg + gap))
+                  .floor()
+                  .clamp(1, targetCols)
+            : targetCols;
         final cardW = (constraints.maxWidth - gap * (cols - 1)) / cols;
         return Wrap(
           spacing: gap,
@@ -589,6 +619,7 @@ class _GridOfTables extends StatelessWidget {
                   width: cardW,
                   child: _TableCard(
                     table: t,
+                    hallName: hallName,
                     isSaved: savedIds.contains(t.id),
                     savedTotal: totalsByTable[t.id],
                     openedAt: openedAtByTable[t.id],
@@ -607,8 +638,44 @@ class _GridOfTables extends StatelessWidget {
 // Table card
 // ─────────────────────────────────────────────
 
+class _StatusPalette {
+  final Color bg;
+  final Color border;
+  final Color accent;
+  const _StatusPalette({
+    required this.bg,
+    required this.border,
+    required this.accent,
+  });
+}
+
+_StatusPalette _paletteFor(TableStatus status) {
+  switch (status) {
+    case TableStatus.free:
+    case TableStatus.none:
+      return const _StatusPalette(
+        bg: _kFreeBg,
+        border: _kFreeBorder,
+        accent: _kGreen,
+      );
+    case TableStatus.busy:
+      return const _StatusPalette(
+        bg: _kBrandTint,
+        border: _kBrandBorder,
+        accent: _kBrand,
+      );
+    case TableStatus.away:
+      return const _StatusPalette(
+        bg: _kPurpleTint,
+        border: _kPurpleBorder,
+        accent: _kPurple,
+      );
+  }
+}
+
 class _TableCard extends StatefulWidget {
   final CafeTableModel table;
+  final String hallName;
   final bool isSaved;
   final int? savedTotal;
   final DateTime? openedAt;
@@ -616,6 +683,7 @@ class _TableCard extends StatefulWidget {
 
   const _TableCard({
     required this.table,
+    required this.hallName,
     required this.isSaved,
     required this.savedTotal,
     required this.openedAt,
@@ -632,8 +700,7 @@ class _TableCardState extends State<_TableCard> {
   @override
   Widget build(BuildContext context) {
     final status = widget.table.status;
-    final bgColor = _bgFor(status);
-    final borderColor = _borderFor(status);
+    final palette = _paletteFor(status);
 
     return MouseRegion(
       cursor: SystemMouseCursors.click,
@@ -643,13 +710,13 @@ class _TableCardState extends State<_TableCard> {
         onTap: widget.onTap,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 130),
-          height: 156,
+          height: 198,
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: bgColor,
+            color: palette.bg,
             borderRadius: BorderRadius.circular(14),
             border: Border.all(
-              color: _hovered ? _kBrand.withOpacity(0.5) : borderColor,
+              color: _hovered ? _kBrand.withOpacity(0.5) : palette.border,
             ),
             boxShadow: _hovered
                 ? [
@@ -667,68 +734,49 @@ class _TableCardState extends State<_TableCard> {
     );
   }
 
-  Color _bgFor(TableStatus status) {
-    switch (status) {
-      case TableStatus.free:
-        return _kFreeBg;
-      case TableStatus.busy:
-        return Colors.white;
-      case TableStatus.away:
-        return Colors.white;
-      case TableStatus.none:
-        return Colors.white;
-    }
-  }
-
-  Color _borderFor(TableStatus status) {
-    switch (status) {
-      case TableStatus.free:
-        return const Color(0xFFBBF7D0);
-      case TableStatus.busy:
-        return _kS200;
-      case TableStatus.away:
-        return _kS200;
-      case TableStatus.none:
-        return _kS200;
-    }
-  }
-
   Widget _buildContent(TableStatus status) {
     switch (status) {
       case TableStatus.free:
-        return _FreeCardContent(table: widget.table);
+      case TableStatus.none:
+        return _FreeCardContent(table: widget.table, hallName: widget.hallName);
       case TableStatus.busy:
         return _BusyCardContent(
           table: widget.table,
+          hallName: widget.hallName,
           isSaved: widget.isSaved,
           savedTotal: widget.savedTotal,
           openedAt: widget.openedAt,
         );
       case TableStatus.away:
-        return _ReservedCardContent(table: widget.table);
-      case TableStatus.none:
-        return _FreeCardContent(table: widget.table);
+        return _ReservedCardContent(
+          table: widget.table,
+          hallName: widget.hallName,
+        );
     }
   }
 }
 
-// ── Card header (title + capacity badge) ──────────────────────────────
+// ── Card header (name + status label / zone + capacity pill) ──────────
 
 class _CardHeader extends StatelessWidget {
   final int tableNumber;
   final int capacity;
-  final Color titleColor;
-  final String? statusBadgeLabel;
-  final Color? statusBadgeFg;
-  final Color? statusBadgeBg;
+  final String hallName;
+  final String statusLabel;
+  final Color accentColor;
+  final bool showSavedBadge;
+  final Color? savedBadgeFg;
+  final Color? savedBadgeBg;
 
   const _CardHeader({
     required this.tableNumber,
     required this.capacity,
-    required this.titleColor,
-    this.statusBadgeLabel,
-    this.statusBadgeFg,
-    this.statusBadgeBg,
+    required this.hallName,
+    required this.statusLabel,
+    required this.accentColor,
+    this.showSavedBadge = false,
+    this.savedBadgeFg,
+    this.savedBadgeBg,
   });
 
   @override
@@ -737,59 +785,135 @@ class _CardHeader extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Expanded(
-          child: Text(
-            'Stol $tableNumber',
-            style: TextStyle(
-              fontSize: 19,
-              fontWeight: FontWeight.w700,
-              color: titleColor,
-              fontFamily: 'Inter',
-              letterSpacing: -0.2,
-              height: 1.1,
-            ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Stol $tableNumber',
+                style: TextStyle(
+                  fontSize: 19,
+                  fontWeight: FontWeight.w700,
+                  color: accentColor,
+                  fontFamily: 'Inter',
+                  letterSpacing: -0.2,
+                  height: 1.1,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              const SizedBox(height: 4),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    statusLabel,
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: accentColor,
+                      fontFamily: 'Inter',
+                      letterSpacing: 0.3,
+                    ),
+                  ),
+                  if (showSavedBadge) ...[
+                    const SizedBox(width: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: savedBadgeBg,
+                        borderRadius: BorderRadius.circular(5),
+                      ),
+                      child: Text(
+                        S.current.strSavedBadge,
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600,
+                          color: savedBadgeFg,
+                          fontFamily: 'Inter',
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ],
           ),
         ),
-        if (statusBadgeLabel != null) ...[
-          Container(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-            decoration: BoxDecoration(
-              color: statusBadgeBg,
-              borderRadius: BorderRadius.circular(6),
-            ),
-            child: Text(
-              statusBadgeLabel!,
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: statusBadgeFg,
+        const SizedBox(width: 8),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              hallName,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w500,
+                color: _kS400,
                 fontFamily: 'Inter',
               ),
             ),
-          ),
-          const SizedBox(width: 6),
-        ],
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(
-              Icons.people_outline_rounded,
-              size: 16,
-              color: _kS500,
-            ),
-            const SizedBox(width: 4),
-            Text(
-              '$capacity',
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-                color: _kS500,
-                fontFamily: 'Inter',
+            const SizedBox(height: 6),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: _kS100,
+                borderRadius: BorderRadius.circular(999),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(
+                    Icons.people_outline_rounded,
+                    size: 13,
+                    color: _kS500,
+                  ),
+                  const SizedBox(width: 3),
+                  Text(
+                    '$capacity',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: _kS500,
+                      fontFamily: 'Inter',
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
+        ),
+      ],
+    );
+  }
+}
+
+// ── Shared hourly-rate footer (divider + clock icon + price/hour) ─────
+
+class _RateFooter extends StatelessWidget {
+  final CafeTableModel table;
+  const _RateFooter({required this.table});
+
+  @override
+  Widget build(BuildContext context) {
+    final isTimeBased = table.tableType == 'time_based';
+    if (!isTimeBased) return const SizedBox.shrink();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(height: 1, color: _kS200),
+        const SizedBox(height: 8),
+        TimeBasedTableBadge(
+          key: ValueKey('${table.id}-footer'),
+          table: table,
+          mode: TimeBasedBadgeMode.footer,
         ),
       ],
     );
@@ -800,31 +924,23 @@ class _CardHeader extends StatelessWidget {
 
 class _FreeCardContent extends StatelessWidget {
   final CafeTableModel table;
-  const _FreeCardContent({required this.table});
+  final String hallName;
+  const _FreeCardContent({required this.table, required this.hallName});
 
   @override
   Widget build(BuildContext context) {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _CardHeader(
           tableNumber: table.number,
           capacity: table.capacity,
-          titleColor: _kS900,
+          hallName: hallName,
+          statusLabel: S.current.strFree.toUpperCase(),
+          accentColor: _kGreen,
         ),
         const Spacer(),
-        Center(
-          child: Text(
-            S.current.strFree,
-            style: const TextStyle(
-              fontSize: 17,
-              fontWeight: FontWeight.w600,
-              color: _kGreen,
-              fontFamily: 'Inter',
-            ),
-          ),
-        ),
-        const Spacer(),
+        _RateFooter(table: table),
       ],
     );
   }
@@ -834,11 +950,13 @@ class _FreeCardContent extends StatelessWidget {
 
 class _BusyCardContent extends StatelessWidget {
   final CafeTableModel table;
+  final String hallName;
   final bool isSaved;
   final int? savedTotal;
   final DateTime? openedAt;
   const _BusyCardContent({
     required this.table,
+    required this.hallName,
     required this.isSaved,
     required this.savedTotal,
     required this.openedAt,
@@ -846,43 +964,184 @@ class _BusyCardContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final hasPrice = (savedTotal ?? 0) > 0;
+    final isTimeBased = table.tableType == 'time_based';
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _CardHeader(
           tableNumber: table.number,
           capacity: table.capacity,
-          titleColor: _kS900,
-          statusBadgeLabel: isSaved ? S.current.strSavedBadge : S.current.strBusy,
-          statusBadgeFg: isSaved ? _kBrand : _kRed,
-          statusBadgeBg: isSaved ? _kBrandTint : _kRedTint,
+          hallName: hallName,
+          statusLabel: S.current.strBusy.toUpperCase(),
+          accentColor: _kBrand,
+          showSavedBadge: isSaved,
+          savedBadgeFg: _kBrand,
+          savedBadgeBg: _kBrandTint,
         ),
+        if (isTimeBased) ...[
+          const SizedBox(height: 10),
+          TimeBasedTableBadge(
+            key: ValueKey('${table.id}-bar'),
+            table: table,
+            mode: TimeBasedBadgeMode.bar,
+          ),
+        ] else if (openedAt != null) ...[
+          const SizedBox(height: 10),
+          _LocalBusyBar(openedAt: openedAt, savedTotal: savedTotal),
+        ],
         const Spacer(),
-        if (hasPrice)
-          Text(
-            '${_fmtSom(savedTotal!)} so\'m',
-            style: const TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.w700,
-              color: _kS900,
-              fontFamily: 'Inter',
-              letterSpacing: -0.3,
-              height: 1.2,
-            ),
-          )
-        else
-          Text(
-            S.current.strWaitingForOrderStatus,
-            style: const TextStyle(
-              fontSize: 15,
-              color: _kS500,
-              fontFamily: 'Inter',
+        _RateFooter(table: table),
+      ],
+    );
+  }
+}
+
+// ── Local elapsed/amount bar for non-time-based busy tables ───────────
+// Mirrors TimeBasedTableBadge's colored-bar look, but sources its data
+// from the client-side saved-order draft (SavedOrdersBloc) instead of
+// the backend order timer, since regular (non-hourly) orders have no
+// backend elapsed-time endpoint.
+
+class _LocalBusyBar extends StatefulWidget {
+  final DateTime? openedAt;
+  final int? savedTotal;
+  const _LocalBusyBar({required this.openedAt, required this.savedTotal});
+
+  @override
+  State<_LocalBusyBar> createState() => _LocalBusyBarState();
+}
+
+class _LocalBusyBarState extends State<_LocalBusyBar> {
+  Timer? _ticker;
+
+  @override
+  void initState() {
+    super.initState();
+    _ticker = Timer.periodic(const Duration(seconds: 30), (_) {
+      if (mounted) setState(() {});
+    });
+  }
+
+  @override
+  void dispose() {
+    _ticker?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final label = _ElapsedLabel._calcLabel(widget.openedAt);
+    if (label == null) return const SizedBox.shrink();
+    final showAmount = (widget.savedTotal ?? 0) > 0;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: _kBrandBarFill,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        children: [
+          const _PulsingDot(color: _kBrand, active: true),
+          const SizedBox(width: 6),
+          Flexible(
+            child: Text(
+              label,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w700,
+                color: _kBrand,
+                fontFamily: 'Inter',
+              ),
             ),
           ),
-        const Spacer(),
-        _ElapsedLabel(openedAt: openedAt),
-      ],
+          const Spacer(),
+          if (showAmount)
+            Text(
+              '${_fmtSom(widget.savedTotal!)} so\'m',
+              style: const TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w700,
+                color: _kBrand,
+                fontFamily: 'Inter',
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Small dot that pulses while [active] — makes a live-accruing bar
+/// visibly distinct from a static one at a glance.
+class _PulsingDot extends StatefulWidget {
+  final Color color;
+  final bool active;
+  const _PulsingDot({required this.color, required this.active});
+
+  @override
+  State<_PulsingDot> createState() => _PulsingDotState();
+}
+
+class _PulsingDotState extends State<_PulsingDot>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 900),
+  );
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.active) _controller.repeat(reverse: true);
+  }
+
+  @override
+  void didUpdateWidget(_PulsingDot old) {
+    super.didUpdateWidget(old);
+    if (widget.active && !old.active) {
+      _controller.repeat(reverse: true);
+    } else if (!widget.active && old.active) {
+      _controller.stop();
+      _controller.value = 0;
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!widget.active) {
+      return Container(
+        width: 6,
+        height: 6,
+        decoration: BoxDecoration(color: widget.color, shape: BoxShape.circle),
+      );
+    }
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, _) {
+        final t = _controller.value;
+        return Container(
+          width: 7,
+          height: 7,
+          decoration: BoxDecoration(
+            color: widget.color.withOpacity(1 - (t * 0.75)),
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: widget.color.withOpacity(0.45 * (1 - t)),
+                blurRadius: 5,
+                spreadRadius: 1.5 * (1 - t),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }
@@ -897,56 +1156,9 @@ String _fmtSom(int v) {
   return buf.toString();
 }
 
-// ── Elapsed label (self-refreshing every 30s) ────────────────────────────
+// ── Elapsed label calc (shared by _LocalBusyBar) ──────────────────────
 
-class _ElapsedLabel extends StatefulWidget {
-  final DateTime? openedAt;
-  const _ElapsedLabel({required this.openedAt});
-
-  @override
-  State<_ElapsedLabel> createState() => _ElapsedLabelState();
-}
-
-class _ElapsedLabelState extends State<_ElapsedLabel> {
-  Timer? _ticker;
-
-  @override
-  void initState() {
-    super.initState();
-    if (widget.openedAt != null) {
-      _ticker = Timer.periodic(const Duration(seconds: 30), (_) {
-        if (mounted) setState(() {});
-      });
-    }
-  }
-
-  @override
-  void dispose() {
-    _ticker?.cancel();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final label = _calcLabel(widget.openedAt);
-    if (label == null) return const SizedBox.shrink();
-    return Row(
-      children: [
-        const Icon(Icons.access_time_rounded, size: 15, color: _kS500),
-        const SizedBox(width: 4),
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
-            color: _kS500,
-            fontFamily: 'Inter',
-          ),
-        ),
-      ],
-    );
-  }
-
+class _ElapsedLabel {
   static String? _calcLabel(DateTime? openedAt) {
     if (openedAt == null) return null;
     final diff = DateTime.now().difference(openedAt);
@@ -963,7 +1175,8 @@ class _ElapsedLabelState extends State<_ElapsedLabel> {
 
 class _ReservedCardContent extends StatelessWidget {
   final CafeTableModel table;
-  const _ReservedCardContent({required this.table});
+  final String hallName;
+  const _ReservedCardContent({required this.table, required this.hallName});
 
   @override
   Widget build(BuildContext context) {
@@ -973,31 +1186,12 @@ class _ReservedCardContent extends StatelessWidget {
         _CardHeader(
           tableNumber: table.number,
           capacity: table.capacity,
-          titleColor: _kS900,
-          statusBadgeLabel: S.current.strReserved,
-          statusBadgeFg: _kBlue,
-          statusBadgeBg: _kBlueTint,
+          hallName: hallName,
+          statusLabel: S.current.strReservedBadge.toUpperCase(),
+          accentColor: _kPurple,
         ),
         const Spacer(),
-        Center(
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.access_time_rounded, size: 17, color: _kBlue),
-              const SizedBox(width: 6),
-              Text(
-                S.current.strBusy,
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                  color: _kBlue,
-                  fontFamily: 'Inter',
-                ),
-              ),
-            ],
-          ),
-        ),
-        const Spacer(),
+        _RateFooter(table: table),
       ],
     );
   }
@@ -1101,10 +1295,7 @@ class _RefreshConfirmDialogState extends State<_RefreshConfirmDialog> {
                   gradient: LinearGradient(
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
-                    colors: [
-                      _kBrandTint,
-                      _kBrandTint.withOpacity(0.55),
-                    ],
+                    colors: [_kBrandTint, _kBrandTint.withOpacity(0.55)],
                   ),
                   borderRadius: const BorderRadius.vertical(
                     top: Radius.circular(24),
@@ -1201,9 +1392,7 @@ class _RefreshConfirmDialogState extends State<_RefreshConfirmDialog> {
                         label: S.current.strRefresh,
                         icon: Icons.refresh_rounded,
                         onTap: () => Navigator.pop(context, true),
-                        bg: _hoverConfirm
-                            ? const Color(0xFFE85522)
-                            : _kBrand,
+                        bg: _hoverConfirm ? const Color(0xFFE85522) : _kBrand,
                         fg: Colors.white,
                         hovered: _hoverConfirm,
                         onHover: (v) => setState(() => _hoverConfirm = v),

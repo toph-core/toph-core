@@ -1,4 +1,5 @@
 import 'package:mary_ai_pos/core/constants/constants.dart';
+import 'package:mary_ai_pos/features/view/main/data/models/table_timer/table_timer_response_model.dart';
 import 'package:mary_ai_pos/features/view/main/domain/entities/order_food_entity.dart';
 
 abstract class ArchiveDetailEntity {
@@ -15,6 +16,7 @@ abstract class ArchiveDetailEntity {
   final double guestCount;
   final double foodCost;
   final double foodTotal;
+  final double tableAmount;
   final double servicePercent;
   final double serviceAmount;
   final double discountPercent;
@@ -24,6 +26,7 @@ abstract class ArchiveDetailEntity {
   final double changeAmount;
   final String comment;
   final List<OrderFoodEntity> goods;
+  final List<PauseInterval> pausePeriods;
 
   ArchiveDetailEntity({
     required this.id,
@@ -39,6 +42,7 @@ abstract class ArchiveDetailEntity {
     required this.guestCount,
     required this.foodCost,
     required this.foodTotal,
+    required this.tableAmount,
     required this.servicePercent,
     required this.serviceAmount,
     required this.discountPercent,
@@ -48,5 +52,6 @@ abstract class ArchiveDetailEntity {
     required this.changeAmount,
     required this.comment,
     required this.goods,
+    required this.pausePeriods,
   });
 }

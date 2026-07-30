@@ -11,6 +11,9 @@ enum TokensStorageKeys {
   /// Key for app language preference
   appLanguage('app_language'),
 
+  /// Key for the virtual keyboard's typing-language preference
+  keyboardLanguage('keyboard_language'),
+
   /// Key for brand ID tokens (brand_id + pos_password)
   brandId('app_brand_id_token'),
 

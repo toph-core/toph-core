@@ -9,6 +9,7 @@ import 'package:mary_ai_pos/core/services/cache/cache_service.dart';
 import 'package:mary_ai_pos/core/services/connectivity/connectivity_cubit.dart';
 import 'package:mary_ai_pos/core/services/lan_hub/lan_hub_service.dart';
 import 'package:mary_ai_pos/core/services/offline_queue/offline_queue_service.dart';
+import 'package:mary_ai_pos/core/services/table_timer/table_timer_sync_service.dart';
 import 'package:mary_ai_pos/core/auth/storage/token_storage_impl.dart';
 import 'package:mary_ai_pos/core/service/minio/minio_service.dart';
 import 'package:mary_ai_pos/core/service/printer/printer_config_storage.dart';
@@ -118,7 +119,9 @@ Future<void> initDi() async {
   inject.registerLazySingleton(() => minioService);
 
   inject.registerLazySingleton(() => PrinterConfigStorage(inject()));
-  inject.registerLazySingleton(() => PrinterService(inject<PrinterConfigStorage>()));
+  inject.registerLazySingleton(
+    () => PrinterService(inject<PrinterConfigStorage>()),
+  );
 
   _dataSources();
   _repositories();
@@ -184,7 +187,15 @@ void _useCase() {
 void _cubit() {
   //? lazy singleton
   inject.registerLazySingleton(
-    () => AuthCubit(inject(), inject(), inject(), inject(), inject(), inject(), inject()),
+    () => AuthCubit(
+      inject(),
+      inject(),
+      inject(),
+      inject(),
+      inject(),
+      inject(),
+      inject(),
+    ),
   );
   inject.registerLazySingleton(() => SettingsCubit(inject(), inject()));
   inject.registerLazySingleton(() => UiPrefsCubit(inject()));
@@ -211,9 +222,16 @@ void _cubit() {
       syncPrinterSettingsUsecase: inject(),
     ),
   );
-  inject.registerFactory(() => LoginPinCubit(inject(), inject(), inject(), inject(), inject()));
-  inject.registerFactory(() => DetailBloc(inject(), inject(), inject(), inject(), inject(), inject()));
-  inject.registerFactory(() => DepartmentSelectionCubit(inject(), inject()));
+  inject.registerFactory(
+    () => LoginPinCubit(inject(), inject(), inject(), inject(), inject()),
+  );
+  inject.registerFactory(
+    () =>
+        DetailBloc(inject(), inject(), inject(), inject(), inject(), inject()),
+  );
+  inject.registerFactory(
+    () => DepartmentSelectionCubit(inject(), inject(), inject()),
+  );
   inject.registerFactory(
     () => CreateOrderBloc(
       createOrderUsecase: inject(),
@@ -223,6 +241,7 @@ void _cubit() {
       lanHub: inject(),
       client: inject(),
       printerService: inject(),
+      shiftBloc: inject(),
     ),
   );
   inject.registerFactory(() => CounterCubit());
@@ -244,6 +263,9 @@ void _cubit() {
   inject.registerFactory(() => NotificationBloc());
   inject.registerLazySingleton(() => SavedOrdersBloc());
   inject.registerFactory(() => HourPriceBloc(getHourPriceUsecase: inject()));
-  inject.registerFactory(() => WaiterCubit(inject(), inject(), inject()));
-  inject.registerFactory(() => TableTimerCubit(inject()));
+  inject.registerFactory(
+    () => WaiterCubit(inject(), inject(), inject(), inject()),
+  );
+  inject.registerLazySingleton(() => TableTimerSyncService());
+  inject.registerFactory(() => TableTimerCubit(inject(), inject()));
 }

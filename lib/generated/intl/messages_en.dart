@@ -486,6 +486,7 @@ class MessageLookup extends MessageLookupByLibrary {
         "strRequiredFields": MessageLookupByLibrary.simpleMessage(
             "Name, category and price are required"),
         "strReserved": MessageLookupByLibrary.simpleMessage("Reserved"),
+        "strReservedBadge": MessageLookupByLibrary.simpleMessage("Reserved"),
         "strRestaurantStaff":
             MessageLookupByLibrary.simpleMessage("Restaurant staff"),
         "strResumeAction": MessageLookupByLibrary.simpleMessage("Resume"),

@@ -9,6 +9,8 @@ import 'package:win32/win32.dart';
 
 import 'package:mary_ai_pos/core/components/flush_bars.dart';
 import 'package:mary_ai_pos/core/utils/helper/helper_widget.dart';
+import 'package:mary_ai_pos/di.dart';
+import 'package:mary_ai_pos/features/view/auth/presentation/cubit/bloc/user_bloc.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/open_order/open_order_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/table_timer/table_timer_response_model.dart';
 import 'package:mary_ai_pos/features/view/main/domain/entities/archive_detail_entity.dart';
@@ -24,6 +26,9 @@ class PrinterService {
   PrinterService(this._storage);
 
   final PrinterConfigStorage _storage;
+
+  /// Hozir tizimga kirgan foydalanuvchi (buyurtmani qabul qilgan/qo'shgan kishi) — cheklarda ko'rsatish uchun.
+  String get _waiterName => inject<UserBloc>().state.userMOdel?.fullName ?? '';
 
   /// TCP orqali yuborish; juda kichik bo‘laklar ESC/raster oqimini sindirishi mumkin.
   static const _socketChunkBytes = 8192;
@@ -186,6 +191,7 @@ class PrinterService {
     required List<OrderItem> items,
     String hallName = '',
     int guestCount = 0,
+    String? orderNumber,
   }) async {
     if (items.isEmpty) return;
     final byKey = <String, List<OrderItem>>{};
@@ -207,33 +213,12 @@ class PrinterService {
       byKey.putIfAbsent(k, () => []).add(item);
     }
     if (byKey.isEmpty) {
+      // Bu pozitsiyalarning kategoriyasi printer sozlamalarida yo'q — kutilgan
+      // holat (masalan ichimliklar uchun oshxona printeri sozlanmagan bo'lishi
+      // mumkin). Foydalanuvchiga xato ko'rsatilmaydi, faqat log yoziladi.
       debugPrint(
         '[PrinterService] Oshxona cheki: barcha pozitsiyalar uchun printer topilmadi — chop etilmadi.',
       );
-      final ctx = navigatorKey.currentContext;
-      if (ctx != null) {
-        if (!_storage.hasPrinterSettingsEntries) {
-          showStructuredErrorDismissible(
-            ctx,
-            title: 'Oshxona cheki chop etilmadi',
-            icon: Icons.cloud_off_outlined,
-            paragraphs: const [
-              'Printer sozlamalari ilovaga yuklanmagan.',
-              'Odatda sabab — kassa foydalanuvchisida GET /settings/printer-settings ruxsati yo‘q (403). '
-                  'Backendda ushbu endpoint uchun cashier (yoki POS) roliga ruxsat bering yoki admin akkaunti bilan kirganda sinxronlang.',
-            ],
-          );
-        } else {
-          showStructuredErrorDismissible(
-            ctx,
-            title: 'Oshxona cheki chop etilmadi',
-            icon: Icons.category_outlined,
-            paragraphs: const [
-              'Tanlangan mahsulotlarning hech biri printer sozlamalaridagi kategoriya yoki mahsulot ro‘yxatiga mos kelmayapti.',
-            ],
-          );
-        }
-      }
       return;
     }
     try {
@@ -246,6 +231,8 @@ class PrinterService {
           guestCount: guestCount,
           items: sub,
           paperSize: config.paperSize,
+          waiterName: _waiterName,
+          orderNumber: orderNumber,
         );
         final r = await _connectAndPrint(config, bytes);
         if (!r.ok) {

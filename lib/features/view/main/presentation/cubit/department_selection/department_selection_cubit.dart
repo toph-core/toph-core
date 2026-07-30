@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mary_ai_pos/core/constants/constants.dart';
@@ -5,18 +7,25 @@ import 'package:mary_ai_pos/core/error/failure.dart';
 import 'package:mary_ai_pos/core/usecase/usecase.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/category/category_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/department/department_model.dart';
+import 'package:mary_ai_pos/features/view/main/data/models/goods/goods_model.dart';
 import 'package:mary_ai_pos/features/view/main/domain/usecase/get_categories_usecase.dart';
 import 'package:mary_ai_pos/features/view/main/domain/usecase/get_departments_usecase.dart';
+import 'package:mary_ai_pos/features/view/main/domain/usecase/get_goods_with_name_usecase.dart';
 import 'package:mary_ai_pos/generated/l10n.dart';
 
 class DepartmentSelectionCubit extends Cubit<DepartmentSelectionState> {
   DepartmentSelectionCubit(
     this._getDepartmentsUsecase,
     this._getCategoriesUsecase,
+    this._getGoodsWithNameUseCase,
   ) : super(const DepartmentSelectionState());
 
   final GetDepartmentsUsecase _getDepartmentsUsecase;
   final GetCategoriesUsecase _getCategoriesUsecase;
+  final GetGoodsWithNameUseCase _getGoodsWithNameUseCase;
+
+  Timer? _searchDebounce;
+  static const _searchDebounceDuration = Duration(milliseconds: 500);
 
   static const String allDepartmentId = 'all';
 
@@ -66,6 +75,36 @@ class DepartmentSelectionCubit extends Cubit<DepartmentSelectionState> {
     if (departmentId == state.selectedDepartmentId) return;
     emit(state.copyWith(selectedDepartmentId: departmentId));
   }
+
+  /// Categories are filtered locally (name contains) via [filteredCategories].
+  /// Matching menu items are fetched from the API (debounced), same endpoint
+  /// used by the Menus page's search.
+  void search(String query) {
+    final q = query.trim();
+    if (q == state.searchQuery) return;
+    _searchDebounce?.cancel();
+    if (q.isEmpty) {
+      emit(state.copyWith(searchQuery: '', matchedGoods: const []));
+      return;
+    }
+    emit(state.copyWith(searchQuery: q));
+    _searchDebounce = Timer(_searchDebounceDuration, () => _searchGoods(q));
+  }
+
+  Future<void> _searchGoods(String query) async {
+    final result = await _getGoodsWithNameUseCase(query);
+    if (isClosed || state.searchQuery != query) return;
+    result.fold(
+      (failure) => emit(state.copyWith(matchedGoods: const [])),
+      (goods) => emit(state.copyWith(matchedGoods: goods)),
+    );
+  }
+
+  @override
+  Future<void> close() {
+    _searchDebounce?.cancel();
+    return super.close();
+  }
 }
 
 class DepartmentSelectionState extends Equatable {
@@ -74,6 +113,8 @@ class DepartmentSelectionState extends Equatable {
   final List<DepartmentModel> departments;
   final List<CategoryModel> categories;
   final String? selectedDepartmentId;
+  final String searchQuery;
+  final List<GoodsModel> matchedGoods;
 
   const DepartmentSelectionState({
     this.status = Status.UNKNOWN,
@@ -81,18 +122,24 @@ class DepartmentSelectionState extends Equatable {
     this.departments = const [],
     this.categories = const [],
     this.selectedDepartmentId,
+    this.searchQuery = '',
+    this.matchedGoods = const [],
   });
 
-  /// Categories visible for the currently selected department.
-  /// When "all" is selected, every category is shown.
+  /// Categories visible for the currently selected department, further
+  /// narrowed by [searchQuery] (name contains, case-insensitive) when set.
+  /// When "all" is selected, every category in the department is shown.
   List<CategoryModel> get filteredCategories {
     final selected = selectedDepartmentId;
-    if (selected == null || selected == DepartmentSelectionCubit.allDepartmentId) {
-      return categories;
+    Iterable<CategoryModel> base =
+        (selected == null || selected == DepartmentSelectionCubit.allDepartmentId)
+            ? categories
+            : categories.where((c) => c.departmentId == selected);
+    if (searchQuery.isNotEmpty) {
+      final q = searchQuery.toLowerCase();
+      base = base.where((c) => c.name.toLowerCase().contains(q));
     }
-    return categories
-        .where((c) => c.departmentId == selected)
-        .toList(growable: false);
+    return base.toList(growable: false);
   }
 
   DepartmentSelectionState copyWith({
@@ -101,6 +148,8 @@ class DepartmentSelectionState extends Equatable {
     List<DepartmentModel>? departments,
     List<CategoryModel>? categories,
     String? selectedDepartmentId,
+    String? searchQuery,
+    List<GoodsModel>? matchedGoods,
     bool clearFailure = false,
   }) {
     return DepartmentSelectionState(
@@ -110,6 +159,8 @@ class DepartmentSelectionState extends Equatable {
       categories: categories ?? this.categories,
       selectedDepartmentId:
           selectedDepartmentId ?? this.selectedDepartmentId,
+      searchQuery: searchQuery ?? this.searchQuery,
+      matchedGoods: matchedGoods ?? this.matchedGoods,
     );
   }
 
@@ -120,5 +171,7 @@ class DepartmentSelectionState extends Equatable {
         departments,
         categories,
         selectedDepartmentId,
+        searchQuery,
+        matchedGoods,
       ];
 }

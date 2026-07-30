@@ -18,6 +18,7 @@ import 'package:mary_ai_pos/features/view/main/data/models/create_order/create_o
 import 'package:mary_ai_pos/features/view/main/domain/usecase/create_order_usecase.dart';
 import 'package:mary_ai_pos/features/view/main/domain/usecase/create_take_away_order_usecase.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/detail/detail_bloc.dart';
+import 'package:mary_ai_pos/features/view/main/presentation/cubit/shift/shift_bloc.dart';
 
 part 'create_order_event.dart';
 part 'create_order_state.dart';
@@ -31,6 +32,7 @@ class CreateOrderBloc extends Bloc<CreateOrderEvent, CreateOrderState> {
   final LanHubService _lanHub;
   final DioClient _client;
   final PrinterService _printerService;
+  final ShiftBloc _shiftBloc;
 
   // Active order ID for busy tables — set via bindActiveOrder()
   String? _activeOrderId;
@@ -54,6 +56,7 @@ class CreateOrderBloc extends Bloc<CreateOrderEvent, CreateOrderState> {
     required LanHubService lanHub,
     required DioClient client,
     required PrinterService printerService,
+    required ShiftBloc shiftBloc,
   })  : _createOrderUsecase = createOrderUsecase,
         _createTakeAwayOrderUsecase = createTakeAwayOrderUsecase,
         _connectivity = connectivity,
@@ -61,6 +64,7 @@ class CreateOrderBloc extends Bloc<CreateOrderEvent, CreateOrderState> {
         _lanHub = lanHub,
         _client = client,
         _printerService = printerService,
+        _shiftBloc = shiftBloc,
         super(const CreateOrderState()) {
     on<_Started>(_started);
     on<_CreateOrder>(_createOrder);
@@ -68,6 +72,17 @@ class CreateOrderBloc extends Bloc<CreateOrderEvent, CreateOrderState> {
 
   void _createOrder(_CreateOrder event, emit) async {
     emit(state.copyWith(status: Status.LOADING));
+
+    // Check if shift is open before creating orders
+    final shiftState = _shiftBloc.state;
+    if (shiftState.shift == null) {
+      showErrorMessage(
+        navigatorKey.currentContext!,
+        "Smena ochilmagan. Iltimos, avval smenani oching.",
+      );
+      emit(state.copyWith(status: Status.ERROR));
+      return;
+    }
 
     if (state.tableId.isEmpty) {
       // ── Takeaway — always requires online ──────────────────────

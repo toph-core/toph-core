@@ -19,7 +19,7 @@ mixin _$ArchivesEvent {
   @optionalTypeArgs
   TResult when<TResult extends Object?>({
     required TResult Function() started,
-    required TResult Function() getArchived,
+    required TResult Function(bool silent) getArchived,
     required TResult Function(Status status) statusChanged,
     required TResult Function(ArchivesResponseEntity archives) archivesUpdated,
     required TResult Function(Failure? failure) failureChanged,
@@ -35,7 +35,7 @@ mixin _$ArchivesEvent {
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
     TResult? Function()? started,
-    TResult? Function()? getArchived,
+    TResult? Function(bool silent)? getArchived,
     TResult? Function(Status status)? statusChanged,
     TResult? Function(ArchivesResponseEntity archives)? archivesUpdated,
     TResult? Function(Failure? failure)? failureChanged,
@@ -51,7 +51,7 @@ mixin _$ArchivesEvent {
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
     TResult Function()? started,
-    TResult Function()? getArchived,
+    TResult Function(bool silent)? getArchived,
     TResult Function(Status status)? statusChanged,
     TResult Function(ArchivesResponseEntity archives)? archivesUpdated,
     TResult Function(Failure? failure)? failureChanged,
@@ -171,7 +171,7 @@ class _$StartedImpl implements _Started {
   @optionalTypeArgs
   TResult when<TResult extends Object?>({
     required TResult Function() started,
-    required TResult Function() getArchived,
+    required TResult Function(bool silent) getArchived,
     required TResult Function(Status status) statusChanged,
     required TResult Function(ArchivesResponseEntity archives) archivesUpdated,
     required TResult Function(Failure? failure) failureChanged,
@@ -190,7 +190,7 @@ class _$StartedImpl implements _Started {
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
     TResult? Function()? started,
-    TResult? Function()? getArchived,
+    TResult? Function(bool silent)? getArchived,
     TResult? Function(Status status)? statusChanged,
     TResult? Function(ArchivesResponseEntity archives)? archivesUpdated,
     TResult? Function(Failure? failure)? failureChanged,
@@ -209,7 +209,7 @@ class _$StartedImpl implements _Started {
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
     TResult Function()? started,
-    TResult Function()? getArchived,
+    TResult Function(bool silent)? getArchived,
     TResult Function(Status status)? statusChanged,
     TResult Function(ArchivesResponseEntity archives)? archivesUpdated,
     TResult Function(Failure? failure)? failureChanged,
@@ -297,6 +297,8 @@ abstract class _$$GetArchivedImplCopyWith<$Res> {
   factory _$$GetArchivedImplCopyWith(
           _$GetArchivedImpl value, $Res Function(_$GetArchivedImpl) then) =
       __$$GetArchivedImplCopyWithImpl<$Res>;
+  @useResult
+  $Res call({bool silent});
 }
 
 /// @nodoc
@@ -306,32 +308,57 @@ class __$$GetArchivedImplCopyWithImpl<$Res>
   __$$GetArchivedImplCopyWithImpl(
       _$GetArchivedImpl _value, $Res Function(_$GetArchivedImpl) _then)
       : super(_value, _then);
+
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? silent = null,
+  }) {
+    return _then(_$GetArchivedImpl(
+      silent: null == silent
+          ? _value.silent
+          : silent // ignore: cast_nullable_to_non_nullable
+              as bool,
+    ));
+  }
 }
 
 /// @nodoc
 
 class _$GetArchivedImpl implements _GetArchived {
-  const _$GetArchivedImpl();
+  const _$GetArchivedImpl({this.silent = false});
+
+  @override
+  @JsonKey()
+  final bool silent;
 
   @override
   String toString() {
-    return 'ArchivesEvent.getArchived()';
+    return 'ArchivesEvent.getArchived(silent: $silent)';
   }
 
   @override
   bool operator ==(Object other) {
     return identical(this, other) ||
-        (other.runtimeType == runtimeType && other is _$GetArchivedImpl);
+        (other.runtimeType == runtimeType &&
+            other is _$GetArchivedImpl &&
+            (identical(other.silent, silent) || other.silent == silent));
   }
 
   @override
-  int get hashCode => runtimeType.hashCode;
+  int get hashCode => Object.hash(runtimeType, silent);
+
+  @JsonKey(ignore: true)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$GetArchivedImplCopyWith<_$GetArchivedImpl> get copyWith =>
+      __$$GetArchivedImplCopyWithImpl<_$GetArchivedImpl>(this, _$identity);
 
   @override
   @optionalTypeArgs
   TResult when<TResult extends Object?>({
     required TResult Function() started,
-    required TResult Function() getArchived,
+    required TResult Function(bool silent) getArchived,
     required TResult Function(Status status) statusChanged,
     required TResult Function(ArchivesResponseEntity archives) archivesUpdated,
     required TResult Function(Failure? failure) failureChanged,
@@ -343,14 +370,14 @@ class _$GetArchivedImpl implements _GetArchived {
     required TResult Function(DateTime startDate, DateTime endDate)
         updateFilterDateRange,
   }) {
-    return getArchived();
+    return getArchived(silent);
   }
 
   @override
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
     TResult? Function()? started,
-    TResult? Function()? getArchived,
+    TResult? Function(bool silent)? getArchived,
     TResult? Function(Status status)? statusChanged,
     TResult? Function(ArchivesResponseEntity archives)? archivesUpdated,
     TResult? Function(Failure? failure)? failureChanged,
@@ -362,14 +389,14 @@ class _$GetArchivedImpl implements _GetArchived {
     TResult? Function(DateTime startDate, DateTime endDate)?
         updateFilterDateRange,
   }) {
-    return getArchived?.call();
+    return getArchived?.call(silent);
   }
 
   @override
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
     TResult Function()? started,
-    TResult Function()? getArchived,
+    TResult Function(bool silent)? getArchived,
     TResult Function(Status status)? statusChanged,
     TResult Function(ArchivesResponseEntity archives)? archivesUpdated,
     TResult Function(Failure? failure)? failureChanged,
@@ -383,7 +410,7 @@ class _$GetArchivedImpl implements _GetArchived {
     required TResult orElse(),
   }) {
     if (getArchived != null) {
-      return getArchived();
+      return getArchived(silent);
     }
     return orElse();
   }
@@ -449,7 +476,12 @@ class _$GetArchivedImpl implements _GetArchived {
 }
 
 abstract class _GetArchived implements ArchivesEvent {
-  const factory _GetArchived() = _$GetArchivedImpl;
+  const factory _GetArchived({final bool silent}) = _$GetArchivedImpl;
+
+  bool get silent;
+  @JsonKey(ignore: true)
+  _$$GetArchivedImplCopyWith<_$GetArchivedImpl> get copyWith =>
+      throw _privateConstructorUsedError;
 }
 
 /// @nodoc
@@ -517,7 +549,7 @@ class _$StatusChangedImpl implements _StatusChanged {
   @optionalTypeArgs
   TResult when<TResult extends Object?>({
     required TResult Function() started,
-    required TResult Function() getArchived,
+    required TResult Function(bool silent) getArchived,
     required TResult Function(Status status) statusChanged,
     required TResult Function(ArchivesResponseEntity archives) archivesUpdated,
     required TResult Function(Failure? failure) failureChanged,
@@ -536,7 +568,7 @@ class _$StatusChangedImpl implements _StatusChanged {
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
     TResult? Function()? started,
-    TResult? Function()? getArchived,
+    TResult? Function(bool silent)? getArchived,
     TResult? Function(Status status)? statusChanged,
     TResult? Function(ArchivesResponseEntity archives)? archivesUpdated,
     TResult? Function(Failure? failure)? failureChanged,
@@ -555,7 +587,7 @@ class _$StatusChangedImpl implements _StatusChanged {
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
     TResult Function()? started,
-    TResult Function()? getArchived,
+    TResult Function(bool silent)? getArchived,
     TResult Function(Status status)? statusChanged,
     TResult Function(ArchivesResponseEntity archives)? archivesUpdated,
     TResult Function(Failure? failure)? failureChanged,
@@ -710,7 +742,7 @@ class _$ArchivesUpdatedImpl implements _ArchivesUpdated {
   @optionalTypeArgs
   TResult when<TResult extends Object?>({
     required TResult Function() started,
-    required TResult Function() getArchived,
+    required TResult Function(bool silent) getArchived,
     required TResult Function(Status status) statusChanged,
     required TResult Function(ArchivesResponseEntity archives) archivesUpdated,
     required TResult Function(Failure? failure) failureChanged,
@@ -729,7 +761,7 @@ class _$ArchivesUpdatedImpl implements _ArchivesUpdated {
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
     TResult? Function()? started,
-    TResult? Function()? getArchived,
+    TResult? Function(bool silent)? getArchived,
     TResult? Function(Status status)? statusChanged,
     TResult? Function(ArchivesResponseEntity archives)? archivesUpdated,
     TResult? Function(Failure? failure)? failureChanged,
@@ -748,7 +780,7 @@ class _$ArchivesUpdatedImpl implements _ArchivesUpdated {
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
     TResult Function()? started,
-    TResult Function()? getArchived,
+    TResult Function(bool silent)? getArchived,
     TResult Function(Status status)? statusChanged,
     TResult Function(ArchivesResponseEntity archives)? archivesUpdated,
     TResult Function(Failure? failure)? failureChanged,
@@ -903,7 +935,7 @@ class _$FailureChangedImpl implements _FailureChanged {
   @optionalTypeArgs
   TResult when<TResult extends Object?>({
     required TResult Function() started,
-    required TResult Function() getArchived,
+    required TResult Function(bool silent) getArchived,
     required TResult Function(Status status) statusChanged,
     required TResult Function(ArchivesResponseEntity archives) archivesUpdated,
     required TResult Function(Failure? failure) failureChanged,
@@ -922,7 +954,7 @@ class _$FailureChangedImpl implements _FailureChanged {
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
     TResult? Function()? started,
-    TResult? Function()? getArchived,
+    TResult? Function(bool silent)? getArchived,
     TResult? Function(Status status)? statusChanged,
     TResult? Function(ArchivesResponseEntity archives)? archivesUpdated,
     TResult? Function(Failure? failure)? failureChanged,
@@ -941,7 +973,7 @@ class _$FailureChangedImpl implements _FailureChanged {
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
     TResult Function()? started,
-    TResult Function()? getArchived,
+    TResult Function(bool silent)? getArchived,
     TResult Function(Status status)? statusChanged,
     TResult Function(ArchivesResponseEntity archives)? archivesUpdated,
     TResult Function(Failure? failure)? failureChanged,
@@ -1094,7 +1126,7 @@ class _$SearchChangedImpl implements _SearchChanged {
   @optionalTypeArgs
   TResult when<TResult extends Object?>({
     required TResult Function() started,
-    required TResult Function() getArchived,
+    required TResult Function(bool silent) getArchived,
     required TResult Function(Status status) statusChanged,
     required TResult Function(ArchivesResponseEntity archives) archivesUpdated,
     required TResult Function(Failure? failure) failureChanged,
@@ -1113,7 +1145,7 @@ class _$SearchChangedImpl implements _SearchChanged {
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
     TResult? Function()? started,
-    TResult? Function()? getArchived,
+    TResult? Function(bool silent)? getArchived,
     TResult? Function(Status status)? statusChanged,
     TResult? Function(ArchivesResponseEntity archives)? archivesUpdated,
     TResult? Function(Failure? failure)? failureChanged,
@@ -1132,7 +1164,7 @@ class _$SearchChangedImpl implements _SearchChanged {
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
     TResult Function()? started,
-    TResult Function()? getArchived,
+    TResult Function(bool silent)? getArchived,
     TResult Function(Status status)? statusChanged,
     TResult Function(ArchivesResponseEntity archives)? archivesUpdated,
     TResult Function(Failure? failure)? failureChanged,
@@ -1286,7 +1318,7 @@ class _$SearchByArchiveNumImpl implements _SearchByArchiveNum {
   @optionalTypeArgs
   TResult when<TResult extends Object?>({
     required TResult Function() started,
-    required TResult Function() getArchived,
+    required TResult Function(bool silent) getArchived,
     required TResult Function(Status status) statusChanged,
     required TResult Function(ArchivesResponseEntity archives) archivesUpdated,
     required TResult Function(Failure? failure) failureChanged,
@@ -1305,7 +1337,7 @@ class _$SearchByArchiveNumImpl implements _SearchByArchiveNum {
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
     TResult? Function()? started,
-    TResult? Function()? getArchived,
+    TResult? Function(bool silent)? getArchived,
     TResult? Function(Status status)? statusChanged,
     TResult? Function(ArchivesResponseEntity archives)? archivesUpdated,
     TResult? Function(Failure? failure)? failureChanged,
@@ -1324,7 +1356,7 @@ class _$SearchByArchiveNumImpl implements _SearchByArchiveNum {
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
     TResult Function()? started,
-    TResult Function()? getArchived,
+    TResult Function(bool silent)? getArchived,
     TResult Function(Status status)? statusChanged,
     TResult Function(ArchivesResponseEntity archives)? archivesUpdated,
     TResult Function(Failure? failure)? failureChanged,
@@ -1478,7 +1510,7 @@ class _$SelectArchiveImpl implements _SelectArchive {
   @optionalTypeArgs
   TResult when<TResult extends Object?>({
     required TResult Function() started,
-    required TResult Function() getArchived,
+    required TResult Function(bool silent) getArchived,
     required TResult Function(Status status) statusChanged,
     required TResult Function(ArchivesResponseEntity archives) archivesUpdated,
     required TResult Function(Failure? failure) failureChanged,
@@ -1497,7 +1529,7 @@ class _$SelectArchiveImpl implements _SelectArchive {
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
     TResult? Function()? started,
-    TResult? Function()? getArchived,
+    TResult? Function(bool silent)? getArchived,
     TResult? Function(Status status)? statusChanged,
     TResult? Function(ArchivesResponseEntity archives)? archivesUpdated,
     TResult? Function(Failure? failure)? failureChanged,
@@ -1516,7 +1548,7 @@ class _$SelectArchiveImpl implements _SelectArchive {
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
     TResult Function()? started,
-    TResult Function()? getArchived,
+    TResult Function(bool silent)? getArchived,
     TResult Function(Status status)? statusChanged,
     TResult Function(ArchivesResponseEntity archives)? archivesUpdated,
     TResult Function(Failure? failure)? failureChanged,
@@ -1644,7 +1676,7 @@ class _$GetArchiveDetailImpl implements _GetArchiveDetail {
   @optionalTypeArgs
   TResult when<TResult extends Object?>({
     required TResult Function() started,
-    required TResult Function() getArchived,
+    required TResult Function(bool silent) getArchived,
     required TResult Function(Status status) statusChanged,
     required TResult Function(ArchivesResponseEntity archives) archivesUpdated,
     required TResult Function(Failure? failure) failureChanged,
@@ -1663,7 +1695,7 @@ class _$GetArchiveDetailImpl implements _GetArchiveDetail {
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
     TResult? Function()? started,
-    TResult? Function()? getArchived,
+    TResult? Function(bool silent)? getArchived,
     TResult? Function(Status status)? statusChanged,
     TResult? Function(ArchivesResponseEntity archives)? archivesUpdated,
     TResult? Function(Failure? failure)? failureChanged,
@@ -1682,7 +1714,7 @@ class _$GetArchiveDetailImpl implements _GetArchiveDetail {
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
     TResult Function()? started,
-    TResult Function()? getArchived,
+    TResult Function(bool silent)? getArchived,
     TResult Function(Status status)? statusChanged,
     TResult Function(ArchivesResponseEntity archives)? archivesUpdated,
     TResult Function(Failure? failure)? failureChanged,
@@ -1831,7 +1863,7 @@ class _$UpdateFilterTypeImpl implements _UpdateFilterType {
   @optionalTypeArgs
   TResult when<TResult extends Object?>({
     required TResult Function() started,
-    required TResult Function() getArchived,
+    required TResult Function(bool silent) getArchived,
     required TResult Function(Status status) statusChanged,
     required TResult Function(ArchivesResponseEntity archives) archivesUpdated,
     required TResult Function(Failure? failure) failureChanged,
@@ -1850,7 +1882,7 @@ class _$UpdateFilterTypeImpl implements _UpdateFilterType {
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
     TResult? Function()? started,
-    TResult? Function()? getArchived,
+    TResult? Function(bool silent)? getArchived,
     TResult? Function(Status status)? statusChanged,
     TResult? Function(ArchivesResponseEntity archives)? archivesUpdated,
     TResult? Function(Failure? failure)? failureChanged,
@@ -1869,7 +1901,7 @@ class _$UpdateFilterTypeImpl implements _UpdateFilterType {
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
     TResult Function()? started,
-    TResult Function()? getArchived,
+    TResult Function(bool silent)? getArchived,
     TResult Function(Status status)? statusChanged,
     TResult Function(ArchivesResponseEntity archives)? archivesUpdated,
     TResult Function(Failure? failure)? failureChanged,
@@ -2035,7 +2067,7 @@ class _$UpdateFilterDateRangeImpl implements _UpdateFilterDateRange {
   @optionalTypeArgs
   TResult when<TResult extends Object?>({
     required TResult Function() started,
-    required TResult Function() getArchived,
+    required TResult Function(bool silent) getArchived,
     required TResult Function(Status status) statusChanged,
     required TResult Function(ArchivesResponseEntity archives) archivesUpdated,
     required TResult Function(Failure? failure) failureChanged,
@@ -2054,7 +2086,7 @@ class _$UpdateFilterDateRangeImpl implements _UpdateFilterDateRange {
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
     TResult? Function()? started,
-    TResult? Function()? getArchived,
+    TResult? Function(bool silent)? getArchived,
     TResult? Function(Status status)? statusChanged,
     TResult? Function(ArchivesResponseEntity archives)? archivesUpdated,
     TResult? Function(Failure? failure)? failureChanged,
@@ -2073,7 +2105,7 @@ class _$UpdateFilterDateRangeImpl implements _UpdateFilterDateRange {
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
     TResult Function()? started,
-    TResult Function()? getArchived,
+    TResult Function(bool silent)? getArchived,
     TResult Function(Status status)? statusChanged,
     TResult Function(ArchivesResponseEntity archives)? archivesUpdated,
     TResult Function(Failure? failure)? failureChanged,

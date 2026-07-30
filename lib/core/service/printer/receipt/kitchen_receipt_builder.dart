@@ -25,12 +25,16 @@ class KitchenReceiptBuilder {
 
   /// Kassir oqimlari uchun — to'liq [OpenOrderModel] shart emas.
   /// [tableLine] — birinchi qator matni ('Стол: 5' yoki 'С собой').
+  /// [waiterName] — buyurtmani qabul qilgan/qo'shgan foydalanuvchi.
+  /// [orderNumber] — buyurtma raqami (mavjud bo'lsa).
   static Future<List<int>> buildWithHeader({
     required String tableLine,
     required List<OrderItem> items,
     String hallName = '',
     int guestCount = 0,
     PaperSize paperSize = PaperSize.mm80,
+    String waiterName = '',
+    String? orderNumber,
   }) async {
     final profile = await CapabilityProfile.load();
     final gen = receiptGenerator(paperSize, profile);
@@ -65,6 +69,14 @@ class KitchenReceiptBuilder {
 
     if (hallName.isNotEmpty) {
       bytes += gen.text('Зал: $hallName');
+    }
+
+    if (orderNumber != null && orderNumber.isNotEmpty) {
+      bytes += gen.text('Заказ №: $orderNumber');
+    }
+
+    if (waiterName.isNotEmpty) {
+      bytes += gen.text('Официант: $waiterName');
     }
 
     bytes += gen.hr();

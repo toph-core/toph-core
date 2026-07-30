@@ -5,8 +5,11 @@ import 'package:mary_ai_pos/core/constants/constants.dart';
 import 'package:mary_ai_pos/core/design_system/pos_design_system.dart';
 import 'package:mary_ai_pos/core/extension/for_context.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/category/category_model.dart';
+import 'package:mary_ai_pos/features/view/main/data/models/goods/goods_model.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/department_selection/department_selection_cubit.dart';
+import 'package:mary_ai_pos/features/view/main/presentation/cubit/detail/detail_bloc.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/department_selection/widgets/department_tab_filter.dart';
+import 'package:mary_ai_pos/features/view/main/presentation/widgets/product_grid_card.dart';
 import 'package:mary_ai_pos/generated/l10n.dart';
 
 /// Grid of categories for the selected department, plus an "All Categories" card.
@@ -43,13 +46,26 @@ class CategorySelectionGrid extends StatelessWidget {
               }
 
               final categories = state.filteredCategories;
-              // First card is always "All Categories"
-              final itemCount = categories.length + 1;
+              final isSearching = state.searchQuery.isNotEmpty;
+              final matchedGoods = state.matchedGoods;
 
-              if (state.status == Status.ERROR && categories.isEmpty) {
+              if (state.status == Status.ERROR && categories.isEmpty && !isSearching) {
                 return Center(
                   child: Text(
                     S.current.strFoodsCategoriesNotFound.trim(),
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: colors.textSecondary,
+                      fontFamily: 'Inter',
+                    ),
+                  ),
+                );
+              }
+
+              if (isSearching && categories.isEmpty && matchedGoods.isEmpty) {
+                return Center(
+                  child: Text(
+                    'Hech narsa topilmadi',
                     style: TextStyle(
                       fontSize: 14,
                       color: colors.textSecondary,
@@ -74,38 +90,88 @@ class CategorySelectionGrid extends StatelessWidget {
                       (cardWidth / 0.92).clamp(1.0, maxCardHeight);
                   final aspectRatio = cardWidth / cardHeight;
 
-                  return GridView.builder(
-                    padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
-                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: crossCount,
-                      crossAxisSpacing: spacing,
-                      mainAxisSpacing: spacing,
-                      childAspectRatio: aspectRatio,
-                    ),
-                    itemCount: itemCount,
-                    itemBuilder: (context, index) {
-                      if (index == 0) {
+                  final gridDelegate = SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: crossCount,
+                    crossAxisSpacing: spacing,
+                    mainAxisSpacing: spacing,
+                    childAspectRatio: aspectRatio,
+                  );
+
+                  if (!isSearching) {
+                    // First card is always "All Categories"
+                    final itemCount = categories.length + 1;
+                    return GridView.builder(
+                      padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
+                      gridDelegate: gridDelegate,
+                      itemCount: itemCount,
+                      itemBuilder: (context, index) {
+                        if (index == 0) {
+                          return _CategoryCard(
+                            name: S.current.strAllCategories,
+                            pictureUrl: null,
+                            colorCode: null,
+                            isAllCard: true,
+                            onTap: () => onCategorySelected(
+                              CategoryModel(
+                                id: allCategoriesId,
+                                name: S.current.strAllCategories,
+                              ),
+                            ),
+                          );
+                        }
+                        final category = categories[index - 1];
                         return _CategoryCard(
-                          name: S.current.strAllCategories,
-                          pictureUrl: null,
-                          colorCode: null,
-                          isAllCard: true,
-                          onTap: () => onCategorySelected(
-                            CategoryModel(
-                              id: allCategoriesId,
-                              name: S.current.strAllCategories,
+                          name: category.name,
+                          pictureUrl: category.pictureUrl,
+                          colorCode: category.colorCode,
+                          onTap: () => onCategorySelected(category),
+                        );
+                      },
+                    );
+                  }
+
+                  return CustomScrollView(
+                    slivers: [
+                      if (categories.isNotEmpty) ...[
+                        const SliverToBoxAdapter(
+                          child: _SectionHeader(title: 'Kategoriyalar'),
+                        ),
+                        SliverPadding(
+                          padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+                          sliver: SliverGrid(
+                            gridDelegate: gridDelegate,
+                            delegate: SliverChildBuilderDelegate(
+                              (context, index) {
+                                final category = categories[index];
+                                return _CategoryCard(
+                                  name: category.name,
+                                  pictureUrl: category.pictureUrl,
+                                  colorCode: category.colorCode,
+                                  onTap: () => onCategorySelected(category),
+                                );
+                              },
+                              childCount: categories.length,
                             ),
                           ),
-                        );
-                      }
-                      final category = categories[index - 1];
-                      return _CategoryCard(
-                        name: category.name,
-                        pictureUrl: category.pictureUrl,
-                        colorCode: category.colorCode,
-                        onTap: () => onCategorySelected(category),
-                      );
-                    },
+                        ),
+                      ],
+                      if (matchedGoods.isNotEmpty) ...[
+                        SliverToBoxAdapter(
+                          child: _SectionHeader(title: S.current.strFoodsColumn),
+                        ),
+                        SliverPadding(
+                          padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+                          sliver: SliverGrid(
+                            gridDelegate: gridDelegate,
+                            delegate: SliverChildBuilderDelegate(
+                              (context, index) =>
+                                  _MatchedGoodCard(good: matchedGoods[index]),
+                              childCount: matchedGoods.length,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
                   );
                 },
               );
@@ -113,6 +179,54 @@ class CategorySelectionGrid extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _SectionHeader extends StatelessWidget {
+  final String title;
+  const _SectionHeader({required this.title});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+      child: Text(
+        title,
+        style: TextStyle(
+          fontSize: 15,
+          fontWeight: FontWeight.w700,
+          color: context.colors.textDefault,
+          fontFamily: PosTypography.family,
+        ),
+      ),
+    );
+  }
+}
+
+class _MatchedGoodCard extends StatelessWidget {
+  final GoodsModel good;
+  const _MatchedGoodCard({required this.good});
+
+  @override
+  Widget build(BuildContext context) {
+    final cartQty = context.select<DetailBloc, int>((b) {
+      final s = b.state;
+      final selected = s.selectedGoods
+          .where((g) => g.goods.id == good.id)
+          .fold<int>(0, (sum, g) => sum + g.quantity);
+      final existing = s.existingGoods
+          .where((g) => g.goods.id == good.id && g.commet != 'cancelled')
+          .fold<int>(0, (sum, g) => sum + g.quantity);
+      return selected + existing;
+    });
+
+    return ProductGridCard(
+      good: good,
+      onTap: () => context.read<DetailBloc>().add(
+        DetailEvent.selectGood(good: good),
+      ),
+      topRightBadge: cartQty > 0 ? ProductCartQtyBadge(qty: cartQty) : null,
     );
   }
 }

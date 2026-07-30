@@ -28,6 +28,9 @@ _$ArchiveDetailModelImpl _$$ArchiveDetailModelImplFromJson(
           json['food_cost'] == null ? 0.0 : _parseDouble(json['food_cost']),
       foodTotal:
           json['food_total'] == null ? 0.0 : _parseDouble(json['food_total']),
+      tableAmount: json['table_amount'] == null
+          ? 0.0
+          : _parseDouble(json['table_amount']),
       servicePercent: json['service_percent'] == null
           ? 0.0
           : _parseDouble(json['service_percent']),
@@ -53,6 +56,9 @@ _$ArchiveDetailModelImpl _$$ArchiveDetailModelImplFromJson(
           ? const []
           : const OrderFoodEntityListConverter()
               .fromJson(json['items'] as List),
+      pausePeriods: json['pause_periods'] == null
+          ? const []
+          : _parsePausePeriods(json['pause_periods']),
     );
 
 Map<String, dynamic> _$$ArchiveDetailModelImplToJson(
@@ -71,6 +77,7 @@ Map<String, dynamic> _$$ArchiveDetailModelImplToJson(
       'guest_count': instance.guestCount,
       'food_cost': instance.foodCost,
       'food_total': instance.foodTotal,
+      'table_amount': instance.tableAmount,
       'service_percent': instance.servicePercent,
       'service_amount': instance.serviceAmount,
       'discount_percent': instance.discountPercent,
@@ -80,6 +87,7 @@ Map<String, dynamic> _$$ArchiveDetailModelImplToJson(
       'change_amount': instance.changeAmount,
       'comment': instance.comment,
       'items': const OrderFoodEntityListConverter().toJson(instance.goods),
+      'pause_periods': _pausePeriodsToJson(instance.pausePeriods),
     };
 
 const _$OrderStatusEnumMap = {

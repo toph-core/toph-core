@@ -18,7 +18,6 @@ import 'package:mary_ai_pos/core/utils/app_formatter.dart';
 import 'package:mary_ai_pos/core/utils/user_role_permissions.dart';
 import 'package:mary_ai_pos/core/utils/helper/helper_widget.dart';
 import 'package:mary_ai_pos/core/widgets/app_scaffold.dart';
-import 'package:mary_ai_pos/core/widgets/global_virtual_keyboard.dart';
 import 'package:mary_ai_pos/di.dart';
 import 'package:mary_ai_pos/features/view/auth/data/models/user/user_model.dart';
 import 'package:mary_ai_pos/features/view/auth/presentation/cubit/bloc/user_bloc.dart';
@@ -2554,8 +2553,7 @@ class _StyledInput extends StatelessWidget {
       keyboardType: keyboardType,
       maxLines: maxLines,
       inputFormatters: inputFormatters,
-      onTap: () =>
-          GlobalVirtualKeyboard.open(controller, numeric: numericKeyboard),
+      onTap: () => AppScaffold.open(controller),
       style: TextStyle(
         fontSize: 15,
         color: colors.textDefault,
