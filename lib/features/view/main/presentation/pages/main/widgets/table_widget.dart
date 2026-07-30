@@ -120,7 +120,7 @@ class _TableWidgetState extends State<TableWidget> {
                     ],
                   ),
                   const Spacer(),
-                  if (widget.table.tableType == 'time_based')
+                  if (widget.table.tableType == 'time_bad')
                     TimeBasedTableBadge(table: widget.table)
                   else
                     Row(

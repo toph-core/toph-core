@@ -24,6 +24,7 @@ class CafeTableModel with _$CafeTableModel {
     @Default(TableShape.rectangle)
     TableShape shape,
     @JsonKey(name: 'table_type') String? tableType,
+    @JsonKey(name: 'price_per_hour') String? pricePerHour,
   }) = _CafeTableModel;
 
   factory CafeTableModel.fromJson(Map<String, dynamic> json) =>

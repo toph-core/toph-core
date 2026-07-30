@@ -1,6 +1,7 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:mary_ai_pos/core/constants/constants.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/order_food/order_food_model.dart';
+import 'package:mary_ai_pos/features/view/main/data/models/table_timer/table_timer_response_model.dart';
 import 'package:mary_ai_pos/features/view/main/domain/entities/archive_detail_entity.dart';
 import 'package:mary_ai_pos/features/view/main/domain/entities/order_food_entity.dart';
 
@@ -27,6 +28,9 @@ class ArchiveDetailModel
     @JsonKey(name: 'guest_count', fromJson: _parseDouble) @Default(0.0) double guestCount,
     @JsonKey(name: 'food_cost', fromJson: _parseDouble) @Default(0.0) double foodCost,
     @JsonKey(name: 'food_total', fromJson: _parseDouble) @Default(0.0) double foodTotal,
+    @JsonKey(name: 'table_amount', fromJson: _parseDouble)
+    @Default(0.0)
+    double tableAmount,
     @JsonKey(name: 'service_percent', fromJson: _parseDouble)
     @Default(0.0)
     double servicePercent,
@@ -53,6 +57,13 @@ class ArchiveDetailModel
     @OrderFoodEntityListConverter()
     @Default([])
     List<OrderFoodEntity> goods,
+    @JsonKey(
+      name: 'pause_periods',
+      fromJson: _parsePausePeriods,
+      toJson: _pausePeriodsToJson,
+    )
+    @Default([])
+    List<PauseInterval> pausePeriods,
   }) = _ArchiveDetailModel;
 
   factory ArchiveDetailModel.fromJson(Map<String, dynamic> json) =>
@@ -102,4 +113,24 @@ DateTime? _parseLocal(Object? v) {
   }
   if (v is DateTime) return v.toLocal();
   return null;
+}
+
+List<PauseInterval> _parsePausePeriods(Object? v) {
+  if (v is! List) return const [];
+  return v
+      .whereType<Map>()
+      .map((item) => PauseInterval.fromJson(Map<String, dynamic>.from(item)))
+      .toList();
+}
+
+List<Map<String, dynamic>> _pausePeriodsToJson(List<PauseInterval> pauses) {
+  return pauses
+      .map(
+        (p) => {
+          'paused_at': p.startedAt.toIso8601String(),
+          'resumed_at': p.endedAt?.toIso8601String(),
+          'duration_sec': p.durationSec,
+        },
+      )
+      .toList();
 }

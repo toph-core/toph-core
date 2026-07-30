@@ -20,4 +20,10 @@ extension UserRolePermissions on UserRole? {
       this == UserRole.manager ||
       this == UserRole.admin ||
       this == UserRole.superadmin;
+
+  bool get canPrintReceipt =>
+      this == UserRole.cashier ||
+      this == UserRole.manager ||
+      this == UserRole.admin ||
+      this == UserRole.superadmin;
 }

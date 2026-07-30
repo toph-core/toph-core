@@ -237,7 +237,7 @@ class _EnhancedTableCardState extends State<EnhancedTableCard> {
                   const SizedBox(height: 8),
 
                   // Timer (time_based) yoki capacity
-                  if (widget.table.tableType == 'time_based')
+                  if (widget.table.tableType == 'time_basesd')
                     TimeBasedTableBadge(table: widget.table)
                   else
                     Row(

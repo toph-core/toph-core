@@ -14,6 +14,7 @@ import 'package:mary_ai_pos/features/view/main/data/models/open_order/open_order
 import 'package:mary_ai_pos/features/view/main/data/models/order_line_item/order_line_item_model.dart';
 import 'package:mary_ai_pos/features/view/main/domain/usecase/get_staff_waiters_usecase.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/detail/detail_bloc.dart';
+import 'package:mary_ai_pos/features/view/main/presentation/cubit/shift/shift_bloc.dart';
 
 part 'waiter_state.dart';
 
@@ -24,10 +25,11 @@ class WaiterCubit extends Cubit<WaiterState> {
   final DioClient _client;
   final GetStaffWaitersUsecase _getStaffWaitersUsecase;
   final PrinterService _printerService;
+  final ShiftBloc _shiftBloc;
 
   OrdersListMode _ordersListMode = OrdersListMode.myOrders;
 
-  WaiterCubit(this._client, this._getStaffWaitersUsecase, this._printerService)
+  WaiterCubit(this._client, this._getStaffWaitersUsecase, this._printerService, this._shiftBloc)
       : super(const WaiterState());
 
   void setOrdersListModeForRole(UserRole role) {
@@ -531,6 +533,16 @@ class WaiterCubit extends Cubit<WaiterState> {
     String? name,
     String? waiterId,
   }) async {
+    // Check if shift is open before creating orders
+    final shiftState = _shiftBloc.state;
+    if (shiftState.shift == null) {
+      emit(state.copyWith(
+        isCreatingOrder: false,
+        errorMessage: "Smena ochilmagan. Iltimos, avval smenani oching.",
+      ));
+      return;
+    }
+
     emit(state.copyWith(isCreatingOrder: true, errorMessage: null));
     try {
       final body = <String, dynamic>{

@@ -76,6 +76,7 @@
   "strNoTables": "No tables",
   "strBusy": "Busy",
   "strReserved": "Reserved",
+  "strReservedBadge": "Reserved",
   "strFree": "Free",
   "strSavedBadge": "Saved",
   "strGuestsSuffix": "guests",

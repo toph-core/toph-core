@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mary_ai_pos/core/service/receipt/receipt_info_storage.dart';
+import 'package:mary_ai_pos/core/widgets/app_scaffold.dart';
 import 'package:mary_ai_pos/di.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/settings/widgets/section_shell.dart';
 import 'package:mary_ai_pos/generated/l10n.dart';
@@ -148,6 +149,7 @@ class _Field extends StatelessWidget {
         TextField(
           controller: controller,
           keyboardType: keyboardType,
+          onTap: () => AppScaffold.open(controller),
           style: const TextStyle(
             fontSize: 14,
             color: Color(0xFF0F172A),

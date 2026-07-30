@@ -752,6 +752,9 @@ class DetailBloc extends Bloc<DetailEvent, DetailState> {
       tableLine: tableNumber > 0 ? 'Стол: $tableNumber' : 'Стол: —',
       hallName: detail?.hallName ?? '',
       guestCount: detail?.guestCount.toInt() ?? 0,
+      orderNumber: (detail != null && detail.bilNumber > 0)
+          ? '${detail.bilNumber}'
+          : null,
       items: [
         OrderItem(
           goods: GoodsModel(

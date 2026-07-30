@@ -45,6 +45,8 @@ mixin _$ArchiveDetailModel {
   double get foodCost => throw _privateConstructorUsedError;
   @JsonKey(name: 'food_total', fromJson: _parseDouble)
   double get foodTotal => throw _privateConstructorUsedError;
+  @JsonKey(name: 'table_amount', fromJson: _parseDouble)
+  double get tableAmount => throw _privateConstructorUsedError;
   @JsonKey(name: 'service_percent', fromJson: _parseDouble)
   double get servicePercent => throw _privateConstructorUsedError;
   @JsonKey(name: 'service_amount', fromJson: _parseDouble)
@@ -64,6 +66,11 @@ mixin _$ArchiveDetailModel {
   @JsonKey(name: "items")
   @OrderFoodEntityListConverter()
   List<OrderFoodEntity> get goods => throw _privateConstructorUsedError;
+  @JsonKey(
+      name: 'pause_periods',
+      fromJson: _parsePausePeriods,
+      toJson: _pausePeriodsToJson)
+  List<PauseInterval> get pausePeriods => throw _privateConstructorUsedError;
 
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
   @JsonKey(ignore: true)
@@ -91,6 +98,7 @@ abstract class $ArchiveDetailModelCopyWith<$Res> {
       @JsonKey(name: 'guest_count', fromJson: _parseDouble) double guestCount,
       @JsonKey(name: 'food_cost', fromJson: _parseDouble) double foodCost,
       @JsonKey(name: 'food_total', fromJson: _parseDouble) double foodTotal,
+      @JsonKey(name: 'table_amount', fromJson: _parseDouble) double tableAmount,
       @JsonKey(name: 'service_percent', fromJson: _parseDouble)
       double servicePercent,
       @JsonKey(name: 'service_amount', fromJson: _parseDouble)
@@ -107,7 +115,12 @@ abstract class $ArchiveDetailModelCopyWith<$Res> {
       @JsonKey(name: 'comment') String comment,
       @JsonKey(name: "items")
       @OrderFoodEntityListConverter()
-      List<OrderFoodEntity> goods});
+      List<OrderFoodEntity> goods,
+      @JsonKey(
+          name: 'pause_periods',
+          fromJson: _parsePausePeriods,
+          toJson: _pausePeriodsToJson)
+      List<PauseInterval> pausePeriods});
 }
 
 /// @nodoc
@@ -136,6 +149,7 @@ class _$ArchiveDetailModelCopyWithImpl<$Res, $Val extends ArchiveDetailModel>
     Object? guestCount = null,
     Object? foodCost = null,
     Object? foodTotal = null,
+    Object? tableAmount = null,
     Object? servicePercent = null,
     Object? serviceAmount = null,
     Object? discountPercent = null,
@@ -145,6 +159,7 @@ class _$ArchiveDetailModelCopyWithImpl<$Res, $Val extends ArchiveDetailModel>
     Object? changeAmount = null,
     Object? comment = null,
     Object? goods = null,
+    Object? pausePeriods = null,
   }) {
     return _then(_value.copyWith(
       id: null == id
@@ -199,6 +214,10 @@ class _$ArchiveDetailModelCopyWithImpl<$Res, $Val extends ArchiveDetailModel>
           ? _value.foodTotal
           : foodTotal // ignore: cast_nullable_to_non_nullable
               as double,
+      tableAmount: null == tableAmount
+          ? _value.tableAmount
+          : tableAmount // ignore: cast_nullable_to_non_nullable
+              as double,
       servicePercent: null == servicePercent
           ? _value.servicePercent
           : servicePercent // ignore: cast_nullable_to_non_nullable
@@ -235,6 +254,10 @@ class _$ArchiveDetailModelCopyWithImpl<$Res, $Val extends ArchiveDetailModel>
           ? _value.goods
           : goods // ignore: cast_nullable_to_non_nullable
               as List<OrderFoodEntity>,
+      pausePeriods: null == pausePeriods
+          ? _value.pausePeriods
+          : pausePeriods // ignore: cast_nullable_to_non_nullable
+              as List<PauseInterval>,
     ) as $Val);
   }
 }
@@ -261,6 +284,7 @@ abstract class _$$ArchiveDetailModelImplCopyWith<$Res>
       @JsonKey(name: 'guest_count', fromJson: _parseDouble) double guestCount,
       @JsonKey(name: 'food_cost', fromJson: _parseDouble) double foodCost,
       @JsonKey(name: 'food_total', fromJson: _parseDouble) double foodTotal,
+      @JsonKey(name: 'table_amount', fromJson: _parseDouble) double tableAmount,
       @JsonKey(name: 'service_percent', fromJson: _parseDouble)
       double servicePercent,
       @JsonKey(name: 'service_amount', fromJson: _parseDouble)
@@ -277,7 +301,12 @@ abstract class _$$ArchiveDetailModelImplCopyWith<$Res>
       @JsonKey(name: 'comment') String comment,
       @JsonKey(name: "items")
       @OrderFoodEntityListConverter()
-      List<OrderFoodEntity> goods});
+      List<OrderFoodEntity> goods,
+      @JsonKey(
+          name: 'pause_periods',
+          fromJson: _parsePausePeriods,
+          toJson: _pausePeriodsToJson)
+      List<PauseInterval> pausePeriods});
 }
 
 /// @nodoc
@@ -304,6 +333,7 @@ class __$$ArchiveDetailModelImplCopyWithImpl<$Res>
     Object? guestCount = null,
     Object? foodCost = null,
     Object? foodTotal = null,
+    Object? tableAmount = null,
     Object? servicePercent = null,
     Object? serviceAmount = null,
     Object? discountPercent = null,
@@ -313,6 +343,7 @@ class __$$ArchiveDetailModelImplCopyWithImpl<$Res>
     Object? changeAmount = null,
     Object? comment = null,
     Object? goods = null,
+    Object? pausePeriods = null,
   }) {
     return _then(_$ArchiveDetailModelImpl(
       id: null == id
@@ -367,6 +398,10 @@ class __$$ArchiveDetailModelImplCopyWithImpl<$Res>
           ? _value.foodTotal
           : foodTotal // ignore: cast_nullable_to_non_nullable
               as double,
+      tableAmount: null == tableAmount
+          ? _value.tableAmount
+          : tableAmount // ignore: cast_nullable_to_non_nullable
+              as double,
       servicePercent: null == servicePercent
           ? _value.servicePercent
           : servicePercent // ignore: cast_nullable_to_non_nullable
@@ -403,6 +438,10 @@ class __$$ArchiveDetailModelImplCopyWithImpl<$Res>
           ? _value._goods
           : goods // ignore: cast_nullable_to_non_nullable
               as List<OrderFoodEntity>,
+      pausePeriods: null == pausePeriods
+          ? _value._pausePeriods
+          : pausePeriods // ignore: cast_nullable_to_non_nullable
+              as List<PauseInterval>,
     ));
   }
 }
@@ -426,6 +465,8 @@ class _$ArchiveDetailModelImpl extends _ArchiveDetailModel {
       this.guestCount = 0.0,
       @JsonKey(name: 'food_cost', fromJson: _parseDouble) this.foodCost = 0.0,
       @JsonKey(name: 'food_total', fromJson: _parseDouble) this.foodTotal = 0.0,
+      @JsonKey(name: 'table_amount', fromJson: _parseDouble)
+      this.tableAmount = 0.0,
       @JsonKey(name: 'service_percent', fromJson: _parseDouble)
       this.servicePercent = 0.0,
       @JsonKey(name: 'service_amount', fromJson: _parseDouble)
@@ -443,8 +484,14 @@ class _$ArchiveDetailModelImpl extends _ArchiveDetailModel {
       @JsonKey(name: 'comment') this.comment = '',
       @JsonKey(name: "items")
       @OrderFoodEntityListConverter()
-      final List<OrderFoodEntity> goods = const []})
+      final List<OrderFoodEntity> goods = const [],
+      @JsonKey(
+          name: 'pause_periods',
+          fromJson: _parsePausePeriods,
+          toJson: _pausePeriodsToJson)
+      final List<PauseInterval> pausePeriods = const []})
       : _goods = goods,
+        _pausePeriods = pausePeriods,
         super._();
 
   factory _$ArchiveDetailModelImpl.fromJson(Map<String, dynamic> json) =>
@@ -490,6 +537,9 @@ class _$ArchiveDetailModelImpl extends _ArchiveDetailModel {
   @JsonKey(name: 'food_total', fromJson: _parseDouble)
   final double foodTotal;
   @override
+  @JsonKey(name: 'table_amount', fromJson: _parseDouble)
+  final double tableAmount;
+  @override
   @JsonKey(name: 'service_percent', fromJson: _parseDouble)
   final double servicePercent;
   @override
@@ -523,9 +573,21 @@ class _$ArchiveDetailModelImpl extends _ArchiveDetailModel {
     return EqualUnmodifiableListView(_goods);
   }
 
+  final List<PauseInterval> _pausePeriods;
+  @override
+  @JsonKey(
+      name: 'pause_periods',
+      fromJson: _parsePausePeriods,
+      toJson: _pausePeriodsToJson)
+  List<PauseInterval> get pausePeriods {
+    if (_pausePeriods is EqualUnmodifiableListView) return _pausePeriods;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(_pausePeriods);
+  }
+
   @override
   String toString() {
-    return 'ArchiveDetailModel(id: $id, bilNumber: $bilNumber, status: $status, opened: $opened, paymentType: $paymentType, tableId: $tableId, tableNumber: $tableNumber, hallName: $hallName, cashierId: $cashierId, cashierName: $cashierName, guestCount: $guestCount, foodCost: $foodCost, foodTotal: $foodTotal, servicePercent: $servicePercent, serviceAmount: $serviceAmount, discountPercent: $discountPercent, discountAmount: $discountAmount, grandTotal: $grandTotal, customerPaidAmount: $customerPaidAmount, changeAmount: $changeAmount, comment: $comment, goods: $goods)';
+    return 'ArchiveDetailModel(id: $id, bilNumber: $bilNumber, status: $status, opened: $opened, paymentType: $paymentType, tableId: $tableId, tableNumber: $tableNumber, hallName: $hallName, cashierId: $cashierId, cashierName: $cashierName, guestCount: $guestCount, foodCost: $foodCost, foodTotal: $foodTotal, tableAmount: $tableAmount, servicePercent: $servicePercent, serviceAmount: $serviceAmount, discountPercent: $discountPercent, discountAmount: $discountAmount, grandTotal: $grandTotal, customerPaidAmount: $customerPaidAmount, changeAmount: $changeAmount, comment: $comment, goods: $goods, pausePeriods: $pausePeriods)';
   }
 
   @override
@@ -555,6 +617,8 @@ class _$ArchiveDetailModelImpl extends _ArchiveDetailModel {
                 other.foodCost == foodCost) &&
             (identical(other.foodTotal, foodTotal) ||
                 other.foodTotal == foodTotal) &&
+            (identical(other.tableAmount, tableAmount) ||
+                other.tableAmount == tableAmount) &&
             (identical(other.servicePercent, servicePercent) ||
                 other.servicePercent == servicePercent) &&
             (identical(other.serviceAmount, serviceAmount) ||
@@ -570,7 +634,9 @@ class _$ArchiveDetailModelImpl extends _ArchiveDetailModel {
             (identical(other.changeAmount, changeAmount) ||
                 other.changeAmount == changeAmount) &&
             (identical(other.comment, comment) || other.comment == comment) &&
-            const DeepCollectionEquality().equals(other._goods, _goods));
+            const DeepCollectionEquality().equals(other._goods, _goods) &&
+            const DeepCollectionEquality()
+                .equals(other._pausePeriods, _pausePeriods));
   }
 
   @JsonKey(ignore: true)
@@ -590,6 +656,7 @@ class _$ArchiveDetailModelImpl extends _ArchiveDetailModel {
         guestCount,
         foodCost,
         foodTotal,
+        tableAmount,
         servicePercent,
         serviceAmount,
         discountPercent,
@@ -598,7 +665,8 @@ class _$ArchiveDetailModelImpl extends _ArchiveDetailModel {
         customerPaidAmount,
         changeAmount,
         comment,
-        const DeepCollectionEquality().hash(_goods)
+        const DeepCollectionEquality().hash(_goods),
+        const DeepCollectionEquality().hash(_pausePeriods)
       ]);
 
   @JsonKey(ignore: true)
@@ -634,6 +702,8 @@ abstract class _ArchiveDetailModel extends ArchiveDetailModel {
       @JsonKey(name: 'food_cost', fromJson: _parseDouble) final double foodCost,
       @JsonKey(name: 'food_total', fromJson: _parseDouble)
       final double foodTotal,
+      @JsonKey(name: 'table_amount', fromJson: _parseDouble)
+      final double tableAmount,
       @JsonKey(name: 'service_percent', fromJson: _parseDouble)
       final double servicePercent,
       @JsonKey(name: 'service_amount', fromJson: _parseDouble)
@@ -651,7 +721,12 @@ abstract class _ArchiveDetailModel extends ArchiveDetailModel {
       @JsonKey(name: 'comment') final String comment,
       @JsonKey(name: "items")
       @OrderFoodEntityListConverter()
-      final List<OrderFoodEntity> goods}) = _$ArchiveDetailModelImpl;
+      final List<OrderFoodEntity> goods,
+      @JsonKey(
+          name: 'pause_periods',
+          fromJson: _parsePausePeriods,
+          toJson: _pausePeriodsToJson)
+      final List<PauseInterval> pausePeriods}) = _$ArchiveDetailModelImpl;
   const _ArchiveDetailModel._() : super._();
 
   factory _ArchiveDetailModel.fromJson(Map<String, dynamic> json) =
@@ -696,6 +771,9 @@ abstract class _ArchiveDetailModel extends ArchiveDetailModel {
   @JsonKey(name: 'food_total', fromJson: _parseDouble)
   double get foodTotal;
   @override
+  @JsonKey(name: 'table_amount', fromJson: _parseDouble)
+  double get tableAmount;
+  @override
   @JsonKey(name: 'service_percent', fromJson: _parseDouble)
   double get servicePercent;
   @override
@@ -723,6 +801,12 @@ abstract class _ArchiveDetailModel extends ArchiveDetailModel {
   @JsonKey(name: "items")
   @OrderFoodEntityListConverter()
   List<OrderFoodEntity> get goods;
+  @override
+  @JsonKey(
+      name: 'pause_periods',
+      fromJson: _parsePausePeriods,
+      toJson: _pausePeriodsToJson)
+  List<PauseInterval> get pausePeriods;
   @override
   @JsonKey(ignore: true)
   _$$ArchiveDetailModelImplCopyWith<_$ArchiveDetailModelImpl> get copyWith =>

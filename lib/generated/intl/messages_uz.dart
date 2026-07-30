@@ -513,6 +513,8 @@ class MessageLookup extends MessageLookupByLibrary {
         "strRequiredFields": MessageLookupByLibrary.simpleMessage(
             "Nomi, kategoriya va narx majburiy"),
         "strReserved": MessageLookupByLibrary.simpleMessage("Bron"),
+        "strReservedBadge":
+            MessageLookupByLibrary.simpleMessage("Bron qilingan"),
         "strRestaurantStaff":
             MessageLookupByLibrary.simpleMessage("Restoran xodimlari"),
         "strResumeAction":

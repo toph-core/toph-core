@@ -23,6 +23,7 @@ _$CafeTableModelImpl _$$CafeTableModelImplFromJson(Map<String, dynamic> json) =>
               unknownValue: TableShape.rectangle) ??
           TableShape.rectangle,
       tableType: json['table_type'] as String?,
+      pricePerHour: json['price_per_hour'] as String?,
     );
 
 Map<String, dynamic> _$$CafeTableModelImplToJson(
@@ -40,6 +41,7 @@ Map<String, dynamic> _$$CafeTableModelImplToJson(
       'status': _$TableStatusEnumMap[instance.status]!,
       'shape': _$TableShapeEnumMap[instance.shape]!,
       'table_type': instance.tableType,
+      'price_per_hour': instance.pricePerHour,
     };
 
 const _$TableStatusEnumMap = {

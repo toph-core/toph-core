@@ -9,6 +9,7 @@ import 'package:mary_ai_pos/core/api/list_api.dart';
 import 'package:mary_ai_pos/core/components/flush_bars.dart';
 import 'package:mary_ai_pos/core/extension/for_context.dart';
 import 'package:mary_ai_pos/core/theme/tokens/theme_colors.dart';
+import 'package:mary_ai_pos/core/widgets/app_scaffold.dart';
 import 'package:mary_ai_pos/di.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/settings/widgets/section_shell.dart';
 import 'package:mary_ai_pos/generated/l10n.dart';
@@ -230,6 +231,17 @@ class _UsersSectionState extends State<UsersSection> {
     );
   }
 
+  void _onSearchChanged(String v) {
+    setState(() {}); // suffixIcon ko'rinishini yangilash uchun
+    _searchDebounce?.cancel();
+    _searchDebounce = Timer(const Duration(milliseconds: 350), () {
+      if (!mounted) return;
+      if (_searchQuery == v.trim()) return;
+      setState(() => _searchQuery = v.trim());
+      _load(page: 1);
+    });
+  }
+
   Widget _buildFilters() {
     final colors = context.colors;
     return Row(
@@ -238,6 +250,7 @@ class _UsersSectionState extends State<UsersSection> {
           child: TextField(
             controller: _searchCtrl,
             textInputAction: TextInputAction.search,
+            onTap: () => AppScaffold.open(_searchCtrl, onChanged: _onSearchChanged),
             decoration: InputDecoration(
               prefixIcon: Icon(Icons.search_rounded,
                   size: 18, color: colors.textSecondary),
@@ -260,17 +273,7 @@ class _UsersSectionState extends State<UsersSection> {
                 borderRadius: BorderRadius.circular(10),
               ),
             ),
-            onChanged: (v) {
-              setState(() {}); // suffixIcon ko'rinishini yangilash uchun
-              _searchDebounce?.cancel();
-              _searchDebounce =
-                  Timer(const Duration(milliseconds: 350), () {
-                if (!mounted) return;
-                if (_searchQuery == v.trim()) return;
-                setState(() => _searchQuery = v.trim());
-                _load(page: 1);
-              });
-            },
+            onChanged: _onSearchChanged,
             onSubmitted: (v) {
               _searchDebounce?.cancel();
               setState(() => _searchQuery = v.trim());

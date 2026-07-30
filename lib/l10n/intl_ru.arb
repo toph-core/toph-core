@@ -76,6 +76,7 @@
   "strNoTables": "Столов нет",
   "strBusy": "Занят",
   "strReserved": "Бронь",
+  "strReservedBadge": "Забронировано",
   "strFree": "Свободно",
   "strSavedBadge": "Сохранён",
   "strGuestsSuffix": "гостей",

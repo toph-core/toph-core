@@ -839,7 +839,7 @@ class _AdminTableItemState extends State<_AdminTableItem> {
                     ),
                   ),
                   // Time-based badge — top-left timer
-                  if (widget.table.tableType == 'time_based')
+                  if (widget.table.tableType == 'time_bassed')
                     Positioned(
                       top: -6,
                       left: -6,

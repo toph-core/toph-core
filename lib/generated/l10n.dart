@@ -790,6 +790,16 @@ class S {
     );
   }
 
+  /// `Reserved`
+  String get strReservedBadge {
+    return Intl.message(
+      'Reserved',
+      name: 'strReservedBadge',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Free`
   String get strFree {
     return Intl.message(

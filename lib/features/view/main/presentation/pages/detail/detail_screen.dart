@@ -158,6 +158,9 @@ class _DetailScreenState extends State<DetailScreen> with DetailScreenMixin {
                         showKeyboard: showVirtualKeyboard,
                         textEditingController: controller,
                         guestCount: guestCount,
+                        onSearchChanged: (text) => _detailBloc.add(
+                          DetailEvent.searchTextChanged(text: text),
+                        ),
                       ),
                       OrderActionsBar(
                         tableId: cafeTable?.id,

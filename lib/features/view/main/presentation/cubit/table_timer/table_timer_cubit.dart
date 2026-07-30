@@ -4,15 +4,18 @@ import 'package:dio/dio.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mary_ai_pos/core/api/dio_client.dart';
 import 'package:mary_ai_pos/core/api/list_api.dart';
+import 'package:mary_ai_pos/core/services/table_timer/table_timer_sync_service.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/open_order/open_order_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/table_timer/table_timer_response_model.dart';
 
 part 'table_timer_state.dart';
 
 class TableTimerCubit extends Cubit<TableTimerState> {
-  TableTimerCubit(this._client) : super(const TableTimerState());
+  TableTimerCubit(this._client, this._syncService)
+    : super(const TableTimerState());
 
   final DioClient _client;
+  final TableTimerSyncService _syncService;
   Timer? _serverSyncTimer;
   Timer? _uiTickTimer;
   String? _activeOrderId;
@@ -84,6 +87,12 @@ class TableTimerCubit extends Cubit<TableTimerState> {
     _startUiTickIfRunning(t);
     // Bill API-dan pause_periods-ni yangilash
     _fetchBillPauses(force: forceBillPauses);
+    // Table-map kartochkasi (TimeBasedTableBadge) shu yerdan darhol
+    // xabardor bo'lishi uchun umumiy keshga yozamiz.
+    final tid = (t.currentTableId?.isNotEmpty ?? false)
+        ? t.currentTableId!
+        : t.tableId;
+    _syncService.publish(tid, t);
   }
 
   /// Bill API-dan pause_periods-ni olib state-ga yozadi.
