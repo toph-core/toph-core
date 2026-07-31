@@ -128,6 +128,42 @@
   "strAccessRestricted": "Access restricted",
   "strSettingsAdminOnly": "Only administrator or manager can access settings.",
 
+  "strTransactions": "Transactions",
+  "strTransactionsAdminOnly": "Only administrator, manager or cashier can access transactions.",
+  "strTransactionCategories": "Categories",
+  "strIncome": "Income",
+  "strExpense": "Expense",
+  "strTransfer": "Transfer",
+  "strAmount": "Amount",
+  "strDescription": "Description",
+  "strDate": "Date",
+  "strCashRegister": "Cash register",
+  "strFromCashRegister": "From cash register",
+  "strToCashRegister": "To cash register",
+  "strCategory": "Category",
+  "strPayType": "Payment type",
+  "strCash": "Cash",
+  "strCard": "Card",
+  "strAddTransaction": "Add transaction",
+  "strEditTransaction": "Edit transaction",
+  "strDeleteTransaction": "Delete transaction",
+  "strDeleteTransactionConfirm": "Are you sure you want to delete this transaction?",
+  "strNoTransactionsYet": "No transactions yet",
+  "strAddCategory": "Add category",
+  "strEditCategory": "Edit category",
+  "strDeleteCategory": "Delete category",
+  "strDeleteCategoryConfirm": "Are you sure you want to delete this category?",
+  "strCategoryName": "Category name",
+  "strNoCategoriesYet": "No categories yet",
+  "strFieldRequired": "Required",
+  "strRequiredFieldsMissing": "Please fill in the required fields",
+  "strTotalCount": "Total: {count}",
+  "@strTotalCount": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+
   "strInterfaceSettings": "Language, interface and menu view",
   "strInterfaceLanguage": "Interface language",
   "strAppliesToAllUsers": "Applied to all users",
@@ -485,5 +521,15 @@
   },
 
   "strConfirmWithPincode": "Enter PIN to confirm",
-  "strIncorrectPincode": "Incorrect PIN"
+  "strIncorrectPincode": "Incorrect PIN",
+
+  "strCancelOrderItemTitle": "Cancel item",
+  "strCancelOrderItemReasonHint": "Reason for cancellation (required)",
+  "strCancelOrderItemReasonRequired": "Please enter a reason for cancellation",
+  "strCancelledByClient": "Cancelled by client",
+  "strWaitersMistake": "Waiter's mistake",
+
+  "strManagerPincodeTitle": "Manager confirmation",
+  "strManagerPincodeSubtitle": "Enter a manager or admin PIN to confirm",
+  "strManagerPincodeDenied": "This action requires a manager or admin PIN"
 }

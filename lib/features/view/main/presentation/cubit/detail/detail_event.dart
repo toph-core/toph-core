@@ -51,6 +51,7 @@ class DetailEvent with _$DetailEvent {
   const factory DetailEvent.deleteExistingItem({
     required String itemKey,
     required String tableId,
+    String? cancelComment,
   }) = _DeleteExistingItem;
 
   /// Mavjud itemning miqdorini bevosita berilgan qiymatga o'rnatadi va
@@ -60,6 +61,7 @@ class DetailEvent with _$DetailEvent {
     required String itemKey,
     required String tableId,
     required int quantity,
+    String? cancelComment,
   }) = _SetExistingItemQuantity;
 
   /// Internal: debounce vaqti tugagandan keyin backendga sinxronlash.

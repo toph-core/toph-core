@@ -1,6 +1,7 @@
 import 'package:dartz/dartz.dart';
 import 'package:mary_ai_pos/core/auth/models/brand_id_token_pair/brand_id_token_pair.dart';
 import 'package:mary_ai_pos/core/auth/storage/token_storage_impl.dart';
+import 'package:mary_ai_pos/core/constants/constants.dart';
 import 'package:mary_ai_pos/core/error/failure.dart';
 import 'package:mary_ai_pos/features/view/auth/data/data_sources/auth_datasource.dart';
 import 'package:mary_ai_pos/features/view/auth/data/models/login/request/login_request_model.dart';
@@ -74,6 +75,10 @@ class AuthRepositoryImpl implements AuthRepository {
       (response) => Right(response),
     );
   }
+
+  @override
+  Future<Either<Failure, UserRole>> verifyPincodeRole(String pincode) =>
+      _datasources.verifyPincodeRole(pincode);
 
   @override
   Future<Either<Failure, String>> setAppLang(String lang) async {

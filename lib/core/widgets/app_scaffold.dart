@@ -153,7 +153,7 @@ class _AppScaffoldState extends State<AppScaffold> {
                       top: false,
                       child: StyledVirtualKeyboard(
                         controller: controller,
-                        height: MediaQuery.of(context).size.height * .32,
+                        height: MediaQuery.of(context).size.height * .48,
                         onClose: () => _showVirtualKeyboard.value = false,
                         onChanged: _keyboardOnChanged,
                       ),

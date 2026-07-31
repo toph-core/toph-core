@@ -456,9 +456,9 @@ class CashierReceiptBuilder {
       ]);
     }
 
-    // Service applies to (items + table_charge) per order-total-calculation.md §5
+    // Service applies to items only — table_charge is not serviced.
     // When table charge is present, ignore API service_amount (read path omits it on table).
-    final baseForService = subtotal + hourAmount;
+    final baseForService = subtotal;
     final serviceAmt = hourAmount > 0.0001
         ? (detail.servicePercent > 0
             ? baseForService * detail.servicePercent / 100

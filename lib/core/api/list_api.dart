@@ -88,4 +88,20 @@ class ListAPI {
 
   //! Branches — branch settings (default service percent, etc.)
   static String branchById(String id) => "/api/v1/branches/$id";
+
+  //! Cash registers (for select dropdowns)
+  static const String cashRegisters = "api/v1/cash-registers";
+
+  //! Transactions (cashbox income/expense/transfer)
+  static const String transactions = "api/v1/transactions";
+  static String transactionById(String id) => "api/v1/transactions/$id";
+  static const String transactionsIncomeExpense =
+      "api/v1/transactions/income-expense";
+  static const String transactionsTransfer = "api/v1/transactions/transfer";
+  static const String transactionsReport = "api/v1/transactions/report";
+
+  //! Group transactions ("categories" for transactions)
+  static const String groupTransactions = "api/v1/group-transactions";
+  static String groupTransactionById(String id) =>
+      "api/v1/group-transactions/$id";
 }

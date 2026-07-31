@@ -222,7 +222,7 @@ class _DepartmentSelectionScreenState extends State<DepartmentSelectionScreen> {
                         top: false,
                         child: StyledVirtualKeyboard(
                           controller: controller,
-                          height: context.h * .32,
+                          height: context.h * .48,
                           onClose: () => showVirtualKeyboard.value = false,
                         ),
                       ),

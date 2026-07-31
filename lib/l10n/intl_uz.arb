@@ -132,6 +132,42 @@
   "strAccessRestricted": "Ruxsat cheklangan",
   "strSettingsAdminOnly": "Sozlamalarga faqat administrator yoki menejer kira oladi.",
 
+  "strTransactions": "Tranzaksiyalar",
+  "strTransactionsAdminOnly": "Tranzaksiyalarga faqat administrator, menejer yoki kassir kira oladi.",
+  "strTransactionCategories": "Kategoriyalar",
+  "strIncome": "Kirim",
+  "strExpense": "Chiqim",
+  "strTransfer": "Ko'chirish",
+  "strAmount": "Summa",
+  "strDescription": "Tavsif",
+  "strDate": "Sana",
+  "strCashRegister": "Kassa",
+  "strFromCashRegister": "Qaysi kassadan",
+  "strToCashRegister": "Qaysi kassaga",
+  "strCategory": "Kategoriya",
+  "strPayType": "To'lov turi",
+  "strCash": "Naqd",
+  "strCard": "Karta",
+  "strAddTransaction": "Tranzaksiya qo'shish",
+  "strEditTransaction": "Tranzaksiyani tahrirlash",
+  "strDeleteTransaction": "Tranzaksiyani o'chirish",
+  "strDeleteTransactionConfirm": "Ushbu tranzaksiyani o'chirishga ishonchingiz komilmi?",
+  "strNoTransactionsYet": "Hozircha tranzaksiyalar yo'q",
+  "strAddCategory": "Kategoriya qo'shish",
+  "strEditCategory": "Kategoriyani tahrirlash",
+  "strDeleteCategory": "Kategoriyani o'chirish",
+  "strDeleteCategoryConfirm": "Ushbu kategoriyani o'chirishga ishonchingiz komilmi?",
+  "strCategoryName": "Kategoriya nomi",
+  "strNoCategoriesYet": "Hozircha kategoriyalar yo'q",
+  "strFieldRequired": "Majburiy",
+  "strRequiredFieldsMissing": "Majburiy maydonlarni to'ldiring",
+  "strTotalCount": "Jami: {count}",
+  "@strTotalCount": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+
   "strInterfaceSettings": "Til, interfeys va menyu ko'rinishi",
   "strInterfaceLanguage": "Interfeys tili",
   "strAppliesToAllUsers": "Barcha foydalanuvchilar uchun qo'llaniladi",
@@ -485,5 +521,15 @@
   },
 
   "strConfirmWithPincode": "Tasdiqlash uchun pinkodni kiriting",
-  "strIncorrectPincode": "Pinkod noto'g'ri"
+  "strIncorrectPincode": "Pinkod noto'g'ri",
+
+  "strCancelOrderItemTitle": "Mahsulotni bekor qilish",
+  "strCancelOrderItemReasonHint": "Bekor qilish sababi (majburiy)",
+  "strCancelOrderItemReasonRequired": "Iltimos, bekor qilish sababini kiriting",
+  "strCancelledByClient": "Mijoz tomonidan bekor qilindi",
+  "strWaitersMistake": "Ofitsiant xatosi",
+
+  "strManagerPincodeTitle": "Menejer tasdig'i",
+  "strManagerPincodeSubtitle": "Tasdiqlash uchun menejer yoki admin PIN kodini kiriting",
+  "strManagerPincodeDenied": "Bu amal uchun menejer yoki admin PIN kodi kerak"
 }

@@ -236,6 +236,7 @@ class WaiterCubit extends Cubit<WaiterState> {
   Future<void> cancelOrderItem({
     required String orderItemId,
     required String orderId,
+    String? comment,
   }) async {
     if (orderItemId.isEmpty) return;
     emit(state.copyWith(cancellingOrderItemId: orderItemId));
@@ -243,7 +244,10 @@ class WaiterCubit extends Cubit<WaiterState> {
       await _client.post(
         ListAPI.orderItemCancel(orderItemId),
         queryParameters: {'lang': 'uz'},
-        data: <String, dynamic>{},
+        data: <String, dynamic>{
+          if (comment != null && comment.trim().isNotEmpty)
+            'comment': comment.trim(),
+        },
       );
       if (isClosed) return;
       emit(state.copyWith(cancellingOrderItemId: null));
@@ -399,7 +403,7 @@ class WaiterCubit extends Cubit<WaiterState> {
   }
 
   /// Backend `total_amount` is safe for normal tables only.
-  /// For time-based tables, GET omits service on table_charge (§7) — recompute.
+  /// For time-based tables, recompute since GET omits the table_charge.
   int _payAmountSom(OpenOrderModel order, List<OrderLineItemModel> lines) {
     final sumLines = lines
         .where((l) => !l.isCancelled)
@@ -411,9 +415,8 @@ class WaiterCubit extends Cubit<WaiterState> {
     final servicePct = order.servicePercent ?? 0;
 
     if (tableCharge > 0.01) {
-      // Service applies to (items + table_charge) per order-total-calculation.md §5
-      final serviceAmt =
-          ((sumLines + tableCharge) * servicePct / 100).round();
+      // Service applies to items only — table_charge is not serviced.
+      final serviceAmt = (sumLines * servicePct / 100).round();
       return sumLines.round() + tableCharge.round() + serviceAmt;
     }
 

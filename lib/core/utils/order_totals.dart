@@ -8,7 +8,7 @@ import 'package:mary_ai_pos/features/view/main/domain/entities/archive_detail_en
 /// `order-total-calculation.md`):
 ///
 /// - With [tableCharge] > 0: never trust API `grand_total` / `service_amount`;
-///   recompute service on (items + table).
+///   recompute service on items only (table charge is not serviced).
 /// - Without table charge: prefer API `grand_total` when no cancelled lines;
 ///   otherwise items + service from `service_amount` or percent.
 class OrderTotals {
@@ -76,7 +76,7 @@ class OrderTotals {
       if (pct <= 0 && servicePercentFallback > 0) {
         pct = servicePercentFallback;
       }
-      serviceInt = ((foodSum + tableCharge) * pct / 100).round();
+      serviceInt = (foodSum * pct / 100).round();
       coreTotal = (foodSum + tableCharge).round() + serviceInt;
     } else {
       final hasCancelled = detail.goods.any((g) => g.status == 'cancelled');

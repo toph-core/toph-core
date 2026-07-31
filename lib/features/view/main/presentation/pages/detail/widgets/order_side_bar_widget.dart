@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mary_ai_pos/core/design_system/pos_design_system.dart';
+import 'package:mary_ai_pos/core/widgets/manager_pincode_dialog.dart';
 import 'package:mary_ai_pos/core/extension/for_context.dart';
 import 'package:mary_ai_pos/core/extension/number_formatter.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/cafe_tables/cafe_tables_model.dart';
@@ -464,18 +465,21 @@ class _ReadonlyOrderItem extends StatelessWidget {
 
   Future<void> _openEditDialog(BuildContext context) async {
     final bloc = context.read<DetailBloc>();
-    final newQty = await showDialog<int>(
+    final result = await showDialog<({int quantity, String? cancelComment})>(
       context: context,
       barrierDismissible: true,
       barrierColor: PosTheme.colors.textPrimary.withOpacity(0.45),
       builder: (_) => _EditExistingOrderItemDialog(item: item),
     );
-    if (newQty == null || newQty == item.quantity || tableId == null) return;
-    if (newQty <= 0) {
+    if (result == null || result.quantity == item.quantity || tableId == null) {
+      return;
+    }
+    if (result.quantity <= 0) {
       bloc.add(
         DetailEvent.deleteExistingItem(
           itemKey: item.uniqueId,
           tableId: tableId!,
+          cancelComment: result.cancelComment,
         ),
       );
     } else {
@@ -483,7 +487,8 @@ class _ReadonlyOrderItem extends StatelessWidget {
         DetailEvent.setExistingItemQuantity(
           itemKey: item.uniqueId,
           tableId: tableId!,
-          quantity: newQty,
+          quantity: result.quantity,
+          cancelComment: result.cancelComment,
         ),
       );
     }
@@ -725,11 +730,45 @@ class _EditExistingOrderItemDialog extends StatefulWidget {
 class _EditExistingOrderItemDialogState
     extends State<_EditExistingOrderItemDialog> {
   late int _qty;
+  late final TextEditingController _cancelCommentController;
+  String? _cancelCommentError;
 
   @override
   void initState() {
     super.initState();
     _qty = widget.item.quantity;
+    _cancelCommentController = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    _cancelCommentController.dispose();
+    super.dispose();
+  }
+
+  void _selectQuickCancelComment(String comment) {
+    setState(() {
+      _cancelCommentController.text = comment;
+      _cancelCommentError = null;
+    });
+  }
+
+  Future<void> _onSave() async {
+    final isCancellation = _qty < widget.item.quantity;
+    if (!isCancellation) {
+      Navigator.of(context).pop((quantity: _qty, cancelComment: null));
+      return;
+    }
+    final comment = _cancelCommentController.text.trim();
+    if (comment.isEmpty) {
+      setState(
+        () => _cancelCommentError = S.current.strCancelOrderItemReasonRequired,
+      );
+      return;
+    }
+    final authorized = await requireManagerPincode(context);
+    if (!authorized || !mounted) return;
+    Navigator.of(context).pop((quantity: _qty, cancelComment: comment));
   }
 
   @override
@@ -738,6 +777,7 @@ class _EditExistingOrderItemDialogState
     final perUnit = double.tryParse(widget.item.goods.price) ?? 0;
     final total = perUnit * _qty;
     final dirty = _qty != widget.item.quantity;
+    final isCancellation = _qty < widget.item.quantity;
 
     return Dialog(
       backgroundColor: colors.surface,
@@ -849,6 +889,93 @@ class _EditExistingOrderItemDialogState
                   ],
                 ),
               ),
+
+              // ── Cancellation reason (required when quantity is reduced) ─
+              if (isCancellation) ...[
+                const SizedBox(height: PosDimensions.l),
+                Text(
+                  S.current.strCancelOrderItemReasonHint,
+                  style: TextStyle(
+                    fontSize: PosTypography.bodyLg,
+                    fontWeight: FontWeight.w500,
+                    color: colors.textSecondary,
+                    fontFamily: PosTypography.family,
+                  ),
+                ),
+                const SizedBox(height: PosDimensions.s),
+                TextField(
+                  controller: _cancelCommentController,
+                  maxLines: 3,
+                  onChanged: (_) {
+                    if (_cancelCommentError != null) {
+                      setState(() => _cancelCommentError = null);
+                    }
+                  },
+                  decoration: InputDecoration(
+                    hintText: S.current.strCancelOrderItemReasonHint,
+                    errorText: _cancelCommentError,
+                    filled: true,
+                    fillColor: colors.surfaceTinted,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(
+                        PosDimensions.radiusMd,
+                      ),
+                      borderSide: BorderSide(color: colors.border),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(
+                        PosDimensions.radiusMd,
+                      ),
+                      borderSide: BorderSide(color: colors.border),
+                    ),
+                    contentPadding: const EdgeInsets.all(PosDimensions.m),
+                  ),
+                  style: TextStyle(
+                    fontSize: PosTypography.bodyLg,
+                    fontFamily: PosTypography.family,
+                    color: colors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: PosDimensions.s),
+                Wrap(
+                  spacing: PosDimensions.s,
+                  runSpacing: PosDimensions.s,
+                  children: [
+                    S.current.strCancelledByClient,
+                    S.current.strWaitersMistake,
+                  ]
+                      .map(
+                        (suggestion) => GestureDetector(
+                          onTap: () => _selectQuickCancelComment(suggestion),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: PosDimensions.m,
+                              vertical: PosDimensions.xs,
+                            ),
+                            decoration: BoxDecoration(
+                              color: colors.brand.withOpacity(0.08),
+                              borderRadius: BorderRadius.circular(
+                                PosDimensions.radiusSm,
+                              ),
+                              border: Border.all(
+                                color: colors.brand.withOpacity(0.3),
+                              ),
+                            ),
+                            child: Text(
+                              suggestion,
+                              style: TextStyle(
+                                fontSize: PosTypography.bodyMd,
+                                fontWeight: FontWeight.w500,
+                                color: colors.brand,
+                                fontFamily: PosTypography.family,
+                              ),
+                            ),
+                          ),
+                        ),
+                      )
+                      .toList(),
+                ),
+              ],
               const SizedBox(height: PosDimensions.xxl),
 
               // ── Actions: Cancel + Save ──────────────────────────────
@@ -885,9 +1012,7 @@ class _EditExistingOrderItemDialogState
                     child: SizedBox(
                       height: PosDimensions.buttonHeightLg,
                       child: FilledButton(
-                        onPressed: dirty
-                            ? () => Navigator.of(context).pop(_qty)
-                            : null,
+                        onPressed: dirty ? _onSave : null,
                         style: FilledButton.styleFrom(
                           backgroundColor: colors.brand,
                           disabledBackgroundColor: colors.brand.withOpacity(

@@ -91,7 +91,7 @@ class _StyledVirtualKeyboardState extends State<StyledVirtualKeyboard> {
       '/',
       _KbAction.shift,
     ],
-    ['@', _KbAction.space, '-', '&', '_'],
+    ['@', _KbAction.space, '-', '&', '_', _KbAction.language],
   ];
 
   // Uzbek layout (Latin)
@@ -113,7 +113,7 @@ class _StyledVirtualKeyboardState extends State<StyledVirtualKeyboard> {
       '/',
       _KbAction.shift,
     ],
-    ['@', _KbAction.space, '-', '&', '_'],
+    ['@', _KbAction.space, '-', '&', '_', _KbAction.language],
   ];
 
   // Russian layout
@@ -135,7 +135,7 @@ class _StyledVirtualKeyboardState extends State<StyledVirtualKeyboard> {
       '.',
       _KbAction.shift,
     ],
-    ['@', _KbAction.space, '-', '&', '_'],
+    ['@', _KbAction.space, '-', '&', '_', _KbAction.language],
   ];
 
   List<List<Object>> _rowsFor(KeyboardLanguage language) {
@@ -212,6 +212,13 @@ class _StyledVirtualKeyboardState extends State<StyledVirtualKeyboard> {
       case _KbAction.returnKey:
         widget.onClose?.call();
         break;
+      case _KbAction.language:
+        const order = _LanguageSwitcher.order;
+        final current = KeyboardLanguagePreference.current.value;
+        final next = order[(order.indexOf(current) + 1) % order.length];
+        setState(() => _shift = false);
+        KeyboardLanguagePreference.set(next);
+        break;
     }
   }
 
@@ -224,15 +231,9 @@ class _StyledVirtualKeyboardState extends State<StyledVirtualKeyboard> {
         final rows = _rowsFor(language);
         final rowCount = rows.length;
         const rowGap = 6.0;
-        // Slim reserved strip for the compact language pill — small screens
-        // need every bit of height they can get for the actual key rows.
-        const languageSwitcherHeight = 30.0;
-        final keyHeight = ((widget.height -
-                    16 -
-                    languageSwitcherHeight -
-                    rowGap * rowCount) /
-                rowCount)
-            .clamp(28.0, 64.0);
+        final keyHeight =
+            ((widget.height - 16 - rowGap * (rowCount - 1)) / rowCount)
+                .clamp(36.0, 168.0);
 
         return Container(
           height: widget.height,
@@ -250,22 +251,6 @@ class _StyledVirtualKeyboardState extends State<StyledVirtualKeyboard> {
           ),
           child: Column(
             children: [
-              // Compact language toggle — right-aligned, out of the way of
-              // the keys instead of a full-width row above them.
-              SizedBox(
-                height: languageSwitcherHeight,
-                child: Align(
-                  alignment: Alignment.centerRight,
-                  child: _LanguageSwitcher(
-                    currentLanguage: language,
-                    onLanguageChanged: (lang) {
-                      setState(() => _shift = false);
-                      KeyboardLanguagePreference.set(lang);
-                    },
-                  ),
-                ),
-              ),
-              const SizedBox(height: rowGap),
               // Keyboard rows
               for (var r = 0; r < rowCount; r++) ...[
                 if (r > 0) const SizedBox(height: rowGap),
@@ -276,13 +261,23 @@ class _StyledVirtualKeyboardState extends State<StyledVirtualKeyboard> {
                         if (c > 0) const SizedBox(width: 5),
                         Expanded(
                           flex: rows[r][c] == _KbAction.space ? 5 : 1,
-                          child: _StyledKey(
-                            label: _labelFor(rows[r][c]),
-                            icon: _iconFor(rows[r][c]),
-                            height: keyHeight,
-                            active: rows[r][c] == _KbAction.shift && _shift,
-                            onTap: () => _onKey(rows[r][c]),
-                          ),
+                          child: rows[r][c] == _KbAction.language
+                              ? _LanguageSwitcher(
+                                  currentLanguage: language,
+                                  height: keyHeight,
+                                  onLanguageChanged: (lang) {
+                                    setState(() => _shift = false);
+                                    KeyboardLanguagePreference.set(lang);
+                                  },
+                                )
+                              : _StyledKey(
+                                  label: _labelFor(rows[r][c]),
+                                  icon: _iconFor(rows[r][c]),
+                                  height: keyHeight,
+                                  active:
+                                      rows[r][c] == _KbAction.shift && _shift,
+                                  onTap: () => _onKey(rows[r][c]),
+                                ),
                         ),
                       ],
                     ],
@@ -307,6 +302,8 @@ class _StyledVirtualKeyboardState extends State<StyledVirtualKeyboard> {
         return null;
       case _KbAction.returnKey:
         return null;
+      case _KbAction.language:
+        return null;
     }
   }
 
@@ -321,25 +318,28 @@ class _StyledVirtualKeyboardState extends State<StyledVirtualKeyboard> {
         return Icons.backspace_outlined;
       case _KbAction.returnKey:
         return Icons.keyboard_return_rounded;
+      case _KbAction.language:
+        return null;
     }
   }
 }
 
-enum _KbAction { backspace, space, shift, returnKey }
+enum _KbAction { backspace, space, shift, returnKey, language }
 
-/// Compact single-button language toggle — tapping cycles EN → UZ → RU → EN.
-/// Deliberately small and corner-anchored rather than a full-width row, so it
-/// doesn't eat into the space the key rows need (especially on small screens).
+/// Compact language toggle — tapping cycles EN → UZ → RU → EN. Sits inline
+/// with the space-bar row, sized to match the surrounding keys.
 class _LanguageSwitcher extends StatelessWidget {
   final KeyboardLanguage currentLanguage;
+  final double height;
   final ValueChanged<KeyboardLanguage> onLanguageChanged;
 
   const _LanguageSwitcher({
     required this.currentLanguage,
+    required this.height,
     required this.onLanguageChanged,
   });
 
-  static const _order = [
+  static const order = [
     KeyboardLanguage.eng,
     KeyboardLanguage.uzb,
     KeyboardLanguage.rus,
@@ -348,27 +348,28 @@ class _LanguageSwitcher extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
-    final next = _order[(_order.indexOf(currentLanguage) + 1) % _order.length];
+    final next = order[(order.indexOf(currentLanguage) + 1) % order.length];
 
     return GestureDetector(
       onTap: () => onLanguageChanged(next),
       child: Container(
-        height: 28,
-        padding: const EdgeInsets.symmetric(horizontal: 10),
+        height: height,
+        alignment: Alignment.center,
+        padding: const EdgeInsets.symmetric(horizontal: 6),
         decoration: BoxDecoration(
           color: colors.bgDefault,
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(10),
           border: Border.all(color: colors.border),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.language_rounded, size: 14, color: colors.textSecondary),
+            Icon(Icons.language_rounded, size: 16, color: colors.textSecondary),
             const SizedBox(width: 4),
             Text(
               currentLanguage.name.toUpperCase(),
               style: TextStyle(
-                fontSize: 12,
+                fontSize: 13,
                 fontWeight: FontWeight.w700,
                 color: colors.textDefault,
               ),
@@ -434,11 +435,11 @@ class _StyledKeyState extends State<_StyledKey> {
         ),
         transform: Matrix4.translationValues(0, _pressed ? 1.5 : 0, 0),
         child: widget.icon != null
-            ? Icon(widget.icon, size: 20, color: colors.textDefault)
+            ? Icon(widget.icon, size: 28, color: colors.textDefault)
             : Text(
                 widget.label ?? '',
                 style: TextStyle(
-                  fontSize: 20,
+                  fontSize: 26,
                   fontWeight: FontWeight.w600,
                   color: colors.textDefault,
                   fontFamily: 'Inter',
