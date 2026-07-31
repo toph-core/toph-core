@@ -9,6 +9,9 @@ import 'package:mary_ai_pos/core/components/flush_bars.dart';
 import 'package:mary_ai_pos/core/extension/date_time_extension.dart';
 import 'package:mary_ai_pos/core/extension/for_context.dart';
 import 'package:mary_ai_pos/core/theme/tokens/theme_colors.dart';
+import 'package:mary_ai_pos/core/utils/app_formatter.dart';
+import 'package:mary_ai_pos/core/widgets/app_scaffold.dart';
+import 'package:mary_ai_pos/core/widgets/styled_virtual_keyboard.dart';
 import 'package:mary_ai_pos/di.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/settings/widgets/section_shell.dart';
 import 'package:mary_ai_pos/generated/l10n.dart';
@@ -38,7 +41,7 @@ extension on _TxType {
         return S.current.strExpense;
       case _TxType.transferIncome:
       case _TxType.transferExpense:
-        return S.current.strTransfer;
+        return S.current.strTxnTransfer;
     }
   }
 
@@ -109,26 +112,48 @@ class _TransactionsListSectionState extends State<TransactionsListSection> {
   }
 
   Future<void> _loadOptions() async {
+    // Ikkalasi mustaqil so'raladi — biri xato bersa ham (masalan
+    // cash-registers uchun rol yetarli bo'lmasa), ikkinchisi baribir
+    // yuklanaveradi. Har biri o'z xatosini o'zi ushlaydi, shuning uchun
+    // Future.wait bitta xato bilan ikkalasini ham bekor qilmaydi.
+    await Future.wait([_loadCashRegisters(), _loadGroupTransactions()]);
+  }
+
+  Future<void> _loadCashRegisters() async {
     try {
-      final results = await Future.wait([
-        _client.get(ListAPI.cashRegisters, queryParameters: {'limit': 200}),
-        _client.get(ListAPI.groupTransactions, queryParameters: {'limit': 200}),
-      ]);
-      final registersRoot = results[0].data;
-      final categoriesRoot = results[1].data;
+      final res = await _client.get(
+        ListAPI.cashRegisters,
+        queryParameters: {'limit': 200},
+      );
+      final root = res.data;
       List<dynamic> registers = const [];
-      List<dynamic> categories = const [];
-      if (registersRoot is Map && registersRoot['data'] is List) {
-        registers = registersRoot['data'] as List;
-      }
-      if (categoriesRoot is Map && categoriesRoot['data'] is List) {
-        categories = categoriesRoot['data'] as List;
+      if (root is Map && root['data'] is List) {
+        registers = root['data'] as List;
       }
       if (!mounted) return;
       setState(() {
         _cashRegisters = registers
             .map((e) => _Option.fromJson(Map<String, dynamic>.from(e as Map)))
             .toList();
+      });
+    } catch (_) {
+      // Reference data — filtr/formalarda bo'sh ro'yxat bilan ishlayveradi.
+    }
+  }
+
+  Future<void> _loadGroupTransactions() async {
+    try {
+      final res = await _client.get(
+        ListAPI.groupTransactions,
+        queryParameters: {'limit': 200},
+      );
+      final root = res.data;
+      List<dynamic> categories = const [];
+      if (root is Map && root['data'] is List) {
+        categories = root['data'] as List;
+      }
+      if (!mounted) return;
+      setState(() {
         _categories = categories
             .map((e) => _Option.fromJson(Map<String, dynamic>.from(e as Map)))
             .toList();
@@ -151,7 +176,8 @@ class _TransactionsListSectionState extends State<TransactionsListSection> {
           'offset': (page - 1) * _pageSize,
           if (_searchQuery.isNotEmpty) 'search': _searchQuery,
           if (_typeFilter != null) 'type': _typeFilter,
-          if (_cashRegisterFilter != null) 'cash_register_id': _cashRegisterFilter,
+          if (_cashRegisterFilter != null)
+            'cash_register_id': _cashRegisterFilter,
         },
       );
       final root = res.data;
@@ -164,7 +190,9 @@ class _TransactionsListSectionState extends State<TransactionsListSection> {
         }
       }
       final parsed = data
-          .map((e) => _Transaction.fromJson(Map<String, dynamic>.from(e as Map)))
+          .map(
+            (e) => _Transaction.fromJson(Map<String, dynamic>.from(e as Map)),
+          )
           .toList();
       if (!mounted) return;
       setState(() {
@@ -190,13 +218,19 @@ class _TransactionsListSectionState extends State<TransactionsListSection> {
 
   String _optionName(List<_Option> options, String? id) {
     if (id == null) return '';
-    return options.firstWhere(
-      (o) => o.id == id,
-      orElse: () => const _Option(id: '', name: ''),
-    ).name;
+    return options
+        .firstWhere(
+          (o) => o.id == id,
+          orElse: () => const _Option(id: '', name: ''),
+        )
+        .name;
   }
 
   Future<void> _openCreateDialog() async {
+    if (_categories.isEmpty || _cashRegisters.isEmpty) {
+      await _loadOptions();
+      if (!mounted) return;
+    }
     final saved = await showDialog<bool>(
       context: context,
       barrierDismissible: false,
@@ -236,8 +270,9 @@ class _TransactionsListSectionState extends State<TransactionsListSection> {
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            style:
-                TextButton.styleFrom(foregroundColor: const Color(0xFFDC2626)),
+            style: TextButton.styleFrom(
+              foregroundColor: const Color(0xFFDC2626),
+            ),
             child: Text(S.current.strDelete),
           ),
         ],
@@ -258,7 +293,9 @@ class _TransactionsListSectionState extends State<TransactionsListSection> {
   Widget build(BuildContext context) {
     return SectionShell(
       title: S.current.strTransactions,
-      subtitle: _totalCount == null ? null : S.current.strTotalCount(_totalCount!),
+      subtitle: _totalCount == null
+          ? null
+          : S.current.strTotalCount(_totalCount!),
       trailing: SectionPrimaryButton(
         icon: Icons.add_rounded,
         label: S.current.strAddTransaction,
@@ -297,14 +334,22 @@ class _TransactionsListSectionState extends State<TransactionsListSection> {
           child: TextField(
             controller: _searchCtrl,
             textInputAction: TextInputAction.search,
+            onTap: () =>
+                AppScaffold.open(_searchCtrl, onChanged: _onSearchChanged),
             decoration: InputDecoration(
-              prefixIcon: Icon(Icons.search_rounded,
-                  size: 18, color: colors.textSecondary),
+              prefixIcon: Icon(
+                Icons.search_rounded,
+                size: 18,
+                color: colors.textSecondary,
+              ),
               suffixIcon: _searchCtrl.text.isEmpty
                   ? null
                   : IconButton(
-                      icon: Icon(Icons.close_rounded,
-                          size: 18, color: colors.textSecondary),
+                      icon: Icon(
+                        Icons.close_rounded,
+                        size: 18,
+                        color: colors.textSecondary,
+                      ),
                       onPressed: () {
                         _searchDebounce?.cancel();
                         _searchCtrl.clear();
@@ -314,7 +359,9 @@ class _TransactionsListSectionState extends State<TransactionsListSection> {
                     ),
               hintText: S.current.strSearch,
               isDense: true,
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
             ),
             onChanged: _onSearchChanged,
           ),
@@ -326,10 +373,15 @@ class _TransactionsListSectionState extends State<TransactionsListSection> {
             value: _typeFilter,
             decoration: InputDecoration(
               isDense: true,
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
             ),
             items: [
-              DropdownMenuItem<String?>(value: null, child: Text(S.current.strAllRoles)),
+              DropdownMenuItem<String?>(
+                value: null,
+                child: Text(S.current.strAllRoles),
+              ),
               ..._TxType.values.map(
                 (t) => DropdownMenuItem<String?>(
                   value: t.apiValue,
@@ -351,12 +403,18 @@ class _TransactionsListSectionState extends State<TransactionsListSection> {
             decoration: InputDecoration(
               labelText: S.current.strCashRegister,
               isDense: true,
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
             ),
             items: [
-              DropdownMenuItem<String?>(value: null, child: Text(S.current.strAllRoles)),
+              DropdownMenuItem<String?>(
+                value: null,
+                child: Text(S.current.strAllRoles),
+              ),
               ..._cashRegisters.map(
-                (o) => DropdownMenuItem<String?>(value: o.id, child: Text(o.name)),
+                (o) =>
+                    DropdownMenuItem<String?>(value: o.id, child: Text(o.name)),
               ),
             ],
             onChanged: (v) {
@@ -419,7 +477,8 @@ class _TransactionsListSectionState extends State<TransactionsListSection> {
         final canEdit = tx.type == _TxType.income || tx.type == _TxType.expense;
         return _TransactionCard(
           tx: tx,
-          cashRegisterName: tx.type == _TxType.transferIncome ||
+          cashRegisterName:
+              tx.type == _TxType.transferIncome ||
                   tx.type == _TxType.transferExpense
               ? '${_optionName(_cashRegisters, tx.fromCashRegisterId)} → ${_optionName(_cashRegisters, tx.toCashRegisterId)}'
               : _optionName(_cashRegisters, tx.cashRegisterId),
@@ -439,9 +498,9 @@ class _TransactionsListSectionState extends State<TransactionsListSection> {
         Theme(
           data: Theme.of(context).copyWith(
             colorScheme: Theme.of(context).colorScheme.copyWith(
-                  secondary: colors.buttonBrand,
-                  onSecondary: colors.textOnBrand,
-                ),
+              secondary: colors.buttonBrand,
+              onSecondary: colors.textOnBrand,
+            ),
           ),
           child: SizedBox(
             width: 372,
@@ -479,12 +538,17 @@ class _TransactionsListSectionState extends State<TransactionsListSection> {
             child: DropdownButton<int>(
               value: _pageSize,
               isDense: true,
-              icon: Icon(Icons.expand_more_rounded, color: colors.textSecondary),
+              icon: Icon(
+                Icons.expand_more_rounded,
+                color: colors.textSecondary,
+              ),
               items: _pageSizeOptions
-                  .map((s) => DropdownMenuItem<int>(
-                        value: s,
-                        child: Text(S.current.strPageSize(s)),
-                      ))
+                  .map(
+                    (s) => DropdownMenuItem<int>(
+                      value: s,
+                      child: Text(S.current.strPageSize(s)),
+                    ),
+                  )
                   .toList(),
               onChanged: (v) {
                 if (v == null || v == _pageSize || _loading) return;
@@ -567,7 +631,9 @@ class _TransactionCardState extends State<_TransactionCard> {
                     children: [
                       Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 3),
+                          horizontal: 8,
+                          vertical: 3,
+                        ),
                         decoration: BoxDecoration(
                           color: typeColor.withOpacity(0.12),
                           borderRadius: BorderRadius.circular(6),
@@ -581,29 +647,70 @@ class _TransactionCardState extends State<_TransactionCard> {
                           ),
                         ),
                       ),
-                      if (widget.categoryName.isNotEmpty) ...[
-                        const SizedBox(width: 8),
-                        Text(
-                          widget.categoryName,
+                      const SizedBox(width: 8),
+                      Flexible(
+                        child: Text(
+                          [
+                            if (widget.cashRegisterName.isNotEmpty)
+                              widget.cashRegisterName,
+                            tx.date.toYyyyMmDd,
+                          ].join(' · '),
                           style: TextStyle(
                             fontSize: 12,
-                            fontWeight: FontWeight.w500,
                             color: colors.textSecondary,
                           ),
+                          overflow: TextOverflow.ellipsis,
                         ),
-                      ],
+                      ),
                     ],
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    [
-                      if (widget.cashRegisterName.isNotEmpty)
-                        widget.cashRegisterName,
-                      if (tx.description != null && tx.description!.isNotEmpty)
-                        tx.description,
-                      tx.date.toYyyyMmDd,
-                    ].whereType<String>().join(' · '),
-                    style: TextStyle(fontSize: 12, color: colors.textSecondary),
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.sell_outlined,
+                        size: 14,
+                        color: colors.textSecondary,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        '${S.current.strTxnGroupLabel}: ${widget.categoryName.isNotEmpty ? widget.categoryName : '—'}',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                          color: widget.categoryName.isNotEmpty
+                              ? colors.textDefault
+                              : colors.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(
+                        Icons.comment_outlined,
+                        size: 14,
+                        color: colors.textSecondary,
+                      ),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: Text(
+                          (tx.description != null && tx.description!.isNotEmpty)
+                              ? tx.description!
+                              : '—',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color:
+                                (tx.description != null &&
+                                    tx.description!.isNotEmpty)
+                                ? colors.textDefault
+                                : colors.textSecondary,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -620,14 +727,20 @@ class _TransactionCardState extends State<_TransactionCard> {
             if (widget.onEdit != null)
               IconButton(
                 tooltip: S.current.strEdit,
-                icon: Icon(Icons.edit_outlined,
-                    size: 20, color: colors.buttonBrand),
+                icon: Icon(
+                  Icons.edit_outlined,
+                  size: 20,
+                  color: colors.buttonBrand,
+                ),
                 onPressed: widget.onEdit,
               ),
             IconButton(
               tooltip: S.current.strDelete,
-              icon: Icon(Icons.delete_outline_rounded,
-                  size: 20, color: colors.systemError),
+              icon: Icon(
+                Icons.delete_outline_rounded,
+                size: 20,
+                color: colors.systemError,
+              ),
               onPressed: widget.onDelete,
             ),
           ],
@@ -651,8 +764,7 @@ class _TransactionEditDialog extends StatefulWidget {
   });
 
   @override
-  State<_TransactionEditDialog> createState() =>
-      _TransactionEditDialogState();
+  State<_TransactionEditDialog> createState() => _TransactionEditDialogState();
 }
 
 class _TransactionEditDialogState extends State<_TransactionEditDialog> {
@@ -677,7 +789,9 @@ class _TransactionEditDialogState extends State<_TransactionEditDialog> {
   void initState() {
     super.initState();
     final e = widget.existing;
-    _amountCtrl = TextEditingController(text: e?.amount ?? '');
+    _amountCtrl = TextEditingController(
+      text: AppFormatter.formatPriceIntegerSpaces(e?.amount),
+    );
     _descriptionCtrl = TextEditingController(text: e?.description ?? '');
     _isTransfer = false;
     _createType = _TxType.income;
@@ -691,10 +805,14 @@ class _TransactionEditDialogState extends State<_TransactionEditDialog> {
 
   @override
   void dispose() {
+    FloatingKeyboard.close();
     _amountCtrl.dispose();
     _descriptionCtrl.dispose();
     super.dispose();
   }
+
+  String get _rawAmount =>
+      _amountCtrl.text.replaceAll(RegExp(r'\s'), '').trim();
 
   Future<void> _pickDate() async {
     final picked = await showDatePicker(
@@ -735,10 +853,10 @@ class _TransactionEditDialogState extends State<_TransactionEditDialog> {
               'from_cash_register_id': _fromCashRegisterId,
               'to_cash_register_id': _toCashRegisterId,
               if (_categoryId != null) 'group_transaction_id': _categoryId,
-              'amount': _amountCtrl.text.trim(),
+              'amount': _rawAmount,
               'description': _descriptionCtrl.text.trim(),
               'pay_type': _payType,
-              'date': _date.toIso8601String(),
+              'date': _toApiDateTime(_date),
             },
           );
         } else {
@@ -748,10 +866,10 @@ class _TransactionEditDialogState extends State<_TransactionEditDialog> {
               'type': _createType.apiValue,
               'cash_register_id': _cashRegisterId,
               if (_categoryId != null) 'group_transaction_id': _categoryId,
-              'amount': _amountCtrl.text.trim(),
+              'amount': _rawAmount,
               'description': _descriptionCtrl.text.trim(),
               'pay_type': _payType,
-              'date': _date.toIso8601String(),
+              'date': _toApiDateTime(_date),
             },
           );
         }
@@ -759,10 +877,10 @@ class _TransactionEditDialogState extends State<_TransactionEditDialog> {
         await widget.client.put(
           ListAPI.transactionById(widget.existing!.id),
           data: {
-            'amount': _amountCtrl.text.trim(),
+            'amount': _rawAmount,
             'description': _descriptionCtrl.text.trim(),
             'pay_type': _payType,
-            'date': _date.toIso8601String(),
+            'date': _toApiDateTime(_date),
           },
         );
       }
@@ -781,6 +899,8 @@ class _TransactionEditDialogState extends State<_TransactionEditDialog> {
   Widget build(BuildContext context) {
     final colors = context.colors;
     return Dialog(
+      alignment: Alignment.topCenter,
+      insetPadding: const EdgeInsets.only(top: 24, left: 40, right: 40),
       backgroundColor: colors.bgDefault,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: ConstrainedBox(
@@ -856,7 +976,10 @@ class _TransactionEditDialogState extends State<_TransactionEditDialog> {
                   _field(
                     label: S.current.strAmount,
                     controller: _amountCtrl,
-                    keyboard: const TextInputType.numberWithOptions(decimal: true),
+                    keyboard: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
+                    numeric: true,
                     validator: (v) => (v == null || v.trim().isEmpty)
                         ? S.current.strFieldRequired
                         : null,
@@ -873,22 +996,31 @@ class _TransactionEditDialogState extends State<_TransactionEditDialog> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(S.current.strPayType,
-                                style: TextStyle(
-                                    fontSize: 12, color: colors.textSecondary)),
+                            Text(
+                              S.current.strPayType,
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: colors.textSecondary,
+                              ),
+                            ),
                             const SizedBox(height: 6),
                             DropdownButtonFormField<String>(
                               value: _payType,
                               decoration: InputDecoration(
                                 isDense: true,
                                 border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(10)),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
                               ),
                               items: [
                                 DropdownMenuItem(
-                                    value: 'cash', child: Text(S.current.strCash)),
+                                  value: 'cash',
+                                  child: Text(S.current.strCash),
+                                ),
                                 DropdownMenuItem(
-                                    value: 'card', child: Text(S.current.strCard)),
+                                  value: 'card',
+                                  child: Text(S.current.strCard),
+                                ),
                               ],
                               onChanged: (v) =>
                                   setState(() => _payType = v ?? _payType),
@@ -902,26 +1034,36 @@ class _TransactionEditDialogState extends State<_TransactionEditDialog> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(S.current.strCategory,
-                                  style: TextStyle(
-                                      fontSize: 12, color: colors.textSecondary)),
+                              Text(
+                                S.current.strTxnGroupLabel,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: colors.textSecondary,
+                                ),
+                              ),
                               const SizedBox(height: 6),
                               DropdownButtonFormField<String?>(
                                 value: _categoryId,
                                 decoration: InputDecoration(
                                   isDense: true,
                                   border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(10)),
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
                                 ),
                                 items: [
                                   DropdownMenuItem<String?>(
-                                      value: null,
-                                      child: Text(S.current.strAllRoles)),
-                                  ...widget.categories.map((o) =>
-                                      DropdownMenuItem<String?>(
-                                          value: o.id, child: Text(o.name))),
+                                    value: null,
+                                    child: Text(S.current.strAllRoles),
+                                  ),
+                                  ...widget.categories.map(
+                                    (o) => DropdownMenuItem<String?>(
+                                      value: o.id,
+                                      child: Text(o.name),
+                                    ),
+                                  ),
                                 ],
-                                onChanged: (v) => setState(() => _categoryId = v),
+                                onChanged: (v) =>
+                                    setState(() => _categoryId = v),
                               ),
                             ],
                           ),
@@ -931,9 +1073,13 @@ class _TransactionEditDialogState extends State<_TransactionEditDialog> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(S.current.strDate,
-                                  style: TextStyle(
-                                      fontSize: 12, color: colors.textSecondary)),
+                              Text(
+                                S.current.strDate,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: colors.textSecondary,
+                                ),
+                              ),
                               const SizedBox(height: 6),
                               InkWell(
                                 onTap: _pickDate,
@@ -941,7 +1087,8 @@ class _TransactionEditDialogState extends State<_TransactionEditDialog> {
                                   decoration: InputDecoration(
                                     isDense: true,
                                     border: OutlineInputBorder(
-                                        borderRadius: BorderRadius.circular(10)),
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
                                   ),
                                   child: Text(_date.toYyyyMmDd),
                                 ),
@@ -956,9 +1103,13 @@ class _TransactionEditDialogState extends State<_TransactionEditDialog> {
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(S.current.strDate,
-                            style: TextStyle(
-                                fontSize: 12, color: colors.textSecondary)),
+                        Text(
+                          S.current.strDate,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: colors.textSecondary,
+                          ),
+                        ),
                         const SizedBox(height: 6),
                         InkWell(
                           onTap: _pickDate,
@@ -966,7 +1117,8 @@ class _TransactionEditDialogState extends State<_TransactionEditDialog> {
                             decoration: InputDecoration(
                               isDense: true,
                               border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(10)),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
                             ),
                             child: Text(_date.toYyyyMmDd),
                           ),
@@ -978,16 +1130,22 @@ class _TransactionEditDialogState extends State<_TransactionEditDialog> {
                     const SizedBox(height: 12),
                     Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 10),
+                        horizontal: 12,
+                        vertical: 10,
+                      ),
                       decoration: BoxDecoration(
                         color: colors.systemError.withOpacity(0.08),
                         borderRadius: BorderRadius.circular(10),
                         border: Border.all(
-                            color: colors.systemError.withOpacity(0.35)),
+                          color: colors.systemError.withOpacity(0.35),
+                        ),
                       ),
                       child: Text(
                         _error!,
-                        style: TextStyle(fontSize: 12, color: colors.systemError),
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: colors.systemError,
+                        ),
                       ),
                     ),
                   ],
@@ -1015,8 +1173,9 @@ class _TransactionEditDialogState extends State<_TransactionEditDialog> {
                                 height: 14,
                                 child: CircularProgressIndicator(
                                   strokeWidth: 1.5,
-                                  valueColor:
-                                      AlwaysStoppedAnimation(Colors.white),
+                                  valueColor: AlwaysStoppedAnimation(
+                                    Colors.white,
+                                  ),
                                 ),
                               )
                             : Text(S.current.strSave),
@@ -1065,18 +1224,27 @@ class _TransactionEditDialogState extends State<_TransactionEditDialog> {
 
     return Row(
       children: [
-        chip(S.current.strIncome, !_isTransfer && _createType == _TxType.income,
-            () => setState(() {
-                  _isTransfer = false;
-                  _createType = _TxType.income;
-                })),
-        chip(S.current.strExpense, !_isTransfer && _createType == _TxType.expense,
-            () => setState(() {
-                  _isTransfer = false;
-                  _createType = _TxType.expense;
-                })),
-        chip(S.current.strTransfer, _isTransfer,
-            () => setState(() => _isTransfer = true)),
+        chip(
+          S.current.strIncome,
+          !_isTransfer && _createType == _TxType.income,
+          () => setState(() {
+            _isTransfer = false;
+            _createType = _TxType.income;
+          }),
+        ),
+        chip(
+          S.current.strExpense,
+          !_isTransfer && _createType == _TxType.expense,
+          () => setState(() {
+            _isTransfer = false;
+            _createType = _TxType.expense;
+          }),
+        ),
+        chip(
+          S.current.strTxnTransfer,
+          _isTransfer,
+          () => setState(() => _isTransfer = true),
+        ),
       ],
     );
   }
@@ -1090,7 +1258,10 @@ class _TransactionEditDialogState extends State<_TransactionEditDialog> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: TextStyle(fontSize: 12, color: colors.textSecondary)),
+        Text(
+          label,
+          style: TextStyle(fontSize: 12, color: colors.textSecondary),
+        ),
         const SizedBox(height: 6),
         DropdownButtonFormField<String>(
           value: value,
@@ -1099,7 +1270,10 @@ class _TransactionEditDialogState extends State<_TransactionEditDialog> {
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
           ),
           items: widget.cashRegisters
-              .map((o) => DropdownMenuItem<String>(value: o.id, child: Text(o.name)))
+              .map(
+                (o) =>
+                    DropdownMenuItem<String>(value: o.id, child: Text(o.name)),
+              )
               .toList(),
           onChanged: onChanged,
           validator: (_) => value == null ? S.current.strFieldRequired : null,
@@ -1113,20 +1287,42 @@ class _TransactionEditDialogState extends State<_TransactionEditDialog> {
     required TextEditingController controller,
     TextInputType? keyboard,
     String? Function(String?)? validator,
+    bool numeric = false,
   }) {
     final colors = context.colors;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: TextStyle(fontSize: 12, color: colors.textSecondary)),
+        Text(
+          label,
+          style: TextStyle(fontSize: 12, color: colors.textSecondary),
+        ),
         const SizedBox(height: 6),
-        TextFormField(
-          controller: controller,
-          keyboardType: keyboard,
-          validator: validator,
-          decoration: InputDecoration(
-            isDense: true,
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+        Builder(
+          builder: (fieldContext) => TextFormField(
+            controller: controller,
+            keyboardType: keyboard,
+            validator: validator,
+            readOnly: true,
+            showCursor: true,
+            textAlign: numeric ? TextAlign.right : TextAlign.left,
+            onTap: () {
+              if (numeric) {
+                FloatingKeyboard.openNumeric(
+                  fieldContext,
+                  controller,
+                  groupThousands: true,
+                );
+              } else {
+                FloatingKeyboard.openText(context, controller);
+              }
+            },
+            decoration: InputDecoration(
+              isDense: true,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
           ),
         ),
       ],
@@ -1140,9 +1336,9 @@ class _Option {
   const _Option({required this.id, required this.name});
 
   factory _Option.fromJson(Map<String, dynamic> json) => _Option(
-        id: (json['id'] ?? '').toString(),
-        name: (json['name'] ?? '').toString(),
-      );
+    id: (json['id'] ?? '').toString(),
+    name: (json['name'] ?? '').toString(),
+  );
 }
 
 class _Transaction {
@@ -1187,6 +1383,20 @@ class _Transaction {
     );
   }
 }
+
+/// Serializes a date picked in the local timezone as an RFC3339 string with a
+/// `Z` suffix, keeping the same calendar date/time components — Go's
+/// `time.Time` JSON unmarshaling rejects an offset-less ISO string (the plain
+/// `DateTime.toIso8601String()` omits it for non-UTC values).
+String _toApiDateTime(DateTime d) => DateTime.utc(
+  d.year,
+  d.month,
+  d.day,
+  d.hour,
+  d.minute,
+  d.second,
+  d.millisecond,
+).toIso8601String();
 
 _TxType? _txTypeFromApi(String v) {
   switch (v) {

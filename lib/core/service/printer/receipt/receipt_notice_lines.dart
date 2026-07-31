@@ -5,7 +5,7 @@ void appendReceiptNoReprepNotice(Generator gen, List<int> bytes) {
   bytes += gen.hr();
   bytes += gen.text(
     'ВНИМАНИЕ: по чеку блюдо не готовить повторно.',
-    styles: const PosStyles(bold: true, align: PosAlign.center),
+    styles: const PosStyles(bold: false, align: PosAlign.center),
     linesAfter: 1,
   );
   bytes += gen.text(

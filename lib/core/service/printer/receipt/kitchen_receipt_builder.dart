@@ -54,37 +54,37 @@ class KitchenReceiptBuilder {
       '** КУХОННЫЙ ЧЕК **',
       styles: const PosStyles(
         align: PosAlign.center,
-        bold: true,
+        bold: false,
         height: PosTextSize.size2,
         width: PosTextSize.size1,
       ),
     );
 
-    bytes += gen.text(tableLine, styles: const PosStyles(bold: true));
-    bytes += gen.text('Время: $now', styles: const PosStyles(bold: true));
+    bytes += gen.text(tableLine, styles: const PosStyles(bold: false));
+    bytes += gen.text('Время: $now', styles: const PosStyles(bold: false));
 
     if (hallName.isNotEmpty) {
-      bytes += gen.text('Зал: $hallName', styles: const PosStyles(bold: true));
+      bytes += gen.text('Зал: $hallName', styles: const PosStyles(bold: false));
     }
 
     if (orderNumber != null && orderNumber.isNotEmpty) {
       bytes += gen.text(
         'Чек №: $orderNumber',
-        styles: const PosStyles(bold: true),
+        styles: const PosStyles(bold: false),
       );
     }
 
     if (orderId != null && orderId.isNotEmpty) {
       bytes += gen.text(
         'ID заказа: $orderId',
-        styles: const PosStyles(bold: true),
+        styles: const PosStyles(bold: false),
       );
     }
 
     if (waiterName.isNotEmpty) {
       bytes += gen.text(
         'Официант: $waiterName',
-        styles: const PosStyles(bold: true),
+        styles: const PosStyles(bold: false),
       );
     }
 
@@ -106,7 +106,7 @@ class KitchenReceiptBuilder {
         (categoryName != null && categoryName.isNotEmpty)
             ? categoryName.toUpperCase()
             : 'ДРУГОЕ',
-        styles: const PosStyles(bold: true, reverse: true),
+        styles: const PosStyles(bold: false, reverse: true),
       );
 
       for (final item in entry.value) {
@@ -118,12 +118,12 @@ class KitchenReceiptBuilder {
           PosColumn(
             text: name,
             width: 9,
-            styles: const PosStyles(bold: true),
+            styles: const PosStyles(bold: false),
           ),
           PosColumn(
             text: 'x${item.quantity}',
             width: 3,
-            styles: const PosStyles(bold: true, align: PosAlign.right),
+            styles: const PosStyles(bold: false, align: PosAlign.right),
           ),
         ]);
 
@@ -132,7 +132,7 @@ class KitchenReceiptBuilder {
         if (note.isNotEmpty) {
           bytes += gen.text(
             '  >> $note',
-            styles: const PosStyles(bold: true, underline: true),
+            styles: const PosStyles(bold: false, underline: true),
           );
         }
       }
@@ -142,7 +142,7 @@ class KitchenReceiptBuilder {
 
     // ── Footer ───────────────────────────────────────────────────────────────
     if (guestCount > 0) {
-      bytes += gen.text('Гостей: $guestCount', styles: const PosStyles(bold: true));
+      bytes += gen.text('Гостей: $guestCount', styles: const PosStyles(bold: false));
     }
     appendReceiptNoReprepNotice(gen, bytes);
     bytes += gen.feed(2);

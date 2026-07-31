@@ -28,7 +28,7 @@ class ShiftCloseReceiptBuilder {
       'ЗАКРЫТИЕ СМЕНЫ',
       styles: const PosStyles(
         align: PosAlign.center,
-        bold: true,
+        bold: false,
         height: PosTextSize.size2,
         width: PosTextSize.size1,
       ),
@@ -42,7 +42,7 @@ class ShiftCloseReceiptBuilder {
       PosColumn(
         text: 'Кассир:',
         width: 4,
-        styles: const PosStyles(bold: true),
+        styles: const PosStyles(bold: false),
       ),
       PosColumn(text: cashierLabel, width: 8),
     ]);
@@ -50,7 +50,7 @@ class ShiftCloseReceiptBuilder {
       PosColumn(
         text: 'Смена ID:',
         width: 4,
-        styles: const PosStyles(bold: true),
+        styles: const PosStyles(bold: false),
       ),
       PosColumn(
         text: shiftId.length > 12 ? '${shiftId.substring(0, 8)}…' : shiftId,
@@ -62,7 +62,7 @@ class ShiftCloseReceiptBuilder {
         PosColumn(
           text: 'Открыта:',
           width: 4,
-          styles: const PosStyles(bold: true),
+          styles: const PosStyles(bold: false),
         ),
         PosColumn(text: df.format(openedAt.toLocal()), width: 8),
       ]);
@@ -73,7 +73,7 @@ class ShiftCloseReceiptBuilder {
         PosColumn(
           text: 'Длительность:',
           width: 4,
-          styles: const PosStyles(bold: true),
+          styles: const PosStyles(bold: false),
         ),
         PosColumn(
           text: '${h.toString().padLeft(2, '0')}:${m.toString().padLeft(2, '0')}',
@@ -85,14 +85,14 @@ class ShiftCloseReceiptBuilder {
     bytes += gen.hr();
     bytes += gen.text(
       'Терминал (итог)',
-      styles: const PosStyles(bold: true),
+      styles: const PosStyles(bold: false),
     );
     bytes += gen.row([
       PosColumn(text: 'Карта:', width: 6),
       PosColumn(
         text: '${_fmt(closingCard)} сум',
         width: 6,
-        styles: const PosStyles(bold: true, align: PosAlign.right),
+        styles: const PosStyles(bold: false, align: PosAlign.right),
       ),
     ]);
     bytes += gen.text(

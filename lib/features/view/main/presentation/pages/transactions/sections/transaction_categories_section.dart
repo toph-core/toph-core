@@ -7,6 +7,8 @@ import 'package:mary_ai_pos/core/api/dio_client.dart';
 import 'package:mary_ai_pos/core/api/list_api.dart';
 import 'package:mary_ai_pos/core/components/flush_bars.dart';
 import 'package:mary_ai_pos/core/extension/for_context.dart';
+import 'package:mary_ai_pos/core/widgets/app_scaffold.dart';
+import 'package:mary_ai_pos/core/widgets/styled_virtual_keyboard.dart';
 import 'package:mary_ai_pos/di.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/settings/widgets/section_shell.dart';
 import 'package:mary_ai_pos/generated/l10n.dart';
@@ -106,8 +108,8 @@ class _TransactionCategoriesSectionState
     final ok = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
-        title: Text(S.current.strDeleteCategory),
-        content: Text('${S.current.strDeleteCategoryConfirm}\n\n"${c.name}"'),
+        title: Text(S.current.strDeleteTxnGroup),
+        content: Text('${S.current.strDeleteTxnGroupConfirm}\n\n"${c.name}"'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -115,8 +117,9 @@ class _TransactionCategoriesSectionState
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            style:
-                TextButton.styleFrom(foregroundColor: const Color(0xFFDC2626)),
+            style: TextButton.styleFrom(
+              foregroundColor: const Color(0xFFDC2626),
+            ),
             child: Text(S.current.strDelete),
           ),
         ],
@@ -136,13 +139,13 @@ class _TransactionCategoriesSectionState
   @override
   Widget build(BuildContext context) {
     return SectionShell(
-      title: S.current.strTransactionCategories,
+      title: S.current.strTxnGroupsTitle,
       subtitle: _categories.isEmpty
           ? null
           : S.current.strTotalCount(_categories.length),
       trailing: SectionPrimaryButton(
         icon: Icons.add_rounded,
-        label: S.current.strAddCategory,
+        label: S.current.strAddTxnGroup,
         onPressed: () => _openEditor(),
       ),
       child: Column(
@@ -160,14 +163,21 @@ class _TransactionCategoriesSectionState
     return TextField(
       controller: _searchCtrl,
       textInputAction: TextInputAction.search,
+      onTap: () => AppScaffold.open(_searchCtrl, onChanged: _onSearchChanged),
       decoration: InputDecoration(
-        prefixIcon:
-            Icon(Icons.search_rounded, size: 18, color: colors.textSecondary),
+        prefixIcon: Icon(
+          Icons.search_rounded,
+          size: 18,
+          color: colors.textSecondary,
+        ),
         suffixIcon: _searchCtrl.text.isEmpty
             ? null
             : IconButton(
-                icon: Icon(Icons.close_rounded,
-                    size: 18, color: colors.textSecondary),
+                icon: Icon(
+                  Icons.close_rounded,
+                  size: 18,
+                  color: colors.textSecondary,
+                ),
                 onPressed: () {
                   _searchDebounce?.cancel();
                   _searchCtrl.clear();
@@ -216,10 +226,10 @@ class _TransactionCategoriesSectionState
     if (_categories.isEmpty) {
       return SectionEmptyState(
         icon: Icons.sell_outlined,
-        title: S.current.strNoCategoriesYet,
+        title: S.current.strNoTxnGroupsYet,
         action: SectionPrimaryButton(
           icon: Icons.add_rounded,
-          label: S.current.strAddCategory,
+          label: S.current.strAddTxnGroup,
           onPressed: () => _openEditor(),
         ),
       );
@@ -285,8 +295,11 @@ class _CategoryCardState extends State<_CategoryCard> {
                 borderRadius: BorderRadius.circular(12),
               ),
               alignment: Alignment.center,
-              child: Icon(Icons.sell_outlined,
-                  size: 20, color: colors.buttonBrand),
+              child: Icon(
+                Icons.sell_outlined,
+                size: 20,
+                color: colors.buttonBrand,
+              ),
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -301,14 +314,20 @@ class _CategoryCardState extends State<_CategoryCard> {
             ),
             IconButton(
               tooltip: S.current.strEdit,
-              icon: Icon(Icons.edit_outlined,
-                  size: 20, color: colors.buttonBrand),
+              icon: Icon(
+                Icons.edit_outlined,
+                size: 20,
+                color: colors.buttonBrand,
+              ),
               onPressed: widget.onEdit,
             ),
             IconButton(
               tooltip: S.current.strDelete,
-              icon: Icon(Icons.delete_outline_rounded,
-                  size: 20, color: colors.systemError),
+              icon: Icon(
+                Icons.delete_outline_rounded,
+                size: 20,
+                color: colors.systemError,
+              ),
               onPressed: widget.onDelete,
             ),
           ],
@@ -344,6 +363,7 @@ class _CategoryEditDialogState extends State<_CategoryEditDialog> {
 
   @override
   void dispose() {
+    FloatingKeyboard.close();
     _nameCtrl.dispose();
     super.dispose();
   }
@@ -399,8 +419,8 @@ class _CategoryEditDialogState extends State<_CategoryEditDialog> {
                     Expanded(
                       child: Text(
                         _isCreate
-                            ? S.current.strAddCategory
-                            : S.current.strEditCategory,
+                            ? S.current.strAddTxnGroup
+                            : S.current.strEditTxnGroup,
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w700,
@@ -409,8 +429,9 @@ class _CategoryEditDialogState extends State<_CategoryEditDialog> {
                       ),
                     ),
                     IconButton(
-                      onPressed:
-                          _saving ? null : () => Navigator.pop(context, false),
+                      onPressed: _saving
+                          ? null
+                          : () => Navigator.pop(context, false),
                       icon: const Icon(Icons.close_rounded),
                       color: colors.textSecondary,
                     ),
@@ -420,11 +441,15 @@ class _CategoryEditDialogState extends State<_CategoryEditDialog> {
                 TextFormField(
                   controller: _nameCtrl,
                   autofocus: true,
+                  readOnly: true,
+                  showCursor: true,
+                  onTap: () => FloatingKeyboard.openText(context, _nameCtrl),
                   decoration: InputDecoration(
-                    labelText: S.current.strCategoryName,
+                    labelText: S.current.strTxnGroupName,
                     isDense: true,
-                    border:
-                        OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
                   ),
                   validator: (v) => (v == null || v.trim().isEmpty)
                       ? S.current.strFieldRequired
@@ -443,8 +468,9 @@ class _CategoryEditDialogState extends State<_CategoryEditDialog> {
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
                     TextButton(
-                      onPressed:
-                          _saving ? null : () => Navigator.pop(context, false),
+                      onPressed: _saving
+                          ? null
+                          : () => Navigator.pop(context, false),
                       child: Text(S.current.strCancelShort),
                     ),
                     const SizedBox(width: 6),
@@ -461,8 +487,9 @@ class _CategoryEditDialogState extends State<_CategoryEditDialog> {
                               height: 14,
                               child: CircularProgressIndicator(
                                 strokeWidth: 1.5,
-                                valueColor:
-                                    AlwaysStoppedAnimation(Colors.white),
+                                valueColor: AlwaysStoppedAnimation(
+                                  Colors.white,
+                                ),
                               ),
                             )
                           : Text(S.current.strSave),
@@ -485,7 +512,7 @@ class _Category {
   const _Category({required this.id, required this.name});
 
   factory _Category.fromJson(Map<String, dynamic> json) => _Category(
-        id: (json['id'] ?? '').toString(),
-        name: (json['name'] ?? '').toString(),
-      );
+    id: (json['id'] ?? '').toString(),
+    name: (json['name'] ?? '').toString(),
+  );
 }
