@@ -7,6 +7,8 @@ import 'package:mary_ai_pos/core/api/dio_client.dart';
 import 'package:mary_ai_pos/core/api/list_api.dart';
 import 'package:mary_ai_pos/core/constants/constants.dart';
 import 'package:mary_ai_pos/core/service/printer/printer_service.dart';
+import 'package:mary_ai_pos/core/services/cache/cache_service.dart';
+import 'package:mary_ai_pos/di.dart';
 import 'package:mary_ai_pos/core/usecase/usecase.dart';
 import 'package:mary_ai_pos/core/utils/order_conflict_helper.dart';
 import 'package:mary_ai_pos/features/view/auth/data/models/user/user_model.dart';
@@ -468,24 +470,34 @@ class WaiterCubit extends Cubit<WaiterState> {
       }
       await _client.post(ListAPI.payToOrder(orderId), data: payBody);
       if (isClosed) return;
-      // Fire-and-forget kassir cheki: state tozalanishidan oldin print qilamiz
+      // Fire-and-forget kassir cheki: state tozalanishidan oldin print qilamiz.
+      // Cheklarda departament bo'yicha guruhlash uchun cache'dagi goods
+      // ro'yxatidan real category/department id larini olamiz.
+      final goodsById = <String, Map<String, dynamic>>{
+        for (final g in inject<CacheService>().getGoods())
+          if (g['id'] != null) g['id'].toString(): g,
+      };
       final receiptItems = lineItems
           .where((l) => !l.isCancelled)
-          .map((l) => OrderItem(
-                goods: GoodsModel(
-                  categoryId: '',
-                  cookTime: 0,
-                  costPrice: l.price,
-                  description: '',
-                  id: l.goodId,
-                  name: l.displayName,
-                  price: l.price,
-                  profit: '0',
-                  profitMargin: '0',
-                ),
-                quantity: l.quantity,
-                commet: l.comment ?? '',
-              ))
+          .map((l) {
+            final cached = goodsById[l.goodId];
+            return OrderItem(
+              goods: GoodsModel(
+                categoryId: cached?['category_id']?.toString() ?? '',
+                cookTime: 0,
+                costPrice: l.price,
+                departmentId: cached?['department_id']?.toString() ?? '',
+                description: '',
+                id: l.goodId,
+                name: l.displayName,
+                price: l.price,
+                profit: '0',
+                profitMargin: '0',
+              ),
+              quantity: l.quantity,
+              commet: l.comment ?? '',
+            );
+          })
           .toList();
       final sumLines = lineItems
           .where((l) => !l.isCancelled)

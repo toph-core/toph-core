@@ -32,6 +32,8 @@ mixin _$OrderFoodModel {
 // Agar mavjud bo'lsa, UI vaqt belgisi sifatida ko'rsatadi.
   @JsonKey(name: 'created_at', fromJson: _parseLocalDate)
   DateTime? get createdAt => throw _privateConstructorUsedError;
+  @JsonKey(name: 'good_id')
+  String get goodId => throw _privateConstructorUsedError;
 
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
   @JsonKey(ignore: true)
@@ -53,7 +55,8 @@ abstract class $OrderFoodModelCopyWith<$Res> {
       String comment,
       String status,
       @JsonKey(name: 'created_at', fromJson: _parseLocalDate)
-      DateTime? createdAt});
+      DateTime? createdAt,
+      @JsonKey(name: 'good_id') String goodId});
 }
 
 /// @nodoc
@@ -76,6 +79,7 @@ class _$OrderFoodModelCopyWithImpl<$Res, $Val extends OrderFoodModel>
     Object? comment = null,
     Object? status = null,
     Object? createdAt = freezed,
+    Object? goodId = null,
   }) {
     return _then(_value.copyWith(
       id: null == id
@@ -106,6 +110,10 @@ class _$OrderFoodModelCopyWithImpl<$Res, $Val extends OrderFoodModel>
           ? _value.createdAt
           : createdAt // ignore: cast_nullable_to_non_nullable
               as DateTime?,
+      goodId: null == goodId
+          ? _value.goodId
+          : goodId // ignore: cast_nullable_to_non_nullable
+              as String,
     ) as $Val);
   }
 }
@@ -126,7 +134,8 @@ abstract class _$$OrderFoodModelImplCopyWith<$Res>
       String comment,
       String status,
       @JsonKey(name: 'created_at', fromJson: _parseLocalDate)
-      DateTime? createdAt});
+      DateTime? createdAt,
+      @JsonKey(name: 'good_id') String goodId});
 }
 
 /// @nodoc
@@ -147,6 +156,7 @@ class __$$OrderFoodModelImplCopyWithImpl<$Res>
     Object? comment = null,
     Object? status = null,
     Object? createdAt = freezed,
+    Object? goodId = null,
   }) {
     return _then(_$OrderFoodModelImpl(
       id: null == id
@@ -177,6 +187,10 @@ class __$$OrderFoodModelImplCopyWithImpl<$Res>
           ? _value.createdAt
           : createdAt // ignore: cast_nullable_to_non_nullable
               as DateTime?,
+      goodId: null == goodId
+          ? _value.goodId
+          : goodId // ignore: cast_nullable_to_non_nullable
+              as String,
     ));
   }
 }
@@ -191,7 +205,8 @@ class _$OrderFoodModelImpl extends _OrderFoodModel {
       @JsonKey(fromJson: parseInt) this.price = 0,
       this.comment = '',
       this.status = 'pending',
-      @JsonKey(name: 'created_at', fromJson: _parseLocalDate) this.createdAt})
+      @JsonKey(name: 'created_at', fromJson: _parseLocalDate) this.createdAt,
+      @JsonKey(name: 'good_id') this.goodId = ''})
       : super._();
 
   factory _$OrderFoodModelImpl.fromJson(Map<String, dynamic> json) =>
@@ -220,10 +235,13 @@ class _$OrderFoodModelImpl extends _OrderFoodModel {
   @override
   @JsonKey(name: 'created_at', fromJson: _parseLocalDate)
   final DateTime? createdAt;
+  @override
+  @JsonKey(name: 'good_id')
+  final String goodId;
 
   @override
   String toString() {
-    return 'OrderFoodModel(id: $id, name: $name, quantity: $quantity, price: $price, comment: $comment, status: $status, createdAt: $createdAt)';
+    return 'OrderFoodModel(id: $id, name: $name, quantity: $quantity, price: $price, comment: $comment, status: $status, createdAt: $createdAt, goodId: $goodId)';
   }
 
   @override
@@ -239,13 +257,14 @@ class _$OrderFoodModelImpl extends _OrderFoodModel {
             (identical(other.comment, comment) || other.comment == comment) &&
             (identical(other.status, status) || other.status == status) &&
             (identical(other.createdAt, createdAt) ||
-                other.createdAt == createdAt));
+                other.createdAt == createdAt) &&
+            (identical(other.goodId, goodId) || other.goodId == goodId));
   }
 
   @JsonKey(ignore: true)
   @override
-  int get hashCode => Object.hash(
-      runtimeType, id, name, quantity, price, comment, status, createdAt);
+  int get hashCode => Object.hash(runtimeType, id, name, quantity, price,
+      comment, status, createdAt, goodId);
 
   @JsonKey(ignore: true)
   @override
@@ -271,7 +290,8 @@ abstract class _OrderFoodModel extends OrderFoodModel {
       final String comment,
       final String status,
       @JsonKey(name: 'created_at', fromJson: _parseLocalDate)
-      final DateTime? createdAt}) = _$OrderFoodModelImpl;
+      final DateTime? createdAt,
+      @JsonKey(name: 'good_id') final String goodId}) = _$OrderFoodModelImpl;
   const _OrderFoodModel._() : super._();
 
   factory _OrderFoodModel.fromJson(Map<String, dynamic> json) =
@@ -295,6 +315,9 @@ abstract class _OrderFoodModel extends OrderFoodModel {
 // Agar mavjud bo'lsa, UI vaqt belgisi sifatida ko'rsatadi.
   @JsonKey(name: 'created_at', fromJson: _parseLocalDate)
   DateTime? get createdAt;
+  @override
+  @JsonKey(name: 'good_id')
+  String get goodId;
   @override
   @JsonKey(ignore: true)
   _$$OrderFoodModelImplCopyWith<_$OrderFoodModelImpl> get copyWith =>

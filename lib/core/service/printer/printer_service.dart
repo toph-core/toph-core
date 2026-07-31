@@ -7,14 +7,19 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:win32/win32.dart';
 
+import 'package:mary_ai_pos/core/api/dio_client.dart';
+import 'package:mary_ai_pos/core/api/list_api.dart';
 import 'package:mary_ai_pos/core/components/flush_bars.dart';
 import 'package:mary_ai_pos/core/services/cache/cache_service.dart';
+import 'package:mary_ai_pos/core/usecase/usecase.dart';
 import 'package:mary_ai_pos/core/utils/helper/helper_widget.dart';
 import 'package:mary_ai_pos/di.dart';
 import 'package:mary_ai_pos/features/view/auth/presentation/cubit/bloc/user_bloc.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/open_order/open_order_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/table_timer/table_timer_response_model.dart';
 import 'package:mary_ai_pos/features/view/main/domain/entities/archive_detail_entity.dart';
+import 'package:mary_ai_pos/features/view/main/domain/entities/order_food_entity.dart';
+import 'package:mary_ai_pos/features/view/main/domain/usecase/get_departments_usecase.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/detail/detail_bloc.dart';
 
 import 'printer_config.dart';
@@ -38,6 +43,83 @@ class PrinterService {
         for (final c in inject<CacheService>().getCategories())
           if (c['id'] != null) c['id'].toString(): (c['name']?.toString() ?? ''),
       };
+
+  /// goodId -> departmentId. Prefers the good's own `department_id`; falls
+  /// back to its category's department when that's empty (older/denormalized
+  /// records). Used to group closing-check items by department.
+  Map<String, String> get _goodDepartmentId {
+    final cache = inject<CacheService>();
+    final categoryDept = <String, String>{
+      for (final c in cache.getCategories())
+        if (c['id'] != null) c['id'].toString(): (c['department_id']?.toString() ?? ''),
+    };
+    final map = <String, String>{};
+    for (final g in cache.getGoods()) {
+      final id = g['id']?.toString();
+      if (id == null || id.isEmpty) continue;
+      var deptId = g['department_id']?.toString() ?? '';
+      if (deptId.isEmpty) {
+        final catId = g['category_id']?.toString() ?? '';
+        deptId = categoryDept[catId] ?? '';
+      }
+      map[id] = deptId;
+    }
+    return map;
+  }
+
+  /// departmentId -> name, and a fixed print order (cache/API response
+  /// order, stable across a session). Fetches from the network once if the
+  /// local cache is empty (e.g. app was never navigated to the menu screen
+  /// this session).
+  Future<({Map<String, String> names, List<String> order})> _resolveDepartments() async {
+    var cached = inject<CacheService>().getDepartments();
+    if (cached.isEmpty) {
+      final result = await inject<GetDepartmentsUsecase>().call(NoParams());
+      result.fold((_) {}, (list) {
+        inject<CacheService>().saveDepartments(
+          list.map((d) => {'id': d.id, 'name': d.name}).toList(),
+        );
+      });
+      cached = inject<CacheService>().getDepartments();
+    }
+    final names = <String, String>{};
+    final order = <String>[];
+    for (final d in cached) {
+      final id = d['id']?.toString();
+      if (id == null || id.isEmpty) continue;
+      order.add(id);
+      names[id] = d['name']?.toString() ?? '';
+    }
+    return (names: names, order: order);
+  }
+
+  /// Archive/bill items don't always carry `good_id` (older backend
+  /// responses). `/api/v1/order-items/order/{id}` does, keyed by line —
+  /// same enrichment pattern as `DetailBloc._enrichExistingGoodsWithTimestamps`.
+  /// Falls back silently (empty map) on any error — department grouping then
+  /// just buckets those lines under "Other".
+  Future<Map<String, String>> _fetchGoodIdsByName(String orderId) async {
+    try {
+      final res = await inject<DioClient>().get(ListAPI.orderItemsListByOrder(orderId));
+      final raw = res.data['data'];
+      final List<dynamic> list = raw is List
+          ? raw
+          : (raw is Map && raw['items'] is List ? raw['items'] as List : const []);
+      final map = <String, String>{};
+      for (final entry in list.whereType<Map>()) {
+        final m = Map<String, dynamic>.from(entry);
+        final name = (m['good_name'] ?? m['name'] ?? '').toString();
+        final goodId = (m['good_id'] ?? '').toString();
+        if (name.isNotEmpty && goodId.isNotEmpty) {
+          map.putIfAbsent(name, () => goodId);
+        }
+      }
+      return map;
+    } catch (e) {
+      debugPrint('[PrinterService] good_id enrichment xatosi: $e');
+      return const {};
+    }
+  }
 
   /// TCP orqali yuborish; juda kichik bo‘laklar ESC/raster oqimini sindirishi mumkin.
   static const _socketChunkBytes = 8192;
@@ -65,6 +147,7 @@ class PrinterService {
     // Summa 0 / barcha pozitsiyalar bekor — yopilgan schyot uchun bo’sh chek ham chop etiladi.
     try {
       final config = _storage.closeCheckConfigOrFallback();
+      final deptInfo = await _resolveDepartments();
       final bytes = await CashierReceiptBuilder.build(
         order: order,
         items: items,
@@ -76,6 +159,8 @@ class PrinterService {
         timerPauses: timerPauses,
         timerTotalSec: timerTotalSec,
         timerPricePerHour: timerPricePerHour,
+        departmentNames: deptInfo.names,
+        departmentOrder: deptInfo.order,
       );
       final r = await _connectAndPrint(config, bytes);
       if (!r.ok) {
@@ -111,6 +196,20 @@ class PrinterService {
   }) async {
     try {
       final config = _storage.closeCheckConfigOrFallback();
+
+      // good_id yo'q bo'lgan qatorlar bo'lsa — nom bo'yicha to'ldiramiz
+      // (bo'lim/departament guruhlash uchun kerak).
+      Map<String, String> nameToGoodId = const {};
+      if (detail.goods.any((g) => g.goodId.isEmpty) && detail.id.isNotEmpty) {
+        nameToGoodId = await _fetchGoodIdsByName(detail.id);
+      }
+      final goodDept = _goodDepartmentId;
+      final deptInfo = await _resolveDepartments();
+      String departmentIdOf(OrderFoodEntity g) {
+        final gid = g.goodId.isNotEmpty ? g.goodId : (nameToGoodId[g.name] ?? '');
+        return gid.isNotEmpty ? (goodDept[gid] ?? '') : '';
+      }
+
       final bytes = await CashierReceiptBuilder.buildFromDetail(
         detail: detail,
         paperSize: config.paperSize,
@@ -121,6 +220,9 @@ class PrinterService {
         timerPauses: timerPauses,
         timerTotalSec: timerTotalSec,
         timerPricePerHour: timerPricePerHour,
+        departmentIdOf: departmentIdOf,
+        departmentNames: deptInfo.names,
+        departmentOrder: deptInfo.order,
       );
       final r = await _connectAndPrint(config, bytes);
       if (!r.ok) {

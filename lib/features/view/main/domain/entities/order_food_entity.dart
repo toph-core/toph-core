@@ -6,6 +6,10 @@ abstract class OrderFoodEntity {
   final String comment;
   final String status;
   final DateTime? createdAt;
+  // Menu item id (`good_id`) — used to merge duplicate lines of the same
+  // menu item and to resolve its department for receipt grouping. May be
+  // empty for older/legacy responses that don't include it.
+  final String goodId;
 
   OrderFoodEntity({
     required this.id,
@@ -15,5 +19,6 @@ abstract class OrderFoodEntity {
     required this.comment,
     this.status = 'pending',
     this.createdAt,
+    this.goodId = '',
   });
 }

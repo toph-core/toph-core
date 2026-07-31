@@ -19,6 +19,7 @@ class OrderFoodModel with _$OrderFoodModel implements OrderFoodEntity {
     // Backend `created_at` (UTC) — har bir item qachon buyurtmaga qo'shilgan.
     // Agar mavjud bo'lsa, UI vaqt belgisi sifatida ko'rsatadi.
     @JsonKey(name: 'created_at', fromJson: _parseLocalDate) DateTime? createdAt,
+    @JsonKey(name: 'good_id') @Default('') String goodId,
   }) = _OrderFoodModel;
 
   factory OrderFoodModel.fromJson(Map<String, dynamic> json) =>
@@ -59,6 +60,7 @@ class OrderFoodEntityListConverter
                   'quantity': item.quantity,
                   'price': item.price,
                   'comment': item.comment,
+                  'good_id': item.goodId,
                 },
         )
         .toList();
