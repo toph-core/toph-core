@@ -1019,15 +1019,14 @@ class _BusyCardContent extends StatelessWidget {
             key: ValueKey('${table.id}-bar'),
             table: table,
             mode: TimeBasedBadgeMode.bar,
-            savedItemCount: savedItemCount,
           ),
         ] else if (openedAt != null) ...[
           const SizedBox(height: 10),
-          _LocalBusyBar(
-            openedAt: openedAt,
-            savedTotal: savedTotal,
-            savedItemCount: savedItemCount,
-          ),
+          _LocalBusyBar(openedAt: openedAt, savedTotal: savedTotal),
+        ],
+        if ((savedItemCount ?? 0) > 0) ...[
+          const SizedBox(height: 6),
+          _SavedItemsBar(itemCount: savedItemCount!, compact: true),
         ],
         const Spacer(),
         _RateFooter(table: table),
@@ -1036,42 +1035,58 @@ class _BusyCardContent extends StatelessWidget {
   }
 }
 
-// ── Prominent "unsaved draft" banner — same size/weight as the timer bar
-// (_LocalBusyBar / TimeBasedTableBadge's bar mode) so an uncommitted cart
-// reads at a glance, not just as a small header chip.
+// ── "Unsaved draft" banner — a separate row below the timer/local bar so
+// an uncommitted cart reads at a glance. Free-table cards have a full
+// timer-bar-sized version (plenty of vertical room, no timer occupying
+// it); busy-table cards use `compact: true` since the timer bar already
+// takes the space the full-size version needs and this card has a fixed
+// height — a full-size banner there overflows the card.
 class _SavedItemsBar extends StatelessWidget {
   final int itemCount;
-  const _SavedItemsBar({required this.itemCount});
+  final bool compact;
+  const _SavedItemsBar({required this.itemCount, this.compact = false});
 
   @override
   Widget build(BuildContext context) {
+    final fontSize = compact ? 12.0 : 15.0;
+    final iconSize = compact ? 13.0 : 16.0;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      padding: EdgeInsets.symmetric(
+        horizontal: compact ? 8 : 10,
+        vertical: compact ? 4 : 8,
+      ),
       decoration: BoxDecoration(
         color: _kInfoTint,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: _kInfo.withOpacity(0.3)),
+        borderRadius: BorderRadius.circular(compact ? 6 : 8),
+        border: compact ? null : Border.all(color: _kInfo.withOpacity(0.3)),
       ),
       child: Row(
+        mainAxisSize: compact ? MainAxisSize.min : MainAxisSize.max,
         children: [
-          const Icon(
-            Icons.priority_high_rounded,
-            size: 16,
-            color: _kInfo,
-          ),
+          Icon(Icons.priority_high_rounded, size: iconSize, color: _kInfo),
           const SizedBox(width: 6),
-          Expanded(
-            child: Text(
-              'Saqlangan $itemCount ta taom',
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w700,
-                color: _kInfo,
-                fontFamily: 'Inter',
-              ),
-            ),
-          ),
+          compact
+              ? Text(
+                  'Saqlangan $itemCount ta taom',
+                  style: TextStyle(
+                    fontSize: fontSize,
+                    fontWeight: FontWeight.w700,
+                    color: _kInfo,
+                    fontFamily: 'Inter',
+                  ),
+                )
+              : Expanded(
+                  child: Text(
+                    'Saqlangan $itemCount ta taom',
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: fontSize,
+                      fontWeight: FontWeight.w700,
+                      color: _kInfo,
+                      fontFamily: 'Inter',
+                    ),
+                  ),
+                ),
         ],
       ),
     );
@@ -1087,12 +1102,7 @@ class _SavedItemsBar extends StatelessWidget {
 class _LocalBusyBar extends StatefulWidget {
   final DateTime? openedAt;
   final int? savedTotal;
-  final int? savedItemCount;
-  const _LocalBusyBar({
-    required this.openedAt,
-    required this.savedTotal,
-    this.savedItemCount,
-  });
+  const _LocalBusyBar({required this.openedAt, required this.savedTotal});
 
   @override
   State<_LocalBusyBar> createState() => _LocalBusyBarState();
@@ -1143,24 +1153,6 @@ class _LocalBusyBarState extends State<_LocalBusyBar> {
             ),
           ),
           const Spacer(),
-          if ((widget.savedItemCount ?? 0) > 0) ...[
-            const Icon(
-              Icons.priority_high_rounded,
-              size: 14,
-              color: _kInfo,
-            ),
-            const SizedBox(width: 2),
-            Text(
-              '${widget.savedItemCount}',
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w700,
-                color: _kInfo,
-                fontFamily: 'Inter',
-              ),
-            ),
-            if (showAmount) const SizedBox(width: 8),
-          ],
           if (showAmount)
             Text(
               '${_fmtSom(widget.savedTotal!)} so\'m',

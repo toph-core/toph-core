@@ -27,6 +27,7 @@ import 'package:mary_ai_pos/features/view/main/domain/usecase/create_payment_use
 import 'package:mary_ai_pos/features/view/main/domain/usecase/get_payment_detail_with_id_usecase.dart';
 import 'package:mary_ai_pos/features/view/main/domain/usecase/get_payment_detail_with_table_id_usecase.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/main/main_cubit.dart';
+import 'package:mary_ai_pos/features/view/main/presentation/cubit/orders/orders_bloc.dart';
 
 part 'payment_event.dart';
 part 'payment_state.dart';
@@ -269,6 +270,12 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
     final effectiveTableId = state.tableId ?? state.detail?.tableId;
     if (effectiveTableId != null && effectiveTableId.isNotEmpty) {
       mainCubit.broadcastTableStatus(effectiveTableId, TableStatus.free);
+      // Order is fully paid off — any leftover local draft for this table
+      // (uncommitted cart items) is stale now and must not resurface next
+      // time the table is opened.
+      navigatorKey.currentContext!.read<SavedOrdersBloc>().add(
+        SavedOrdersEvent.removeOrder(tableId: effectiveTableId),
+      );
     }
     Navigator.pushNamedAndRemoveUntil(
       navigatorKey.currentContext!,

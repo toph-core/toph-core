@@ -57,9 +57,6 @@ class _DetailScreenState extends State<DetailScreen> with DetailScreenMixin {
 
     tableStatus = args['table_status'] as TableStatus;
 
-    final hasSavedGoods =
-        savedOrders != null && savedOrders!.createOrderRequest.foods.isNotEmpty;
-
     final initialCategoryId = args['initial_category_id'] as String?;
 
     final sharedDetailBloc = args['detail_bloc'] as DetailBloc?;
@@ -85,9 +82,7 @@ class _DetailScreenState extends State<DetailScreen> with DetailScreenMixin {
         ),
       );
 
-      if (tableStatus == TableStatus.busy &&
-          cafeTable != null &&
-          !hasSavedGoods) {
+      if (tableStatus == TableStatus.busy && cafeTable != null) {
         _detailBloc.add(DetailEvent.fetchBillOrders(billId: cafeTable!.id));
       }
 

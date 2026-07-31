@@ -55,9 +55,6 @@ class _DepartmentSelectionScreenState extends State<DepartmentSelectionScreen> {
 
     tableStatus = args['table_status'] as TableStatus? ?? TableStatus.none;
 
-    final hasSavedGoods =
-        savedOrders != null && savedOrders!.createOrderRequest.foods.isNotEmpty;
-
     _detailBloc = inject<DetailBloc>()
       ..add(const DetailEvent.started())
       ..add(
@@ -66,9 +63,14 @@ class _DepartmentSelectionScreenState extends State<DepartmentSelectionScreen> {
         ),
       );
 
-    if (tableStatus == TableStatus.busy &&
-        cafeTable != null &&
-        !hasSavedGoods) {
+    // Fetch the bill's already-committed items (existingGoods) and bind
+    // activeOrderId regardless of whether there's also a local saved draft
+    // (selectedGoods) — they're independent state fields, and skipping
+    // this when a draft exists used to hide already-billed items and
+    // leave activeOrderId null, which then made committing the draft fail
+    // with "Buyurtma ID topilmadi" since the create-order flow refuses to
+    // POST a fresh order for an already-busy table without one.
+    if (tableStatus == TableStatus.busy && cafeTable != null) {
       _detailBloc.add(DetailEvent.fetchBillOrders(billId: cafeTable!.id));
     }
 

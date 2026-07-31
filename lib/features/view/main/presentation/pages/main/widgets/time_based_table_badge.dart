@@ -19,7 +19,6 @@ const _kFooterText = Color(0xFF64748B);
 const _kPausedBg = Color(0xFFE9EDF2);
 const _kPausedBorder = Color(0xFFCBD5E1);
 const _kPausedText = Color(0xFF64748B);
-const _kInfo = Color(0xFF2563EB);
 
 /// Rendering mode for the redesigned table-card chrome. Takes precedence
 /// over [TimeBasedTableBadge.compact] when set, so existing call sites
@@ -31,7 +30,6 @@ class TimeBasedTableBadge extends StatefulWidget {
   final bool compact;
   final bool showControls;
   final TimeBasedBadgeMode? mode;
-  final int? savedItemCount;
 
   const TimeBasedTableBadge({
     super.key,
@@ -39,7 +37,6 @@ class TimeBasedTableBadge extends StatefulWidget {
     this.compact = false,
     this.showControls = false,
     this.mode,
-    this.savedItemCount,
   });
 
   @override
@@ -320,24 +317,6 @@ class _TimeBasedTableBadgeState extends State<TimeBasedTableBadge> {
             ),
           ),
           const Spacer(),
-          if ((widget.savedItemCount ?? 0) > 0) ...[
-            const Icon(
-              Icons.priority_high_rounded,
-              size: 14,
-              color: _kInfo,
-            ),
-            const SizedBox(width: 2),
-            Text(
-              '${widget.savedItemCount}',
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w700,
-                color: _kInfo,
-                fontFamily: 'Inter',
-              ),
-            ),
-            if (showAmount) const SizedBox(width: 8),
-          ],
           if (showAmount)
             Text(
               '${fmtAmount('$amount')} so\'m',
