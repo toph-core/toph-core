@@ -1270,6 +1270,296 @@ class S {
     );
   }
 
+  /// `Transactions`
+  String get strTransactions {
+    return Intl.message(
+      'Transactions',
+      name: 'strTransactions',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Only administrator, manager or cashier can access transactions.`
+  String get strTransactionsAdminOnly {
+    return Intl.message(
+      'Only administrator, manager or cashier can access transactions.',
+      name: 'strTransactionsAdminOnly',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Categories`
+  String get strTransactionCategories {
+    return Intl.message(
+      'Categories',
+      name: 'strTransactionCategories',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Income`
+  String get strIncome {
+    return Intl.message(
+      'Income',
+      name: 'strIncome',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Expense`
+  String get strExpense {
+    return Intl.message(
+      'Expense',
+      name: 'strExpense',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Move`
+  String get strTransfer {
+    return Intl.message(
+      'Move',
+      name: 'strTransfer',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Amount`
+  String get strAmount {
+    return Intl.message(
+      'Amount',
+      name: 'strAmount',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Description`
+  String get strDescription {
+    return Intl.message(
+      'Description',
+      name: 'strDescription',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Cash register`
+  String get strCashRegister {
+    return Intl.message(
+      'Cash register',
+      name: 'strCashRegister',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `From cash register`
+  String get strFromCashRegister {
+    return Intl.message(
+      'From cash register',
+      name: 'strFromCashRegister',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `To cash register`
+  String get strToCashRegister {
+    return Intl.message(
+      'To cash register',
+      name: 'strToCashRegister',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Category`
+  String get strCategory {
+    return Intl.message(
+      'Category',
+      name: 'strCategory',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Payment type`
+  String get strPayType {
+    return Intl.message(
+      'Payment type',
+      name: 'strPayType',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Cash`
+  String get strCash {
+    return Intl.message(
+      'Cash',
+      name: 'strCash',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Card`
+  String get strCard {
+    return Intl.message(
+      'Card',
+      name: 'strCard',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Add transaction`
+  String get strAddTransaction {
+    return Intl.message(
+      'Add transaction',
+      name: 'strAddTransaction',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Edit transaction`
+  String get strEditTransaction {
+    return Intl.message(
+      'Edit transaction',
+      name: 'strEditTransaction',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Delete transaction`
+  String get strDeleteTransaction {
+    return Intl.message(
+      'Delete transaction',
+      name: 'strDeleteTransaction',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Are you sure you want to delete this transaction?`
+  String get strDeleteTransactionConfirm {
+    return Intl.message(
+      'Are you sure you want to delete this transaction?',
+      name: 'strDeleteTransactionConfirm',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `No transactions yet`
+  String get strNoTransactionsYet {
+    return Intl.message(
+      'No transactions yet',
+      name: 'strNoTransactionsYet',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Add category`
+  String get strAddCategory {
+    return Intl.message(
+      'Add category',
+      name: 'strAddCategory',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Edit category`
+  String get strEditCategory {
+    return Intl.message(
+      'Edit category',
+      name: 'strEditCategory',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Delete category`
+  String get strDeleteCategory {
+    return Intl.message(
+      'Delete category',
+      name: 'strDeleteCategory',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Are you sure you want to delete this category?`
+  String get strDeleteCategoryConfirm {
+    return Intl.message(
+      'Are you sure you want to delete this category?',
+      name: 'strDeleteCategoryConfirm',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Category name`
+  String get strCategoryName {
+    return Intl.message(
+      'Category name',
+      name: 'strCategoryName',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `No categories yet`
+  String get strNoCategoriesYet {
+    return Intl.message(
+      'No categories yet',
+      name: 'strNoCategoriesYet',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Required`
+  String get strFieldRequired {
+    return Intl.message(
+      'Required',
+      name: 'strFieldRequired',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Please fill in the required fields`
+  String get strRequiredFieldsMissing {
+    return Intl.message(
+      'Please fill in the required fields',
+      name: 'strRequiredFieldsMissing',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Total: {count}`
+  String strTotalCount(int count) {
+    return Intl.message(
+      'Total: $count',
+      name: 'strTotalCount',
+      desc: '',
+      args: [count],
+    );
+  }
+
   /// `Language, interface and menu view`
   String get strInterfaceSettings {
     return Intl.message(
@@ -2065,26 +2355,6 @@ class S {
     return Intl.message(
       'Confirm that customer paid by card',
       name: 'strConfirmCardPayment',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Cash`
-  String get strCash {
-    return Intl.message(
-      'Cash',
-      name: 'strCash',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Card`
-  String get strCard {
-    return Intl.message(
-      'Card',
-      name: 'strCard',
       desc: '',
       args: [],
     );
@@ -3030,16 +3300,6 @@ class S {
     );
   }
 
-  /// `Category`
-  String get strCategory {
-    return Intl.message(
-      'Category',
-      name: 'strCategory',
-      desc: '',
-      args: [],
-    );
-  }
-
   /// `All Categories`
   String get strAllCategories {
     return Intl.message(
@@ -3240,31 +3500,11 @@ class S {
     );
   }
 
-  /// `Delete category`
-  String get strDeleteCategory {
-    return Intl.message(
-      'Delete category',
-      name: 'strDeleteCategory',
-      desc: '',
-      args: [],
-    );
-  }
-
   /// `Delete meal`
   String get strDeleteMeal {
     return Intl.message(
       'Delete meal',
       name: 'strDeleteMeal',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Add category`
-  String get strAddCategory {
-    return Intl.message(
-      'Add category',
-      name: 'strAddCategory',
       desc: '',
       args: [],
     );
@@ -4020,16 +4260,6 @@ class S {
     );
   }
 
-  /// `Move`
-  String get strTransfer {
-    return Intl.message(
-      'Move',
-      name: 'strTransfer',
-      desc: '',
-      args: [],
-    );
-  }
-
   /// `No other tables in this hall`
   String get strNoOtherTablesInHall {
     return Intl.message(
@@ -4445,6 +4675,86 @@ class S {
     return Intl.message(
       'Incorrect PIN',
       name: 'strIncorrectPincode',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Cancel item`
+  String get strCancelOrderItemTitle {
+    return Intl.message(
+      'Cancel item',
+      name: 'strCancelOrderItemTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Reason for cancellation (required)`
+  String get strCancelOrderItemReasonHint {
+    return Intl.message(
+      'Reason for cancellation (required)',
+      name: 'strCancelOrderItemReasonHint',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Please enter a reason for cancellation`
+  String get strCancelOrderItemReasonRequired {
+    return Intl.message(
+      'Please enter a reason for cancellation',
+      name: 'strCancelOrderItemReasonRequired',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Cancelled by client`
+  String get strCancelledByClient {
+    return Intl.message(
+      'Cancelled by client',
+      name: 'strCancelledByClient',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Waiter's mistake`
+  String get strWaitersMistake {
+    return Intl.message(
+      'Waiter\'s mistake',
+      name: 'strWaitersMistake',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Manager confirmation`
+  String get strManagerPincodeTitle {
+    return Intl.message(
+      'Manager confirmation',
+      name: 'strManagerPincodeTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Enter a manager or admin PIN to confirm`
+  String get strManagerPincodeSubtitle {
+    return Intl.message(
+      'Enter a manager or admin PIN to confirm',
+      name: 'strManagerPincodeSubtitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `This action requires a manager or admin PIN`
+  String get strManagerPincodeDenied {
+    return Intl.message(
+      'This action requires a manager or admin PIN',
+      name: 'strManagerPincodeDenied',
       desc: '',
       args: [],
     );

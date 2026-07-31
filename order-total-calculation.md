@@ -15,7 +15,7 @@ when **displaying a running bill** and when **collecting payment**.
 ```
 items_amount   = Σ (item.quantity × item.price)      // only non-cancelled items
 table_charge   = time-based tables only (see §3)     // 0 for normal tables
-service_amount = ROUND((items_amount + table_charge) × service_percent / 100)
+service_amount = ROUND(items_amount × service_percent / 100)   // table_charge is NOT serviced
 base_total     = items_amount + table_charge + service_amount
 discount       = discount_percent ? base_total × %/100 : discount_amount   // §5
 grand_total    = MAX(ROUND(base_total − discount), 0)
@@ -40,7 +40,7 @@ display this same number so the customer is never surprised at payment time.
 |---|---|---|
 | `items_amount` (food_total) | Sum of ordered items | order items |
 | `table_charge` | Time played on a time-based table | table time sessions |
-| `service_amount` | Service fee (%) on items **+ table** | `service_percent` |
+| `service_amount` | Service fee (%) on items only (not table charge) | `service_percent` |
 | `discount` | Percent or flat discount | request / stored |
 | `grand_total` | Final amount due | computed |
 | `change_amount` | Money returned to customer | computed at pay |
@@ -98,14 +98,13 @@ the payment (see §8).
 ## 5. Service charge
 
 ```
-service_amount = ROUND((items_amount + table_charge) × service_percent / 100)
+service_amount = ROUND(items_amount × service_percent / 100)
 ```
 
 - `service_percent` is fixed on the order when it is created, taken from the
   branch's `default_service_percent` (fallback **20%**).
 - Takeaway orders (no table) have `service_percent = 0`.
-- ‼️ **Service applies to the table charge too**, not just items. This matters for
-  time-based tables — see §7.
+- Service does **not** apply to the table charge — only to items.
 
 ---
 
@@ -130,28 +129,17 @@ Rules enforced by the backend (validation errors if broken):
 
 ---
 
-## 7. Two totals: displayed vs. charged ‼️ (read this)
+## 7. Two totals: displayed vs. charged
 
-There is a subtle difference between what the **read/display** path returns and
-what the **payment** path charges, for **time-based tables**:
-
-| Path | Formula for the table part |
-|---|---|
-| `GET /orders/{id}` (`total_amount`) | adds the **raw** `table_charge` (no service on it) |
-| `POST /orders/{id}/pay` (`grand_total`) | charges **service on the table_charge** too |
-
-So the payment total can be **higher** than the displayed `total_amount` by
-`service_percent × table_charge`.
-
-**Recommendation:** to avoid "insufficient payment" surprises, the frontend should
-compute and display the total using the **payment formula** (§1), i.e. include the
-table charge in the service base:
+For **time-based tables**, both the read/display path and the payment path agree:
+the raw `table_charge` is added, but service is **not** charged on it — only on
+`items_amount`.
 
 ```
 displayed_total = MAX(ROUND(
     items_amount
   + table_charge
-  + (items_amount + table_charge) × service_percent / 100
+  + items_amount × service_percent / 100
   − discount
 ), 0)
 ```
@@ -257,7 +245,7 @@ Fields relevant to totals returned in the order response:
 | `total_amount` | running total (see §7 caveat) |
 
 For time-based tables, `total_amount` on an unpaid order already includes the live
-raw `table_amount`, but **not** service on it — see §7.
+raw `table_amount`; service is never charged on the table amount — see §7.
 
 ---
 
@@ -282,13 +270,13 @@ Customer pays `customer_paid_amount = "295200"`, `payment_type = "cash"` → cha
 items_amount   = 246 000
 table_charge   = 1 434 800     // 47.8 active hours × 30 000/hr
 service_percent= 20
-service_amount = ROUND((246000 + 1434800) × 20/100) = 336 160
-base_total     = 246000 + 1434800 + 336160          = 2 016 960
+service_amount = ROUND(246000 × 20/100)             = 49 200
+base_total     = 246000 + 1434800 + 49200           = 1 730 000
 discount       = 0
-grand_total    = 2 016 960
+grand_total    = 1 730 000
 ```
 If the frontend showed only `295 200` (food + service, no table), payment of
-`295 200` is **rejected**. Show `2 016 960`.
+`295 200` is **rejected**. Show `1 730 000`.
 
 ### Example C — split payment with 10% discount
 
@@ -308,7 +296,8 @@ Send `payment_type = "split"`, `cash_amount = "300000"`, `card_amount = "240000"
 ## 11. Frontend checklist
 
 - [ ] Compute the displayed total with the **payment formula** (§7) so it matches
-      `grand_total` exactly — include the table charge in the service base.
+      `grand_total` exactly — table charge is added but never included in the
+      service base.
 - [ ] For time-based tables, fetch the live table charge from
       `GET /orders/{id}/table-price` and include it (and send it in the pay body).
 - [ ] Surface the table charge prominently — a forgotten timer can dwarf the food.

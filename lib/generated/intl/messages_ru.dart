@@ -47,6 +47,8 @@ class MessageLookup extends MessageLookupByLibrary {
 
   static String m12(count) => "${count} столов не сохранено";
 
+  static String m13(count) => "Всего: ${count}";
+
   final messages = _notInlinedMessages(_notInlinedMessages);
   static Map<String, Function> _notInlinedMessages(_) => <String, Function>{
         "all": MessageLookupByLibrary.simpleMessage("Все"),
@@ -76,6 +78,8 @@ class MessageLookup extends MessageLookupByLibrary {
         "strAddNewHall": MessageLookupByLibrary.simpleMessage("Новый зал"),
         "strAddOrder": MessageLookupByLibrary.simpleMessage("Добавить заказ"),
         "strAddPrinter": MessageLookupByLibrary.simpleMessage("Новый принтер"),
+        "strAddTransaction":
+            MessageLookupByLibrary.simpleMessage("Добавить транзакцию"),
         "strAddedItems":
             MessageLookupByLibrary.simpleMessage("Добавленные элементы"),
         "strAddress": MessageLookupByLibrary.simpleMessage("Адрес"),
@@ -86,6 +90,7 @@ class MessageLookup extends MessageLookupByLibrary {
         "strAllHalls": MessageLookupByLibrary.simpleMessage("Все"),
         "strAllOrdersTitle": MessageLookupByLibrary.simpleMessage("Все заказы"),
         "strAllRoles": MessageLookupByLibrary.simpleMessage("Все"),
+        "strAmount": MessageLookupByLibrary.simpleMessage("Сумма"),
         "strAmountColumn": MessageLookupByLibrary.simpleMessage("Сумма"),
         "strAmountColumnHeader": MessageLookupByLibrary.simpleMessage("Сумма"),
         "strAngleDegrees": MessageLookupByLibrary.simpleMessage("Угол (°)"),
@@ -108,8 +113,16 @@ class MessageLookup extends MessageLookupByLibrary {
         "strBusyShort": MessageLookupByLibrary.simpleMessage("занят"),
         "strCable": MessageLookupByLibrary.simpleMessage("Кабель"),
         "strCancel": MessageLookupByLibrary.simpleMessage("Отмена"),
+        "strCancelOrderItemReasonHint": MessageLookupByLibrary.simpleMessage(
+            "Причина отмены (обязательно)"),
+        "strCancelOrderItemReasonRequired":
+            MessageLookupByLibrary.simpleMessage("Укажите причину отмены"),
+        "strCancelOrderItemTitle":
+            MessageLookupByLibrary.simpleMessage("Отмена позиции"),
         "strCancelShort": MessageLookupByLibrary.simpleMessage("Отмена"),
         "strCancelled": MessageLookupByLibrary.simpleMessage("Отменено"),
+        "strCancelledByClient":
+            MessageLookupByLibrary.simpleMessage("Отменено клиентом"),
         "strCannotCloseShiftMessage": MessageLookupByLibrary.simpleMessage(
             "Чтобы полностью закрыть смену, все столы должны быть закрыты."),
         "strCannotCloseShiftTitle":
@@ -122,10 +135,13 @@ class MessageLookup extends MessageLookupByLibrary {
         "strCash": MessageLookupByLibrary.simpleMessage("Наличные"),
         "strCashBalance":
             MessageLookupByLibrary.simpleMessage("Кассовый баланс"),
+        "strCashRegister": MessageLookupByLibrary.simpleMessage("Касса"),
         "strCashier": MessageLookupByLibrary.simpleMessage("Кассир"),
         "strCashierLabel": MessageLookupByLibrary.simpleMessage("Кассир:"),
         "strCashierRole": MessageLookupByLibrary.simpleMessage("Кассир"),
         "strCategory": MessageLookupByLibrary.simpleMessage("Категория"),
+        "strCategoryName":
+            MessageLookupByLibrary.simpleMessage("Название категории"),
         "strChange": MessageLookupByLibrary.simpleMessage("Сдача"),
         "strChangeTable": MessageLookupByLibrary.simpleMessage("Сменить стол"),
         "strCheckForDetails": MessageLookupByLibrary.simpleMessage(
@@ -182,6 +198,8 @@ class MessageLookup extends MessageLookupByLibrary {
         "strDelete": MessageLookupByLibrary.simpleMessage("Удалить"),
         "strDeleteCategory":
             MessageLookupByLibrary.simpleMessage("Удалить категорию"),
+        "strDeleteCategoryConfirm": MessageLookupByLibrary.simpleMessage(
+            "Вы уверены, что хотите удалить эту категорию?"),
         "strDeleteEmployee":
             MessageLookupByLibrary.simpleMessage("Удалить сотрудника"),
         "strDeleteEmployeeConfirm": m2,
@@ -192,6 +210,11 @@ class MessageLookup extends MessageLookupByLibrary {
         "strDeletePrinter":
             MessageLookupByLibrary.simpleMessage("Удалить принтер"),
         "strDeleteTable": MessageLookupByLibrary.simpleMessage("Удалить стол"),
+        "strDeleteTransaction":
+            MessageLookupByLibrary.simpleMessage("Удалить транзакцию"),
+        "strDeleteTransactionConfirm": MessageLookupByLibrary.simpleMessage(
+            "Вы уверены, что хотите удалить эту транзакцию?"),
+        "strDescription": MessageLookupByLibrary.simpleMessage("Описание"),
         "strDeviceSynchronization": MessageLookupByLibrary.simpleMessage(
             "Синхронизация между устройствами"),
         "strDisabled": MessageLookupByLibrary.simpleMessage("Отключён"),
@@ -212,10 +235,14 @@ class MessageLookup extends MessageLookupByLibrary {
         "strDurationLabel":
             MessageLookupByLibrary.simpleMessage("Длительность"),
         "strEdit": MessageLookupByLibrary.simpleMessage("Редактировать"),
+        "strEditCategory":
+            MessageLookupByLibrary.simpleMessage("Редактировать категорию"),
         "strEditMeal":
             MessageLookupByLibrary.simpleMessage("Редактировать блюдо"),
         "strEditPrinter":
             MessageLookupByLibrary.simpleMessage("Редактировать принтер"),
+        "strEditTransaction":
+            MessageLookupByLibrary.simpleMessage("Редактировать транзакцию"),
         "strElapsedTime":
             MessageLookupByLibrary.simpleMessage("Прошло времени"),
         "strEmail": MessageLookupByLibrary.simpleMessage("Email"),
@@ -237,6 +264,7 @@ class MessageLookup extends MessageLookupByLibrary {
             MessageLookupByLibrary.simpleMessage("Текущие заказы"),
         "strExpectedBalance":
             MessageLookupByLibrary.simpleMessage("Ожидаемый остаток"),
+        "strExpense": MessageLookupByLibrary.simpleMessage("Расход"),
         "strExport": MessageLookupByLibrary.simpleMessage("Экспорт"),
         "strExtraSalt":
             MessageLookupByLibrary.simpleMessage("Дополнительно соли"),
@@ -275,6 +303,8 @@ class MessageLookup extends MessageLookupByLibrary {
         "strFebruary": MessageLookupByLibrary.simpleMessage("Февраль"),
         "strFieldCannotBeEmpty": MessageLookupByLibrary.simpleMessage(
             "Это поле не может быть пустым"),
+        "strFieldRequired":
+            MessageLookupByLibrary.simpleMessage("Обязательное поле"),
         "strFileTooLarge":
             MessageLookupByLibrary.simpleMessage("Файл не больше 5 МБ"),
         "strFloorMap": MessageLookupByLibrary.simpleMessage("Карта столов"),
@@ -291,6 +321,7 @@ class MessageLookup extends MessageLookupByLibrary {
             MessageLookupByLibrary.simpleMessage("Заморозить плату за время"),
         "strFriday": MessageLookupByLibrary.simpleMessage("Пятница"),
         "strFrom": MessageLookupByLibrary.simpleMessage("От"),
+        "strFromCashRegister": MessageLookupByLibrary.simpleMessage("Из кассы"),
         "strFrozenAmount":
             MessageLookupByLibrary.simpleMessage("Замороженная сумма"),
         "strFrozenShort": MessageLookupByLibrary.simpleMessage("ЗАМОРОЖЕНО"),
@@ -321,6 +352,7 @@ class MessageLookup extends MessageLookupByLibrary {
             MessageLookupByLibrary.simpleMessage("Настройки Hub и клиентов"),
         "strIPAddress": MessageLookupByLibrary.simpleMessage("IP адрес"),
         "strImages": MessageLookupByLibrary.simpleMessage("Изображения"),
+        "strIncome": MessageLookupByLibrary.simpleMessage("Приход"),
         "strIncorrectPincode":
             MessageLookupByLibrary.simpleMessage("Неверный пин-код"),
         "strIngredients": MessageLookupByLibrary.simpleMessage("Ингредиенты"),
@@ -355,6 +387,12 @@ class MessageLookup extends MessageLookupByLibrary {
         "strLogout": MessageLookupByLibrary.simpleMessage("Выйти"),
         "strLogoutConfirm": MessageLookupByLibrary.simpleMessage(
             "Вы действительно хотите выйти из аккаунта?"),
+        "strManagerPincodeDenied": MessageLookupByLibrary.simpleMessage(
+            "Это действие требует PIN менеджера или админа"),
+        "strManagerPincodeSubtitle": MessageLookupByLibrary.simpleMessage(
+            "Введите PIN менеджера или админа для подтверждения"),
+        "strManagerPincodeTitle":
+            MessageLookupByLibrary.simpleMessage("Подтверждение менеджера"),
         "strManualAdd":
             MessageLookupByLibrary.simpleMessage("Добавить вручную"),
         "strManualInput": MessageLookupByLibrary.simpleMessage("Ручной ввод"),
@@ -386,6 +424,8 @@ class MessageLookup extends MessageLookupByLibrary {
             MessageLookupByLibrary.simpleMessage("Активных периодов пока нет"),
         "strNoCalculationsHint": MessageLookupByLibrary.simpleMessage(
             "Нет строк. Добавьте ингредиент или полуфабрикат."),
+        "strNoCategoriesYet":
+            MessageLookupByLibrary.simpleMessage("Категорий пока нет"),
         "strNoDataFound":
             MessageLookupByLibrary.simpleMessage("Данные не найдены"),
         "strNoDiscountYet":
@@ -410,6 +450,8 @@ class MessageLookup extends MessageLookupByLibrary {
         "strNoTables": MessageLookupByLibrary.simpleMessage("Столов нет"),
         "strNoTablesInHall":
             MessageLookupByLibrary.simpleMessage("В этом зале нет столов"),
+        "strNoTransactionsYet":
+            MessageLookupByLibrary.simpleMessage("Транзакций пока нет"),
         "strNotOrdered": MessageLookupByLibrary.simpleMessage("Не заказано"),
         "strNotYet": MessageLookupByLibrary.simpleMessage("Пока нет"),
         "strNotifications": MessageLookupByLibrary.simpleMessage("Уведомления"),
@@ -459,6 +501,7 @@ class MessageLookup extends MessageLookupByLibrary {
             MessageLookupByLibrary.simpleMessage("Пароли не совпадают"),
         "strPauseAction": MessageLookupByLibrary.simpleMessage("Пауза"),
         "strPauseHistory": MessageLookupByLibrary.simpleMessage("История пауз"),
+        "strPayType": MessageLookupByLibrary.simpleMessage("Тип оплаты"),
         "strPayment": MessageLookupByLibrary.simpleMessage("Оплата"),
         "strPaymentAmount":
             MessageLookupByLibrary.simpleMessage("Сумма оплаты"),
@@ -514,6 +557,8 @@ class MessageLookup extends MessageLookupByLibrary {
             MessageLookupByLibrary.simpleMessage("Отпустите — обновится"),
         "strRequiredFields": MessageLookupByLibrary.simpleMessage(
             "Название, категория и цена обязательны"),
+        "strRequiredFieldsMissing":
+            MessageLookupByLibrary.simpleMessage("Заполните обязательные поля"),
         "strReserved": MessageLookupByLibrary.simpleMessage("Бронь"),
         "strReservedBadge":
             MessageLookupByLibrary.simpleMessage("Забронировано"),
@@ -629,6 +674,7 @@ class MessageLookup extends MessageLookupByLibrary {
         "strTimeColumn": MessageLookupByLibrary.simpleMessage("Время"),
         "strTimeColumnHeader": MessageLookupByLibrary.simpleMessage("Открыт"),
         "strTo": MessageLookupByLibrary.simpleMessage("До"),
+        "strToCashRegister": MessageLookupByLibrary.simpleMessage("В кассу"),
         "strTodayRevenue":
             MessageLookupByLibrary.simpleMessage("Выручка за сегодня"),
         "strTotal": MessageLookupByLibrary.simpleMessage("Итого"),
@@ -636,6 +682,7 @@ class MessageLookup extends MessageLookupByLibrary {
         "strTotalCapacity":
             MessageLookupByLibrary.simpleMessage("Общая вместимость"),
         "strTotalColon": MessageLookupByLibrary.simpleMessage("Итого:"),
+        "strTotalCount": m13,
         "strTotalLabel": MessageLookupByLibrary.simpleMessage("Итого:"),
         "strTotalPause": MessageLookupByLibrary.simpleMessage("Всего пауз:"),
         "strTotalPrice": MessageLookupByLibrary.simpleMessage("Итоговая цена"),
@@ -644,6 +691,11 @@ class MessageLookup extends MessageLookupByLibrary {
         "strTotalSales": MessageLookupByLibrary.simpleMessage("Общая выручка"),
         "strTotalSum": MessageLookupByLibrary.simpleMessage("Итого"),
         "strTotalTables": MessageLookupByLibrary.simpleMessage("Всего столов"),
+        "strTransactionCategories":
+            MessageLookupByLibrary.simpleMessage("Категории"),
+        "strTransactions": MessageLookupByLibrary.simpleMessage("Транзакции"),
+        "strTransactionsAdminOnly": MessageLookupByLibrary.simpleMessage(
+            "Доступ к транзакциям есть только у администратора, менеджера или кассира."),
         "strTransfer": MessageLookupByLibrary.simpleMessage("Перенести"),
         "strTuesday": MessageLookupByLibrary.simpleMessage("Вторник"),
         "strTypeColumnHeader": MessageLookupByLibrary.simpleMessage("Тип"),
@@ -662,6 +714,8 @@ class MessageLookup extends MessageLookupByLibrary {
         "strViewAll": MessageLookupByLibrary.simpleMessage("Смотреть все"),
         "strViewReceipt": MessageLookupByLibrary.simpleMessage("Показать чек"),
         "strWaiterRole": MessageLookupByLibrary.simpleMessage("Официант"),
+        "strWaitersMistake":
+            MessageLookupByLibrary.simpleMessage("Ошибка официанта"),
         "strWaiting": MessageLookupByLibrary.simpleMessage("Ожидание"),
         "strWaitingForOrder":
             MessageLookupByLibrary.simpleMessage("Ожидание заказа"),

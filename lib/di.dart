@@ -55,6 +55,7 @@ import 'package:mary_ai_pos/features/view/auth/domain/repository/auth_repository
 import 'package:mary_ai_pos/features/view/auth/domain/usecases/check_user_auth/check_user_auth.dart';
 import 'package:mary_ai_pos/features/view/auth/domain/usecases/get_app_language/get_app_langauage_usecase.dart';
 import 'package:mary_ai_pos/features/view/auth/domain/usecases/login/login_usecase.dart';
+import 'package:mary_ai_pos/features/view/auth/domain/usecases/login/verify_manager_pincode_usecase.dart';
 import 'package:mary_ai_pos/features/view/auth/domain/usecases/login_with_brand/login_with_brand_usecase.dart';
 import 'package:mary_ai_pos/features/view/auth/domain/usecases/logout/logout_from_app_usecase.dart';
 import 'package:mary_ai_pos/features/view/auth/domain/usecases/set_app_language/set_app_language_uscase.dart';
@@ -151,6 +152,7 @@ void _useCase() {
   inject.registerLazySingleton(() => LogoutFromAppUseCase(inject()));
   inject.registerLazySingleton(() => CheckUserAuthUseCase(inject()));
   inject.registerLazySingleton(() => LoginUsecase(inject()));
+  inject.registerLazySingleton(() => VerifyManagerPincodeUsecase(inject()));
   inject.registerLazySingleton(() => GetAppLangauageUsecase(inject()));
   inject.registerLazySingleton(() => SetAppLanguageUscase(inject()));
   inject.registerLazySingleton(() => LoginWithBrandUsecase(inject()));

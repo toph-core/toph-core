@@ -8,6 +8,7 @@ import 'package:mary_ai_pos/core/extension/int_extension.dart';
 import 'package:mary_ai_pos/core/extension/widget_extension.dart';
 import 'package:mary_ai_pos/core/values/app_assets.dart';
 import 'package:mary_ai_pos/core/values/app_colors.dart';
+import 'package:mary_ai_pos/core/widgets/manager_pincode_dialog.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/shift/shift_bloc.dart';
 import 'package:mary_ai_pos/generated/l10n.dart';
 
@@ -56,16 +57,16 @@ class WShiftBottom extends StatelessWidget {
               child: SizedBox(
                 height: 56,
                 child: CustomHoverEffectWidget(
-                  onTap: () {
-                    if (state.shift == null) {
-                      context.read<ShiftBloc>().add(
-                        const ShiftEvent.openShift(),
-                      );
-                    } else {
-                      context.read<ShiftBloc>().add(
-                        const ShiftEvent.closeShift(),
-                      );
-                    }
+                  onTap: () async {
+                    final bloc = context.read<ShiftBloc>();
+                    final isOpening = state.shift == null;
+                    final authorized = await requireManagerPincode(context);
+                    if (!authorized) return;
+                    bloc.add(
+                      isOpening
+                          ? const ShiftEvent.openShift()
+                          : const ShiftEvent.closeShift(),
+                    );
                   },
                   bgColor: state.shift == null
                       ? const Color(0xFFFB6633)

@@ -26,4 +26,18 @@ extension UserRolePermissions on UserRole? {
       this == UserRole.manager ||
       this == UserRole.admin ||
       this == UserRole.superadmin;
+
+  /// Kassa tranzaksiyalari (kirim/chiqim/o'tkazma) va kategoriyalarini
+  /// ko'rish/boshqarish huquqi — kassir, manager va admin.
+  bool get canManageTransactions =>
+      this == UserRole.cashier ||
+      this == UserRole.manager ||
+      this == UserRole.admin;
+
+  /// Manager/admin PIN bilan tasdiqlash talab qilinadigan amallar uchun
+  /// (masalan, tasdiqlangan order-item'ni bekor qilish) ruxsat tekshiruvi.
+  bool get isManagerOrAdmin =>
+      this == UserRole.manager ||
+      this == UserRole.admin ||
+      this == UserRole.superadmin;
 }

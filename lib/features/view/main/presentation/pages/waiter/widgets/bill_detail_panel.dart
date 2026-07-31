@@ -12,12 +12,31 @@ import 'package:mary_ai_pos/features/view/main/data/models/order_line_item/order
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/detail/detail_bloc.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/main/main_cubit.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/waiter/waiter_cubit.dart';
+import 'package:mary_ai_pos/core/widgets/cancel_order_item_dialog.dart';
+import 'package:mary_ai_pos/core/widgets/manager_pincode_dialog.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/waiter/widgets/create_bill_form.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/waiter/widgets/order_status_badge.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/waiter/widgets/table_timer_section.dart';
 import 'package:mary_ai_pos/generated/l10n.dart';
 
 enum _OrderStatusTab { pending, cooking, ready, cancelled }
+
+Future<void> _confirmCancelOrderItem(
+  BuildContext context, {
+  required String orderItemId,
+  required String orderId,
+}) async {
+  final cubit = context.read<WaiterCubit>();
+  final comment = await showCancelOrderItemDialog(context);
+  if (comment == null || !context.mounted) return;
+  final authorized = await requireManagerPincode(context);
+  if (!authorized) return;
+  await cubit.cancelOrderItem(
+    orderItemId: orderItemId,
+    orderId: orderId,
+    comment: comment,
+  );
+}
 
 class BillDetailPanel extends StatefulWidget {
   const BillDetailPanel({super.key});
@@ -198,9 +217,8 @@ class _BillDetailView extends StatelessWidget {
                                           .cancellingOrderItemId ==
                                       line.id,
                                   onCancel: editMode && line.canBeCancelled
-                                      ? () => context
-                                          .read<WaiterCubit>()
-                                          .cancelOrderItem(
+                                      ? () => _confirmCancelOrderItem(
+                                            context,
                                             orderItemId: line.id,
                                             orderId: order.id,
                                           )
@@ -1076,7 +1094,7 @@ double _sumActiveLines(List<OrderLineItemModel> lines) {
 }
 
 /// [total_amount] odatda xizmat bilan; qatorlar esa faqat mahsulot narxini beradi.
-/// Time-based: API service_amount omits service on table_charge (§7) — recompute.
+/// Service applies to items only — table_charge is not serviced.
 double _servicePartForOrder(
   OpenOrderModel order,
   double sumSubtotal,
@@ -1089,7 +1107,7 @@ double _servicePartForOrder(
     if (pct <= 0 && sumSubtotal > 0.01 && order.serviceAmountValue > 0.01) {
       pct = order.serviceAmountValue / sumSubtotal * 100;
     }
-    return (sumSubtotal + tableCharge) * pct / 100;
+    return sumSubtotal * pct / 100;
   }
   if (order.serviceAmountValue > 0.01) return order.serviceAmountValue;
   if (totalFromOrder > sumSubtotal + 0.01) {
@@ -1102,7 +1120,7 @@ double _servicePartForOrder(
 ///
 /// [kOpenOrderServiceFeeZeroPercent] yoqilganda odatda faqat qatorlar yig‘indisi
 /// ishlatiladi (xizmatni ikki marta qo‘shmaslik). Vaqt bo‘yicha stolda esa
-/// payment formula: items + table + service(on both) (§1 / §7).
+/// items + table + service(on items only).
 double _grandTotalForCloseOrder(
   OpenOrderModel order,
   double sumLines,

@@ -3,8 +3,8 @@ import 'package:mary_ai_pos/core/api/api.dart';
 import 'package:mary_ai_pos/core/design_system/pos_design_system.dart';
 import 'package:mary_ai_pos/core/extension/number_formatter.dart';
 import 'package:mary_ai_pos/core/routes/app_routes.dart';
-import 'package:mary_ai_pos/core/widgets/app_pincode_dialog.dart';
 import 'package:mary_ai_pos/core/widgets/app_scaffold.dart';
+import 'package:mary_ai_pos/core/widgets/manager_pincode_dialog.dart';
 import 'package:mary_ai_pos/di.dart';
 import 'package:mary_ai_pos/features/view/auth/presentation/cubit/bloc/user_bloc.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/cafe_tables/cafe_tables_model.dart';
@@ -1895,11 +1895,8 @@ class _CloseShiftCTA extends StatelessWidget {
     }
 
     final shiftBloc = context.read<ShiftBloc>();
-    final confirmed = await AppPincodeDialog.showWithStoredPin(
-      context,
-      subtitle: S.current.strConfirmWithPincode,
-    );
-    if (confirmed == true) {
+    final authorized = await requireManagerPincode(context);
+    if (authorized) {
       shiftBloc.add(const ShiftEvent.closeShift());
     }
   }

@@ -23,6 +23,7 @@ class AppSidebar extends StatelessWidget {
     final canManageMenu = role.canManageMenu;
     final canAccessSettings = role.canAccessSettings;
     final canManageShift = role.canManageShift;
+    final canManageTransactions = role.canManageTransactions;
 
     return Container(
       // Compact ekranlarda kichikroq sidebar — products grid'ga joy beradi
@@ -99,6 +100,14 @@ class AppSidebar extends StatelessWidget {
                             activeRoute == AppRoutes.menuManageScreen,
                         onTap: () =>
                             _navigate(context, AppRoutes.menuMealsScreen),
+                      ),
+                    if (canManageTransactions)
+                      _NavItem(
+                        icon: _IconTransactions(),
+                        label: S.current.strTransactions,
+                        isActive: activeRoute == AppRoutes.transactionsScreen,
+                        onTap: () =>
+                            _navigate(context, AppRoutes.transactionsScreen),
                       ),
                     if (canAccessSettings)
                       _NavItem(
@@ -313,6 +322,14 @@ class _IconShift extends StatelessWidget {
   Widget build(BuildContext context) {
     final t = IconTheme.of(context);
     return Icon(Icons.bar_chart_rounded, size: t.size, color: t.color);
+  }
+}
+
+class _IconTransactions extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final t = IconTheme.of(context);
+    return Icon(Icons.receipt_long_outlined, size: t.size, color: t.color);
   }
 }
 

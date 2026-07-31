@@ -74,6 +74,11 @@ class DetailBloc extends Bloc<DetailEvent, DetailState> {
   final Map<String, Timer> _existingSyncTimers = {};
   static const _existingSyncDebounce = Duration(milliseconds: 500);
 
+  /// User-entered reason for a pending quantity-decrease cancellation,
+  /// captured immediately by `_onSetExistingItemQuantity` and consumed by
+  /// `_onSyncExistingItem` when the actual cancel API calls run.
+  final Map<String, String> _pendingCancelComments = {};
+
   DetailBloc(
     this._getCategoriesUsecase,
     this._getGoodsByCategoryIdUseCase,
@@ -489,6 +494,7 @@ class DetailBloc extends Bloc<DetailEvent, DetailState> {
       itemKey: event.itemKey,
       tableId: event.tableId,
       emit: emit,
+      cancelComment: event.cancelComment,
     );
   }
 
@@ -520,6 +526,10 @@ class DetailBloc extends Bloc<DetailEvent, DetailState> {
       },
     ));
 
+    if (event.cancelComment != null && event.cancelComment!.trim().isNotEmpty) {
+      _pendingCancelComments[event.itemKey] = event.cancelComment!.trim();
+    }
+
     _existingSyncTimers.remove(event.itemKey)?.cancel();
     add(DetailEvent.syncExistingItem(
       itemKey: event.itemKey,
@@ -531,6 +541,7 @@ class DetailBloc extends Bloc<DetailEvent, DetailState> {
     required String itemKey,
     required String tableId,
     required Emitter<DetailState> emit,
+    String? cancelComment,
   }) async {
     final idx = state.existingGoods.indexWhere((g) => g.uniqueId == itemKey);
     if (idx == -1) return;
@@ -555,10 +566,17 @@ class DetailBloc extends Bloc<DetailEvent, DetailState> {
 
     final lineIds = _resolveLineIds(item);
     final dio = inject<DioClient>().dio;
+    final trimmedComment = cancelComment?.trim();
     try {
       for (final id in lineIds) {
         try {
-          await dio.post(ListAPI.orderItemCancel(id));
+          await dio.post(
+            ListAPI.orderItemCancel(id),
+            data: <String, dynamic>{
+              if (trimmedComment != null && trimmedComment.isNotEmpty)
+                'comment': trimmedComment,
+            },
+          );
         } on DioException catch (e) {
           // 404 — line allaqachon yo'q (boshqa client bekor qilgan) — davom etamiz
           if (e.response?.statusCode != 404) rethrow;
@@ -615,6 +633,7 @@ class DetailBloc extends Bloc<DetailEvent, DetailState> {
     Emitter<DetailState> emit,
   ) async {
     final snapshot = _existingSnapshots.remove(event.itemKey);
+    final pendingCancelComment = _pendingCancelComments.remove(event.itemKey);
     _existingSyncTimers.remove(event.itemKey)?.cancel();
 
     // Sync paytida UI'da +/-/X disable bo'lishi uchun nomni topamiz. Disable
@@ -693,7 +712,14 @@ class DetailBloc extends Bloc<DetailEvent, DetailState> {
           // qilmaydi — shu yo'l yagona to'g'ri ish.
           for (final id in snapshot.originalLineIds) {
             try {
-              await dio.post(ListAPI.orderItemCancel(id));
+              await dio.post(
+                ListAPI.orderItemCancel(id),
+                data: <String, dynamic>{
+                  if (pendingCancelComment != null &&
+                      pendingCancelComment.isNotEmpty)
+                    'comment': pendingCancelComment,
+                },
+              );
             } on DioException catch (e) {
               if (e.response?.statusCode != 404) rethrow;
             }

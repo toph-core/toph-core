@@ -226,7 +226,7 @@ class _DetailScreenState extends State<DetailScreen> with DetailScreenMixin {
                         top: false,
                         child: StyledVirtualKeyboard(
                           controller: controller,
-                          height: context.h * .32,
+                          height: context.h * .48,
                           onClose: () => showVirtualKeyboard.value = false,
                         ),
                       ),

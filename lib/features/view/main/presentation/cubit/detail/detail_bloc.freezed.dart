@@ -37,9 +37,11 @@ mixin _$DetailEvent {
         incrementExistingItem,
     required TResult Function(String itemKey, String tableId)
         decrementExistingItem,
-    required TResult Function(String itemKey, String tableId)
+    required TResult Function(
+            String itemKey, String tableId, String? cancelComment)
         deleteExistingItem,
-    required TResult Function(String itemKey, String tableId, int quantity)
+    required TResult Function(
+            String itemKey, String tableId, int quantity, String? cancelComment)
         setExistingItemQuantity,
     required TResult Function(String itemKey, String tableId) syncExistingItem,
   }) =>
@@ -63,8 +65,10 @@ mixin _$DetailEvent {
     TResult? Function(String itemId, String tableId)? cancelOrderItem,
     TResult? Function(String itemKey, String tableId)? incrementExistingItem,
     TResult? Function(String itemKey, String tableId)? decrementExistingItem,
-    TResult? Function(String itemKey, String tableId)? deleteExistingItem,
-    TResult? Function(String itemKey, String tableId, int quantity)?
+    TResult? Function(String itemKey, String tableId, String? cancelComment)?
+        deleteExistingItem,
+    TResult? Function(String itemKey, String tableId, int quantity,
+            String? cancelComment)?
         setExistingItemQuantity,
     TResult? Function(String itemKey, String tableId)? syncExistingItem,
   }) =>
@@ -88,8 +92,10 @@ mixin _$DetailEvent {
     TResult Function(String itemId, String tableId)? cancelOrderItem,
     TResult Function(String itemKey, String tableId)? incrementExistingItem,
     TResult Function(String itemKey, String tableId)? decrementExistingItem,
-    TResult Function(String itemKey, String tableId)? deleteExistingItem,
-    TResult Function(String itemKey, String tableId, int quantity)?
+    TResult Function(String itemKey, String tableId, String? cancelComment)?
+        deleteExistingItem,
+    TResult Function(String itemKey, String tableId, int quantity,
+            String? cancelComment)?
         setExistingItemQuantity,
     TResult Function(String itemKey, String tableId)? syncExistingItem,
     required TResult orElse(),
@@ -243,9 +249,11 @@ class _$StartedImpl implements _Started {
         incrementExistingItem,
     required TResult Function(String itemKey, String tableId)
         decrementExistingItem,
-    required TResult Function(String itemKey, String tableId)
+    required TResult Function(
+            String itemKey, String tableId, String? cancelComment)
         deleteExistingItem,
-    required TResult Function(String itemKey, String tableId, int quantity)
+    required TResult Function(
+            String itemKey, String tableId, int quantity, String? cancelComment)
         setExistingItemQuantity,
     required TResult Function(String itemKey, String tableId) syncExistingItem,
   }) {
@@ -272,8 +280,10 @@ class _$StartedImpl implements _Started {
     TResult? Function(String itemId, String tableId)? cancelOrderItem,
     TResult? Function(String itemKey, String tableId)? incrementExistingItem,
     TResult? Function(String itemKey, String tableId)? decrementExistingItem,
-    TResult? Function(String itemKey, String tableId)? deleteExistingItem,
-    TResult? Function(String itemKey, String tableId, int quantity)?
+    TResult? Function(String itemKey, String tableId, String? cancelComment)?
+        deleteExistingItem,
+    TResult? Function(String itemKey, String tableId, int quantity,
+            String? cancelComment)?
         setExistingItemQuantity,
     TResult? Function(String itemKey, String tableId)? syncExistingItem,
   }) {
@@ -300,8 +310,10 @@ class _$StartedImpl implements _Started {
     TResult Function(String itemId, String tableId)? cancelOrderItem,
     TResult Function(String itemKey, String tableId)? incrementExistingItem,
     TResult Function(String itemKey, String tableId)? decrementExistingItem,
-    TResult Function(String itemKey, String tableId)? deleteExistingItem,
-    TResult Function(String itemKey, String tableId, int quantity)?
+    TResult Function(String itemKey, String tableId, String? cancelComment)?
+        deleteExistingItem,
+    TResult Function(String itemKey, String tableId, int quantity,
+            String? cancelComment)?
         setExistingItemQuantity,
     TResult Function(String itemKey, String tableId)? syncExistingItem,
     required TResult orElse(),
@@ -457,9 +469,11 @@ class _$GetCategoriesImpl implements _GetCategories {
         incrementExistingItem,
     required TResult Function(String itemKey, String tableId)
         decrementExistingItem,
-    required TResult Function(String itemKey, String tableId)
+    required TResult Function(
+            String itemKey, String tableId, String? cancelComment)
         deleteExistingItem,
-    required TResult Function(String itemKey, String tableId, int quantity)
+    required TResult Function(
+            String itemKey, String tableId, int quantity, String? cancelComment)
         setExistingItemQuantity,
     required TResult Function(String itemKey, String tableId) syncExistingItem,
   }) {
@@ -486,8 +500,10 @@ class _$GetCategoriesImpl implements _GetCategories {
     TResult? Function(String itemId, String tableId)? cancelOrderItem,
     TResult? Function(String itemKey, String tableId)? incrementExistingItem,
     TResult? Function(String itemKey, String tableId)? decrementExistingItem,
-    TResult? Function(String itemKey, String tableId)? deleteExistingItem,
-    TResult? Function(String itemKey, String tableId, int quantity)?
+    TResult? Function(String itemKey, String tableId, String? cancelComment)?
+        deleteExistingItem,
+    TResult? Function(String itemKey, String tableId, int quantity,
+            String? cancelComment)?
         setExistingItemQuantity,
     TResult? Function(String itemKey, String tableId)? syncExistingItem,
   }) {
@@ -514,8 +530,10 @@ class _$GetCategoriesImpl implements _GetCategories {
     TResult Function(String itemId, String tableId)? cancelOrderItem,
     TResult Function(String itemKey, String tableId)? incrementExistingItem,
     TResult Function(String itemKey, String tableId)? decrementExistingItem,
-    TResult Function(String itemKey, String tableId)? deleteExistingItem,
-    TResult Function(String itemKey, String tableId, int quantity)?
+    TResult Function(String itemKey, String tableId, String? cancelComment)?
+        deleteExistingItem,
+    TResult Function(String itemKey, String tableId, int quantity,
+            String? cancelComment)?
         setExistingItemQuantity,
     TResult Function(String itemKey, String tableId)? syncExistingItem,
     required TResult orElse(),
@@ -706,9 +724,11 @@ class _$InitSavedGoodsImpl implements _InitSavedGoods {
         incrementExistingItem,
     required TResult Function(String itemKey, String tableId)
         decrementExistingItem,
-    required TResult Function(String itemKey, String tableId)
+    required TResult Function(
+            String itemKey, String tableId, String? cancelComment)
         deleteExistingItem,
-    required TResult Function(String itemKey, String tableId, int quantity)
+    required TResult Function(
+            String itemKey, String tableId, int quantity, String? cancelComment)
         setExistingItemQuantity,
     required TResult Function(String itemKey, String tableId) syncExistingItem,
   }) {
@@ -735,8 +755,10 @@ class _$InitSavedGoodsImpl implements _InitSavedGoods {
     TResult? Function(String itemId, String tableId)? cancelOrderItem,
     TResult? Function(String itemKey, String tableId)? incrementExistingItem,
     TResult? Function(String itemKey, String tableId)? decrementExistingItem,
-    TResult? Function(String itemKey, String tableId)? deleteExistingItem,
-    TResult? Function(String itemKey, String tableId, int quantity)?
+    TResult? Function(String itemKey, String tableId, String? cancelComment)?
+        deleteExistingItem,
+    TResult? Function(String itemKey, String tableId, int quantity,
+            String? cancelComment)?
         setExistingItemQuantity,
     TResult? Function(String itemKey, String tableId)? syncExistingItem,
   }) {
@@ -763,8 +785,10 @@ class _$InitSavedGoodsImpl implements _InitSavedGoods {
     TResult Function(String itemId, String tableId)? cancelOrderItem,
     TResult Function(String itemKey, String tableId)? incrementExistingItem,
     TResult Function(String itemKey, String tableId)? decrementExistingItem,
-    TResult Function(String itemKey, String tableId)? deleteExistingItem,
-    TResult Function(String itemKey, String tableId, int quantity)?
+    TResult Function(String itemKey, String tableId, String? cancelComment)?
+        deleteExistingItem,
+    TResult Function(String itemKey, String tableId, int quantity,
+            String? cancelComment)?
         setExistingItemQuantity,
     TResult Function(String itemKey, String tableId)? syncExistingItem,
     required TResult orElse(),
@@ -954,9 +978,11 @@ class _$SetSelectedCategoryIdImpl implements _SetSelectedCategoryId {
         incrementExistingItem,
     required TResult Function(String itemKey, String tableId)
         decrementExistingItem,
-    required TResult Function(String itemKey, String tableId)
+    required TResult Function(
+            String itemKey, String tableId, String? cancelComment)
         deleteExistingItem,
-    required TResult Function(String itemKey, String tableId, int quantity)
+    required TResult Function(
+            String itemKey, String tableId, int quantity, String? cancelComment)
         setExistingItemQuantity,
     required TResult Function(String itemKey, String tableId) syncExistingItem,
   }) {
@@ -983,8 +1009,10 @@ class _$SetSelectedCategoryIdImpl implements _SetSelectedCategoryId {
     TResult? Function(String itemId, String tableId)? cancelOrderItem,
     TResult? Function(String itemKey, String tableId)? incrementExistingItem,
     TResult? Function(String itemKey, String tableId)? decrementExistingItem,
-    TResult? Function(String itemKey, String tableId)? deleteExistingItem,
-    TResult? Function(String itemKey, String tableId, int quantity)?
+    TResult? Function(String itemKey, String tableId, String? cancelComment)?
+        deleteExistingItem,
+    TResult? Function(String itemKey, String tableId, int quantity,
+            String? cancelComment)?
         setExistingItemQuantity,
     TResult? Function(String itemKey, String tableId)? syncExistingItem,
   }) {
@@ -1011,8 +1039,10 @@ class _$SetSelectedCategoryIdImpl implements _SetSelectedCategoryId {
     TResult Function(String itemId, String tableId)? cancelOrderItem,
     TResult Function(String itemKey, String tableId)? incrementExistingItem,
     TResult Function(String itemKey, String tableId)? decrementExistingItem,
-    TResult Function(String itemKey, String tableId)? deleteExistingItem,
-    TResult Function(String itemKey, String tableId, int quantity)?
+    TResult Function(String itemKey, String tableId, String? cancelComment)?
+        deleteExistingItem,
+    TResult Function(String itemKey, String tableId, int quantity,
+            String? cancelComment)?
         setExistingItemQuantity,
     TResult Function(String itemKey, String tableId)? syncExistingItem,
     required TResult orElse(),
@@ -1230,9 +1260,11 @@ class _$AddFoodAdditionalImpl implements _AddFoodAdditional {
         incrementExistingItem,
     required TResult Function(String itemKey, String tableId)
         decrementExistingItem,
-    required TResult Function(String itemKey, String tableId)
+    required TResult Function(
+            String itemKey, String tableId, String? cancelComment)
         deleteExistingItem,
-    required TResult Function(String itemKey, String tableId, int quantity)
+    required TResult Function(
+            String itemKey, String tableId, int quantity, String? cancelComment)
         setExistingItemQuantity,
     required TResult Function(String itemKey, String tableId) syncExistingItem,
   }) {
@@ -1259,8 +1291,10 @@ class _$AddFoodAdditionalImpl implements _AddFoodAdditional {
     TResult? Function(String itemId, String tableId)? cancelOrderItem,
     TResult? Function(String itemKey, String tableId)? incrementExistingItem,
     TResult? Function(String itemKey, String tableId)? decrementExistingItem,
-    TResult? Function(String itemKey, String tableId)? deleteExistingItem,
-    TResult? Function(String itemKey, String tableId, int quantity)?
+    TResult? Function(String itemKey, String tableId, String? cancelComment)?
+        deleteExistingItem,
+    TResult? Function(String itemKey, String tableId, int quantity,
+            String? cancelComment)?
         setExistingItemQuantity,
     TResult? Function(String itemKey, String tableId)? syncExistingItem,
   }) {
@@ -1287,8 +1321,10 @@ class _$AddFoodAdditionalImpl implements _AddFoodAdditional {
     TResult Function(String itemId, String tableId)? cancelOrderItem,
     TResult Function(String itemKey, String tableId)? incrementExistingItem,
     TResult Function(String itemKey, String tableId)? decrementExistingItem,
-    TResult Function(String itemKey, String tableId)? deleteExistingItem,
-    TResult Function(String itemKey, String tableId, int quantity)?
+    TResult Function(String itemKey, String tableId, String? cancelComment)?
+        deleteExistingItem,
+    TResult Function(String itemKey, String tableId, int quantity,
+            String? cancelComment)?
         setExistingItemQuantity,
     TResult Function(String itemKey, String tableId)? syncExistingItem,
     required TResult orElse(),
@@ -1490,9 +1526,11 @@ class _$SelectGoodImpl implements _SelectGood {
         incrementExistingItem,
     required TResult Function(String itemKey, String tableId)
         decrementExistingItem,
-    required TResult Function(String itemKey, String tableId)
+    required TResult Function(
+            String itemKey, String tableId, String? cancelComment)
         deleteExistingItem,
-    required TResult Function(String itemKey, String tableId, int quantity)
+    required TResult Function(
+            String itemKey, String tableId, int quantity, String? cancelComment)
         setExistingItemQuantity,
     required TResult Function(String itemKey, String tableId) syncExistingItem,
   }) {
@@ -1519,8 +1557,10 @@ class _$SelectGoodImpl implements _SelectGood {
     TResult? Function(String itemId, String tableId)? cancelOrderItem,
     TResult? Function(String itemKey, String tableId)? incrementExistingItem,
     TResult? Function(String itemKey, String tableId)? decrementExistingItem,
-    TResult? Function(String itemKey, String tableId)? deleteExistingItem,
-    TResult? Function(String itemKey, String tableId, int quantity)?
+    TResult? Function(String itemKey, String tableId, String? cancelComment)?
+        deleteExistingItem,
+    TResult? Function(String itemKey, String tableId, int quantity,
+            String? cancelComment)?
         setExistingItemQuantity,
     TResult? Function(String itemKey, String tableId)? syncExistingItem,
   }) {
@@ -1547,8 +1587,10 @@ class _$SelectGoodImpl implements _SelectGood {
     TResult Function(String itemId, String tableId)? cancelOrderItem,
     TResult Function(String itemKey, String tableId)? incrementExistingItem,
     TResult Function(String itemKey, String tableId)? decrementExistingItem,
-    TResult Function(String itemKey, String tableId)? deleteExistingItem,
-    TResult Function(String itemKey, String tableId, int quantity)?
+    TResult Function(String itemKey, String tableId, String? cancelComment)?
+        deleteExistingItem,
+    TResult Function(String itemKey, String tableId, int quantity,
+            String? cancelComment)?
         setExistingItemQuantity,
     TResult Function(String itemKey, String tableId)? syncExistingItem,
     required TResult orElse(),
@@ -1737,9 +1779,11 @@ class _$IncrementQuantityImpl implements _IncrementQuantity {
         incrementExistingItem,
     required TResult Function(String itemKey, String tableId)
         decrementExistingItem,
-    required TResult Function(String itemKey, String tableId)
+    required TResult Function(
+            String itemKey, String tableId, String? cancelComment)
         deleteExistingItem,
-    required TResult Function(String itemKey, String tableId, int quantity)
+    required TResult Function(
+            String itemKey, String tableId, int quantity, String? cancelComment)
         setExistingItemQuantity,
     required TResult Function(String itemKey, String tableId) syncExistingItem,
   }) {
@@ -1766,8 +1810,10 @@ class _$IncrementQuantityImpl implements _IncrementQuantity {
     TResult? Function(String itemId, String tableId)? cancelOrderItem,
     TResult? Function(String itemKey, String tableId)? incrementExistingItem,
     TResult? Function(String itemKey, String tableId)? decrementExistingItem,
-    TResult? Function(String itemKey, String tableId)? deleteExistingItem,
-    TResult? Function(String itemKey, String tableId, int quantity)?
+    TResult? Function(String itemKey, String tableId, String? cancelComment)?
+        deleteExistingItem,
+    TResult? Function(String itemKey, String tableId, int quantity,
+            String? cancelComment)?
         setExistingItemQuantity,
     TResult? Function(String itemKey, String tableId)? syncExistingItem,
   }) {
@@ -1794,8 +1840,10 @@ class _$IncrementQuantityImpl implements _IncrementQuantity {
     TResult Function(String itemId, String tableId)? cancelOrderItem,
     TResult Function(String itemKey, String tableId)? incrementExistingItem,
     TResult Function(String itemKey, String tableId)? decrementExistingItem,
-    TResult Function(String itemKey, String tableId)? deleteExistingItem,
-    TResult Function(String itemKey, String tableId, int quantity)?
+    TResult Function(String itemKey, String tableId, String? cancelComment)?
+        deleteExistingItem,
+    TResult Function(String itemKey, String tableId, int quantity,
+            String? cancelComment)?
         setExistingItemQuantity,
     TResult Function(String itemKey, String tableId)? syncExistingItem,
     required TResult orElse(),
@@ -1984,9 +2032,11 @@ class _$DecrementQuantityImpl implements _DecrementQuantity {
         incrementExistingItem,
     required TResult Function(String itemKey, String tableId)
         decrementExistingItem,
-    required TResult Function(String itemKey, String tableId)
+    required TResult Function(
+            String itemKey, String tableId, String? cancelComment)
         deleteExistingItem,
-    required TResult Function(String itemKey, String tableId, int quantity)
+    required TResult Function(
+            String itemKey, String tableId, int quantity, String? cancelComment)
         setExistingItemQuantity,
     required TResult Function(String itemKey, String tableId) syncExistingItem,
   }) {
@@ -2013,8 +2063,10 @@ class _$DecrementQuantityImpl implements _DecrementQuantity {
     TResult? Function(String itemId, String tableId)? cancelOrderItem,
     TResult? Function(String itemKey, String tableId)? incrementExistingItem,
     TResult? Function(String itemKey, String tableId)? decrementExistingItem,
-    TResult? Function(String itemKey, String tableId)? deleteExistingItem,
-    TResult? Function(String itemKey, String tableId, int quantity)?
+    TResult? Function(String itemKey, String tableId, String? cancelComment)?
+        deleteExistingItem,
+    TResult? Function(String itemKey, String tableId, int quantity,
+            String? cancelComment)?
         setExistingItemQuantity,
     TResult? Function(String itemKey, String tableId)? syncExistingItem,
   }) {
@@ -2041,8 +2093,10 @@ class _$DecrementQuantityImpl implements _DecrementQuantity {
     TResult Function(String itemId, String tableId)? cancelOrderItem,
     TResult Function(String itemKey, String tableId)? incrementExistingItem,
     TResult Function(String itemKey, String tableId)? decrementExistingItem,
-    TResult Function(String itemKey, String tableId)? deleteExistingItem,
-    TResult Function(String itemKey, String tableId, int quantity)?
+    TResult Function(String itemKey, String tableId, String? cancelComment)?
+        deleteExistingItem,
+    TResult Function(String itemKey, String tableId, int quantity,
+            String? cancelComment)?
         setExistingItemQuantity,
     TResult Function(String itemKey, String tableId)? syncExistingItem,
     required TResult orElse(),
@@ -2204,9 +2258,11 @@ class _$ClearGoodsImpl implements _ClearGoods {
         incrementExistingItem,
     required TResult Function(String itemKey, String tableId)
         decrementExistingItem,
-    required TResult Function(String itemKey, String tableId)
+    required TResult Function(
+            String itemKey, String tableId, String? cancelComment)
         deleteExistingItem,
-    required TResult Function(String itemKey, String tableId, int quantity)
+    required TResult Function(
+            String itemKey, String tableId, int quantity, String? cancelComment)
         setExistingItemQuantity,
     required TResult Function(String itemKey, String tableId) syncExistingItem,
   }) {
@@ -2233,8 +2289,10 @@ class _$ClearGoodsImpl implements _ClearGoods {
     TResult? Function(String itemId, String tableId)? cancelOrderItem,
     TResult? Function(String itemKey, String tableId)? incrementExistingItem,
     TResult? Function(String itemKey, String tableId)? decrementExistingItem,
-    TResult? Function(String itemKey, String tableId)? deleteExistingItem,
-    TResult? Function(String itemKey, String tableId, int quantity)?
+    TResult? Function(String itemKey, String tableId, String? cancelComment)?
+        deleteExistingItem,
+    TResult? Function(String itemKey, String tableId, int quantity,
+            String? cancelComment)?
         setExistingItemQuantity,
     TResult? Function(String itemKey, String tableId)? syncExistingItem,
   }) {
@@ -2261,8 +2319,10 @@ class _$ClearGoodsImpl implements _ClearGoods {
     TResult Function(String itemId, String tableId)? cancelOrderItem,
     TResult Function(String itemKey, String tableId)? incrementExistingItem,
     TResult Function(String itemKey, String tableId)? decrementExistingItem,
-    TResult Function(String itemKey, String tableId)? deleteExistingItem,
-    TResult Function(String itemKey, String tableId, int quantity)?
+    TResult Function(String itemKey, String tableId, String? cancelComment)?
+        deleteExistingItem,
+    TResult Function(String itemKey, String tableId, int quantity,
+            String? cancelComment)?
         setExistingItemQuantity,
     TResult Function(String itemKey, String tableId)? syncExistingItem,
     required TResult orElse(),
@@ -2445,9 +2505,11 @@ class _$SearchTextChangedImpl implements _SearchTextChanged {
         incrementExistingItem,
     required TResult Function(String itemKey, String tableId)
         decrementExistingItem,
-    required TResult Function(String itemKey, String tableId)
+    required TResult Function(
+            String itemKey, String tableId, String? cancelComment)
         deleteExistingItem,
-    required TResult Function(String itemKey, String tableId, int quantity)
+    required TResult Function(
+            String itemKey, String tableId, int quantity, String? cancelComment)
         setExistingItemQuantity,
     required TResult Function(String itemKey, String tableId) syncExistingItem,
   }) {
@@ -2474,8 +2536,10 @@ class _$SearchTextChangedImpl implements _SearchTextChanged {
     TResult? Function(String itemId, String tableId)? cancelOrderItem,
     TResult? Function(String itemKey, String tableId)? incrementExistingItem,
     TResult? Function(String itemKey, String tableId)? decrementExistingItem,
-    TResult? Function(String itemKey, String tableId)? deleteExistingItem,
-    TResult? Function(String itemKey, String tableId, int quantity)?
+    TResult? Function(String itemKey, String tableId, String? cancelComment)?
+        deleteExistingItem,
+    TResult? Function(String itemKey, String tableId, int quantity,
+            String? cancelComment)?
         setExistingItemQuantity,
     TResult? Function(String itemKey, String tableId)? syncExistingItem,
   }) {
@@ -2502,8 +2566,10 @@ class _$SearchTextChangedImpl implements _SearchTextChanged {
     TResult Function(String itemId, String tableId)? cancelOrderItem,
     TResult Function(String itemKey, String tableId)? incrementExistingItem,
     TResult Function(String itemKey, String tableId)? decrementExistingItem,
-    TResult Function(String itemKey, String tableId)? deleteExistingItem,
-    TResult Function(String itemKey, String tableId, int quantity)?
+    TResult Function(String itemKey, String tableId, String? cancelComment)?
+        deleteExistingItem,
+    TResult Function(String itemKey, String tableId, int quantity,
+            String? cancelComment)?
         setExistingItemQuantity,
     TResult Function(String itemKey, String tableId)? syncExistingItem,
     required TResult orElse(),
@@ -2701,9 +2767,11 @@ class _$FetchBillOrdersImpl implements _FetchBillOrders {
         incrementExistingItem,
     required TResult Function(String itemKey, String tableId)
         decrementExistingItem,
-    required TResult Function(String itemKey, String tableId)
+    required TResult Function(
+            String itemKey, String tableId, String? cancelComment)
         deleteExistingItem,
-    required TResult Function(String itemKey, String tableId, int quantity)
+    required TResult Function(
+            String itemKey, String tableId, int quantity, String? cancelComment)
         setExistingItemQuantity,
     required TResult Function(String itemKey, String tableId) syncExistingItem,
   }) {
@@ -2730,8 +2798,10 @@ class _$FetchBillOrdersImpl implements _FetchBillOrders {
     TResult? Function(String itemId, String tableId)? cancelOrderItem,
     TResult? Function(String itemKey, String tableId)? incrementExistingItem,
     TResult? Function(String itemKey, String tableId)? decrementExistingItem,
-    TResult? Function(String itemKey, String tableId)? deleteExistingItem,
-    TResult? Function(String itemKey, String tableId, int quantity)?
+    TResult? Function(String itemKey, String tableId, String? cancelComment)?
+        deleteExistingItem,
+    TResult? Function(String itemKey, String tableId, int quantity,
+            String? cancelComment)?
         setExistingItemQuantity,
     TResult? Function(String itemKey, String tableId)? syncExistingItem,
   }) {
@@ -2758,8 +2828,10 @@ class _$FetchBillOrdersImpl implements _FetchBillOrders {
     TResult Function(String itemId, String tableId)? cancelOrderItem,
     TResult Function(String itemKey, String tableId)? incrementExistingItem,
     TResult Function(String itemKey, String tableId)? decrementExistingItem,
-    TResult Function(String itemKey, String tableId)? deleteExistingItem,
-    TResult Function(String itemKey, String tableId, int quantity)?
+    TResult Function(String itemKey, String tableId, String? cancelComment)?
+        deleteExistingItem,
+    TResult Function(String itemKey, String tableId, int quantity,
+            String? cancelComment)?
         setExistingItemQuantity,
     TResult Function(String itemKey, String tableId)? syncExistingItem,
     required TResult orElse(),
@@ -2949,9 +3021,11 @@ class _$SetActiveOrderIdImpl implements _SetActiveOrderId {
         incrementExistingItem,
     required TResult Function(String itemKey, String tableId)
         decrementExistingItem,
-    required TResult Function(String itemKey, String tableId)
+    required TResult Function(
+            String itemKey, String tableId, String? cancelComment)
         deleteExistingItem,
-    required TResult Function(String itemKey, String tableId, int quantity)
+    required TResult Function(
+            String itemKey, String tableId, int quantity, String? cancelComment)
         setExistingItemQuantity,
     required TResult Function(String itemKey, String tableId) syncExistingItem,
   }) {
@@ -2978,8 +3052,10 @@ class _$SetActiveOrderIdImpl implements _SetActiveOrderId {
     TResult? Function(String itemId, String tableId)? cancelOrderItem,
     TResult? Function(String itemKey, String tableId)? incrementExistingItem,
     TResult? Function(String itemKey, String tableId)? decrementExistingItem,
-    TResult? Function(String itemKey, String tableId)? deleteExistingItem,
-    TResult? Function(String itemKey, String tableId, int quantity)?
+    TResult? Function(String itemKey, String tableId, String? cancelComment)?
+        deleteExistingItem,
+    TResult? Function(String itemKey, String tableId, int quantity,
+            String? cancelComment)?
         setExistingItemQuantity,
     TResult? Function(String itemKey, String tableId)? syncExistingItem,
   }) {
@@ -3006,8 +3082,10 @@ class _$SetActiveOrderIdImpl implements _SetActiveOrderId {
     TResult Function(String itemId, String tableId)? cancelOrderItem,
     TResult Function(String itemKey, String tableId)? incrementExistingItem,
     TResult Function(String itemKey, String tableId)? decrementExistingItem,
-    TResult Function(String itemKey, String tableId)? deleteExistingItem,
-    TResult Function(String itemKey, String tableId, int quantity)?
+    TResult Function(String itemKey, String tableId, String? cancelComment)?
+        deleteExistingItem,
+    TResult Function(String itemKey, String tableId, int quantity,
+            String? cancelComment)?
         setExistingItemQuantity,
     TResult Function(String itemKey, String tableId)? syncExistingItem,
     required TResult orElse(),
@@ -3204,9 +3282,11 @@ class _$CancelOrderItemImpl implements _CancelOrderItem {
         incrementExistingItem,
     required TResult Function(String itemKey, String tableId)
         decrementExistingItem,
-    required TResult Function(String itemKey, String tableId)
+    required TResult Function(
+            String itemKey, String tableId, String? cancelComment)
         deleteExistingItem,
-    required TResult Function(String itemKey, String tableId, int quantity)
+    required TResult Function(
+            String itemKey, String tableId, int quantity, String? cancelComment)
         setExistingItemQuantity,
     required TResult Function(String itemKey, String tableId) syncExistingItem,
   }) {
@@ -3233,8 +3313,10 @@ class _$CancelOrderItemImpl implements _CancelOrderItem {
     TResult? Function(String itemId, String tableId)? cancelOrderItem,
     TResult? Function(String itemKey, String tableId)? incrementExistingItem,
     TResult? Function(String itemKey, String tableId)? decrementExistingItem,
-    TResult? Function(String itemKey, String tableId)? deleteExistingItem,
-    TResult? Function(String itemKey, String tableId, int quantity)?
+    TResult? Function(String itemKey, String tableId, String? cancelComment)?
+        deleteExistingItem,
+    TResult? Function(String itemKey, String tableId, int quantity,
+            String? cancelComment)?
         setExistingItemQuantity,
     TResult? Function(String itemKey, String tableId)? syncExistingItem,
   }) {
@@ -3261,8 +3343,10 @@ class _$CancelOrderItemImpl implements _CancelOrderItem {
     TResult Function(String itemId, String tableId)? cancelOrderItem,
     TResult Function(String itemKey, String tableId)? incrementExistingItem,
     TResult Function(String itemKey, String tableId)? decrementExistingItem,
-    TResult Function(String itemKey, String tableId)? deleteExistingItem,
-    TResult Function(String itemKey, String tableId, int quantity)?
+    TResult Function(String itemKey, String tableId, String? cancelComment)?
+        deleteExistingItem,
+    TResult Function(String itemKey, String tableId, int quantity,
+            String? cancelComment)?
         setExistingItemQuantity,
     TResult Function(String itemKey, String tableId)? syncExistingItem,
     required TResult orElse(),
@@ -3463,9 +3547,11 @@ class _$IncrementExistingItemImpl implements _IncrementExistingItem {
         incrementExistingItem,
     required TResult Function(String itemKey, String tableId)
         decrementExistingItem,
-    required TResult Function(String itemKey, String tableId)
+    required TResult Function(
+            String itemKey, String tableId, String? cancelComment)
         deleteExistingItem,
-    required TResult Function(String itemKey, String tableId, int quantity)
+    required TResult Function(
+            String itemKey, String tableId, int quantity, String? cancelComment)
         setExistingItemQuantity,
     required TResult Function(String itemKey, String tableId) syncExistingItem,
   }) {
@@ -3492,8 +3578,10 @@ class _$IncrementExistingItemImpl implements _IncrementExistingItem {
     TResult? Function(String itemId, String tableId)? cancelOrderItem,
     TResult? Function(String itemKey, String tableId)? incrementExistingItem,
     TResult? Function(String itemKey, String tableId)? decrementExistingItem,
-    TResult? Function(String itemKey, String tableId)? deleteExistingItem,
-    TResult? Function(String itemKey, String tableId, int quantity)?
+    TResult? Function(String itemKey, String tableId, String? cancelComment)?
+        deleteExistingItem,
+    TResult? Function(String itemKey, String tableId, int quantity,
+            String? cancelComment)?
         setExistingItemQuantity,
     TResult? Function(String itemKey, String tableId)? syncExistingItem,
   }) {
@@ -3520,8 +3608,10 @@ class _$IncrementExistingItemImpl implements _IncrementExistingItem {
     TResult Function(String itemId, String tableId)? cancelOrderItem,
     TResult Function(String itemKey, String tableId)? incrementExistingItem,
     TResult Function(String itemKey, String tableId)? decrementExistingItem,
-    TResult Function(String itemKey, String tableId)? deleteExistingItem,
-    TResult Function(String itemKey, String tableId, int quantity)?
+    TResult Function(String itemKey, String tableId, String? cancelComment)?
+        deleteExistingItem,
+    TResult Function(String itemKey, String tableId, int quantity,
+            String? cancelComment)?
         setExistingItemQuantity,
     TResult Function(String itemKey, String tableId)? syncExistingItem,
     required TResult orElse(),
@@ -3722,9 +3812,11 @@ class _$DecrementExistingItemImpl implements _DecrementExistingItem {
         incrementExistingItem,
     required TResult Function(String itemKey, String tableId)
         decrementExistingItem,
-    required TResult Function(String itemKey, String tableId)
+    required TResult Function(
+            String itemKey, String tableId, String? cancelComment)
         deleteExistingItem,
-    required TResult Function(String itemKey, String tableId, int quantity)
+    required TResult Function(
+            String itemKey, String tableId, int quantity, String? cancelComment)
         setExistingItemQuantity,
     required TResult Function(String itemKey, String tableId) syncExistingItem,
   }) {
@@ -3751,8 +3843,10 @@ class _$DecrementExistingItemImpl implements _DecrementExistingItem {
     TResult? Function(String itemId, String tableId)? cancelOrderItem,
     TResult? Function(String itemKey, String tableId)? incrementExistingItem,
     TResult? Function(String itemKey, String tableId)? decrementExistingItem,
-    TResult? Function(String itemKey, String tableId)? deleteExistingItem,
-    TResult? Function(String itemKey, String tableId, int quantity)?
+    TResult? Function(String itemKey, String tableId, String? cancelComment)?
+        deleteExistingItem,
+    TResult? Function(String itemKey, String tableId, int quantity,
+            String? cancelComment)?
         setExistingItemQuantity,
     TResult? Function(String itemKey, String tableId)? syncExistingItem,
   }) {
@@ -3779,8 +3873,10 @@ class _$DecrementExistingItemImpl implements _DecrementExistingItem {
     TResult Function(String itemId, String tableId)? cancelOrderItem,
     TResult Function(String itemKey, String tableId)? incrementExistingItem,
     TResult Function(String itemKey, String tableId)? decrementExistingItem,
-    TResult Function(String itemKey, String tableId)? deleteExistingItem,
-    TResult Function(String itemKey, String tableId, int quantity)?
+    TResult Function(String itemKey, String tableId, String? cancelComment)?
+        deleteExistingItem,
+    TResult Function(String itemKey, String tableId, int quantity,
+            String? cancelComment)?
         setExistingItemQuantity,
     TResult Function(String itemKey, String tableId)? syncExistingItem,
     required TResult orElse(),
@@ -3893,7 +3989,7 @@ abstract class _$$DeleteExistingItemImplCopyWith<$Res> {
           $Res Function(_$DeleteExistingItemImpl) then) =
       __$$DeleteExistingItemImplCopyWithImpl<$Res>;
   @useResult
-  $Res call({String itemKey, String tableId});
+  $Res call({String itemKey, String tableId, String? cancelComment});
 }
 
 /// @nodoc
@@ -3909,6 +4005,7 @@ class __$$DeleteExistingItemImplCopyWithImpl<$Res>
   $Res call({
     Object? itemKey = null,
     Object? tableId = null,
+    Object? cancelComment = freezed,
   }) {
     return _then(_$DeleteExistingItemImpl(
       itemKey: null == itemKey
@@ -3919,6 +4016,10 @@ class __$$DeleteExistingItemImplCopyWithImpl<$Res>
           ? _value.tableId
           : tableId // ignore: cast_nullable_to_non_nullable
               as String,
+      cancelComment: freezed == cancelComment
+          ? _value.cancelComment
+          : cancelComment // ignore: cast_nullable_to_non_nullable
+              as String?,
     ));
   }
 }
@@ -3927,16 +4028,18 @@ class __$$DeleteExistingItemImplCopyWithImpl<$Res>
 
 class _$DeleteExistingItemImpl implements _DeleteExistingItem {
   const _$DeleteExistingItemImpl(
-      {required this.itemKey, required this.tableId});
+      {required this.itemKey, required this.tableId, this.cancelComment});
 
   @override
   final String itemKey;
   @override
   final String tableId;
+  @override
+  final String? cancelComment;
 
   @override
   String toString() {
-    return 'DetailEvent.deleteExistingItem(itemKey: $itemKey, tableId: $tableId)';
+    return 'DetailEvent.deleteExistingItem(itemKey: $itemKey, tableId: $tableId, cancelComment: $cancelComment)';
   }
 
   @override
@@ -3945,11 +4048,13 @@ class _$DeleteExistingItemImpl implements _DeleteExistingItem {
         (other.runtimeType == runtimeType &&
             other is _$DeleteExistingItemImpl &&
             (identical(other.itemKey, itemKey) || other.itemKey == itemKey) &&
-            (identical(other.tableId, tableId) || other.tableId == tableId));
+            (identical(other.tableId, tableId) || other.tableId == tableId) &&
+            (identical(other.cancelComment, cancelComment) ||
+                other.cancelComment == cancelComment));
   }
 
   @override
-  int get hashCode => Object.hash(runtimeType, itemKey, tableId);
+  int get hashCode => Object.hash(runtimeType, itemKey, tableId, cancelComment);
 
   @JsonKey(ignore: true)
   @override
@@ -3980,13 +4085,15 @@ class _$DeleteExistingItemImpl implements _DeleteExistingItem {
         incrementExistingItem,
     required TResult Function(String itemKey, String tableId)
         decrementExistingItem,
-    required TResult Function(String itemKey, String tableId)
+    required TResult Function(
+            String itemKey, String tableId, String? cancelComment)
         deleteExistingItem,
-    required TResult Function(String itemKey, String tableId, int quantity)
+    required TResult Function(
+            String itemKey, String tableId, int quantity, String? cancelComment)
         setExistingItemQuantity,
     required TResult Function(String itemKey, String tableId) syncExistingItem,
   }) {
-    return deleteExistingItem(itemKey, tableId);
+    return deleteExistingItem(itemKey, tableId, cancelComment);
   }
 
   @override
@@ -4009,12 +4116,14 @@ class _$DeleteExistingItemImpl implements _DeleteExistingItem {
     TResult? Function(String itemId, String tableId)? cancelOrderItem,
     TResult? Function(String itemKey, String tableId)? incrementExistingItem,
     TResult? Function(String itemKey, String tableId)? decrementExistingItem,
-    TResult? Function(String itemKey, String tableId)? deleteExistingItem,
-    TResult? Function(String itemKey, String tableId, int quantity)?
+    TResult? Function(String itemKey, String tableId, String? cancelComment)?
+        deleteExistingItem,
+    TResult? Function(String itemKey, String tableId, int quantity,
+            String? cancelComment)?
         setExistingItemQuantity,
     TResult? Function(String itemKey, String tableId)? syncExistingItem,
   }) {
-    return deleteExistingItem?.call(itemKey, tableId);
+    return deleteExistingItem?.call(itemKey, tableId, cancelComment);
   }
 
   @override
@@ -4037,14 +4146,16 @@ class _$DeleteExistingItemImpl implements _DeleteExistingItem {
     TResult Function(String itemId, String tableId)? cancelOrderItem,
     TResult Function(String itemKey, String tableId)? incrementExistingItem,
     TResult Function(String itemKey, String tableId)? decrementExistingItem,
-    TResult Function(String itemKey, String tableId)? deleteExistingItem,
-    TResult Function(String itemKey, String tableId, int quantity)?
+    TResult Function(String itemKey, String tableId, String? cancelComment)?
+        deleteExistingItem,
+    TResult Function(String itemKey, String tableId, int quantity,
+            String? cancelComment)?
         setExistingItemQuantity,
     TResult Function(String itemKey, String tableId)? syncExistingItem,
     required TResult orElse(),
   }) {
     if (deleteExistingItem != null) {
-      return deleteExistingItem(itemKey, tableId);
+      return deleteExistingItem(itemKey, tableId, cancelComment);
     }
     return orElse();
   }
@@ -4136,10 +4247,12 @@ class _$DeleteExistingItemImpl implements _DeleteExistingItem {
 abstract class _DeleteExistingItem implements DetailEvent {
   const factory _DeleteExistingItem(
       {required final String itemKey,
-      required final String tableId}) = _$DeleteExistingItemImpl;
+      required final String tableId,
+      final String? cancelComment}) = _$DeleteExistingItemImpl;
 
   String get itemKey;
   String get tableId;
+  String? get cancelComment;
   @JsonKey(ignore: true)
   _$$DeleteExistingItemImplCopyWith<_$DeleteExistingItemImpl> get copyWith =>
       throw _privateConstructorUsedError;
@@ -4152,7 +4265,8 @@ abstract class _$$SetExistingItemQuantityImplCopyWith<$Res> {
           $Res Function(_$SetExistingItemQuantityImpl) then) =
       __$$SetExistingItemQuantityImplCopyWithImpl<$Res>;
   @useResult
-  $Res call({String itemKey, String tableId, int quantity});
+  $Res call(
+      {String itemKey, String tableId, int quantity, String? cancelComment});
 }
 
 /// @nodoc
@@ -4170,6 +4284,7 @@ class __$$SetExistingItemQuantityImplCopyWithImpl<$Res>
     Object? itemKey = null,
     Object? tableId = null,
     Object? quantity = null,
+    Object? cancelComment = freezed,
   }) {
     return _then(_$SetExistingItemQuantityImpl(
       itemKey: null == itemKey
@@ -4184,6 +4299,10 @@ class __$$SetExistingItemQuantityImplCopyWithImpl<$Res>
           ? _value.quantity
           : quantity // ignore: cast_nullable_to_non_nullable
               as int,
+      cancelComment: freezed == cancelComment
+          ? _value.cancelComment
+          : cancelComment // ignore: cast_nullable_to_non_nullable
+              as String?,
     ));
   }
 }
@@ -4192,7 +4311,10 @@ class __$$SetExistingItemQuantityImplCopyWithImpl<$Res>
 
 class _$SetExistingItemQuantityImpl implements _SetExistingItemQuantity {
   const _$SetExistingItemQuantityImpl(
-      {required this.itemKey, required this.tableId, required this.quantity});
+      {required this.itemKey,
+      required this.tableId,
+      required this.quantity,
+      this.cancelComment});
 
   @override
   final String itemKey;
@@ -4200,10 +4322,12 @@ class _$SetExistingItemQuantityImpl implements _SetExistingItemQuantity {
   final String tableId;
   @override
   final int quantity;
+  @override
+  final String? cancelComment;
 
   @override
   String toString() {
-    return 'DetailEvent.setExistingItemQuantity(itemKey: $itemKey, tableId: $tableId, quantity: $quantity)';
+    return 'DetailEvent.setExistingItemQuantity(itemKey: $itemKey, tableId: $tableId, quantity: $quantity, cancelComment: $cancelComment)';
   }
 
   @override
@@ -4214,11 +4338,14 @@ class _$SetExistingItemQuantityImpl implements _SetExistingItemQuantity {
             (identical(other.itemKey, itemKey) || other.itemKey == itemKey) &&
             (identical(other.tableId, tableId) || other.tableId == tableId) &&
             (identical(other.quantity, quantity) ||
-                other.quantity == quantity));
+                other.quantity == quantity) &&
+            (identical(other.cancelComment, cancelComment) ||
+                other.cancelComment == cancelComment));
   }
 
   @override
-  int get hashCode => Object.hash(runtimeType, itemKey, tableId, quantity);
+  int get hashCode =>
+      Object.hash(runtimeType, itemKey, tableId, quantity, cancelComment);
 
   @JsonKey(ignore: true)
   @override
@@ -4249,13 +4376,15 @@ class _$SetExistingItemQuantityImpl implements _SetExistingItemQuantity {
         incrementExistingItem,
     required TResult Function(String itemKey, String tableId)
         decrementExistingItem,
-    required TResult Function(String itemKey, String tableId)
+    required TResult Function(
+            String itemKey, String tableId, String? cancelComment)
         deleteExistingItem,
-    required TResult Function(String itemKey, String tableId, int quantity)
+    required TResult Function(
+            String itemKey, String tableId, int quantity, String? cancelComment)
         setExistingItemQuantity,
     required TResult Function(String itemKey, String tableId) syncExistingItem,
   }) {
-    return setExistingItemQuantity(itemKey, tableId, quantity);
+    return setExistingItemQuantity(itemKey, tableId, quantity, cancelComment);
   }
 
   @override
@@ -4278,12 +4407,15 @@ class _$SetExistingItemQuantityImpl implements _SetExistingItemQuantity {
     TResult? Function(String itemId, String tableId)? cancelOrderItem,
     TResult? Function(String itemKey, String tableId)? incrementExistingItem,
     TResult? Function(String itemKey, String tableId)? decrementExistingItem,
-    TResult? Function(String itemKey, String tableId)? deleteExistingItem,
-    TResult? Function(String itemKey, String tableId, int quantity)?
+    TResult? Function(String itemKey, String tableId, String? cancelComment)?
+        deleteExistingItem,
+    TResult? Function(String itemKey, String tableId, int quantity,
+            String? cancelComment)?
         setExistingItemQuantity,
     TResult? Function(String itemKey, String tableId)? syncExistingItem,
   }) {
-    return setExistingItemQuantity?.call(itemKey, tableId, quantity);
+    return setExistingItemQuantity?.call(
+        itemKey, tableId, quantity, cancelComment);
   }
 
   @override
@@ -4306,14 +4438,16 @@ class _$SetExistingItemQuantityImpl implements _SetExistingItemQuantity {
     TResult Function(String itemId, String tableId)? cancelOrderItem,
     TResult Function(String itemKey, String tableId)? incrementExistingItem,
     TResult Function(String itemKey, String tableId)? decrementExistingItem,
-    TResult Function(String itemKey, String tableId)? deleteExistingItem,
-    TResult Function(String itemKey, String tableId, int quantity)?
+    TResult Function(String itemKey, String tableId, String? cancelComment)?
+        deleteExistingItem,
+    TResult Function(String itemKey, String tableId, int quantity,
+            String? cancelComment)?
         setExistingItemQuantity,
     TResult Function(String itemKey, String tableId)? syncExistingItem,
     required TResult orElse(),
   }) {
     if (setExistingItemQuantity != null) {
-      return setExistingItemQuantity(itemKey, tableId, quantity);
+      return setExistingItemQuantity(itemKey, tableId, quantity, cancelComment);
     }
     return orElse();
   }
@@ -4406,11 +4540,13 @@ abstract class _SetExistingItemQuantity implements DetailEvent {
   const factory _SetExistingItemQuantity(
       {required final String itemKey,
       required final String tableId,
-      required final int quantity}) = _$SetExistingItemQuantityImpl;
+      required final int quantity,
+      final String? cancelComment}) = _$SetExistingItemQuantityImpl;
 
   String get itemKey;
   String get tableId;
   int get quantity;
+  String? get cancelComment;
   @JsonKey(ignore: true)
   _$$SetExistingItemQuantityImplCopyWith<_$SetExistingItemQuantityImpl>
       get copyWith => throw _privateConstructorUsedError;
@@ -4508,9 +4644,11 @@ class _$SyncExistingItemImpl implements _SyncExistingItem {
         incrementExistingItem,
     required TResult Function(String itemKey, String tableId)
         decrementExistingItem,
-    required TResult Function(String itemKey, String tableId)
+    required TResult Function(
+            String itemKey, String tableId, String? cancelComment)
         deleteExistingItem,
-    required TResult Function(String itemKey, String tableId, int quantity)
+    required TResult Function(
+            String itemKey, String tableId, int quantity, String? cancelComment)
         setExistingItemQuantity,
     required TResult Function(String itemKey, String tableId) syncExistingItem,
   }) {
@@ -4537,8 +4675,10 @@ class _$SyncExistingItemImpl implements _SyncExistingItem {
     TResult? Function(String itemId, String tableId)? cancelOrderItem,
     TResult? Function(String itemKey, String tableId)? incrementExistingItem,
     TResult? Function(String itemKey, String tableId)? decrementExistingItem,
-    TResult? Function(String itemKey, String tableId)? deleteExistingItem,
-    TResult? Function(String itemKey, String tableId, int quantity)?
+    TResult? Function(String itemKey, String tableId, String? cancelComment)?
+        deleteExistingItem,
+    TResult? Function(String itemKey, String tableId, int quantity,
+            String? cancelComment)?
         setExistingItemQuantity,
     TResult? Function(String itemKey, String tableId)? syncExistingItem,
   }) {
@@ -4565,8 +4705,10 @@ class _$SyncExistingItemImpl implements _SyncExistingItem {
     TResult Function(String itemId, String tableId)? cancelOrderItem,
     TResult Function(String itemKey, String tableId)? incrementExistingItem,
     TResult Function(String itemKey, String tableId)? decrementExistingItem,
-    TResult Function(String itemKey, String tableId)? deleteExistingItem,
-    TResult Function(String itemKey, String tableId, int quantity)?
+    TResult Function(String itemKey, String tableId, String? cancelComment)?
+        deleteExistingItem,
+    TResult Function(String itemKey, String tableId, int quantity,
+            String? cancelComment)?
         setExistingItemQuantity,
     TResult Function(String itemKey, String tableId)? syncExistingItem,
     required TResult orElse(),

@@ -72,13 +72,13 @@ void main() {
       expect(t.grandTotal, 130000); // items + service, ignores stale grand
     });
 
-    test('time-based: service applies to items + table charge', () {
+    test('time-based: service applies to items only, not table charge', () {
       final t = OrderTotals.fromDetail(
         _Detail(goods: [_Good(price: 246000)], servicePercent: 20),
         tableCharge: 1434800,
       );
-      expect(t.serviceAmount, 336160);
-      expect(t.grandTotal, 2016960);
+      expect(t.serviceAmount, 49200);
+      expect(t.grandTotal, 1730000);
     });
 
     test('time-based: ignores read-path service_amount, recomputes', () {
@@ -91,8 +91,8 @@ void main() {
         ),
         tableCharge: 1434800,
       );
-      expect(t.serviceAmount, 336160);
-      expect(t.grandTotal, 2016960);
+      expect(t.serviceAmount, 49200);
+      expect(t.grandTotal, 1730000);
     });
 
     test('time-based: infers percent from food-only service_amount', () {
@@ -100,7 +100,7 @@ void main() {
         _Detail(goods: [_Good(price: 246000)], serviceAmount: 49200),
         tableCharge: 1434800,
       );
-      expect(t.serviceAmount, 336160);
+      expect(t.serviceAmount, 49200);
     });
 
     test('cancelled items excluded from items amount', () {

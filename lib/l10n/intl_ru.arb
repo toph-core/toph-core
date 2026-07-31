@@ -128,6 +128,42 @@
   "strAccessRestricted": "Доступ ограничен",
   "strSettingsAdminOnly": "Только администратор или менеджер может войти в настройки.",
 
+  "strTransactions": "Транзакции",
+  "strTransactionsAdminOnly": "Доступ к транзакциям есть только у администратора, менеджера или кассира.",
+  "strTransactionCategories": "Категории",
+  "strIncome": "Приход",
+  "strExpense": "Расход",
+  "strTransfer": "Перевод",
+  "strAmount": "Сумма",
+  "strDescription": "Описание",
+  "strDate": "Дата",
+  "strCashRegister": "Касса",
+  "strFromCashRegister": "Из кассы",
+  "strToCashRegister": "В кассу",
+  "strCategory": "Категория",
+  "strPayType": "Тип оплаты",
+  "strCash": "Наличные",
+  "strCard": "Карта",
+  "strAddTransaction": "Добавить транзакцию",
+  "strEditTransaction": "Редактировать транзакцию",
+  "strDeleteTransaction": "Удалить транзакцию",
+  "strDeleteTransactionConfirm": "Вы уверены, что хотите удалить эту транзакцию?",
+  "strNoTransactionsYet": "Транзакций пока нет",
+  "strAddCategory": "Добавить категорию",
+  "strEditCategory": "Редактировать категорию",
+  "strDeleteCategory": "Удалить категорию",
+  "strDeleteCategoryConfirm": "Вы уверены, что хотите удалить эту категорию?",
+  "strCategoryName": "Название категории",
+  "strNoCategoriesYet": "Категорий пока нет",
+  "strFieldRequired": "Обязательное поле",
+  "strRequiredFieldsMissing": "Заполните обязательные поля",
+  "strTotalCount": "Всего: {count}",
+  "@strTotalCount": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+
   "strInterfaceSettings": "Язык, интерфейс и вид меню",
   "strInterfaceLanguage": "Язык интерфейса",
   "strAppliesToAllUsers": "Применяется для всех пользователей",
@@ -485,5 +521,15 @@
   },
 
   "strConfirmWithPincode": "Введите пин-код для подтверждения",
-  "strIncorrectPincode": "Неверный пин-код"
+  "strIncorrectPincode": "Неверный пин-код",
+
+  "strCancelOrderItemTitle": "Отмена позиции",
+  "strCancelOrderItemReasonHint": "Причина отмены (обязательно)",
+  "strCancelOrderItemReasonRequired": "Укажите причину отмены",
+  "strCancelledByClient": "Отменено клиентом",
+  "strWaitersMistake": "Ошибка официанта",
+
+  "strManagerPincodeTitle": "Подтверждение менеджера",
+  "strManagerPincodeSubtitle": "Введите PIN менеджера или админа для подтверждения",
+  "strManagerPincodeDenied": "Это действие требует PIN менеджера или админа"
 }

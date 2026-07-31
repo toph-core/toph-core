@@ -47,6 +47,8 @@ class MessageLookup extends MessageLookupByLibrary {
 
   static String m12(count) => "${count} ta stol saqlanmadi";
 
+  static String m13(count) => "Jami: ${count}";
+
   final messages = _notInlinedMessages(_notInlinedMessages);
   static Map<String, Function> _notInlinedMessages(_) => <String, Function>{
         "all": MessageLookupByLibrary.simpleMessage("Hammasi"),
@@ -77,6 +79,8 @@ class MessageLookup extends MessageLookupByLibrary {
         "strAddOrder":
             MessageLookupByLibrary.simpleMessage("Buyurtma qo\'shish"),
         "strAddPrinter": MessageLookupByLibrary.simpleMessage("Yangi printer"),
+        "strAddTransaction":
+            MessageLookupByLibrary.simpleMessage("Tranzaksiya qo\'shish"),
         "strAddedItems":
             MessageLookupByLibrary.simpleMessage("Qo\'shilgan elementlar"),
         "strAddress": MessageLookupByLibrary.simpleMessage("Manzil"),
@@ -88,6 +92,7 @@ class MessageLookup extends MessageLookupByLibrary {
         "strAllOrdersTitle":
             MessageLookupByLibrary.simpleMessage("Barcha buyurtmalar"),
         "strAllRoles": MessageLookupByLibrary.simpleMessage("Hammasi"),
+        "strAmount": MessageLookupByLibrary.simpleMessage("Summa"),
         "strAmountColumn": MessageLookupByLibrary.simpleMessage("Summa"),
         "strAmountColumnHeader": MessageLookupByLibrary.simpleMessage("Summa"),
         "strAngleDegrees": MessageLookupByLibrary.simpleMessage("Burchak (°)"),
@@ -111,8 +116,17 @@ class MessageLookup extends MessageLookupByLibrary {
         "strBusyShort": MessageLookupByLibrary.simpleMessage("band"),
         "strCable": MessageLookupByLibrary.simpleMessage("Kabel"),
         "strCancel": MessageLookupByLibrary.simpleMessage("Bekor qilish"),
+        "strCancelOrderItemReasonHint": MessageLookupByLibrary.simpleMessage(
+            "Bekor qilish sababi (majburiy)"),
+        "strCancelOrderItemReasonRequired":
+            MessageLookupByLibrary.simpleMessage(
+                "Iltimos, bekor qilish sababini kiriting"),
+        "strCancelOrderItemTitle":
+            MessageLookupByLibrary.simpleMessage("Mahsulotni bekor qilish"),
         "strCancelShort": MessageLookupByLibrary.simpleMessage("Bekor"),
         "strCancelled": MessageLookupByLibrary.simpleMessage("Bekor qilindi"),
+        "strCancelledByClient": MessageLookupByLibrary.simpleMessage(
+            "Mijoz tomonidan bekor qilindi"),
         "strCannotCloseShiftMessage": MessageLookupByLibrary.simpleMessage(
             "Smenani to\'liq yopish uchun barcha stollar yopilgan bo\'lishi kerak."),
         "strCannotCloseShiftTitle":
@@ -124,10 +138,13 @@ class MessageLookup extends MessageLookupByLibrary {
         "strCard": MessageLookupByLibrary.simpleMessage("Karta"),
         "strCash": MessageLookupByLibrary.simpleMessage("Naqd"),
         "strCashBalance": MessageLookupByLibrary.simpleMessage("Kassa balansi"),
+        "strCashRegister": MessageLookupByLibrary.simpleMessage("Kassa"),
         "strCashier": MessageLookupByLibrary.simpleMessage("Kassir"),
         "strCashierLabel": MessageLookupByLibrary.simpleMessage("Kassir:"),
         "strCashierRole": MessageLookupByLibrary.simpleMessage("Kassir"),
         "strCategory": MessageLookupByLibrary.simpleMessage("Kategoriya"),
+        "strCategoryName":
+            MessageLookupByLibrary.simpleMessage("Kategoriya nomi"),
         "strChange": MessageLookupByLibrary.simpleMessage("Qaytim"),
         "strChangeTable":
             MessageLookupByLibrary.simpleMessage("Stolni o\'zgartirish"),
@@ -183,6 +200,8 @@ class MessageLookup extends MessageLookupByLibrary {
         "strDelete": MessageLookupByLibrary.simpleMessage("O\'chirish"),
         "strDeleteCategory":
             MessageLookupByLibrary.simpleMessage("Kategoriyani o\'chirish"),
+        "strDeleteCategoryConfirm": MessageLookupByLibrary.simpleMessage(
+            "Ushbu kategoriyani o\'chirishga ishonchingiz komilmi?"),
         "strDeleteEmployee":
             MessageLookupByLibrary.simpleMessage("Xodimni o\'chirish"),
         "strDeleteEmployeeConfirm": m2,
@@ -196,6 +215,11 @@ class MessageLookup extends MessageLookupByLibrary {
             MessageLookupByLibrary.simpleMessage("Printerni o\'chirish"),
         "strDeleteTable":
             MessageLookupByLibrary.simpleMessage("Stolni o\'chirish"),
+        "strDeleteTransaction":
+            MessageLookupByLibrary.simpleMessage("Tranzaksiyani o\'chirish"),
+        "strDeleteTransactionConfirm": MessageLookupByLibrary.simpleMessage(
+            "Ushbu tranzaksiyani o\'chirishga ishonchingiz komilmi?"),
+        "strDescription": MessageLookupByLibrary.simpleMessage("Tavsif"),
         "strDeviceSynchronization": MessageLookupByLibrary.simpleMessage(
             "Qurilmalararo sinxronizatsiya"),
         "strDisabled": MessageLookupByLibrary.simpleMessage("O\'chirilgan"),
@@ -215,10 +239,14 @@ class MessageLookup extends MessageLookupByLibrary {
         "strDuration": MessageLookupByLibrary.simpleMessage("Davomiyligi"),
         "strDurationLabel": MessageLookupByLibrary.simpleMessage("Davomiyligi"),
         "strEdit": MessageLookupByLibrary.simpleMessage("Tahrirlash"),
+        "strEditCategory":
+            MessageLookupByLibrary.simpleMessage("Kategoriyani tahrirlash"),
         "strEditMeal":
             MessageLookupByLibrary.simpleMessage("Taomni tahrirlash"),
         "strEditPrinter":
             MessageLookupByLibrary.simpleMessage("Printerni tahrirlash"),
+        "strEditTransaction":
+            MessageLookupByLibrary.simpleMessage("Tranzaksiyani tahrirlash"),
         "strElapsedTime": MessageLookupByLibrary.simpleMessage("O\'tgan vaqt"),
         "strEmail": MessageLookupByLibrary.simpleMessage("Email"),
         "strEnlarge": MessageLookupByLibrary.simpleMessage("Kattalashtirish"),
@@ -238,6 +266,7 @@ class MessageLookup extends MessageLookupByLibrary {
             MessageLookupByLibrary.simpleMessage("Mavjud buyurtmalar"),
         "strExpectedBalance":
             MessageLookupByLibrary.simpleMessage("Kutilayotgan qoldiq"),
+        "strExpense": MessageLookupByLibrary.simpleMessage("Chiqim"),
         "strExport": MessageLookupByLibrary.simpleMessage("Eksport"),
         "strExtraSalt": MessageLookupByLibrary.simpleMessage("Qo\'shimcha tuz"),
         "strExtraSpicy":
@@ -275,6 +304,7 @@ class MessageLookup extends MessageLookupByLibrary {
         "strFebruary": MessageLookupByLibrary.simpleMessage("Fevral"),
         "strFieldCannotBeEmpty": MessageLookupByLibrary.simpleMessage(
             "Bu maydon bo\'sh bo\'lishi mumkin emas"),
+        "strFieldRequired": MessageLookupByLibrary.simpleMessage("Majburiy"),
         "strFileTooLarge": MessageLookupByLibrary.simpleMessage(
             "Fayl 5 MB dan katta bo\'lmasligi kerak"),
         "strFloorMap": MessageLookupByLibrary.simpleMessage("Stollar xaritasi"),
@@ -291,6 +321,8 @@ class MessageLookup extends MessageLookupByLibrary {
             MessageLookupByLibrary.simpleMessage("Vaqt to\'lovini muzlatish"),
         "strFriday": MessageLookupByLibrary.simpleMessage("Juma"),
         "strFrom": MessageLookupByLibrary.simpleMessage("Dan"),
+        "strFromCashRegister":
+            MessageLookupByLibrary.simpleMessage("Qaysi kassadan"),
         "strFrozenAmount":
             MessageLookupByLibrary.simpleMessage("Muzlatilgan summa"),
         "strFrozenShort": MessageLookupByLibrary.simpleMessage("MUZLATILDI"),
@@ -323,6 +355,7 @@ class MessageLookup extends MessageLookupByLibrary {
             MessageLookupByLibrary.simpleMessage("Hub va client sozlamalari"),
         "strIPAddress": MessageLookupByLibrary.simpleMessage("IP manzil"),
         "strImages": MessageLookupByLibrary.simpleMessage("Rasmlar"),
+        "strIncome": MessageLookupByLibrary.simpleMessage("Kirim"),
         "strIncorrectPincode":
             MessageLookupByLibrary.simpleMessage("Pinkod noto\'g\'ri"),
         "strIngredients": MessageLookupByLibrary.simpleMessage("Ingredientlar"),
@@ -360,6 +393,12 @@ class MessageLookup extends MessageLookupByLibrary {
         "strLogout": MessageLookupByLibrary.simpleMessage("Chiqish"),
         "strLogoutConfirm": MessageLookupByLibrary.simpleMessage(
             "Rostdan ham akauntdan chiqmoqchimisiz?"),
+        "strManagerPincodeDenied": MessageLookupByLibrary.simpleMessage(
+            "Bu amal uchun menejer yoki admin PIN kodi kerak"),
+        "strManagerPincodeSubtitle": MessageLookupByLibrary.simpleMessage(
+            "Tasdiqlash uchun menejer yoki admin PIN kodini kiriting"),
+        "strManagerPincodeTitle":
+            MessageLookupByLibrary.simpleMessage("Menejer tasdig\'i"),
         "strManualAdd":
             MessageLookupByLibrary.simpleMessage("Qo\'lda qo\'shish"),
         "strManualInput":
@@ -391,6 +430,8 @@ class MessageLookup extends MessageLookupByLibrary {
             MessageLookupByLibrary.simpleMessage("Hali faol davr yo\'q"),
         "strNoCalculationsHint": MessageLookupByLibrary.simpleMessage(
             "Qatorlar yo\'q. Ingredient yoki yarim tayyor mahsulot qo\'shing."),
+        "strNoCategoriesYet": MessageLookupByLibrary.simpleMessage(
+            "Hozircha kategoriyalar yo\'q"),
         "strNoDataFound":
             MessageLookupByLibrary.simpleMessage("Ma\'lumot topilmadi"),
         "strNoDiscountYet":
@@ -417,6 +458,8 @@ class MessageLookup extends MessageLookupByLibrary {
             MessageLookupByLibrary.simpleMessage("Stollar mavjud emas"),
         "strNoTablesInHall":
             MessageLookupByLibrary.simpleMessage("Bu zalda stol yo\'q"),
+        "strNoTransactionsYet": MessageLookupByLibrary.simpleMessage(
+            "Hozircha tranzaksiyalar yo\'q"),
         "strNotOrdered":
             MessageLookupByLibrary.simpleMessage("Buyurtma qilinmagan"),
         "strNotYet": MessageLookupByLibrary.simpleMessage("Hali yo\'q"),
@@ -467,6 +510,7 @@ class MessageLookup extends MessageLookupByLibrary {
             MessageLookupByLibrary.simpleMessage("Parollar mos kelmadi"),
         "strPauseAction": MessageLookupByLibrary.simpleMessage("To\'xtatish"),
         "strPauseHistory": MessageLookupByLibrary.simpleMessage("Pauza tarixi"),
+        "strPayType": MessageLookupByLibrary.simpleMessage("To\'lov turi"),
         "strPayment": MessageLookupByLibrary.simpleMessage("To\'lov"),
         "strPaymentAmount":
             MessageLookupByLibrary.simpleMessage("To\'lov miqdori"),
@@ -523,6 +567,8 @@ class MessageLookup extends MessageLookupByLibrary {
             "Qo\'yib yuboring — yangilanadi"),
         "strRequiredFields": MessageLookupByLibrary.simpleMessage(
             "Nomi, kategoriya va narx majburiy"),
+        "strRequiredFieldsMissing": MessageLookupByLibrary.simpleMessage(
+            "Majburiy maydonlarni to\'ldiring"),
         "strReserved": MessageLookupByLibrary.simpleMessage("Bron"),
         "strReservedBadge":
             MessageLookupByLibrary.simpleMessage("Bron qilingan"),
@@ -637,6 +683,8 @@ class MessageLookup extends MessageLookupByLibrary {
         "strTimeColumn": MessageLookupByLibrary.simpleMessage("Vaqt"),
         "strTimeColumnHeader": MessageLookupByLibrary.simpleMessage("Ochilgan"),
         "strTo": MessageLookupByLibrary.simpleMessage("Gacha"),
+        "strToCashRegister":
+            MessageLookupByLibrary.simpleMessage("Qaysi kassaga"),
         "strTodayRevenue":
             MessageLookupByLibrary.simpleMessage("Bugungi tushum"),
         "strTotal": MessageLookupByLibrary.simpleMessage("Jami"),
@@ -644,6 +692,7 @@ class MessageLookup extends MessageLookupByLibrary {
         "strTotalCapacity":
             MessageLookupByLibrary.simpleMessage("Umumiy sig\'im"),
         "strTotalColon": MessageLookupByLibrary.simpleMessage("Jami:"),
+        "strTotalCount": m13,
         "strTotalLabel": MessageLookupByLibrary.simpleMessage("Jami:"),
         "strTotalPause": MessageLookupByLibrary.simpleMessage("Jami pauza:"),
         "strTotalPrice": MessageLookupByLibrary.simpleMessage("Jami narx"),
@@ -652,6 +701,12 @@ class MessageLookup extends MessageLookupByLibrary {
         "strTotalSales": MessageLookupByLibrary.simpleMessage("Umumiy savdo"),
         "strTotalSum": MessageLookupByLibrary.simpleMessage("Jami summa"),
         "strTotalTables": MessageLookupByLibrary.simpleMessage("Jami stollar"),
+        "strTransactionCategories":
+            MessageLookupByLibrary.simpleMessage("Kategoriyalar"),
+        "strTransactions":
+            MessageLookupByLibrary.simpleMessage("Tranzaksiyalar"),
+        "strTransactionsAdminOnly": MessageLookupByLibrary.simpleMessage(
+            "Tranzaksiyalarga faqat administrator, menejer yoki kassir kira oladi."),
         "strTransfer": MessageLookupByLibrary.simpleMessage("Ko\'chirish"),
         "strTuesday": MessageLookupByLibrary.simpleMessage("Seshanba"),
         "strTypeColumnHeader": MessageLookupByLibrary.simpleMessage("Tur"),
@@ -671,6 +726,8 @@ class MessageLookup extends MessageLookupByLibrary {
             MessageLookupByLibrary.simpleMessage("Barchasini ko\'rish"),
         "strViewReceipt": MessageLookupByLibrary.simpleMessage("Chek ko\'rish"),
         "strWaiterRole": MessageLookupByLibrary.simpleMessage("Ofitsiant"),
+        "strWaitersMistake":
+            MessageLookupByLibrary.simpleMessage("Ofitsiant xatosi"),
         "strWaiting": MessageLookupByLibrary.simpleMessage("Kutilmoqda"),
         "strWaitingForOrder":
             MessageLookupByLibrary.simpleMessage("Buyurtma kutilmoqda"),
