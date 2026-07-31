@@ -78,6 +78,7 @@ class MessageLookup extends MessageLookupByLibrary {
         "strAddPrinter": MessageLookupByLibrary.simpleMessage("New printer"),
         "strAddTransaction":
             MessageLookupByLibrary.simpleMessage("Add transaction"),
+        "strAddTxnGroup": MessageLookupByLibrary.simpleMessage("Add group"),
         "strAddedItems": MessageLookupByLibrary.simpleMessage("Added items"),
         "strAddress": MessageLookupByLibrary.simpleMessage("Address"),
         "strAllCategories":
@@ -138,8 +139,6 @@ class MessageLookup extends MessageLookupByLibrary {
         "strCashierLabel": MessageLookupByLibrary.simpleMessage("Cashier:"),
         "strCashierRole": MessageLookupByLibrary.simpleMessage("Cashier"),
         "strCategory": MessageLookupByLibrary.simpleMessage("Category"),
-        "strCategoryName":
-            MessageLookupByLibrary.simpleMessage("Category name"),
         "strChange": MessageLookupByLibrary.simpleMessage("Change"),
         "strChangeTable": MessageLookupByLibrary.simpleMessage("Change table"),
         "strCheckForDetails": MessageLookupByLibrary.simpleMessage(
@@ -195,8 +194,6 @@ class MessageLookup extends MessageLookupByLibrary {
         "strDelete": MessageLookupByLibrary.simpleMessage("Delete"),
         "strDeleteCategory":
             MessageLookupByLibrary.simpleMessage("Delete category"),
-        "strDeleteCategoryConfirm": MessageLookupByLibrary.simpleMessage(
-            "Are you sure you want to delete this category?"),
         "strDeleteEmployee":
             MessageLookupByLibrary.simpleMessage("Delete employee"),
         "strDeleteEmployeeConfirm": m2,
@@ -210,6 +207,10 @@ class MessageLookup extends MessageLookupByLibrary {
             MessageLookupByLibrary.simpleMessage("Delete transaction"),
         "strDeleteTransactionConfirm": MessageLookupByLibrary.simpleMessage(
             "Are you sure you want to delete this transaction?"),
+        "strDeleteTxnGroup":
+            MessageLookupByLibrary.simpleMessage("Delete group"),
+        "strDeleteTxnGroupConfirm": MessageLookupByLibrary.simpleMessage(
+            "Are you sure you want to delete this group?"),
         "strDescription": MessageLookupByLibrary.simpleMessage("Description"),
         "strDeviceSynchronization":
             MessageLookupByLibrary.simpleMessage("Device synchronization"),
@@ -230,12 +231,11 @@ class MessageLookup extends MessageLookupByLibrary {
         "strDuration": MessageLookupByLibrary.simpleMessage("Duration"),
         "strDurationLabel": MessageLookupByLibrary.simpleMessage("Duration"),
         "strEdit": MessageLookupByLibrary.simpleMessage("Edit"),
-        "strEditCategory":
-            MessageLookupByLibrary.simpleMessage("Edit category"),
         "strEditMeal": MessageLookupByLibrary.simpleMessage("Edit meal"),
         "strEditPrinter": MessageLookupByLibrary.simpleMessage("Edit printer"),
         "strEditTransaction":
             MessageLookupByLibrary.simpleMessage("Edit transaction"),
+        "strEditTxnGroup": MessageLookupByLibrary.simpleMessage("Edit group"),
         "strElapsedTime": MessageLookupByLibrary.simpleMessage("Elapsed time"),
         "strEmail": MessageLookupByLibrary.simpleMessage("Email"),
         "strEnlarge": MessageLookupByLibrary.simpleMessage("Zoom in"),
@@ -407,8 +407,6 @@ class MessageLookup extends MessageLookupByLibrary {
             MessageLookupByLibrary.simpleMessage("No active periods yet"),
         "strNoCalculationsHint": MessageLookupByLibrary.simpleMessage(
             "No rows. Add an ingredient or semi-finished item."),
-        "strNoCategoriesYet":
-            MessageLookupByLibrary.simpleMessage("No categories yet"),
         "strNoDataFound": MessageLookupByLibrary.simpleMessage("No data found"),
         "strNoDiscountYet":
             MessageLookupByLibrary.simpleMessage("No discount yet"),
@@ -433,6 +431,8 @@ class MessageLookup extends MessageLookupByLibrary {
             MessageLookupByLibrary.simpleMessage("No tables in this hall"),
         "strNoTransactionsYet":
             MessageLookupByLibrary.simpleMessage("No transactions yet"),
+        "strNoTxnGroupsYet":
+            MessageLookupByLibrary.simpleMessage("No groups yet"),
         "strNotOrdered": MessageLookupByLibrary.simpleMessage("Not ordered"),
         "strNotYet": MessageLookupByLibrary.simpleMessage("Not yet"),
         "strNotifications":
@@ -671,13 +671,15 @@ class MessageLookup extends MessageLookupByLibrary {
         "strTotalSales": MessageLookupByLibrary.simpleMessage("Total sales"),
         "strTotalSum": MessageLookupByLibrary.simpleMessage("Total"),
         "strTotalTables": MessageLookupByLibrary.simpleMessage("Total tables"),
-        "strTransactionCategories":
-            MessageLookupByLibrary.simpleMessage("Categories"),
         "strTransactions": MessageLookupByLibrary.simpleMessage("Transactions"),
         "strTransactionsAdminOnly": MessageLookupByLibrary.simpleMessage(
             "Only administrator, manager or cashier can access transactions."),
         "strTransfer": MessageLookupByLibrary.simpleMessage("Move"),
         "strTuesday": MessageLookupByLibrary.simpleMessage("Tuesday"),
+        "strTxnGroupLabel": MessageLookupByLibrary.simpleMessage("Group"),
+        "strTxnGroupName": MessageLookupByLibrary.simpleMessage("Group name"),
+        "strTxnGroupsTitle": MessageLookupByLibrary.simpleMessage("Groups"),
+        "strTxnTransfer": MessageLookupByLibrary.simpleMessage("Transfer"),
         "strTypeColumnHeader": MessageLookupByLibrary.simpleMessage("Type"),
         "strUmumiySumma": MessageLookupByLibrary.simpleMessage("Total amount"),
         "strUnacceptableDate":

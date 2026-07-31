@@ -87,7 +87,7 @@ class CashierReceiptBuilder {
     bytes += gen.hr();
     bytes += gen.text(
       'SOATLIK JADVAL',
-      styles: const PosStyles(bold: true, align: PosAlign.center),
+      styles: const PosStyles(bold: false, align: PosAlign.center),
     );
 
     if (timerStartedAt != null) {
@@ -177,7 +177,7 @@ class CashierReceiptBuilder {
     bytes += gen.text(
       'КАССИРСКИЙ ЧЕК',
       styles: const PosStyles(
-        align: PosAlign.center, bold: true,
+        align: PosAlign.center, bold: false,
         height: PosTextSize.size2, width: PosTextSize.size1,
       ),
       linesAfter: 1,
@@ -208,9 +208,9 @@ class CashierReceiptBuilder {
     bytes += gen.hr();
 
     bytes += gen.row([
-      PosColumn(text: 'Блюдо', width: 6, styles: const PosStyles(bold: true, underline: true)),
-      PosColumn(text: 'Кол', width: 2, styles: const PosStyles(bold: true, align: PosAlign.center)),
-      PosColumn(text: 'Сумма', width: 4, styles: const PosStyles(bold: true, align: PosAlign.right)),
+      PosColumn(text: 'Блюдо', width: 6, styles: const PosStyles(bold: false, underline: true)),
+      PosColumn(text: 'Кол', width: 2, styles: const PosStyles(bold: false, align: PosAlign.center)),
+      PosColumn(text: 'Сумма', width: 4, styles: const PosStyles(bold: false, align: PosAlign.right)),
     ]);
 
     double subtotal = 0;
@@ -241,9 +241,9 @@ class CashierReceiptBuilder {
     bytes += gen.hr();
 
     bytes += gen.row([
-      PosColumn(text: 'Mahsulotlar:', width: 8, styles: const PosStyles(bold: true)),
+      PosColumn(text: 'Mahsulotlar:', width: 8, styles: const PosStyles(bold: false)),
       PosColumn(text: _fmt(subtotal), width: 4,
-          styles: const PosStyles(bold: true, align: PosAlign.right)),
+          styles: const PosStyles(bold: false, align: PosAlign.right)),
     ]);
 
     if (hourAmount > 0.0001) {
@@ -282,15 +282,15 @@ class CashierReceiptBuilder {
     bytes += gen.hr();
     bytes += gen.row([
       PosColumn(text: 'TO\'LOV:', width: 8,
-          styles: const PosStyles(bold: true, height: PosTextSize.size2, width: PosTextSize.size1)),
+          styles: const PosStyles(bold: false, height: PosTextSize.size2, width: PosTextSize.size1)),
       PosColumn(text: _fmt(toPay.round()), width: 4,
-          styles: const PosStyles(bold: true, align: PosAlign.right,
+          styles: const PosStyles(bold: false, align: PosAlign.right,
               height: PosTextSize.size2, width: PosTextSize.size1)),
     ]);
 
     appendReceiptNoReprepNotice(gen, bytes);
     bytes += gen.feed(1);
-    bytes += gen.text('Rahmat!', styles: const PosStyles(align: PosAlign.center, bold: true), linesAfter: 1);
+    bytes += gen.text('Rahmat!', styles: const PosStyles(align: PosAlign.center, bold: false), linesAfter: 1);
     bytes += gen.cut();
 
     return bytes;
@@ -334,7 +334,7 @@ class CashierReceiptBuilder {
       companyName,
       styles: const PosStyles(
         align: PosAlign.center,
-        bold: true,
+        bold: false,
         height: PosTextSize.size2,
         width: PosTextSize.size1,
       ),
@@ -360,7 +360,7 @@ class CashierReceiptBuilder {
       PosColumn(
         text: 'A-${detail.bilNumber}',
         width: 6,
-        styles: const PosStyles(align: PosAlign.right, bold: true),
+        styles: const PosStyles(align: PosAlign.right, bold: false),
       ),
     ]);
     bytes += gen.row([
@@ -413,7 +413,7 @@ class CashierReceiptBuilder {
       // Nom — alohida qatorda, to'liq (kesilmaydi)
       bytes += gen.text(
         g.name,
-        styles: const PosStyles(bold: true),
+        styles: const PosStyles(bold: false),
       );
       // "qty × price           total" — ikkinchi qator
       bytes += gen.row([
@@ -424,7 +424,7 @@ class CashierReceiptBuilder {
         PosColumn(
           text: _fmt(lineTotal),
           width: 5,
-          styles: const PosStyles(align: PosAlign.right, bold: true),
+          styles: const PosStyles(align: PosAlign.right, bold: false),
         ),
       ]);
       final note = g.comment.trim();
@@ -506,7 +506,7 @@ class CashierReceiptBuilder {
         text: 'JAMI',
         width: 5,
         styles: const PosStyles(
-          bold: true,
+          bold: false,
           height: PosTextSize.size2,
           width: PosTextSize.size1,
         ),
@@ -515,7 +515,7 @@ class CashierReceiptBuilder {
         text: '${_fmt(toPay.round())} so\'m',
         width: 7,
         styles: const PosStyles(
-          bold: true,
+          bold: false,
           align: PosAlign.right,
           height: PosTextSize.size2,
           width: PosTextSize.size1,
@@ -527,7 +527,7 @@ class CashierReceiptBuilder {
     bytes += gen.feed(1);
     bytes += gen.text(
       'Rahmat!',
-      styles: const PosStyles(align: PosAlign.center, bold: true),
+      styles: const PosStyles(align: PosAlign.center, bold: false),
       linesAfter: 1,
     );
     bytes += gen.cut();

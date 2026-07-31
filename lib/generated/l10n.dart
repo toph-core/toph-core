@@ -1290,11 +1290,11 @@ class S {
     );
   }
 
-  /// `Categories`
-  String get strTransactionCategories {
+  /// `Groups`
+  String get strTxnGroupsTitle {
     return Intl.message(
-      'Categories',
-      name: 'strTransactionCategories',
+      'Groups',
+      name: 'strTxnGroupsTitle',
       desc: '',
       args: [],
     );
@@ -1320,11 +1320,11 @@ class S {
     );
   }
 
-  /// `Move`
-  String get strTransfer {
+  /// `Transfer`
+  String get strTxnTransfer {
     return Intl.message(
-      'Move',
-      name: 'strTransfer',
+      'Transfer',
+      name: 'strTxnTransfer',
       desc: '',
       args: [],
     );
@@ -1380,11 +1380,11 @@ class S {
     );
   }
 
-  /// `Category`
-  String get strCategory {
+  /// `Group`
+  String get strTxnGroupLabel {
     return Intl.message(
-      'Category',
-      name: 'strCategory',
+      'Group',
+      name: 'strTxnGroupLabel',
       desc: '',
       args: [],
     );
@@ -1395,26 +1395,6 @@ class S {
     return Intl.message(
       'Payment type',
       name: 'strPayType',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Cash`
-  String get strCash {
-    return Intl.message(
-      'Cash',
-      name: 'strCash',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Card`
-  String get strCard {
-    return Intl.message(
-      'Card',
-      name: 'strCard',
       desc: '',
       args: [],
     );
@@ -1470,61 +1450,61 @@ class S {
     );
   }
 
-  /// `Add category`
-  String get strAddCategory {
+  /// `Add group`
+  String get strAddTxnGroup {
     return Intl.message(
-      'Add category',
-      name: 'strAddCategory',
+      'Add group',
+      name: 'strAddTxnGroup',
       desc: '',
       args: [],
     );
   }
 
-  /// `Edit category`
-  String get strEditCategory {
+  /// `Edit group`
+  String get strEditTxnGroup {
     return Intl.message(
-      'Edit category',
-      name: 'strEditCategory',
+      'Edit group',
+      name: 'strEditTxnGroup',
       desc: '',
       args: [],
     );
   }
 
-  /// `Delete category`
-  String get strDeleteCategory {
+  /// `Delete group`
+  String get strDeleteTxnGroup {
     return Intl.message(
-      'Delete category',
-      name: 'strDeleteCategory',
+      'Delete group',
+      name: 'strDeleteTxnGroup',
       desc: '',
       args: [],
     );
   }
 
-  /// `Are you sure you want to delete this category?`
-  String get strDeleteCategoryConfirm {
+  /// `Are you sure you want to delete this group?`
+  String get strDeleteTxnGroupConfirm {
     return Intl.message(
-      'Are you sure you want to delete this category?',
-      name: 'strDeleteCategoryConfirm',
+      'Are you sure you want to delete this group?',
+      name: 'strDeleteTxnGroupConfirm',
       desc: '',
       args: [],
     );
   }
 
-  /// `Category name`
-  String get strCategoryName {
+  /// `Group name`
+  String get strTxnGroupName {
     return Intl.message(
-      'Category name',
-      name: 'strCategoryName',
+      'Group name',
+      name: 'strTxnGroupName',
       desc: '',
       args: [],
     );
   }
 
-  /// `No categories yet`
-  String get strNoCategoriesYet {
+  /// `No groups yet`
+  String get strNoTxnGroupsYet {
     return Intl.message(
-      'No categories yet',
-      name: 'strNoCategoriesYet',
+      'No groups yet',
+      name: 'strNoTxnGroupsYet',
       desc: '',
       args: [],
     );
@@ -2355,6 +2335,26 @@ class S {
     return Intl.message(
       'Confirm that customer paid by card',
       name: 'strConfirmCardPayment',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Cash`
+  String get strCash {
+    return Intl.message(
+      'Cash',
+      name: 'strCash',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Card`
+  String get strCard {
+    return Intl.message(
+      'Card',
+      name: 'strCard',
       desc: '',
       args: [],
     );
@@ -3300,6 +3300,16 @@ class S {
     );
   }
 
+  /// `Category`
+  String get strCategory {
+    return Intl.message(
+      'Category',
+      name: 'strCategory',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `All Categories`
   String get strAllCategories {
     return Intl.message(
@@ -3500,11 +3510,31 @@ class S {
     );
   }
 
+  /// `Delete category`
+  String get strDeleteCategory {
+    return Intl.message(
+      'Delete category',
+      name: 'strDeleteCategory',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Delete meal`
   String get strDeleteMeal {
     return Intl.message(
       'Delete meal',
       name: 'strDeleteMeal',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Add category`
+  String get strAddCategory {
+    return Intl.message(
+      'Add category',
+      name: 'strAddCategory',
       desc: '',
       args: [],
     );
@@ -4255,6 +4285,16 @@ class S {
     return Intl.message(
       'Select a free table to move the order to',
       name: 'strSelectFreeTableForTransfer',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Move`
+  String get strTransfer {
+    return Intl.message(
+      'Move',
+      name: 'strTransfer',
       desc: '',
       args: [],
     );

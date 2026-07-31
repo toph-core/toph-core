@@ -80,6 +80,8 @@ class MessageLookup extends MessageLookupByLibrary {
         "strAddPrinter": MessageLookupByLibrary.simpleMessage("Новый принтер"),
         "strAddTransaction":
             MessageLookupByLibrary.simpleMessage("Добавить транзакцию"),
+        "strAddTxnGroup":
+            MessageLookupByLibrary.simpleMessage("Добавить группу"),
         "strAddedItems":
             MessageLookupByLibrary.simpleMessage("Добавленные элементы"),
         "strAddress": MessageLookupByLibrary.simpleMessage("Адрес"),
@@ -140,8 +142,6 @@ class MessageLookup extends MessageLookupByLibrary {
         "strCashierLabel": MessageLookupByLibrary.simpleMessage("Кассир:"),
         "strCashierRole": MessageLookupByLibrary.simpleMessage("Кассир"),
         "strCategory": MessageLookupByLibrary.simpleMessage("Категория"),
-        "strCategoryName":
-            MessageLookupByLibrary.simpleMessage("Название категории"),
         "strChange": MessageLookupByLibrary.simpleMessage("Сдача"),
         "strChangeTable": MessageLookupByLibrary.simpleMessage("Сменить стол"),
         "strCheckForDetails": MessageLookupByLibrary.simpleMessage(
@@ -198,8 +198,6 @@ class MessageLookup extends MessageLookupByLibrary {
         "strDelete": MessageLookupByLibrary.simpleMessage("Удалить"),
         "strDeleteCategory":
             MessageLookupByLibrary.simpleMessage("Удалить категорию"),
-        "strDeleteCategoryConfirm": MessageLookupByLibrary.simpleMessage(
-            "Вы уверены, что хотите удалить эту категорию?"),
         "strDeleteEmployee":
             MessageLookupByLibrary.simpleMessage("Удалить сотрудника"),
         "strDeleteEmployeeConfirm": m2,
@@ -214,6 +212,10 @@ class MessageLookup extends MessageLookupByLibrary {
             MessageLookupByLibrary.simpleMessage("Удалить транзакцию"),
         "strDeleteTransactionConfirm": MessageLookupByLibrary.simpleMessage(
             "Вы уверены, что хотите удалить эту транзакцию?"),
+        "strDeleteTxnGroup":
+            MessageLookupByLibrary.simpleMessage("Удалить группу"),
+        "strDeleteTxnGroupConfirm": MessageLookupByLibrary.simpleMessage(
+            "Вы уверены, что хотите удалить эту группу?"),
         "strDescription": MessageLookupByLibrary.simpleMessage("Описание"),
         "strDeviceSynchronization": MessageLookupByLibrary.simpleMessage(
             "Синхронизация между устройствами"),
@@ -235,14 +237,14 @@ class MessageLookup extends MessageLookupByLibrary {
         "strDurationLabel":
             MessageLookupByLibrary.simpleMessage("Длительность"),
         "strEdit": MessageLookupByLibrary.simpleMessage("Редактировать"),
-        "strEditCategory":
-            MessageLookupByLibrary.simpleMessage("Редактировать категорию"),
         "strEditMeal":
             MessageLookupByLibrary.simpleMessage("Редактировать блюдо"),
         "strEditPrinter":
             MessageLookupByLibrary.simpleMessage("Редактировать принтер"),
         "strEditTransaction":
             MessageLookupByLibrary.simpleMessage("Редактировать транзакцию"),
+        "strEditTxnGroup":
+            MessageLookupByLibrary.simpleMessage("Редактировать группу"),
         "strElapsedTime":
             MessageLookupByLibrary.simpleMessage("Прошло времени"),
         "strEmail": MessageLookupByLibrary.simpleMessage("Email"),
@@ -424,8 +426,6 @@ class MessageLookup extends MessageLookupByLibrary {
             MessageLookupByLibrary.simpleMessage("Активных периодов пока нет"),
         "strNoCalculationsHint": MessageLookupByLibrary.simpleMessage(
             "Нет строк. Добавьте ингредиент или полуфабрикат."),
-        "strNoCategoriesYet":
-            MessageLookupByLibrary.simpleMessage("Категорий пока нет"),
         "strNoDataFound":
             MessageLookupByLibrary.simpleMessage("Данные не найдены"),
         "strNoDiscountYet":
@@ -452,6 +452,8 @@ class MessageLookup extends MessageLookupByLibrary {
             MessageLookupByLibrary.simpleMessage("В этом зале нет столов"),
         "strNoTransactionsYet":
             MessageLookupByLibrary.simpleMessage("Транзакций пока нет"),
+        "strNoTxnGroupsYet":
+            MessageLookupByLibrary.simpleMessage("Групп пока нет"),
         "strNotOrdered": MessageLookupByLibrary.simpleMessage("Не заказано"),
         "strNotYet": MessageLookupByLibrary.simpleMessage("Пока нет"),
         "strNotifications": MessageLookupByLibrary.simpleMessage("Уведомления"),
@@ -691,13 +693,16 @@ class MessageLookup extends MessageLookupByLibrary {
         "strTotalSales": MessageLookupByLibrary.simpleMessage("Общая выручка"),
         "strTotalSum": MessageLookupByLibrary.simpleMessage("Итого"),
         "strTotalTables": MessageLookupByLibrary.simpleMessage("Всего столов"),
-        "strTransactionCategories":
-            MessageLookupByLibrary.simpleMessage("Категории"),
         "strTransactions": MessageLookupByLibrary.simpleMessage("Транзакции"),
         "strTransactionsAdminOnly": MessageLookupByLibrary.simpleMessage(
             "Доступ к транзакциям есть только у администратора, менеджера или кассира."),
         "strTransfer": MessageLookupByLibrary.simpleMessage("Перенести"),
         "strTuesday": MessageLookupByLibrary.simpleMessage("Вторник"),
+        "strTxnGroupLabel": MessageLookupByLibrary.simpleMessage("Группа"),
+        "strTxnGroupName":
+            MessageLookupByLibrary.simpleMessage("Название группы"),
+        "strTxnGroupsTitle": MessageLookupByLibrary.simpleMessage("Группы"),
+        "strTxnTransfer": MessageLookupByLibrary.simpleMessage("Перевод"),
         "strTypeColumnHeader": MessageLookupByLibrary.simpleMessage("Тип"),
         "strUmumiySumma": MessageLookupByLibrary.simpleMessage("Общая сумма"),
         "strUnacceptableDate":

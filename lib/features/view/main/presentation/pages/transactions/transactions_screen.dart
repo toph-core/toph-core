@@ -29,7 +29,7 @@ extension _SectionMeta on _TransactionsSection {
       case _TransactionsSection.list:
         return S.current.strTransactions;
       case _TransactionsSection.categories:
-        return S.current.strTransactionCategories;
+        return S.current.strTxnGroupsTitle;
     }
   }
 }
