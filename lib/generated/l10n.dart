@@ -920,10 +920,10 @@ class S {
     );
   }
 
-  /// `Add`
+  /// `Add items`
   String get strAddItems {
     return Intl.message(
-      'Add',
+      'Add items',
       name: 'strAddItems',
       desc: '',
       args: [],
@@ -1900,6 +1900,66 @@ class S {
     );
   }
 
+  /// `From`
+  String get strFrom {
+    return Intl.message(
+      'From',
+      name: 'strFrom',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `To`
+  String get strTo {
+    return Intl.message(
+      'To',
+      name: 'strTo',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `D`
+  String get strPeriodDay {
+    return Intl.message(
+      'D',
+      name: 'strPeriodDay',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `W`
+  String get strPeriodWeek {
+    return Intl.message(
+      'W',
+      name: 'strPeriodWeek',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `M`
+  String get strPeriodMonth {
+    return Intl.message(
+      'M',
+      name: 'strPeriodMonth',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Y`
+  String get strPeriodYear {
+    return Intl.message(
+      'Y',
+      name: 'strPeriodYear',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Enter notes...`
   String get strEnterNotes {
     return Intl.message(
@@ -2130,11 +2190,21 @@ class S {
     );
   }
 
-  /// `Time`
+  /// `Opened`
   String get strTimeColumnHeader {
     return Intl.message(
-      'Time',
+      'Opened',
       name: 'strTimeColumnHeader',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Closed`
+  String get strClosedColumnHeader {
+    return Intl.message(
+      'Closed',
+      name: 'strClosedColumnHeader',
       desc: '',
       args: [],
     );
@@ -4085,6 +4155,46 @@ class S {
     return Intl.message(
       'No pauses yet',
       name: 'strNoPauses',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Active periods`
+  String get strActivePeriods {
+    return Intl.message(
+      'Active periods',
+      name: 'strActivePeriods',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Total:`
+  String get strTotalActiveTime {
+    return Intl.message(
+      'Total:',
+      name: 'strTotalActiveTime',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `No active periods yet`
+  String get strNoActivePeriods {
+    return Intl.message(
+      'No active periods yet',
+      name: 'strNoActivePeriods',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `tables`
+  String get strTablesVisited {
+    return Intl.message(
+      'tables',
+      name: 'strTablesVisited',
       desc: '',
       args: [],
     );

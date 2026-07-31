@@ -755,6 +755,7 @@ class DetailBloc extends Bloc<DetailEvent, DetailState> {
       orderNumber: (detail != null && detail.bilNumber > 0)
           ? '${detail.bilNumber}'
           : null,
+      orderId: detail?.id,
       items: [
         OrderItem(
           goods: GoodsModel(

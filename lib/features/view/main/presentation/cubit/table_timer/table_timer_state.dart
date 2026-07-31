@@ -12,8 +12,29 @@ class TableTimerState {
   /// UI uchun lokal hisoblangan faol vaqt (sekund). `null` bo'lsa `timer.totalActiveSec` ishlatiladi.
   final int? displayActiveSec;
 
+  /// UI uchun lokal hisoblangan joriy summa (so'm), oxirgi server
+  /// `current_amount`'iga langar solingan holda har sekundda yangilanadi
+  /// (`TableTimerCubit._startUiTickIfRunning`). `displayActiveSec` kabi
+  /// faqat *yangi* sekundlarni joriy stol narxida qo'shadi — sessiya
+  /// transferdan keyingi ko'p segmentli bo'lsa ham, eski segmentlarning
+  /// narxini "unutib" butun vaqtni joriy narxda hisoblamaydi. `null` bo'lsa
+  /// `computedCurrentAmount` eski (segmentga e'tibor bermaydigan) formulaga
+  /// tushadi.
+  final double? displayAmount;
+
   /// Bill API-dan kelgan pause_periods ro'yxati.
   final List<PauseInterval> billPauses;
+
+  /// `/bills/{id}`'ning `table_sessions[].segments`idan tekislangan,
+  /// server-avtoritar (frozen) segmentlar ro'yxati — active periods
+  /// dialogining yagona manbai (single source of truth).
+  final List<TableSegment> billSegments;
+
+  /// `billSegments`ning oxirgi (hali yopilmagan) elementiga har sekundda
+  /// live tick qo'shilgan versiyasi (`TableTimerCubit._tickLastSegment`).
+  /// `null` bo'lsa `billSegments` o'zi ko'rsatiladi (masalan hali fetch
+  /// bo'lmagan yoki timer running emas holatda).
+  final List<TableSegment>? displaySegments;
 
   const TableTimerState({
     this.timer,
@@ -22,12 +43,24 @@ class TableTimerState {
     this.errorMessage,
     this.shouldShow = false,
     this.displayActiveSec,
+    this.displayAmount,
     this.billPauses = const [],
+    this.billSegments = const [],
+    this.displaySegments,
   });
 
-  /// `pricePerHour` va `displayActiveSec` dan hisoblangan joriy summa (so'm).
-  /// Timer API `current_amount` qaytarmasa ishlatiladi.
+  /// Active periods dialogi uchun ko'rsatiladigan segmentlar — live tick
+  /// mavjud bo'lsa shuni, aks holda server-frozen ro'yxatni qaytaradi.
+  List<TableSegment> get effectiveSegments => displaySegments ?? billSegments;
+
+  /// `displayAmount` mavjud bo'lsa — shu (server `current_amount`'iga
+  /// langar solingan, segment narxlarini hisobga oladigan) qiymatni
+  /// qaytaradi. Aks holda `pricePerHour` va `displayActiveSec` dan
+  /// hisoblangan summaga tushadi — bu formula sessiya bitta segmentdan
+  /// iborat bo'lgandagina to'g'ri (transferdan keyin ko'p segment bo'lsa,
+  /// butun vaqtni joriy stol narxida hisoblab noto'g'ri natija beradi).
   String? get computedCurrentAmount {
+    if (displayAmount != null) return displayAmount!.toStringAsFixed(2);
     final priceStr = timer?.pricePerHour;
     if (priceStr == null || priceStr.isEmpty) return null;
     final price = double.tryParse(priceStr);
@@ -91,7 +124,12 @@ class TableTimerState {
     bool? shouldShow,
     int? displayActiveSec,
     bool clearDisplayActiveSec = false,
+    double? displayAmount,
+    bool clearDisplayAmount = false,
     List<PauseInterval>? billPauses,
+    List<TableSegment>? billSegments,
+    List<TableSegment>? displaySegments,
+    bool clearDisplaySegments = false,
   }) {
     return TableTimerState(
       timer: clearTimer ? null : (timer ?? this.timer),
@@ -104,7 +142,14 @@ class TableTimerState {
       displayActiveSec: clearDisplayActiveSec
           ? null
           : (displayActiveSec ?? this.displayActiveSec),
+      displayAmount: clearDisplayAmount
+          ? null
+          : (displayAmount ?? this.displayAmount),
       billPauses: billPauses ?? this.billPauses,
+      billSegments: billSegments ?? this.billSegments,
+      displaySegments: clearDisplaySegments
+          ? null
+          : (displaySegments ?? this.displaySegments),
     );
   }
 }

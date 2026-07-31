@@ -71,6 +71,11 @@ mixin _$ArchiveDetailModel {
       fromJson: _parsePausePeriods,
       toJson: _pausePeriodsToJson)
   List<PauseInterval> get pausePeriods => throw _privateConstructorUsedError;
+  @JsonKey(
+      name: 'table_sessions',
+      fromJson: parseBillTableSessionsToSegments,
+      toJson: _segmentsToJsonStub)
+  List<TableSegment> get activePeriods => throw _privateConstructorUsedError;
 
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
   @JsonKey(ignore: true)
@@ -120,7 +125,12 @@ abstract class $ArchiveDetailModelCopyWith<$Res> {
           name: 'pause_periods',
           fromJson: _parsePausePeriods,
           toJson: _pausePeriodsToJson)
-      List<PauseInterval> pausePeriods});
+      List<PauseInterval> pausePeriods,
+      @JsonKey(
+          name: 'table_sessions',
+          fromJson: parseBillTableSessionsToSegments,
+          toJson: _segmentsToJsonStub)
+      List<TableSegment> activePeriods});
 }
 
 /// @nodoc
@@ -160,6 +170,7 @@ class _$ArchiveDetailModelCopyWithImpl<$Res, $Val extends ArchiveDetailModel>
     Object? comment = null,
     Object? goods = null,
     Object? pausePeriods = null,
+    Object? activePeriods = null,
   }) {
     return _then(_value.copyWith(
       id: null == id
@@ -258,6 +269,10 @@ class _$ArchiveDetailModelCopyWithImpl<$Res, $Val extends ArchiveDetailModel>
           ? _value.pausePeriods
           : pausePeriods // ignore: cast_nullable_to_non_nullable
               as List<PauseInterval>,
+      activePeriods: null == activePeriods
+          ? _value.activePeriods
+          : activePeriods // ignore: cast_nullable_to_non_nullable
+              as List<TableSegment>,
     ) as $Val);
   }
 }
@@ -306,7 +321,12 @@ abstract class _$$ArchiveDetailModelImplCopyWith<$Res>
           name: 'pause_periods',
           fromJson: _parsePausePeriods,
           toJson: _pausePeriodsToJson)
-      List<PauseInterval> pausePeriods});
+      List<PauseInterval> pausePeriods,
+      @JsonKey(
+          name: 'table_sessions',
+          fromJson: parseBillTableSessionsToSegments,
+          toJson: _segmentsToJsonStub)
+      List<TableSegment> activePeriods});
 }
 
 /// @nodoc
@@ -344,6 +364,7 @@ class __$$ArchiveDetailModelImplCopyWithImpl<$Res>
     Object? comment = null,
     Object? goods = null,
     Object? pausePeriods = null,
+    Object? activePeriods = null,
   }) {
     return _then(_$ArchiveDetailModelImpl(
       id: null == id
@@ -442,6 +463,10 @@ class __$$ArchiveDetailModelImplCopyWithImpl<$Res>
           ? _value._pausePeriods
           : pausePeriods // ignore: cast_nullable_to_non_nullable
               as List<PauseInterval>,
+      activePeriods: null == activePeriods
+          ? _value._activePeriods
+          : activePeriods // ignore: cast_nullable_to_non_nullable
+              as List<TableSegment>,
     ));
   }
 }
@@ -489,9 +514,15 @@ class _$ArchiveDetailModelImpl extends _ArchiveDetailModel {
           name: 'pause_periods',
           fromJson: _parsePausePeriods,
           toJson: _pausePeriodsToJson)
-      final List<PauseInterval> pausePeriods = const []})
+      final List<PauseInterval> pausePeriods = const [],
+      @JsonKey(
+          name: 'table_sessions',
+          fromJson: parseBillTableSessionsToSegments,
+          toJson: _segmentsToJsonStub)
+      final List<TableSegment> activePeriods = const []})
       : _goods = goods,
         _pausePeriods = pausePeriods,
+        _activePeriods = activePeriods,
         super._();
 
   factory _$ArchiveDetailModelImpl.fromJson(Map<String, dynamic> json) =>
@@ -585,9 +616,21 @@ class _$ArchiveDetailModelImpl extends _ArchiveDetailModel {
     return EqualUnmodifiableListView(_pausePeriods);
   }
 
+  final List<TableSegment> _activePeriods;
+  @override
+  @JsonKey(
+      name: 'table_sessions',
+      fromJson: parseBillTableSessionsToSegments,
+      toJson: _segmentsToJsonStub)
+  List<TableSegment> get activePeriods {
+    if (_activePeriods is EqualUnmodifiableListView) return _activePeriods;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(_activePeriods);
+  }
+
   @override
   String toString() {
-    return 'ArchiveDetailModel(id: $id, bilNumber: $bilNumber, status: $status, opened: $opened, paymentType: $paymentType, tableId: $tableId, tableNumber: $tableNumber, hallName: $hallName, cashierId: $cashierId, cashierName: $cashierName, guestCount: $guestCount, foodCost: $foodCost, foodTotal: $foodTotal, tableAmount: $tableAmount, servicePercent: $servicePercent, serviceAmount: $serviceAmount, discountPercent: $discountPercent, discountAmount: $discountAmount, grandTotal: $grandTotal, customerPaidAmount: $customerPaidAmount, changeAmount: $changeAmount, comment: $comment, goods: $goods, pausePeriods: $pausePeriods)';
+    return 'ArchiveDetailModel(id: $id, bilNumber: $bilNumber, status: $status, opened: $opened, paymentType: $paymentType, tableId: $tableId, tableNumber: $tableNumber, hallName: $hallName, cashierId: $cashierId, cashierName: $cashierName, guestCount: $guestCount, foodCost: $foodCost, foodTotal: $foodTotal, tableAmount: $tableAmount, servicePercent: $servicePercent, serviceAmount: $serviceAmount, discountPercent: $discountPercent, discountAmount: $discountAmount, grandTotal: $grandTotal, customerPaidAmount: $customerPaidAmount, changeAmount: $changeAmount, comment: $comment, goods: $goods, pausePeriods: $pausePeriods, activePeriods: $activePeriods)';
   }
 
   @override
@@ -636,7 +679,9 @@ class _$ArchiveDetailModelImpl extends _ArchiveDetailModel {
             (identical(other.comment, comment) || other.comment == comment) &&
             const DeepCollectionEquality().equals(other._goods, _goods) &&
             const DeepCollectionEquality()
-                .equals(other._pausePeriods, _pausePeriods));
+                .equals(other._pausePeriods, _pausePeriods) &&
+            const DeepCollectionEquality()
+                .equals(other._activePeriods, _activePeriods));
   }
 
   @JsonKey(ignore: true)
@@ -666,7 +711,8 @@ class _$ArchiveDetailModelImpl extends _ArchiveDetailModel {
         changeAmount,
         comment,
         const DeepCollectionEquality().hash(_goods),
-        const DeepCollectionEquality().hash(_pausePeriods)
+        const DeepCollectionEquality().hash(_pausePeriods),
+        const DeepCollectionEquality().hash(_activePeriods)
       ]);
 
   @JsonKey(ignore: true)
@@ -726,7 +772,12 @@ abstract class _ArchiveDetailModel extends ArchiveDetailModel {
           name: 'pause_periods',
           fromJson: _parsePausePeriods,
           toJson: _pausePeriodsToJson)
-      final List<PauseInterval> pausePeriods}) = _$ArchiveDetailModelImpl;
+      final List<PauseInterval> pausePeriods,
+      @JsonKey(
+          name: 'table_sessions',
+          fromJson: parseBillTableSessionsToSegments,
+          toJson: _segmentsToJsonStub)
+      final List<TableSegment> activePeriods}) = _$ArchiveDetailModelImpl;
   const _ArchiveDetailModel._() : super._();
 
   factory _ArchiveDetailModel.fromJson(Map<String, dynamic> json) =
@@ -807,6 +858,12 @@ abstract class _ArchiveDetailModel extends ArchiveDetailModel {
       fromJson: _parsePausePeriods,
       toJson: _pausePeriodsToJson)
   List<PauseInterval> get pausePeriods;
+  @override
+  @JsonKey(
+      name: 'table_sessions',
+      fromJson: parseBillTableSessionsToSegments,
+      toJson: _segmentsToJsonStub)
+  List<TableSegment> get activePeriods;
   @override
   @JsonKey(ignore: true)
   _$$ArchiveDetailModelImplCopyWith<_$ArchiveDetailModelImpl> get copyWith =>

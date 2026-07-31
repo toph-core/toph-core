@@ -21,12 +21,16 @@ class KitchenReceiptBuilder {
         guestCount: order.guestCount,
         items: items,
         paperSize: paperSize,
+        orderId: order.id,
       );
 
   /// Kassir oqimlari uchun — to'liq [OpenOrderModel] shart emas.
   /// [tableLine] — birinchi qator matni ('Стол: 5' yoki 'С собой').
   /// [waiterName] — buyurtmani qabul qilgan/qo'shgan foydalanuvchi.
-  /// [orderNumber] — buyurtma raqami (mavjud bo'lsa).
+  /// [orderNumber] — chek raqami (bilNumber, mavjud bo'lsa).
+  /// [orderId] — buyurtma ID (bilNumber hali noma'lum bo'lganda ham izlash uchun).
+  /// [categoryNames] — categoryId -> nom, pozitsiyalarni kategoriya bo'yicha
+  /// guruhlab, har bir guruh oldidan qalin sarlavha chiqarish uchun.
   static Future<List<int>> buildWithHeader({
     required String tableLine,
     required List<OrderItem> items,
@@ -35,10 +39,12 @@ class KitchenReceiptBuilder {
     PaperSize paperSize = PaperSize.mm80,
     String waiterName = '',
     String? orderNumber,
+    String? orderId,
+    Map<String, String> categoryNames = const {},
   }) async {
     final profile = await CapabilityProfile.load();
     final gen = receiptGenerator(paperSize, profile);
-    final time = DateFormat('HH:mm').format(DateTime.now());
+    final now = DateFormat('dd.MM.yyyy HH:mm').format(DateTime.now());
 
     List<int> bytes = [];
     bytes += receiptEncodingPreamble(gen);
@@ -54,59 +60,81 @@ class KitchenReceiptBuilder {
       ),
     );
 
-    bytes += gen.row([
-      PosColumn(
-        text: tableLine,
-        width: 8,
-        styles: const PosStyles(bold: true),
-      ),
-      PosColumn(
-        text: time,
-        width: 4,
-        styles: const PosStyles(align: PosAlign.right),
-      ),
-    ]);
+    bytes += gen.text(tableLine, styles: const PosStyles(bold: true));
+    bytes += gen.text('Время: $now', styles: const PosStyles(bold: true));
 
     if (hallName.isNotEmpty) {
-      bytes += gen.text('Зал: $hallName');
+      bytes += gen.text('Зал: $hallName', styles: const PosStyles(bold: true));
     }
 
     if (orderNumber != null && orderNumber.isNotEmpty) {
-      bytes += gen.text('Заказ №: $orderNumber');
+      bytes += gen.text(
+        'Чек №: $orderNumber',
+        styles: const PosStyles(bold: true),
+      );
+    }
+
+    if (orderId != null && orderId.isNotEmpty) {
+      bytes += gen.text(
+        'ID заказа: $orderId',
+        styles: const PosStyles(bold: true),
+      );
     }
 
     if (waiterName.isNotEmpty) {
-      bytes += gen.text('Официант: $waiterName');
+      bytes += gen.text(
+        'Официант: $waiterName',
+        styles: const PosStyles(bold: true),
+      );
     }
 
     bytes += gen.hr();
 
-    // ── Items — katta shrift, narxsiz ────────────────────────────────────────
+    // ── Items — kategoriya bo'yicha guruhlab, katta shrift, narxsiz ─────────
+    final grouped = <String, List<OrderItem>>{};
     for (final item in items) {
-      final name = item.goods.name.length > 28
-          ? '${item.goods.name.substring(0, 26)}..'
-          : item.goods.name;
+      grouped.putIfAbsent(item.goods.categoryId, () => []).add(item);
+    }
 
-      bytes += gen.row([
-        PosColumn(
-          text: name,
-          width: 9,
-          styles: const PosStyles(bold: true),
-        ),
-        PosColumn(
-          text: 'x${item.quantity}',
-          width: 3,
-          styles: const PosStyles(bold: true, align: PosAlign.right),
-        ),
-      ]);
+    var firstGroup = true;
+    for (final entry in grouped.entries) {
+      final categoryName = categoryNames[entry.key];
+      if (!firstGroup) bytes += gen.text('');
+      firstGroup = false;
 
-      // Waiter oqimi izohni `commet` da, kassir oqimlari `comment` da yuboradi.
-      final note = item.commet.isNotEmpty ? item.commet : item.comment;
-      if (note.isNotEmpty) {
-        bytes += gen.text(
-          '  >> $note',
-          styles: const PosStyles(underline: true),
-        );
+      bytes += gen.text(
+        (categoryName != null && categoryName.isNotEmpty)
+            ? categoryName.toUpperCase()
+            : 'ДРУГОЕ',
+        styles: const PosStyles(bold: true, reverse: true),
+      );
+
+      for (final item in entry.value) {
+        final name = item.goods.name.length > 28
+            ? '${item.goods.name.substring(0, 26)}..'
+            : item.goods.name;
+
+        bytes += gen.row([
+          PosColumn(
+            text: name,
+            width: 9,
+            styles: const PosStyles(bold: true),
+          ),
+          PosColumn(
+            text: 'x${item.quantity}',
+            width: 3,
+            styles: const PosStyles(bold: true, align: PosAlign.right),
+          ),
+        ]);
+
+        // Waiter oqimi izohni `commet` da, kassir oqimlari `comment` da yuboradi.
+        final note = item.commet.isNotEmpty ? item.commet : item.comment;
+        if (note.isNotEmpty) {
+          bytes += gen.text(
+            '  >> $note',
+            styles: const PosStyles(bold: true, underline: true),
+          );
+        }
       }
     }
 
@@ -114,7 +142,7 @@ class KitchenReceiptBuilder {
 
     // ── Footer ───────────────────────────────────────────────────────────────
     if (guestCount > 0) {
-      bytes += gen.text('Гостей: $guestCount');
+      bytes += gen.text('Гостей: $guestCount', styles: const PosStyles(bold: true));
     }
     appendReceiptNoReprepNotice(gen, bytes);
     bytes += gen.feed(2);

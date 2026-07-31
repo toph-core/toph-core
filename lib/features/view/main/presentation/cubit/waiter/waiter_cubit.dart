@@ -8,6 +8,7 @@ import 'package:mary_ai_pos/core/api/list_api.dart';
 import 'package:mary_ai_pos/core/constants/constants.dart';
 import 'package:mary_ai_pos/core/service/printer/printer_service.dart';
 import 'package:mary_ai_pos/core/usecase/usecase.dart';
+import 'package:mary_ai_pos/core/utils/order_conflict_helper.dart';
 import 'package:mary_ai_pos/features/view/auth/data/models/user/user_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/goods/goods_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/open_order/open_order_model.dart';
@@ -593,6 +594,18 @@ class WaiterCubit extends Cubit<WaiterState> {
       await loadOrderItems(orderId);
     } on DioException catch (e) {
       if (kDebugMode) print('WaiterCubit.createOrder error: $e');
+      // 409 Conflict: stol allaqachon faol buyurtmaga ega. Xato ko'rsatish
+      // o'rniga mavjud buyurtmani yuklab, panelni o'shanga ochamiz — shu
+      // orqali orphan/duplicate bill hosil bo'lishining oldi olinadi.
+      if (e.response?.statusCode == 409) {
+        final raw = e.response?.data;
+        final msg = raw is Map ? (raw['error'] ?? raw['message'])?.toString() : null;
+        final existingId = extractExistingOrderIdFromConflict(msg);
+        if (existingId != null && existingId.isNotEmpty) {
+          await _openExistingOrder(existingId);
+          return;
+        }
+      }
       if (!isClosed) {
         emit(state.copyWith(
           isCreatingOrder: false,
@@ -604,6 +617,42 @@ class WaiterCubit extends Cubit<WaiterState> {
       if (!isClosed) {
         emit(state.copyWith(isCreatingOrder: false, errorMessage: e.toString()));
       }
+    }
+  }
+
+  /// 409 conflict paytida chaqiriladi: buyurtma `state.openOrders`da
+  /// bo'lmasligi mumkin (masalan boshqa ofitsiantniki) — shuning uchun
+  /// `selectOrder`dan foydalanmaymiz, balki uni to'g'ridan-to'g'ri yuklab
+  /// ro'yxatga qo'shamiz.
+  Future<void> _openExistingOrder(String orderId) async {
+    try {
+      final response = await _client.get(
+        ListAPI.orderById(orderId),
+        queryParameters: {'lang': 'uz'},
+      );
+      if (isClosed) return;
+      final raw = response.data['data'];
+      final existing = raw is Map<String, dynamic>
+          ? OpenOrderModel.fromJson(raw)
+          : null;
+      final alreadyListed = state.openOrders.any((o) => o.id == orderId);
+      emit(state.copyWith(
+        isCreatingOrder: false,
+        openOrders: (existing != null && !alreadyListed)
+            ? [existing, ...state.openOrders]
+            : state.openOrders,
+        selectedOrderId: orderId,
+        panelMode: WaiterPanelMode.billDetail,
+        orderLineItems: const [],
+        isLoadingOrderItems: true,
+        orderItemsEditMode: false,
+        cancellingOrderItemId: null,
+      ));
+      await loadOpenOrders();
+      await loadOrderItems(orderId);
+    } catch (e) {
+      if (kDebugMode) print('WaiterCubit._openExistingOrder error: $e');
+      if (!isClosed) emit(state.copyWith(isCreatingOrder: false));
     }
   }
 }

@@ -129,34 +129,48 @@ class _TopBar extends StatelessWidget {
           Expanded(
             child: SizedBox(
               height: 36,
-              child: TextField(
-                controller: searchCtrl,
-                // onChanged virtual keyboard bilan ishlamaydi —
-                // parent `_MenuPanelState` controller listener'ga ulangan.
-                style: TextStyle(
-                  fontSize: 13,
-                  color: colors.textDefault,
-                ),
-                decoration: InputDecoration(
-                  hintText: S.current.strSearch,
-                  hintStyle: TextStyle(
-                    fontSize: 13,
-                    color: colors.textSecondary,
-                  ),
-                  suffixIcon: Icon(
-                    Icons.search,
-                    size: 18,
-                    color: colors.textSecondary,
-                  ),
-                  contentPadding:
-                      const EdgeInsets.symmetric(horizontal: 14, vertical: 0),
-                  filled: true,
-                  fillColor: colors.bgSecondary,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    borderSide: BorderSide.none,
-                  ),
-                ),
+              child: ValueListenableBuilder(
+                valueListenable: searchCtrl,
+                builder: (context, value, _) {
+                  return TextField(
+                    controller: searchCtrl,
+                    // onChanged virtual keyboard bilan ishlamaydi —
+                    // parent `_MenuPanelState` controller listener'ga ulangan.
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: colors.textDefault,
+                    ),
+                    decoration: InputDecoration(
+                      hintText: S.current.strSearch,
+                      hintStyle: TextStyle(
+                        fontSize: 13,
+                        color: colors.textSecondary,
+                      ),
+                      suffixIcon: value.text.isEmpty
+                          ? Icon(
+                              Icons.search,
+                              size: 18,
+                              color: colors.textSecondary,
+                            )
+                          : GestureDetector(
+                              onTap: searchCtrl.clear,
+                              child: Icon(
+                                Icons.close,
+                                size: 22,
+                                color: colors.textSecondary,
+                              ),
+                            ),
+                      contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 14, vertical: 0),
+                      filled: true,
+                      fillColor: colors.bgSecondary,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: BorderSide.none,
+                      ),
+                    ),
+                  );
+                },
               ),
             ),
           ),

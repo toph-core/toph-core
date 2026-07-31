@@ -55,9 +55,6 @@ class _DepartmentSelectionScreenState extends State<DepartmentSelectionScreen> {
 
     tableStatus = args['table_status'] as TableStatus? ?? TableStatus.none;
 
-    final hasSavedGoods =
-        savedOrders != null && savedOrders!.createOrderRequest.foods.isNotEmpty;
-
     _detailBloc = inject<DetailBloc>()
       ..add(const DetailEvent.started())
       ..add(
@@ -66,9 +63,14 @@ class _DepartmentSelectionScreenState extends State<DepartmentSelectionScreen> {
         ),
       );
 
-    if (tableStatus == TableStatus.busy &&
-        cafeTable != null &&
-        !hasSavedGoods) {
+    // Fetch the bill's already-committed items (existingGoods) and bind
+    // activeOrderId regardless of whether there's also a local saved draft
+    // (selectedGoods) — they're independent state fields, and skipping
+    // this when a draft exists used to hide already-billed items and
+    // leave activeOrderId null, which then made committing the draft fail
+    // with "Buyurtma ID topilmadi" since the create-order flow refuses to
+    // POST a fresh order for an already-busy table without one.
+    if (tableStatus == TableStatus.busy && cafeTable != null) {
       _detailBloc.add(DetailEvent.fetchBillOrders(billId: cafeTable!.id));
     }
 
@@ -112,13 +114,6 @@ class _DepartmentSelectionScreenState extends State<DepartmentSelectionScreen> {
   }
 
   void _openMenu(CategoryModel category) {
-    // Items added via search results on this screen only live in
-    // `_detailBloc.state.selectedGoods` — carry them into the next screen
-    // instead of the original `savedOrders` this screen was opened with.
-    final currentSavedOrders =
-        (cafeTable != null && _detailBloc.state.selectedGoods.isNotEmpty)
-            ? _detailBloc.saveOrder(cafeTable!, guestCount)
-            : savedOrders;
     Navigator.pushNamed(
       context,
       AppRoutes.detailScreen,
@@ -126,7 +121,11 @@ class _DepartmentSelectionScreenState extends State<DepartmentSelectionScreen> {
         'table': cafeTable,
         'guest_count': guestCount,
         'table_status': tableStatus,
-        'saved_orders': currentSavedOrders,
+        'saved_orders': savedOrders,
+        // Pass the same DetailBloc instance so the cart (selectedGoods)
+        // stays identical between the category and menu screens — see
+        // note on `_ownsDetailBloc` in detail_screen.dart.
+        'detail_bloc': _detailBloc,
         'initial_category_id': category.id,
       },
     );
@@ -166,6 +165,8 @@ class _DepartmentSelectionScreenState extends State<DepartmentSelectionScreen> {
                         showKeyboard: showVirtualKeyboard,
                         textEditingController: controller,
                         guestCount: guestCount,
+                        hadInitialDraft: savedOrders != null &&
+                            savedOrders!.createOrderRequest.foods.isNotEmpty,
                         onSearchChanged: _deptCubit.search,
                       ),
                       OrderActionsBar(

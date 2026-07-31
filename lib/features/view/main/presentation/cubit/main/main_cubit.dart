@@ -41,10 +41,14 @@ class MainCubit extends Cubit<MainState> {
   }
 
   void _applyRemoteTableUpdate(({String tableId, String status}) event) {
-    final newStatus = TableStatus.values.firstWhere(
-      (s) => s.name == event.status,
-      orElse: () => TableStatus.free,
-    );
+    // Noma'lum status string kelsa — stolni "free" deb taxmin qilmaymiz
+    // (bu band stolni bekorga bo'shatib qo'yishi mumkin edi). Shunchaki
+    // e'tiborsiz qoldiramiz; keyingi to'g'ri broadcast yoki forced refresh
+    // holatni tuzatadi.
+    final newStatus = TableStatus.values
+        .where((s) => s.name == event.status)
+        .firstOrNull;
+    if (newStatus == null) return;
     updateTableStatus(event.tableId, newStatus);
   }
 

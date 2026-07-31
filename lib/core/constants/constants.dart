@@ -16,18 +16,26 @@ const TECHNICAL_SUPPORT_URL = '';
 /// Vaqtincha: ochiq buyurtma yopish ekranida xizmat 0% — jami faqat faol qatorlar yig‘indisi (API `total_amount` xizmatni e’tiborsiz qiladi).
 const bool kOpenOrderServiceFeeZeroPercent = true;
 
-enum UserRole {admin, manager, cashier, waiter, kitchen, user, superadmin,none}
+enum UserRole {
+  admin,
+  manager,
+  cashier,
+  waiter,
+  kitchen,
+  user,
+  superadmin,
+  none,
+}
 
+enum CashStatus { open, close, none }
 
-enum CashStatus {open, close, none}
-
-enum ShiftSumType {cash,card}
+enum ShiftSumType { cash, card }
 
 enum Status { LOADING, UNKNOWN, SUCCESS, ERROR, OTHER, OTHER_LOADING, IDLE }
 
 enum OrderStatus { opened, pending, open, closed, paid, debt, deleted, none }
 
-enum ArchivesFilterType { All, Today, Week, month, date }
+enum ArchivesFilterType { All, Today, Week, month, Year, date }
 
 enum GoodsCategoryType { all, category }
 

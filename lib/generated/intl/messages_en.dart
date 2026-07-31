@@ -56,6 +56,8 @@ class MessageLookup extends MessageLookupByLibrary {
             MessageLookupByLibrary.simpleMessage("Access restricted"),
         "strActionColumnHeader": MessageLookupByLibrary.simpleMessage("Action"),
         "strActionsColumn": MessageLookupByLibrary.simpleMessage("Actions"),
+        "strActivePeriods":
+            MessageLookupByLibrary.simpleMessage("Active periods"),
         "strAdd": MessageLookupByLibrary.simpleMessage("Add"),
         "strAddCategory": MessageLookupByLibrary.simpleMessage("Add category"),
         "strAddFirstEmployee":
@@ -66,7 +68,7 @@ class MessageLookup extends MessageLookupByLibrary {
             MessageLookupByLibrary.simpleMessage("Add first printer"),
         "strAddFirstTable":
             MessageLookupByLibrary.simpleMessage("Add first table"),
-        "strAddItems": MessageLookupByLibrary.simpleMessage("Add"),
+        "strAddItems": MessageLookupByLibrary.simpleMessage("Add items"),
         "strAddNewEmployee":
             MessageLookupByLibrary.simpleMessage("New employee"),
         "strAddNewHall": MessageLookupByLibrary.simpleMessage("New hall"),
@@ -143,6 +145,7 @@ class MessageLookup extends MessageLookupByLibrary {
             "Press the button in the bottom right to close the shift."),
         "strCloseShiftShort":
             MessageLookupByLibrary.simpleMessage("Close shift"),
+        "strClosedColumnHeader": MessageLookupByLibrary.simpleMessage("Closed"),
         "strClosedStatus": MessageLookupByLibrary.simpleMessage("Closed"),
         "strClosedToday": MessageLookupByLibrary.simpleMessage("Closed today"),
         "strCompounds": MessageLookupByLibrary.simpleMessage("Compounds"),
@@ -273,6 +276,7 @@ class MessageLookup extends MessageLookupByLibrary {
         "strFreezeTimerTitle":
             MessageLookupByLibrary.simpleMessage("Freeze time charge"),
         "strFriday": MessageLookupByLibrary.simpleMessage("Friday"),
+        "strFrom": MessageLookupByLibrary.simpleMessage("From"),
         "strFrozenAmount":
             MessageLookupByLibrary.simpleMessage("Frozen amount"),
         "strFrozenShort": MessageLookupByLibrary.simpleMessage("FROZEN"),
@@ -359,6 +363,8 @@ class MessageLookup extends MessageLookupByLibrary {
         "strNewPrinter": MessageLookupByLibrary.simpleMessage("New printer"),
         "strNewTable": MessageLookupByLibrary.simpleMessage("New table"),
         "strNo": MessageLookupByLibrary.simpleMessage("No"),
+        "strNoActivePeriods":
+            MessageLookupByLibrary.simpleMessage("No active periods yet"),
         "strNoCalculationsHint": MessageLookupByLibrary.simpleMessage(
             "No rows. Add an ingredient or semi-finished item."),
         "strNoDataFound": MessageLookupByLibrary.simpleMessage("No data found"),
@@ -443,6 +449,10 @@ class MessageLookup extends MessageLookupByLibrary {
         "strPaymentMethodLabel":
             MessageLookupByLibrary.simpleMessage("Payment method:"),
         "strPeakTime": MessageLookupByLibrary.simpleMessage("Peak time"),
+        "strPeriodDay": MessageLookupByLibrary.simpleMessage("D"),
+        "strPeriodMonth": MessageLookupByLibrary.simpleMessage("M"),
+        "strPeriodWeek": MessageLookupByLibrary.simpleMessage("W"),
+        "strPeriodYear": MessageLookupByLibrary.simpleMessage("Y"),
         "strPersonsSuffix": MessageLookupByLibrary.simpleMessage("people"),
         "strPhone": MessageLookupByLibrary.simpleMessage("Phone"),
         "strPhoneMask":
@@ -589,14 +599,17 @@ class MessageLookup extends MessageLookupByLibrary {
         "strTableType": MessageLookupByLibrary.simpleMessage("Type"),
         "strTables": MessageLookupByLibrary.simpleMessage("Tables"),
         "strTablesNotSavedCount": m12,
+        "strTablesVisited": MessageLookupByLibrary.simpleMessage("tables"),
         "strTakeaway": MessageLookupByLibrary.simpleMessage("Takeaway"),
         "strTerminal": MessageLookupByLibrary.simpleMessage("Terminal"),
         "strThursday": MessageLookupByLibrary.simpleMessage("Thursday"),
         "strTimeColumn": MessageLookupByLibrary.simpleMessage("Time"),
-        "strTimeColumnHeader": MessageLookupByLibrary.simpleMessage("Time"),
+        "strTimeColumnHeader": MessageLookupByLibrary.simpleMessage("Opened"),
+        "strTo": MessageLookupByLibrary.simpleMessage("To"),
         "strTodayRevenue":
             MessageLookupByLibrary.simpleMessage("Today\'s revenue"),
         "strTotal": MessageLookupByLibrary.simpleMessage("Total"),
+        "strTotalActiveTime": MessageLookupByLibrary.simpleMessage("Total:"),
         "strTotalCapacity":
             MessageLookupByLibrary.simpleMessage("Total capacity"),
         "strTotalColon": MessageLookupByLibrary.simpleMessage("Total:"),

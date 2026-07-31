@@ -5,8 +5,11 @@ abstract class ArchiveEntity {
   final int bilNumber;
   final OrderStatus status;
   final DateTime? opened;
+  final DateTime? closed;
   final int tableNumber;
+  final String hallName;
   final int totalPrice;
+  final int tableAmount;
   final int goodsTotal;
   final int serviceAmount;
   final int discountAmount;
@@ -18,8 +21,11 @@ abstract class ArchiveEntity {
     required this.bilNumber,
     required this.status,
     this.opened,
+    this.closed,
     required this.tableNumber,
+    required this.hallName,
     required this.totalPrice,
+    this.tableAmount = 0,
     required this.goodsTotal,
     required this.serviceAmount,
     required this.discountAmount,

@@ -38,6 +38,13 @@ class _DetailScreenState extends State<DetailScreen> with DetailScreenMixin {
   late final TableTimerCubit _timerCubit = inject<TableTimerCubit>();
   late DetailBloc _detailBloc;
 
+  // department_selection_screen passes down the same DetailBloc it created
+  // for this table session so the cart (selectedGoods) stays identical on
+  // both the category and menu screens — a separate instance here used to
+  // go stale the moment either screen edited the cart, silently dropping
+  // additions or resurrecting cleared items when navigating back.
+  bool _ownsDetailBloc = true;
+
   // Mutable: free → busy after timer auto-starts
   TableStatus tableStatus = TableStatus.none;
   bool _initDone = false;
@@ -50,12 +57,15 @@ class _DetailScreenState extends State<DetailScreen> with DetailScreenMixin {
 
     tableStatus = args['table_status'] as TableStatus;
 
-    final hasSavedGoods =
-        savedOrders != null && savedOrders!.createOrderRequest.foods.isNotEmpty;
-
     final initialCategoryId = args['initial_category_id'] as String?;
 
-    _detailBloc = inject<DetailBloc>()..add(const DetailEvent.started());
+    final sharedDetailBloc = args['detail_bloc'] as DetailBloc?;
+    if (sharedDetailBloc != null) {
+      _detailBloc = sharedDetailBloc;
+      _ownsDetailBloc = false;
+    } else {
+      _detailBloc = inject<DetailBloc>()..add(const DetailEvent.started());
+    }
 
     // Pre-select category before getCategories so the default "all"
     // selection does not race and override the caller's choice.
@@ -63,32 +73,32 @@ class _DetailScreenState extends State<DetailScreen> with DetailScreenMixin {
       _detailBloc.add(DetailEvent.setSelectedCategoryId(id: initialCategoryId));
     }
 
-    _detailBloc
-      ..add(const DetailEvent.getCategories())
-      ..add(
+    _detailBloc.add(const DetailEvent.getCategories());
+
+    if (_ownsDetailBloc) {
+      _detailBloc.add(
         DetailEvent.initSavedGoods(
           savedGoods: savedOrders?.createOrderRequest.foods ?? [],
         ),
       );
 
-    if (tableStatus == TableStatus.busy &&
-        cafeTable != null &&
-        !hasSavedGoods) {
-      _detailBloc.add(DetailEvent.fetchBillOrders(billId: cafeTable!.id));
-    }
+      if (tableStatus == TableStatus.busy && cafeTable != null) {
+        _detailBloc.add(DetailEvent.fetchBillOrders(billId: cafeTable!.id));
+      }
 
-    final isTimeBased = cafeTable?.tableType?.toLowerCase() == 'time_based';
-    if (isTimeBased && tableStatus == TableStatus.free) {
-      WidgetsBinding.instance.addPostFrameCallback(
-        (_) => _autoStartTimedOrder(),
-      );
+      final isTimeBased = cafeTable?.tableType?.toLowerCase() == 'time_based';
+      if (isTimeBased && tableStatus == TableStatus.free) {
+        WidgetsBinding.instance.addPostFrameCallback(
+          (_) => _autoStartTimedOrder(),
+        );
+      }
     }
   }
 
   @override
   void dispose() {
     _timerCubit.close();
-    _detailBloc.close();
+    if (_ownsDetailBloc) _detailBloc.close();
     showVirtualKeyboard.dispose();
     controller.dispose();
     super.dispose();
@@ -158,6 +168,8 @@ class _DetailScreenState extends State<DetailScreen> with DetailScreenMixin {
                         showKeyboard: showVirtualKeyboard,
                         textEditingController: controller,
                         guestCount: guestCount,
+                        hadInitialDraft: savedOrders != null &&
+                            savedOrders!.createOrderRequest.foods.isNotEmpty,
                         onSearchChanged: (text) => _detailBloc.add(
                           DetailEvent.searchTextChanged(text: text),
                         ),

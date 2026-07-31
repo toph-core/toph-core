@@ -59,6 +59,9 @@ _$ArchiveDetailModelImpl _$$ArchiveDetailModelImplFromJson(
       pausePeriods: json['pause_periods'] == null
           ? const []
           : _parsePausePeriods(json['pause_periods']),
+      activePeriods: json['table_sessions'] == null
+          ? const []
+          : parseBillTableSessionsToSegments(json['table_sessions']),
     );
 
 Map<String, dynamic> _$$ArchiveDetailModelImplToJson(
@@ -88,6 +91,7 @@ Map<String, dynamic> _$$ArchiveDetailModelImplToJson(
       'comment': instance.comment,
       'items': const OrderFoodEntityListConverter().toJson(instance.goods),
       'pause_periods': _pausePeriodsToJson(instance.pausePeriods),
+      'table_sessions': _segmentsToJsonStub(instance.activePeriods),
     };
 
 const _$OrderStatusEnumMap = {

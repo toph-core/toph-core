@@ -25,6 +25,7 @@ mixin _$ArchivesFilterRequestModel {
   ArchivesFilterType get filterType => throw _privateConstructorUsedError;
   DateTime? get startDate => throw _privateConstructorUsedError;
   DateTime? get endDate => throw _privateConstructorUsedError;
+  String? get billStatus => throw _privateConstructorUsedError;
   @PaginationRequestEntityConverter()
   PaginationRequestEntity? get pagination => throw _privateConstructorUsedError;
 
@@ -46,6 +47,7 @@ abstract class $ArchivesFilterRequestModelCopyWith<$Res> {
       ArchivesFilterType filterType,
       DateTime? startDate,
       DateTime? endDate,
+      String? billStatus,
       @PaginationRequestEntityConverter() PaginationRequestEntity? pagination});
 }
 
@@ -67,6 +69,7 @@ class _$ArchivesFilterRequestModelCopyWithImpl<$Res,
     Object? filterType = null,
     Object? startDate = freezed,
     Object? endDate = freezed,
+    Object? billStatus = freezed,
     Object? pagination = freezed,
   }) {
     return _then(_value.copyWith(
@@ -86,6 +89,10 @@ class _$ArchivesFilterRequestModelCopyWithImpl<$Res,
           ? _value.endDate
           : endDate // ignore: cast_nullable_to_non_nullable
               as DateTime?,
+      billStatus: freezed == billStatus
+          ? _value.billStatus
+          : billStatus // ignore: cast_nullable_to_non_nullable
+              as String?,
       pagination: freezed == pagination
           ? _value.pagination
           : pagination // ignore: cast_nullable_to_non_nullable
@@ -108,6 +115,7 @@ abstract class _$$ArchivesFilterRequestModelImplCopyWith<$Res>
       ArchivesFilterType filterType,
       DateTime? startDate,
       DateTime? endDate,
+      String? billStatus,
       @PaginationRequestEntityConverter() PaginationRequestEntity? pagination});
 }
 
@@ -128,6 +136,7 @@ class __$$ArchivesFilterRequestModelImplCopyWithImpl<$Res>
     Object? filterType = null,
     Object? startDate = freezed,
     Object? endDate = freezed,
+    Object? billStatus = freezed,
     Object? pagination = freezed,
   }) {
     return _then(_$ArchivesFilterRequestModelImpl(
@@ -147,6 +156,10 @@ class __$$ArchivesFilterRequestModelImplCopyWithImpl<$Res>
           ? _value.endDate
           : endDate // ignore: cast_nullable_to_non_nullable
               as DateTime?,
+      billStatus: freezed == billStatus
+          ? _value.billStatus
+          : billStatus // ignore: cast_nullable_to_non_nullable
+              as String?,
       pagination: freezed == pagination
           ? _value.pagination
           : pagination // ignore: cast_nullable_to_non_nullable
@@ -163,6 +176,7 @@ class _$ArchivesFilterRequestModelImpl extends _ArchivesFilterRequestModel {
       this.filterType = ArchivesFilterType.Today,
       this.startDate,
       this.endDate,
+      this.billStatus,
       @PaginationRequestEntityConverter() this.pagination})
       : super._();
 
@@ -180,12 +194,14 @@ class _$ArchivesFilterRequestModelImpl extends _ArchivesFilterRequestModel {
   @override
   final DateTime? endDate;
   @override
+  final String? billStatus;
+  @override
   @PaginationRequestEntityConverter()
   final PaginationRequestEntity? pagination;
 
   @override
   String toString() {
-    return 'ArchivesFilterRequestModel(archiveNum: $archiveNum, filterType: $filterType, startDate: $startDate, endDate: $endDate, pagination: $pagination)';
+    return 'ArchivesFilterRequestModel(archiveNum: $archiveNum, filterType: $filterType, startDate: $startDate, endDate: $endDate, billStatus: $billStatus, pagination: $pagination)';
   }
 
   @override
@@ -200,14 +216,16 @@ class _$ArchivesFilterRequestModelImpl extends _ArchivesFilterRequestModel {
             (identical(other.startDate, startDate) ||
                 other.startDate == startDate) &&
             (identical(other.endDate, endDate) || other.endDate == endDate) &&
+            (identical(other.billStatus, billStatus) ||
+                other.billStatus == billStatus) &&
             (identical(other.pagination, pagination) ||
                 other.pagination == pagination));
   }
 
   @JsonKey(ignore: true)
   @override
-  int get hashCode => Object.hash(
-      runtimeType, archiveNum, filterType, startDate, endDate, pagination);
+  int get hashCode => Object.hash(runtimeType, archiveNum, filterType,
+      startDate, endDate, billStatus, pagination);
 
   @JsonKey(ignore: true)
   @override
@@ -230,6 +248,7 @@ abstract class _ArchivesFilterRequestModel extends ArchivesFilterRequestModel {
           final ArchivesFilterType filterType,
           final DateTime? startDate,
           final DateTime? endDate,
+          final String? billStatus,
           @PaginationRequestEntityConverter()
           final PaginationRequestEntity? pagination}) =
       _$ArchivesFilterRequestModelImpl;
@@ -246,6 +265,8 @@ abstract class _ArchivesFilterRequestModel extends ArchivesFilterRequestModel {
   DateTime? get startDate;
   @override
   DateTime? get endDate;
+  @override
+  String? get billStatus;
   @override
   @PaginationRequestEntityConverter()
   PaginationRequestEntity? get pagination;

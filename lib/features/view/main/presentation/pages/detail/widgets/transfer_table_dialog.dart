@@ -1,3 +1,5 @@
+import 'dart:async' show unawaited;
+
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -97,6 +99,9 @@ class _TransferTableDialogState extends State<_TransferTableDialog> {
       // boshqa POS qurilmalari ham real-time ko'rishi uchun.
       main.broadcastTableStatus(widget.sourceTableId, TableStatus.free);
       main.broadcastTableStatus(targetId, TableStatus.busy);
+      // Optimistik holatni server bilan tasdiqlaymiz — payment_bloc'dagi
+      // yopish oqimi ham xuddi shu naqshni ishlatadi.
+      unawaited(main.refreshTables(force: true));
       nav.pop(true);
       if (mounted) showInfoMessage(context, S.current.strOrderTransferred);
     } on DioException catch (e) {

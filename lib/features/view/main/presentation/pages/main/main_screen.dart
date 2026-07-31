@@ -7,7 +7,6 @@ import 'package:mary_ai_pos/core/routes/app_routes.dart';
 import 'package:mary_ai_pos/core/widgets/app_scaffold.dart';
 import 'package:mary_ai_pos/features/view/auth/presentation/cubit/bloc/user_bloc.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/main/main_cubit.dart';
-import 'package:mary_ai_pos/features/view/main/presentation/cubit/orders/orders_bloc.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/shift/shift_bloc.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/main/widgets/hall_widget.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/main/widgets/main_header.dart';
@@ -26,7 +25,6 @@ class _MainScreenState extends State<MainScreen> {
   void initState() {
     super.initState();
     context.read<MainCubit>().getHalls();
-    context.read<SavedOrdersBloc>().add(const SavedOrdersEvent.clear());
   }
 
   @override

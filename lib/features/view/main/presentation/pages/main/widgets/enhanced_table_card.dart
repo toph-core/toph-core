@@ -118,9 +118,14 @@ class _EnhancedTableCardState extends State<EnhancedTableCard> {
 
     return BlocBuilder<SavedOrdersBloc, SavedOrdersState>(
       builder: (context, savedState) {
-        final hasSaved = savedState.order.any(
+        final savedIndex = savedState.order.indexWhere(
           (v) => v.cafeTable.id == widget.table.id,
         );
+        final hasSaved = savedIndex != -1;
+        final savedItemCount = hasSaved
+            ? savedState.order[savedIndex].createOrderRequest.foods
+                .fold<int>(0, (sum, f) => sum + f.quantity)
+            : 0;
 
         return MouseRegion(
           onEnter: (_) => setState(() => _hovered = true),
@@ -219,17 +224,31 @@ class _EnhancedTableCardState extends State<EnhancedTableCard> {
                             vertical: 2,
                           ),
                           decoration: BoxDecoration(
-                            color: colors.textBrand.withOpacity(0.15),
+                            color: const Color(0xFFDC2626).withOpacity(0.12),
                             borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Text(
-                            'Saqlan.',
-                            style: TextStyle(
-                              fontSize: 9,
-                              fontWeight: FontWeight.w600,
-                              color: colors.textBrand,
-                              fontFamily: 'Inter',
+                            border: Border.all(
+                              color: const Color(0xFFDC2626).withOpacity(0.3),
                             ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            spacing: 3,
+                            children: [
+                              const Icon(
+                                Icons.priority_high_rounded,
+                                size: 10,
+                                color: Color(0xFFDC2626),
+                              ),
+                              Text(
+                                '$savedItemCount',
+                                style: const TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w700,
+                                  color: Color(0xFFDC2626),
+                                  fontFamily: 'Inter',
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                     ],

@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:win32/win32.dart';
 
 import 'package:mary_ai_pos/core/components/flush_bars.dart';
+import 'package:mary_ai_pos/core/services/cache/cache_service.dart';
 import 'package:mary_ai_pos/core/utils/helper/helper_widget.dart';
 import 'package:mary_ai_pos/di.dart';
 import 'package:mary_ai_pos/features/view/auth/presentation/cubit/bloc/user_bloc.dart';
@@ -29,6 +30,14 @@ class PrinterService {
 
   /// Hozir tizimga kirgan foydalanuvchi (buyurtmani qabul qilgan/qo'shgan kishi) — cheklarda ko'rsatish uchun.
   String get _waiterName => inject<UserBloc>().state.userMOdel?.fullName ?? '';
+
+  /// categoryId -> nom — oshxona chekida pozitsiyalarni kategoriya bo'yicha
+  /// guruhlab sarlavha chiqarish uchun. `CacheService` categoriyalarni
+  /// DetailBloc har safar ro'yxatni yuklaganda saqlaydi.
+  Map<String, String> get _categoryNames => {
+        for (final c in inject<CacheService>().getCategories())
+          if (c['id'] != null) c['id'].toString(): (c['name']?.toString() ?? ''),
+      };
 
   /// TCP orqali yuborish; juda kichik bo‘laklar ESC/raster oqimini sindirishi mumkin.
   static const _socketChunkBytes = 8192;
@@ -182,6 +191,7 @@ class PrinterService {
         hallName: order.hallName,
         guestCount: order.guestCount,
         items: items,
+        orderId: order.id,
       );
 
   /// [printKitchenReceipt] bilan bir xil, lekin to'liq [OpenOrderModel] talab
@@ -192,6 +202,7 @@ class PrinterService {
     String hallName = '',
     int guestCount = 0,
     String? orderNumber,
+    String? orderId,
   }) async {
     if (items.isEmpty) return;
     final byKey = <String, List<OrderItem>>{};
@@ -222,6 +233,7 @@ class PrinterService {
       return;
     }
     try {
+      final categoryNames = _categoryNames;
       for (final k in byKey.keys) {
         final config = cfgByKey[k]!;
         final sub = byKey[k]!;
@@ -233,6 +245,8 @@ class PrinterService {
           paperSize: config.paperSize,
           waiterName: _waiterName,
           orderNumber: orderNumber,
+          orderId: orderId,
+          categoryNames: categoryNames,
         );
         final r = await _connectAndPrint(config, bytes);
         if (!r.ok) {

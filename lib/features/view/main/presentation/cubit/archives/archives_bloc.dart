@@ -41,6 +41,7 @@ class ArchivesBloc extends Bloc<ArchivesEvent, ArchivesState> {
     on<_GetArchiveDetail>(_getArchiveDetail);
     on<_UpdateFilterType>(_updateFilterType);
     on<_UpdateFilterDateRange>(_updateFilterDateRange);
+    on<_UpdateStatusFilter>(_updateStatusFilter);
     on<_SearchByArchiveNum>(
       _onSearchByArchiveNum,
       transformer: (events, mapper) => events
@@ -73,6 +74,13 @@ class ArchivesBloc extends Bloc<ArchivesEvent, ArchivesState> {
       ),
     );
     add(const _GetArchived());
+  }
+
+  void _updateStatusFilter(_UpdateStatusFilter event, emit) {
+    if (state.statusFilter != event.status) {
+      emit(state.copyWith(statusFilter: event.status, archives: null));
+      add(const _GetArchived());
+    }
   }
 
   Future<void> _getArchiveDetail(
@@ -150,6 +158,7 @@ class ArchivesBloc extends Bloc<ArchivesEvent, ArchivesState> {
         filterType: state.filterType,
         startDate: state.startFilterDate,
         endDate: state.endFilterDate,
+        billStatus: state.statusFilter,
         pagination: pagination,
       ),
     );
@@ -166,11 +175,7 @@ class ArchivesBloc extends Bloc<ArchivesEvent, ArchivesState> {
       (r) {
         if (isClosed) return;
         emit(
-          state.copyWith(
-            archives: r,
-            status: Status.SUCCESS,
-            failure: null,
-          ),
+          state.copyWith(archives: r, status: Status.SUCCESS, failure: null),
         );
         if (r.archives.isNotEmpty && state.selectArchive == null) {
           if (!isClosed) {

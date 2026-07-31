@@ -41,13 +41,23 @@ class TimeBasedAccruingPricing extends TablePricingStrategy {
   final TableTimerResponse timer;
   final int displayActiveSec;
 
+  /// `TableTimerCubit`ning `computeAnchoredLiveAmount` orqali hisoblagan
+  /// langar solingan summasi — segment narxlarini hisobga oladi. Mavjud
+  /// bo'lsa shu ishlatiladi; `null` bo'lsagina (masalan cubit tick hali
+  /// ishlamagan holatlarda) pastdagi zaxira formulaga tushiladi, u esa faqat
+  /// sessiya bitta segmentdan iborat bo'lsa to'g'ri natija beradi.
+  final double? displayAmount;
+
   const TimeBasedAccruingPricing({
     required this.timer,
     required this.displayActiveSec,
+    this.displayAmount,
   });
 
   @override
   int get extraCharge {
+    if (displayAmount != null) return displayAmount!.round();
+
     final price = double.tryParse(timer.pricePerHour ?? '') ?? 0;
     // Running paytda lokal hisoblangan summa — UI har sekundda yangilanishi
     // uchun. Server `currentAmount` 60s sync orasida muzlab qoladi.
@@ -108,6 +118,7 @@ class TablePricingResolver {
     required OpenOrderModel? order,
     required TableTimerResponse? timer,
     required int displayActiveSec,
+    double? displayAmount,
   }) {
     if (timer != null &&
         timer.isFrozenClosed &&
@@ -136,6 +147,7 @@ class TablePricingResolver {
       return TimeBasedAccruingPricing(
         timer: timer,
         displayActiveSec: displayActiveSec,
+        displayAmount: displayAmount,
       );
     }
 
