@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -7,8 +9,10 @@ import 'package:mary_ai_pos/core/api/list_api.dart';
 import 'package:mary_ai_pos/core/components/flush_bars.dart';
 import 'package:mary_ai_pos/core/extension/for_context.dart';
 import 'package:mary_ai_pos/core/service/printer/printer_setting_entry.dart';
+import 'package:mary_ai_pos/core/usecase/usecase.dart';
 import 'package:mary_ai_pos/di.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/category/category_model.dart';
+import 'package:mary_ai_pos/features/view/main/domain/usecase/sync_printer_settings_usecase.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/settings/widgets/section_shell.dart';
 import 'package:mary_ai_pos/generated/l10n.dart';
 
@@ -98,6 +102,7 @@ class _PrintersSectionState extends State<PrintersSection> {
     );
     if (saved == true && mounted) {
       _loadAll();
+      unawaited(inject<SyncPrinterSettingsUsecase>().call(NoParams()));
     }
   }
 
@@ -115,6 +120,7 @@ class _PrintersSectionState extends State<PrintersSection> {
       await _client.delete('${ListAPI.printerSettings}/${item.id}');
       if (!mounted) return;
       _loadAll();
+      unawaited(inject<SyncPrinterSettingsUsecase>().call(NoParams()));
     } on DioException catch (e) {
       if (!mounted) return;
       showErrorMessage(context, _readError(e) ?? S.current.strDeleteError);

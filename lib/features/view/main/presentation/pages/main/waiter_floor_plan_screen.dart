@@ -38,6 +38,8 @@ const _kBrandTint = Color(0xFFFFF3EE);
 const _kBrandBorder = Color(0xFFFFD9C2);
 const _kBrandBarFill = Color(0xFFFFE4D6);
 const _kRed = Color(0xFFDC2626);
+const _kInfo = Color(0xFF2563EB);
+const _kInfoTint = Color(0xFFDBEAFE);
 const _kGreen = Color(0xFF16A34A);
 const _kFreeBg = Color(0xFFF0FDF4);
 const _kFreeBorder = Color(0xFFBBF7D0);
@@ -191,12 +193,20 @@ class _WaiterFloorPlanScreenState extends State<WaiterFloorPlanScreen> {
                                             f.quantity,
                                   ),
                           };
+                          final savedItemCountsByTable = <String, int>{
+                            for (final o in savedOrders)
+                              o.createOrderRequest.tableId: o
+                                  .createOrderRequest
+                                  .foods
+                                  .fold<int>(0, (sum, f) => sum + f.quantity),
+                          };
                           _syncOpenedAt(savedIds);
                           return _GridView(
                             halls: halls,
                             tables: tables,
                             savedIds: savedIds,
                             totalsByTable: savedTotalsByTable,
+                            itemCountsByTable: savedItemCountsByTable,
                             openedAtByTable: _openedAtByTable,
                             selectedHallId: state.selectedHallId,
                             onTap: (table) => _handleTableTap(context, table),
@@ -420,6 +430,7 @@ class _GridView extends StatelessWidget {
   final List<CafeTableModel> tables;
   final Set<String> savedIds;
   final Map<String, int> totalsByTable;
+  final Map<String, int> itemCountsByTable;
   final Map<String, DateTime> openedAtByTable;
   final String? selectedHallId;
   final void Function(CafeTableModel) onTap;
@@ -429,6 +440,7 @@ class _GridView extends StatelessWidget {
     required this.tables,
     required this.savedIds,
     required this.totalsByTable,
+    required this.itemCountsByTable,
     required this.openedAtByTable,
     required this.selectedHallId,
     required this.onTap,
@@ -504,6 +516,7 @@ class _GridView extends StatelessWidget {
               hallName: orderedGroups[g].key.name,
               savedIds: savedIds,
               totalsByTable: totalsByTable,
+              itemCountsByTable: itemCountsByTable,
               openedAtByTable: openedAtByTable,
               onTap: onTap,
             ),
@@ -525,6 +538,7 @@ class _GridView extends StatelessWidget {
               hallName: S.current.strOther,
               savedIds: savedIds,
               totalsByTable: totalsByTable,
+              itemCountsByTable: itemCountsByTable,
               openedAtByTable: openedAtByTable,
               onTap: onTap,
             ),
@@ -576,6 +590,7 @@ class _GridOfTables extends StatelessWidget {
   final String hallName;
   final Set<String> savedIds;
   final Map<String, int> totalsByTable;
+  final Map<String, int> itemCountsByTable;
   final Map<String, DateTime> openedAtByTable;
   final void Function(CafeTableModel) onTap;
 
@@ -584,6 +599,7 @@ class _GridOfTables extends StatelessWidget {
     required this.hallName,
     required this.savedIds,
     required this.totalsByTable,
+    required this.itemCountsByTable,
     required this.openedAtByTable,
     required this.onTap,
   });
@@ -622,6 +638,7 @@ class _GridOfTables extends StatelessWidget {
                     hallName: hallName,
                     isSaved: savedIds.contains(t.id),
                     savedTotal: totalsByTable[t.id],
+                    savedItemCount: itemCountsByTable[t.id],
                     openedAt: openedAtByTable[t.id],
                     onTap: () => onTap(t),
                   ),
@@ -678,6 +695,7 @@ class _TableCard extends StatefulWidget {
   final String hallName;
   final bool isSaved;
   final int? savedTotal;
+  final int? savedItemCount;
   final DateTime? openedAt;
   final VoidCallback onTap;
 
@@ -686,6 +704,7 @@ class _TableCard extends StatefulWidget {
     required this.hallName,
     required this.isSaved,
     required this.savedTotal,
+    required this.savedItemCount,
     required this.openedAt,
     required this.onTap,
   });
@@ -738,13 +757,18 @@ class _TableCardState extends State<_TableCard> {
     switch (status) {
       case TableStatus.free:
       case TableStatus.none:
-        return _FreeCardContent(table: widget.table, hallName: widget.hallName);
+        return _FreeCardContent(
+          table: widget.table,
+          hallName: widget.hallName,
+          savedItemCount: widget.savedItemCount,
+        );
       case TableStatus.busy:
         return _BusyCardContent(
           table: widget.table,
           hallName: widget.hallName,
           isSaved: widget.isSaved,
           savedTotal: widget.savedTotal,
+          savedItemCount: widget.savedItemCount,
           openedAt: widget.openedAt,
         );
       case TableStatus.away:
@@ -925,7 +949,12 @@ class _RateFooter extends StatelessWidget {
 class _FreeCardContent extends StatelessWidget {
   final CafeTableModel table;
   final String hallName;
-  const _FreeCardContent({required this.table, required this.hallName});
+  final int? savedItemCount;
+  const _FreeCardContent({
+    required this.table,
+    required this.hallName,
+    this.savedItemCount,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -939,6 +968,10 @@ class _FreeCardContent extends StatelessWidget {
           statusLabel: S.current.strFree.toUpperCase(),
           accentColor: _kGreen,
         ),
+        if ((savedItemCount ?? 0) > 0) ...[
+          const SizedBox(height: 10),
+          _SavedItemsBar(itemCount: savedItemCount!),
+        ],
         const Spacer(),
         _RateFooter(table: table),
       ],
@@ -953,12 +986,14 @@ class _BusyCardContent extends StatelessWidget {
   final String hallName;
   final bool isSaved;
   final int? savedTotal;
+  final int? savedItemCount;
   final DateTime? openedAt;
   const _BusyCardContent({
     required this.table,
     required this.hallName,
     required this.isSaved,
     required this.savedTotal,
+    required this.savedItemCount,
     required this.openedAt,
   });
 
@@ -984,14 +1019,61 @@ class _BusyCardContent extends StatelessWidget {
             key: ValueKey('${table.id}-bar'),
             table: table,
             mode: TimeBasedBadgeMode.bar,
+            savedItemCount: savedItemCount,
           ),
         ] else if (openedAt != null) ...[
           const SizedBox(height: 10),
-          _LocalBusyBar(openedAt: openedAt, savedTotal: savedTotal),
+          _LocalBusyBar(
+            openedAt: openedAt,
+            savedTotal: savedTotal,
+            savedItemCount: savedItemCount,
+          ),
         ],
         const Spacer(),
         _RateFooter(table: table),
       ],
+    );
+  }
+}
+
+// ── Prominent "unsaved draft" banner — same size/weight as the timer bar
+// (_LocalBusyBar / TimeBasedTableBadge's bar mode) so an uncommitted cart
+// reads at a glance, not just as a small header chip.
+class _SavedItemsBar extends StatelessWidget {
+  final int itemCount;
+  const _SavedItemsBar({required this.itemCount});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: _kInfoTint,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: _kInfo.withOpacity(0.3)),
+      ),
+      child: Row(
+        children: [
+          const Icon(
+            Icons.priority_high_rounded,
+            size: 16,
+            color: _kInfo,
+          ),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Text(
+              'Saqlangan $itemCount ta taom',
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w700,
+                color: _kInfo,
+                fontFamily: 'Inter',
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -1005,7 +1087,12 @@ class _BusyCardContent extends StatelessWidget {
 class _LocalBusyBar extends StatefulWidget {
   final DateTime? openedAt;
   final int? savedTotal;
-  const _LocalBusyBar({required this.openedAt, required this.savedTotal});
+  final int? savedItemCount;
+  const _LocalBusyBar({
+    required this.openedAt,
+    required this.savedTotal,
+    this.savedItemCount,
+  });
 
   @override
   State<_LocalBusyBar> createState() => _LocalBusyBarState();
@@ -1056,6 +1143,24 @@ class _LocalBusyBarState extends State<_LocalBusyBar> {
             ),
           ),
           const Spacer(),
+          if ((widget.savedItemCount ?? 0) > 0) ...[
+            const Icon(
+              Icons.priority_high_rounded,
+              size: 14,
+              color: _kInfo,
+            ),
+            const SizedBox(width: 2),
+            Text(
+              '${widget.savedItemCount}',
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+                color: _kInfo,
+                fontFamily: 'Inter',
+              ),
+            ),
+            if (showAmount) const SizedBox(width: 8),
+          ],
           if (showAmount)
             Text(
               '${_fmtSom(widget.savedTotal!)} so\'m',

@@ -16,6 +16,15 @@ class TableSegment {
   final String? moveOutReason;
   final List<PauseInterval> pauses;
 
+  /// This segment's own table number, price/hour, and charge — frozen by
+  /// the backend at the moment the segment closed (never re-derived from
+  /// the table's current rate afterward), or live for the one still-open
+  /// segment. `null` for a legacy pre-freeze segment or a table with no
+  /// price set.
+  final int? tableNumber;
+  final String? pricePerHour;
+  final String? amount;
+
   const TableSegment({
     this.segmentId,
     this.tableId,
@@ -28,6 +37,9 @@ class TableSegment {
     this.moveInReason,
     this.moveOutReason,
     this.pauses = const [],
+    this.tableNumber,
+    this.pricePerHour,
+    this.amount,
   });
 
   static DateTime? _parseDt(Object? v) {
@@ -56,6 +68,28 @@ class TableSegment {
       moveInReason: json['move_in_reason'] as String?,
       moveOutReason: json['move_out_reason'] as String?,
       pauses: _parsePauses(json['pause_intervals']),
+      tableNumber: (json['table_number'] as num?)?.toInt(),
+      pricePerHour: json['price_per_hour']?.toString(),
+      amount: json['amount']?.toString(),
+    );
+  }
+
+  TableSegment copyWith({int? activeSeconds, String? amount}) {
+    return TableSegment(
+      segmentId: segmentId,
+      tableId: tableId,
+      enteredAt: enteredAt,
+      leftAt: leftAt,
+      activeSeconds: activeSeconds ?? this.activeSeconds,
+      pausedSeconds: pausedSeconds,
+      movedFromTableId: movedFromTableId,
+      movedToTableId: movedToTableId,
+      moveInReason: moveInReason,
+      moveOutReason: moveOutReason,
+      pauses: pauses,
+      tableNumber: tableNumber,
+      pricePerHour: pricePerHour,
+      amount: amount ?? this.amount,
     );
   }
 
@@ -65,4 +99,93 @@ class TableSegment {
 
   /// Segment tugagan (boshqa stolga ko'chirilgan) bo'lsa true.
   bool get isClosed => leftAt != null;
+
+  /// The continuous active stretches within this segment — the complement
+  /// of [pauses] against [enteredAt]..[leftAt] (or "now" if still open and
+  /// not currently paused). Derived client-side from timestamps already on
+  /// this segment; matches the "Faol davrlar" dialog's per-interval rows
+  /// (time range, duration, cost), nested under this segment's own row.
+  List<ActiveInterval> get activeIntervals {
+    final start = enteredAt;
+    if (start == null) return const [];
+    final sortedPauses = [...pauses]
+      ..sort((a, b) => a.startedAt.compareTo(b.startedAt));
+    final result = <ActiveInterval>[];
+    var cursor = start;
+    for (final p in sortedPauses) {
+      if (p.startedAt.isAfter(cursor)) {
+        result.add(
+          ActiveInterval(
+            start: cursor,
+            end: p.startedAt,
+            durationSec: p.startedAt.difference(cursor).inSeconds,
+          ),
+        );
+      }
+      if (p.endedAt == null) {
+        // Still paused right now — no active interval continues after this.
+        return result;
+      }
+      cursor = p.endedAt!;
+    }
+    if (leftAt != null) {
+      if (leftAt!.isAfter(cursor)) {
+        result.add(
+          ActiveInterval(
+            start: cursor,
+            end: leftAt,
+            durationSec: leftAt!.difference(cursor).inSeconds,
+          ),
+        );
+      }
+    } else {
+      final now = DateTime.now();
+      result.add(
+        ActiveInterval(
+          start: cursor,
+          end: null,
+          durationSec: now.difference(cursor).inSeconds,
+        ),
+      );
+    }
+    return result;
+  }
+}
+
+/// One continuous active (non-paused) stretch within a [TableSegment].
+/// `end == null` means it's still ongoing (the segment is currently running).
+class ActiveInterval {
+  final DateTime start;
+  final DateTime? end;
+  final int durationSec;
+
+  const ActiveInterval({
+    required this.start,
+    this.end,
+    required this.durationSec,
+  });
+}
+
+/// Flattens `table_sessions[].segments` (from a `/bills/{id}` response) into
+/// one chronological list — sessions are sequential for an order (at most
+/// one open at a time), so straight concatenation (oldest session first,
+/// segments already ascending within a session) preserves chronological
+/// order without needing a session-wrapper type. This is the single source
+/// of truth both `TableTimerCubit` (open orders, polls `/bills/{id}` every
+/// 60s) and `ArchiveDetailEntity` (closed orders, fetched once) parse
+/// through — see `docs/active_periods_view.md`.
+List<TableSegment> parseBillTableSessionsToSegments(Object? tableSessionsJson) {
+  if (tableSessionsJson is! List) return const [];
+  final segments = <TableSegment>[];
+  for (final session in tableSessionsJson) {
+    if (session is! Map<String, dynamic>) continue;
+    final rawSegments = session['segments'];
+    if (rawSegments is! List) continue;
+    segments.addAll(
+      rawSegments
+          .whereType<Map<String, dynamic>>()
+          .map(TableSegment.fromJson),
+    );
+  }
+  return segments;
 }

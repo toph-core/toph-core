@@ -23,4 +23,6 @@ class ArchivesEvent with _$ArchivesEvent {
     required DateTime startDate,
     required DateTime endDate,
   }) = _UpdateFilterDateRange;
+  const factory ArchivesEvent.updateStatusFilter({String? status}) =
+      _UpdateStatusFilter;
 }

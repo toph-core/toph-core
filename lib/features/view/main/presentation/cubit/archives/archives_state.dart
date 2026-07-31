@@ -15,6 +15,7 @@ class ArchivesState with _$ArchivesState {
     List<ArchivesFilterType> filters,
     DateTime? startFilterDate,
     DateTime? endFilterDate,
+    String? statusFilter,
     TextEditingController? textController,
     ArchivesResponseEntity? archives,
     ArchiveDetailEntity? selectArchiveDetail,

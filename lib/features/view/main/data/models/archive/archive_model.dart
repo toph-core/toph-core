@@ -26,12 +26,17 @@ class ArchiveModel with _$ArchiveModel implements ArchiveEntity {
     @JsonKey(name: 'bill_no', fromJson: parseInt) @Default(0) int bilNumber,
     @JsonKey(name: "bill_status") @Default(OrderStatus.none) OrderStatus status,
     @JsonKey(name: "opened_at", fromJson: _parseLocal) DateTime? opened,
+    @JsonKey(name: "closed_at", fromJson: _parseLocal) DateTime? closed,
     @JsonKey(name: 'table_number', fromJson: parseInt)
     @Default(0)
     int tableNumber,
+    @JsonKey(name: 'hall_name') @Default('') String hallName,
     @JsonKey(name: 'grand_total', fromJson: parseInt)
     @Default(0)
     int totalPrice,
+    @JsonKey(name: 'table_amount', fromJson: parseInt)
+    @Default(0)
+    int tableAmount,
     @JsonKey(name: "food_total", fromJson: parseInt) @Default(0) int goodsTotal,
     @JsonKey(name: "service_amount", fromJson: parseInt)
     @Default(0)

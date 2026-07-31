@@ -6,6 +6,7 @@ abstract class ArchivesFilterRequestEntity {
   final ArchivesFilterType filterType;
   final DateTime? startDate;
   final DateTime? endDate;
+  final String? billStatus;
   final PaginationRequestEntity? pagination;
 
   ArchivesFilterRequestEntity({
@@ -13,6 +14,7 @@ abstract class ArchivesFilterRequestEntity {
     required this.filterType,
     this.startDate,
     this.endDate,
+    this.billStatus,
     this.pagination,
   });
 

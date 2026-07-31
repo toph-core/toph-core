@@ -18,6 +18,7 @@ class ArchivesFilterRequestModel
     @Default(ArchivesFilterType.Today) ArchivesFilterType filterType,
     DateTime? startDate,
     DateTime? endDate,
+    String? billStatus,
     @PaginationRequestEntityConverter() PaginationRequestEntity? pagination,
   }) = _ArchivesFilterRequestModel;
 
@@ -32,6 +33,9 @@ class ArchivesFilterRequestModel
     }
     if (pagination != null) {
       req.addAll(pagination!.request());
+    }
+    if (billStatus != null && billStatus!.isNotEmpty) {
+      req.addAll({"bill_status": billStatus});
     }
 
     switch (filterType) {
@@ -62,6 +66,16 @@ class ArchivesFilterRequestModel
         req.addAll({
           "start": DateTime.now()
               .subtract(const Duration(days: 30))
+              .toUtc()
+              .toIso8601String(),
+          "end": DateTime.now().toUtc().toIso8601String(),
+        });
+        break;
+
+      case ArchivesFilterType.Year:
+        req.addAll({
+          "start": DateTime.now()
+              .subtract(const Duration(days: 365))
               .toUtc()
               .toIso8601String(),
           "end": DateTime.now().toUtc().toIso8601String(),

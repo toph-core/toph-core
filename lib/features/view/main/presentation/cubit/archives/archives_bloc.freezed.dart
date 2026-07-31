@@ -30,6 +30,7 @@ mixin _$ArchivesEvent {
     required TResult Function(ArchivesFilterType type) updateFilterType,
     required TResult Function(DateTime startDate, DateTime endDate)
         updateFilterDateRange,
+    required TResult Function(String? status) updateStatusFilter,
   }) =>
       throw _privateConstructorUsedError;
   @optionalTypeArgs
@@ -46,6 +47,7 @@ mixin _$ArchivesEvent {
     TResult? Function(ArchivesFilterType type)? updateFilterType,
     TResult? Function(DateTime startDate, DateTime endDate)?
         updateFilterDateRange,
+    TResult? Function(String? status)? updateStatusFilter,
   }) =>
       throw _privateConstructorUsedError;
   @optionalTypeArgs
@@ -62,6 +64,7 @@ mixin _$ArchivesEvent {
     TResult Function(ArchivesFilterType type)? updateFilterType,
     TResult Function(DateTime startDate, DateTime endDate)?
         updateFilterDateRange,
+    TResult Function(String? status)? updateStatusFilter,
     required TResult orElse(),
   }) =>
       throw _privateConstructorUsedError;
@@ -79,6 +82,7 @@ mixin _$ArchivesEvent {
     required TResult Function(_UpdateFilterType value) updateFilterType,
     required TResult Function(_UpdateFilterDateRange value)
         updateFilterDateRange,
+    required TResult Function(_UpdateStatusFilter value) updateStatusFilter,
   }) =>
       throw _privateConstructorUsedError;
   @optionalTypeArgs
@@ -94,6 +98,7 @@ mixin _$ArchivesEvent {
     TResult? Function(_GetArchiveDetail value)? getArchiveDetail,
     TResult? Function(_UpdateFilterType value)? updateFilterType,
     TResult? Function(_UpdateFilterDateRange value)? updateFilterDateRange,
+    TResult? Function(_UpdateStatusFilter value)? updateStatusFilter,
   }) =>
       throw _privateConstructorUsedError;
   @optionalTypeArgs
@@ -109,6 +114,7 @@ mixin _$ArchivesEvent {
     TResult Function(_GetArchiveDetail value)? getArchiveDetail,
     TResult Function(_UpdateFilterType value)? updateFilterType,
     TResult Function(_UpdateFilterDateRange value)? updateFilterDateRange,
+    TResult Function(_UpdateStatusFilter value)? updateStatusFilter,
     required TResult orElse(),
   }) =>
       throw _privateConstructorUsedError;
@@ -182,6 +188,7 @@ class _$StartedImpl implements _Started {
     required TResult Function(ArchivesFilterType type) updateFilterType,
     required TResult Function(DateTime startDate, DateTime endDate)
         updateFilterDateRange,
+    required TResult Function(String? status) updateStatusFilter,
   }) {
     return started();
   }
@@ -201,6 +208,7 @@ class _$StartedImpl implements _Started {
     TResult? Function(ArchivesFilterType type)? updateFilterType,
     TResult? Function(DateTime startDate, DateTime endDate)?
         updateFilterDateRange,
+    TResult? Function(String? status)? updateStatusFilter,
   }) {
     return started?.call();
   }
@@ -220,6 +228,7 @@ class _$StartedImpl implements _Started {
     TResult Function(ArchivesFilterType type)? updateFilterType,
     TResult Function(DateTime startDate, DateTime endDate)?
         updateFilterDateRange,
+    TResult Function(String? status)? updateStatusFilter,
     required TResult orElse(),
   }) {
     if (started != null) {
@@ -243,6 +252,7 @@ class _$StartedImpl implements _Started {
     required TResult Function(_UpdateFilterType value) updateFilterType,
     required TResult Function(_UpdateFilterDateRange value)
         updateFilterDateRange,
+    required TResult Function(_UpdateStatusFilter value) updateStatusFilter,
   }) {
     return started(this);
   }
@@ -261,6 +271,7 @@ class _$StartedImpl implements _Started {
     TResult? Function(_GetArchiveDetail value)? getArchiveDetail,
     TResult? Function(_UpdateFilterType value)? updateFilterType,
     TResult? Function(_UpdateFilterDateRange value)? updateFilterDateRange,
+    TResult? Function(_UpdateStatusFilter value)? updateStatusFilter,
   }) {
     return started?.call(this);
   }
@@ -279,6 +290,7 @@ class _$StartedImpl implements _Started {
     TResult Function(_GetArchiveDetail value)? getArchiveDetail,
     TResult Function(_UpdateFilterType value)? updateFilterType,
     TResult Function(_UpdateFilterDateRange value)? updateFilterDateRange,
+    TResult Function(_UpdateStatusFilter value)? updateStatusFilter,
     required TResult orElse(),
   }) {
     if (started != null) {
@@ -369,6 +381,7 @@ class _$GetArchivedImpl implements _GetArchived {
     required TResult Function(ArchivesFilterType type) updateFilterType,
     required TResult Function(DateTime startDate, DateTime endDate)
         updateFilterDateRange,
+    required TResult Function(String? status) updateStatusFilter,
   }) {
     return getArchived(silent);
   }
@@ -388,6 +401,7 @@ class _$GetArchivedImpl implements _GetArchived {
     TResult? Function(ArchivesFilterType type)? updateFilterType,
     TResult? Function(DateTime startDate, DateTime endDate)?
         updateFilterDateRange,
+    TResult? Function(String? status)? updateStatusFilter,
   }) {
     return getArchived?.call(silent);
   }
@@ -407,6 +421,7 @@ class _$GetArchivedImpl implements _GetArchived {
     TResult Function(ArchivesFilterType type)? updateFilterType,
     TResult Function(DateTime startDate, DateTime endDate)?
         updateFilterDateRange,
+    TResult Function(String? status)? updateStatusFilter,
     required TResult orElse(),
   }) {
     if (getArchived != null) {
@@ -430,6 +445,7 @@ class _$GetArchivedImpl implements _GetArchived {
     required TResult Function(_UpdateFilterType value) updateFilterType,
     required TResult Function(_UpdateFilterDateRange value)
         updateFilterDateRange,
+    required TResult Function(_UpdateStatusFilter value) updateStatusFilter,
   }) {
     return getArchived(this);
   }
@@ -448,6 +464,7 @@ class _$GetArchivedImpl implements _GetArchived {
     TResult? Function(_GetArchiveDetail value)? getArchiveDetail,
     TResult? Function(_UpdateFilterType value)? updateFilterType,
     TResult? Function(_UpdateFilterDateRange value)? updateFilterDateRange,
+    TResult? Function(_UpdateStatusFilter value)? updateStatusFilter,
   }) {
     return getArchived?.call(this);
   }
@@ -466,6 +483,7 @@ class _$GetArchivedImpl implements _GetArchived {
     TResult Function(_GetArchiveDetail value)? getArchiveDetail,
     TResult Function(_UpdateFilterType value)? updateFilterType,
     TResult Function(_UpdateFilterDateRange value)? updateFilterDateRange,
+    TResult Function(_UpdateStatusFilter value)? updateStatusFilter,
     required TResult orElse(),
   }) {
     if (getArchived != null) {
@@ -560,6 +578,7 @@ class _$StatusChangedImpl implements _StatusChanged {
     required TResult Function(ArchivesFilterType type) updateFilterType,
     required TResult Function(DateTime startDate, DateTime endDate)
         updateFilterDateRange,
+    required TResult Function(String? status) updateStatusFilter,
   }) {
     return statusChanged(status);
   }
@@ -579,6 +598,7 @@ class _$StatusChangedImpl implements _StatusChanged {
     TResult? Function(ArchivesFilterType type)? updateFilterType,
     TResult? Function(DateTime startDate, DateTime endDate)?
         updateFilterDateRange,
+    TResult? Function(String? status)? updateStatusFilter,
   }) {
     return statusChanged?.call(status);
   }
@@ -598,6 +618,7 @@ class _$StatusChangedImpl implements _StatusChanged {
     TResult Function(ArchivesFilterType type)? updateFilterType,
     TResult Function(DateTime startDate, DateTime endDate)?
         updateFilterDateRange,
+    TResult Function(String? status)? updateStatusFilter,
     required TResult orElse(),
   }) {
     if (statusChanged != null) {
@@ -621,6 +642,7 @@ class _$StatusChangedImpl implements _StatusChanged {
     required TResult Function(_UpdateFilterType value) updateFilterType,
     required TResult Function(_UpdateFilterDateRange value)
         updateFilterDateRange,
+    required TResult Function(_UpdateStatusFilter value) updateStatusFilter,
   }) {
     return statusChanged(this);
   }
@@ -639,6 +661,7 @@ class _$StatusChangedImpl implements _StatusChanged {
     TResult? Function(_GetArchiveDetail value)? getArchiveDetail,
     TResult? Function(_UpdateFilterType value)? updateFilterType,
     TResult? Function(_UpdateFilterDateRange value)? updateFilterDateRange,
+    TResult? Function(_UpdateStatusFilter value)? updateStatusFilter,
   }) {
     return statusChanged?.call(this);
   }
@@ -657,6 +680,7 @@ class _$StatusChangedImpl implements _StatusChanged {
     TResult Function(_GetArchiveDetail value)? getArchiveDetail,
     TResult Function(_UpdateFilterType value)? updateFilterType,
     TResult Function(_UpdateFilterDateRange value)? updateFilterDateRange,
+    TResult Function(_UpdateStatusFilter value)? updateStatusFilter,
     required TResult orElse(),
   }) {
     if (statusChanged != null) {
@@ -753,6 +777,7 @@ class _$ArchivesUpdatedImpl implements _ArchivesUpdated {
     required TResult Function(ArchivesFilterType type) updateFilterType,
     required TResult Function(DateTime startDate, DateTime endDate)
         updateFilterDateRange,
+    required TResult Function(String? status) updateStatusFilter,
   }) {
     return archivesUpdated(archives);
   }
@@ -772,6 +797,7 @@ class _$ArchivesUpdatedImpl implements _ArchivesUpdated {
     TResult? Function(ArchivesFilterType type)? updateFilterType,
     TResult? Function(DateTime startDate, DateTime endDate)?
         updateFilterDateRange,
+    TResult? Function(String? status)? updateStatusFilter,
   }) {
     return archivesUpdated?.call(archives);
   }
@@ -791,6 +817,7 @@ class _$ArchivesUpdatedImpl implements _ArchivesUpdated {
     TResult Function(ArchivesFilterType type)? updateFilterType,
     TResult Function(DateTime startDate, DateTime endDate)?
         updateFilterDateRange,
+    TResult Function(String? status)? updateStatusFilter,
     required TResult orElse(),
   }) {
     if (archivesUpdated != null) {
@@ -814,6 +841,7 @@ class _$ArchivesUpdatedImpl implements _ArchivesUpdated {
     required TResult Function(_UpdateFilterType value) updateFilterType,
     required TResult Function(_UpdateFilterDateRange value)
         updateFilterDateRange,
+    required TResult Function(_UpdateStatusFilter value) updateStatusFilter,
   }) {
     return archivesUpdated(this);
   }
@@ -832,6 +860,7 @@ class _$ArchivesUpdatedImpl implements _ArchivesUpdated {
     TResult? Function(_GetArchiveDetail value)? getArchiveDetail,
     TResult? Function(_UpdateFilterType value)? updateFilterType,
     TResult? Function(_UpdateFilterDateRange value)? updateFilterDateRange,
+    TResult? Function(_UpdateStatusFilter value)? updateStatusFilter,
   }) {
     return archivesUpdated?.call(this);
   }
@@ -850,6 +879,7 @@ class _$ArchivesUpdatedImpl implements _ArchivesUpdated {
     TResult Function(_GetArchiveDetail value)? getArchiveDetail,
     TResult Function(_UpdateFilterType value)? updateFilterType,
     TResult Function(_UpdateFilterDateRange value)? updateFilterDateRange,
+    TResult Function(_UpdateStatusFilter value)? updateStatusFilter,
     required TResult orElse(),
   }) {
     if (archivesUpdated != null) {
@@ -946,6 +976,7 @@ class _$FailureChangedImpl implements _FailureChanged {
     required TResult Function(ArchivesFilterType type) updateFilterType,
     required TResult Function(DateTime startDate, DateTime endDate)
         updateFilterDateRange,
+    required TResult Function(String? status) updateStatusFilter,
   }) {
     return failureChanged(failure);
   }
@@ -965,6 +996,7 @@ class _$FailureChangedImpl implements _FailureChanged {
     TResult? Function(ArchivesFilterType type)? updateFilterType,
     TResult? Function(DateTime startDate, DateTime endDate)?
         updateFilterDateRange,
+    TResult? Function(String? status)? updateStatusFilter,
   }) {
     return failureChanged?.call(failure);
   }
@@ -984,6 +1016,7 @@ class _$FailureChangedImpl implements _FailureChanged {
     TResult Function(ArchivesFilterType type)? updateFilterType,
     TResult Function(DateTime startDate, DateTime endDate)?
         updateFilterDateRange,
+    TResult Function(String? status)? updateStatusFilter,
     required TResult orElse(),
   }) {
     if (failureChanged != null) {
@@ -1007,6 +1040,7 @@ class _$FailureChangedImpl implements _FailureChanged {
     required TResult Function(_UpdateFilterType value) updateFilterType,
     required TResult Function(_UpdateFilterDateRange value)
         updateFilterDateRange,
+    required TResult Function(_UpdateStatusFilter value) updateStatusFilter,
   }) {
     return failureChanged(this);
   }
@@ -1025,6 +1059,7 @@ class _$FailureChangedImpl implements _FailureChanged {
     TResult? Function(_GetArchiveDetail value)? getArchiveDetail,
     TResult? Function(_UpdateFilterType value)? updateFilterType,
     TResult? Function(_UpdateFilterDateRange value)? updateFilterDateRange,
+    TResult? Function(_UpdateStatusFilter value)? updateStatusFilter,
   }) {
     return failureChanged?.call(this);
   }
@@ -1043,6 +1078,7 @@ class _$FailureChangedImpl implements _FailureChanged {
     TResult Function(_GetArchiveDetail value)? getArchiveDetail,
     TResult Function(_UpdateFilterType value)? updateFilterType,
     TResult Function(_UpdateFilterDateRange value)? updateFilterDateRange,
+    TResult Function(_UpdateStatusFilter value)? updateStatusFilter,
     required TResult orElse(),
   }) {
     if (failureChanged != null) {
@@ -1137,6 +1173,7 @@ class _$SearchChangedImpl implements _SearchChanged {
     required TResult Function(ArchivesFilterType type) updateFilterType,
     required TResult Function(DateTime startDate, DateTime endDate)
         updateFilterDateRange,
+    required TResult Function(String? status) updateStatusFilter,
   }) {
     return searchChanged(value);
   }
@@ -1156,6 +1193,7 @@ class _$SearchChangedImpl implements _SearchChanged {
     TResult? Function(ArchivesFilterType type)? updateFilterType,
     TResult? Function(DateTime startDate, DateTime endDate)?
         updateFilterDateRange,
+    TResult? Function(String? status)? updateStatusFilter,
   }) {
     return searchChanged?.call(value);
   }
@@ -1175,6 +1213,7 @@ class _$SearchChangedImpl implements _SearchChanged {
     TResult Function(ArchivesFilterType type)? updateFilterType,
     TResult Function(DateTime startDate, DateTime endDate)?
         updateFilterDateRange,
+    TResult Function(String? status)? updateStatusFilter,
     required TResult orElse(),
   }) {
     if (searchChanged != null) {
@@ -1198,6 +1237,7 @@ class _$SearchChangedImpl implements _SearchChanged {
     required TResult Function(_UpdateFilterType value) updateFilterType,
     required TResult Function(_UpdateFilterDateRange value)
         updateFilterDateRange,
+    required TResult Function(_UpdateStatusFilter value) updateStatusFilter,
   }) {
     return searchChanged(this);
   }
@@ -1216,6 +1256,7 @@ class _$SearchChangedImpl implements _SearchChanged {
     TResult? Function(_GetArchiveDetail value)? getArchiveDetail,
     TResult? Function(_UpdateFilterType value)? updateFilterType,
     TResult? Function(_UpdateFilterDateRange value)? updateFilterDateRange,
+    TResult? Function(_UpdateStatusFilter value)? updateStatusFilter,
   }) {
     return searchChanged?.call(this);
   }
@@ -1234,6 +1275,7 @@ class _$SearchChangedImpl implements _SearchChanged {
     TResult Function(_GetArchiveDetail value)? getArchiveDetail,
     TResult Function(_UpdateFilterType value)? updateFilterType,
     TResult Function(_UpdateFilterDateRange value)? updateFilterDateRange,
+    TResult Function(_UpdateStatusFilter value)? updateStatusFilter,
     required TResult orElse(),
   }) {
     if (searchChanged != null) {
@@ -1329,6 +1371,7 @@ class _$SearchByArchiveNumImpl implements _SearchByArchiveNum {
     required TResult Function(ArchivesFilterType type) updateFilterType,
     required TResult Function(DateTime startDate, DateTime endDate)
         updateFilterDateRange,
+    required TResult Function(String? status) updateStatusFilter,
   }) {
     return searchByArchiveNum(value);
   }
@@ -1348,6 +1391,7 @@ class _$SearchByArchiveNumImpl implements _SearchByArchiveNum {
     TResult? Function(ArchivesFilterType type)? updateFilterType,
     TResult? Function(DateTime startDate, DateTime endDate)?
         updateFilterDateRange,
+    TResult? Function(String? status)? updateStatusFilter,
   }) {
     return searchByArchiveNum?.call(value);
   }
@@ -1367,6 +1411,7 @@ class _$SearchByArchiveNumImpl implements _SearchByArchiveNum {
     TResult Function(ArchivesFilterType type)? updateFilterType,
     TResult Function(DateTime startDate, DateTime endDate)?
         updateFilterDateRange,
+    TResult Function(String? status)? updateStatusFilter,
     required TResult orElse(),
   }) {
     if (searchByArchiveNum != null) {
@@ -1390,6 +1435,7 @@ class _$SearchByArchiveNumImpl implements _SearchByArchiveNum {
     required TResult Function(_UpdateFilterType value) updateFilterType,
     required TResult Function(_UpdateFilterDateRange value)
         updateFilterDateRange,
+    required TResult Function(_UpdateStatusFilter value) updateStatusFilter,
   }) {
     return searchByArchiveNum(this);
   }
@@ -1408,6 +1454,7 @@ class _$SearchByArchiveNumImpl implements _SearchByArchiveNum {
     TResult? Function(_GetArchiveDetail value)? getArchiveDetail,
     TResult? Function(_UpdateFilterType value)? updateFilterType,
     TResult? Function(_UpdateFilterDateRange value)? updateFilterDateRange,
+    TResult? Function(_UpdateStatusFilter value)? updateStatusFilter,
   }) {
     return searchByArchiveNum?.call(this);
   }
@@ -1426,6 +1473,7 @@ class _$SearchByArchiveNumImpl implements _SearchByArchiveNum {
     TResult Function(_GetArchiveDetail value)? getArchiveDetail,
     TResult Function(_UpdateFilterType value)? updateFilterType,
     TResult Function(_UpdateFilterDateRange value)? updateFilterDateRange,
+    TResult Function(_UpdateStatusFilter value)? updateStatusFilter,
     required TResult orElse(),
   }) {
     if (searchByArchiveNum != null) {
@@ -1521,6 +1569,7 @@ class _$SelectArchiveImpl implements _SelectArchive {
     required TResult Function(ArchivesFilterType type) updateFilterType,
     required TResult Function(DateTime startDate, DateTime endDate)
         updateFilterDateRange,
+    required TResult Function(String? status) updateStatusFilter,
   }) {
     return selectArchive(id);
   }
@@ -1540,6 +1589,7 @@ class _$SelectArchiveImpl implements _SelectArchive {
     TResult? Function(ArchivesFilterType type)? updateFilterType,
     TResult? Function(DateTime startDate, DateTime endDate)?
         updateFilterDateRange,
+    TResult? Function(String? status)? updateStatusFilter,
   }) {
     return selectArchive?.call(id);
   }
@@ -1559,6 +1609,7 @@ class _$SelectArchiveImpl implements _SelectArchive {
     TResult Function(ArchivesFilterType type)? updateFilterType,
     TResult Function(DateTime startDate, DateTime endDate)?
         updateFilterDateRange,
+    TResult Function(String? status)? updateStatusFilter,
     required TResult orElse(),
   }) {
     if (selectArchive != null) {
@@ -1582,6 +1633,7 @@ class _$SelectArchiveImpl implements _SelectArchive {
     required TResult Function(_UpdateFilterType value) updateFilterType,
     required TResult Function(_UpdateFilterDateRange value)
         updateFilterDateRange,
+    required TResult Function(_UpdateStatusFilter value) updateStatusFilter,
   }) {
     return selectArchive(this);
   }
@@ -1600,6 +1652,7 @@ class _$SelectArchiveImpl implements _SelectArchive {
     TResult? Function(_GetArchiveDetail value)? getArchiveDetail,
     TResult? Function(_UpdateFilterType value)? updateFilterType,
     TResult? Function(_UpdateFilterDateRange value)? updateFilterDateRange,
+    TResult? Function(_UpdateStatusFilter value)? updateStatusFilter,
   }) {
     return selectArchive?.call(this);
   }
@@ -1618,6 +1671,7 @@ class _$SelectArchiveImpl implements _SelectArchive {
     TResult Function(_GetArchiveDetail value)? getArchiveDetail,
     TResult Function(_UpdateFilterType value)? updateFilterType,
     TResult Function(_UpdateFilterDateRange value)? updateFilterDateRange,
+    TResult Function(_UpdateStatusFilter value)? updateStatusFilter,
     required TResult orElse(),
   }) {
     if (selectArchive != null) {
@@ -1687,6 +1741,7 @@ class _$GetArchiveDetailImpl implements _GetArchiveDetail {
     required TResult Function(ArchivesFilterType type) updateFilterType,
     required TResult Function(DateTime startDate, DateTime endDate)
         updateFilterDateRange,
+    required TResult Function(String? status) updateStatusFilter,
   }) {
     return getArchiveDetail();
   }
@@ -1706,6 +1761,7 @@ class _$GetArchiveDetailImpl implements _GetArchiveDetail {
     TResult? Function(ArchivesFilterType type)? updateFilterType,
     TResult? Function(DateTime startDate, DateTime endDate)?
         updateFilterDateRange,
+    TResult? Function(String? status)? updateStatusFilter,
   }) {
     return getArchiveDetail?.call();
   }
@@ -1725,6 +1781,7 @@ class _$GetArchiveDetailImpl implements _GetArchiveDetail {
     TResult Function(ArchivesFilterType type)? updateFilterType,
     TResult Function(DateTime startDate, DateTime endDate)?
         updateFilterDateRange,
+    TResult Function(String? status)? updateStatusFilter,
     required TResult orElse(),
   }) {
     if (getArchiveDetail != null) {
@@ -1748,6 +1805,7 @@ class _$GetArchiveDetailImpl implements _GetArchiveDetail {
     required TResult Function(_UpdateFilterType value) updateFilterType,
     required TResult Function(_UpdateFilterDateRange value)
         updateFilterDateRange,
+    required TResult Function(_UpdateStatusFilter value) updateStatusFilter,
   }) {
     return getArchiveDetail(this);
   }
@@ -1766,6 +1824,7 @@ class _$GetArchiveDetailImpl implements _GetArchiveDetail {
     TResult? Function(_GetArchiveDetail value)? getArchiveDetail,
     TResult? Function(_UpdateFilterType value)? updateFilterType,
     TResult? Function(_UpdateFilterDateRange value)? updateFilterDateRange,
+    TResult? Function(_UpdateStatusFilter value)? updateStatusFilter,
   }) {
     return getArchiveDetail?.call(this);
   }
@@ -1784,6 +1843,7 @@ class _$GetArchiveDetailImpl implements _GetArchiveDetail {
     TResult Function(_GetArchiveDetail value)? getArchiveDetail,
     TResult Function(_UpdateFilterType value)? updateFilterType,
     TResult Function(_UpdateFilterDateRange value)? updateFilterDateRange,
+    TResult Function(_UpdateStatusFilter value)? updateStatusFilter,
     required TResult orElse(),
   }) {
     if (getArchiveDetail != null) {
@@ -1874,6 +1934,7 @@ class _$UpdateFilterTypeImpl implements _UpdateFilterType {
     required TResult Function(ArchivesFilterType type) updateFilterType,
     required TResult Function(DateTime startDate, DateTime endDate)
         updateFilterDateRange,
+    required TResult Function(String? status) updateStatusFilter,
   }) {
     return updateFilterType(type);
   }
@@ -1893,6 +1954,7 @@ class _$UpdateFilterTypeImpl implements _UpdateFilterType {
     TResult? Function(ArchivesFilterType type)? updateFilterType,
     TResult? Function(DateTime startDate, DateTime endDate)?
         updateFilterDateRange,
+    TResult? Function(String? status)? updateStatusFilter,
   }) {
     return updateFilterType?.call(type);
   }
@@ -1912,6 +1974,7 @@ class _$UpdateFilterTypeImpl implements _UpdateFilterType {
     TResult Function(ArchivesFilterType type)? updateFilterType,
     TResult Function(DateTime startDate, DateTime endDate)?
         updateFilterDateRange,
+    TResult Function(String? status)? updateStatusFilter,
     required TResult orElse(),
   }) {
     if (updateFilterType != null) {
@@ -1935,6 +1998,7 @@ class _$UpdateFilterTypeImpl implements _UpdateFilterType {
     required TResult Function(_UpdateFilterType value) updateFilterType,
     required TResult Function(_UpdateFilterDateRange value)
         updateFilterDateRange,
+    required TResult Function(_UpdateStatusFilter value) updateStatusFilter,
   }) {
     return updateFilterType(this);
   }
@@ -1953,6 +2017,7 @@ class _$UpdateFilterTypeImpl implements _UpdateFilterType {
     TResult? Function(_GetArchiveDetail value)? getArchiveDetail,
     TResult? Function(_UpdateFilterType value)? updateFilterType,
     TResult? Function(_UpdateFilterDateRange value)? updateFilterDateRange,
+    TResult? Function(_UpdateStatusFilter value)? updateStatusFilter,
   }) {
     return updateFilterType?.call(this);
   }
@@ -1971,6 +2036,7 @@ class _$UpdateFilterTypeImpl implements _UpdateFilterType {
     TResult Function(_GetArchiveDetail value)? getArchiveDetail,
     TResult Function(_UpdateFilterType value)? updateFilterType,
     TResult Function(_UpdateFilterDateRange value)? updateFilterDateRange,
+    TResult Function(_UpdateStatusFilter value)? updateStatusFilter,
     required TResult orElse(),
   }) {
     if (updateFilterType != null) {
@@ -2078,6 +2144,7 @@ class _$UpdateFilterDateRangeImpl implements _UpdateFilterDateRange {
     required TResult Function(ArchivesFilterType type) updateFilterType,
     required TResult Function(DateTime startDate, DateTime endDate)
         updateFilterDateRange,
+    required TResult Function(String? status) updateStatusFilter,
   }) {
     return updateFilterDateRange(startDate, endDate);
   }
@@ -2097,6 +2164,7 @@ class _$UpdateFilterDateRangeImpl implements _UpdateFilterDateRange {
     TResult? Function(ArchivesFilterType type)? updateFilterType,
     TResult? Function(DateTime startDate, DateTime endDate)?
         updateFilterDateRange,
+    TResult? Function(String? status)? updateStatusFilter,
   }) {
     return updateFilterDateRange?.call(startDate, endDate);
   }
@@ -2116,6 +2184,7 @@ class _$UpdateFilterDateRangeImpl implements _UpdateFilterDateRange {
     TResult Function(ArchivesFilterType type)? updateFilterType,
     TResult Function(DateTime startDate, DateTime endDate)?
         updateFilterDateRange,
+    TResult Function(String? status)? updateStatusFilter,
     required TResult orElse(),
   }) {
     if (updateFilterDateRange != null) {
@@ -2139,6 +2208,7 @@ class _$UpdateFilterDateRangeImpl implements _UpdateFilterDateRange {
     required TResult Function(_UpdateFilterType value) updateFilterType,
     required TResult Function(_UpdateFilterDateRange value)
         updateFilterDateRange,
+    required TResult Function(_UpdateStatusFilter value) updateStatusFilter,
   }) {
     return updateFilterDateRange(this);
   }
@@ -2157,6 +2227,7 @@ class _$UpdateFilterDateRangeImpl implements _UpdateFilterDateRange {
     TResult? Function(_GetArchiveDetail value)? getArchiveDetail,
     TResult? Function(_UpdateFilterType value)? updateFilterType,
     TResult? Function(_UpdateFilterDateRange value)? updateFilterDateRange,
+    TResult? Function(_UpdateStatusFilter value)? updateStatusFilter,
   }) {
     return updateFilterDateRange?.call(this);
   }
@@ -2175,6 +2246,7 @@ class _$UpdateFilterDateRangeImpl implements _UpdateFilterDateRange {
     TResult Function(_GetArchiveDetail value)? getArchiveDetail,
     TResult Function(_UpdateFilterType value)? updateFilterType,
     TResult Function(_UpdateFilterDateRange value)? updateFilterDateRange,
+    TResult Function(_UpdateStatusFilter value)? updateStatusFilter,
     required TResult orElse(),
   }) {
     if (updateFilterDateRange != null) {
@@ -2197,6 +2269,205 @@ abstract class _UpdateFilterDateRange implements ArchivesEvent {
 }
 
 /// @nodoc
+abstract class _$$UpdateStatusFilterImplCopyWith<$Res> {
+  factory _$$UpdateStatusFilterImplCopyWith(_$UpdateStatusFilterImpl value,
+          $Res Function(_$UpdateStatusFilterImpl) then) =
+      __$$UpdateStatusFilterImplCopyWithImpl<$Res>;
+  @useResult
+  $Res call({String? status});
+}
+
+/// @nodoc
+class __$$UpdateStatusFilterImplCopyWithImpl<$Res>
+    extends _$ArchivesEventCopyWithImpl<$Res, _$UpdateStatusFilterImpl>
+    implements _$$UpdateStatusFilterImplCopyWith<$Res> {
+  __$$UpdateStatusFilterImplCopyWithImpl(_$UpdateStatusFilterImpl _value,
+      $Res Function(_$UpdateStatusFilterImpl) _then)
+      : super(_value, _then);
+
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? status = freezed,
+  }) {
+    return _then(_$UpdateStatusFilterImpl(
+      status: freezed == status
+          ? _value.status
+          : status // ignore: cast_nullable_to_non_nullable
+              as String?,
+    ));
+  }
+}
+
+/// @nodoc
+
+class _$UpdateStatusFilterImpl implements _UpdateStatusFilter {
+  const _$UpdateStatusFilterImpl({this.status});
+
+  @override
+  final String? status;
+
+  @override
+  String toString() {
+    return 'ArchivesEvent.updateStatusFilter(status: $status)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$UpdateStatusFilterImpl &&
+            (identical(other.status, status) || other.status == status));
+  }
+
+  @override
+  int get hashCode => Object.hash(runtimeType, status);
+
+  @JsonKey(ignore: true)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$UpdateStatusFilterImplCopyWith<_$UpdateStatusFilterImpl> get copyWith =>
+      __$$UpdateStatusFilterImplCopyWithImpl<_$UpdateStatusFilterImpl>(
+          this, _$identity);
+
+  @override
+  @optionalTypeArgs
+  TResult when<TResult extends Object?>({
+    required TResult Function() started,
+    required TResult Function(bool silent) getArchived,
+    required TResult Function(Status status) statusChanged,
+    required TResult Function(ArchivesResponseEntity archives) archivesUpdated,
+    required TResult Function(Failure? failure) failureChanged,
+    required TResult Function(String value) searchChanged,
+    required TResult Function(String value) searchByArchiveNum,
+    required TResult Function(String id) selectArchive,
+    required TResult Function() getArchiveDetail,
+    required TResult Function(ArchivesFilterType type) updateFilterType,
+    required TResult Function(DateTime startDate, DateTime endDate)
+        updateFilterDateRange,
+    required TResult Function(String? status) updateStatusFilter,
+  }) {
+    return updateStatusFilter(status);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult? whenOrNull<TResult extends Object?>({
+    TResult? Function()? started,
+    TResult? Function(bool silent)? getArchived,
+    TResult? Function(Status status)? statusChanged,
+    TResult? Function(ArchivesResponseEntity archives)? archivesUpdated,
+    TResult? Function(Failure? failure)? failureChanged,
+    TResult? Function(String value)? searchChanged,
+    TResult? Function(String value)? searchByArchiveNum,
+    TResult? Function(String id)? selectArchive,
+    TResult? Function()? getArchiveDetail,
+    TResult? Function(ArchivesFilterType type)? updateFilterType,
+    TResult? Function(DateTime startDate, DateTime endDate)?
+        updateFilterDateRange,
+    TResult? Function(String? status)? updateStatusFilter,
+  }) {
+    return updateStatusFilter?.call(status);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult maybeWhen<TResult extends Object?>({
+    TResult Function()? started,
+    TResult Function(bool silent)? getArchived,
+    TResult Function(Status status)? statusChanged,
+    TResult Function(ArchivesResponseEntity archives)? archivesUpdated,
+    TResult Function(Failure? failure)? failureChanged,
+    TResult Function(String value)? searchChanged,
+    TResult Function(String value)? searchByArchiveNum,
+    TResult Function(String id)? selectArchive,
+    TResult Function()? getArchiveDetail,
+    TResult Function(ArchivesFilterType type)? updateFilterType,
+    TResult Function(DateTime startDate, DateTime endDate)?
+        updateFilterDateRange,
+    TResult Function(String? status)? updateStatusFilter,
+    required TResult orElse(),
+  }) {
+    if (updateStatusFilter != null) {
+      return updateStatusFilter(status);
+    }
+    return orElse();
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult map<TResult extends Object?>({
+    required TResult Function(_Started value) started,
+    required TResult Function(_GetArchived value) getArchived,
+    required TResult Function(_StatusChanged value) statusChanged,
+    required TResult Function(_ArchivesUpdated value) archivesUpdated,
+    required TResult Function(_FailureChanged value) failureChanged,
+    required TResult Function(_SearchChanged value) searchChanged,
+    required TResult Function(_SearchByArchiveNum value) searchByArchiveNum,
+    required TResult Function(_SelectArchive value) selectArchive,
+    required TResult Function(_GetArchiveDetail value) getArchiveDetail,
+    required TResult Function(_UpdateFilterType value) updateFilterType,
+    required TResult Function(_UpdateFilterDateRange value)
+        updateFilterDateRange,
+    required TResult Function(_UpdateStatusFilter value) updateStatusFilter,
+  }) {
+    return updateStatusFilter(this);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult? mapOrNull<TResult extends Object?>({
+    TResult? Function(_Started value)? started,
+    TResult? Function(_GetArchived value)? getArchived,
+    TResult? Function(_StatusChanged value)? statusChanged,
+    TResult? Function(_ArchivesUpdated value)? archivesUpdated,
+    TResult? Function(_FailureChanged value)? failureChanged,
+    TResult? Function(_SearchChanged value)? searchChanged,
+    TResult? Function(_SearchByArchiveNum value)? searchByArchiveNum,
+    TResult? Function(_SelectArchive value)? selectArchive,
+    TResult? Function(_GetArchiveDetail value)? getArchiveDetail,
+    TResult? Function(_UpdateFilterType value)? updateFilterType,
+    TResult? Function(_UpdateFilterDateRange value)? updateFilterDateRange,
+    TResult? Function(_UpdateStatusFilter value)? updateStatusFilter,
+  }) {
+    return updateStatusFilter?.call(this);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult maybeMap<TResult extends Object?>({
+    TResult Function(_Started value)? started,
+    TResult Function(_GetArchived value)? getArchived,
+    TResult Function(_StatusChanged value)? statusChanged,
+    TResult Function(_ArchivesUpdated value)? archivesUpdated,
+    TResult Function(_FailureChanged value)? failureChanged,
+    TResult Function(_SearchChanged value)? searchChanged,
+    TResult Function(_SearchByArchiveNum value)? searchByArchiveNum,
+    TResult Function(_SelectArchive value)? selectArchive,
+    TResult Function(_GetArchiveDetail value)? getArchiveDetail,
+    TResult Function(_UpdateFilterType value)? updateFilterType,
+    TResult Function(_UpdateFilterDateRange value)? updateFilterDateRange,
+    TResult Function(_UpdateStatusFilter value)? updateStatusFilter,
+    required TResult orElse(),
+  }) {
+    if (updateStatusFilter != null) {
+      return updateStatusFilter(this);
+    }
+    return orElse();
+  }
+}
+
+abstract class _UpdateStatusFilter implements ArchivesEvent {
+  const factory _UpdateStatusFilter({final String? status}) =
+      _$UpdateStatusFilterImpl;
+
+  String? get status;
+  @JsonKey(ignore: true)
+  _$$UpdateStatusFilterImplCopyWith<_$UpdateStatusFilterImpl> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+/// @nodoc
 mixin _$ArchivesState {
   Status get status => throw _privateConstructorUsedError;
   Status get archiveStatus => throw _privateConstructorUsedError;
@@ -2204,6 +2475,7 @@ mixin _$ArchivesState {
   List<ArchivesFilterType> get filters => throw _privateConstructorUsedError;
   DateTime? get startFilterDate => throw _privateConstructorUsedError;
   DateTime? get endFilterDate => throw _privateConstructorUsedError;
+  String? get statusFilter => throw _privateConstructorUsedError;
   TextEditingController? get textController =>
       throw _privateConstructorUsedError;
   ArchivesResponseEntity? get archives => throw _privateConstructorUsedError;
@@ -2230,6 +2502,7 @@ abstract class $ArchivesStateCopyWith<$Res> {
       List<ArchivesFilterType> filters,
       DateTime? startFilterDate,
       DateTime? endFilterDate,
+      String? statusFilter,
       TextEditingController? textController,
       ArchivesResponseEntity? archives,
       ArchiveDetailEntity? selectArchiveDetail,
@@ -2256,6 +2529,7 @@ class _$ArchivesStateCopyWithImpl<$Res, $Val extends ArchivesState>
     Object? filters = null,
     Object? startFilterDate = freezed,
     Object? endFilterDate = freezed,
+    Object? statusFilter = freezed,
     Object? textController = freezed,
     Object? archives = freezed,
     Object? selectArchiveDetail = freezed,
@@ -2287,6 +2561,10 @@ class _$ArchivesStateCopyWithImpl<$Res, $Val extends ArchivesState>
           ? _value.endFilterDate
           : endFilterDate // ignore: cast_nullable_to_non_nullable
               as DateTime?,
+      statusFilter: freezed == statusFilter
+          ? _value.statusFilter
+          : statusFilter // ignore: cast_nullable_to_non_nullable
+              as String?,
       textController: freezed == textController
           ? _value.textController
           : textController // ignore: cast_nullable_to_non_nullable
@@ -2326,6 +2604,7 @@ abstract class _$$ArchivesStateImplCopyWith<$Res>
       List<ArchivesFilterType> filters,
       DateTime? startFilterDate,
       DateTime? endFilterDate,
+      String? statusFilter,
       TextEditingController? textController,
       ArchivesResponseEntity? archives,
       ArchiveDetailEntity? selectArchiveDetail,
@@ -2350,6 +2629,7 @@ class __$$ArchivesStateImplCopyWithImpl<$Res>
     Object? filters = null,
     Object? startFilterDate = freezed,
     Object? endFilterDate = freezed,
+    Object? statusFilter = freezed,
     Object? textController = freezed,
     Object? archives = freezed,
     Object? selectArchiveDetail = freezed,
@@ -2381,6 +2661,10 @@ class __$$ArchivesStateImplCopyWithImpl<$Res>
           ? _value.endFilterDate
           : endFilterDate // ignore: cast_nullable_to_non_nullable
               as DateTime?,
+      statusFilter: freezed == statusFilter
+          ? _value.statusFilter
+          : statusFilter // ignore: cast_nullable_to_non_nullable
+              as String?,
       textController: freezed == textController
           ? _value.textController
           : textController // ignore: cast_nullable_to_non_nullable
@@ -2420,6 +2704,7 @@ class _$ArchivesStateImpl implements _ArchivesState {
       ],
       this.startFilterDate,
       this.endFilterDate,
+      this.statusFilter,
       this.textController,
       this.archives,
       this.selectArchiveDetail,
@@ -2450,6 +2735,8 @@ class _$ArchivesStateImpl implements _ArchivesState {
   @override
   final DateTime? endFilterDate;
   @override
+  final String? statusFilter;
+  @override
   final TextEditingController? textController;
   @override
   final ArchivesResponseEntity? archives;
@@ -2462,7 +2749,7 @@ class _$ArchivesStateImpl implements _ArchivesState {
 
   @override
   String toString() {
-    return 'ArchivesState(status: $status, archiveStatus: $archiveStatus, filterType: $filterType, filters: $filters, startFilterDate: $startFilterDate, endFilterDate: $endFilterDate, textController: $textController, archives: $archives, selectArchiveDetail: $selectArchiveDetail, selectArchive: $selectArchive, failure: $failure)';
+    return 'ArchivesState(status: $status, archiveStatus: $archiveStatus, filterType: $filterType, filters: $filters, startFilterDate: $startFilterDate, endFilterDate: $endFilterDate, statusFilter: $statusFilter, textController: $textController, archives: $archives, selectArchiveDetail: $selectArchiveDetail, selectArchive: $selectArchive, failure: $failure)';
   }
 
   @override
@@ -2480,6 +2767,8 @@ class _$ArchivesStateImpl implements _ArchivesState {
                 other.startFilterDate == startFilterDate) &&
             (identical(other.endFilterDate, endFilterDate) ||
                 other.endFilterDate == endFilterDate) &&
+            (identical(other.statusFilter, statusFilter) ||
+                other.statusFilter == statusFilter) &&
             (identical(other.textController, textController) ||
                 other.textController == textController) &&
             (identical(other.archives, archives) ||
@@ -2500,6 +2789,7 @@ class _$ArchivesStateImpl implements _ArchivesState {
       const DeepCollectionEquality().hash(_filters),
       startFilterDate,
       endFilterDate,
+      statusFilter,
       textController,
       archives,
       selectArchiveDetail,
@@ -2521,6 +2811,7 @@ abstract class _ArchivesState implements ArchivesState {
       final List<ArchivesFilterType> filters,
       final DateTime? startFilterDate,
       final DateTime? endFilterDate,
+      final String? statusFilter,
       final TextEditingController? textController,
       final ArchivesResponseEntity? archives,
       final ArchiveDetailEntity? selectArchiveDetail,
@@ -2539,6 +2830,8 @@ abstract class _ArchivesState implements ArchivesState {
   DateTime? get startFilterDate;
   @override
   DateTime? get endFilterDate;
+  @override
+  String? get statusFilter;
   @override
   TextEditingController? get textController;
   @override

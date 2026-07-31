@@ -15,6 +15,9 @@ class _Detail extends ArchiveDetailEntity {
     super.servicePercent = 0,
     super.serviceAmount = 0,
     super.grandTotal = 0,
+    super.tableAmount = 0,
+    super.pausePeriods = const [],
+    super.activePeriods = const [],
   }) : super(
           id: 'order',
           bilNumber: 1,

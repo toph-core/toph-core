@@ -19,6 +19,7 @@ _$ArchivesFilterRequestModelImpl _$$ArchivesFilterRequestModelImplFromJson(
       endDate: json['endDate'] == null
           ? null
           : DateTime.parse(json['endDate'] as String),
+      billStatus: json['billStatus'] as String?,
       pagination: const PaginationRequestEntityConverter()
           .fromJson(json['pagination'] as Map<String, dynamic>?),
     );
@@ -30,6 +31,7 @@ Map<String, dynamic> _$$ArchivesFilterRequestModelImplToJson(
       'filterType': _$ArchivesFilterTypeEnumMap[instance.filterType]!,
       'startDate': instance.startDate?.toIso8601String(),
       'endDate': instance.endDate?.toIso8601String(),
+      'billStatus': instance.billStatus,
       'pagination':
           const PaginationRequestEntityConverter().toJson(instance.pagination),
     };
@@ -39,5 +41,6 @@ const _$ArchivesFilterTypeEnumMap = {
   ArchivesFilterType.Today: 'Today',
   ArchivesFilterType.Week: 'Week',
   ArchivesFilterType.month: 'month',
+  ArchivesFilterType.Year: 'Year',
   ArchivesFilterType.date: 'date',
 };

@@ -112,13 +112,6 @@ class _DepartmentSelectionScreenState extends State<DepartmentSelectionScreen> {
   }
 
   void _openMenu(CategoryModel category) {
-    // Items added via search results on this screen only live in
-    // `_detailBloc.state.selectedGoods` — carry them into the next screen
-    // instead of the original `savedOrders` this screen was opened with.
-    final currentSavedOrders =
-        (cafeTable != null && _detailBloc.state.selectedGoods.isNotEmpty)
-            ? _detailBloc.saveOrder(cafeTable!, guestCount)
-            : savedOrders;
     Navigator.pushNamed(
       context,
       AppRoutes.detailScreen,
@@ -126,7 +119,11 @@ class _DepartmentSelectionScreenState extends State<DepartmentSelectionScreen> {
         'table': cafeTable,
         'guest_count': guestCount,
         'table_status': tableStatus,
-        'saved_orders': currentSavedOrders,
+        'saved_orders': savedOrders,
+        // Pass the same DetailBloc instance so the cart (selectedGoods)
+        // stays identical between the category and menu screens — see
+        // note on `_ownsDetailBloc` in detail_screen.dart.
+        'detail_bloc': _detailBloc,
         'initial_category_id': category.id,
       },
     );
@@ -166,6 +163,8 @@ class _DepartmentSelectionScreenState extends State<DepartmentSelectionScreen> {
                         showKeyboard: showVirtualKeyboard,
                         textEditingController: controller,
                         guestCount: guestCount,
+                        hadInitialDraft: savedOrders != null &&
+                            savedOrders!.createOrderRequest.foods.isNotEmpty,
                         onSearchChanged: _deptCubit.search,
                       ),
                       OrderActionsBar(

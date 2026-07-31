@@ -57,6 +57,8 @@ class MessageLookup extends MessageLookupByLibrary {
         "strActionColumnHeader":
             MessageLookupByLibrary.simpleMessage("Действие"),
         "strActionsColumn": MessageLookupByLibrary.simpleMessage("Действия"),
+        "strActivePeriods":
+            MessageLookupByLibrary.simpleMessage("Активные периоды"),
         "strAdd": MessageLookupByLibrary.simpleMessage("Добавить"),
         "strAddCategory":
             MessageLookupByLibrary.simpleMessage("Добавить категорию"),
@@ -68,7 +70,7 @@ class MessageLookup extends MessageLookupByLibrary {
             MessageLookupByLibrary.simpleMessage("Добавить первый принтер"),
         "strAddFirstTable":
             MessageLookupByLibrary.simpleMessage("Добавить первый стол"),
-        "strAddItems": MessageLookupByLibrary.simpleMessage("Добавить"),
+        "strAddItems": MessageLookupByLibrary.simpleMessage("Добавить блюда"),
         "strAddNewEmployee":
             MessageLookupByLibrary.simpleMessage("Новый сотрудник"),
         "strAddNewHall": MessageLookupByLibrary.simpleMessage("Новый зал"),
@@ -147,6 +149,7 @@ class MessageLookup extends MessageLookupByLibrary {
             "Нажмите кнопку в правом нижнем углу, чтобы закрыть смену."),
         "strCloseShiftShort":
             MessageLookupByLibrary.simpleMessage("Закрыть смену"),
+        "strClosedColumnHeader": MessageLookupByLibrary.simpleMessage("Закрыт"),
         "strClosedStatus": MessageLookupByLibrary.simpleMessage("Закрыт"),
         "strClosedToday":
             MessageLookupByLibrary.simpleMessage("Закрыто сегодня"),
@@ -287,6 +290,7 @@ class MessageLookup extends MessageLookupByLibrary {
         "strFreezeTimerTitle":
             MessageLookupByLibrary.simpleMessage("Заморозить плату за время"),
         "strFriday": MessageLookupByLibrary.simpleMessage("Пятница"),
+        "strFrom": MessageLookupByLibrary.simpleMessage("От"),
         "strFrozenAmount":
             MessageLookupByLibrary.simpleMessage("Замороженная сумма"),
         "strFrozenShort": MessageLookupByLibrary.simpleMessage("ЗАМОРОЖЕНО"),
@@ -378,6 +382,8 @@ class MessageLookup extends MessageLookupByLibrary {
         "strNewPrinter": MessageLookupByLibrary.simpleMessage("Новый принтер"),
         "strNewTable": MessageLookupByLibrary.simpleMessage("Новый стол"),
         "strNo": MessageLookupByLibrary.simpleMessage("Нет"),
+        "strNoActivePeriods":
+            MessageLookupByLibrary.simpleMessage("Активных периодов пока нет"),
         "strNoCalculationsHint": MessageLookupByLibrary.simpleMessage(
             "Нет строк. Добавьте ингредиент или полуфабрикат."),
         "strNoDataFound":
@@ -462,6 +468,10 @@ class MessageLookup extends MessageLookupByLibrary {
         "strPaymentMethodLabel":
             MessageLookupByLibrary.simpleMessage("Способ оплаты:"),
         "strPeakTime": MessageLookupByLibrary.simpleMessage("Пиковое время"),
+        "strPeriodDay": MessageLookupByLibrary.simpleMessage("Д"),
+        "strPeriodMonth": MessageLookupByLibrary.simpleMessage("М"),
+        "strPeriodWeek": MessageLookupByLibrary.simpleMessage("Н"),
+        "strPeriodYear": MessageLookupByLibrary.simpleMessage("Г"),
         "strPersonsSuffix": MessageLookupByLibrary.simpleMessage("чел."),
         "strPhone": MessageLookupByLibrary.simpleMessage("Телефон"),
         "strPhoneMask":
@@ -612,14 +622,17 @@ class MessageLookup extends MessageLookupByLibrary {
         "strTableType": MessageLookupByLibrary.simpleMessage("Тип"),
         "strTables": MessageLookupByLibrary.simpleMessage("Столы"),
         "strTablesNotSavedCount": m12,
+        "strTablesVisited": MessageLookupByLibrary.simpleMessage("столов"),
         "strTakeaway": MessageLookupByLibrary.simpleMessage("С собой"),
         "strTerminal": MessageLookupByLibrary.simpleMessage("Терминал"),
         "strThursday": MessageLookupByLibrary.simpleMessage("Четверг"),
         "strTimeColumn": MessageLookupByLibrary.simpleMessage("Время"),
-        "strTimeColumnHeader": MessageLookupByLibrary.simpleMessage("Время"),
+        "strTimeColumnHeader": MessageLookupByLibrary.simpleMessage("Открыт"),
+        "strTo": MessageLookupByLibrary.simpleMessage("До"),
         "strTodayRevenue":
             MessageLookupByLibrary.simpleMessage("Выручка за сегодня"),
         "strTotal": MessageLookupByLibrary.simpleMessage("Итого"),
+        "strTotalActiveTime": MessageLookupByLibrary.simpleMessage("Итого:"),
         "strTotalCapacity":
             MessageLookupByLibrary.simpleMessage("Общая вместимость"),
         "strTotalColon": MessageLookupByLibrary.simpleMessage("Итого:"),

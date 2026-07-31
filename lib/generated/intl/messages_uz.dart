@@ -57,6 +57,8 @@ class MessageLookup extends MessageLookupByLibrary {
             MessageLookupByLibrary.simpleMessage("Ruxsat cheklangan"),
         "strActionColumnHeader": MessageLookupByLibrary.simpleMessage("Amal"),
         "strActionsColumn": MessageLookupByLibrary.simpleMessage("Amallar"),
+        "strActivePeriods":
+            MessageLookupByLibrary.simpleMessage("Faol davrlar"),
         "strAdd": MessageLookupByLibrary.simpleMessage("Qo\'shish"),
         "strAddCategory":
             MessageLookupByLibrary.simpleMessage("Kategoriya qo\'shish"),
@@ -68,7 +70,7 @@ class MessageLookup extends MessageLookupByLibrary {
             MessageLookupByLibrary.simpleMessage("Yangi printer qo\'shish"),
         "strAddFirstTable":
             MessageLookupByLibrary.simpleMessage("Birinchi stolni qo\'shish"),
-        "strAddItems": MessageLookupByLibrary.simpleMessage("Qo\'shish"),
+        "strAddItems": MessageLookupByLibrary.simpleMessage("Taom qo\'shish"),
         "strAddNewEmployee":
             MessageLookupByLibrary.simpleMessage("Yangi xodim"),
         "strAddNewHall": MessageLookupByLibrary.simpleMessage("Yangi zal"),
@@ -149,6 +151,8 @@ class MessageLookup extends MessageLookupByLibrary {
             "Smenani yopish uchun o\'ng pastdagi tugmani bosing."),
         "strCloseShiftShort":
             MessageLookupByLibrary.simpleMessage("Smenani yopish"),
+        "strClosedColumnHeader":
+            MessageLookupByLibrary.simpleMessage("Yopilgan"),
         "strClosedStatus": MessageLookupByLibrary.simpleMessage("Yopiq"),
         "strClosedToday": MessageLookupByLibrary.simpleMessage("Bugun yopildi"),
         "strCompounds": MessageLookupByLibrary.simpleMessage("Qo\'shma"),
@@ -286,6 +290,7 @@ class MessageLookup extends MessageLookupByLibrary {
         "strFreezeTimerTitle":
             MessageLookupByLibrary.simpleMessage("Vaqt to\'lovini muzlatish"),
         "strFriday": MessageLookupByLibrary.simpleMessage("Juma"),
+        "strFrom": MessageLookupByLibrary.simpleMessage("Dan"),
         "strFrozenAmount":
             MessageLookupByLibrary.simpleMessage("Muzlatilgan summa"),
         "strFrozenShort": MessageLookupByLibrary.simpleMessage("MUZLATILDI"),
@@ -382,6 +387,8 @@ class MessageLookup extends MessageLookupByLibrary {
         "strNewPrinter": MessageLookupByLibrary.simpleMessage("Yangi printer"),
         "strNewTable": MessageLookupByLibrary.simpleMessage("Yangi stol"),
         "strNo": MessageLookupByLibrary.simpleMessage("Yo\'q"),
+        "strNoActivePeriods":
+            MessageLookupByLibrary.simpleMessage("Hali faol davr yo\'q"),
         "strNoCalculationsHint": MessageLookupByLibrary.simpleMessage(
             "Qatorlar yo\'q. Ingredient yoki yarim tayyor mahsulot qo\'shing."),
         "strNoDataFound":
@@ -469,6 +476,10 @@ class MessageLookup extends MessageLookupByLibrary {
         "strPaymentMethodLabel":
             MessageLookupByLibrary.simpleMessage("To\'lov usuli:"),
         "strPeakTime": MessageLookupByLibrary.simpleMessage("Eng gavjum vaqt"),
+        "strPeriodDay": MessageLookupByLibrary.simpleMessage("K"),
+        "strPeriodMonth": MessageLookupByLibrary.simpleMessage("O"),
+        "strPeriodWeek": MessageLookupByLibrary.simpleMessage("H"),
+        "strPeriodYear": MessageLookupByLibrary.simpleMessage("Y"),
         "strPersonsSuffix": MessageLookupByLibrary.simpleMessage("kishi"),
         "strPhone": MessageLookupByLibrary.simpleMessage("Telefon"),
         "strPhoneMask":
@@ -619,14 +630,17 @@ class MessageLookup extends MessageLookupByLibrary {
         "strTableType": MessageLookupByLibrary.simpleMessage("Turi"),
         "strTables": MessageLookupByLibrary.simpleMessage("Stollar"),
         "strTablesNotSavedCount": m12,
+        "strTablesVisited": MessageLookupByLibrary.simpleMessage("stol"),
         "strTakeaway": MessageLookupByLibrary.simpleMessage("Olib ketish"),
         "strTerminal": MessageLookupByLibrary.simpleMessage("Terminal"),
         "strThursday": MessageLookupByLibrary.simpleMessage("Payshanba"),
         "strTimeColumn": MessageLookupByLibrary.simpleMessage("Vaqt"),
-        "strTimeColumnHeader": MessageLookupByLibrary.simpleMessage("Vaqt"),
+        "strTimeColumnHeader": MessageLookupByLibrary.simpleMessage("Ochilgan"),
+        "strTo": MessageLookupByLibrary.simpleMessage("Gacha"),
         "strTodayRevenue":
             MessageLookupByLibrary.simpleMessage("Bugungi tushum"),
         "strTotal": MessageLookupByLibrary.simpleMessage("Jami"),
+        "strTotalActiveTime": MessageLookupByLibrary.simpleMessage("Jami:"),
         "strTotalCapacity":
             MessageLookupByLibrary.simpleMessage("Umumiy sig\'im"),
         "strTotalColon": MessageLookupByLibrary.simpleMessage("Jami:"),

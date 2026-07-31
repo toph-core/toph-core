@@ -27,6 +27,7 @@ abstract class ArchiveDetailEntity {
   final String comment;
   final List<OrderFoodEntity> goods;
   final List<PauseInterval> pausePeriods;
+  final List<TableSegment> activePeriods;
 
   ArchiveDetailEntity({
     required this.id,
@@ -53,5 +54,6 @@ abstract class ArchiveDetailEntity {
     required this.comment,
     required this.goods,
     required this.pausePeriods,
+    required this.activePeriods,
   });
 }

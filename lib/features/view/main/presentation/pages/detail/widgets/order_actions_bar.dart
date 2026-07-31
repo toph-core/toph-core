@@ -19,6 +19,7 @@ import 'package:mary_ai_pos/features/view/main/presentation/cubit/table_timer/ta
 import 'package:mary_ai_pos/features/view/main/presentation/pages/detail/detail_screen_mixin.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/detail/widgets/clear_dialog.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/detail/widgets/transfer_table_dialog.dart';
+import 'package:mary_ai_pos/features/view/main/presentation/widgets/active_periods_view.dart';
 import 'package:mary_ai_pos/generated/l10n.dart';
 
 const _kS900 = Color(0xFF0F172A);
@@ -102,6 +103,7 @@ class _OrderActionsBarState extends State<OrderActionsBar>
                     timerState.displayActiveSec ??
                     timerState.timer?.totalActiveSec ??
                     0,
+                displayAmount: timerState.displayAmount,
               );
               final timerAmt = pricing.extraCharge;
               final detail = context.read<DetailBloc>().lastDetail;
@@ -294,9 +296,7 @@ class _TimerCompact extends StatelessWidget {
         const primary = Color(0xFFFB6633);
         final rawAmt = timerState.effectiveCurrentAmount ?? '';
         final amount = rawAmt.isNotEmpty ? _fmtAmount(rawAmt) : '';
-        final pauses = timerState.billPauses.isNotEmpty
-            ? timerState.billPauses
-            : (t?.pauses ?? const <PauseInterval>[]);
+        final segments = timerState.effectiveSegments;
 
         return MouseRegion(
           cursor: SystemMouseCursors.click,
@@ -304,8 +304,10 @@ class _TimerCompact extends StatelessWidget {
             behavior: HitTestBehavior.opaque,
             onTap: () => showDialog<void>(
               context: context,
-              builder: (_) =>
-                  _PauseHistoryDialog(pauses: pauses, startedAt: t?.startedAt),
+              builder: (_) => ActivePeriodsDialog(
+                segments: segments,
+                startedAt: t?.startedAt,
+              ),
             ),
             child: Container(
               height: 56,
@@ -349,7 +351,7 @@ class _TimerCompact extends StatelessWidget {
                         ),
                     ],
                   ),
-                  if (pauses.isNotEmpty) ...[
+                  if (segments.length > 1) ...[
                     const SizedBox(width: 10),
                     Container(
                       padding: const EdgeInsets.symmetric(
@@ -364,13 +366,13 @@ class _TimerCompact extends StatelessWidget {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           const Icon(
-                            Icons.pause_circle_outline_rounded,
+                            Icons.table_restaurant_rounded,
                             size: 12,
                             color: Color(0xFFF59E0B),
                           ),
                           const SizedBox(width: 3),
                           Text(
-                            '${pauses.length}',
+                            '${segments.length}',
                             style: const TextStyle(
                               fontSize: 11,
                               fontWeight: FontWeight.w700,
@@ -450,272 +452,6 @@ class _TimerCompact extends StatelessWidget {
     return d.round().toString().replaceAllMapped(
       RegExp(r'(\d)(?=(\d{3})+(?!\d))'),
       (m) => '${m[1]} ',
-    );
-  }
-}
-
-// ─── Pause history dialog ────────────────────────────────────────────────────
-String _fmtClockUtil(DateTime dt) {
-  final l = dt.toLocal();
-  return '${l.hour.toString().padLeft(2, '0')}:${l.minute.toString().padLeft(2, '0')}';
-}
-
-String _fmtDurationUtil(int sec) {
-  if (sec < 60) return '${sec}s';
-  final m = sec ~/ 60;
-  final s = sec % 60;
-  if (s == 0) return '${m}min';
-  return '${m}m ${s}s';
-}
-
-class _PauseHistoryDialog extends StatefulWidget {
-  final List<PauseInterval> pauses;
-  final DateTime? startedAt;
-
-  const _PauseHistoryDialog({required this.pauses, this.startedAt});
-
-  @override
-  State<_PauseHistoryDialog> createState() => _PauseHistoryDialogState();
-}
-
-class _PauseHistoryDialogState extends State<_PauseHistoryDialog> {
-  final ScrollController _ctrl = ScrollController();
-
-  @override
-  void dispose() {
-    _ctrl.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final pauses = widget.pauses;
-    final startedAt = widget.startedAt;
-    final totalPauseSec = pauses.fold<int>(0, (s, p) => s + p.durationSec);
-    return Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 460),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 18, 12, 12),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          S.current.strPauseHistory,
-                          style: const TextStyle(
-                            fontSize: 17,
-                            fontWeight: FontWeight.w700,
-                            color: Color(0xFF0F172A),
-                            fontFamily: 'Inter',
-                            letterSpacing: -0.2,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.close_rounded, size: 20),
-                    color: const Color(0xFF64748B),
-                    onPressed: () => Navigator.of(context).pop(),
-                  ),
-                ],
-              ),
-            ),
-            const Divider(height: 1, color: Color(0xFFE2E8F0)),
-            // Meta row
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 12, 20, 12),
-              child: Row(
-                children: [
-                  if (startedAt != null) ...[
-                    const Icon(
-                      Icons.schedule_rounded,
-                      size: 14,
-                      color: Color(0xFF64748B),
-                    ),
-                    const SizedBox(width: 5),
-                    Text(
-                      '${S.current.strOpenedAtLabel} ${_fmtClockUtil(startedAt)}',
-                      style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                        color: Color(0xFF64748B),
-                        fontFamily: 'Inter',
-                      ),
-                    ),
-                  ],
-                  const Spacer(),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF59E0B).withOpacity(0.12),
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: Text(
-                      '${S.current.strTotalPause} ${_fmtDurationUtil(totalPauseSec)}',
-                      style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xFFF59E0B),
-                        fontFamily: 'Inter',
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const Divider(height: 1, color: Color(0xFFE2E8F0)),
-            // List
-            if (pauses.isEmpty)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
-                child: Center(
-                  child: Text(
-                    S.current.strNoPauses,
-                    style: const TextStyle(
-                      fontSize: 13,
-                      color: Color(0xFF94A3B8),
-                      fontFamily: 'Inter',
-                    ),
-                  ),
-                ),
-              )
-            else
-              Flexible(
-                child: Scrollbar(
-                  controller: _ctrl,
-                  thumbVisibility: true,
-                  thickness: 4,
-                  radius: const Radius.circular(8),
-                  child: ListView.separated(
-                    controller: _ctrl,
-                    shrinkWrap: true,
-                    padding: const EdgeInsets.fromLTRB(0, 4, 4, 4),
-                    itemCount: pauses.length,
-                    separatorBuilder: (_, _) =>
-                        const Divider(height: 1, color: Color(0xFFF1F5F9)),
-                    itemBuilder: (_, i) {
-                      final p = pauses[i];
-                      final dur = p.durationSec > 0
-                          ? p.durationSec
-                          : (p.endedAt != null
-                                ? p.endedAt!
-                                      .difference(p.startedAt)
-                                      .inSeconds
-                                      .abs()
-                                : 0);
-                      return Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 12,
-                        ),
-                        child: Row(
-                          children: [
-                            Container(
-                              width: 28,
-                              height: 28,
-                              decoration: BoxDecoration(
-                                color: const Color(
-                                  0xFFF59E0B,
-                                ).withOpacity(0.12),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Center(
-                                child: Text(
-                                  '${i + 1}',
-                                  style: const TextStyle(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w700,
-                                    color: Color(0xFFF59E0B),
-                                    fontFamily: 'Inter',
-                                  ),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            _PauseChip(
-                              icon: Icons.pause_rounded,
-                              label: _fmtClockUtil(p.startedAt),
-                              color: const Color(0xFFF59E0B),
-                            ),
-                            const SizedBox(width: 8),
-                            const Icon(
-                              Icons.arrow_forward_rounded,
-                              size: 14,
-                              color: Color(0xFFCBD5E1),
-                            ),
-                            const SizedBox(width: 8),
-                            _PauseChip(
-                              icon: Icons.play_arrow_rounded,
-                              label: p.endedAt != null
-                                  ? _fmtClockUtil(p.endedAt!)
-                                  : '—',
-                              color: const Color(0xFF22C55E),
-                            ),
-                            const Spacer(),
-                            Text(
-                              dur > 0 ? _fmtDurationUtil(dur) : '—',
-                              style: const TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
-                                color: Color(0xFF94A3B8),
-                                fontFamily: 'Inter',
-                                fontFeatures: [FontFeature.tabularFigures()],
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
-                    },
-                  ),
-                ),
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _PauseChip extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final Color color;
-
-  const _PauseChip({
-    required this.icon,
-    required this.label,
-    required this.color,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, size: 13, color: color),
-        const SizedBox(width: 4),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-            color: color,
-            fontFamily: 'Inter',
-            fontFeatures: const [FontFeature.tabularFigures()],
-          ),
-        ),
-      ],
     );
   }
 }

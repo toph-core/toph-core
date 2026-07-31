@@ -1,17 +1,11 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:mary_ai_pos/core/constants/constants.dart';
 import 'package:mary_ai_pos/core/design_system/pos_design_system.dart';
 import 'package:mary_ai_pos/core/extension/for_context.dart';
-import 'package:mary_ai_pos/di.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/cafe_tables/cafe_tables_model.dart';
-import 'package:mary_ai_pos/features/view/main/presentation/cubit/create_order/create_order_bloc.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/detail/detail_bloc.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/main/main_cubit.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/orders/orders_bloc.dart';
-import 'package:mary_ai_pos/features/view/main/presentation/pages/detail/widgets/leave_from_detail_screen_dialog.dart';
 import 'package:mary_ai_pos/generated/l10n.dart';
 
 const _kS900 = Color(0xFF0F172A);
@@ -25,6 +19,7 @@ class TopBarWidget extends StatelessWidget {
   final TextEditingController textEditingController;
   final int guestCount;
   final ValueChanged<String> onSearchChanged;
+  final bool hadInitialDraft;
 
   const TopBarWidget({
     super.key,
@@ -33,6 +28,7 @@ class TopBarWidget extends StatelessWidget {
     required this.textEditingController,
     required this.guestCount,
     required this.onSearchChanged,
+    this.hadInitialDraft = false,
   });
 
   @override
@@ -66,7 +62,7 @@ class TopBarWidget extends StatelessWidget {
               _BackButton(
                 cafeTable: cafeTable,
                 guestCount: guestCount,
-                hasSelection: state.selectedGoods.isNotEmpty,
+                hadInitialDraft: hadInitialDraft,
               ),
               const SizedBox(width: PosDimensions.m),
               if (cafeTable != null)
@@ -109,90 +105,36 @@ class TopBarWidget extends StatelessWidget {
 class _BackButton extends StatelessWidget {
   final CafeTableModel? cafeTable;
   final int guestCount;
-  final bool hasSelection;
+  final bool hadInitialDraft;
 
   const _BackButton({
     required this.cafeTable,
     required this.guestCount,
-    required this.hasSelection,
+    required this.hadInitialDraft,
   });
 
-  Future<void> _onTap(BuildContext context) async {
-    if (hasSelection && cafeTable != null) {
+  // Leaves silently — no confirmation dialog. If there are uncommitted
+  // items, they're auto-saved as a local draft (per table) so the user
+  // finds them ready to add when they come back. Only clears the draft
+  // when this same screen instance started with one and the user emptied
+  // it here — a bare empty `selectedGoods` doesn't mean "no draft exists",
+  // since department_selection_screen and detail_screen each hold their
+  // own DetailBloc instance and one may simply never have seen the items
+  // the other screen saved.
+  void _onTap(BuildContext context) {
+    if (cafeTable != null) {
       final detailBloc = context.read<DetailBloc>();
       final savedOrdersBloc = context.read<SavedOrdersBloc>();
-      final mainCubit = context.read<MainCubit>();
-      final navigator = Navigator.of(context);
-      final value = await showDialog<bool>(
-        context: context,
-        barrierDismissible: true,
-        builder: (_) => const LeaveFromDetailScreenDialog(),
-      );
-      // Dialog tashqarisini bosish — null qaytaradi, ekranda qolish.
-      if (value == null) return;
-
-      if (value == true) {
-        final selectedGoods = detailBloc.state.selectedGoods;
-        if (selectedGoods.isEmpty) {
-          navigator.pop();
-          return;
-        }
-        final activeOrderId = detailBloc.state.activeOrderId;
-        final tableStatus = activeOrderId != null
-            ? TableStatus.busy
-            : TableStatus.free;
-
-        final createOrderBloc = inject<CreateOrderBloc>()
-          ..bindTableNumber(cafeTable!.number)
-          ..add(
-            CreateOrderEvent.started(
-              tableId: cafeTable!.id,
-              guestCount: guestCount,
-              tableStatus: tableStatus,
-            ),
-          );
-        if (activeOrderId != null) {
-          createOrderBloc.bindActiveOrder(activeOrderId);
-        }
-
-        final completer = Completer<bool>();
-        late final StreamSubscription sub;
-        sub = createOrderBloc.stream.listen((s) {
-          if (s.status == Status.SUCCESS && s.success) {
-            if (!completer.isCompleted) completer.complete(true);
-          } else if (s.status == Status.ERROR) {
-            if (!completer.isCompleted) completer.complete(false);
-          }
-        });
-        createOrderBloc.add(
-          CreateOrderEvent.createOrder(orders: selectedGoods),
-        );
-
-        final ok = await completer.future;
-        await sub.cancel();
-        await createOrderBloc.close();
-
-        if (ok) {
-          mainCubit.updateTableStatus(cafeTable!.id, TableStatus.busy);
-          savedOrdersBloc.add(
-            SavedOrdersEvent.removeOrder(tableId: cafeTable!.id),
-          );
-          navigator.pop();
-        }
-      } else if (value == false) {
+      final entity = detailBloc.saveOrder(cafeTable!, guestCount);
+      if (entity != null) {
+        savedOrdersBloc.add(SavedOrdersEvent.addNewOrder(order: entity));
+      } else if (hadInitialDraft) {
         savedOrdersBloc.add(
-          SavedOrdersEvent.removeOrder(tableId: cafeTable?.id ?? ''),
-        );
-        navigator.pop();
-      }
-    } else {
-      if (cafeTable != null) {
-        context.read<SavedOrdersBloc>().add(
           SavedOrdersEvent.removeOrder(tableId: cafeTable!.id),
         );
       }
-      Navigator.pop(context);
     }
+    Navigator.pop(context);
   }
 
   @override
@@ -382,6 +324,11 @@ class _SearchInputState extends State<_SearchInput> {
     _last = current;
     if (!mounted) return;
     widget.onChanged(current);
+    setState(() {});
+  }
+
+  void _onClear() {
+    widget.controller.clear();
   }
 
   @override
@@ -424,6 +371,14 @@ class _SearchInputState extends State<_SearchInput> {
               ),
             ),
           ),
+          if (widget.controller.text.isNotEmpty) ...[
+            const SizedBox(width: 8),
+            GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: _onClear,
+              child: const Icon(Icons.close, size: 22, color: _kS500),
+            ),
+          ],
         ],
       ),
     );

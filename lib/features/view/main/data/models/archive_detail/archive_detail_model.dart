@@ -64,6 +64,13 @@ class ArchiveDetailModel
     )
     @Default([])
     List<PauseInterval> pausePeriods,
+    @JsonKey(
+      name: 'table_sessions',
+      fromJson: parseBillTableSessionsToSegments,
+      toJson: _segmentsToJsonStub,
+    )
+    @Default([])
+    List<TableSegment> activePeriods,
   }) = _ArchiveDetailModel;
 
   factory ArchiveDetailModel.fromJson(Map<String, dynamic> json) =>
@@ -121,6 +128,13 @@ List<PauseInterval> _parsePausePeriods(Object? v) {
       .whereType<Map>()
       .map((item) => PauseInterval.fromJson(Map<String, dynamic>.from(item)))
       .toList();
+}
+
+// activePeriods is derived read-only from `table_sessions` on the way in;
+// this model is never re-serialized back to that shape, so this is just a
+// minimal stub to satisfy json_serializable's fromJson/toJson pairing.
+List<Map<String, dynamic>> _segmentsToJsonStub(List<TableSegment> segments) {
+  return const [];
 }
 
 List<Map<String, dynamic>> _pausePeriodsToJson(List<PauseInterval> pauses) {

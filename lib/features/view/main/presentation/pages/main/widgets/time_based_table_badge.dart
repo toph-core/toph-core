@@ -19,6 +19,7 @@ const _kFooterText = Color(0xFF64748B);
 const _kPausedBg = Color(0xFFE9EDF2);
 const _kPausedBorder = Color(0xFFCBD5E1);
 const _kPausedText = Color(0xFF64748B);
+const _kInfo = Color(0xFF2563EB);
 
 /// Rendering mode for the redesigned table-card chrome. Takes precedence
 /// over [TimeBasedTableBadge.compact] when set, so existing call sites
@@ -30,6 +31,7 @@ class TimeBasedTableBadge extends StatefulWidget {
   final bool compact;
   final bool showControls;
   final TimeBasedBadgeMode? mode;
+  final int? savedItemCount;
 
   const TimeBasedTableBadge({
     super.key,
@@ -37,6 +39,7 @@ class TimeBasedTableBadge extends StatefulWidget {
     this.compact = false,
     this.showControls = false,
     this.mode,
+    this.savedItemCount,
   });
 
   @override
@@ -45,6 +48,9 @@ class TimeBasedTableBadge extends StatefulWidget {
 
 class _TimeBasedTableBadgeState extends State<TimeBasedTableBadge> {
   int _elapsedSec = 0;
+  int _baseElapsedSec = 0;
+  double _baseAmount = 0;
+  DateTime? _lastSyncAt;
   String _amount = '';
   String _pricePerHour = '';
   String _timerState = 'none';
@@ -90,6 +96,12 @@ class _TimeBasedTableBadgeState extends State<TimeBasedTableBadge> {
   void _absorbTimer(TableTimerResponse t) {
     if (t.orderId.isNotEmpty) _orderId = t.orderId;
     _elapsedSec = t.totalActiveSec;
+    _baseElapsedSec = t.totalActiveSec;
+    _baseAmount =
+        double.tryParse(t.currentAmount ?? '') ??
+        double.tryParse(t.finalAmount ?? '') ??
+        0;
+    _lastSyncAt = DateTime.now();
     _timerState = t.stateNormalized;
     _amount = t.currentAmount ?? t.finalAmount ?? '';
     if ((t.pricePerHour ?? '').isNotEmpty) _pricePerHour = t.pricePerHour!;
@@ -98,8 +110,19 @@ class _TimeBasedTableBadgeState extends State<TimeBasedTableBadge> {
     _tickTimer?.cancel();
     _tickTimer = null;
     if (_timerState == 'running') {
+      // Recompute from the wall-clock anchor every tick instead of a raw
+      // `_elapsedSec++` — Timer.periodic doesn't compensate for
+      // delayed/dropped ticks (busy isolate, backgrounded tab), so a raw
+      // increment silently drifts behind the true elapsed time.
       _tickTimer = Timer.periodic(const Duration(seconds: 1), (_) {
-        if (mounted) setState(() => _elapsedSec++);
+        if (!mounted) return;
+        final syncAt = _lastSyncAt;
+        final elapsed = syncAt == null
+            ? 0
+            : DateTime.now().difference(syncAt).inSeconds;
+        setState(
+          () => _elapsedSec = _baseElapsedSec + (elapsed < 0 ? 0 : elapsed),
+        );
       });
     }
   }
@@ -124,6 +147,9 @@ class _TimeBasedTableBadgeState extends State<TimeBasedTableBadge> {
         setState(() {
           _loaded = false;
           _elapsedSec = 0;
+          _baseElapsedSec = 0;
+          _baseAmount = 0;
+          _lastSyncAt = null;
           _amount = '';
           _seedPriceFromTable();
           _timerState = 'none';
@@ -237,17 +263,25 @@ class _TimeBasedTableBadgeState extends State<TimeBasedTableBadge> {
     );
   }
 
-  /// Charge to display for the current tick. While the timer is
-  /// `running`, the server's `current_amount` only refreshes every 60s
-  /// (our sync interval), so it visibly lags the ticking clock — here we
-  /// recompute it locally every second from price/hour × elapsed time,
-  /// same formula as `TimeBasedAccruingPricing.extraCharge` on the order
-  /// screen, so both stay in step. Paused/closed amounts are authoritative
+  /// Charge to display for the current tick. While the timer is `running`,
+  /// the server's `current_amount` only refreshes every 60s (our sync
+  /// interval), so it visibly lags the ticking clock — here we tick it
+  /// locally via the shared `computeAnchoredLiveAmount` (same helper
+  /// `TableTimerCubit` uses), anchored on `_baseAmount` (the last
+  /// server-computed, already segment-priced amount) plus only the seconds
+  /// elapsed since that sync at the *current* price. This must not multiply
+  /// the whole `_elapsedSec` (which can span a prior, differently-priced
+  /// segment after a transfer) by the current price — that would silently
+  /// re-price already-billed time. Paused/closed amounts are authoritative
   /// from the server and aren't recomputed.
   int _liveAmount() {
-    final price = double.tryParse(_pricePerHour) ?? 0;
-    if (_timerState == 'running' && price > 0) {
-      return ((_elapsedSec / 3600.0) * price).round();
+    if (_timerState == 'running') {
+      final price = double.tryParse(_pricePerHour) ?? 0;
+      return computeAnchoredLiveAmount(
+        baseAmount: _baseAmount,
+        elapsedSinceSyncSec: _elapsedSec - _baseElapsedSec,
+        currentPricePerHour: price,
+      ).round();
     }
     return parseAmountToInt(_amount);
   }
@@ -286,6 +320,24 @@ class _TimeBasedTableBadgeState extends State<TimeBasedTableBadge> {
             ),
           ),
           const Spacer(),
+          if ((widget.savedItemCount ?? 0) > 0) ...[
+            const Icon(
+              Icons.priority_high_rounded,
+              size: 14,
+              color: _kInfo,
+            ),
+            const SizedBox(width: 2),
+            Text(
+              '${widget.savedItemCount}',
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+                color: _kInfo,
+                fontFamily: 'Inter',
+              ),
+            ),
+            if (showAmount) const SizedBox(width: 8),
+          ],
           if (showAmount)
             Text(
               '${fmtAmount('$amount')} so\'m',

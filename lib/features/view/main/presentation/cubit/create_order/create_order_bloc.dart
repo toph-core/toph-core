@@ -13,6 +13,7 @@ import 'package:mary_ai_pos/core/services/lan_hub/lan_hub_service.dart';
 import 'package:mary_ai_pos/core/services/offline_queue/offline_queue_service.dart';
 import 'package:mary_ai_pos/core/services/offline_queue/pending_operation.dart';
 import 'package:mary_ai_pos/core/utils/helper/helper_widget.dart';
+import 'package:mary_ai_pos/core/utils/order_conflict_helper.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/cafe_tables/cafe_tables_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/create_order/create_order_request_model.dart';
 import 'package:mary_ai_pos/features/view/main/domain/usecase/create_order_usecase.dart';
@@ -106,6 +107,7 @@ class CreateOrderBloc extends Bloc<CreateOrderEvent, CreateOrderState> {
             tableLine: 'С собой',
             guestCount: state.guestCount,
             items: event.orders,
+            orderId: r,
           ));
           Navigator.pushNamed(
             navigatorKey.currentContext!,
@@ -129,41 +131,11 @@ class CreateOrderBloc extends Bloc<CreateOrderEvent, CreateOrderState> {
     // `state.tableStatus` free bo'lsa ham shunday ishlaydi — UI holati
     // eskirgan bo'lsa ham 409 conflict yuz bermaydi.
     if (_activeOrderId != null) {
-      try {
-        await _client.post(
-          ListAPI.orderItemsCreate,
-          data: {
-            'order_id': _activeOrderId,
-            'items': event.orders
-                .map((o) => {
-                      'comment': o.comment,
-                      'good_id': o.goods.id,
-                      'quantity': o.quantity,
-                    })
-                .toList(),
-          },
-        );
-        _lanHub.tableStatusChanged(state.tableId, TableStatus.busy.name);
-        // Fire-and-forget: oshxona cheki (kategoriya printerlari).
-        unawaited(_printerService.printKitchenReceiptFor(
-          tableLine: _kitchenTableLine,
-          guestCount: state.guestCount,
-          items: event.orders,
-        ));
-        emit(state.copyWith(status: Status.SUCCESS, success: true));
-      } on DioException catch (e) {
-        if (e.type == DioExceptionType.connectionError ||
-            e.type == DioExceptionType.sendTimeout ||
-            e.type == DioExceptionType.receiveTimeout) {
-          await _handleOfflineOrder(event.orders, emit);
-          return;
-        }
-        showErrorMessage(
-          navigatorKey.currentContext!,
-          e.message ?? 'Xato yuz berdi',
-        );
-        emit(state.copyWith(status: Status.ERROR));
-      }
+      await _addItemsToExistingOrder(
+        orderId: _activeOrderId!,
+        orders: event.orders,
+        emit: emit,
+      );
       return;
     }
 
@@ -196,12 +168,29 @@ class CreateOrderBloc extends Bloc<CreateOrderEvent, CreateOrderState> {
           await _handleOfflineOrder(event.orders, emit);
           return;
         }
+        // 409 Conflict: stol allaqachon faol buyurtmaga ega. Xato ko'rsatish
+        // o'rniga mavjud buyurtmaga bog'lanib, itemlarni o'shanga qo'shamiz —
+        // shu orqali orphan/duplicate bill hosil bo'lishining oldi olinadi.
+        if (l is MessageFailure) {
+          final existingId = extractExistingOrderIdFromConflict(l.message);
+          if (existingId != null && existingId.isNotEmpty) {
+            bindActiveOrder(existingId);
+            await _addItemsToExistingOrder(
+              orderId: existingId,
+              orders: event.orders,
+              emit: emit,
+            );
+            return;
+          }
+        }
         l.showErrorMsg();
         emit(state.copyWith(status: Status.ERROR, failure: l));
       },
       (r) {
         _lanHub.tableStatusChanged(state.tableId, TableStatus.busy.name);
         // Fire-and-forget: oshxona cheki (kategoriya printerlari).
+        // Eslatma: yangi dine-in order yaratilganda backend ID qaytarmaydi
+        // (faqat bool) — shuning uchun bu yerda orderId yo'q.
         unawaited(_printerService.printKitchenReceiptFor(
           tableLine: _kitchenTableLine,
           guestCount: state.guestCount,
@@ -212,10 +201,54 @@ class CreateOrderBloc extends Bloc<CreateOrderEvent, CreateOrderState> {
     );
   }
 
+  Future<void> _addItemsToExistingOrder({
+    required String orderId,
+    required List<OrderItem> orders,
+    required Emitter<CreateOrderState> emit,
+  }) async {
+    try {
+      await _client.post(
+        ListAPI.orderItemsCreate,
+        data: {
+          'order_id': orderId,
+          'items': orders
+              .map((o) => {
+                    'comment': o.comment,
+                    'good_id': o.goods.id,
+                    'quantity': o.quantity,
+                  })
+              .toList(),
+        },
+      );
+      _lanHub.tableStatusChanged(state.tableId, TableStatus.busy.name);
+      // Fire-and-forget: oshxona cheki (kategoriya printerlari).
+      unawaited(_printerService.printKitchenReceiptFor(
+        tableLine: _kitchenTableLine,
+        guestCount: state.guestCount,
+        items: orders,
+        orderId: orderId,
+      ));
+      emit(state.copyWith(status: Status.SUCCESS, success: true));
+    } on DioException catch (e) {
+      if (e.type == DioExceptionType.connectionError ||
+          e.type == DioExceptionType.sendTimeout ||
+          e.type == DioExceptionType.receiveTimeout) {
+        await _handleOfflineOrder(orders, emit, orderId: orderId);
+        return;
+      }
+      showErrorMessage(
+        navigatorKey.currentContext!,
+        e.message ?? 'Xato yuz berdi',
+      );
+      emit(state.copyWith(status: Status.ERROR));
+    }
+  }
+
   Future<void> _handleOfflineOrder(
     List<OrderItem> orders,
-    Emitter<CreateOrderState> emit,
-  ) async {
+    Emitter<CreateOrderState> emit, {
+    String? orderId,
+  }) async {
     final tableId = state.tableId;
     final createdAt = DateTime.now();
 
@@ -265,6 +298,7 @@ class CreateOrderBloc extends Bloc<CreateOrderEvent, CreateOrderState> {
       tableLine: _kitchenTableLine,
       guestCount: state.guestCount,
       items: orders,
+      orderId: orderId ?? _activeOrderId,
     ));
     emit(state.copyWith(status: Status.SUCCESS, success: true));
   }

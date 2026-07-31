@@ -5,6 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mary_ai_pos/core/api/api.dart';
 import 'package:mary_ai_pos/core/components/flush_bars.dart';
 import 'package:mary_ai_pos/core/design_system/pos_design_system.dart';
+import 'package:mary_ai_pos/core/extension/date_time_extension.dart';
 import 'package:mary_ai_pos/core/extension/for_context.dart';
 import 'package:mary_ai_pos/core/extension/number_formatter.dart';
 import 'package:mary_ai_pos/core/routes/app_routes.dart';
@@ -19,6 +20,21 @@ import 'package:mary_ai_pos/features/view/main/presentation/cubit/archives/archi
 import 'package:mary_ai_pos/features/view/main/presentation/pages/archive/widgets/archive_right_sider_bar.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/main/widgets/main_header.dart';
 import 'package:mary_ai_pos/generated/l10n.dart';
+
+// Open bills haven't been paid yet, so their persisted `grand_total`
+// doesn't include the running table charge (only finalized at payment) —
+// add it back in for display. Closed/paid bills already have it baked in.
+int _archiveDisplayTotal(ArchiveEntity a) {
+  final isOpen =
+      a.status == OrderStatus.open ||
+      a.status == OrderStatus.opened ||
+      a.status == OrderStatus.pending;
+  return isOpen ? a.totalPrice + a.tableAmount : a.totalPrice;
+}
+
+String _fmtHm(DateTime? dt) => dt != null
+    ? '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}'
+    : '-';
 
 class ArchiveScreen extends StatefulWidget {
   const ArchiveScreen({super.key});
@@ -88,7 +104,7 @@ class _ArchiveBody extends StatelessWidget {
                   .length;
               final revenue = archives.fold<int>(
                 0,
-                (sum, a) => sum + a.totalPrice,
+                (sum, a) => sum + _archiveDisplayTotal(a),
               );
               final avgCheck = archives.isNotEmpty
                   ? revenue ~/ archives.length
@@ -312,16 +328,15 @@ class _ArchiveTable extends StatelessWidget {
             height: 48,
             padding: const EdgeInsets.symmetric(horizontal: 4),
             decoration: const BoxDecoration(
-              border: Border(
-                bottom: BorderSide(color: Color(0xFFE2E8F0)),
-              ),
+              border: Border(bottom: BorderSide(color: Color(0xFFE2E8F0))),
             ),
             child: Row(
               children: [
                 const _ThCell(label: '#', flex: 2),
                 _ThCell(label: S.current.strTimeColumnHeader, flex: 2),
+                _ThCell(label: S.current.strClosedColumnHeader, flex: 2),
                 _ThCell(label: S.current.strTypeColumnHeader, flex: 2),
-                const _ThCell(label: 'Stol', flex: 1),
+                const _ThCell(label: 'Stol', flex: 2),
                 _ThCell(label: S.current.strAmountColumnHeader, flex: 3),
                 _ThCell(label: S.current.strStatusColumnHeader, flex: 2),
               ],
@@ -403,8 +418,6 @@ class _ArchiveFilterBar extends StatelessWidget {
   final UserRole? role;
   const _ArchiveFilterBar({required this.state, required this.role});
 
-  static const _filterLabels = ['Hammasi', 'Bugun', 'Hafta', 'Oy'];
-
   @override
   Widget build(BuildContext context) {
     final horizontal = PosBreakpoints.pick<double>(
@@ -471,58 +484,9 @@ class _ArchiveFilterBar extends StatelessWidget {
               ),
             ),
           ),
-          Container(
-            height: 48,
-            decoration: BoxDecoration(
-              color: const Color(0xFFF8FAFC),
-              borderRadius: BorderRadius.circular(PosDimensions.radiusMd),
-            ),
-            padding: const EdgeInsets.all(4),
-            child: Row(
-              spacing: 0,
-              children: List.generate(state.filters.length, (i) {
-                final isActive = state.filterType == state.filters[i];
-                return GestureDetector(
-                  onTap: () => context.read<ArchivesBloc>().add(
-                    ArchivesEvent.updateFilterType(type: state.filters[i]),
-                  ),
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 150),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 10,
-                    ),
-                    decoration: BoxDecoration(
-                      color: isActive ? Colors.white : Colors.transparent,
-                      borderRadius: BorderRadius.circular(10),
-                      boxShadow: isActive
-                          ? [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.08),
-                                blurRadius: 4,
-                                offset: const Offset(0, 1),
-                              ),
-                            ]
-                          : null,
-                    ),
-                    child: Text(
-                      _filterLabels[i],
-                      style: TextStyle(
-                        fontSize: PosTypography.bodyMd,
-                        fontWeight: FontWeight.w600,
-                        color: isActive
-                            ? const Color(0xFF0F172A)
-                            : const Color(0xFF64748B),
-                        fontFamily: PosTypography.family,
-                      ),
-                    ),
-                  ),
-                );
-              }),
-            ),
-          ),
+          _PeriodFilterBar(state: state),
+          _StatusFilterRow(state: state),
           const Spacer(),
-          _DateRangeButton(state: state),
           if (role.canViewAllOrders)
             _ExportCsvButton(archives: state.archives?.archives ?? const []),
         ],
@@ -531,44 +495,127 @@ class _ArchiveFilterBar extends StatelessWidget {
   }
 }
 
-class _DateRangeButton extends StatelessWidget {
+/// Bill-status filter rendered as a row of selectable chips (not a
+/// dropdown) — every option is visible and reachable in one tap.
+class _StatusFilterRow extends StatelessWidget {
   final ArchivesState state;
-  const _DateRangeButton({required this.state});
+  const _StatusFilterRow({required this.state});
 
-  bool get _isActive => state.filterType == ArchivesFilterType.date;
+  @override
+  Widget build(BuildContext context) {
+    final options = <(String?, String)>[
+      (null, S.current.all),
+      ('opened', localizedOrderStatus(context, 'opened')),
+      ('closed', localizedOrderStatus(context, 'closed')),
+      ('paid', localizedOrderStatus(context, 'paid')),
+    ];
 
-  String get _label {
-    if (!_isActive || state.startFilterDate == null) return 'Sana';
-    final s = state.startFilterDate!;
-    final e = state.endFilterDate;
-    final start =
-        '${s.day.toString().padLeft(2, '0')}.${s.month.toString().padLeft(2, '0')}';
-    if (e == null || (e.day == s.day && e.month == s.month && e.year == s.year)) {
-      return start;
+    return Container(
+      height: 48,
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(PosDimensions.radiusMd),
+      ),
+      padding: const EdgeInsets.all(4),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        spacing: 0,
+        children: options.map((o) {
+          final isActive = state.statusFilter == o.$1;
+          return GestureDetector(
+            onTap: () => context.read<ArchivesBloc>().add(
+              ArchivesEvent.updateStatusFilter(status: o.$1),
+            ),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 150),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              decoration: BoxDecoration(
+                color: isActive ? Colors.white : Colors.transparent,
+                borderRadius: BorderRadius.circular(10),
+                boxShadow: isActive
+                    ? [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.08),
+                          blurRadius: 4,
+                          offset: const Offset(0, 1),
+                        ),
+                      ]
+                    : null,
+              ),
+              child: Text(
+                o.$2,
+                style: TextStyle(
+                  fontSize: PosTypography.bodyMd,
+                  fontWeight: FontWeight.w600,
+                  color: isActive
+                      ? const Color(0xFF0F172A)
+                      : const Color(0xFF64748B),
+                  fontFamily: PosTypography.family,
+                ),
+              ),
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+}
+
+/// Compact "FROM … → TO …" range display (tap opens the calendar — no
+/// icon, since the tap target itself is the affordance) paired with a
+/// D/W/M/Y quick-range toggle.
+class _PeriodFilterBar extends StatelessWidget {
+  final ArchivesState state;
+  const _PeriodFilterBar({required this.state});
+
+  DateTimeRange get _range {
+    final now = DateTime.now();
+    switch (state.filterType) {
+      case ArchivesFilterType.Today:
+        return DateTimeRange(
+          start: now.subtract(const Duration(hours: 24)),
+          end: now,
+        );
+      case ArchivesFilterType.Week:
+        return DateTimeRange(
+          start: now.subtract(const Duration(days: 7)),
+          end: now,
+        );
+      case ArchivesFilterType.month:
+        return DateTimeRange(
+          start: now.subtract(const Duration(days: 30)),
+          end: now,
+        );
+      case ArchivesFilterType.Year:
+        return DateTimeRange(
+          start: now.subtract(const Duration(days: 365)),
+          end: now,
+        );
+      case ArchivesFilterType.date:
+      case ArchivesFilterType.All:
+        return DateTimeRange(
+          start: state.startFilterDate ?? now,
+          end: state.endFilterDate ?? now,
+        );
     }
-    final end =
-        '${e.day.toString().padLeft(2, '0')}.${e.month.toString().padLeft(2, '0')}';
-    return '$start — $end';
   }
 
   Future<void> _pick(BuildContext context) async {
     final bloc = context.read<ArchivesBloc>();
+    final current = _range;
     final picked = await showDateRangePicker(
       context: context,
-      initialDateRange: DateTimeRange(
-        start: state.startFilterDate ?? DateTime.now(),
-        end: state.endFilterDate ?? DateTime.now(),
-      ),
+      initialDateRange: DateTimeRange(start: current.start, end: current.end),
       firstDate: DateTime(2000),
       lastDate: DateTime.now().add(const Duration(days: 365)),
       initialEntryMode: DatePickerEntryMode.calendarOnly,
       builder: (context, child) => Theme(
         data: Theme.of(context).copyWith(
           colorScheme: Theme.of(context).colorScheme.copyWith(
-                primary: const Color(0xFFFB6633),
-                onPrimary: Colors.white,
-                surface: Colors.white,
-              ),
+            primary: const Color(0xFFFB6633),
+            onPrimary: Colors.white,
+            surface: Colors.white,
+          ),
           textButtonTheme: TextButtonThemeData(
             style: TextButton.styleFrom(
               foregroundColor: const Color(0xFFFB6633),
@@ -593,77 +640,123 @@ class _DateRangeButton extends StatelessWidget {
     }
   }
 
-  void _clear(BuildContext context) {
-    context.read<ArchivesBloc>().add(
-          const ArchivesEvent.updateFilterType(type: ArchivesFilterType.All),
-        );
-  }
-
   @override
   Widget build(BuildContext context) {
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 150),
+    final range = _range;
+    final presets = <(ArchivesFilterType, String)>[
+      (ArchivesFilterType.Today, S.current.strPeriodDay),
+      (ArchivesFilterType.Week, S.current.strPeriodWeek),
+      (ArchivesFilterType.month, S.current.strPeriodMonth),
+      (ArchivesFilterType.Year, S.current.strPeriodYear),
+    ];
+    return Container(
       height: 48,
       decoration: BoxDecoration(
-        color: _isActive ? const Color(0xFFFFF3EE) : Colors.white,
-        border: Border.all(
-          color: _isActive ? const Color(0xFFFB6633) : const Color(0xFFE2E8F0),
-        ),
+        color: Colors.white,
+        border: Border.all(color: const Color(0xFFE2E8F0)),
         borderRadius: BorderRadius.circular(PosDimensions.radiusMd),
       ),
+      padding: const EdgeInsets.all(4),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           GestureDetector(
+            behavior: HitTestBehavior.opaque,
             onTap: () => _pick(context),
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 14),
+              padding: const EdgeInsets.symmetric(horizontal: 10),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
-                spacing: 6,
+                spacing: 8,
                 children: [
-                  Icon(
-                    Icons.calendar_today_rounded,
-                    size: 18,
-                    color: _isActive
-                        ? const Color(0xFFFB6633)
-                        : const Color(0xFF64748B),
+                  _DateChunk(label: S.current.strFrom, date: range.start),
+                  const Icon(
+                    Icons.arrow_forward_rounded,
+                    size: 14,
+                    color: Color(0xFF94A3B8),
                   ),
-                  Text(
-                    _label,
-                    style: TextStyle(
-                      fontSize: PosTypography.bodyMd,
-                      fontWeight: _isActive ? FontWeight.w600 : FontWeight.w400,
-                      color: _isActive
-                          ? const Color(0xFFFB6633)
-                          : const Color(0xFF64748B),
-                      fontFamily: PosTypography.family,
-                    ),
-                  ),
+                  _DateChunk(label: S.current.strTo, date: range.end),
                 ],
               ),
             ),
           ),
-          if (_isActive) ...[
-            Container(
-              width: 1,
-              height: 18,
-              color: const Color(0xFFFB6633).withValues(alpha: 0.3),
-            ),
-            GestureDetector(
-              onTap: () => _clear(context),
-              child: const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 10),
-                child: Icon(
-                  Icons.close_rounded,
-                  size: 18,
-                  color: Color(0xFFFB6633),
+          Container(
+            width: 1,
+            height: 28,
+            margin: const EdgeInsets.symmetric(horizontal: 8),
+            color: const Color(0xFFE2E8F0),
+          ),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            spacing: 2,
+            children: presets.map((p) {
+              final isActive = state.filterType == p.$1;
+              return GestureDetector(
+                onTap: () => context.read<ArchivesBloc>().add(
+                  ArchivesEvent.updateFilterType(type: p.$1),
                 ),
-              ),
-            ),
-          ],
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 150),
+                  width: 32,
+                  height: 32,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: isActive
+                        ? const Color(0xFFFB6633)
+                        : Colors.transparent,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    p.$2,
+                    style: TextStyle(
+                      fontSize: PosTypography.bodyMd,
+                      fontWeight: FontWeight.w600,
+                      color: isActive ? Colors.white : const Color(0xFF64748B),
+                      fontFamily: PosTypography.family,
+                    ),
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
         ],
       ),
+    );
+  }
+}
+
+class _DateChunk extends StatelessWidget {
+  final String label;
+  final DateTime date;
+  const _DateChunk({required this.label, required this.date});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label.toUpperCase(),
+          style: const TextStyle(
+            fontSize: 9,
+            fontWeight: FontWeight.w600,
+            color: Color(0xFF94A3B8),
+            fontFamily: PosTypography.family,
+            letterSpacing: 0.4,
+          ),
+        ),
+        Text(
+          date.toYyyyMmDd,
+          style: const TextStyle(
+            fontSize: PosTypography.bodySm,
+            fontWeight: FontWeight.w600,
+            color: Color(0xFF0F172A),
+            fontFamily: PosTypography.family,
+            fontFeatures: [FontFeature.tabularFigures()],
+          ),
+        ),
+      ],
     );
   }
 }
@@ -680,7 +773,7 @@ class _ExportCsvButton extends StatelessWidget {
                 '${a.opened!.hour.toString().padLeft(2, '0')}:${a.opened!.minute.toString().padLeft(2, '0')}'
           : '';
       buffer.writeln(
-        '${a.bilNumber},${a.tableNumber},${a.status.name},${a.goodsQuantity},${a.totalPrice},$time',
+        '${a.bilNumber},${a.tableNumber},${a.status.name},${a.goodsQuantity},${_archiveDisplayTotal(a)},$time',
       );
     }
     Clipboard.setData(ClipboardData(text: buffer.toString()));
@@ -785,9 +878,8 @@ class _ArchiveRowState extends State<_ArchiveRow> {
   @override
   Widget build(BuildContext context) {
     final archive = widget.archive;
-    final time = archive.opened != null
-        ? '${archive.opened!.hour.toString().padLeft(2, '0')}:${archive.opened!.minute.toString().padLeft(2, '0')}'
-        : '-';
+    final time = _fmtHm(archive.opened);
+    final closedTime = _fmtHm(archive.closed);
     final isTakeaway = archive.tableNumber == 0;
 
     final bg = widget.isSelected
@@ -858,6 +950,23 @@ class _ArchiveRowState extends State<_ArchiveRow> {
                 flex: 2,
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 10),
+                  child: Text(
+                    closedTime,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      color: Color(0xFF64748B),
+                      fontFamily: 'Inter',
+                      fontFeatures: [FontFeature.tabularFigures()],
+                    ),
+                  ),
+                ),
+              ),
+              Expanded(
+                flex: 2,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
                   child: FittedBox(
                     fit: BoxFit.scaleDown,
                     alignment: Alignment.centerLeft,
@@ -866,7 +975,7 @@ class _ArchiveRowState extends State<_ArchiveRow> {
                 ),
               ),
               Expanded(
-                flex: 1,
+                flex: 2,
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 6),
                   child: isTakeaway
@@ -879,24 +988,44 @@ class _ArchiveRowState extends State<_ArchiveRow> {
                             fontFamily: 'Inter',
                           ),
                         )
-                      : Container(
-                          width: 28,
-                          height: 28,
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFF1F5F9),
-                            borderRadius: BorderRadius.circular(7),
-                          ),
-                          alignment: Alignment.center,
-                          child: Text(
-                            '${archive.tableNumber}',
-                            maxLines: 1,
-                            style: const TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              color: Color(0xFF0F172A),
-                              fontFamily: 'Inter',
+                      : Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              width: 28,
+                              height: 28,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFF1F5F9),
+                                borderRadius: BorderRadius.circular(7),
+                              ),
+                              alignment: Alignment.center,
+                              child: Text(
+                                '${archive.tableNumber}',
+                                maxLines: 1,
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: Color(0xFF0F172A),
+                                  fontFamily: 'Inter',
+                                ),
+                              ),
                             ),
-                          ),
+                            if (archive.hallName.trim().isNotEmpty) ...[
+                              const SizedBox(width: 6),
+                              Flexible(
+                                child: Text(
+                                  archive.hallName.trim(),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    fontSize: 11,
+                                    color: Color(0xFF64748B),
+                                    fontFamily: 'Inter',
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ],
                         ),
                 ),
               ),
@@ -905,7 +1034,7 @@ class _ArchiveRowState extends State<_ArchiveRow> {
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 10),
                   child: Text(
-                    archive.totalPrice.formatN,
+                    _archiveDisplayTotal(archive).formatN,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
@@ -982,11 +1111,7 @@ class _TypeChip extends StatelessWidget {
       child: const Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            Icons.restaurant_outlined,
-            size: 13,
-            color: Color(0xFF475569),
-          ),
+          Icon(Icons.restaurant_outlined, size: 13, color: Color(0xFF475569)),
           SizedBox(width: 6),
           Text(
             'Zalda',

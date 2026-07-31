@@ -166,3 +166,26 @@ int parseAmountToInt(String? raw) {
   final cleaned = raw.replaceAll(RegExp(r'[^0-9.]'), '');
   return (double.tryParse(cleaned) ?? 0).round();
 }
+
+/// Single source of truth for ticking a time-based table's live charge
+/// between server polls (`TableTimerCubit`, `TimeBasedAccruingPricing`, and
+/// `TimeBasedTableBadge` all call this instead of each re-deriving the same
+/// formula independently).
+///
+/// Anchors on `baseAmount` — the last known-good, already segment-priced
+/// server `current_amount` — and adds only the seconds elapsed *since that
+/// sync* at the *current* segment's rate. It deliberately never multiplies
+/// the session's whole multi-segment elapsed time by a single rate: after a
+/// transfer, prior segments' time was already priced (at their own table's
+/// rate) into `baseAmount` by the server, so re-pricing it here at the
+/// current rate would silently overcharge (e.g. 1h@60k + 1h@120k must stay
+/// 180k, not (2h)@120k = 240k).
+double computeAnchoredLiveAmount({
+  required double baseAmount,
+  required int elapsedSinceSyncSec,
+  required double currentPricePerHour,
+}) {
+  if (currentPricePerHour <= 0) return baseAmount;
+  final safeElapsed = elapsedSinceSyncSec < 0 ? 0 : elapsedSinceSyncSec;
+  return baseAmount + (safeElapsed / 3600.0) * currentPricePerHour;
+}
