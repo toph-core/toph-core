@@ -4,7 +4,9 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mary_ai_pos/core/constants/constants.dart';
 import 'package:mary_ai_pos/core/error/failure.dart';
+import 'package:mary_ai_pos/core/services/cache/cache_service.dart';
 import 'package:mary_ai_pos/core/usecase/usecase.dart';
+import 'package:mary_ai_pos/di.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/category/category_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/department/department_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/goods/goods_model.dart';
@@ -45,6 +47,11 @@ class DepartmentSelectionCubit extends Cubit<DepartmentSelectionState> {
       (f) => failure = f,
       (list) => departments = list,
     );
+    if (departments.isNotEmpty) {
+      inject<CacheService>().saveDepartments(
+        departments.map((d) => {'id': d.id, 'name': d.name}).toList(),
+      );
+    }
     categoriesResult.fold(
       (f) => failure ??= f,
       (list) => categories = list,

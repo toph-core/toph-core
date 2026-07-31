@@ -33,6 +33,14 @@ class CacheService {
 
   List<Map<String, dynamic>> getGoods() => _decode(_box.get(_goods));
 
+  // ─── Departments ──────────────────────────────────────────────
+  static const _departments = 'cache_departments';
+
+  Future<void> saveDepartments(List<Map<String, dynamic>> items) async =>
+      _box.put(_departments, jsonEncode(items));
+
+  List<Map<String, dynamic>> getDepartments() => _decode(_box.get(_departments));
+
   // ─── Halls ────────────────────────────────────────────────────
   Future<void> saveHalls(List<Map<String, dynamic>> items) async =>
       _box.put(_halls, jsonEncode(items));

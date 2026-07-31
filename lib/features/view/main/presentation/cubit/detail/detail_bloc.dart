@@ -147,7 +147,13 @@ class DetailBloc extends Bloc<DetailEvent, DetailState> {
       (categories) {
         if (isClosed) return;
         _cache.saveCategories(
-          categories.map((c) => {'id': c.id, 'name': c.name}).toList(),
+          categories
+              .map((c) => {
+                    'id': c.id,
+                    'name': c.name,
+                    'department_id': c.departmentId,
+                  })
+              .toList(),
         );
         categories.insert(0, const CategoryModel(id: "all", name: "Hammasi"));
         emit(state.copyWith(status: Status.SUCCESS, categories: categories));

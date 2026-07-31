@@ -10,7 +10,21 @@ import 'package:mary_ai_pos/di.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/open_order/open_order_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/table_timer/table_timer_response_model.dart';
 import 'package:mary_ai_pos/features/view/main/domain/entities/archive_detail_entity.dart';
+import 'package:mary_ai_pos/features/view/main/domain/entities/order_food_entity.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/detail/detail_bloc.dart';
+
+/// One consolidated receipt line — same menu item (by `good_id`, or by name
+/// when `good_id` isn't known) merged across every order line that produced
+/// it, with every distinct comment preserved (never dropped or merged into
+/// one string — printed as separate indented rows under the item).
+class _MergedLine {
+  _MergedLine({required this.name});
+
+  final String name;
+  int quantity = 0;
+  double lineTotal = 0;
+  final List<String> comments = [];
+}
 
 /// Kassir cheki — narxlar, jami summa, xizmat to'lovi bilan to'liq chek.
 class CashierReceiptBuilder {
@@ -153,6 +167,215 @@ class CashierReceiptBuilder {
     }
   }
 
+  // ── Department grouping (buildFromDetail) ────────────────────────────────
+
+  /// Groups [items] by department id (via [departmentIdOf], empty string for
+  /// unknown/unresolved) and, within each department, merges lines that
+  /// share the same menu item (`good_id`, falling back to name) into one
+  /// row with a summed quantity — while keeping every comment from every
+  /// merged line (never lost, never collapsed into the others).
+  static Map<String, List<_MergedLine>> _groupByDepartment(
+    List<OrderFoodEntity> items,
+    String Function(OrderFoodEntity)? departmentIdOf,
+  ) {
+    final byDept = <String, Map<String, _MergedLine>>{};
+    for (final g in items) {
+      final deptId = departmentIdOf?.call(g) ?? '';
+      final deptLines = byDept.putIfAbsent(deptId, () => {});
+      final key = g.goodId.isNotEmpty ? g.goodId : g.name;
+      final line = deptLines.putIfAbsent(key, () => _MergedLine(name: g.name));
+      line.quantity += g.quantity;
+      line.lineTotal += g.price * g.quantity;
+      final note = g.comment.trim();
+      if (note.isNotEmpty) line.comments.add(note);
+    }
+    return {for (final e in byDept.entries) e.key: e.value.values.toList()};
+  }
+
+  /// Departments are printed only if they have items, in [departmentOrder]
+  /// (a fixed, session-stable order from the department list), then any
+  /// department id not present there (still a real id, just not fetched into
+  /// the order list), and finally the unresolved/"no department" bucket.
+  static List<String> _departmentPrintOrder(
+    Map<String, List<_MergedLine>> byDept,
+    List<String> departmentOrder,
+  ) {
+    final keys = <String>[];
+    for (final id in departmentOrder) {
+      if (byDept.containsKey(id)) keys.add(id);
+    }
+    for (final id in byDept.keys) {
+      if (!keys.contains(id)) keys.add(id);
+    }
+    if (keys.remove('')) keys.add('');
+    return keys;
+  }
+
+  static void _appendDepartmentItemLines({
+    required Generator gen,
+    required List<int> bytes,
+    required Map<String, List<_MergedLine>> byDept,
+    required Map<String, String> departmentNames,
+    required List<String> departmentOrder,
+  }) {
+    final keys = _departmentPrintOrder(byDept, departmentOrder);
+    for (final id in keys) {
+      final lines = byDept[id];
+      if (lines == null || lines.isEmpty) continue;
+      final name = departmentNames[id];
+      final label = (name != null && name.isNotEmpty) ? name : 'Boshqa';
+      // "stand out" header — reverse video (black bg/white text), same
+      // technique the kitchen ticket uses for category headers; this
+      // printer profile doesn't render `bold` reliably.
+      bytes += gen.text(
+        label.toUpperCase(),
+        styles: const PosStyles(bold: false, reverse: true),
+      );
+      for (final line in lines) {
+        final displayName = line.name.length > 20
+            ? '${line.name.substring(0, 18)}..'
+            : line.name;
+        bytes += gen.row([
+          PosColumn(text: displayName, width: 6),
+          PosColumn(text: '${line.quantity}x', width: 2,
+              styles: const PosStyles(align: PosAlign.center)),
+          PosColumn(text: _fmt(line.lineTotal), width: 4,
+              styles: const PosStyles(align: PosAlign.right)),
+        ]);
+        for (final c in line.comments) {
+          bytes += gen.text('  - $c');
+        }
+      }
+    }
+  }
+
+  static void _appendCancelledSection({
+    required Generator gen,
+    required List<int> bytes,
+    required List<OrderFoodEntity> cancelledGoods,
+    required Map<String, String> departmentNames,
+    required List<String> departmentOrder,
+    required String Function(OrderFoodEntity)? departmentIdOf,
+  }) {
+    if (cancelledGoods.isEmpty) return;
+    bytes += gen.hr();
+    bytes += gen.text(
+      'CANCELLED ITEMS',
+      styles: const PosStyles(bold: false, align: PosAlign.center, reverse: true),
+      linesAfter: 1,
+    );
+    final byDept = _groupByDepartment(cancelledGoods, departmentIdOf);
+    _appendDepartmentItemLines(
+      gen: gen,
+      bytes: bytes,
+      byDept: byDept,
+      departmentNames: departmentNames,
+      departmentOrder: departmentOrder,
+    );
+  }
+
+  // ── Table usage (Room-by-room) — buildFromDetail only ────────────────────
+
+  static double _segmentAmount(TableSegment s, double fallbackPricePerHour) {
+    final amt = double.tryParse(s.amount ?? '');
+    if (amt != null) return amt;
+    return fallbackPricePerHour * (s.activeSeconds / 3600.0);
+  }
+
+  static double _segmentPrice(TableSegment s) =>
+      double.tryParse(s.pricePerHour ?? '') ?? 0;
+
+  /// Transparent room-by-room breakdown of the time-based table charge —
+  /// every segment (a room may be entered/left/re-entered several times),
+  /// every active interval within it, and the exact calculation that turns
+  /// duration into money. Silently omitted when there's nothing to show.
+  static void _appendTableUsageSection({
+    required Generator gen,
+    required List<int> bytes,
+    required ArchiveDetailEntity detail,
+  }) {
+    final segments = detail.activePeriods;
+    if (segments.isEmpty) return;
+
+    bytes += gen.hr();
+    bytes += gen.text(
+      'TABLE USAGE',
+      styles: const PosStyles(bold: false, align: PosAlign.center, reverse: true),
+    );
+    if (detail.tableNumber > 0) {
+      bytes += gen.text('Table: ${detail.tableNumber.toInt()}');
+    }
+    if (detail.opened != null) {
+      bytes += gen.text('Opened: ${_fmtClock(detail.opened!)}');
+    }
+
+    // Group segments by room (table number; falls back to table id for the
+    // rare case a segment's number wasn't frozen).
+    final byRoom = <String, List<TableSegment>>{};
+    final roomOrder = <String>[];
+    for (final s in segments) {
+      final key = s.tableNumber != null ? 'n${s.tableNumber}' : 't${s.tableId ?? ''}';
+      if (!byRoom.containsKey(key)) roomOrder.add(key);
+      byRoom.putIfAbsent(key, () => []).add(s);
+    }
+
+    int totalActiveSec = 0;
+    double totalCost = 0;
+
+    for (var i = 0; i < roomOrder.length; i++) {
+      final segs = byRoom[roomOrder[i]]!;
+      final roomNumber = segs.firstWhere(
+        (s) => s.tableNumber != null,
+        orElse: () => segs.first,
+      ).tableNumber;
+      // Most recent known rate for this room (rate may have changed between
+      // segments — each segment's own frozen amount is still authoritative).
+      final price = segs.map(_segmentPrice).lastWhere((p) => p > 0, orElse: () => 0);
+
+      bytes += gen.text('');
+      bytes += gen.text(
+        'Room ${roomNumber ?? '?'}  ${_fmt(price)} so\'m/soat',
+        styles: const PosStyles(bold: false, underline: true),
+      );
+
+      final intervals = <ActiveInterval>[];
+      for (final s in segs) {
+        intervals.addAll(s.activeIntervals);
+      }
+      intervals.sort((a, b) => a.start.compareTo(b.start));
+
+      final minsList = <int>[];
+      for (final iv in intervals) {
+        final mins = (iv.durationSec / 60).round();
+        minsList.add(mins);
+        final endLabel = iv.end != null ? _fmtClock(iv.end!) : 'hozir';
+        bytes += gen.text('${_fmtClock(iv.start)} -> $endLabel   $mins min');
+      }
+
+      final totalMin = minsList.fold(0, (a, b) => a + b);
+      final roomAmount = segs.fold<double>(0, (s, seg) => s + _segmentAmount(seg, price));
+
+      if (minsList.isNotEmpty) {
+        bytes += gen.text('Calculation:');
+        bytes += gen.text('${_fmt(price)} x ((${minsList.join(' + ')}) / 60)');
+        bytes += gen.text('= ${_fmt(price)} x ($totalMin / 60)');
+        bytes += gen.text('= ${_fmt(roomAmount)} so\'m');
+      }
+
+      totalActiveSec += segs.fold<int>(0, (s, seg) => s + seg.activeSeconds);
+      totalCost += roomAmount;
+
+      if (i < roomOrder.length - 1) bytes += gen.hr(ch: '-');
+    }
+
+    bytes += gen.hr();
+    bytes += gen.text('Total Time: ${(totalActiveSec / 60).round()} min');
+    bytes += gen.text(
+      'Total Table Cost: ${_fmt(totalCost)} so\'m',
+      styles: const PosStyles(bold: false, underline: true),
+    );
+  }
+
   /// To'liq kassir cheki — [OpenOrderModel] asosida.
   static Future<List<int>> build({
     required OpenOrderModel order,
@@ -165,6 +388,8 @@ class CashierReceiptBuilder {
     List<PauseInterval> timerPauses = const [],
     int timerTotalSec = 0,
     String? timerPricePerHour,
+    Map<String, String> departmentNames = const {},
+    List<String> departmentOrder = const [],
   }) async {
     final profile = await CapabilityProfile.load();
     final gen = receiptGenerator(paperSize, profile);
@@ -207,36 +432,35 @@ class CashierReceiptBuilder {
 
     bytes += gen.hr();
 
-    bytes += gen.row([
-      PosColumn(text: 'Блюдо', width: 6, styles: const PosStyles(bold: false, underline: true)),
-      PosColumn(text: 'Кол', width: 2, styles: const PosStyles(bold: false, align: PosAlign.center)),
-      PosColumn(text: 'Сумма', width: 4, styles: const PosStyles(bold: false, align: PosAlign.right)),
-    ]);
-
+    // Items — grouped by department (empty dept id → "Boshqa" bucket), each
+    // menu item merged into one line with a summed quantity, no comment lost.
+    final byDept = <String, Map<String, _MergedLine>>{};
     double subtotal = 0;
     for (final item in items) {
       final price = double.tryParse(item.goods.price) ?? 0;
       final lineTotal = price * item.quantity;
       subtotal += lineTotal;
-      final name = item.goods.name.length > 22
-          ? '${item.goods.name.substring(0, 20)}..'
-          : item.goods.name;
-      bytes += gen.row([
-        PosColumn(text: name, width: 6,
-            styles: const PosStyles(height: PosTextSize.size1, width: PosTextSize.size1)),
-        PosColumn(text: 'x${item.quantity}', width: 2,
-            styles: const PosStyles(align: PosAlign.center, height: PosTextSize.size1, width: PosTextSize.size1)),
-        PosColumn(text: _fmt(lineTotal), width: 4,
-            styles: const PosStyles(align: PosAlign.right, height: PosTextSize.size1, width: PosTextSize.size1)),
-      ]);
-      final note = item.comment.trim();
-      if (note.isNotEmpty) {
-        bytes += gen.text(
-          '  · $note',
-          styles: const PosStyles(height: PosTextSize.size1, width: PosTextSize.size1),
-        );
-      }
+      final deptId = item.goods.departmentId;
+      final deptLines = byDept.putIfAbsent(deptId, () => {});
+      final key = item.goods.id.isNotEmpty ? item.goods.id : item.goods.name;
+      final line = deptLines.putIfAbsent(key, () => _MergedLine(name: item.goods.name));
+      line.quantity += item.quantity;
+      line.lineTotal += lineTotal;
+      // Waiter flow stores the note in `commet` (status field repurposed as
+      // comment for this print-only list); DetailBloc flow uses `comment`.
+      final note = (item.commet.isNotEmpty ? item.commet : item.comment).trim();
+      if (note.isNotEmpty) line.comments.add(note);
     }
+    final byDeptLines = {
+      for (final e in byDept.entries) e.key: e.value.values.toList(),
+    };
+    _appendDepartmentItemLines(
+      gen: gen,
+      bytes: bytes,
+      byDept: byDeptLines,
+      departmentNames: departmentNames,
+      departmentOrder: departmentOrder,
+    );
 
     bytes += gen.hr();
 
@@ -304,7 +528,10 @@ class CashierReceiptBuilder {
     return '${parts.first} ${parts[1][0].toUpperCase()}.';
   }
 
-  /// To'lov ekranidan keyin chek — [ArchiveDetailEntity] asosida.
+  /// To'lov ekranidan keyin chek — [ArchiveDetailEntity] asosida. This is the
+  /// **closing check**: items grouped by department (duplicates merged, every
+  /// comment kept), a transparent room-by-room table-usage breakdown, and
+  /// cancelled items in their own section at the very end.
   /// Preview modal (`ReceiptPreviewModal`) bilan bir xil ko'rinishda chop etiladi.
   static Future<List<int>> buildFromDetail({
     required ArchiveDetailEntity detail,
@@ -312,10 +539,16 @@ class CashierReceiptBuilder {
     double hourAmount = 0,
     double discountPercent = 0,
     double discountAmount = 0,
+    // Kept for call-site compatibility; the printed table-usage breakdown
+    // now comes from `detail.activePeriods` (room-by-room, see
+    // `_appendTableUsageSection`) rather than this flat pause list.
     DateTime? timerStartedAt,
     List<PauseInterval> timerPauses = const [],
     int timerTotalSec = 0,
     String? timerPricePerHour,
+    String Function(OrderFoodEntity)? departmentIdOf,
+    Map<String, String> departmentNames = const {},
+    List<String> departmentOrder = const [],
   }) async {
     final profile = await CapabilityProfile.load();
     final gen = receiptGenerator(paperSize, profile);
@@ -394,48 +627,33 @@ class CashierReceiptBuilder {
       ),
     ]);
 
-    _appendTimerSection(
+    bytes += gen.hr(ch: '-');
+
+    // ─── 3) Items — grouped by department, duplicates merged ─────────────
+    final purchasedGoods = detail.goods.where((g) => g.status != 'cancelled').toList();
+    final cancelledGoods = detail.goods.where((g) => g.status == 'cancelled').toList();
+
+    double subtotal = 0;
+    for (final g in purchasedGoods) {
+      subtotal += g.price * g.quantity;
+    }
+
+    final byDept = _groupByDepartment(purchasedGoods, departmentIdOf);
+    _appendDepartmentItemLines(
       gen: gen,
       bytes: bytes,
-      timerStartedAt: timerStartedAt,
-      timerPauses: timerPauses,
-      timerTotalSec: timerTotalSec,
-      timerPricePerHour: timerPricePerHour,
+      byDept: byDept,
+      departmentNames: departmentNames,
+      departmentOrder: departmentOrder,
     );
 
     bytes += gen.hr(ch: '-');
 
-    // ─── 3) Items ────────────────────────────────────────────────────────
-    double subtotal = 0;
-    for (final g in detail.goods.where((g) => g.status != 'cancelled')) {
-      final lineTotal = g.price * g.quantity;
-      subtotal += lineTotal;
-      // Nom — alohida qatorda, to'liq (kesilmaydi)
-      bytes += gen.text(
-        g.name,
-        styles: const PosStyles(bold: false),
-      );
-      // "qty × price           total" — ikkinchi qator
-      bytes += gen.row([
-        PosColumn(
-          text: '  ${g.quantity} x ${_fmt(g.price)}',
-          width: 7,
-        ),
-        PosColumn(
-          text: _fmt(lineTotal),
-          width: 5,
-          styles: const PosStyles(align: PosAlign.right, bold: false),
-        ),
-      ]);
-      final note = g.comment.trim();
-      if (note.isNotEmpty) {
-        bytes += gen.text('  · $note');
-      }
-    }
+    // ─── 4) Table usage — transparent room-by-room breakdown ─────────────
+    _appendTableUsageSection(gen: gen, bytes: bytes, detail: detail);
 
+    // ─── 5) Totals (preview order) ───────────────────────────────────────
     bytes += gen.hr(ch: '-');
-
-    // ─── 4) Totals (preview order) ───────────────────────────────────────
     bytes += gen.row([
       PosColumn(text: 'Oraliq jami', width: 7),
       PosColumn(
@@ -500,7 +718,7 @@ class CashierReceiptBuilder {
     bytes += gen.hr(ch: '-');
 
     final toPay = (preDiscount - discVal).clamp(0.0, double.infinity);
-    // ─── 5) JAMI (big, bold) ──────────────────────────────────────────────
+    // ─── 6) JAMI (big, bold) ──────────────────────────────────────────────
     bytes += gen.row([
       PosColumn(
         text: 'JAMI',
@@ -522,6 +740,16 @@ class CashierReceiptBuilder {
         ),
       ),
     ]);
+
+    // ─── 7) Cancelled items — separate section, always last ──────────────
+    _appendCancelledSection(
+      gen: gen,
+      bytes: bytes,
+      cancelledGoods: cancelledGoods,
+      departmentNames: departmentNames,
+      departmentOrder: departmentOrder,
+      departmentIdOf: departmentIdOf,
+    );
 
     appendReceiptNoReprepNotice(gen, bytes);
     bytes += gen.feed(1);
