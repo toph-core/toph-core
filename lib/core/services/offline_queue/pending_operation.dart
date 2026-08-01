@@ -10,6 +10,12 @@ enum PendingOperationType {
   addItems,
   @HiveField(2)
   payOrder,
+  @HiveField(3)
+  openShift,
+  @HiveField(4)
+  closeShift,
+  @HiveField(5)
+  cancelLineItems,
 }
 
 @HiveType(typeId: 11)

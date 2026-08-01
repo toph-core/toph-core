@@ -97,6 +97,9 @@ class _LanNetworkSectionState extends State<LanNetworkSection> {
             clientCount: _mode == LanMode.server ? lanHub.clientCount : null,
             isConnected:
                 _mode == LanMode.client ? lanHub.isClientConnected : null,
+            authFailReason: _mode == LanMode.client
+                ? lanHub.lastAuthFailReason
+                : null,
             colors: colors,
           ),
           const SizedBox(height: 14),
@@ -230,12 +233,14 @@ class _StatusCard extends StatelessWidget {
   final LanMode mode;
   final int? clientCount;
   final bool? isConnected;
+  final String? authFailReason;
   final dynamic colors;
 
   const _StatusCard({
     required this.mode,
     required this.clientCount,
     required this.isConnected,
+    this.authFailReason,
     required this.colors,
   });
 
@@ -260,7 +265,12 @@ class _StatusCard extends StatelessWidget {
         break;
       case LanMode.client:
         final connected = isConnected ?? false;
-        statusText = connected ? 'Hub ga ulangan' : 'Ulanmadi — qayta urinmoqda...';
+        final reason = authFailReason;
+        statusText = connected
+            ? 'Hub ga ulangan'
+            : (reason != null
+                ? 'Hub rad etdi ($reason) — qayta urinmoqda...'
+                : 'Ulanmadi — qayta urinmoqda...');
         statusColor = connected ? c.systemSuccess : c.systemError;
         statusIcon = connected
             ? Icons.check_circle_outline

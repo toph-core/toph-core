@@ -14,6 +14,7 @@ import 'package:mary_ai_pos/core/services/offline_queue/offline_queue_service.da
 import 'package:mary_ai_pos/core/services/offline_queue/pending_operation.dart';
 import 'package:mary_ai_pos/core/utils/helper/helper_widget.dart';
 import 'package:mary_ai_pos/core/utils/order_conflict_helper.dart';
+import 'package:mary_ai_pos/core/utils/uuid.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/cafe_tables/cafe_tables_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/create_order/create_order_request_model.dart';
 import 'package:mary_ai_pos/features/view/main/domain/usecase/create_order_usecase.dart';
@@ -89,6 +90,7 @@ class CreateOrderBloc extends Bloc<CreateOrderEvent, CreateOrderState> {
       // ── Takeaway — always requires online ──────────────────────
       final response = await _createTakeAwayOrderUsecase.call(
         CreateOrderRequestModel(
+          id: generateUuidV4(),
           orderType: "takeaway",
           foods: event.orders,
         ),
@@ -126,6 +128,11 @@ class CreateOrderBloc extends Bloc<CreateOrderEvent, CreateOrderState> {
       return;
     }
 
+    // Generated once per create attempt so a connection-failure retry (below)
+    // replays under the SAME id rather than risking a second order server-side
+    // if the original request actually landed before the response was lost.
+    final clientOrderId = generateUuidV4();
+
     // Kalit qoida: agar `_activeOrderId` bog'langan bo'lsa — server'da
     // mavjud buyurtmaga item qo'shamiz (POST /api/v1/order-items).
     // `state.tableStatus` free bo'lsa ham shunday ishlaydi — UI holati
@@ -152,6 +159,7 @@ class CreateOrderBloc extends Bloc<CreateOrderEvent, CreateOrderState> {
     }
 
     final request = CreateOrderRequestModel(
+      id: clientOrderId,
       tableId: state.tableId,
       comment: "Very good",
       guestCount: state.guestCount,
@@ -165,7 +173,11 @@ class CreateOrderBloc extends Bloc<CreateOrderEvent, CreateOrderState> {
     response.fold(
       (l) async {
         if (l is ConnectionFailure) {
-          await _handleOfflineOrder(event.orders, emit);
+          await _handleOfflineOrder(
+            event.orders,
+            emit,
+            clientOrderId: clientOrderId,
+          );
           return;
         }
         // 409 Conflict: stol allaqachon faol buyurtmaga ega. Xato ko'rsatish
@@ -248,6 +260,7 @@ class CreateOrderBloc extends Bloc<CreateOrderEvent, CreateOrderState> {
     List<OrderItem> orders,
     Emitter<CreateOrderState> emit, {
     String? orderId,
+    String? clientOrderId,
   }) async {
     final tableId = state.tableId;
     final createdAt = DateTime.now();
@@ -271,8 +284,11 @@ class CreateOrderBloc extends Bloc<CreateOrderEvent, CreateOrderState> {
         createdAt: createdAt,
       ));
     } else {
-      // Yangi order yaratish
+      // Yangi order yaratish — clientOrderId bo'lsa (allaqachon online urinish
+      // muvaffaqiyatsiz bo'lgan) o'shani qayta ishlatamiz, aks holda yangisini
+      // generatsiya qilamiz.
       final request = CreateOrderRequestModel(
+        id: clientOrderId ?? generateUuidV4(),
         tableId: tableId,
         comment: "Very good",
         guestCount: state.guestCount,

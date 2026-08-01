@@ -7,7 +7,10 @@ import 'package:mary_ai_pos/core/auth/storage/token_storage_impl.dart';
 import 'package:mary_ai_pos/core/components/flush_bars.dart';
 import 'package:mary_ai_pos/core/error/failure.dart';
 import 'package:mary_ai_pos/core/routes/app_routes.dart';
+import 'package:mary_ai_pos/core/services/offline_queue/offline_queue_service.dart';
+import 'package:mary_ai_pos/core/services/offline_queue/pending_operation.dart';
 import 'package:mary_ai_pos/core/utils/helper/helper_widget.dart';
+import 'package:mary_ai_pos/di.dart' show inject;
 import 'package:mary_ai_pos/features/view/auth/presentation/cubit/auth/auth_cubit.dart';
 import 'package:mary_ai_pos/features/view/auth/presentation/cubit/bloc/user_bloc.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/close_shift/close_shift_request_model.dart';
@@ -130,20 +133,45 @@ class ShiftBloc extends Bloc<ShiftEvent, ShiftState> {
     await _printShiftCloseFromState(state);
   }
 
+  /// Cash-register id is the lookup key used at sync time (see
+  /// `OfflineQueueService.syncAll`) — the shift's own id isn't known/valid
+  /// yet for an offline-opened (`local_...`) shift, and even for a real shift
+  /// we don't want the replay depending on an id that might be stale by the
+  /// time connectivity returns.
+  Future<void> _enqueueCloseShift(String cashRegisterId) async {
+    await inject<OfflineQueueService>().enqueue(
+      PendingOperation(
+        id: OfflineQueueService.newId(),
+        type: PendingOperationType.closeShift,
+        payload: jsonEncode({
+          'cash_register_id': cashRegisterId,
+          'closing_cash': '0',
+          'closing_card': '0',
+        }),
+        tableId: '',
+        createdAt: DateTime.now(),
+      ),
+    );
+  }
+
   Future<void> _closeShift(_CloseShift event, Emitter<ShiftState> emit) async {
     final shift = state.shift;
     if (shift == null) return;
 
     /// Offline rejimda ochilgan smena — `local_...` ID serverda yo'q, UUID emas.
-    /// Yopishda API chaqirsak 500 (invalid UUID) beradi.
+    /// Yopishda API chaqirsak 500 (invalid UUID) beradi. Bu holatda ham close
+    /// operatsiyasi navbatga qo'yiladi — ulanish tiklanganda avval navbatdagi
+    /// openShift, keyin closeShift qayta ishlanadi (`OfflineQueueService.syncAll`
+    /// tur bo'yicha guruhlab, shu tartibda qayta yuboradi).
     if (shift.id.startsWith('local_')) {
       emit(state.copyWith(status: Status.LOADING));
       await _printShiftCloseFromState(state);
+      await _enqueueCloseShift(shift.cashRegisterId);
       await _clearLocalShift();
       if (emit.isDone) return;
       showSuccessMessage(
         navigatorKey.currentContext!,
-        'Smena yopildi (offline ochilgan, serverga yuborilmaydi).',
+        'Smena yopildi (offline, ulanish tiklanganda serverga yuboriladi).',
       );
       emit(
         state.copyWith(
@@ -192,7 +220,32 @@ class ShiftBloc extends Bloc<ShiftEvent, ShiftState> {
       return;
     }
 
-    // Failure path (offline-friendly fallback)
+    // Connectivity-only failure → queue for real replay instead of an error
+    // dead end (previously only the already-`local_`-prefixed case above was
+    // offline-friendly at all; a real shift that failed to close offline just
+    // showed an error with no recovery path).
+    final failure = response.swap().getOrElse(() => const UnknownFailure());
+    if (failure is ConnectionFailure) {
+      await _printShiftCloseFromState(state);
+      await _enqueueCloseShift(shift.cashRegisterId);
+      await _clearLocalShift();
+      if (emit.isDone) return;
+      showSuccessMessage(
+        navigatorKey.currentContext!,
+        'Smena yopildi (offline, ulanish tiklanganda serverga yuboriladi).',
+      );
+      emit(
+        state.copyWith(
+          status: Status.SUCCESS,
+          shift: null,
+          cardSum: '0',
+          cashSum: '0',
+        ),
+      );
+      return;
+    }
+
+    // Failure path (legacy local-shift bookkeeping fallback)
     final local = _readLocalShift();
     if (local != null && (state.shift?.id == local.id)) {
       await _clearLocalShift();
@@ -212,16 +265,12 @@ class ShiftBloc extends Bloc<ShiftEvent, ShiftState> {
       return;
     }
 
-    response.fold(
-      (l) {
-        showErrorMessage(
-          navigatorKey.currentContext!,
-          l.getLocalizedMessage(navigatorKey.currentContext!),
-        );
-        emit(state.copyWith(status: Status.ERROR, failure: l));
-      },
-      (_) => emit(state.copyWith(status: Status.ERROR)),
+    // Real (non-connection) rejection — surface it; do not fabricate a closure.
+    showErrorMessage(
+      navigatorKey.currentContext!,
+      failure.getLocalizedMessage(navigatorKey.currentContext!),
     );
+    emit(state.copyWith(status: Status.ERROR, failure: failure));
   }
 
   Future<void> _openShift(_OpenShift evente, Emitter<ShiftState> emit) async {
@@ -267,7 +316,19 @@ class ShiftBloc extends Bloc<ShiftEvent, ShiftState> {
       return;
     }
 
-    // Failure path → offline-friendly local shift
+    // Real (non-connection) rejection — surface it; do not fabricate a shift.
+    final failure = response.swap().getOrElse(() => const UnknownFailure());
+    if (failure is! ConnectionFailure) {
+      showErrorMessage(
+        navigatorKey.currentContext!,
+        failure.getLocalizedMessage(navigatorKey.currentContext!),
+      );
+      emit(state.copyWith(status: Status.ERROR, failure: failure));
+      return;
+    }
+
+    // Connection failure → offline-friendly local shift, queued for real
+    // replay once connectivity returns (see `OfflineQueueService.syncAll`).
     final now = DateTime.now();
     final local = ShiftResponseModel(
       id: 'local_${now.millisecondsSinceEpoch}',
@@ -280,6 +341,19 @@ class ShiftBloc extends Bloc<ShiftEvent, ShiftState> {
       updatedAt: now,
     );
     await _writeLocalShift(local);
+    await inject<OfflineQueueService>().enqueue(
+      PendingOperation(
+        id: OfflineQueueService.newId(),
+        type: PendingOperationType.openShift,
+        payload: jsonEncode({
+          'cash_register_id': cashRegisterId,
+          'opening_cash': openCash.toString(),
+          'opening_card': openCard.toString(),
+        }),
+        tableId: '',
+        createdAt: now,
+      ),
+    );
     if (emit.isDone) return;
     Navigator.pushNamedAndRemoveUntil(
       navigatorKey.currentContext!,

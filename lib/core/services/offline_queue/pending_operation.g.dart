@@ -65,6 +65,12 @@ class PendingOperationTypeAdapter extends TypeAdapter<PendingOperationType> {
         return PendingOperationType.addItems;
       case 2:
         return PendingOperationType.payOrder;
+      case 3:
+        return PendingOperationType.openShift;
+      case 4:
+        return PendingOperationType.closeShift;
+      case 5:
+        return PendingOperationType.cancelLineItems;
       default:
         return PendingOperationType.createOrder;
     }
@@ -81,6 +87,15 @@ class PendingOperationTypeAdapter extends TypeAdapter<PendingOperationType> {
         break;
       case PendingOperationType.payOrder:
         writer.writeByte(2);
+        break;
+      case PendingOperationType.openShift:
+        writer.writeByte(3);
+        break;
+      case PendingOperationType.closeShift:
+        writer.writeByte(4);
+        break;
+      case PendingOperationType.cancelLineItems:
+        writer.writeByte(5);
         break;
     }
   }

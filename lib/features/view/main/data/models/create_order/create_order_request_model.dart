@@ -9,6 +9,7 @@ part 'create_order_request_model.freezed.dart';
 @freezed
 class CreateOrderRequestModel with _$CreateOrderRequestModel {
   const factory CreateOrderRequestModel({
+    @Default('') String id,
     @Default('') String cashierId,
     @Default('') String comment,
     @Default(0) int guestCount,
@@ -22,6 +23,10 @@ class CreateOrderRequestModel with _$CreateOrderRequestModel {
   const CreateOrderRequestModel._();
 
   Map<String, dynamic> request() => {
+    // Client-generated UUID — backend accepts it as the order's own id
+    // (`CreateOrderRequest.id`), so a retried/replayed create doesn't risk
+    // becoming a second order under a different server-assigned id.
+    if (id.isNotEmpty) "id": id,
     // "cashier_id": cashierId,
     "comment": comment,
     "guest_count": guestCount,
@@ -39,6 +44,7 @@ class CreateOrderRequestModel with _$CreateOrderRequestModel {
   };
 
   Map<String, dynamic> createOrder() => {
+    if (id.isNotEmpty) "id": id,
     // "cashier_id": cashierId,
     "order_type": "takeaway",
     "items": List.generate(

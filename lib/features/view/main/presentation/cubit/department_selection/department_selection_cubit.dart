@@ -4,27 +4,17 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mary_ai_pos/core/constants/constants.dart';
 import 'package:mary_ai_pos/core/error/failure.dart';
-import 'package:mary_ai_pos/core/services/cache/cache_service.dart';
-import 'package:mary_ai_pos/core/usecase/usecase.dart';
-import 'package:mary_ai_pos/di.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/category/category_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/department/department_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/goods/goods_model.dart';
-import 'package:mary_ai_pos/features/view/main/domain/usecase/get_categories_usecase.dart';
-import 'package:mary_ai_pos/features/view/main/domain/usecase/get_departments_usecase.dart';
-import 'package:mary_ai_pos/features/view/main/domain/usecase/get_goods_with_name_usecase.dart';
+import 'package:mary_ai_pos/features/view/main/domain/repository/menu_local_repository.dart';
 import 'package:mary_ai_pos/generated/l10n.dart';
 
 class DepartmentSelectionCubit extends Cubit<DepartmentSelectionState> {
-  DepartmentSelectionCubit(
-    this._getDepartmentsUsecase,
-    this._getCategoriesUsecase,
-    this._getGoodsWithNameUseCase,
-  ) : super(const DepartmentSelectionState());
+  DepartmentSelectionCubit(this._menuRepository)
+    : super(const DepartmentSelectionState());
 
-  final GetDepartmentsUsecase _getDepartmentsUsecase;
-  final GetCategoriesUsecase _getCategoriesUsecase;
-  final GetGoodsWithNameUseCase _getGoodsWithNameUseCase;
+  final MenuLocalRepository _menuRepository;
 
   Timer? _searchDebounce;
   static const _searchDebounceDuration = Duration(milliseconds: 500);
@@ -34,8 +24,8 @@ class DepartmentSelectionCubit extends Cubit<DepartmentSelectionState> {
   Future<void> load() async {
     emit(state.copyWith(status: Status.LOADING, clearFailure: true));
 
-    final departmentsResult = await _getDepartmentsUsecase(NoParams());
-    final categoriesResult = await _getCategoriesUsecase(NoParams());
+    final departmentsResult = await _menuRepository.getDepartments();
+    final categoriesResult = await _menuRepository.getCategories();
 
     if (isClosed) return;
 
@@ -47,11 +37,6 @@ class DepartmentSelectionCubit extends Cubit<DepartmentSelectionState> {
       (f) => failure = f,
       (list) => departments = list,
     );
-    if (departments.isNotEmpty) {
-      inject<CacheService>().saveDepartments(
-        departments.map((d) => {'id': d.id, 'name': d.name}).toList(),
-      );
-    }
     categoriesResult.fold(
       (f) => failure ??= f,
       (list) => categories = list,
@@ -99,7 +84,7 @@ class DepartmentSelectionCubit extends Cubit<DepartmentSelectionState> {
   }
 
   Future<void> _searchGoods(String query) async {
-    final result = await _getGoodsWithNameUseCase(query);
+    final result = await _menuRepository.searchGoodsByName(query);
     if (isClosed || state.searchQuery != query) return;
     result.fold(
       (failure) => emit(state.copyWith(matchedGoods: const [])),

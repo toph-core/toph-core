@@ -19,6 +19,7 @@ import 'package:mary_ai_pos/core/services/offline_queue/pending_operation.dart';
 import 'package:mary_ai_pos/di.dart' show inject;
 import 'package:mary_ai_pos/core/error/failure.dart';
 import 'package:mary_ai_pos/core/usecase/usecase.dart';
+import 'package:mary_ai_pos/core/utils/uuid.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/cafe_tables/cafe_tables_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/category/category_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/create_order/create_order_request_model.dart';
@@ -543,6 +544,62 @@ class DetailBloc extends Bloc<DetailEvent, DetailState> {
     ));
   }
 
+  bool _isConnectionIssue(Object e) {
+    if (e is DioException) {
+      return e.type == DioExceptionType.connectionError ||
+          e.type == DioExceptionType.connectionTimeout ||
+          e.type == DioExceptionType.sendTimeout ||
+          e.type == DioExceptionType.receiveTimeout;
+    }
+    return false;
+  }
+
+  /// Re-cancelling an already-cancelled line on replay is harmless — the
+  /// backend (and `OfflineQueueService`'s replay) both tolerate a 404 there
+  /// as "already gone," matching the inline retry logic below.
+  Future<void> _enqueueCancelLineItems(
+    List<String> lineIds,
+    String? comment,
+  ) async {
+    if (lineIds.isEmpty) return;
+    await inject<OfflineQueueService>().enqueue(
+      PendingOperation(
+        id: OfflineQueueService.newId(),
+        type: PendingOperationType.cancelLineItems,
+        payload: jsonEncode({
+          'line_ids': lineIds,
+          if (comment != null && comment.isNotEmpty) 'comment': comment,
+        }),
+        tableId: '',
+        createdAt: DateTime.now(),
+      ),
+    );
+  }
+
+  /// Reuses the existing `addItems` op type (same shape `CreateOrderBloc`
+  /// already queues) rather than inventing a parallel mechanism — sync-time
+  /// replay resolves the order by table the same way either caller needs.
+  Future<void> _enqueueAddItem({
+    required String tableId,
+    required String goodId,
+    required int quantity,
+    required String comment,
+  }) async {
+    await inject<OfflineQueueService>().enqueue(
+      PendingOperation(
+        id: OfflineQueueService.newId(),
+        type: PendingOperationType.addItems,
+        payload: jsonEncode({
+          'items': [
+            {'good_id': goodId, 'quantity': quantity, 'comment': comment},
+          ],
+        }),
+        tableId: tableId,
+        createdAt: DateTime.now(),
+      ),
+    );
+  }
+
   Future<void> _deleteExistingByKey({
     required String itemKey,
     required String tableId,
@@ -588,9 +645,15 @@ class DetailBloc extends Bloc<DetailEvent, DetailState> {
           if (e.response?.statusCode != 404) rethrow;
         }
       }
-    } catch (_) {
-      // Toast'ni global Dio interceptor (dio_interceptor.dart) o'zi ko'rsatadi —
-      // bu yerda takror chaqirmaymiz, aks holda 2 ta snackbar chiqib ketadi.
+    } catch (e) {
+      if (_isConnectionIssue(e)) {
+        // Offline — optimistic remove allaqachon bajarildi; bekor qilish
+        // ulanish tiklanganda qayta yuborilishi uchun navbatga qo'yiladi.
+        await _enqueueCancelLineItems(lineIds, trimmedComment);
+      }
+      // Boshqa xatolar: Toast'ni global Dio interceptor (dio_interceptor.dart)
+      // o'zi ko'rsatadi — bu yerda takror chaqirmaymiz, aks holda 2 ta
+      // snackbar chiqib ketadi.
     } finally {
       if (!isClosed) {
         await _fetchBillOrdersInline(tableId, emit);
@@ -746,9 +809,34 @@ class DetailBloc extends Bloc<DetailEvent, DetailState> {
             );
           }
         }
-      } catch (_) {
-        // Toast global Dio interceptor (dio_interceptor.dart) tomonidan
-        // ko'rsatiladi — bu yerda takror chaqirmaymiz.
+      } catch (e) {
+        if (_isConnectionIssue(e)) {
+          // Offline — bajarilmagan o'zgarishni navbatga qo'yamiz, ulanish
+          // tiklanganda qayta ishlanadi.
+          if (delta > 0) {
+            await _enqueueAddItem(
+              tableId: event.tableId,
+              goodId: snapshot.goodId,
+              quantity: delta,
+              comment: snapshot.comment,
+            );
+          } else {
+            await _enqueueCancelLineItems(
+              snapshot.originalLineIds,
+              pendingCancelComment,
+            );
+            if (desiredQty > 0) {
+              await _enqueueAddItem(
+                tableId: event.tableId,
+                goodId: snapshot.goodId,
+                quantity: desiredQty,
+                comment: snapshot.comment,
+              );
+            }
+          }
+        }
+        // Boshqa xatolar: toast global Dio interceptor (dio_interceptor.dart)
+        // tomonidan ko'rsatiladi — bu yerda takror chaqirmaymiz.
       }
 
       if (!isClosed) {
@@ -1008,6 +1096,7 @@ class DetailBloc extends Bloc<DetailEvent, DetailState> {
       return SaveOrderModel(
         cafeTable: cafeTable,
         createOrderRequest: CreateOrderRequestModel(
+          id: generateUuidV4(),
           tableId: cafeTable.id,
           comment: "Very good",
           guestCount: guestCount,

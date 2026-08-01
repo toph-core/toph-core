@@ -2,10 +2,8 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:mary_ai_pos/core/api/dio_client.dart';
-import 'package:mary_ai_pos/core/services/cache/cache_service.dart';
 import 'package:mary_ai_pos/core/services/connectivity/connectivity_cubit.dart';
-import 'package:mary_ai_pos/core/services/offline_queue/offline_queue_service.dart';
+import 'package:mary_ai_pos/core/sync/sync_engine.dart';
 import 'package:mary_ai_pos/core/widgets/app_sidebar.dart';
 import 'package:mary_ai_pos/core/widgets/styled_virtual_keyboard.dart';
 import 'package:mary_ai_pos/core/widgets/offline_banner.dart';
@@ -73,28 +71,17 @@ class _AppScaffoldState extends State<AppScaffold> {
     super.initState();
     _instance = this;
     _connectivitySub = inject<ConnectivityCubit>().stream.listen((isOnline) {
-      if (isOnline) {
-        _syncOfflineQueue();
-        // Offline-ga tushib chiqqanda goods kesh eski bo'lishi mumkin —
-        // CacheService throttle tekshiradi, kerak bo'lsa yangilaydi.
-        _prefetchGoods();
-      }
+      if (isOnline) _syncOnReconnect();
     });
-    // Birinchi ochilishda bir marta prefetch (keyingi scaffoldlar triggerlamaydi)
+    // Birinchi ochilishda bir marta (keyingi scaffoldlar triggerlamaydi)
     if (!_prefetchAttempted && inject<ConnectivityCubit>().isOnline) {
       _prefetchAttempted = true;
-      _prefetchGoods();
+      inject<SyncEngine>().tick();
     }
   }
 
-  void _prefetchGoods() {
-    inject<CacheService>().prefetchAllGoods(inject<DioClient>());
-  }
-
-  Future<void> _syncOfflineQueue() async {
-    final queue = inject<OfflineQueueService>();
-    if (!queue.hasItems) return;
-    await queue.syncAll(inject<DioClient>());
+  Future<void> _syncOnReconnect() async {
+    await inject<SyncEngine>().tick();
     if (mounted) context.read<MainCubit>().refreshTables();
   }
 

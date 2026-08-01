@@ -21,6 +21,30 @@ class OrderLineItemModel {
     this.createdAt,
   });
 
+  OrderLineItemModel copyWith({
+    String? id,
+    String? goodId,
+    int? quantity,
+    String? price,
+    Object? comment = _sentinel,
+    Object? goodName = _sentinel,
+    Object? status = _sentinel,
+    Object? createdAt = _sentinel,
+  }) {
+    return OrderLineItemModel(
+      id: id ?? this.id,
+      goodId: goodId ?? this.goodId,
+      quantity: quantity ?? this.quantity,
+      price: price ?? this.price,
+      comment: identical(comment, _sentinel) ? this.comment : comment as String?,
+      goodName: identical(goodName, _sentinel) ? this.goodName : goodName as String?,
+      status: identical(status, _sentinel) ? this.status : status as String?,
+      createdAt: identical(createdAt, _sentinel)
+          ? this.createdAt
+          : createdAt as DateTime?,
+    );
+  }
+
   factory OrderLineItemModel.fromJson(Map<String, dynamic> json) {
     final good = json['good'];
     String? nameFromGood;
@@ -91,3 +115,5 @@ class OrderLineItemModel {
     }
   }
 }
+
+const _sentinel = Object();

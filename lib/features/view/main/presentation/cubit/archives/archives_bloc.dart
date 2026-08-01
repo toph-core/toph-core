@@ -13,8 +13,7 @@ import 'package:mary_ai_pos/features/view/main/data/models/pagination_request/pa
 import 'package:mary_ai_pos/features/view/main/domain/entities/archive_detail_entity.dart';
 import 'package:mary_ai_pos/features/view/main/domain/entities/archive_entity.dart';
 import 'package:mary_ai_pos/features/view/main/domain/entities/archives_response_entity.dart';
-import 'package:mary_ai_pos/features/view/main/domain/usecase/get_archive_with_id_usecase.dart';
-import 'package:mary_ai_pos/features/view/main/domain/usecase/get_archives_usecase.dart';
+import 'package:mary_ai_pos/features/view/main/domain/repository/archives_local_repository.dart';
 import 'package:rxdart/rxdart.dart';
 
 part 'archives_event.dart';
@@ -22,15 +21,11 @@ part 'archives_state.dart';
 part 'archives_bloc.freezed.dart';
 
 class ArchivesBloc extends Bloc<ArchivesEvent, ArchivesState> {
-  late final GetArchivesUsecase _getArchivesUsecase;
-  late final GetArchiveWithIdUsecase _getArchiveWithIdUsecase;
+  final ArchivesLocalRepository _archivesRepository;
   //
-  ArchivesBloc({
-    required GetArchivesUsecase getArchivesUsecase,
-    required GetArchiveWithIdUsecase getArchiveWithIdUsecase,
-  }) : _getArchivesUsecase = getArchivesUsecase,
-       _getArchiveWithIdUsecase = getArchiveWithIdUsecase,
-       super(ArchivesState.initial()) {
+  ArchivesBloc({required ArchivesLocalRepository archivesRepository})
+    : _archivesRepository = archivesRepository,
+      super(ArchivesState.initial()) {
     on<_Started>(_onStarted);
     on<_StatusChanged>(_onStatusChanged);
     on<_ArchivesUpdated>(_onArchivesUpdated);
@@ -94,7 +89,7 @@ class ArchivesBloc extends Bloc<ArchivesEvent, ArchivesState> {
           selectArchiveDetail: null,
         ),
       );
-      final response = await _getArchiveWithIdUsecase.call(
+      final response = await _archivesRepository.getArchiveWithId(
         state.selectArchive!.id,
       );
       if (isClosed) return;
@@ -152,7 +147,7 @@ class ArchivesBloc extends Bloc<ArchivesEvent, ArchivesState> {
             items: state.archives?.archives.length ?? 0,
             limit: 20,
           );
-    final response = await _getArchivesUsecase.call(
+    final response = await _archivesRepository.getArchives(
       ArchivesFilterRequestModel(
         archiveNum: int.tryParse(state.textController?.text ?? ""),
         filterType: state.filterType,

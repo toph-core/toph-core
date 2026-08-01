@@ -67,6 +67,54 @@ class CacheService {
     }
   }
 
+  // ─── Archives (history) ─────────────────────────────────────────
+  // Only the most recent unfiltered/first-page list is cached — archive
+  // history can be large and query-shaped (date range, status, search), so
+  // this isn't meant to mirror every filter combination, just what's on
+  // screen the moment connectivity drops.
+  static const _archivesList = 'cache_archives_list';
+  static const _archiveDetailPrefix = 'cache_archive_detail:';
+
+  Future<void> saveArchivesList(Map<String, dynamic> json) async =>
+      _box.put(_archivesList, jsonEncode(json));
+
+  Map<String, dynamic>? getArchivesList() {
+    final raw = _box.get(_archivesList);
+    if (raw == null) return null;
+    try {
+      return jsonDecode(raw as String) as Map<String, dynamic>;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<void> saveArchiveDetail(String id, Map<String, dynamic> json) async =>
+      _box.put('$_archiveDetailPrefix$id', jsonEncode(json));
+
+  Map<String, dynamic>? getArchiveDetail(String id) {
+    final raw = _box.get('$_archiveDetailPrefix$id');
+    if (raw == null) return null;
+    try {
+      return jsonDecode(raw as String) as Map<String, dynamic>;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  // ─── Waiter open orders ───────────────────────────────────────
+  // Keyed by list mode ("myOrders" / "branchOrders") — only the default
+  // first-page view is cached, same "what's on screen when connectivity
+  // drops" scope as the archives list above.
+  static const _waiterOpenOrdersPrefix = 'cache_waiter_open_orders:';
+
+  Future<void> saveWaiterOpenOrders(
+    String mode,
+    List<Map<String, dynamic>> items,
+  ) async => _box.put('$_waiterOpenOrdersPrefix$mode', jsonEncode(items));
+
+  List<Map<String, dynamic>> getWaiterOpenOrders(String mode) =>
+      _decode(_box.get('$_waiterOpenOrdersPrefix$mode'));
+
   /// Transfer yoki checkout keyin stol cache-ni o'chiradi.
   /// Keyingi `fetchBillOrders` chaqiruvi throttle'ni chetlab o'tib
   /// serverdan yangi ma'lumot oladi.

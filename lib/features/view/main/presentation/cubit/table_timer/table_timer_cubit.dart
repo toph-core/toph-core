@@ -1,21 +1,19 @@
 import 'dart:async';
 
-import 'package:dio/dio.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:mary_ai_pos/core/api/dio_client.dart';
-import 'package:mary_ai_pos/core/api/list_api.dart';
+import 'package:mary_ai_pos/core/error/failure.dart';
 import 'package:mary_ai_pos/core/services/table_timer/table_timer_sync_service.dart';
-import 'package:mary_ai_pos/core/utils/order_conflict_helper.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/open_order/open_order_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/table_timer/table_timer_response_model.dart';
+import 'package:mary_ai_pos/features/view/main/domain/repository/table_timer_local_repository.dart';
 
 part 'table_timer_state.dart';
 
 class TableTimerCubit extends Cubit<TableTimerState> {
-  TableTimerCubit(this._client, this._syncService)
+  TableTimerCubit(this._repository, this._syncService)
     : super(const TableTimerState());
 
-  final DioClient _client;
+  final TableTimerLocalRepository _repository;
   final TableTimerSyncService _syncService;
   Timer? _serverSyncTimer;
   Timer? _uiTickTimer;
@@ -29,6 +27,16 @@ class TableTimerCubit extends Cubit<TableTimerState> {
 
   static const Duration _serverSyncInterval = Duration(seconds: 60);
   static const Duration _billPausesThrottle = Duration(seconds: 60);
+
+  /// Backend message when present (`MessageFailure`), else a fixed fallback —
+  /// same "backend text if we have it, else a friendly default" behavior the
+  /// old direct-Dio code approximated via `e.message ?? fallback`, except this
+  /// surfaces the server's actual `error`/`message` body instead of Dio's own
+  /// generic exception description.
+  String _messageFor(Failure failure, {required String fallback}) {
+    if (failure is MessageFailure) return failure.message;
+    return fallback;
+  }
 
   void _cancelTimers() {
     _serverSyncTimer?.cancel();
@@ -173,9 +181,9 @@ class TableTimerCubit extends Cubit<TableTimerState> {
   /// state-ga yozadi. DetailBloc ham `/bills/{id}` chaqiradi — duplikat
   /// bo'lmasin uchun bir xil orderId uchun 60s ichida takroriy chaqiriq
   /// bloklanadi. `table_sessions[].segments` — bitta chronological ro'yxatga
-  /// tekislanadi (`parseBillTableSessionsToSegments`), shu ro'yxat active
-  /// periods dialogining yagona manbai (single source of truth): frozen
-  /// segmentlar to'g'ridan-to'g'ri, oxirgi (ochiq) segment esa
+  /// tekislanadi (`parseBillTableSessionsToSegments`, inside the repository),
+  /// shu ro'yxat active periods dialogining yagona manbai (single source of
+  /// truth): frozen segmentlar to'g'ridan-to'g'ri, oxirgi (ochiq) segment esa
   /// `_startUiTickIfRunning`'da live tick qo'shiladi.
   Future<void> _fetchBillDetails({bool force = false}) async {
     final orderId = _activeOrderId;
@@ -192,35 +200,26 @@ class TableTimerCubit extends Cubit<TableTimerState> {
     _lastBillDetailsOrderId = orderId;
     _lastBillDetailsFetchAt = DateTime.now();
 
-    try {
-      final res = await _client.get('/api/v1/bills/$orderId');
-      if (isClosed) return;
-      // Stale: order almashgan bo'lsa — eski javobni tashlaymiz
-      if (_activeOrderId != orderId) return;
-      final raw = res.data['data'];
-      if (raw is! Map<String, dynamic>) return;
-      final rawPauses = raw['pause_periods'];
-      final pauses = rawPauses is List
-          ? rawPauses
-                .whereType<Map<String, dynamic>>()
-                .map(PauseInterval.fromJson)
-                .toList()
-          : null;
-      final segments = parseBillTableSessionsToSegments(raw['table_sessions']);
+    final result = await _repository.getBillDetails(orderId);
+    if (isClosed) return;
+    // Stale: order almashgan bo'lsa — eski javobni tashlaymiz
+    if (_activeOrderId != orderId) return;
+    // Xatolik bo'lsa — jimgina o'tib ketamiz (mirrors the old silent catch-all)
+    result.fold((_) {}, (details) {
       if (!isClosed) {
         emit(
           state.copyWith(
-            billPauses: pauses ?? state.billPauses,
+            billPauses: details.pauses ?? state.billPauses,
             // Only overwrite when the bill actually returned segments — an
             // empty/failed response must not wipe out the `table_history`
             // seed already emitted by `_applyTimer`.
-            billSegments: segments.isNotEmpty ? segments : null,
+            billSegments: details.segments.isNotEmpty
+                ? details.segments
+                : null,
           ),
         );
       }
-    } catch (_) {
-      // Xatolik bo'lsa — jimgina o'tib ketamiz
-    }
+    });
   }
 
   /// Buyurtma almashganda chaqiriladi. Timer faqat `dine_in` (yoki tur noma’lum) uchun so‘raladi.
@@ -275,77 +274,89 @@ class TableTimerCubit extends Cubit<TableTimerState> {
     if (showLoading) {
       emit(state.copyWith(isLoading: true, errorMessage: null));
     }
-    try {
-      final res = await _client.get(ListAPI.orderTableTimer(orderId));
-      if (isClosed) return;
-      if (_activeOrderId != orderId) return;
-      final raw = res.data['data'];
-      if (raw is! Map<String, dynamic>) {
+
+    final result = await _repository.getTimer(orderId);
+    if (isClosed) return;
+    if (_activeOrderId != orderId) return;
+
+    result.fold(
+      (failure) {
+        // Mirrors the old `e.response?.statusCode == 400 || 404` branch:
+        // treated as "no timer here", not an error — hide silently.
+        if (failure is NotFoundFailure || failure is ValidationFailure) {
+          _cancelTimers();
+          _activeOrderId = null;
+          emit(
+            state.copyWith(
+              isLoading: false,
+              shouldShow: false,
+              clearTimer: true,
+              clearDisplayActiveSec: true,
+            ),
+          );
+          return;
+        }
+        // Mirrors the old non-DioException catch-all: malformed/unexpected
+        // data is untrustworthy enough to hide the block, not just show an
+        // inline error over stale state.
+        if (failure is ParsingFailure || failure is UnknownFailure) {
+          emit(
+            state.copyWith(
+              isLoading: false,
+              shouldShow: false,
+              clearTimer: true,
+              clearDisplayActiveSec: true,
+              errorMessage: _messageFor(
+                failure,
+                fallback: 'Table timer xatosi',
+              ),
+            ),
+          );
+          return;
+        }
+        // Other failures (connection/timeout/server/...): transient — keep
+        // whatever's currently shown, just surface the error inline.
         emit(
           state.copyWith(
             isLoading: false,
-            shouldShow: false,
-            clearTimer: true,
-            clearDisplayActiveSec: true,
+            errorMessage: _messageFor(failure, fallback: 'Table timer xatosi'),
           ),
         );
-        return;
-      }
-      final t = TableTimerResponse.fromJson(raw);
-      // Order time-based stoldan simple-ga ko'chirilgan bo'lsa, hozirgi
-      // `table_type` `simple` keladi, lekin `state == closed` + `final_amount`
-      // muzlatilgan summani saqlaydi. Bu holatda block-ni yashirmasdan
-      // frozen UI ko'rsatish kerak.
-      final hasFrozenAmount =
-          t.isFrozenClosed && parseAmountToInt(t.finalAmount) > 0;
-      if (!t.isTimeBasedTable && !hasFrozenAmount) {
-        emit(
-          state.copyWith(
-            isLoading: false,
-            shouldShow: false,
-            clearTimer: true,
-            clearDisplayActiveSec: true,
-          ),
-        );
-        _cancelTimers();
-        return;
-      }
-      _applyTimer(t);
-    } on DioException catch (e) {
-      if (isClosed) return;
-      if (_activeOrderId != orderId) return;
-      if (e.response?.statusCode == 400 || e.response?.statusCode == 404) {
-        _cancelTimers();
-        _activeOrderId = null;
-        emit(
-          state.copyWith(
-            isLoading: false,
-            shouldShow: false,
-            clearTimer: true,
-            clearDisplayActiveSec: true,
-          ),
-        );
-        return;
-      }
-      emit(
-        state.copyWith(
-          isLoading: false,
-          errorMessage: e.message ?? 'Table timer xatosi',
-        ),
-      );
-    } catch (e) {
-      if (isClosed) return;
-      if (_activeOrderId != orderId) return;
-      emit(
-        state.copyWith(
-          isLoading: false,
-          shouldShow: false,
-          clearTimer: true,
-          clearDisplayActiveSec: true,
-          errorMessage: e.toString(),
-        ),
-      );
-    }
+      },
+      (t) {
+        if (t == null) {
+          emit(
+            state.copyWith(
+              isLoading: false,
+              shouldShow: false,
+              clearTimer: true,
+              clearDisplayActiveSec: true,
+            ),
+          );
+          _cancelTimers();
+          return;
+        }
+        // Order time-based stoldan simple-ga ko'chirilgan bo'lsa, hozirgi
+        // `table_type` `simple` keladi, lekin `state == closed` + `final_amount`
+        // muzlatilgan summani saqlaydi. Bu holatda block-ni yashirmasdan
+        // frozen UI ko'rsatish kerak.
+        final hasFrozenAmount =
+            t.isFrozenClosed && parseAmountToInt(t.finalAmount) > 0;
+        if (!t.isTimeBasedTable && !hasFrozenAmount) {
+          emit(
+            state.copyWith(
+              isLoading: false,
+              shouldShow: false,
+              clearTimer: true,
+              clearDisplayActiveSec: true,
+            ),
+          );
+          _cancelTimers();
+          return;
+        }
+        _applyTimer(t);
+      },
+    );
   }
 
   /// Bo'sh order yaratadi va timerni boshlaydi (time-based free stol uchun).
@@ -365,130 +376,99 @@ class TableTimerCubit extends Cubit<TableTimerState> {
     emit(
       state.copyWith(shouldShow: true, isLoading: true, displayActiveSec: 0),
     );
-    try {
-      final orderRes = await _client.post(
-        ListAPI.orders,
-        data: {
-          'table_id': tableId,
-          'guest_count': guestCount,
-          'items': <dynamic>[],
-          'status': 'open',
-          'order_type': 'dine_in',
-          'comment': '',
-        },
-      );
-      final data = orderRes.data['data'];
-      final orderId = (data is Map<String, dynamic>)
-          ? (data['id'] as String? ?? data['order_id'] as String?)
-          : null;
-      if (orderId == null || orderId.isEmpty) {
-        if (!isClosed)
+
+    final result = await _repository.createTimedOrder(
+      tableId: tableId,
+      guestCount: guestCount,
+    );
+    if (isClosed) return null;
+
+    return result.fold(
+      (failure) async {
+        // Missing orderId on an otherwise-successful create previously
+        // failed silently (no error message) — `EmptyFailure` preserves that.
+        if (failure is EmptyFailure) {
           emit(state.copyWith(isLoading: false, shouldShow: false));
-        return null;
-      }
-      _activeOrderId = orderId;
-      emit(state.copyWith(isLoading: false));
-      await startTimer();
-      return orderId;
-    } on DioException catch (e) {
-      // 409 Conflict: stolda mavjud faol buyurtma bor.
-      // Javob: {"error": "stol already has an active buyurtma: <uuid>", ...}
-      if (e.response?.statusCode == 409) {
-        final raw = e.response?.data;
-        final msg = raw is Map
-            ? (raw['error'] ?? raw['message']).toString()
-            : '';
-        final existingOrderId = extractExistingOrderIdFromConflict(msg);
-        if (existingOrderId != null && existingOrderId.isNotEmpty) {
-          _activeOrderId = existingOrderId;
-          emit(state.copyWith(isLoading: false));
-          // Timer holatini sinxronlaymiz — allaqachon ishlayotgan bo'lishi mumkin
-          await fetchTimer(orderId: existingOrderId);
-          return existingOrderId;
+        } else {
+          emit(
+            state.copyWith(
+              isLoading: false,
+              shouldShow: false,
+              errorMessage: _messageFor(
+                failure,
+                fallback: 'Order yaratishda xato',
+              ),
+            ),
+          );
         }
-      }
-      if (!isClosed) {
-        emit(
-          state.copyWith(
-            isLoading: false,
-            shouldShow: false,
-            errorMessage: e.message ?? 'Order yaratishda xato',
-          ),
-        );
-      }
-      return null;
-    } catch (e) {
-      if (!isClosed) {
-        emit(
-          state.copyWith(
-            isLoading: false,
-            shouldShow: false,
-            errorMessage: e.toString(),
-          ),
-        );
-      }
-      return null;
-    }
+        return null;
+      },
+      (created) async {
+        _activeOrderId = created.orderId;
+        emit(state.copyWith(isLoading: false));
+        if (created.wasExisting) {
+          // Timer holatini sinxronlaymiz — allaqachon ishlayotgan bo'lishi mumkin
+          await fetchTimer(orderId: created.orderId);
+        } else {
+          await startTimer();
+        }
+        return created.orderId;
+      },
+    );
   }
 
   Future<void> startTimer() async {
     final id = _activeOrderId;
     if (id == null) return;
     emit(state.copyWith(isMutating: true, errorMessage: null));
-    try {
-      final res = await _client.post(ListAPI.orderTableTimerStart(id));
-      if (isClosed || _activeOrderId != id) return;
-      final raw = res.data['data'];
-      if (raw is Map<String, dynamic>) {
-        final t = TableTimerResponse.fromJson(raw);
-        emit(state.copyWith(isMutating: false));
-        _applyTimer(t, forceBillPauses: true);
-      } else {
-        await fetchTimer(orderId: id);
-        await _fetchBillDetails(force: true);
-      }
-    } on DioException catch (e) {
-      if (isClosed || _activeOrderId != id) return;
-      emit(
-        state.copyWith(
-          isMutating: false,
-          errorMessage: e.message ?? 'Start xatosi',
-        ),
-      );
-    } catch (e) {
-      if (isClosed || _activeOrderId != id) return;
-      emit(state.copyWith(isMutating: false, errorMessage: e.toString()));
-    }
+    final result = await _repository.startTimer(id);
+    if (isClosed || _activeOrderId != id) return;
+    await result.fold(
+      (failure) async {
+        emit(
+          state.copyWith(
+            isMutating: false,
+            errorMessage: _messageFor(failure, fallback: 'Start xatosi'),
+          ),
+        );
+      },
+      (t) async {
+        if (t != null) {
+          emit(state.copyWith(isMutating: false));
+          _applyTimer(t, forceBillPauses: true);
+        } else {
+          await fetchTimer(orderId: id);
+          await _fetchBillDetails(force: true);
+        }
+      },
+    );
   }
 
   Future<void> pauseTimer() async {
     final id = _activeOrderId;
     if (id == null) return;
     emit(state.copyWith(isMutating: true, errorMessage: null));
-    try {
-      final res = await _client.post(ListAPI.orderTableTimerPause(id));
-      if (isClosed || _activeOrderId != id) return;
-      final raw = res.data['data'];
-      if (raw is Map<String, dynamic>) {
-        final t = TableTimerResponse.fromJson(raw);
-        emit(state.copyWith(isMutating: false));
-        _applyTimer(t, forceBillPauses: true);
-      } else {
-        await fetchTimer(orderId: id);
-        await _fetchBillDetails(force: true);
-      }
-    } on DioException catch (e) {
-      if (isClosed || _activeOrderId != id) return;
-      emit(
-        state.copyWith(
-          isMutating: false,
-          errorMessage: e.message ?? 'Pause xatosi',
-        ),
-      );
-    } catch (e) {
-      if (isClosed || _activeOrderId != id) return;
-      emit(state.copyWith(isMutating: false, errorMessage: e.toString()));
-    }
+    final result = await _repository.pauseTimer(id);
+    if (isClosed || _activeOrderId != id) return;
+    await result.fold(
+      (failure) async {
+        emit(
+          state.copyWith(
+            isMutating: false,
+            errorMessage: _messageFor(failure, fallback: 'Pause xatosi'),
+          ),
+        );
+      },
+      (t) async {
+        if (t != null) {
+          emit(state.copyWith(isMutating: false));
+          _applyTimer(t, forceBillPauses: true);
+        } else {
+          await fetchTimer(orderId: id);
+          await _fetchBillDetails(force: true);
+        }
+      },
+    );
   }
 
   Future<void> resumeTimer() async {
@@ -504,30 +484,27 @@ class TableTimerCubit extends Cubit<TableTimerState> {
       return;
     }
     emit(state.copyWith(isMutating: true, errorMessage: null));
-    try {
-      final res = await _client.post(ListAPI.orderTableTimerResume(id));
-      if (isClosed || _activeOrderId != id) return;
-      final raw = res.data['data'];
-      if (raw is Map<String, dynamic>) {
-        final t = TableTimerResponse.fromJson(raw);
-        emit(state.copyWith(isMutating: false));
-        _applyTimer(t, forceBillPauses: true);
-      } else {
-        await fetchTimer(orderId: id);
-        await _fetchBillDetails(force: true);
-      }
-    } on DioException catch (e) {
-      if (isClosed || _activeOrderId != id) return;
-      emit(
-        state.copyWith(
-          isMutating: false,
-          errorMessage: e.message ?? 'Resume xatosi',
-        ),
-      );
-    } catch (e) {
-      if (isClosed || _activeOrderId != id) return;
-      emit(state.copyWith(isMutating: false, errorMessage: e.toString()));
-    }
+    final result = await _repository.resumeTimer(id);
+    if (isClosed || _activeOrderId != id) return;
+    await result.fold(
+      (failure) async {
+        emit(
+          state.copyWith(
+            isMutating: false,
+            errorMessage: _messageFor(failure, fallback: 'Resume xatosi'),
+          ),
+        );
+      },
+      (t) async {
+        if (t != null) {
+          emit(state.copyWith(isMutating: false));
+          _applyTimer(t, forceBillPauses: true);
+        } else {
+          await fetchTimer(orderId: id);
+          await _fetchBillDetails(force: true);
+        }
+      },
+    );
   }
 
   @override

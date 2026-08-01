@@ -5,17 +5,17 @@ import 'package:mary_ai_pos/core/constants/constants.dart';
 import 'package:mary_ai_pos/core/error/failure.dart';
 import 'package:mary_ai_pos/core/utils/helper/helper_widget.dart';
 import 'package:mary_ai_pos/features/view/main/domain/entities/archive_detail_entity.dart';
-import 'package:mary_ai_pos/features/view/main/domain/usecase/get_archive_with_id_usecase.dart';
+import 'package:mary_ai_pos/features/view/main/domain/repository/archives_local_repository.dart';
 
 part 'archive_event.dart';
 part 'archive_state.dart';
 part 'archive_bloc.freezed.dart';
 
 class ArchiveBloc extends Bloc<ArchiveEvent, ArchiveState> {
-  final GetArchiveWithIdUsecase _getArchiveWithIdUsecase;
+  final ArchivesLocalRepository _archivesRepository;
 
-  ArchiveBloc({required GetArchiveWithIdUsecase getArchiveWithIdUsecase})
-    : _getArchiveWithIdUsecase = getArchiveWithIdUsecase,
+  ArchiveBloc({required ArchivesLocalRepository archivesRepository})
+    : _archivesRepository = archivesRepository,
       super(const ArchiveState()) {
     on<_Started>(_onStarted);
     on<_GetArchive>(_getArchive);
@@ -24,7 +24,7 @@ class ArchiveBloc extends Bloc<ArchiveEvent, ArchiveState> {
   void _getArchive(_GetArchive event, emit) async {
     if (event.id != null) {
       emit(state.copyWith(status: Status.LOADING, archiveDetail: null));
-      final response = await _getArchiveWithIdUsecase.call(event.id!);
+      final response = await _archivesRepository.getArchiveWithId(event.id!);
       response.fold((l) {
         showErrorMessage(
           navigatorKey.currentContext!,

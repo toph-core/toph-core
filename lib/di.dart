@@ -10,6 +10,7 @@ import 'package:mary_ai_pos/core/services/connectivity/connectivity_cubit.dart';
 import 'package:mary_ai_pos/core/services/lan_hub/lan_hub_service.dart';
 import 'package:mary_ai_pos/core/services/offline_queue/offline_queue_service.dart';
 import 'package:mary_ai_pos/core/services/table_timer/table_timer_sync_service.dart';
+import 'package:mary_ai_pos/core/sync/sync_engine.dart';
 import 'package:mary_ai_pos/core/auth/storage/token_storage_impl.dart';
 import 'package:mary_ai_pos/core/service/minio/minio_service.dart';
 import 'package:mary_ai_pos/core/service/printer/printer_config_storage.dart';
@@ -23,8 +24,14 @@ import 'package:mary_ai_pos/features/view/main/domain/usecase/close_shift_usecas
 import 'package:mary_ai_pos/features/view/main/domain/usecase/create_order_usecase.dart';
 import 'package:mary_ai_pos/features/view/main/domain/usecase/create_payment_usecase.dart';
 import 'package:mary_ai_pos/features/view/main/domain/usecase/create_take_away_order_usecase.dart';
-import 'package:mary_ai_pos/features/view/main/domain/usecase/get_archive_with_id_usecase.dart';
-import 'package:mary_ai_pos/features/view/main/domain/usecase/get_archives_usecase.dart';
+import 'package:mary_ai_pos/features/view/main/data/repository/archives_local_repository_impl.dart';
+import 'package:mary_ai_pos/features/view/main/data/repository/menu_local_repository_impl.dart';
+import 'package:mary_ai_pos/features/view/main/data/repository/table_timer_local_repository_impl.dart';
+import 'package:mary_ai_pos/features/view/main/data/repository/waiter_local_repository_impl.dart';
+import 'package:mary_ai_pos/features/view/main/domain/repository/archives_local_repository.dart';
+import 'package:mary_ai_pos/features/view/main/domain/repository/menu_local_repository.dart';
+import 'package:mary_ai_pos/features/view/main/domain/repository/table_timer_local_repository.dart';
+import 'package:mary_ai_pos/features/view/main/domain/repository/waiter_local_repository.dart';
 import 'package:mary_ai_pos/features/view/main/domain/usecase/get_categories_usecase.dart';
 import 'package:mary_ai_pos/features/view/main/domain/usecase/get_departments_usecase.dart';
 import 'package:mary_ai_pos/features/view/main/domain/usecase/get_goods_by_category_id_usecase.dart';
@@ -66,7 +73,6 @@ import 'package:mary_ai_pos/features/view/main/data/data_source/main_datasources
 import 'package:mary_ai_pos/features/view/main/data/repository/main_repository_impl.dart';
 import 'package:mary_ai_pos/features/view/main/domain/repository/main_repository.dart';
 import 'package:mary_ai_pos/features/view/main/domain/usecase/get_halls_usecase.dart';
-import 'package:mary_ai_pos/features/view/main/domain/usecase/get_staff_waiters_usecase.dart';
 import 'package:mary_ai_pos/features/view/main/domain/usecase/get_tables_by_hall_id_usecase.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/main/main_cubit.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/table_timer/table_timer_cubit.dart';
@@ -110,10 +116,24 @@ Future<void> initDi() async {
   );
   alice.addAdapter(dioClient.aliceDioAdapter);
   inject.registerSingleton<DioClient>(dioClient);
+  connectivityCubit.attachProbeClient(dioClient);
 
-  final lanHubService = LanHubService(prefs);
-  await lanHubService.init();
+  final lanHubService = LanHubService(
+    prefs,
+    tokenStorage: tokenStorage,
+    connectivity: connectivityCubit,
+  );
   inject.registerSingleton<LanHubService>(lanHubService);
+
+  final syncEngine = SyncEngine(
+    queue: offlineQueue,
+    cache: cacheService,
+    connectivity: connectivityCubit,
+    client: dioClient,
+    lanHub: lanHubService,
+  );
+  syncEngine.start();
+  inject.registerSingleton<SyncEngine>(syncEngine);
 
   final MinioService minioService = MinioService.instance;
   minioService.configure(securityContext: securityContext);
@@ -128,6 +148,11 @@ Future<void> initDi() async {
   _repositories();
   _useCase();
   _cubit();
+
+  // Deferred until here: `client` mode's initial connect attempt reads the
+  // current user via `inject<UserBloc>()` for its branch id, and `UserBloc`
+  // isn't registered until `_cubit()` above runs.
+  await lanHubService.init();
 }
 
 void _dataSources() {
@@ -146,6 +171,18 @@ void _repositories() {
   inject.registerLazySingleton<MainRepository>(
     () => MainRepositoryImpl(inject()),
   );
+  inject.registerLazySingleton<ArchivesLocalRepository>(
+    () => ArchivesLocalRepositoryImpl(inject(), inject(), inject()),
+  );
+  inject.registerLazySingleton<MenuLocalRepository>(
+    () => MenuLocalRepositoryImpl(inject(), inject(), inject()),
+  );
+  inject.registerLazySingleton<TableTimerLocalRepository>(
+    () => TableTimerLocalRepositoryImpl(inject()),
+  );
+  inject.registerLazySingleton<WaiterLocalRepository>(
+    () => WaiterLocalRepositoryImpl(inject(), inject(), inject(), inject()),
+  );
 }
 
 void _useCase() {
@@ -162,8 +199,6 @@ void _useCase() {
   inject.registerLazySingleton(() => GetDepartmentsUsecase(inject()));
   inject.registerLazySingleton(() => GetGoodsByCategoryIdUseCase(inject()));
   inject.registerLazySingleton(() => GetGoodsWithNameUseCase(inject()));
-  inject.registerLazySingleton(() => GetArchivesUsecase(inject()));
-  inject.registerLazySingleton(() => GetArchiveWithIdUsecase(inject()));
   inject.registerLazySingleton(() => LogoutUsecase(inject()));
   inject.registerLazySingleton(() => CheckUserDataUsecase(inject()));
   inject.registerLazySingleton(() => CreateOrderUsecase(inject()));
@@ -179,7 +214,6 @@ void _useCase() {
   inject.registerLazySingleton(
     () => SyncPrinterSettingsUsecase(inject(), inject()),
   );
-  inject.registerLazySingleton(() => GetStaffWaitersUsecase(inject()));
   inject.registerLazySingleton(() => CheckShiftUsecase(inject()));
   inject.registerFactory(() => OpenShiftUsecase(inject()));
   inject.registerFactory(() => CloseShiftUsecase(inject()));
@@ -232,7 +266,7 @@ void _cubit() {
         DetailBloc(inject(), inject(), inject(), inject(), inject(), inject()),
   );
   inject.registerFactory(
-    () => DepartmentSelectionCubit(inject(), inject(), inject()),
+    () => DepartmentSelectionCubit(inject()),
   );
   inject.registerFactory(
     () => CreateOrderBloc(
@@ -248,12 +282,9 @@ void _cubit() {
   );
   inject.registerFactory(() => CounterCubit());
   inject.registerFactory(
-    () => ArchivesBloc(
-      getArchivesUsecase: inject(),
-      getArchiveWithIdUsecase: inject(),
-    ),
+    () => ArchivesBloc(archivesRepository: inject()),
   );
-  inject.registerFactory(() => ArchiveBloc(getArchiveWithIdUsecase: inject()));
+  inject.registerFactory(() => ArchiveBloc(archivesRepository: inject()));
   inject.registerFactory(
     () => PaymentBloc(
       getPaymentDetailWithTableIdUsecase: inject(),
@@ -266,7 +297,7 @@ void _cubit() {
   inject.registerLazySingleton(() => SavedOrdersBloc());
   inject.registerFactory(() => HourPriceBloc(getHourPriceUsecase: inject()));
   inject.registerFactory(
-    () => WaiterCubit(inject(), inject(), inject(), inject()),
+    () => WaiterCubit(inject(), inject(), inject()),
   );
   inject.registerLazySingleton(() => TableTimerSyncService());
   inject.registerFactory(() => TableTimerCubit(inject(), inject()));

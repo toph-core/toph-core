@@ -151,6 +151,25 @@ class OpenOrderModel {
     );
   }
 
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'name': name,
+        'table_number': tableNumber,
+        'hall_name': hallName,
+        'guest_count': guestCount,
+        'opened_at': openedAt?.toIso8601String(),
+        'table_id': tableId,
+        'status': status,
+        'total_amount': totalAmount,
+        'display_total_amount': displayTotalAmount,
+        'service_amount': serviceAmount,
+        'service_percent': servicePercent,
+        'order_type': orderType,
+        'table_type': tableType,
+        'table_started_at': tableStartedAt?.toIso8601String(),
+        'table_amount': tableAmount,
+      };
+
   double get displayTotalAmountValue =>
       double.tryParse(displayTotalAmount.replaceAll(RegExp(r'\s'), '')) ?? 0;
 

@@ -16,6 +16,7 @@ final _privateConstructorUsedError = UnsupportedError(
 
 /// @nodoc
 mixin _$CreateOrderRequestModel {
+  String get id => throw _privateConstructorUsedError;
   String get cashierId => throw _privateConstructorUsedError;
   String get comment => throw _privateConstructorUsedError;
   int get guestCount => throw _privateConstructorUsedError;
@@ -37,7 +38,8 @@ abstract class $CreateOrderRequestModelCopyWith<$Res> {
       _$CreateOrderRequestModelCopyWithImpl<$Res, CreateOrderRequestModel>;
   @useResult
   $Res call(
-      {String cashierId,
+      {String id,
+      String cashierId,
       String comment,
       int guestCount,
       List<OrderItem> foods,
@@ -61,6 +63,7 @@ class _$CreateOrderRequestModelCopyWithImpl<$Res,
   @pragma('vm:prefer-inline')
   @override
   $Res call({
+    Object? id = null,
     Object? cashierId = null,
     Object? comment = null,
     Object? guestCount = null,
@@ -71,6 +74,10 @@ class _$CreateOrderRequestModelCopyWithImpl<$Res,
     Object? orderType = null,
   }) {
     return _then(_value.copyWith(
+      id: null == id
+          ? _value.id
+          : id // ignore: cast_nullable_to_non_nullable
+              as String,
       cashierId: null == cashierId
           ? _value.cashierId
           : cashierId // ignore: cast_nullable_to_non_nullable
@@ -117,7 +124,8 @@ abstract class _$$CreateOrderRequestModelImplCopyWith<$Res>
   @override
   @useResult
   $Res call(
-      {String cashierId,
+      {String id,
+      String cashierId,
       String comment,
       int guestCount,
       List<OrderItem> foods,
@@ -140,6 +148,7 @@ class __$$CreateOrderRequestModelImplCopyWithImpl<$Res>
   @pragma('vm:prefer-inline')
   @override
   $Res call({
+    Object? id = null,
     Object? cashierId = null,
     Object? comment = null,
     Object? guestCount = null,
@@ -150,6 +159,10 @@ class __$$CreateOrderRequestModelImplCopyWithImpl<$Res>
     Object? orderType = null,
   }) {
     return _then(_$CreateOrderRequestModelImpl(
+      id: null == id
+          ? _value.id
+          : id // ignore: cast_nullable_to_non_nullable
+              as String,
       cashierId: null == cashierId
           ? _value.cashierId
           : cashierId // ignore: cast_nullable_to_non_nullable
@@ -190,7 +203,8 @@ class __$$CreateOrderRequestModelImplCopyWithImpl<$Res>
 
 class _$CreateOrderRequestModelImpl extends _CreateOrderRequestModel {
   const _$CreateOrderRequestModelImpl(
-      {this.cashierId = '',
+      {this.id = '',
+      this.cashierId = '',
       this.comment = '',
       this.guestCount = 0,
       final List<OrderItem> foods = const [],
@@ -201,6 +215,9 @@ class _$CreateOrderRequestModelImpl extends _CreateOrderRequestModel {
       : _foods = foods,
         super._();
 
+  @override
+  @JsonKey()
+  final String id;
   @override
   @JsonKey()
   final String cashierId;
@@ -234,7 +251,7 @@ class _$CreateOrderRequestModelImpl extends _CreateOrderRequestModel {
 
   @override
   String toString() {
-    return 'CreateOrderRequestModel(cashierId: $cashierId, comment: $comment, guestCount: $guestCount, foods: $foods, status: $status, tableId: $tableId, tableStatus: $tableStatus, orderType: $orderType)';
+    return 'CreateOrderRequestModel(id: $id, cashierId: $cashierId, comment: $comment, guestCount: $guestCount, foods: $foods, status: $status, tableId: $tableId, tableStatus: $tableStatus, orderType: $orderType)';
   }
 
   @override
@@ -242,6 +259,7 @@ class _$CreateOrderRequestModelImpl extends _CreateOrderRequestModel {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
             other is _$CreateOrderRequestModelImpl &&
+            (identical(other.id, id) || other.id == id) &&
             (identical(other.cashierId, cashierId) ||
                 other.cashierId == cashierId) &&
             (identical(other.comment, comment) || other.comment == comment) &&
@@ -259,6 +277,7 @@ class _$CreateOrderRequestModelImpl extends _CreateOrderRequestModel {
   @override
   int get hashCode => Object.hash(
       runtimeType,
+      id,
       cashierId,
       comment,
       guestCount,
@@ -278,7 +297,8 @@ class _$CreateOrderRequestModelImpl extends _CreateOrderRequestModel {
 
 abstract class _CreateOrderRequestModel extends CreateOrderRequestModel {
   const factory _CreateOrderRequestModel(
-      {final String cashierId,
+      {final String id,
+      final String cashierId,
       final String comment,
       final int guestCount,
       final List<OrderItem> foods,
@@ -288,6 +308,8 @@ abstract class _CreateOrderRequestModel extends CreateOrderRequestModel {
       final String orderType}) = _$CreateOrderRequestModelImpl;
   const _CreateOrderRequestModel._() : super._();
 
+  @override
+  String get id;
   @override
   String get cashierId;
   @override
