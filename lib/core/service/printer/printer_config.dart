@@ -15,15 +15,20 @@ class PrinterConfig {
   });
 
   /// Backend `GET/POST …/printer-settings` — `connection_type`: rasmiy jadvalda
-  /// **`cable`** (LAN) va **`wlan`** (Wi‑Fi); default `cable`.
+  /// **`cable`** (LAN) va **`wlan`** (Wi‑Fi); default `cable`. Ikkalasi ham
+  /// IP:port orqali TCP — sozlamalar formasi ikkalasida ham IP talab qiladi,
+  /// haqiqiy Windows USB spooler printeri uchun alohida (IP'siz) tanlov yo'q.
   final String connectionType;
 
-  /// `cable` — USB kabel orqali Windows printer API ishlatiladi (IP kerak emas).
-  bool get usesWindowsPrinter => connectionType.toLowerCase() == 'cable';
+  /// `usb` — hozircha sozlamalar formasida yo'q (ikkala mavjud tanlov —
+  /// `cable`/`wlan` — IP:port TCP). Kelajakda haqiqiy IP'siz Windows USB
+  /// spooler printeri qo'shilsa, shu qiymat orqali yoqiladi.
+  bool get usesWindowsPrinter => connectionType.toLowerCase() == 'usb';
 
-  /// Wi-Fi / LAN orqali RAW TCP (IP:port). `cable` bu yerga kirmaydi.
+  /// Wi-Fi / LAN — ikkalasi ham RAW TCP (IP:port).
   bool get usesNetworkTcp {
     switch (connectionType.toLowerCase()) {
+      case 'cable':
       case 'wlan':
       case 'wifi':
       case 'lan':

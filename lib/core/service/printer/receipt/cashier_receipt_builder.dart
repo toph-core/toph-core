@@ -223,13 +223,12 @@ class CashierReceiptBuilder {
       final lines = byDept[id];
       if (lines == null || lines.isEmpty) continue;
       final name = departmentNames[id];
-      final label = (name != null && name.isNotEmpty) ? name : 'Boshqa';
-      // "stand out" header — reverse video (black bg/white text), same
-      // technique the kitchen ticket uses for category headers; this
-      // printer profile doesn't render `bold` reliably.
+      final label = (name != null && name.isNotEmpty) ? name : 'ДРУГОЕ';
+      // Black text on white, bold only — no inverted/reverse-video headers
+      // (thermal paper is white; reverse print looks muddy and wastes ink).
       bytes.addAll(gen.text(
         label.toUpperCase(),
-      styles: const PosStyles(bold: true, reverse: true),
+        styles: const PosStyles(bold: true),
       ));
       for (final line in lines) {
         final displayName = line.name.length > 20
@@ -260,8 +259,8 @@ class CashierReceiptBuilder {
     if (cancelledGoods.isEmpty) return;
     bytes.addAll(gen.hr());
     bytes.addAll(gen.text(
-      'CANCELLED ITEMS',
-      styles: const PosStyles(bold: true, align: PosAlign.center, reverse: true),
+      'ОТМЕНЁННЫЕ ПОЗИЦИИ',
+      styles: const PosStyles(bold: true, align: PosAlign.center),
       linesAfter: 1,
     ));
     final byDept = _groupByDepartment(cancelledGoods, departmentIdOf);
@@ -285,10 +284,23 @@ class CashierReceiptBuilder {
   static double _segmentPrice(TableSegment s) =>
       double.tryParse(s.pricePerHour ?? '') ?? 0;
 
+  /// "X ч Y мин" — always both parts, rounded to the nearest minute from raw
+  /// seconds (a single rounding step, so per-line and summed totals never
+  /// disagree by a minute the way summing already-rounded lines would).
+  static String _fmtHoursMinutesRu(int totalSec) {
+    final totalMin = (totalSec / 60).round();
+    final h = totalMin ~/ 60;
+    final m = totalMin % 60;
+    return '$h ч $m мин';
+  }
+
   /// Transparent room-by-room breakdown of the time-based table charge —
   /// every segment (a room may be entered/left/re-entered several times),
-  /// every active interval within it, and the exact calculation that turns
-  /// duration into money. Silently omitted when there's nothing to show.
+  /// every active interval within it, and a clean hours × rate result (no
+  /// intermediate formula spelled out). Silently omitted when there's
+  /// nothing to show. All totals are derived from raw seconds, never by
+  /// re-summing already-rounded per-line minute values, so the room and
+  /// grand totals can never mismatch what's shown per interval.
   static void _appendTableUsageSection({
     required Generator gen,
     required List<int> bytes,
@@ -299,14 +311,14 @@ class CashierReceiptBuilder {
 
     bytes.addAll(gen.hr());
     bytes.addAll(gen.text(
-      'TABLE USAGE',
-      styles: const PosStyles(bold: true, align: PosAlign.center, reverse: true),
+      'ИСПОЛЬЗОВАНИЕ СТОЛА',
+      styles: const PosStyles(bold: true, align: PosAlign.center),
     ));
     if (detail.tableNumber > 0) {
-      bytes.addAll(gen.text('Table: ${detail.tableNumber.toInt()}'));
+      bytes.addAll(gen.text('Стол: ${detail.tableNumber.toInt()}'));
     }
     if (detail.opened != null) {
-      bytes.addAll(gen.text('Opened: ${_fmtClock(detail.opened!)}'));
+      bytes.addAll(gen.text('Открыт: ${_fmtClock(detail.opened!)}'));
     }
 
     // Group segments by room (table number; falls back to table id for the
@@ -320,7 +332,7 @@ class CashierReceiptBuilder {
     }
 
     int totalActiveSec = 0;
-    double totalCost = 0;
+    int totalCost = 0;
 
     for (var i = 0; i < roomOrder.length; i++) {
       final segs = byRoom[roomOrder[i]]!;
@@ -329,13 +341,15 @@ class CashierReceiptBuilder {
         orElse: () => segs.first,
       ).tableNumber;
       // Most recent known rate for this room (rate may have changed between
-      // segments — each segment's own frozen amount is still authoritative).
+      // segments — each segment's own frozen amount is still authoritative
+      // if rates actually differ, see fallback below).
       final price = segs.map(_segmentPrice).lastWhere((p) => p > 0, orElse: () => 0);
+      final pricesDiffer = segs.map(_segmentPrice).where((p) => p > 0).toSet().length > 1;
 
       bytes.addAll(gen.text(''));
       bytes.addAll(gen.text(
-        'Room ${roomNumber ?? '?'}  ${_fmt(price)} so\'m/soat',
-        styles: const PosStyles(bold: false, underline: true),
+        'Комната ${roomNumber ?? '?'}   ${_fmt(price)} сум/час',
+        styles: const PosStyles(bold: true),
       ));
 
       final intervals = <ActiveInterval>[];
@@ -344,35 +358,39 @@ class CashierReceiptBuilder {
       }
       intervals.sort((a, b) => a.start.compareTo(b.start));
 
-      final minsList = <int>[];
       for (final iv in intervals) {
-        final mins = (iv.durationSec / 60).round();
-        minsList.add(mins);
-        final endLabel = iv.end != null ? _fmtClock(iv.end!) : 'hozir';
-        bytes.addAll(gen.text('${_fmtClock(iv.start)} -> $endLabel   $mins min'));
+        final endLabel = iv.end != null ? _fmtClock(iv.end!) : 'сейчас';
+        bytes.addAll(gen.text(
+          '${_fmtClock(iv.start)} -> $endLabel   ${_fmtHoursMinutesRu(iv.durationSec)}',
+        ));
       }
 
-      final totalMin = minsList.fold(0, (a, b) => a + b);
-      final roomAmount = segs.fold<double>(0, (s, seg) => s + _segmentAmount(seg, price));
+      final roomActiveSec = segs.fold<int>(0, (s, seg) => s + seg.activeSeconds);
+      final roomHours = roomActiveSec / 3600.0;
+      // Rate changed mid-room (rare) — the clean hours×rate formula doesn't
+      // apply to a single displayed rate, so fall back to summing each
+      // segment's own authoritative frozen amount.
+      final roomCost = pricesDiffer
+          ? segs.fold<double>(0, (s, seg) => s + _segmentAmount(seg, _segmentPrice(seg))).round()
+          : (roomHours * price).round();
 
-      if (minsList.isNotEmpty) {
-        bytes.addAll(gen.text('Calculation:'));
-        bytes.addAll(gen.text('${_fmt(price)} x ((${minsList.join(' + ')}) / 60)'));
-        bytes.addAll(gen.text('= ${_fmt(price)} x ($totalMin / 60)'));
-        bytes.addAll(gen.text('= ${_fmt(roomAmount)} so\'m'));
+      if (intervals.isNotEmpty) {
+        bytes.addAll(gen.text(
+          'Итого по комнате: ${roomHours.toStringAsFixed(2)} ч x ${_fmt(price)} = ${_fmt(roomCost)} сум',
+        ));
       }
 
-      totalActiveSec += segs.fold<int>(0, (s, seg) => s + seg.activeSeconds);
-      totalCost += roomAmount;
+      totalActiveSec += roomActiveSec;
+      totalCost += roomCost;
 
       if (i < roomOrder.length - 1) bytes.addAll(gen.hr(ch: '-'));
     }
 
     bytes.addAll(gen.hr());
-    bytes.addAll(gen.text('Total Time: ${(totalActiveSec / 60).round()} min'));
+    bytes.addAll(gen.text('Общее время: ${_fmtHoursMinutesRu(totalActiveSec)}'));
     bytes.addAll(gen.text(
-      'Total Table Cost: ${_fmt(totalCost)} so\'m',
-      styles: const PosStyles(bold: false, underline: true),
+      'Общая стоимость стола: ${_fmt(totalCost)} сум',
+      styles: const PosStyles(bold: true),
     ));
   }
 
@@ -432,7 +450,7 @@ class CashierReceiptBuilder {
 
     bytes += gen.hr();
 
-    // Items — grouped by department (empty dept id → "Boshqa" bucket), each
+    // Items — grouped by department (empty dept id → "ДРУГОЕ" bucket), each
     // menu item merged into one line with a summed quantity, no comment lost.
     final byDept = <String, Map<String, _MergedLine>>{};
     double subtotal = 0;
@@ -465,14 +483,14 @@ class CashierReceiptBuilder {
     bytes += gen.hr();
 
     bytes += gen.row([
-      PosColumn(text: 'Mahsulotlar:', width: 8, styles: const PosStyles(bold: false)),
+      PosColumn(text: 'Товары:', width: 8, styles: const PosStyles(bold: false)),
       PosColumn(text: _fmt(subtotal), width: 4,
           styles: const PosStyles(bold: false, align: PosAlign.right)),
     ]);
 
     if (hourAmount > 0.0001) {
       bytes += gen.row([
-        PosColumn(text: 'Soatlik haq:', width: 8),
+        PosColumn(text: 'Плата за стол:', width: 8),
         PosColumn(text: _fmt(hourAmount), width: 4,
             styles: const PosStyles(align: PosAlign.right)),
       ]);
@@ -505,7 +523,7 @@ class CashierReceiptBuilder {
 
     bytes += gen.hr();
     bytes += gen.row([
-      PosColumn(text: 'TO\'LOV:', width: 8,
+      PosColumn(text: 'ИТОГО:', width: 8,
           styles: const PosStyles(bold: true, height: PosTextSize.size2, width: PosTextSize.size1)),
       PosColumn(text: _fmt(toPay.round()), width: 4,
           styles: const PosStyles(bold: true, align: PosAlign.right,
@@ -514,18 +532,31 @@ class CashierReceiptBuilder {
 
     appendReceiptNoReprepNotice(gen, bytes);
     bytes += gen.feed(1);
-    bytes += gen.text('Rahmat!', styles: const PosStyles(align: PosAlign.center, bold: false), linesAfter: 1);
+    bytes += gen.text('Спасибо!', styles: const PosStyles(align: PosAlign.center, bold: true), linesAfter: 1);
     bytes += gen.cut();
 
     return bytes;
   }
 
   /// Ismdan qisqa format ("Ali Valiyev" → "Ali V.")
+  /// `—` emas — CP866 kod jadvalida yo'q, printer uni `?` ga almashtiradi.
   static String _shortName(String name) {
     final parts = name.trim().split(RegExp(r'\s+'));
-    if (parts.isEmpty || parts.first.isEmpty) return '—';
+    if (parts.isEmpty || parts.first.isEmpty) return 'Неизвестно';
     if (parts.length == 1) return parts.first;
     return '${parts.first} ${parts[1][0].toUpperCase()}.';
+  }
+
+  /// Chekni kim yopgani — hech qachon "?" yoki bo'sh chiqmasligi kerak.
+  /// `detail.cashierName` bo'sh bo'lsa (masalan admin tomonidan yopilganda
+  /// backend uni to'ldirmagan holatlar), hozir tizimga kirgan foydalanuvchi
+  /// ([closerName]) ishlatiladi — u chekni chop etayotgan aynan shu kishi.
+  static String _resolveCloserName(ArchiveDetailEntity detail, String closerName) {
+    final primary = detail.cashierName.trim();
+    if (primary.isNotEmpty) return primary;
+    final fallback = closerName.trim();
+    if (fallback.isNotEmpty) return fallback;
+    return 'Неизвестно';
   }
 
   /// To'lov ekranidan keyin chek — [ArchiveDetailEntity] asosida. This is the
@@ -549,6 +580,9 @@ class CashierReceiptBuilder {
     String Function(OrderFoodEntity)? departmentIdOf,
     Map<String, String> departmentNames = const {},
     List<String> departmentOrder = const [],
+    // Hozir tizimga kirgan foydalanuvchi — `detail.cashierName` bo'sh bo'lsa
+    // shu ko'rsatiladi (hech qachon "?" yoki bo'sh emas).
+    String closerName = '',
   }) async {
     final profile = await CapabilityProfile.load();
     final gen = receiptGenerator(paperSize, profile);
@@ -589,7 +623,7 @@ class CashierReceiptBuilder {
 
     // ─── 2) Meta info ────────────────────────────────────────────────────
     bytes += gen.row([
-      PosColumn(text: 'Chek №:', width: 6),
+      PosColumn(text: 'Чек №:', width: 6),
       PosColumn(
         text: 'A-${detail.bilNumber}',
         width: 6,
@@ -597,7 +631,7 @@ class CashierReceiptBuilder {
       ),
     ]);
     bytes += gen.row([
-      PosColumn(text: 'Sana:', width: 4),
+      PosColumn(text: 'Дата:', width: 4),
       PosColumn(
         text: dateStr,
         width: 8,
@@ -607,10 +641,10 @@ class CashierReceiptBuilder {
     final tableNum = detail.tableNumber.toInt();
     if (tableNum > 0) {
       final guests = detail.guestCount > 0
-          ? ' · ${detail.guestCount.toInt()} mehmon'
+          ? ' · ${detail.guestCount.toInt()} гостей'
           : '';
       bytes += gen.row([
-        PosColumn(text: 'Stol:', width: 4),
+        PosColumn(text: 'Стол:', width: 4),
         PosColumn(
           text: '№$tableNum$guests',
           width: 8,
@@ -619,17 +653,17 @@ class CashierReceiptBuilder {
       ]);
     }
     bytes += gen.row([
-      PosColumn(text: 'Kassir:', width: 5),
+      PosColumn(text: 'Кассир:', width: 5),
       PosColumn(
-        text: _shortName(detail.cashierName),
+        text: _shortName(_resolveCloserName(detail, closerName)),
         width: 7,
-        styles: const PosStyles(align: PosAlign.right),
+        styles: const PosStyles(align: PosAlign.right, bold: true),
       ),
     ]);
 
     bytes += gen.hr(ch: '-');
 
-    // ─── 3) Items — grouped by department, duplicates merged ─────────────
+    // ─── 3) Ordered items — grouped by department, duplicates merged ─────
     final purchasedGoods = detail.goods.where((g) => g.status != 'cancelled').toList();
     final cancelledGoods = detail.goods.where((g) => g.status == 'cancelled').toList();
 
@@ -647,15 +681,23 @@ class CashierReceiptBuilder {
       departmentOrder: departmentOrder,
     );
 
-    bytes += gen.hr(ch: '-');
+    // ─── 4) Cancelled items — right after ordered items, own section ─────
+    _appendCancelledSection(
+      gen: gen,
+      bytes: bytes,
+      cancelledGoods: cancelledGoods,
+      departmentNames: departmentNames,
+      departmentOrder: departmentOrder,
+      departmentIdOf: departmentIdOf,
+    );
 
-    // ─── 4) Table usage — transparent room-by-room breakdown ─────────────
+    // ─── 5) Table usage — transparent room-by-room breakdown ─────────────
     _appendTableUsageSection(gen: gen, bytes: bytes, detail: detail);
 
-    // ─── 5) Totals (preview order) ───────────────────────────────────────
+    // ─── 6) Totals ─────────────────────────────────────────────────────
     bytes += gen.hr(ch: '-');
     bytes += gen.row([
-      PosColumn(text: 'Oraliq jami', width: 7),
+      PosColumn(text: 'Товары:', width: 7),
       PosColumn(
         text: _fmt(subtotal),
         width: 5,
@@ -665,7 +707,7 @@ class CashierReceiptBuilder {
 
     if (hourAmount > 0.0001) {
       bytes += gen.row([
-        PosColumn(text: 'Soatlik haq', width: 7),
+        PosColumn(text: 'Плата за стол:', width: 7),
         PosColumn(
           text: _fmt(hourAmount),
           width: 5,
@@ -688,7 +730,7 @@ class CashierReceiptBuilder {
                 : 0.0));
     if (serviceAmt > 0.0001) {
       final servicePct = detail.servicePercent.toInt();
-      final label = servicePct > 0 ? 'Xizmat ($servicePct%)' : 'Xizmat';
+      final label = servicePct > 0 ? 'Обслуживание ($servicePct%)' : 'Обслуживание';
       bytes += gen.row([
         PosColumn(text: label, width: 7),
         PosColumn(
@@ -703,8 +745,8 @@ class CashierReceiptBuilder {
     final discVal = _discountValue(preDiscount, discountPercent, discountAmount);
     if (discVal > 0.0001) {
       final discLabel = discountPercent > 0
-          ? 'Chegirma (${discountPercent.toInt()}%)'
-          : 'Chegirma';
+          ? 'Скидка (${discountPercent.toInt()}%)'
+          : 'Скидка';
       bytes += gen.row([
         PosColumn(text: discLabel, width: 7),
         PosColumn(
@@ -718,10 +760,10 @@ class CashierReceiptBuilder {
     bytes += gen.hr(ch: '-');
 
     final toPay = (preDiscount - discVal).clamp(0.0, double.infinity);
-    // ─── 6) JAMI (big, bold) ──────────────────────────────────────────────
+    // ─── ИТОГО (big, bold) ────────────────────────────────────────────────
     bytes += gen.row([
       PosColumn(
-        text: 'JAMI',
+        text: 'ИТОГО',
         width: 5,
         styles: const PosStyles(
           bold: true,
@@ -730,7 +772,7 @@ class CashierReceiptBuilder {
         ),
       ),
       PosColumn(
-        text: '${_fmt(toPay.round())} so\'m',
+        text: '${_fmt(toPay.round())} сум',
         width: 7,
         styles: const PosStyles(
           bold: true,
@@ -741,21 +783,12 @@ class CashierReceiptBuilder {
       ),
     ]);
 
-    // ─── 7) Cancelled items — separate section, always last ──────────────
-    _appendCancelledSection(
-      gen: gen,
-      bytes: bytes,
-      cancelledGoods: cancelledGoods,
-      departmentNames: departmentNames,
-      departmentOrder: departmentOrder,
-      departmentIdOf: departmentIdOf,
-    );
-
+    // ─── 7) Footer notes ───────────────────────────────────────────────
     appendReceiptNoReprepNotice(gen, bytes);
     bytes += gen.feed(1);
     bytes += gen.text(
-      'Rahmat!',
-      styles: const PosStyles(align: PosAlign.center, bold: false),
+      'Спасибо!',
+      styles: const PosStyles(align: PosAlign.center, bold: true),
       linesAfter: 1,
     );
     bytes += gen.cut();

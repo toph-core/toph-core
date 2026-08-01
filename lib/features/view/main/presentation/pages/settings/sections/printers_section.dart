@@ -8,6 +8,7 @@ import 'package:mary_ai_pos/core/api/dio_client.dart';
 import 'package:mary_ai_pos/core/api/list_api.dart';
 import 'package:mary_ai_pos/core/components/flush_bars.dart';
 import 'package:mary_ai_pos/core/extension/for_context.dart';
+import 'package:mary_ai_pos/core/service/printer/printer_service.dart';
 import 'package:mary_ai_pos/core/service/printer/printer_setting_entry.dart';
 import 'package:mary_ai_pos/core/usecase/usecase.dart';
 import 'package:mary_ai_pos/di.dart';
@@ -239,6 +240,31 @@ class _PrinterCard extends StatefulWidget {
 
 class _PrinterCardState extends State<_PrinterCard> {
   bool _hover = false;
+  bool _testing = false;
+
+  Future<void> _testPrint() async {
+    if (_testing) return;
+    setState(() => _testing = true);
+    final entry = widget.entry;
+    final result = await inject<PrinterService>().testPrint(
+      ip: entry.ip,
+      port: entry.port,
+      connectionType: entry.connectionType,
+    );
+    if (!mounted) return;
+    setState(() => _testing = false);
+    if (result.ok) {
+      showSuccessMessage(
+        context,
+        'Test cheki ${entry.ip}:${entry.port} ga yuborildi',
+      );
+    } else {
+      showErrorMessage(
+        context,
+        result.error ?? 'Printerga ulanib bo\'lmadi',
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -339,6 +365,22 @@ class _PrinterCardState extends State<_PrinterCard> {
             ),
             Row(
               children: [
+                _testing
+                    ? const Padding(
+                        padding: EdgeInsets.all(11),
+                        child: SizedBox(
+                          width: 22,
+                          height: 22,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                      )
+                    : _GhostIconButton(
+                        icon: Icons.print_outlined,
+                        tooltip: 'Test printer',
+                        color: colors.systemAccent,
+                        onTap: _testPrint,
+                      ),
+                const SizedBox(width: 8),
                 _GhostIconButton(
                   icon: Icons.edit_outlined,
                   tooltip: S.current.strEdit,
@@ -631,6 +673,9 @@ class _PrinterEditDialogState extends State<_PrinterEditDialog> {
   final Set<String> _selectedCategoryIds = {};
   bool _saving = false;
   String? _saveError;
+  bool _testing = false;
+  bool? _testOk; // null = no test run yet
+  String? _testMessage;
 
   @override
   void initState() {
@@ -711,6 +756,39 @@ class _PrinterEditDialogState extends State<_PrinterEditDialog> {
   }
 
   String? _readError(DioException e) => userFriendlyDioError(e);
+
+  /// IP/port/ulanish turini — hozir formaga kiritilgan qiymatlarni, saqlash
+  /// shart bo'lmasdan — to'g'ridan-to'g'ri shu printerga chek yuborib sinaydi.
+  /// Kategoriya tanlovi yoki boshqa Save-only qoidalar bu yerda talab qilinmaydi.
+  Future<void> _testPrinter() async {
+    final ipError = _validateIp(_ipCtrl.text);
+    final portError = _validatePort(_portCtrl.text);
+    if (ipError != null || portError != null) {
+      setState(() {
+        _testOk = false;
+        _testMessage = ipError ?? portError;
+      });
+      return;
+    }
+    setState(() {
+      _testing = true;
+      _testOk = null;
+      _testMessage = null;
+    });
+    final result = await inject<PrinterService>().testPrint(
+      ip: _ipCtrl.text.trim(),
+      port: int.parse(_portCtrl.text.trim()),
+      connectionType: _connection,
+    );
+    if (!mounted) return;
+    setState(() {
+      _testing = false;
+      _testOk = result.ok;
+      _testMessage = result.ok
+          ? 'Test cheki yuborildi — printerni tekshiring.'
+          : (result.error ?? 'Printerga ulanib bo\'lmadi');
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -821,6 +899,46 @@ class _PrinterEditDialogState extends State<_PrinterEditDialog> {
                           ],
                         ),
                       ),
+                      if (_testMessage != null) ...[
+                        const SizedBox(height: 14),
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: (_testOk == true
+                                    ? colors.systemSuccess
+                                    : colors.systemError)
+                                .withOpacity(0.08),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                _testOk == true
+                                    ? Icons.check_circle_outline
+                                    : Icons.error_outline,
+                                size: 16,
+                                color: _testOk == true
+                                    ? colors.systemSuccess
+                                    : colors.systemError,
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  _testMessage!,
+                                  style: TextStyle(
+                                    color: _testOk == true
+                                        ? colors.systemSuccess
+                                        : colors.systemError,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w500,
+                                    fontFamily: 'Inter',
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                       if (_type == 'category') ...[
                         const SizedBox(height: 14),
                         _LabeledField(
@@ -881,23 +999,85 @@ class _PrinterEditDialogState extends State<_PrinterEditDialog> {
               ),
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.end,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  _DialogButton.ghost(
-                    label: S.current.strCancel,
-                    onPressed:
-                        _saving ? null : () => Navigator.pop(context, false),
+                  _TestPrinterButton(
+                    testing: _testing,
+                    onPressed: _saving ? null : _testPrinter,
                   ),
-                  const SizedBox(width: 8),
-                  _SavingButton(
-                    saving: _saving,
-                    label: isEdit ? S.current.strSave : S.current.strAdd,
-                    onPressed: _saving ? null : _save,
+                  Row(
+                    children: [
+                      _DialogButton.ghost(
+                        label: S.current.strCancel,
+                        onPressed: _saving
+                            ? null
+                            : () => Navigator.pop(context, false),
+                      ),
+                      const SizedBox(width: 8),
+                      _SavingButton(
+                        saving: _saving,
+                        label: isEdit ? S.current.strSave : S.current.strAdd,
+                        onPressed: _saving ? null : _save,
+                      ),
+                    ],
                   ),
                 ],
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Saqlangan yo'q — hozir formaga kiritilgan IP/port/ulanish turi bilan bitta
+/// diagnostik chek yuboradi. Save tugmasidan mustaqil: kategoriya tanlovi
+/// yoki boshqa Save-only qoidalar bu yerda talab qilinmaydi.
+class _TestPrinterButton extends StatelessWidget {
+  final bool testing;
+  final VoidCallback? onPressed;
+
+  const _TestPrinterButton({required this.testing, required this.onPressed});
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    final active = onPressed != null && !testing;
+    return Material(
+      color: colors.systemAccent.withOpacity(active ? 0.10 : 0.06),
+      borderRadius: BorderRadius.circular(10),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(10),
+        onTap: testing ? null : onPressed,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (testing)
+                SizedBox(
+                  width: 14,
+                  height: 14,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: colors.systemAccent,
+                  ),
+                )
+              else
+                Icon(Icons.print_outlined, size: 16, color: colors.systemAccent),
+              const SizedBox(width: 8),
+              Text(
+                'Test Printer',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: colors.systemAccent,
+                  fontFamily: 'Inter',
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
