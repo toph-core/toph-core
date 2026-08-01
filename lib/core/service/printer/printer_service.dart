@@ -294,14 +294,17 @@ class PrinterService {
   /// matn, uchta tekislash). Hali saqlanmagan qiymatlarni ham sinash mumkin —
   /// `PrinterConfigStorage`ga bog'liq emas, chaqiruvchi istalgan
   /// ip/port/connectionType/paperSize kombinatsiyasini uzatishi mumkin.
-  /// Muvaffaqiyat/xato natijasini to'g'ridan-to'g'ri qaytaradi — UI o'zi
-  /// qanday ko'rsatishni hal qiladi (bu yerda global xato overlay chiqarilmaydi).
+  /// `connectionType: 'usb'` bo'lsa [windowsPrinterName] talab qilinadi,
+  /// ip/port e'tiborga olinmaydi. Muvaffaqiyat/xato natijasini
+  /// to'g'ridan-to'g'ri qaytaradi — UI o'zi qanday ko'rsatishni hal qiladi
+  /// (bu yerda global xato overlay chiqarilmaydi).
   Future<({bool ok, String? error})> testPrint({
-    required String ip,
-    required int port,
+    String ip = '',
+    int port = 0,
     String connectionType = 'wlan',
     PaperSize paperSize = PaperSize.mm80,
     int timeoutMs = 6000,
+    String? windowsPrinterName,
   }) async {
     final config = PrinterConfig(
       ip: ip,
@@ -309,6 +312,7 @@ class PrinterService {
       connectionType: connectionType,
       paperSize: paperSize,
       timeoutMs: timeoutMs,
+      windowsPrinterName: windowsPrinterName,
     );
     try {
       final bytes = await _buildTestTicket(config);
@@ -510,7 +514,15 @@ class PrinterService {
       if (!Platform.isWindows) {
         return (ok: false, error: "USB printer faqat Windows da ishlaydi.");
       }
-      return _printViaWindowsRaw(data);
+      // `windowsPrinterName` odatda ad-hoc konfiglarda (Test Printer) to'g'ridan
+      // -to'g'ri keladi; `_storage`dan kelgan haqiqiy chek konfiglari faqat
+      // `entryId` bilan keladi — shu qurilmada mahalliy saqlangan tanlovni
+      // shu yerda qidiramiz (backend bilan sinxronlanmaydi, sof lokal holat).
+      final targetName = config.windowsPrinterName ??
+          (config.entryId != null
+              ? inject<CacheService>().getUsbPrinterName(config.entryId!)
+              : null);
+      return _printViaWindowsRaw(data, targetPrinterName: targetName);
     }
 
     if (!config.usesNetworkTcp) {
@@ -578,16 +590,53 @@ class PrinterService {
 
   /// USB kabel orqali ulangan printerga raw ESC/POS bytes yuboradi.
   /// Windows printer API: OpenPrinter → WritePrinter → ClosePrinter.
-  Future<({bool ok, String? error})> _printViaWindowsRaw(List<int> bytes) async {
+  ///
+  /// [targetPrinterName] berilgan bo'lsa — aniq shu nomdagi (katta/kichik
+  /// harf farqisiz) mahalliy printer qidiriladi va topilmasa xato qaytariladi
+  /// (nima topilgani ro'yxati bilan — diagnostika uchun). Berilmagan bo'lsa —
+  /// eski xulq-atvor: porti "USB" bilan boshlanadigan birinchi printer
+  /// (bir nechta printer ulangan bo'lsa noaniq — shuning uchun sozlamalar
+  /// formasida printer nomi tanlash tavsiya etiladi).
+  Future<({bool ok, String? error})> _printViaWindowsRaw(
+    List<int> bytes, {
+    String? targetPrinterName,
+  }) async {
     try {
-      final printerName = _findUsbPrinterName();
-      if (printerName == null) {
-        return (
-          ok: false,
-          error: "USB printer topilmadi.\n"
-              "Windows: Sozlamalar → Bluetooth va qurilmalar → Printerlar da "
-              "USB printer o'rnatilganini tekshiring.",
-        );
+      final printers = _enumerateLocalPrinters();
+      String? printerName;
+      final want = targetPrinterName?.trim() ?? '';
+      if (want.isNotEmpty) {
+        for (final p in printers) {
+          if (p.name.toLowerCase() == want.toLowerCase()) {
+            printerName = p.name;
+            break;
+          }
+        }
+        if (printerName == null) {
+          final found = printers.map((p) => p.name).join(', ');
+          return (
+            ok: false,
+            error: 'Tanlangan printer topilmadi: "$want".\n'
+                "Ushbu kompyuterda o'rnatilgan printerlar: "
+                "${found.isEmpty ? '(hech biri)' : found}",
+          );
+        }
+      } else {
+        for (final p in printers) {
+          if (p.port.toUpperCase().startsWith('USB')) {
+            printerName = p.name;
+            break;
+          }
+        }
+        if (printerName == null) {
+          return (
+            ok: false,
+            error: "USB printer topilmadi.\n"
+                "Windows: Sozlamalar → Bluetooth va qurilmalar → Printerlar da "
+                "USB printer o'rnatilganini tekshiring, yoki printer "
+                "sozlamalarida aniq printerni tanlang.",
+          );
+        }
       }
       return _writeRawToPrinter(printerName, bytes);
     } catch (e, st) {
@@ -596,8 +645,9 @@ class PrinterService {
     }
   }
 
-  /// O'rnatilgan local printerlar orasidan USB portga ulangani topiladi.
-  String? _findUsbPrinterName() {
+  /// Ushbu kompyuterda o'rnatilgan barcha printerlar (nomi va porti) — USB
+  /// printer tanlagichi (sozlamalar formasi) va diagnostika xabarlari uchun.
+  List<({String name, String port})> _enumerateLocalPrinters() {
     final cbNeeded = calloc<DWORD>();
     final cReturned = calloc<DWORD>();
 
@@ -608,7 +658,7 @@ class PrinterService {
     if (size == 0) {
       calloc.free(cbNeeded);
       calloc.free(cReturned);
-      return null;
+      return const [];
     }
 
     final buf = calloc<Uint8>(size);
@@ -622,25 +672,31 @@ class PrinterService {
       cReturned,
     );
 
-    String? found;
+    final result = <({String name, String port})>[];
     if (ok != 0) {
       final count = cReturned.value;
       for (int i = 0; i < count; i++) {
         final pInfo = Pointer<PRINTER_INFO_2>.fromAddress(
           buf.address + i * sizeOf<PRINTER_INFO_2>(),
         );
-        final portName = pInfo.ref.pPortName.toDartString().toUpperCase();
-        if (portName.startsWith('USB')) {
-          found = pInfo.ref.pPrinterName.toDartString();
-          break;
-        }
+        result.add((
+          name: pInfo.ref.pPrinterName.toDartString(),
+          port: pInfo.ref.pPortName.toDartString(),
+        ));
       }
     }
 
     calloc.free(buf);
     calloc.free(cbNeeded);
     calloc.free(cReturned);
-    return found;
+    return result;
+  }
+
+  /// Sozlamalar formasidagi USB printer tanlagichi uchun — Windows'da
+  /// o'rnatilgan barcha printerlar nomi. Windows'dan tashqarida bo'sh ro'yxat.
+  List<String> listLocalWindowsPrinterNames() {
+    if (!Platform.isWindows) return const [];
+    return _enumerateLocalPrinters().map((p) => p.name).toList();
   }
 
   /// Win32 API orqali raw bytes yuboradi.

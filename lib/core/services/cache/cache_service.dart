@@ -41,6 +41,29 @@ class CacheService {
 
   List<Map<String, dynamic>> getDepartments() => _decode(_box.get(_departments));
 
+  // ─── USB printer names (per-device, never synced to backend) ──
+  // A `connection_type: usb` printer-settings entry is shared/synced across
+  // the team, but the actual Windows-installed printer name it should target
+  // only makes sense on the one PC its USB cable is plugged into — so the
+  // entry.id -> Windows printer name mapping lives only in this local box.
+  static const _usbPrinterNames = 'cache_usb_printer_names';
+
+  Future<void> saveUsbPrinterName(String entryId, String printerName) async {
+    final map = _decodeMap(_box.get(_usbPrinterNames));
+    map[entryId] = printerName;
+    await _box.put(_usbPrinterNames, jsonEncode(map));
+  }
+
+  String? getUsbPrinterName(String entryId) =>
+      _decodeMap(_box.get(_usbPrinterNames))[entryId];
+
+  Future<void> removeUsbPrinterName(String entryId) async {
+    final map = _decodeMap(_box.get(_usbPrinterNames));
+    if (map.remove(entryId) != null) {
+      await _box.put(_usbPrinterNames, jsonEncode(map));
+    }
+  }
+
   // ─── Halls ────────────────────────────────────────────────────
   Future<void> saveHalls(List<Map<String, dynamic>> items) async =>
       _box.put(_halls, jsonEncode(items));
@@ -163,6 +186,16 @@ class CacheService {
       return list.cast<Map<String, dynamic>>();
     } catch (_) {
       return [];
+    }
+  }
+
+  Map<String, String> _decodeMap(dynamic raw) {
+    if (raw == null) return {};
+    try {
+      final map = jsonDecode(raw as String) as Map;
+      return map.map((k, v) => MapEntry(k.toString(), v.toString()));
+    } catch (_) {
+      return {};
     }
   }
 }

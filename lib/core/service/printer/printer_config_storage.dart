@@ -48,6 +48,7 @@ class PrinterConfigStorage {
           ip: e.ip,
           port: e.port,
           connectionType: e.connectionType,
+          entryId: e.id,
         );
       }
     }
@@ -78,6 +79,7 @@ class PrinterConfigStorage {
               ip: e.ip,
               port: e.port,
               connectionType: e.connectionType,
+              entryId: e.id,
             );
           }
         }
@@ -92,6 +94,7 @@ class PrinterConfigStorage {
               ip: e.ip,
               port: e.port,
               connectionType: e.connectionType,
+              entryId: e.id,
             );
           }
         }
