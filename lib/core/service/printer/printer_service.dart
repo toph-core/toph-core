@@ -509,7 +509,10 @@ class PrinterService {
     int maxRetries = 2,
     bool beep = false,
   }) async {
-    final data = beep ? [..._buzzerBytes, ...bytes] : bytes;
+    // Signal oxirida — boshida yuborilsa, printer hali ESC @ bilan
+    // ishga tushmagan holatda notanish buyruq oladi va ba'zi modellarda
+    // butun jarayonni chalkashtirib qo'yishi mumkin.
+    final data = beep ? [...bytes, ..._buzzerBytes] : bytes;
     if (config.usesWindowsPrinter) {
       if (!Platform.isWindows) {
         return (ok: false, error: "USB printer faqat Windows da ishlaydi.");
