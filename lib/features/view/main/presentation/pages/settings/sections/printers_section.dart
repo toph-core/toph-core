@@ -1,21 +1,18 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:mary_ai_pos/core/api/api_error_overlay.dart';
 import 'package:mary_ai_pos/core/api/dio_client.dart';
 import 'package:mary_ai_pos/core/api/list_api.dart';
 import 'package:mary_ai_pos/core/components/flush_bars.dart';
 import 'package:mary_ai_pos/core/extension/for_context.dart';
+import 'package:mary_ai_pos/core/service/printer/printer_config_storage.dart';
 import 'package:mary_ai_pos/core/service/printer/printer_service.dart';
 import 'package:mary_ai_pos/core/service/printer/printer_setting_entry.dart';
 import 'package:mary_ai_pos/core/services/cache/cache_service.dart';
-import 'package:mary_ai_pos/core/usecase/usecase.dart';
 import 'package:mary_ai_pos/di.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/category/category_model.dart';
-import 'package:mary_ai_pos/features/view/main/domain/usecase/sync_printer_settings_usecase.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/settings/widgets/section_shell.dart';
 import 'package:mary_ai_pos/generated/l10n.dart';
 
@@ -28,9 +25,9 @@ class PrintersSection extends StatefulWidget {
 
 class _PrintersSectionState extends State<PrintersSection> {
   final DioClient _client = inject<DioClient>();
+  final PrinterConfigStorage _storage = inject<PrinterConfigStorage>();
 
   bool _loading = true;
-  String? _error;
   List<PrinterSettingEntry> _items = const [];
   List<CategoryModel> _categories = const [];
 
@@ -40,58 +37,45 @@ class _PrintersSectionState extends State<PrintersSection> {
     _loadAll();
   }
 
+  /// Printer ro'yxati — **shu qurilmadagi** lokal saqlashdan, hech qanday
+  /// tarmoq so'rovisiz (hech qachon xato bermaydi). Kategoriya nomlari esa
+  /// faqat ko'rsatish uchun — avval keshdan, so'ng eng yaxshi urinish sifatida
+  /// backenddan yangilanadi; muvaffaqiyatsiz bo'lsa jim qoladi.
   Future<void> _loadAll() async {
     setState(() {
       _loading = true;
-      _error = null;
+      _items = _storage.listEntries();
     });
+    final cachedCats = inject<CacheService>().getCategories();
+    if (cachedCats.isNotEmpty && mounted) {
+      setState(() {
+        _categories =
+            cachedCats.map((e) => CategoryModel.fromJson(e)).toList();
+      });
+    }
+    setState(() => _loading = false);
     try {
-      final results = await Future.wait([
-        _client.get(ListAPI.printerSettings),
-        _client.get(ListAPI.categories),
-      ]);
-      final printersRoot = results[0].data;
-      final categoriesRoot = results[1].data;
-
-      List<dynamic> printersData = const [];
-      if (printersRoot is Map && printersRoot['data'] is List) {
-        printersData = printersRoot['data'] as List;
-      } else if (printersRoot is List) {
-        printersData = printersRoot;
-      }
-
+      final res = await _client.get(ListAPI.categories);
+      final root = res.data;
       List<dynamic> categoriesData = const [];
-      if (categoriesRoot is Map && categoriesRoot['data'] is List) {
-        categoriesData = categoriesRoot['data'] as List;
-      } else if (categoriesRoot is List) {
-        categoriesData = categoriesRoot;
+      if (root is Map && root['data'] is List) {
+        categoriesData = root['data'] as List;
+      } else if (root is List) {
+        categoriesData = root;
       }
-
       if (!mounted) return;
       setState(() {
-        _items = PrinterSettingEntry.listFromJsonList(printersData);
         _categories = categoriesData
             .map((e) =>
                 CategoryModel.fromJson(Map<String, dynamic>.from(e as Map)))
             .toList();
-        _loading = false;
-      });
-    } on DioException catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _loading = false;
-        _error = _readError(e) ?? S.current.strLoadError;
       });
     } catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _loading = false;
-        _error = e.toString();
-      });
+      // Kategoriya nomlarini yangilab bo'lmadi — jim o'tamiz, printer
+      // ro'yxati baribir lokal holatdan to'liq ko'rsatiladi.
+      debugPrint('[PrintersSection] Kategoriyalarni yuklab bo\'lmadi: $e');
     }
   }
-
-  String? _readError(DioException e) => userFriendlyDioError(e);
 
   Future<void> _openEditor({PrinterSettingEntry? existing}) async {
     final saved = await showDialog<bool>(
@@ -101,11 +85,11 @@ class _PrintersSectionState extends State<PrintersSection> {
         existing: existing,
         categories: _categories,
         client: _client,
+        storage: _storage,
       ),
     );
     if (saved == true && mounted) {
       _loadAll();
-      unawaited(inject<SyncPrinterSettingsUsecase>().call(NoParams()));
     }
   }
 
@@ -119,15 +103,18 @@ class _PrintersSectionState extends State<PrintersSection> {
       ),
     );
     if (ok != true || !mounted) return;
-    try {
-      await _client.delete('${ListAPI.printerSettings}/${item.id}');
-      if (!mounted) return;
-      _loadAll();
-      unawaited(inject<SyncPrinterSettingsUsecase>().call(NoParams()));
-    } on DioException catch (e) {
-      if (!mounted) return;
-      showErrorMessage(context, _readError(e) ?? S.current.strDeleteError);
-    }
+    // Lokal — har doim ishlaydi. Backend — eng yaxshi urinish, muvaffaqiyatsiz
+    // bo'lsa ham lokal o'chirish kuchda qoladi (faqat sinov uchun jim log).
+    await _storage.deleteEntry(item.id);
+    unawaited(
+      _client.delete('${ListAPI.printerSettings}/${item.id}').catchError((e) {
+        debugPrint('[PrintersSection] Backend delete xatosi (e\'tiborsiz): $e');
+        return null;
+      }),
+    );
+    if (!mounted) return;
+    inject<CacheService>().removeUsbPrinterName(item.id);
+    _loadAll();
   }
 
   String _categoryName(String id) {
@@ -154,47 +141,8 @@ class _PrintersSectionState extends State<PrintersSection> {
   }
 
   Widget _buildBody() {
-    final colors = context.colors;
     if (_loading) {
       return const Center(child: CircularProgressIndicator.adaptive());
-    }
-    if (_error != null) {
-      return Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 64,
-              height: 64,
-              decoration: BoxDecoration(
-                color: colors.systemError.withOpacity(0.10),
-                borderRadius: BorderRadius.circular(18),
-              ),
-              child: Icon(Icons.error_outline,
-                  size: 28, color: colors.systemError),
-            ),
-            const SizedBox(height: 14),
-            SizedBox(
-              width: 320,
-              child: Text(
-                _error!,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: colors.systemError,
-                  fontFamily: 'Inter',
-                  fontSize: 13,
-                ),
-              ),
-            ),
-            const SizedBox(height: 12),
-            SectionPrimaryButton(
-              icon: Icons.refresh_rounded,
-              label: S.current.strRetry,
-              onPressed: _loadAll,
-            ),
-          ],
-        ),
-      );
     }
     if (_items.isEmpty) {
       return SectionEmptyState(
@@ -678,11 +626,13 @@ class _PrinterEditDialog extends StatefulWidget {
   final PrinterSettingEntry? existing;
   final List<CategoryModel> categories;
   final DioClient client;
+  final PrinterConfigStorage storage;
 
   const _PrinterEditDialog({
     required this.existing,
     required this.categories,
     required this.client,
+    required this.storage,
   });
 
   @override
@@ -770,6 +720,10 @@ class _PrinterEditDialogState extends State<_PrinterEditDialog> {
     return null;
   }
 
+  /// Lokal saqlash — har doim ishlaydi, birlamchi manba. Backendga yuborish
+  /// alohida, eng yaxshi urinish sifatida ([_pushToBackendBestEffort]): u
+  /// muvaffaqiyatsiz bo'lsa ham (masalan tarmoq yo'q) Save baribir
+  /// muvaffaqiyatli yakunlanadi — hozircha shu tarzda sinovdan o'tkazilmoqda.
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
     if (_type == 'category' && _selectedCategoryIds.isEmpty) {
@@ -785,50 +739,68 @@ class _PrinterEditDialogState extends State<_PrinterEditDialog> {
       _saving = true;
       _saveError = null;
     });
-    // USB — IP/port backend sxemasi uchun talab qilinadi, lekin chop etishda
+
+    // USB — IP/port backend sxemasi uchun placeholder, chop etishda
     // ishlatilmaydi (haqiqiy nishon — [_windowsPrinterName] — faqat shu
     // qurilmada lokal saqlanadi, pastda).
-    final body = {
-      'ip': _connection == 'usb' ? '127.0.0.1' : _ipCtrl.text.trim(),
-      'port': _connection == 'usb' ? 9100 : int.parse(_portCtrl.text.trim()),
-      'type': _type,
-      'connection_type': _connection,
-      'connected_entity_ids':
+    final ip = _connection == 'usb' ? '127.0.0.1' : _ipCtrl.text.trim();
+    final port = _connection == 'usb' ? 9100 : int.parse(_portCtrl.text.trim());
+    final entryId = widget.existing?.id ?? widget.storage.generateLocalId();
+    final entry = PrinterSettingEntry(
+      id: entryId,
+      ip: ip,
+      port: port,
+      type: _type,
+      connectedEntityIds:
           _type == 'category' ? _selectedCategoryIds.toList() : <String>[],
+      connectionType: _connection,
+    );
+
+    await widget.storage.upsertEntry(entry);
+
+    final cache = inject<CacheService>();
+    if (_connection == 'usb' && _windowsPrinterName != null) {
+      await cache.saveUsbPrinterName(entryId, _windowsPrinterName!);
+    } else {
+      // Turi 'usb'dan boshqasiga o'zgargan bo'lishi mumkin — eski lokal
+      // tanlovni qoldirmaymiz.
+      await cache.removeUsbPrinterName(entryId);
+    }
+
+    unawaited(_pushToBackendBestEffort(entry));
+
+    if (!mounted) return;
+    Navigator.pop(context, true);
+  }
+
+  /// Backendga yozishga urinadi — muvaffaqiyat/muvaffaqiyatsizligi Save
+  /// natijasiga ta'sir qilmaydi, faqat log qoldiradi. Yangi yozuv uchun
+  /// backend berishi mumkin bo'lgan boshqa id'ga qasddan almashtirilmaydi —
+  /// lokal [entryId] shu qurilmada USB tanlovi va print-time qidiruvi uchun
+  /// yagona manba bo'lib qoladi.
+  Future<void> _pushToBackendBestEffort(PrinterSettingEntry entry) async {
+    final body = {
+      'ip': entry.ip,
+      'port': entry.port,
+      'type': entry.type,
+      'connection_type': entry.connectionType,
+      'connected_entity_ids': entry.connectedEntityIds,
     };
     try {
-      String? entryId = widget.existing?.id;
       if (widget.existing == null) {
-        final res = await widget.client.post(ListAPI.printerSettings, data: body);
-        entryId = (res.data?['data']?['id'])?.toString();
+        await widget.client.post(ListAPI.printerSettings, data: body);
       } else {
         await widget.client.put(
-          '${ListAPI.printerSettings}/${widget.existing!.id}',
+          '${ListAPI.printerSettings}/${entry.id}',
           data: body,
         );
       }
-      if (entryId != null && entryId.isNotEmpty) {
-        final cache = inject<CacheService>();
-        if (_connection == 'usb' && _windowsPrinterName != null) {
-          await cache.saveUsbPrinterName(entryId, _windowsPrinterName!);
-        } else {
-          // Turi 'usb'dan boshqasiga o'zgargan bo'lishi mumkin — eski lokal
-          // tanlovni qoldirmaymiz.
-          await cache.removeUsbPrinterName(entryId);
-        }
-      }
-      if (!mounted) return;
-      Navigator.pop(context, true);
-    } on DioException catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _saving = false;
-        _saveError = _readError(e) ?? S.current.strSaveError;
-      });
+      debugPrint('[PrinterEditDialog] Backendga yozildi: ${entry.id}');
+    } catch (e) {
+      debugPrint('[PrinterEditDialog] Backend yozish xatosi (e\'tiborsiz, '
+          'lokal saqlandi): $e');
     }
   }
-
-  String? _readError(DioException e) => userFriendlyDioError(e);
 
   /// IP/port/ulanish turini — hozir formaga kiritilgan qiymatlarni, saqlash
   /// shart bo'lmasdan — to'g'ridan-to'g'ri shu printerga chek yuborib sinaydi.

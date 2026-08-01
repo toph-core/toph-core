@@ -5,7 +5,15 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'printer_config.dart';
 import 'printer_setting_entry.dart';
 
-/// Backend `GET /api/v1/settings/printer-settings` ro‘yxati; [SyncPrinterSettingsUsecase] yozadi.
+/// Printer sozlamalarining **shu qurilmadagi** manzili — sozlamalar ekrani
+/// to'g'ridan-to'g'ri shu yerga o'qiydi/yozadi (backendga bog'liq emas).
+/// Backenddagi `GET/POST/PUT/DELETE /api/v1/settings/printer-settings` faqat
+/// eng yaxshi urinish sifatida, alohida chaqiriladi — muvaffaqiyatsiz bo'lsa
+/// ham lokal holat o'zgarmasdan ishlashda davom etadi (`printers_section.dart`).
+/// `SyncPrinterSettingsUsecase` (login paytida) hali ham backend ro'yxati
+/// bilan almashtirib qo'yishi mumkin — shu sababli faqat lokal saqlangan
+/// (backendga hech qachon yuborilmagan) yozuvlar keyingi loginda yo'qolishi
+/// mumkin. Hozircha qasddan shunday — sinov bosqichi.
 class PrinterConfigStorage {
   PrinterConfigStorage(this._prefs);
 
@@ -36,6 +44,31 @@ class PrinterConfigStorage {
       return [];
     }
   }
+
+  /// Sozlamalar ekrani uchun — to'liq ro'yxat, backendga murojaat qilmasdan.
+  List<PrinterSettingEntry> listEntries() => _entries();
+
+  /// `id` bo'yicha yangi yozuvni qo'shadi yoki mavjudini almashtiradi.
+  Future<void> upsertEntry(PrinterSettingEntry entry) async {
+    final list = _entries();
+    final idx = list.indexWhere((e) => e.id == entry.id);
+    if (idx >= 0) {
+      list[idx] = entry;
+    } else {
+      list.add(entry);
+    }
+    await applyPrinterSettingsList(list);
+  }
+
+  Future<void> deleteEntry(String id) async {
+    final list = _entries()..removeWhere((e) => e.id == id);
+    await applyPrinterSettingsList(list);
+  }
+
+  /// Backend hali ko'rmagan yangi yozuv uchun — vaqt tamg'asi asosida,
+  /// shu qurilmada takrorlanmaydigan id.
+  String generateLocalId() =>
+      'local-${DateTime.now().microsecondsSinceEpoch}';
 
   /// `GET printer-settings` muvaffaqiyatli yozilgan bo‘lsa `true` (bo‘sh ro‘yxat ham `true`).
   bool get hasPrinterSettingsEntries => _entries().isNotEmpty;
