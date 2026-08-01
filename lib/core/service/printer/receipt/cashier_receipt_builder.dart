@@ -98,71 +98,71 @@ class CashierReceiptBuilder {
     final hasData = timerStartedAt != null || timerTotalSec > 0 || timerPauses.isNotEmpty;
     if (!hasData) return;
 
-    bytes += gen.hr();
-    bytes += gen.text(
+    bytes.addAll(gen.hr());
+    bytes.addAll(gen.text(
       'SOATLIK JADVAL',
       styles: const PosStyles(bold: false, align: PosAlign.center),
-    );
+    ));
 
     if (timerStartedAt != null) {
-      bytes += gen.row([
+      bytes.addAll(gen.row([
         PosColumn(text: 'Ochildi:', width: 6),
         PosColumn(text: _fmtClock(timerStartedAt), width: 6,
             styles: const PosStyles(align: PosAlign.right)),
-      ]);
+      ]));
     }
 
     // Pause tarixi
     for (int i = 0; i < timerPauses.length; i++) {
       final p = timerPauses[i];
       final num = i + 1;
-      bytes += gen.row([
+      bytes.addAll(gen.row([
         PosColumn(text: 'Pause $num bo\'ldi:', width: 7),
         PosColumn(text: _fmtClock(p.startedAt), width: 5,
             styles: const PosStyles(align: PosAlign.right)),
-      ]);
+      ]));
       if (p.endedAt != null) {
-        bytes += gen.row([
+        bytes.addAll(gen.row([
           PosColumn(text: 'To\'xtatildi:', width: 7),
           PosColumn(text: _fmtClock(p.endedAt!), width: 5,
               styles: const PosStyles(align: PosAlign.right)),
-        ]);
+        ]));
       }
       if (p.durationSec > 0) {
-        bytes += gen.row([
+        bytes.addAll(gen.row([
           PosColumn(text: 'Pause vaqti:', width: 7),
           PosColumn(text: _fmtDuration(p.durationSec), width: 5,
               styles: const PosStyles(align: PosAlign.right)),
-        ]);
+        ]));
       }
     }
 
     if (timerTotalSec > 0) {
-      bytes += gen.row([
+      bytes.addAll(gen.row([
         PosColumn(text: 'Faol vaqt:', width: 7),
         PosColumn(text: _fmtDuration(timerTotalSec), width: 5,
             styles: const PosStyles(align: PosAlign.right)),
-      ]);
+      ]));
     }
 
     // Umumiy pauza vaqti
     final totalPauseSec = timerPauses.fold(0, (s, p) => s + p.durationSec);
     if (totalPauseSec > 0) {
-      bytes += gen.row([
+      bytes.addAll(gen.row([
         PosColumn(text: 'Umumiy pauza:', width: 7),
         PosColumn(text: _fmtDuration(totalPauseSec), width: 5,
             styles: const PosStyles(align: PosAlign.right)),
-      ]);
+      ]));
     }
 
     if (timerPricePerHour != null && timerPricePerHour.isNotEmpty) {
       final ph = int.tryParse(timerPricePerHour.replaceAll(RegExp(r'[^0-9]'), ''));
       if (ph != null && ph > 0) {
-        bytes += gen.row([
+        bytes.addAll(gen.row([
           PosColumn(text: 'Soatlik narx:', width: 7),
           PosColumn(text: '${_fmt(ph)} sum', width: 5,
               styles: const PosStyles(align: PosAlign.right)),
-        ]);
+        ]));
       }
     }
   }
@@ -227,23 +227,23 @@ class CashierReceiptBuilder {
       // "stand out" header — reverse video (black bg/white text), same
       // technique the kitchen ticket uses for category headers; this
       // printer profile doesn't render `bold` reliably.
-      bytes += gen.text(
+      bytes.addAll(gen.text(
         label.toUpperCase(),
-        styles: const PosStyles(bold: false, reverse: true),
-      );
+      styles: const PosStyles(bold: true, reverse: true),
+      ));
       for (final line in lines) {
         final displayName = line.name.length > 20
             ? '${line.name.substring(0, 18)}..'
             : line.name;
-        bytes += gen.row([
+        bytes.addAll(gen.row([
           PosColumn(text: displayName, width: 6),
           PosColumn(text: '${line.quantity}x', width: 2,
               styles: const PosStyles(align: PosAlign.center)),
           PosColumn(text: _fmt(line.lineTotal), width: 4,
               styles: const PosStyles(align: PosAlign.right)),
-        ]);
+        ]));
         for (final c in line.comments) {
-          bytes += gen.text('  - $c');
+          bytes.addAll(gen.text('  - $c'));
         }
       }
     }
@@ -258,12 +258,12 @@ class CashierReceiptBuilder {
     required String Function(OrderFoodEntity)? departmentIdOf,
   }) {
     if (cancelledGoods.isEmpty) return;
-    bytes += gen.hr();
-    bytes += gen.text(
+    bytes.addAll(gen.hr());
+    bytes.addAll(gen.text(
       'CANCELLED ITEMS',
-      styles: const PosStyles(bold: false, align: PosAlign.center, reverse: true),
+      styles: const PosStyles(bold: true, align: PosAlign.center, reverse: true),
       linesAfter: 1,
-    );
+    ));
     final byDept = _groupByDepartment(cancelledGoods, departmentIdOf);
     _appendDepartmentItemLines(
       gen: gen,
@@ -297,16 +297,16 @@ class CashierReceiptBuilder {
     final segments = detail.activePeriods;
     if (segments.isEmpty) return;
 
-    bytes += gen.hr();
-    bytes += gen.text(
+    bytes.addAll(gen.hr());
+    bytes.addAll(gen.text(
       'TABLE USAGE',
-      styles: const PosStyles(bold: false, align: PosAlign.center, reverse: true),
-    );
+      styles: const PosStyles(bold: true, align: PosAlign.center, reverse: true),
+    ));
     if (detail.tableNumber > 0) {
-      bytes += gen.text('Table: ${detail.tableNumber.toInt()}');
+      bytes.addAll(gen.text('Table: ${detail.tableNumber.toInt()}'));
     }
     if (detail.opened != null) {
-      bytes += gen.text('Opened: ${_fmtClock(detail.opened!)}');
+      bytes.addAll(gen.text('Opened: ${_fmtClock(detail.opened!)}'));
     }
 
     // Group segments by room (table number; falls back to table id for the
@@ -332,11 +332,11 @@ class CashierReceiptBuilder {
       // segments — each segment's own frozen amount is still authoritative).
       final price = segs.map(_segmentPrice).lastWhere((p) => p > 0, orElse: () => 0);
 
-      bytes += gen.text('');
-      bytes += gen.text(
+      bytes.addAll(gen.text(''));
+      bytes.addAll(gen.text(
         'Room ${roomNumber ?? '?'}  ${_fmt(price)} so\'m/soat',
         styles: const PosStyles(bold: false, underline: true),
-      );
+      ));
 
       final intervals = <ActiveInterval>[];
       for (final s in segs) {
@@ -349,31 +349,31 @@ class CashierReceiptBuilder {
         final mins = (iv.durationSec / 60).round();
         minsList.add(mins);
         final endLabel = iv.end != null ? _fmtClock(iv.end!) : 'hozir';
-        bytes += gen.text('${_fmtClock(iv.start)} -> $endLabel   $mins min');
+        bytes.addAll(gen.text('${_fmtClock(iv.start)} -> $endLabel   $mins min'));
       }
 
       final totalMin = minsList.fold(0, (a, b) => a + b);
       final roomAmount = segs.fold<double>(0, (s, seg) => s + _segmentAmount(seg, price));
 
       if (minsList.isNotEmpty) {
-        bytes += gen.text('Calculation:');
-        bytes += gen.text('${_fmt(price)} x ((${minsList.join(' + ')}) / 60)');
-        bytes += gen.text('= ${_fmt(price)} x ($totalMin / 60)');
-        bytes += gen.text('= ${_fmt(roomAmount)} so\'m');
+        bytes.addAll(gen.text('Calculation:'));
+        bytes.addAll(gen.text('${_fmt(price)} x ((${minsList.join(' + ')}) / 60)'));
+        bytes.addAll(gen.text('= ${_fmt(price)} x ($totalMin / 60)'));
+        bytes.addAll(gen.text('= ${_fmt(roomAmount)} so\'m'));
       }
 
       totalActiveSec += segs.fold<int>(0, (s, seg) => s + seg.activeSeconds);
       totalCost += roomAmount;
 
-      if (i < roomOrder.length - 1) bytes += gen.hr(ch: '-');
+      if (i < roomOrder.length - 1) bytes.addAll(gen.hr(ch: '-'));
     }
 
-    bytes += gen.hr();
-    bytes += gen.text('Total Time: ${(totalActiveSec / 60).round()} min');
-    bytes += gen.text(
+    bytes.addAll(gen.hr());
+    bytes.addAll(gen.text('Total Time: ${(totalActiveSec / 60).round()} min'));
+    bytes.addAll(gen.text(
       'Total Table Cost: ${_fmt(totalCost)} so\'m',
       styles: const PosStyles(bold: false, underline: true),
-    );
+    ));
   }
 
   /// To'liq kassir cheki — [OpenOrderModel] asosida.
@@ -402,7 +402,7 @@ class CashierReceiptBuilder {
     bytes += gen.text(
       'КАССИРСКИЙ ЧЕК',
       styles: const PosStyles(
-        align: PosAlign.center, bold: false,
+        align: PosAlign.center, bold: true,
         height: PosTextSize.size2, width: PosTextSize.size1,
       ),
       linesAfter: 1,
@@ -506,9 +506,9 @@ class CashierReceiptBuilder {
     bytes += gen.hr();
     bytes += gen.row([
       PosColumn(text: 'TO\'LOV:', width: 8,
-          styles: const PosStyles(bold: false, height: PosTextSize.size2, width: PosTextSize.size1)),
+          styles: const PosStyles(bold: true, height: PosTextSize.size2, width: PosTextSize.size1)),
       PosColumn(text: _fmt(toPay.round()), width: 4,
-          styles: const PosStyles(bold: false, align: PosAlign.right,
+          styles: const PosStyles(bold: true, align: PosAlign.right,
               height: PosTextSize.size2, width: PosTextSize.size1)),
     ]);
 
@@ -567,7 +567,7 @@ class CashierReceiptBuilder {
       companyName,
       styles: const PosStyles(
         align: PosAlign.center,
-        bold: false,
+        bold: true,
         height: PosTextSize.size2,
         width: PosTextSize.size1,
       ),
@@ -724,7 +724,7 @@ class CashierReceiptBuilder {
         text: 'JAMI',
         width: 5,
         styles: const PosStyles(
-          bold: false,
+          bold: true,
           height: PosTextSize.size2,
           width: PosTextSize.size1,
         ),
@@ -733,7 +733,7 @@ class CashierReceiptBuilder {
         text: '${_fmt(toPay.round())} so\'m',
         width: 7,
         styles: const PosStyles(
-          bold: false,
+          bold: true,
           align: PosAlign.right,
           height: PosTextSize.size2,
           width: PosTextSize.size1,

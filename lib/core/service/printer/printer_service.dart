@@ -123,6 +123,7 @@ class PrinterService {
 
   /// TCP orqali yuborish; juda kichik bo‘laklar ESC/raster oqimini sindirishi mumkin.
   static const _socketChunkBytes = 8192;
+  static const List<int> _buzzerBytes = [0x1B, 0x42, 0x02, 0x03];
 
   static List<List<int>> _socketSendChunks(List<int> bytes) {
     if (bytes.isEmpty) return [bytes];
@@ -162,7 +163,7 @@ class PrinterService {
         departmentNames: deptInfo.names,
         departmentOrder: deptInfo.order,
       );
-      final r = await _connectAndPrint(config, bytes);
+      final r = await _connectAndPrint(config, bytes, beep: true);
       if (!r.ok) {
         _notifyPrinterFailed(
           config,
@@ -224,7 +225,7 @@ class PrinterService {
         departmentNames: deptInfo.names,
         departmentOrder: deptInfo.order,
       );
-      final r = await _connectAndPrint(config, bytes);
+      final r = await _connectAndPrint(config, bytes, beep: true);
       if (!r.ok) {
         _notifyPrinterFailed(
           config,
@@ -261,7 +262,7 @@ class PrinterService {
         cashierLabel: cashierLabel,
         paperSize: config.paperSize,
       );
-      final r = await _connectAndPrint(config, bytes);
+      final r = await _connectAndPrint(config, bytes, beep: true);
       if (!r.ok) {
         _notifyPrinterFailed(
           config,
@@ -414,12 +415,14 @@ class PrinterService {
     PrinterConfig config,
     List<int> bytes, {
     int maxRetries = 2,
+    bool beep = false,
   }) async {
+    final data = beep ? [..._buzzerBytes, ...bytes] : bytes;
     if (config.usesWindowsPrinter) {
       if (!Platform.isWindows) {
         return (ok: false, error: "USB printer faqat Windows da ishlaydi.");
       }
-      return _printViaWindowsRaw(bytes);
+      return _printViaWindowsRaw(data);
     }
 
     if (!config.usesNetworkTcp) {
@@ -441,7 +444,7 @@ class PrinterService {
 
         // 250 bayt — raster (logo) va boshqa buyruqlarni o‘rtadan uzib, printer
         // qolganini matn sifatida chop etishi mumkin. Katta bo‘lak yoki bitta yuborish.
-        final chunks = _socketSendChunks(bytes);
+        final chunks = _socketSendChunks(data);
         await socket.addStream(Stream.fromIterable(chunks));
         await socket.flush();
         await socket.close();
