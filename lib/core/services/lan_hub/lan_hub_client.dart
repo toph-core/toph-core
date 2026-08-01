@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:math';
 
 import 'package:flutter/foundation.dart';
+import 'package:rxdart/rxdart.dart';
 
 import 'lan_hub_message.dart';
 
@@ -42,6 +43,27 @@ class LanHubClient {
   /// "disconnected" with no reason.
   String? get lastAuthFailReason => _lastAuthFailReason;
 
+  /// Reactive mirror of [isConnected] — seeded so a widget that subscribes
+  /// after the fact still sees the current state immediately, not just the
+  /// next change. Fed by re-computing [isConnected] at each transition point
+  /// below rather than tracked independently, so it can never drift from
+  /// what the getter itself would say. Exists so an app-wide "operating
+  /// solo" indicator doesn't need its own polling `Timer` — this codebase
+  /// already has enough of those (see offline-first-architecture-plan.md
+  /// §2's "scattered polling" finding).
+  final _connectionStateSubject = BehaviorSubject<bool>.seeded(false);
+  Stream<bool> get connectionState => _connectionStateSubject.stream;
+
+  /// `dispose()` closing the socket can itself trigger `_onDisconnected`
+  /// asynchronously (the underlying `WebSocket.close()` future can resolve
+  /// before the listener's `onDone` callback actually fires) — guard every
+  /// emission site rather than assume `dispose()`'s ordering is enough.
+  void _emitConnectionState() {
+    if (!_connectionStateSubject.isClosed) {
+      _connectionStateSubject.add(isConnected);
+    }
+  }
+
   Future<void> connect(
     String ip, {
     int port = defaultPort,
@@ -73,12 +95,14 @@ class LanHubClient {
               _authorized = true;
               _lastAuthFailReason = null;
               if (kDebugMode) print('[LanHub] Authorized by hub');
+              _emitConnectionState();
               return;
             }
             if (msg.type == LanHubMessageType.authFail) {
               _lastAuthFailReason = msg.reason;
               if (kDebugMode) print('[LanHub] Rejected by hub: ${msg.reason}');
               _ws?.close();
+              _emitConnectionState();
               return;
             }
             return; // ignore anything else until authorized
@@ -110,6 +134,7 @@ class LanHubClient {
     _ws = null;
     _authorized = false;
     if (kDebugMode) print('[LanHub] Disconnected from hub');
+    _emitConnectionState();
     _scheduleReconnect();
   }
 
@@ -196,6 +221,7 @@ class LanHubClient {
     await _ws?.close();
     _ws = null;
     _authorized = false;
+    _emitConnectionState();
   }
 
   /// To'liq o'chirish — qayta ulanish mumkin emas.
@@ -204,5 +230,6 @@ class LanHubClient {
     await _ws?.close();
     _ws = null;
     if (!_controller.isClosed) await _controller.close();
+    if (!_connectionStateSubject.isClosed) await _connectionStateSubject.close();
   }
 }

@@ -809,7 +809,7 @@ skipped for now 2026-08-01, revisit on real pain**
   that's the trigger to come back to this phase with a concrete problem in hand.
 
 **Phase 4 — LAN cluster hardening + sole-uplink relay (priority raised 2026-08-01) —
-auth + core relay done 2026-08-01, hardening extras not started**
+auth + core relay + solo banner + discovery/conflict-guard done 2026-08-01**
 - mDNS discovery, terminal-JWT auth on the WebSocket handshake, richer
   `LanHubMessage` protocol (order/payment/print-job events, not just table status),
   "operating solo" banner, guard against two manually-configured servers.
@@ -966,24 +966,152 @@ auth + core relay done 2026-08-01, hardening extras not started**
     margin for multi-call ops like `cancelLineItems`/`closeShift`) reduces how often
     this triggers but doesn't close it — closing it for real needs a backend
     idempotency key per operation, out of scope for a client-only change.
-  - *Verification still needed:* none of this has been exercised against two real
-    terminals yet — a follower with pending ops relaying through a leader with live
-    cloud access, a leader that's itself offline (relay should report `retryLater`
-    consistently, not crash), a follower's LAN link dropping mid-relay (should leave
-    the in-flight op queued, not lose it), and a timeout firing on a slow relayed op
-    are all unverified beyond `flutter analyze` (0 new issues) and code review.
-  - **Not started:** mDNS discovery, the "operating solo" banner, and the guard
-    against two manually-configured servers — none of these block the relay
-    mechanism itself, they're operational polish (auto-discovery instead of typing
-    an IP, visibility into cluster health) layered on top of what now exists.
+  - *Verification done, added 2026-08-01:* `test/lan_hub_test.dart` — the codebase's
+    first test for any of this, and only the second hand-written test file in the
+    project (alongside `order_totals_test.dart`; `widget_test.dart` is unmodified
+    `flutter create` boilerplate testing a counter app that doesn't match this POS
+    app and was already failing before this session, unrelated to any of this work).
+    Runs the **real** `LanHubServer`/`LanHubClient` — real `dart:io` `HttpServer`/
+    `WebSocket` over loopback, no mocks — covering: a valid same-branch token being
+    accepted and able to receive a broadcast; a wrong-branch token being rejected
+    with a reason and never reaching the broadcast set; the exact token/branchId
+    strings surviving the JSON round-trip to the validator unmodified; a relayed op
+    executing end-to-end with the result correctly correlated back by `op_id`; two
+    sequential relayed ops on the same connection not cross-talking; a relay
+    request timing out cleanly (returns `null`, doesn't hang) when the handler never
+    replies; and a connection that never sends its `auth` message being dropped
+    after the real 5s server-side timeout. All 7 pass. **This covers the wire
+    protocol layer only** — `LanHubService`'s app-level decisions (the actual
+    `UserBloc`/`AppTokenStorage` branch/token lookup, the online-vs-offline
+    validator split, `OfflineQueueService` wiring) aren't exercised here, since that
+    needs the full DI graph; catching a real misunderstanding while writing this
+    (an early draft test asserted `LanHubServer` itself rejects empty credentials —
+    it doesn't, that check lives entirely in `LanHubService`'s validator) is itself
+    a small data point for why this kind of test is worth having.
+  - *Verification still needed:* still no test against two actual separate running
+    app instances/devices — everything above runs the real network stack but within
+    one test process. A leader that's itself offline (relay should report
+    `retryLater` consistently, not crash), a follower's LAN link dropping mid-relay
+    (should leave the in-flight op queued, not lose it), and the full
+    `LanHubService`-level branch/token decision logic remain unverified beyond
+    `flutter analyze` and code review.
+- **Done: "operating solo" banner.** `LanHubClient` gained a `BehaviorSubject<bool>`-
+  backed `connectionState` stream (seeded with the current value, so a widget that
+  subscribes late still sees the current state immediately) — re-emitted at every
+  point `isConnected` could change (auth accepted, auth rejected, disconnected,
+  explicit `disconnect()`), always by re-reading the existing `isConnected` getter
+  rather than tracked as a second, independently-maintained value, so it can't drift
+  from what that getter would say. Exposed through `LanHubService.
+  onClientConnectionChanged`. New `LanSoloBanner` widget (`lib/core/widgets/
+  lan_solo_banner.dart`) mirrors `OfflineBanner`'s exact visual pattern (animated
+  height-collapse strip, icon + text) and is mounted right below it in
+  `AppScaffold` — reaching the same 11 screens `OfflineBanner` already covers, same
+  known gap on the 4 screens with their own `Scaffold` (payment/detail/waiter/
+  department-selection) that `OfflineBanner` already has, not a new one this adds.
+  Deliberately a **distinct** indicator from `OfflineBanner`, not a merged/shared
+  one: a `client`-mode follower can have perfectly good internet of its own and
+  still be "solo" here, since Phase 4's relay design routes all outbox sync through
+  the leader, never directly — the two conditions are orthogonal and can be true
+  independently, so both banners can legitimately stack at once.
+  - **Caught a real, newly-introduced bug while writing this, before it shipped:**
+    the very first test run crashed with `Bad state: Cannot add new events after
+    calling close`. `LanHubClient.dispose()` closes the socket, which can trigger
+    `_onDisconnected` *asynchronously* (the `WebSocket.close()` future resolving
+    doesn't guarantee the listener's `onDone` callback has already fired) — that
+    handler was emitting onto `_connectionStateSubject` after `dispose()` had
+    already closed it. Fixed by guarding every emission site through one
+    `_emitConnectionState()` helper that checks `isClosed` first, rather than
+    trusting `dispose()`'s call ordering to be race-free. This is exactly the kind
+    of bug `flutter analyze` structurally cannot catch (it's a runtime ordering
+    issue, not a type error) and the LAN test suite caught on the very first run —
+    concrete evidence for why that test slice was worth adding before this one.
+  - `LanSoloBanner` re-reads `mode` inside the `StreamBuilder`'s builder callback
+    rather than gating on it with a separate check outside — `mode` itself has no
+    stream, but every mode change in the app goes through `LanHubService.restart()`,
+    which always calls `disconnect()` first, and `disconnect()` always emits on
+    `connectionState`. Piggybacking the mode check on that same rebuild trigger
+    means this banner doesn't need a polling `Timer` of its own to notice a mode
+    change — consistent with the plan's own "scattered polling" finding (§2) this
+    whole effort is trying to reduce, not add to.
+  - *Verification:* `flutter test test/lan_hub_test.dart` (7/7, including the
+    dispose-while-connected path that reproduced the race above) plus `flutter
+    analyze` (0 new issues). Not yet visually confirmed in a running app — no
+    screenshot/manual pass, just the underlying stream logic under test.
+- **Done: discovery beacon + two-server conflict guard, added 2026-08-01.** Not
+  actual mDNS/Bonjour — a hand-rolled UDP broadcast beacon (`LanDiscoveryService`,
+  new), consistent with the rest of this LAN hub already being raw `dart:io`
+  sockets rather than a pub.dev networking package:
+  - A `server` broadcasts `{branch_id, ws_port}` every 2s on UDP port 8766 (a new
+    port, separate from the WebSocket's 8765) to `255.255.255.255`, and, on that
+    same socket, listens for any *other* hub announcing the same branch id — a
+    split-brain signal that two terminals are both configured as `server` at once.
+    Deliberately **detect-and-warn only, never automatic**: demoting one side
+    automatically would need picking a "winner" with no reliable criteria, and this
+    architecture already accepts a single leader as a known point of failure (§1 Q5)
+    — resolving *which* terminal stays the leader is left to whoever's staffing the
+    branch. Surfaced in the LAN settings screen as a red warning card naming the
+    conflicting IP, shown alongside (not replacing) the existing status card.
+  - A `client` can now run a bounded (4s) discovery scan (`LanHubService.
+    discoverHubs()`) instead of only accepting a hand-typed IP — the settings
+    screen's IP card gained a "search the local network" button that lists
+    discovered hub IPs as tappable chips, filling the IP field on tap. Manual entry
+    stays fully available as a fallback (a network that blocks UDP broadcast, or a
+    hub not yet reached by a scan, still needs it) — this is additive, not a
+    replacement.
+  - An announcer filters out its own broadcast using a random per-process
+    `instance_id` stamped on every packet it sends (not the source address — on one
+    host, a leader's own announce-and-listen socket genuinely receives its own
+    broadcast back, so address alone can't distinguish "me" from "someone else").
+  - Not authenticated, and deliberately so: an announcement carries only a branch id
+    and a port, never a token, and is used only to populate a picker or raise a
+    warning — never to authorize anything. The real handshake still goes through
+    `LanHubServer`'s existing JWT-based `auth` exchange (above) once a terminal
+    dials whichever IP it picked, manually or via the scan.
+  - *A real bug caught while writing the test, before it shipped:* the first draft
+    of `test/lan_discovery_test.dart` deterministically failed (same tests, same
+    failure, every run — not flaky) even though a standalone throwaway script using
+    the identical `dart:io` UDP primitives worked fine. Root cause turned out to be
+    in `LanDiscoveryService` itself, not the test or the environment: `_send()` sent
+    every announcement to the hardcoded `defaultPort` constant instead of whichever
+    port `startAnnouncing`/`startListening` had actually bound — invisible in
+    production (every real caller uses the default port on both ends) but fatal for
+    a test intentionally using non-default ports to avoid cross-test port
+    collisions. Fixed by tracking the actually-bound port (`_activePort`) and
+    sending to that instead of the constant. Confirmed by re-running the suite
+    (deterministic failures → deterministic passes) — a good reminder that a
+    *consistent* test failure, not just a flaky one, is still worth chasing to a
+    root cause rather than assumed to be an environment quirk.
+  - Also caught, while chasing the above: the test's own first draft for
+    self-filtering ("an announcer never surfaces its own broadcast") would have
+    passed even if broadcast delivery were completely broken, since it only ever
+    asserted absence. Fixed by adding an independent third-party listener that must
+    positively receive the same broadcast the announcer itself must not — so a
+    fully-broken send path now fails this test instead of silently passing it.
+  - *Verification:* `test/lan_discovery_test.dart` (4 tests, real UDP sockets over
+    loopback, no mocking) — a listener hearing an announcer's fields correctly; an
+    announcer never surfacing its own broadcast (witnessed independently, per
+    above); two hubs on two different branches both heard distinctly; `stop()`
+    actually halting the periodic beacon rather than leaking a live timer. All pass,
+    alongside the existing 7 `lan_hub_test.dart` tests (11/11 total) and `flutter
+    analyze` (69 issues, unchanged baseline). Same disclosed scope limit as the
+    other LAN tests: one test process on loopback, not two physical machines on a
+    real subnet — real-hardware broadcast delivery (firewall rules, multi-NIC
+    routing, actual subnet behavior) remains unverified.
 - *Acceptance:* a device presenting no token, an empty branch id, a mismatched branch
   id, or an expired token cannot join the leader's broadcast set or get anything
   relayed; one presenting a live, same-branch token can do both. A follower with no
   internet of its own but a live LAN link to its leader can still create/modify/close
   orders, open/close shifts, and cancel line items — each op is queued locally,
   handed to the leader over LAN, and only cleared once the leader confirms it landed
-  (or was terminally rejected) server-side. Solo-mode banner and the two-server guard
-  remain open per the "not started" list above.
+  (or was terminally rejected) server-side. A follower that loses its leader sees a
+  visible "operating solo" indicator within moments (event-driven, not a poll
+  interval) instead of silently failing sync in the background. A `client` can find
+  its leader via a local-network scan instead of only manual IP entry, and a
+  `server` is warned in-app if a second hub is ever heard on the same branch. Every
+  item originally scoped for this phase is now built; what remains is the
+  real-two-terminal verification called out throughout (leader offline mid-relay, a
+  follower's LAN link dropping mid-relay, actual hardware broadcast behavior) —
+  Phase 6's soak test is where that's scoped to happen.
 
 **Phase 5 — Print subsystem: job queue + USB relay**
 - `PrintJob` table, claim/lease state machine, LAN-relay path for USB-owned

@@ -12,8 +12,10 @@ import 'package:mary_ai_pos/core/services/offline_queue/pending_operation.dart';
 import 'package:mary_ai_pos/core/utils/jwt_utils.dart';
 import 'package:mary_ai_pos/di.dart';
 import 'package:mary_ai_pos/features/view/auth/presentation/cubit/bloc/user_bloc.dart';
+import 'package:rxdart/rxdart.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'lan_discovery_service.dart';
 import 'lan_hub_client.dart';
 import 'lan_hub_message.dart';
 import 'lan_hub_server.dart';
@@ -29,12 +31,23 @@ class LanHubService {
   final ConnectivityCubit _connectivity;
   final _server = LanHubServer();
   final _client = LanHubClient();
+  final _discovery = LanDiscoveryService();
+  StreamSubscription<HubAnnouncement>? _discoverySub;
 
   final _tableUpdateController =
       StreamController<({String tableId, String status})>.broadcast();
 
   Stream<({String tableId, String status})> get onRemoteTableUpdate =>
       _tableUpdateController.stream;
+
+  /// Non-null while in `server` mode and a second hub has been heard
+  /// broadcasting for this same branch — surfaced as a warning, never acted
+  /// on automatically (see [_watchForConflicts]).
+  final _hubConflictController = BehaviorSubject<String?>.seeded(null);
+
+  Stream<String?> get onHubConflictChanged => _hubConflictController.stream;
+
+  String? get conflictingHubIp => _hubConflictController.valueOrNull;
 
   LanHubService(
     this._prefs, {
@@ -67,6 +80,7 @@ class LanHubService {
           onRelayOp: _handleRelayOp,
         );
         // Server o'zi ham broadcastni eshitadi (lekin client emas)
+        await _watchForConflicts();
         break;
       case LanMode.client:
         final ip = serverIp;
@@ -78,6 +92,58 @@ class LanHubService {
       case LanMode.disabled:
         break;
     }
+  }
+
+  /// Starts this leader's own discovery beacon (so a `client` running
+  /// [discoverHubs] can find it) and, on the same socket, starts watching
+  /// for any *other* hub announcing itself for this same branch — a split-
+  /// brain signal that two terminals are both configured as `server` at
+  /// once. Deliberately detect-and-warn only: automatically demoting one
+  /// side would need picking a "winner" with no reliable criteria, and this
+  /// architecture already accepts a single leader as a known point of
+  /// failure — resolving *which* terminal stays the leader is a call for
+  /// whoever's staffing the branch, not this service.
+  Future<void> _watchForConflicts() async {
+    final myBranchId = inject<UserBloc>().state.userMOdel?.branchId ?? '';
+    if (myBranchId.isEmpty) return;
+    await _discovery.startAnnouncing(
+      branchId: myBranchId,
+      wsPort: LanHubServer.defaultPort,
+    );
+    await _discoverySub?.cancel();
+    _discoverySub = _discovery.onAnnouncement.listen((a) {
+      if (a.branchId != myBranchId) return;
+      if (kDebugMode) print('[LanHub] Conflicting hub detected at ${a.ip}');
+      if (!_hubConflictController.isClosed) _hubConflictController.add(a.ip);
+    });
+  }
+
+  /// Client-side helper: listens for hub broadcasts on this LAN for
+  /// [timeout] and returns any distinct IPs heard for this terminal's own
+  /// branch — lets the settings screen offer a picker instead of requiring
+  /// an IP be typed in by hand. Manual entry stays available as a fallback
+  /// (a network that blocks UDP broadcast, or a hub not yet reached by a
+  /// scan, still needs it). Safe to call regardless of current [mode]: while
+  /// in `client` mode the discovery socket isn't otherwise in use (the
+  /// standing conflict watch above only ever runs under `server`), so this
+  /// always starts from a clean, dedicated scan and fully stops afterward.
+  Future<List<String>> discoverHubs({
+    Duration timeout = const Duration(seconds: 4),
+  }) async {
+    final myBranchId = inject<UserBloc>().state.userMOdel?.branchId ?? '';
+    if (myBranchId.isEmpty) return [];
+    final found = <String>{};
+    final sub = _discovery.onAnnouncement.listen((a) {
+      if (a.branchId == myBranchId) found.add(a.ip);
+    });
+    try {
+      await _discovery.startListening();
+      await Future.delayed(timeout);
+    } finally {
+      await sub.cancel();
+      await _discovery.stop();
+    }
+    return found.toList();
   }
 
   Future<LanAuthCredentials> _readOwnCredentials() async {
@@ -204,16 +270,28 @@ class LanHubService {
   bool get isClientConnected => _client.isConnected;
   String? get lastAuthFailReason => _client.lastAuthFailReason;
 
+  /// Reactive mirror of [isClientConnected] — for `client` mode only, used by
+  /// the app-wide "operating solo" indicator so it doesn't need its own
+  /// polling timer.
+  Stream<bool> get onClientConnectionChanged => _client.connectionState;
+
   /// Rejim o'zgarganda — eski server/clientni to'xtatib qayta ishga tushirish.
   Future<void> restart() async {
     await _server.stop();
     await _client.disconnect();
+    await _discoverySub?.cancel();
+    _discoverySub = null;
+    await _discovery.stop();
+    if (!_hubConflictController.isClosed) _hubConflictController.add(null);
     await init();
   }
 
   Future<void> dispose() async {
     await _server.stop();
     await _client.dispose();
+    await _discoverySub?.cancel();
+    await _discovery.dispose();
+    if (!_hubConflictController.isClosed) await _hubConflictController.close();
     if (!_tableUpdateController.isClosed) {
       await _tableUpdateController.close();
     }

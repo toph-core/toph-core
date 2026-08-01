@@ -6,6 +6,7 @@ import 'package:mary_ai_pos/core/services/connectivity/connectivity_cubit.dart';
 import 'package:mary_ai_pos/core/sync/sync_engine.dart';
 import 'package:mary_ai_pos/core/widgets/app_sidebar.dart';
 import 'package:mary_ai_pos/core/widgets/styled_virtual_keyboard.dart';
+import 'package:mary_ai_pos/core/widgets/lan_solo_banner.dart';
 import 'package:mary_ai_pos/core/widgets/offline_banner.dart';
 import 'package:mary_ai_pos/di.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/main/main_cubit.dart';
@@ -112,6 +113,7 @@ class _AppScaffoldState extends State<AppScaffold> {
             child: Column(
               children: [
                 const OfflineBanner(),
+                const LanSoloBanner(),
                 Expanded(
                   child: Row(
                     children: [

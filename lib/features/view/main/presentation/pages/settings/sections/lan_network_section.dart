@@ -19,6 +19,8 @@ class _LanNetworkSectionState extends State<LanNetworkSection> {
   late String _serverIp;
   final _ipController = TextEditingController();
   Timer? _refreshTimer;
+  bool _discovering = false;
+  List<String> _discoveredIps = [];
 
   @override
   void initState() {
@@ -44,7 +46,10 @@ class _LanNetworkSectionState extends State<LanNetworkSection> {
     final lanHub = inject<LanHubService>();
     await lanHub.setMode(mode);
     await lanHub.restart();
-    setState(() => _mode = mode);
+    setState(() {
+      _mode = mode;
+      _discoveredIps = [];
+    });
   }
 
   Future<void> _onIpSaved() async {
@@ -54,6 +59,25 @@ class _LanNetworkSectionState extends State<LanNetworkSection> {
     await lanHub.setServerIp(ip);
     await lanHub.restart();
     setState(() => _serverIp = ip);
+  }
+
+  Future<void> _onDiscoverTap() async {
+    if (_discovering) return;
+    setState(() {
+      _discovering = true;
+      _discoveredIps = [];
+    });
+    final found = await inject<LanHubService>().discoverHubs();
+    if (!mounted) return;
+    setState(() {
+      _discovering = false;
+      _discoveredIps = found;
+    });
+  }
+
+  void _onDiscoveredIpPicked(String ip) {
+    _ipController.text = ip;
+    setState(() {});
   }
 
   @override
@@ -89,6 +113,10 @@ class _LanNetworkSectionState extends State<LanNetworkSection> {
             _IpInputCard(
               controller: _ipController,
               onSave: _onIpSaved,
+              discovering: _discovering,
+              discoveredIps: _discoveredIps,
+              onDiscover: _onDiscoverTap,
+              onPickDiscovered: _onDiscoveredIpPicked,
             ),
           ],
           const SizedBox(height: 14),
@@ -102,6 +130,10 @@ class _LanNetworkSectionState extends State<LanNetworkSection> {
                 : null,
             colors: colors,
           ),
+          if (_mode == LanMode.server && lanHub.conflictingHubIp != null) ...[
+            const SizedBox(height: 14),
+            _ConflictCard(conflictingIp: lanHub.conflictingHubIp!),
+          ],
           const SizedBox(height: 14),
           _InfoCard(mode: _mode),
         ],
@@ -113,25 +145,273 @@ class _LanNetworkSectionState extends State<LanNetworkSection> {
 class _IpInputCard extends StatelessWidget {
   final TextEditingController controller;
   final VoidCallback onSave;
+  final bool discovering;
+  final List<String> discoveredIps;
+  final VoidCallback onDiscover;
+  final ValueChanged<String> onPickDiscovered;
 
-  const _IpInputCard({required this.controller, required this.onSave});
+  const _IpInputCard({
+    required this.controller,
+    required this.onSave,
+    required this.discovering,
+    required this.discoveredIps,
+    required this.onDiscover,
+    required this.onPickDiscovered,
+  });
 
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
     return SoftCard(
       padding: const EdgeInsets.all(18),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: colors.buttonBrand.withOpacity(0.10),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(Icons.lan_outlined,
+                    color: colors.buttonBrand, size: 22),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Hub IP manzili',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: colors.textDefault,
+                        fontFamily: 'Inter',
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      'Hub (server) qurilmaning IP manzili',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: colors.textSecondary,
+                        fontFamily: 'Inter',
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 16),
+              SizedBox(
+                width: 180,
+                child: TextField(
+                  controller: controller,
+                  keyboardType: TextInputType.number,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontFamily: 'Inter',
+                    color: colors.textDefault,
+                  ),
+                  decoration: InputDecoration(
+                    hintText: '192.168.1.100',
+                    hintStyle: TextStyle(
+                      fontSize: 13,
+                      color: colors.textSecondary,
+                      fontFamily: 'Inter',
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 10,
+                    ),
+                    filled: true,
+                    fillColor: colors.bgSecondary,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: BorderSide(color: colors.border),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: BorderSide(color: colors.border),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide:
+                          BorderSide(color: colors.buttonBrand, width: 1.5),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Material(
+                color: colors.buttonBrand,
+                borderRadius: BorderRadius.circular(10),
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(10),
+                  onTap: onSave,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 10,
+                    ),
+                    child: Text(
+                      'Saqlash',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: colors.textOnBrand,
+                        fontFamily: 'Inter',
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              const SizedBox(width: 58),
+              Material(
+                color: colors.bgSecondary,
+                borderRadius: BorderRadius.circular(10),
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(10),
+                  onTap: discovering ? null : onDiscover,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 9,
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (discovering)
+                          SizedBox(
+                            width: 14,
+                            height: 14,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: colors.textSecondary,
+                            ),
+                          )
+                        else
+                          Icon(Icons.wifi_find_outlined,
+                              size: 16, color: colors.textSecondary),
+                        const SizedBox(width: 8),
+                        Text(
+                          discovering
+                              ? 'Qidirilmoqda...'
+                              : "Lokal tarmoqdan qidirish",
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: colors.textSecondary,
+                            fontFamily: 'Inter',
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          if (discoveredIps.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            Padding(
+              padding: const EdgeInsets.only(left: 58),
+              child: Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: discoveredIps.map((ip) {
+                  final selected = controller.text == ip;
+                  return Material(
+                    color: selected
+                        ? colors.buttonBrand.withOpacity(0.12)
+                        : colors.bgSecondary,
+                    borderRadius: BorderRadius.circular(8),
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(8),
+                      onTap: () => onPickDiscovered(ip),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 7,
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.dns_outlined,
+                                size: 14,
+                                color: selected
+                                    ? colors.buttonBrand
+                                    : colors.textSecondary),
+                            const SizedBox(width: 6),
+                            Text(
+                              ip,
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: selected
+                                    ? colors.buttonBrand
+                                    : colors.textDefault,
+                                fontFamily: 'Inter',
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
+          ] else if (!discovering) ...[
+            const SizedBox(height: 8),
+            Padding(
+              padding: const EdgeInsets.only(left: 58),
+              child: Text(
+                "Hech qanday hub topilmadi. IP manzilni qo'lda kiriting yoki qayta qidiring.",
+                style: TextStyle(
+                  fontSize: 11,
+                  color: colors.textSecondary,
+                  fontFamily: 'Inter',
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _ConflictCard extends StatelessWidget {
+  final String conflictingIp;
+  const _ConflictCard({required this.conflictingIp});
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    return SoftCard(
+      padding: const EdgeInsets.all(18),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
             width: 44,
             height: 44,
             decoration: BoxDecoration(
-              color: colors.buttonBrand.withOpacity(0.10),
+              color: c.systemError.withOpacity(0.10),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Icon(Icons.lan_outlined, color: colors.buttonBrand, size: 22),
+            child: Icon(Icons.warning_amber_rounded,
+                color: c.systemError, size: 22),
           ),
           const SizedBox(width: 14),
           Expanded(
@@ -139,88 +419,26 @@ class _IpInputCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Hub IP manzili',
+                  'Ikkita hub aniqlandi',
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
-                    color: colors.textDefault,
+                    color: c.systemError,
                     fontFamily: 'Inter',
                   ),
                 ),
                 const SizedBox(height: 3),
                 Text(
-                  'Hub (server) qurilmaning IP manzili',
+                  '$conflictingIp manzilida boshqa bir qurilma ham Hub sifatida ishlayapti. '
+                  "Faqat bitta qurilma Hub bo'lishi kerak — boshqasini Client yoki O'chirilgan rejimiga o'tkazing.",
                   style: TextStyle(
                     fontSize: 12,
-                    color: colors.textSecondary,
+                    color: c.textSecondary,
                     fontFamily: 'Inter',
+                    height: 1.5,
                   ),
                 ),
               ],
-            ),
-          ),
-          const SizedBox(width: 16),
-          SizedBox(
-            width: 180,
-            child: TextField(
-              controller: controller,
-              keyboardType: TextInputType.number,
-              style: TextStyle(
-                fontSize: 14,
-                fontFamily: 'Inter',
-                color: colors.textDefault,
-              ),
-              decoration: InputDecoration(
-                hintText: '192.168.1.100',
-                hintStyle: TextStyle(
-                  fontSize: 13,
-                  color: colors.textSecondary,
-                  fontFamily: 'Inter',
-                ),
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 10,
-                ),
-                filled: true,
-                fillColor: colors.bgSecondary,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                  borderSide: BorderSide(color: colors.border),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                  borderSide: BorderSide(color: colors.border),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                  borderSide:
-                      BorderSide(color: colors.buttonBrand, width: 1.5),
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(width: 8),
-          Material(
-            color: colors.buttonBrand,
-            borderRadius: BorderRadius.circular(10),
-            child: InkWell(
-              borderRadius: BorderRadius.circular(10),
-              onTap: onSave,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 14,
-                  vertical: 10,
-                ),
-                child: Text(
-                  'Saqlash',
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: colors.textOnBrand,
-                    fontFamily: 'Inter',
-                  ),
-                ),
-              ),
             ),
           ),
         ],
