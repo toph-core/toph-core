@@ -1,18 +1,18 @@
 import 'dart:async';
+import 'dart:io';
 
-import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:mary_ai_pos/core/api/api_error_overlay.dart';
 import 'package:mary_ai_pos/core/api/dio_client.dart';
 import 'package:mary_ai_pos/core/api/list_api.dart';
 import 'package:mary_ai_pos/core/components/flush_bars.dart';
 import 'package:mary_ai_pos/core/extension/for_context.dart';
+import 'package:mary_ai_pos/core/service/printer/printer_config_storage.dart';
+import 'package:mary_ai_pos/core/service/printer/printer_service.dart';
 import 'package:mary_ai_pos/core/service/printer/printer_setting_entry.dart';
-import 'package:mary_ai_pos/core/usecase/usecase.dart';
+import 'package:mary_ai_pos/core/services/cache/cache_service.dart';
 import 'package:mary_ai_pos/di.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/category/category_model.dart';
-import 'package:mary_ai_pos/features/view/main/domain/usecase/sync_printer_settings_usecase.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/settings/widgets/section_shell.dart';
 import 'package:mary_ai_pos/generated/l10n.dart';
 
@@ -25,9 +25,9 @@ class PrintersSection extends StatefulWidget {
 
 class _PrintersSectionState extends State<PrintersSection> {
   final DioClient _client = inject<DioClient>();
+  final PrinterConfigStorage _storage = inject<PrinterConfigStorage>();
 
   bool _loading = true;
-  String? _error;
   List<PrinterSettingEntry> _items = const [];
   List<CategoryModel> _categories = const [];
 
@@ -37,58 +37,45 @@ class _PrintersSectionState extends State<PrintersSection> {
     _loadAll();
   }
 
+  /// Printer ro'yxati — **shu qurilmadagi** lokal saqlashdan, hech qanday
+  /// tarmoq so'rovisiz (hech qachon xato bermaydi). Kategoriya nomlari esa
+  /// faqat ko'rsatish uchun — avval keshdan, so'ng eng yaxshi urinish sifatida
+  /// backenddan yangilanadi; muvaffaqiyatsiz bo'lsa jim qoladi.
   Future<void> _loadAll() async {
     setState(() {
       _loading = true;
-      _error = null;
+      _items = _storage.listEntries();
     });
+    final cachedCats = inject<CacheService>().getCategories();
+    if (cachedCats.isNotEmpty && mounted) {
+      setState(() {
+        _categories =
+            cachedCats.map((e) => CategoryModel.fromJson(e)).toList();
+      });
+    }
+    setState(() => _loading = false);
     try {
-      final results = await Future.wait([
-        _client.get(ListAPI.printerSettings),
-        _client.get(ListAPI.categories),
-      ]);
-      final printersRoot = results[0].data;
-      final categoriesRoot = results[1].data;
-
-      List<dynamic> printersData = const [];
-      if (printersRoot is Map && printersRoot['data'] is List) {
-        printersData = printersRoot['data'] as List;
-      } else if (printersRoot is List) {
-        printersData = printersRoot;
-      }
-
+      final res = await _client.get(ListAPI.categories);
+      final root = res.data;
       List<dynamic> categoriesData = const [];
-      if (categoriesRoot is Map && categoriesRoot['data'] is List) {
-        categoriesData = categoriesRoot['data'] as List;
-      } else if (categoriesRoot is List) {
-        categoriesData = categoriesRoot;
+      if (root is Map && root['data'] is List) {
+        categoriesData = root['data'] as List;
+      } else if (root is List) {
+        categoriesData = root;
       }
-
       if (!mounted) return;
       setState(() {
-        _items = PrinterSettingEntry.listFromJsonList(printersData);
         _categories = categoriesData
             .map((e) =>
                 CategoryModel.fromJson(Map<String, dynamic>.from(e as Map)))
             .toList();
-        _loading = false;
-      });
-    } on DioException catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _loading = false;
-        _error = _readError(e) ?? S.current.strLoadError;
       });
     } catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _loading = false;
-        _error = e.toString();
-      });
+      // Kategoriya nomlarini yangilab bo'lmadi — jim o'tamiz, printer
+      // ro'yxati baribir lokal holatdan to'liq ko'rsatiladi.
+      debugPrint('[PrintersSection] Kategoriyalarni yuklab bo\'lmadi: $e');
     }
   }
-
-  String? _readError(DioException e) => userFriendlyDioError(e);
 
   Future<void> _openEditor({PrinterSettingEntry? existing}) async {
     final saved = await showDialog<bool>(
@@ -98,11 +85,11 @@ class _PrintersSectionState extends State<PrintersSection> {
         existing: existing,
         categories: _categories,
         client: _client,
+        storage: _storage,
       ),
     );
     if (saved == true && mounted) {
       _loadAll();
-      unawaited(inject<SyncPrinterSettingsUsecase>().call(NoParams()));
     }
   }
 
@@ -116,15 +103,18 @@ class _PrintersSectionState extends State<PrintersSection> {
       ),
     );
     if (ok != true || !mounted) return;
-    try {
-      await _client.delete('${ListAPI.printerSettings}/${item.id}');
-      if (!mounted) return;
-      _loadAll();
-      unawaited(inject<SyncPrinterSettingsUsecase>().call(NoParams()));
-    } on DioException catch (e) {
-      if (!mounted) return;
-      showErrorMessage(context, _readError(e) ?? S.current.strDeleteError);
-    }
+    // Lokal — har doim ishlaydi. Backend — eng yaxshi urinish, muvaffaqiyatsiz
+    // bo'lsa ham lokal o'chirish kuchda qoladi (faqat sinov uchun jim log).
+    await _storage.deleteEntry(item.id);
+    unawaited(
+      _client.delete('${ListAPI.printerSettings}/${item.id}').catchError((e) {
+        debugPrint('[PrintersSection] Backend delete xatosi (e\'tiborsiz): $e');
+        return null;
+      }),
+    );
+    if (!mounted) return;
+    inject<CacheService>().removeUsbPrinterName(item.id);
+    _loadAll();
   }
 
   String _categoryName(String id) {
@@ -151,47 +141,8 @@ class _PrintersSectionState extends State<PrintersSection> {
   }
 
   Widget _buildBody() {
-    final colors = context.colors;
     if (_loading) {
       return const Center(child: CircularProgressIndicator.adaptive());
-    }
-    if (_error != null) {
-      return Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 64,
-              height: 64,
-              decoration: BoxDecoration(
-                color: colors.systemError.withOpacity(0.10),
-                borderRadius: BorderRadius.circular(18),
-              ),
-              child: Icon(Icons.error_outline,
-                  size: 28, color: colors.systemError),
-            ),
-            const SizedBox(height: 14),
-            SizedBox(
-              width: 320,
-              child: Text(
-                _error!,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: colors.systemError,
-                  fontFamily: 'Inter',
-                  fontSize: 13,
-                ),
-              ),
-            ),
-            const SizedBox(height: 12),
-            SectionPrimaryButton(
-              icon: Icons.refresh_rounded,
-              label: S.current.strRetry,
-              onPressed: _loadAll,
-            ),
-          ],
-        ),
-      );
     }
     if (_items.isEmpty) {
       return SectionEmptyState(
@@ -239,6 +190,47 @@ class _PrinterCard extends StatefulWidget {
 
 class _PrinterCardState extends State<_PrinterCard> {
   bool _hover = false;
+  bool _testing = false;
+
+  Future<void> _testPrint() async {
+    if (_testing) return;
+    final entry = widget.entry;
+    final isUsb = entry.connectionType == 'usb';
+    String? windowsPrinterName;
+    if (isUsb) {
+      windowsPrinterName = inject<CacheService>().getUsbPrinterName(entry.id);
+      if (windowsPrinterName == null || windowsPrinterName.isEmpty) {
+        showErrorMessage(
+          context,
+          'Bu USB printer uchun ushbu kompyuterda printer tanlanmagan — '
+          'Tahrirlashda tanlang',
+        );
+        return;
+      }
+    }
+    setState(() => _testing = true);
+    final result = await inject<PrinterService>().testPrint(
+      ip: entry.ip,
+      port: entry.port,
+      connectionType: entry.connectionType,
+      windowsPrinterName: windowsPrinterName,
+    );
+    if (!mounted) return;
+    setState(() => _testing = false);
+    if (result.ok) {
+      showSuccessMessage(
+        context,
+        isUsb
+            ? 'Test cheki "$windowsPrinterName" ga yuborildi'
+            : 'Test cheki ${entry.ip}:${entry.port} ga yuborildi',
+      );
+    } else {
+      showErrorMessage(
+        context,
+        result.error ?? 'Printerga ulanib bo\'lmadi',
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -246,9 +238,16 @@ class _PrinterCardState extends State<_PrinterCard> {
     final entry = widget.entry;
     final isCloseCheck = entry.isCloseCheck;
     final typeColor = isCloseCheck ? colors.extraOrange : colors.systemAccent;
-    final connectionIcon =
-        entry.connectionType == 'wlan' ? Icons.wifi_rounded : Icons.cable_rounded;
-    final connLabel = entry.connectionType == 'wlan' ? S.current.strWiFi : S.current.strCable;
+    final connectionIcon = switch (entry.connectionType) {
+      'wlan' => Icons.wifi_rounded,
+      'usb' => Icons.usb_rounded,
+      _ => Icons.cable_rounded,
+    };
+    final connLabel = switch (entry.connectionType) {
+      'wlan' => S.current.strWiFi,
+      'usb' => 'USB',
+      _ => S.current.strCable,
+    };
 
     return MouseRegion(
       onEnter: (_) => setState(() => _hover = true),
@@ -339,6 +338,22 @@ class _PrinterCardState extends State<_PrinterCard> {
             ),
             Row(
               children: [
+                _testing
+                    ? const Padding(
+                        padding: EdgeInsets.all(11),
+                        child: SizedBox(
+                          width: 22,
+                          height: 22,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                      )
+                    : _GhostIconButton(
+                        icon: Icons.print_outlined,
+                        tooltip: 'Test printer',
+                        color: colors.systemAccent,
+                        onTap: _testPrint,
+                      ),
+                const SizedBox(width: 8),
                 _GhostIconButton(
                   icon: Icons.edit_outlined,
                   tooltip: S.current.strEdit,
@@ -611,11 +626,13 @@ class _PrinterEditDialog extends StatefulWidget {
   final PrinterSettingEntry? existing;
   final List<CategoryModel> categories;
   final DioClient client;
+  final PrinterConfigStorage storage;
 
   const _PrinterEditDialog({
     required this.existing,
     required this.categories,
     required this.client,
+    required this.storage,
   });
 
   @override
@@ -631,6 +648,15 @@ class _PrinterEditDialogState extends State<_PrinterEditDialog> {
   final Set<String> _selectedCategoryIds = {};
   bool _saving = false;
   String? _saveError;
+  bool _testing = false;
+  bool? _testOk; // null = no test run yet
+  String? _testMessage;
+
+  // USB (Windows spooler) — bu qurilmada o'rnatilgan printerlar ro'yxati va
+  // tanlangan nom. Backend bilan sinxronlanmaydi (CacheService, faqat lokal).
+  String? _windowsPrinterName;
+  List<String> _localPrinters = const [];
+  bool _loadingLocalPrinters = false;
 
   @override
   void initState() {
@@ -642,7 +668,27 @@ class _PrinterEditDialogState extends State<_PrinterEditDialog> {
       _type = e.type.isNotEmpty ? e.type : 'category';
       _connection = e.connectionType.isNotEmpty ? e.connectionType : 'cable';
       _selectedCategoryIds.addAll(e.connectedEntityIds);
+      if (_connection == 'usb') {
+        _windowsPrinterName = inject<CacheService>().getUsbPrinterName(e.id);
+      }
     }
+    if (Platform.isWindows) _loadLocalPrinters();
+  }
+
+  Future<void> _loadLocalPrinters() async {
+    setState(() => _loadingLocalPrinters = true);
+    // EnumPrinters — sinxron Win32 chaqiruv; bir frame kutib, loading holati
+    // ko'rinishi uchun mikrotaskka o'tkazamiz.
+    final names =
+        await Future(() => inject<PrinterService>().listLocalWindowsPrinterNames());
+    if (!mounted) return;
+    setState(() {
+      _localPrinters = names;
+      _loadingLocalPrinters = false;
+      // Avval saqlangan tanlov hozir ro'yxatda yo'q bo'lsa ham saqlab
+      // qolamiz — printer vaqtincha uzilgan bo'lishi mumkin, tanlovni
+      // yo'qotib qo'ymaslik kerak.
+    });
   }
 
   @override
@@ -653,6 +699,7 @@ class _PrinterEditDialogState extends State<_PrinterEditDialog> {
   }
 
   String? _validateIp(String? v) {
+    if (_connection == 'usb') return null; // USB — IP shart emas
     final s = v?.trim() ?? '';
     if (s.isEmpty) return 'IP manzil kerak';
     final parts = s.split('.');
@@ -665,6 +712,7 @@ class _PrinterEditDialogState extends State<_PrinterEditDialog> {
   }
 
   String? _validatePort(String? v) {
+    if (_connection == 'usb') return null; // USB — port shart emas
     final s = v?.trim() ?? '';
     if (s.isEmpty) return 'Port kerak';
     final n = int.tryParse(s);
@@ -672,45 +720,131 @@ class _PrinterEditDialogState extends State<_PrinterEditDialog> {
     return null;
   }
 
+  /// Lokal saqlash — har doim ishlaydi, birlamchi manba. Backendga yuborish
+  /// alohida, eng yaxshi urinish sifatida ([_pushToBackendBestEffort]): u
+  /// muvaffaqiyatsiz bo'lsa ham (masalan tarmoq yo'q) Save baribir
+  /// muvaffaqiyatli yakunlanadi — hozircha shu tarzda sinovdan o'tkazilmoqda.
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
     if (_type == 'category' && _selectedCategoryIds.isEmpty) {
       setState(() => _saveError = 'Kamida bitta kategoriya tanlang');
       return;
     }
+    if (_connection == 'usb' &&
+        (_windowsPrinterName == null || _windowsPrinterName!.isEmpty)) {
+      setState(() => _saveError = 'USB printer tanlang');
+      return;
+    }
     setState(() {
       _saving = true;
       _saveError = null;
     });
-    final body = {
-      'ip': _ipCtrl.text.trim(),
-      'port': int.parse(_portCtrl.text.trim()),
-      'type': _type,
-      'connection_type': _connection,
-      'connected_entity_ids':
+
+    // USB — IP/port backend sxemasi uchun placeholder, chop etishda
+    // ishlatilmaydi (haqiqiy nishon — [_windowsPrinterName] — faqat shu
+    // qurilmada lokal saqlanadi, pastda).
+    final ip = _connection == 'usb' ? '127.0.0.1' : _ipCtrl.text.trim();
+    final port = _connection == 'usb' ? 9100 : int.parse(_portCtrl.text.trim());
+    final entryId = widget.existing?.id ?? widget.storage.generateLocalId();
+    final entry = PrinterSettingEntry(
+      id: entryId,
+      ip: ip,
+      port: port,
+      type: _type,
+      connectedEntityIds:
           _type == 'category' ? _selectedCategoryIds.toList() : <String>[],
+      connectionType: _connection,
+    );
+
+    await widget.storage.upsertEntry(entry);
+
+    final cache = inject<CacheService>();
+    if (_connection == 'usb' && _windowsPrinterName != null) {
+      await cache.saveUsbPrinterName(entryId, _windowsPrinterName!);
+    } else {
+      // Turi 'usb'dan boshqasiga o'zgargan bo'lishi mumkin — eski lokal
+      // tanlovni qoldirmaymiz.
+      await cache.removeUsbPrinterName(entryId);
+    }
+
+    unawaited(_pushToBackendBestEffort(entry));
+
+    if (!mounted) return;
+    Navigator.pop(context, true);
+  }
+
+  /// Backendga yozishga urinadi — muvaffaqiyat/muvaffaqiyatsizligi Save
+  /// natijasiga ta'sir qilmaydi, faqat log qoldiradi. Yangi yozuv uchun
+  /// backend berishi mumkin bo'lgan boshqa id'ga qasddan almashtirilmaydi —
+  /// lokal [entryId] shu qurilmada USB tanlovi va print-time qidiruvi uchun
+  /// yagona manba bo'lib qoladi.
+  Future<void> _pushToBackendBestEffort(PrinterSettingEntry entry) async {
+    final body = {
+      'ip': entry.ip,
+      'port': entry.port,
+      'type': entry.type,
+      'connection_type': entry.connectionType,
+      'connected_entity_ids': entry.connectedEntityIds,
     };
     try {
       if (widget.existing == null) {
         await widget.client.post(ListAPI.printerSettings, data: body);
       } else {
         await widget.client.put(
-          '${ListAPI.printerSettings}/${widget.existing!.id}',
+          '${ListAPI.printerSettings}/${entry.id}',
           data: body,
         );
       }
-      if (!mounted) return;
-      Navigator.pop(context, true);
-    } on DioException catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _saving = false;
-        _saveError = _readError(e) ?? S.current.strSaveError;
-      });
+      debugPrint('[PrinterEditDialog] Backendga yozildi: ${entry.id}');
+    } catch (e) {
+      debugPrint('[PrinterEditDialog] Backend yozish xatosi (e\'tiborsiz, '
+          'lokal saqlandi): $e');
     }
   }
 
-  String? _readError(DioException e) => userFriendlyDioError(e);
+  /// IP/port/ulanish turini — hozir formaga kiritilgan qiymatlarni, saqlash
+  /// shart bo'lmasdan — to'g'ridan-to'g'ri shu printerga chek yuborib sinaydi.
+  /// Kategoriya tanlovi yoki boshqa Save-only qoidalar bu yerda talab qilinmaydi.
+  Future<void> _testPrinter() async {
+    if (_connection == 'usb') {
+      if (_windowsPrinterName == null || _windowsPrinterName!.isEmpty) {
+        setState(() {
+          _testOk = false;
+          _testMessage = 'Avval USB printerni tanlang';
+        });
+        return;
+      }
+    } else {
+      final ipError = _validateIp(_ipCtrl.text);
+      final portError = _validatePort(_portCtrl.text);
+      if (ipError != null || portError != null) {
+        setState(() {
+          _testOk = false;
+          _testMessage = ipError ?? portError;
+        });
+        return;
+      }
+    }
+    setState(() {
+      _testing = true;
+      _testOk = null;
+      _testMessage = null;
+    });
+    final result = await inject<PrinterService>().testPrint(
+      ip: _connection == 'usb' ? '' : _ipCtrl.text.trim(),
+      port: _connection == 'usb' ? 0 : int.parse(_portCtrl.text.trim()),
+      connectionType: _connection,
+      windowsPrinterName: _connection == 'usb' ? _windowsPrinterName : null,
+    );
+    if (!mounted) return;
+    setState(() {
+      _testing = false;
+      _testOk = result.ok;
+      _testMessage = result.ok
+          ? 'Test cheki yuborildi — printerni tekshiring.'
+          : (result.error ?? 'Printerga ulanib bo\'lmadi');
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -742,41 +876,58 @@ class _PrinterEditDialogState extends State<_PrinterEditDialog> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            flex: 3,
-                            child: _LabeledField(
-                              label: S.current.strIPAddress,
-                              child: _TextField(
-                                controller: _ipCtrl,
-                                hint: '192.168.1.100',
-                                validator: _validateIp,
-                                formatters: [
-                                  FilteringTextInputFormatter.allow(
-                                      RegExp(r'[0-9.]')),
-                                ],
+                      if (_connection == 'usb') ...[
+                        _LabeledField(
+                          label: 'USB printer',
+                          helper: _loadingLocalPrinters
+                              ? null
+                              : 'Ushbu kompyuterda o\'rnatilgan printer — Windows '
+                                  'qaysi biriga chop etishni shu nom orqali biladi',
+                          child: _UsbPrinterPicker(
+                            loading: _loadingLocalPrinters,
+                            options: _localPrinters,
+                            value: _windowsPrinterName,
+                            onChanged: (v) =>
+                                setState(() => _windowsPrinterName = v),
+                            onRefresh: _loadLocalPrinters,
+                          ),
+                        ),
+                      ] else
+                        Row(
+                          children: [
+                            Expanded(
+                              flex: 3,
+                              child: _LabeledField(
+                                label: S.current.strIPAddress,
+                                child: _TextField(
+                                  controller: _ipCtrl,
+                                  hint: '192.168.1.100',
+                                  validator: _validateIp,
+                                  formatters: [
+                                    FilteringTextInputFormatter.allow(
+                                        RegExp(r'[0-9.]')),
+                                  ],
+                                ),
                               ),
                             ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            flex: 2,
-                            child: _LabeledField(
-                              label: S.current.strPort,
-                              child: _TextField(
-                                controller: _portCtrl,
-                                hint: '9100',
-                                keyboard: TextInputType.number,
-                                validator: _validatePort,
-                                formatters: [
-                                  FilteringTextInputFormatter.digitsOnly,
-                                ],
+                            const SizedBox(width: 12),
+                            Expanded(
+                              flex: 2,
+                              child: _LabeledField(
+                                label: S.current.strPort,
+                                child: _TextField(
+                                  controller: _portCtrl,
+                                  hint: '9100',
+                                  keyboard: TextInputType.number,
+                                  validator: _validatePort,
+                                  formatters: [
+                                    FilteringTextInputFormatter.digitsOnly,
+                                  ],
+                                ),
                               ),
                             ),
-                          ),
-                        ],
-                      ),
+                          ],
+                        ),
                       const SizedBox(height: 14),
                       _LabeledField(
                         label: S.current.strPrinterType,
@@ -818,9 +969,59 @@ class _PrinterEditDialogState extends State<_PrinterEditDialog> {
                               icon: Icons.wifi_rounded,
                               helper: 'WLAN',
                             ),
+                            // Faqat Windows'da — Windows spooler orqali (bu
+                            // qurilmaga to'g'ridan-to'g'ri USB kabel bilan
+                            // ulangan printer, IP'siz).
+                            if (Platform.isWindows)
+                              const _ChoiceOption(
+                                value: 'usb',
+                                label: 'USB',
+                                icon: Icons.usb_rounded,
+                                helper: 'To\'g\'ridan',
+                              ),
                           ],
                         ),
                       ),
+                      if (_testMessage != null) ...[
+                        const SizedBox(height: 14),
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: (_testOk == true
+                                    ? colors.systemSuccess
+                                    : colors.systemError)
+                                .withOpacity(0.08),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                _testOk == true
+                                    ? Icons.check_circle_outline
+                                    : Icons.error_outline,
+                                size: 16,
+                                color: _testOk == true
+                                    ? colors.systemSuccess
+                                    : colors.systemError,
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  _testMessage!,
+                                  style: TextStyle(
+                                    color: _testOk == true
+                                        ? colors.systemSuccess
+                                        : colors.systemError,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w500,
+                                    fontFamily: 'Inter',
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                       if (_type == 'category') ...[
                         const SizedBox(height: 14),
                         _LabeledField(
@@ -881,23 +1082,85 @@ class _PrinterEditDialogState extends State<_PrinterEditDialog> {
               ),
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.end,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  _DialogButton.ghost(
-                    label: S.current.strCancel,
-                    onPressed:
-                        _saving ? null : () => Navigator.pop(context, false),
+                  _TestPrinterButton(
+                    testing: _testing,
+                    onPressed: _saving ? null : _testPrinter,
                   ),
-                  const SizedBox(width: 8),
-                  _SavingButton(
-                    saving: _saving,
-                    label: isEdit ? S.current.strSave : S.current.strAdd,
-                    onPressed: _saving ? null : _save,
+                  Row(
+                    children: [
+                      _DialogButton.ghost(
+                        label: S.current.strCancel,
+                        onPressed: _saving
+                            ? null
+                            : () => Navigator.pop(context, false),
+                      ),
+                      const SizedBox(width: 8),
+                      _SavingButton(
+                        saving: _saving,
+                        label: isEdit ? S.current.strSave : S.current.strAdd,
+                        onPressed: _saving ? null : _save,
+                      ),
+                    ],
                   ),
                 ],
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Saqlangan yo'q — hozir formaga kiritilgan IP/port/ulanish turi bilan bitta
+/// diagnostik chek yuboradi. Save tugmasidan mustaqil: kategoriya tanlovi
+/// yoki boshqa Save-only qoidalar bu yerda talab qilinmaydi.
+class _TestPrinterButton extends StatelessWidget {
+  final bool testing;
+  final VoidCallback? onPressed;
+
+  const _TestPrinterButton({required this.testing, required this.onPressed});
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    final active = onPressed != null && !testing;
+    return Material(
+      color: colors.systemAccent.withOpacity(active ? 0.10 : 0.06),
+      borderRadius: BorderRadius.circular(10),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(10),
+        onTap: testing ? null : onPressed,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (testing)
+                SizedBox(
+                  width: 14,
+                  height: 14,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: colors.systemAccent,
+                  ),
+                )
+              else
+                Icon(Icons.print_outlined, size: 16, color: colors.systemAccent),
+              const SizedBox(width: 8),
+              Text(
+                'Test Printer',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: colors.systemAccent,
+                  fontFamily: 'Inter',
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -1245,6 +1508,99 @@ class _SegmentedChoice<T> extends StatelessWidget {
           ),
         );
       }).toList(),
+    );
+  }
+}
+
+/// Ushbu kompyuterda o'rnatilgan Windows printerlari orasidan aniq birini
+/// tanlash — eski "birinchi USB portlisini top" taxminidan farqli o'laroq,
+/// bir nechta printer ulanganda ham noaniqlik qolmaydi.
+class _UsbPrinterPicker extends StatelessWidget {
+  final bool loading;
+  final List<String> options;
+  final String? value;
+  final ValueChanged<String?> onChanged;
+  final VoidCallback onRefresh;
+
+  const _UsbPrinterPicker({
+    required this.loading,
+    required this.options,
+    required this.value,
+    required this.onChanged,
+    required this.onRefresh,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    // Saqlangan tanlov hozir ro'yxatda bo'lmasligi mumkin (printer vaqtincha
+    // uzilgan) — dropdown yiqilib tushmasligi uchun uni ham ro'yxatga
+    // qo'shamiz, alohida belgi bilan.
+    final items = [...options];
+    final missing = value != null && value!.isNotEmpty && !items.contains(value);
+    if (missing) items.insert(0, value!);
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(
+          child: Container(
+            decoration: BoxDecoration(
+              color: colors.bgSecondary,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: colors.border),
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 4),
+            child: DropdownButtonHideUnderline(
+              child: DropdownButtonFormField<String>(
+                initialValue: items.contains(value) ? value : null,
+                isExpanded: true,
+                icon: Icon(Icons.expand_more_rounded, color: colors.textSecondary),
+                decoration: const InputDecoration(
+                  isDense: true,
+                  contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 13),
+                  border: InputBorder.none,
+                ),
+                hint: Text(
+                  loading ? 'Yuklanmoqda…' : 'Printer tanlang',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: colors.textSecondary.withOpacity(0.7),
+                    fontFamily: 'Inter',
+                  ),
+                ),
+                items: items
+                    .map(
+                      (name) => DropdownMenuItem(
+                        value: name,
+                        child: Text(
+                          missing && name == value ? '$name (mavjud emas)' : name,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                            color: missing && name == value
+                                ? colors.systemError
+                                : colors.textDefault,
+                            fontFamily: 'Inter',
+                          ),
+                        ),
+                      ),
+                    )
+                    .toList(),
+                onChanged: loading ? null : onChanged,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
+        _GhostIconButton(
+          icon: Icons.refresh_rounded,
+          tooltip: 'Ro\'yxatni yangilash',
+          color: colors.buttonBrand,
+          onTap: loading ? () {} : onRefresh,
+        ),
+      ],
     );
   }
 }

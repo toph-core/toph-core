@@ -5,6 +5,7 @@ import 'package:esc_pos_utils_plus/esc_pos_utils_plus.dart';
 import 'package:ffi/ffi.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:win32/win32.dart';
 
 import 'package:mary_ai_pos/core/api/dio_client.dart';
@@ -26,6 +27,7 @@ import 'printer_config.dart';
 import 'printer_config_storage.dart';
 import 'receipt/cashier_receipt_builder.dart';
 import 'receipt/kitchen_receipt_builder.dart';
+import 'receipt/receipt_esc_pos_helper.dart';
 import 'receipt/shift_close_receipt_builder.dart';
 
 class PrinterService {
@@ -123,6 +125,7 @@ class PrinterService {
 
   /// TCP orqali yuborish; juda kichik bo‘laklar ESC/raster oqimini sindirishi mumkin.
   static const _socketChunkBytes = 8192;
+  static const List<int> _buzzerBytes = [0x1B, 0x42, 0x02, 0x03];
 
   static List<List<int>> _socketSendChunks(List<int> bytes) {
     if (bytes.isEmpty) return [bytes];
@@ -162,7 +165,7 @@ class PrinterService {
         departmentNames: deptInfo.names,
         departmentOrder: deptInfo.order,
       );
-      final r = await _connectAndPrint(config, bytes);
+      final r = await _connectAndPrint(config, bytes, beep: true);
       if (!r.ok) {
         _notifyPrinterFailed(
           config,
@@ -223,8 +226,12 @@ class PrinterService {
         departmentIdOf: departmentIdOf,
         departmentNames: deptInfo.names,
         departmentOrder: deptInfo.order,
+        // Chekni kim yopayotgani — hozir tizimga kirgan foydalanuvchi
+        // (kassir yoki admin). `detail.cashierName` bo'sh bo'lsa shu ishlatiladi,
+        // hech qachon "?" yoki bo'sh qator chiqmasligi uchun.
+        closerName: _waiterName,
       );
-      final r = await _connectAndPrint(config, bytes);
+      final r = await _connectAndPrint(config, bytes, beep: true);
       if (!r.ok) {
         _notifyPrinterFailed(
           config,
@@ -261,7 +268,7 @@ class PrinterService {
         cashierLabel: cashierLabel,
         paperSize: config.paperSize,
       );
-      final r = await _connectAndPrint(config, bytes);
+      final r = await _connectAndPrint(config, bytes, beep: true);
       if (!r.ok) {
         _notifyPrinterFailed(
           config,
@@ -280,6 +287,92 @@ class PrinterService {
         detail: e.toString(),
       );
     }
+  }
+
+  /// Printer sozlamalari formasidagi "Test Printer" tugmasi uchun — bitta
+  /// diagnostik chek chop etadi (IP/port/tur, oddiy/qalin/tagiga chizilgan
+  /// matn, uchta tekislash). Hali saqlanmagan qiymatlarni ham sinash mumkin —
+  /// `PrinterConfigStorage`ga bog'liq emas, chaqiruvchi istalgan
+  /// ip/port/connectionType/paperSize kombinatsiyasini uzatishi mumkin.
+  /// `connectionType: 'usb'` bo'lsa [windowsPrinterName] talab qilinadi,
+  /// ip/port e'tiborga olinmaydi. Muvaffaqiyat/xato natijasini
+  /// to'g'ridan-to'g'ri qaytaradi — UI o'zi qanday ko'rsatishni hal qiladi
+  /// (bu yerda global xato overlay chiqarilmaydi).
+  Future<({bool ok, String? error})> testPrint({
+    String ip = '',
+    int port = 0,
+    String connectionType = 'wlan',
+    PaperSize paperSize = PaperSize.mm80,
+    int timeoutMs = 6000,
+    String? windowsPrinterName,
+  }) async {
+    final config = PrinterConfig(
+      ip: ip,
+      port: port,
+      connectionType: connectionType,
+      paperSize: paperSize,
+      timeoutMs: timeoutMs,
+      windowsPrinterName: windowsPrinterName,
+    );
+    try {
+      final bytes = await _buildTestTicket(config);
+      // Tez javob uchun bitta urinish + bitta qayta urinish — Save tugmasidan
+      // farqli o'laroq, foydalanuvchi "Test" bosgach uzoq kutmasligi kerak.
+      return await _connectAndPrint(config, bytes, beep: true, maxRetries: 1);
+    } catch (e, st) {
+      debugPrint('[PrinterService] Test print xatosi: $e\n$st');
+      return (ok: false, error: e.toString());
+    }
+  }
+
+  Future<List<int>> _buildTestTicket(PrinterConfig config) async {
+    final profile = await CapabilityProfile.load();
+    final gen = receiptGenerator(config.paperSize, profile);
+
+    List<int> bytes = [];
+    bytes += receiptEncodingPreamble(gen);
+
+    bytes += gen.text(
+      'ТЕСТОВАЯ ПЕЧАТЬ',
+      styles: const PosStyles(
+        align: PosAlign.center,
+        bold: true,
+        height: PosTextSize.size2,
+        width: PosTextSize.size1,
+      ),
+      linesAfter: 1,
+    );
+    bytes += gen.hr();
+    bytes += gen.row([
+      PosColumn(text: 'IP:', width: 4),
+      PosColumn(text: config.ip, width: 8, styles: const PosStyles(align: PosAlign.right)),
+    ]);
+    bytes += gen.row([
+      PosColumn(text: 'Порт:', width: 4),
+      PosColumn(text: '${config.port}', width: 8, styles: const PosStyles(align: PosAlign.right)),
+    ]);
+    bytes += gen.row([
+      PosColumn(text: 'Тип:', width: 4),
+      PosColumn(text: config.connectionType, width: 8, styles: const PosStyles(align: PosAlign.right)),
+    ]);
+    bytes += gen.text('Время: ${DateFormat('dd.MM.yyyy HH:mm:ss').format(DateTime.now())}');
+    bytes += gen.hr();
+    bytes += gen.text('Обычный текст');
+    bytes += gen.text('Жирный текст', styles: const PosStyles(bold: true));
+    bytes += gen.text('Подчёркнутый текст', styles: const PosStyles(underline: true));
+    bytes += gen.text('По левому краю', styles: const PosStyles(align: PosAlign.left));
+    bytes += gen.text('По центру', styles: const PosStyles(align: PosAlign.center));
+    bytes += gen.text('По правому краю', styles: const PosStyles(align: PosAlign.right));
+    bytes += gen.hr();
+    bytes += gen.text(
+      'Принтер настроен верно!',
+      styles: const PosStyles(align: PosAlign.center, bold: true),
+      linesAfter: 1,
+    );
+    bytes += gen.feed(2);
+    bytes += gen.cut();
+
+    return bytes;
   }
 
   /// `type: category` bo‘yicha guruhlab, har bir printerga alohida oshxona cheki.
@@ -414,12 +507,25 @@ class PrinterService {
     PrinterConfig config,
     List<int> bytes, {
     int maxRetries = 2,
+    bool beep = false,
   }) async {
+    // Signal oxirida — boshida yuborilsa, printer hali ESC @ bilan
+    // ishga tushmagan holatda notanish buyruq oladi va ba'zi modellarda
+    // butun jarayonni chalkashtirib qo'yishi mumkin.
+    final data = beep ? [...bytes, ..._buzzerBytes] : bytes;
     if (config.usesWindowsPrinter) {
       if (!Platform.isWindows) {
         return (ok: false, error: "USB printer faqat Windows da ishlaydi.");
       }
-      return _printViaWindowsRaw(bytes);
+      // `windowsPrinterName` odatda ad-hoc konfiglarda (Test Printer) to'g'ridan
+      // -to'g'ri keladi; `_storage`dan kelgan haqiqiy chek konfiglari faqat
+      // `entryId` bilan keladi — shu qurilmada mahalliy saqlangan tanlovni
+      // shu yerda qidiramiz (backend bilan sinxronlanmaydi, sof lokal holat).
+      final targetName = config.windowsPrinterName ??
+          (config.entryId != null
+              ? inject<CacheService>().getUsbPrinterName(config.entryId!)
+              : null);
+      return _printViaWindowsRaw(data, targetPrinterName: targetName);
     }
 
     if (!config.usesNetworkTcp) {
@@ -441,7 +547,7 @@ class PrinterService {
 
         // 250 bayt — raster (logo) va boshqa buyruqlarni o‘rtadan uzib, printer
         // qolganini matn sifatida chop etishi mumkin. Katta bo‘lak yoki bitta yuborish.
-        final chunks = _socketSendChunks(bytes);
+        final chunks = _socketSendChunks(data);
         await socket.addStream(Stream.fromIterable(chunks));
         await socket.flush();
         await socket.close();
@@ -487,16 +593,53 @@ class PrinterService {
 
   /// USB kabel orqali ulangan printerga raw ESC/POS bytes yuboradi.
   /// Windows printer API: OpenPrinter → WritePrinter → ClosePrinter.
-  Future<({bool ok, String? error})> _printViaWindowsRaw(List<int> bytes) async {
+  ///
+  /// [targetPrinterName] berilgan bo'lsa — aniq shu nomdagi (katta/kichik
+  /// harf farqisiz) mahalliy printer qidiriladi va topilmasa xato qaytariladi
+  /// (nima topilgani ro'yxati bilan — diagnostika uchun). Berilmagan bo'lsa —
+  /// eski xulq-atvor: porti "USB" bilan boshlanadigan birinchi printer
+  /// (bir nechta printer ulangan bo'lsa noaniq — shuning uchun sozlamalar
+  /// formasida printer nomi tanlash tavsiya etiladi).
+  Future<({bool ok, String? error})> _printViaWindowsRaw(
+    List<int> bytes, {
+    String? targetPrinterName,
+  }) async {
     try {
-      final printerName = _findUsbPrinterName();
-      if (printerName == null) {
-        return (
-          ok: false,
-          error: "USB printer topilmadi.\n"
-              "Windows: Sozlamalar → Bluetooth va qurilmalar → Printerlar da "
-              "USB printer o'rnatilganini tekshiring.",
-        );
+      final printers = _enumerateLocalPrinters();
+      String? printerName;
+      final want = targetPrinterName?.trim() ?? '';
+      if (want.isNotEmpty) {
+        for (final p in printers) {
+          if (p.name.toLowerCase() == want.toLowerCase()) {
+            printerName = p.name;
+            break;
+          }
+        }
+        if (printerName == null) {
+          final found = printers.map((p) => p.name).join(', ');
+          return (
+            ok: false,
+            error: 'Tanlangan printer topilmadi: "$want".\n'
+                "Ushbu kompyuterda o'rnatilgan printerlar: "
+                "${found.isEmpty ? '(hech biri)' : found}",
+          );
+        }
+      } else {
+        for (final p in printers) {
+          if (p.port.toUpperCase().startsWith('USB')) {
+            printerName = p.name;
+            break;
+          }
+        }
+        if (printerName == null) {
+          return (
+            ok: false,
+            error: "USB printer topilmadi.\n"
+                "Windows: Sozlamalar → Bluetooth va qurilmalar → Printerlar da "
+                "USB printer o'rnatilganini tekshiring, yoki printer "
+                "sozlamalarida aniq printerni tanlang.",
+          );
+        }
       }
       return _writeRawToPrinter(printerName, bytes);
     } catch (e, st) {
@@ -505,8 +648,9 @@ class PrinterService {
     }
   }
 
-  /// O'rnatilgan local printerlar orasidan USB portga ulangani topiladi.
-  String? _findUsbPrinterName() {
+  /// Ushbu kompyuterda o'rnatilgan barcha printerlar (nomi va porti) — USB
+  /// printer tanlagichi (sozlamalar formasi) va diagnostika xabarlari uchun.
+  List<({String name, String port})> _enumerateLocalPrinters() {
     final cbNeeded = calloc<DWORD>();
     final cReturned = calloc<DWORD>();
 
@@ -517,7 +661,7 @@ class PrinterService {
     if (size == 0) {
       calloc.free(cbNeeded);
       calloc.free(cReturned);
-      return null;
+      return const [];
     }
 
     final buf = calloc<Uint8>(size);
@@ -531,25 +675,31 @@ class PrinterService {
       cReturned,
     );
 
-    String? found;
+    final result = <({String name, String port})>[];
     if (ok != 0) {
       final count = cReturned.value;
       for (int i = 0; i < count; i++) {
         final pInfo = Pointer<PRINTER_INFO_2>.fromAddress(
           buf.address + i * sizeOf<PRINTER_INFO_2>(),
         );
-        final portName = pInfo.ref.pPortName.toDartString().toUpperCase();
-        if (portName.startsWith('USB')) {
-          found = pInfo.ref.pPrinterName.toDartString();
-          break;
-        }
+        result.add((
+          name: pInfo.ref.pPrinterName.toDartString(),
+          port: pInfo.ref.pPortName.toDartString(),
+        ));
       }
     }
 
     calloc.free(buf);
     calloc.free(cbNeeded);
     calloc.free(cReturned);
-    return found;
+    return result;
+  }
+
+  /// Sozlamalar formasidagi USB printer tanlagichi uchun — Windows'da
+  /// o'rnatilgan barcha printerlar nomi. Windows'dan tashqarida bo'sh ro'yxat.
+  List<String> listLocalWindowsPrinterNames() {
+    if (!Platform.isWindows) return const [];
+    return _enumerateLocalPrinters().map((p) => p.name).toList();
   }
 
   /// Win32 API orqali raw bytes yuboradi.

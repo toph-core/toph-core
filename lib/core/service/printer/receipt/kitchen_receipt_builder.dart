@@ -54,7 +54,7 @@ class KitchenReceiptBuilder {
       '** КУХОННЫЙ ЧЕК **',
       styles: const PosStyles(
         align: PosAlign.center,
-        bold: false,
+        bold: true,
         height: PosTextSize.size2,
         width: PosTextSize.size1,
       ),
@@ -106,7 +106,7 @@ class KitchenReceiptBuilder {
         (categoryName != null && categoryName.isNotEmpty)
             ? categoryName.toUpperCase()
             : 'ДРУГОЕ',
-        styles: const PosStyles(bold: false, reverse: true),
+        styles: const PosStyles(bold: true, reverse: true),
       );
 
       for (final item in entry.value) {
