@@ -1,10 +1,6 @@
-import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:mary_ai_pos/core/api/api_error_overlay.dart';
-import 'package:mary_ai_pos/core/api/dio_client.dart';
-import 'package:mary_ai_pos/core/api/list_api.dart';
 import 'package:mary_ai_pos/core/components/flush_bars.dart';
 import 'package:mary_ai_pos/core/extension/for_context.dart';
 import 'package:mary_ai_pos/core/utils/pos_units.dart';
@@ -12,6 +8,7 @@ import 'package:mary_ai_pos/di.dart';
 import 'package:mary_ai_pos/features/view/auth/presentation/cubit/bloc/user_bloc.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/cafe_tables/cafe_tables_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/hall/hall_model.dart';
+import 'package:mary_ai_pos/features/view/main/domain/repository/main_repository.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/main/main_cubit.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/main/widgets/admin_floor_plan_canvas.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/settings/widgets/section_shell.dart';
@@ -25,7 +22,7 @@ class HallsTablesSection extends StatefulWidget {
 }
 
 class _HallsTablesSectionState extends State<HallsTablesSection> {
-  final DioClient _client = inject<DioClient>();
+  final MainRepository _repository = inject<MainRepository>();
 
   bool _loading = true;
   String? _error;
@@ -43,16 +40,15 @@ class _HallsTablesSectionState extends State<HallsTablesSection> {
       _loading = true;
       _error = null;
     });
-    try {
-      final res = await _client.get(ListAPI.halls);
-      final root = res.data;
-      List<dynamic> data = const [];
-      if (root is Map && root['data'] is List) data = root['data'] as List;
-      if (!mounted) return;
-      setState(() {
-        _halls = data
-            .map((e) => HallModel.fromJson(Map<String, dynamic>.from(e as Map)))
-            .toList();
+    final result = await _repository.getHalls();
+    if (!mounted) return;
+    result.fold(
+      (failure) => setState(() {
+        _loading = false;
+        _error = failure.getLocalizedMessage(context);
+      }),
+      (halls) => setState(() {
+        _halls = halls;
         _loading = false;
         // Keep _selectedHall in sync if it was updated/removed.
         if (_selectedHall != null) {
@@ -60,23 +56,9 @@ class _HallsTablesSectionState extends State<HallsTablesSection> {
               _halls.where((h) => h.id == _selectedHall!.id).cast<HallModel?>();
           _selectedHall = match.isNotEmpty ? match.first : null;
         }
-      });
-    } on DioException catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _loading = false;
-        _error = _readError(e) ?? S.current.strLoadError;
-      });
-    } catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _loading = false;
-        _error = e.toString();
-      });
-    }
+      }),
+    );
   }
-
-  String? _readError(DioException e) => userFriendlyDioError(e);
 
   Future<void> _openHallEditor({HallModel? existing}) async {
     final branchId =
@@ -87,7 +69,7 @@ class _HallsTablesSectionState extends State<HallsTablesSection> {
       builder: (_) => _HallEditDialog(
         existing: existing,
         branchId: branchId,
-        client: _client,
+        repository: _repository,
       ),
     );
     if (saved == true && mounted) {
@@ -108,17 +90,17 @@ class _HallsTablesSectionState extends State<HallsTablesSection> {
       ),
     );
     if (ok != true || !mounted) return;
-    try {
-      await _client.delete('${ListAPI.halls}/${hall.id}');
-      if (!mounted) return;
+    final result = await _repository.deleteHall(hall.id);
+    if (!mounted) return;
+    final failure = result.fold((f) => f, (_) => null);
+    if (failure == null) {
       _load();
       try {
         // ignore: use_build_context_synchronously
         await context.read<MainCubit>().getHalls();
       } catch (_) {}
-    } on DioException catch (e) {
-      if (!mounted) return;
-      showErrorMessage(context, _readError(e) ?? S.current.strDeleteError);
+    } else {
+      showErrorMessage(context, failure.getLocalizedMessage(context));
     }
   }
 
@@ -145,7 +127,7 @@ class _HallsTablesSectionState extends State<HallsTablesSection> {
           : _TablesDetailView(
               key: ValueKey('tables-${_selectedHall!.id}'),
               hall: _selectedHall!,
-              client: _client,
+              repository: _repository,
               onBack: () => setState(() => _selectedHall = null),
             ),
     );
@@ -366,13 +348,13 @@ class _HallCardState extends State<_HallCard> {
 
 class _TablesDetailView extends StatefulWidget {
   final HallModel hall;
-  final DioClient client;
+  final MainRepository repository;
   final VoidCallback onBack;
 
   const _TablesDetailView({
     super.key,
     required this.hall,
-    required this.client,
+    required this.repository,
     required this.onBack,
   });
 
@@ -401,41 +383,25 @@ class _TablesDetailViewState extends State<_TablesDetailView> {
       _loading = true;
       _error = null;
     });
-    try {
-      final res = await widget.client.get(
-        '${ListAPI.cafeTablesByHallId}/${widget.hall.id}',
-        queryParameters: {'limit': 1000},
-      );
-      final root = res.data;
-      List<dynamic> data = const [];
-      if (root is Map && root['data'] is List) data = root['data'] as List;
-      if (!mounted) return;
-      final parsed = data
-          .map((e) =>
-              CafeTableModel.fromJson(Map<String, dynamic>.from(e as Map)))
-          .toList()
-        ..sort((a, b) => a.number.compareTo(b.number));
-      setState(() {
-        _tables = parsed;
-        _loading = false;
-      });
-      await _autoLayoutInvalid(parsed);
-    } on DioException catch (e) {
-      if (!mounted) return;
+    final result = await widget.repository.getTablesByHallId(widget.hall.id);
+    if (!mounted) return;
+    final failure = result.fold((f) => f, (_) => null);
+    if (failure != null) {
       setState(() {
         _loading = false;
-        _error = _readError(e) ?? S.current.strLoadError;
+        _error = failure.getLocalizedMessage(context);
       });
-    } catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _loading = false;
-        _error = e.toString();
-      });
+      return;
     }
+    final tables = result.fold((_) => null, (r) => r)!;
+    final parsed = List<CafeTableModel>.from(tables)
+      ..sort((a, b) => a.number.compareTo(b.number));
+    setState(() {
+      _tables = parsed;
+      _loading = false;
+    });
+    await _autoLayoutInvalid(parsed);
   }
-
-  String? _readError(DioException e) => userFriendlyDioError(e);
 
   Future<void> _autoLayoutInvalid(List<CafeTableModel> all) async {
     final hallW = widget.hall.width <= 0 ? 1000.0 : widget.hall.width;
@@ -507,7 +473,7 @@ class _TablesDetailViewState extends State<_TablesDetailView> {
       builder: (_) => _TableEditDialog(
         existing: existing,
         hall: widget.hall,
-        client: widget.client,
+        repository: widget.repository,
         suggestedNumber: _nextNumber(),
         prefillPosX: prefillPosX,
         prefillPosY: prefillPosY,
@@ -534,20 +500,19 @@ class _TablesDetailViewState extends State<_TablesDetailView> {
               : x)
           .toList();
     });
-    try {
-      await widget.client.put(
-        ListAPI.cafeTableById(t.id),
-        data: _tablePutPayload(t, newPosX, newPosY),
-      );
+    final result = await widget.repository.updateTable(
+      t.id,
+      _tablePutPayload(t, newPosX, newPosY),
+    );
+    if (!mounted) return;
+    final failure = result.fold((f) => f, (_) => null);
+    if (failure == null) {
       try {
-        if (!mounted) return;
         // ignore: use_build_context_synchronously
         await context.read<MainCubit>().refreshTables();
       } catch (_) {}
-    } on DioException catch (e) {
-      if (!mounted) return;
-      showErrorMessage(
-          context, _readError(e) ?? S.current.strSavePositionError);
+    } else {
+      showErrorMessage(context, failure.getLocalizedMessage(context));
       _load();
     }
   }
@@ -600,15 +565,11 @@ class _TablesDetailViewState extends State<_TablesDetailView> {
         failCount++;
         continue;
       }
-      try {
-        await widget.client.put(
-          ListAPI.cafeTableById(t.id),
-          data: _tablePutPayload(
-              t, entry.value.dx.round(), entry.value.dy.round()),
-        );
-      } on DioException {
-        failCount++;
-      }
+      final result = await widget.repository.updateTable(
+        t.id,
+        _tablePutPayload(t, entry.value.dx.round(), entry.value.dy.round()),
+      );
+      if (result.isLeft()) failCount++;
     }
 
     if (!mounted) return;
@@ -672,17 +633,17 @@ class _TablesDetailViewState extends State<_TablesDetailView> {
       ),
     );
     if (ok != true || !mounted) return;
-    try {
-      await widget.client.delete(ListAPI.cafeTableById(t.id));
-      if (!mounted) return;
+    final result = await widget.repository.deleteTable(t.id);
+    if (!mounted) return;
+    final failure = result.fold((f) => f, (_) => null);
+    if (failure == null) {
       _load();
       try {
         // ignore: use_build_context_synchronously
         await context.read<MainCubit>().refreshTables();
       } catch (_) {}
-    } on DioException catch (e) {
-      if (!mounted) return;
-      showErrorMessage(context, _readError(e) ?? S.current.strDeleteError);
+    } else {
+      showErrorMessage(context, failure.getLocalizedMessage(context));
     }
   }
 
@@ -1182,7 +1143,7 @@ class _StatCard extends StatelessWidget {
 class _TableEditDialog extends StatefulWidget {
   final CafeTableModel? existing;
   final HallModel hall;
-  final DioClient client;
+  final MainRepository repository;
   final int suggestedNumber;
   final int? prefillPosX;
   final int? prefillPosY;
@@ -1192,7 +1153,7 @@ class _TableEditDialog extends StatefulWidget {
   const _TableEditDialog({
     required this.existing,
     required this.hall,
-    required this.client,
+    required this.repository,
     required this.suggestedNumber,
     this.prefillPosX,
     this.prefillPosY,
@@ -1355,57 +1316,33 @@ class _TableEditDialogState extends State<_TableEditDialog> {
             : _priceCtrl.text.trim().replaceAll(' ', '').replaceAll(',', '.'))
         : null;
     final existing = widget.existing;
+    final body = {
+      'hall_id': widget.hall.id,
+      'number': number,
+      'capacity': capacity,
+      'status': _statusToApi(_status),
+      'shape': _shapeToApi(_shape),
+      'table_type': _type,
+      'pos_x': posX,
+      'pos_y': posY,
+      'width': width,
+      'height': height,
+      'rotation': rotation,
+      if (pricePerHour != null) 'price_per_hour': pricePerHour,
+    };
 
-    try {
-      if (existing == null) {
-        await widget.client.post(
-          ListAPI.cafeTables,
-          data: {
-            'hall_id': widget.hall.id,
-            'number': number,
-            'capacity': capacity,
-            'status': _statusToApi(_status),
-            'shape': _shapeToApi(_shape),
-            'table_type': _type,
-            'pos_x': posX,
-            'pos_y': posY,
-            'width': width,
-            'height': height,
-            'rotation': rotation,
-            if (pricePerHour != null) 'price_per_hour': pricePerHour,
-          },
-        );
-      } else {
-        await widget.client.put(
-          ListAPI.cafeTableById(existing.id),
-          data: {
-            'hall_id': widget.hall.id,
-            'number': number,
-            'capacity': capacity,
-            'status': _statusToApi(_status),
-            'shape': _shapeToApi(_shape),
-            'table_type': _type,
-            'pos_x': posX,
-            'pos_y': posY,
-            'width': width,
-            'height': height,
-            'rotation': rotation,
-            if (pricePerHour != null) 'price_per_hour': pricePerHour,
-          },
-        );
-      }
-      if (!mounted) return;
-      Navigator.pop(context, true);
-    } on DioException catch (e) {
-      if (!mounted) return;
-      setState(() {
+    final result = existing == null
+        ? await widget.repository.createTable(body)
+        : await widget.repository.updateTable(existing.id, body);
+    if (!mounted) return;
+    result.fold(
+      (failure) => setState(() {
         _saving = false;
-        _saveError = _readError(e) ?? S.current.strSaveError;
-      });
-    }
+        _saveError = failure.getLocalizedMessage(context);
+      }),
+      (_) => Navigator.pop(context, true),
+    );
   }
-
-  String? _readError(DioException e) => userFriendlyDioError(e);
 
   @override
   Widget build(BuildContext context) {
@@ -2405,12 +2342,12 @@ class _DangerButton extends StatelessWidget {
 class _HallEditDialog extends StatefulWidget {
   final HallModel? existing;
   final String branchId;
-  final DioClient client;
+  final MainRepository repository;
 
   const _HallEditDialog({
     required this.existing,
     required this.branchId,
-    required this.client,
+    required this.repository,
   });
 
   @override
@@ -2475,40 +2412,29 @@ class _HallEditDialogState extends State<_HallEditDialog> {
     final width = metersToPx(widthM);
     final height = metersToPx(heightM);
     final name = _nameCtrl.text.trim();
+    final existing = widget.existing;
 
-    try {
-      if (widget.existing == null) {
-        await widget.client.post(
-          ListAPI.halls,
-          data: {
+    final result = existing == null
+        ? await widget.repository.createHall({
             'name': name,
             'branch_id': widget.branchId,
             'width': width,
             'height': height,
-          },
-        );
-      } else {
-        await widget.client.put(
-          '${ListAPI.halls}/${widget.existing!.id}',
-          data: {
+          })
+        : await widget.repository.updateHall(existing.id, {
             'name': name,
             'width': width,
             'height': height,
-          },
-        );
-      }
-      if (!mounted) return;
-      Navigator.pop(context, true);
-    } on DioException catch (e) {
-      if (!mounted) return;
-      setState(() {
+          });
+    if (!mounted) return;
+    result.fold(
+      (failure) => setState(() {
         _saving = false;
-        _saveError = _readError(e) ?? 'Saqlashda xatolik';
-      });
-    }
+        _saveError = failure.getLocalizedMessage(context);
+      }),
+      (_) => Navigator.pop(context, true),
+    );
   }
-
-  String? _readError(DioException e) => userFriendlyDioError(e);
 
   @override
   Widget build(BuildContext context) {

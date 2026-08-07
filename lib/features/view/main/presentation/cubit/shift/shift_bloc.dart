@@ -225,7 +225,7 @@ class ShiftBloc extends Bloc<ShiftEvent, ShiftState> {
     // offline-friendly at all; a real shift that failed to close offline just
     // showed an error with no recovery path).
     final failure = response.swap().getOrElse(() => const UnknownFailure());
-    if (failure is ConnectionFailure) {
+    if (failure.isConnectivityIssue) {
       await _printShiftCloseFromState(state);
       await _enqueueCloseShift(shift.cashRegisterId);
       await _clearLocalShift();
@@ -318,7 +318,7 @@ class ShiftBloc extends Bloc<ShiftEvent, ShiftState> {
 
     // Real (non-connection) rejection — surface it; do not fabricate a shift.
     final failure = response.swap().getOrElse(() => const UnknownFailure());
-    if (failure is! ConnectionFailure) {
+    if (!failure.isConnectivityIssue) {
       showErrorMessage(
         navigatorKey.currentContext!,
         failure.getLocalizedMessage(navigatorKey.currentContext!),

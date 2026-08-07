@@ -1,10 +1,8 @@
-import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:mary_ai_pos/core/api/dio_client.dart';
-import 'package:mary_ai_pos/core/api/list_api.dart';
 import 'package:mary_ai_pos/core/components/flush_bars.dart';
 import 'package:mary_ai_pos/core/design_system/pos_design_system.dart';
+import 'package:mary_ai_pos/core/error/failure.dart';
 import 'package:mary_ai_pos/core/extension/for_context.dart';
 import 'package:mary_ai_pos/core/utils/user_role_permissions.dart';
 import 'package:mary_ai_pos/core/routes/app_routes.dart';
@@ -13,6 +11,7 @@ import 'package:mary_ai_pos/di.dart';
 import 'package:mary_ai_pos/features/view/auth/presentation/cubit/bloc/user_bloc.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/category/category_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/goods/goods_model.dart';
+import 'package:mary_ai_pos/features/view/main/domain/repository/main_repository.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/main/widgets/main_header.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/widgets/product_grid_card.dart';
 import 'package:mary_ai_pos/generated/l10n.dart';
@@ -30,7 +29,7 @@ class MenuMealsListScreen extends StatefulWidget {
 }
 
 class _MenuMealsListScreenState extends State<MenuMealsListScreen> {
-  final DioClient _client = inject<DioClient>();
+  final MainRepository _repository = inject<MainRepository>();
   final NumberPaginatorController _paginatorController =
       NumberPaginatorController();
   final TextEditingController _searchCtrl = TextEditingController();
@@ -84,26 +83,18 @@ class _MenuMealsListScreenState extends State<MenuMealsListScreen> {
   Future<void> _loadCategories() async {
     if (!mounted) return;
     setState(() => _loadingCategories = true);
-    try {
-      final res = await _client.get(ListAPI.categories);
-      final list =
-          (res.data['data'] as List?)
-              ?.map((e) => CategoryModel.fromJson(e as Map<String, dynamic>))
-              .toList() ??
-          <CategoryModel>[];
-      if (!mounted) return;
-      setState(() {
-        _categories = list;
-        _loadingCategories = false;
-      });
-    } catch (_) {
-      if (!mounted) return;
-      setState(() => _loadingCategories = false);
-    }
+    final result = await _repository.getCategories();
+    if (!mounted) return;
+    setState(() {
+      _categories = result.fold((_) => const [], (r) => r);
+      _loadingCategories = false;
+    });
   }
 
   Future<void> _createCategory(String name) async {
-    await _client.post(ListAPI.categories, data: {'name': name});
+    final result = await _repository.createCategory(name);
+    final failure = result.fold((f) => f, (_) => null);
+    if (failure != null) throw failure;
     await _loadCategories();
   }
 
@@ -117,9 +108,8 @@ class _MenuMealsListScreenState extends State<MenuMealsListScreen> {
           } catch (e) {
             if (!mounted) return;
             _showSnack(
-              e is DioException
-                  ? (e.response?.data['message']?.toString() ??
-                        "Kategoriya qo'shilmadi")
+              e is Failure
+                  ? e.getLocalizedMessage(context)
                   : "Kategoriya qo'shilmadi",
             );
           }
@@ -136,40 +126,27 @@ class _MenuMealsListScreenState extends State<MenuMealsListScreen> {
       _loadingGoods = true;
       _errorGoods = null;
     });
-    try {
-      final offset = (page - 1) * _pageSize;
-      final params = <String, dynamic>{'limit': _pageSize, 'offset': offset};
-      if (_selectedCategoryId != null) {
-        params['category_id'] = _selectedCategoryId;
-      }
-      if (_searchQuery.isNotEmpty) {
-        params['search'] = _searchQuery;
-      }
-      final res = await _client.get(ListAPI.goods, queryParameters: params);
-      final list = _extractGoodsList(res.data);
-      final total = _extractTotalCount(res.data);
-      if (!mounted) return;
-      setState(() {
-        _goods = list;
+    final result = await _repository.searchGoodsAdmin(
+      limit: _pageSize,
+      offset: (page - 1) * _pageSize,
+      categoryId: _selectedCategoryId,
+      search: _searchQuery.isEmpty ? null : _searchQuery,
+    );
+    if (!mounted) return;
+    result.fold(
+      (failure) => setState(() {
+        _loadingGoods = false;
+        _errorGoods = failure is MessageFailure
+            ? failure.message
+            : "Taomlar yuklanmadi";
+      }),
+      (data) => setState(() {
+        _goods = _extractGoodsList(data);
         _page = page;
-        _totalCount = total;
+        _totalCount = _extractTotalCount(data);
         _loadingGoods = false;
-      });
-    } on DioException catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _loadingGoods = false;
-        _errorGoods = e.response?.data is Map
-            ? e.response!.data['message']?.toString()
-            : null;
-      });
-    } catch (_) {
-      if (!mounted) return;
-      setState(() {
-        _loadingGoods = false;
-        _errorGoods = "Taomlar yuklanmadi";
-      });
-    }
+      }),
+    );
   }
 
   Future<void> _openManage({String? mealId}) async {

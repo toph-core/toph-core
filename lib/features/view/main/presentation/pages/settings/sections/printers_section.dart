@@ -3,8 +3,6 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:mary_ai_pos/core/api/dio_client.dart';
-import 'package:mary_ai_pos/core/api/list_api.dart';
 import 'package:mary_ai_pos/core/components/flush_bars.dart';
 import 'package:mary_ai_pos/core/extension/for_context.dart';
 import 'package:mary_ai_pos/core/service/printer/printer_config_storage.dart';
@@ -13,6 +11,7 @@ import 'package:mary_ai_pos/core/service/printer/printer_setting_entry.dart';
 import 'package:mary_ai_pos/core/services/cache/cache_service.dart';
 import 'package:mary_ai_pos/di.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/category/category_model.dart';
+import 'package:mary_ai_pos/features/view/main/domain/repository/main_repository.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/settings/widgets/section_shell.dart';
 import 'package:mary_ai_pos/generated/l10n.dart';
 
@@ -24,7 +23,7 @@ class PrintersSection extends StatefulWidget {
 }
 
 class _PrintersSectionState extends State<PrintersSection> {
-  final DioClient _client = inject<DioClient>();
+  final MainRepository _repository = inject<MainRepository>();
   final PrinterConfigStorage _storage = inject<PrinterConfigStorage>();
 
   bool _loading = true;
@@ -54,27 +53,16 @@ class _PrintersSectionState extends State<PrintersSection> {
       });
     }
     setState(() => _loading = false);
-    try {
-      final res = await _client.get(ListAPI.categories);
-      final root = res.data;
-      List<dynamic> categoriesData = const [];
-      if (root is Map && root['data'] is List) {
-        categoriesData = root['data'] as List;
-      } else if (root is List) {
-        categoriesData = root;
-      }
-      if (!mounted) return;
-      setState(() {
-        _categories = categoriesData
-            .map((e) =>
-                CategoryModel.fromJson(Map<String, dynamic>.from(e as Map)))
-            .toList();
-      });
-    } catch (e) {
+    final result = await _repository.getCategories();
+    final categories = result.fold((_) => null, (r) => r);
+    if (categories == null) {
       // Kategoriya nomlarini yangilab bo'lmadi — jim o'tamiz, printer
       // ro'yxati baribir lokal holatdan to'liq ko'rsatiladi.
-      debugPrint('[PrintersSection] Kategoriyalarni yuklab bo\'lmadi: $e');
+      debugPrint('[PrintersSection] Kategoriyalarni yuklab bo\'lmadi');
+      return;
     }
+    if (!mounted) return;
+    setState(() => _categories = categories);
   }
 
   Future<void> _openEditor({PrinterSettingEntry? existing}) async {
@@ -84,7 +72,7 @@ class _PrintersSectionState extends State<PrintersSection> {
       builder: (_) => _PrinterEditDialog(
         existing: existing,
         categories: _categories,
-        client: _client,
+        repository: _repository,
         storage: _storage,
       ),
     );
@@ -107,9 +95,11 @@ class _PrintersSectionState extends State<PrintersSection> {
     // bo'lsa ham lokal o'chirish kuchda qoladi (faqat sinov uchun jim log).
     await _storage.deleteEntry(item.id);
     unawaited(
-      _client.delete('${ListAPI.printerSettings}/${item.id}').catchError((e) {
-        debugPrint('[PrintersSection] Backend delete xatosi (e\'tiborsiz): $e');
-        return null;
+      _repository.deletePrinterSetting(item.id).then((result) {
+        result.fold(
+          (f) => debugPrint('[PrintersSection] Backend delete xatosi (e\'tiborsiz): $f'),
+          (_) {},
+        );
       }),
     );
     if (!mounted) return;
@@ -625,13 +615,13 @@ enum _ButtonKind { ghost, danger }
 class _PrinterEditDialog extends StatefulWidget {
   final PrinterSettingEntry? existing;
   final List<CategoryModel> categories;
-  final DioClient client;
+  final MainRepository repository;
   final PrinterConfigStorage storage;
 
   const _PrinterEditDialog({
     required this.existing,
     required this.categories,
-    required this.client,
+    required this.repository,
     required this.storage,
   });
 
@@ -786,20 +776,17 @@ class _PrinterEditDialogState extends State<_PrinterEditDialog> {
       'connection_type': entry.connectionType,
       'connected_entity_ids': entry.connectedEntityIds,
     };
-    try {
-      if (widget.existing == null) {
-        await widget.client.post(ListAPI.printerSettings, data: body);
-      } else {
-        await widget.client.put(
-          '${ListAPI.printerSettings}/${entry.id}',
-          data: body,
-        );
-      }
-      debugPrint('[PrinterEditDialog] Backendga yozildi: ${entry.id}');
-    } catch (e) {
-      debugPrint('[PrinterEditDialog] Backend yozish xatosi (e\'tiborsiz, '
-          'lokal saqlandi): $e');
-    }
+    final result = await widget.repository.pushPrinterSetting(
+      body,
+      existingId: widget.existing?.id,
+    );
+    result.fold(
+      (f) => debugPrint(
+        '[PrinterEditDialog] Backend yozish xatosi (e\'tiborsiz, '
+        'lokal saqlandi): $f',
+      ),
+      (_) => debugPrint('[PrinterEditDialog] Backendga yozildi: ${entry.id}'),
+    );
   }
 
   /// IP/port/ulanish turini — hozir formaga kiritilgan qiymatlarni, saqlash

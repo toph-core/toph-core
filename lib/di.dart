@@ -1,14 +1,17 @@
 import 'package:alice/alice.dart';
 import 'package:alice/model/alice_configuration.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:mary_ai_pos/core/api/app_security_context.dart';
 import 'package:mary_ai_pos/core/api/dio_client.dart';
+import 'package:mary_ai_pos/core/services/audit/privileged_action_audit_log_service.dart';
 import 'package:mary_ai_pos/core/services/auth/offline_auth_cache.dart';
 import 'package:mary_ai_pos/core/service/receipt/receipt_info_storage.dart';
 import 'package:mary_ai_pos/core/services/cache/cache_service.dart';
 import 'package:mary_ai_pos/core/services/connectivity/connectivity_cubit.dart';
 import 'package:mary_ai_pos/core/services/lan_hub/lan_hub_service.dart';
 import 'package:mary_ai_pos/core/services/offline_queue/offline_queue_service.dart';
+import 'package:mary_ai_pos/core/services/print_queue/print_queue_service.dart';
 import 'package:mary_ai_pos/core/services/table_timer/table_timer_sync_service.dart';
 import 'package:mary_ai_pos/core/sync/sync_engine.dart';
 import 'package:mary_ai_pos/core/auth/storage/token_storage_impl.dart';
@@ -82,12 +85,20 @@ import 'package:mary_ai_pos/features/view/main/presentation/cubit/ui_prefs/ui_pr
 final inject = GetIt.instance;
 Future<void> initDi() async {
   final SharedPreferences prefs = await SharedPreferences.getInstance();
+  const secureStorage = FlutterSecureStorage();
 
-  final AppTokenStorage tokenStorage = AppTokenStorage(prefs);
+  // One-time upgrade for installs that predate the secure-storage migration
+  // (§11 Phase 6) — moves any credential still sitting in plaintext
+  // SharedPreferences into secure storage before anything reads it.
+  await AppTokenStorage.migrateLegacyPlaintext(prefs, secureStorage);
+  await OfflineAuthCache.migrateLegacyPlaintext(prefs, secureStorage);
+
+  final AppTokenStorage tokenStorage = AppTokenStorage(prefs, secureStorage);
 
   inject.registerSingleton<SharedPreferences>(prefs);
+  inject.registerSingleton<FlutterSecureStorage>(secureStorage);
   inject.registerSingleton<AppTokenStorage>(tokenStorage);
-  inject.registerSingleton<OfflineAuthCache>(OfflineAuthCache(prefs));
+  inject.registerSingleton<OfflineAuthCache>(const OfflineAuthCache(secureStorage));
   inject.registerSingleton<ReceiptInfoStorage>(ReceiptInfoStorage(prefs));
 
   final alice = Alice(
@@ -107,6 +118,9 @@ Future<void> initDi() async {
 
   final offlineQueue = await OfflineQueueService.init();
   inject.registerSingleton<OfflineQueueService>(offlineQueue);
+
+  final privilegedActionAuditLog = await PrivilegedActionAuditLogService.init();
+  inject.registerSingleton<PrivilegedActionAuditLogService>(privilegedActionAuditLog);
 
   final securityContext = await buildAppSecurityContext();
   final dioClient = DioClient(
@@ -131,6 +145,7 @@ Future<void> initDi() async {
     connectivity: connectivityCubit,
     client: dioClient,
     lanHub: lanHubService,
+    prefs: prefs,
   );
   syncEngine.start();
   inject.registerSingleton<SyncEngine>(syncEngine);
@@ -139,10 +154,39 @@ Future<void> initDi() async {
   minioService.configure(securityContext: securityContext);
   inject.registerLazySingleton(() => minioService);
 
-  inject.registerLazySingleton(() => PrinterConfigStorage(inject()));
-  inject.registerLazySingleton(
-    () => PrinterService(inject<PrinterConfigStorage>()),
+  final printerConfigStorage = PrinterConfigStorage(prefs);
+  inject.registerSingleton<PrinterConfigStorage>(printerConfigStorage);
+  final printerService = PrinterService(printerConfigStorage);
+  inject.registerSingleton<PrinterService>(printerService);
+
+  // Print-job relay (Phase 5): needs `printerService` (transport) and
+  // `lanHubService` (broadcast) to already exist, which is why this is
+  // registered here rather than alongside them above. `PrintQueueService`
+  // itself never imports `lan_hub_*` — see its own doc comment for why —
+  // so the LAN side is wired here as plain closures over `lanHubService`'s
+  // new `broadcastPrintJob*`/`canRelayPrintJobs` members.
+  final printQueueService = await PrintQueueService.init(
+    printerService,
+    cacheService,
+    prefs,
+    isLanRelayPossible: () => lanHubService.canRelayPrintJobs,
+    broadcastAnnounce: ({
+      required jobId,
+      required jobType,
+      required entryId,
+      required payloadBase64,
+    }) =>
+        lanHubService.broadcastPrintJobAnnounce(
+          jobId: jobId,
+          jobType: jobType,
+          entryId: entryId,
+          payloadBase64: payloadBase64,
+        ),
+    broadcastClaim: lanHubService.broadcastPrintJobClaim,
+    broadcastResult: lanHubService.broadcastPrintJobResult,
   );
+  inject.registerSingleton<PrintQueueService>(printQueueService);
+  printerService.attachPrintQueue(printQueueService.submitJob);
 
   _dataSources();
   _repositories();
@@ -157,7 +201,7 @@ Future<void> initDi() async {
 
 void _dataSources() {
   inject.registerLazySingleton<AuthDatasource>(
-    () => AuthDatasourceImpl(inject(), inject()),
+    () => AuthDatasourceImpl(inject(), inject(), inject()),
   );
   inject.registerLazySingleton<MainDataSources>(
     () => MainDataSourcesImpl(inject()),
@@ -169,7 +213,7 @@ void _repositories() {
     () => AuthRepositoryImpl(inject(), inject()),
   );
   inject.registerLazySingleton<MainRepository>(
-    () => MainRepositoryImpl(inject()),
+    () => MainRepositoryImpl(inject(), inject(), inject()),
   );
   inject.registerLazySingleton<ArchivesLocalRepository>(
     () => ArchivesLocalRepositoryImpl(inject(), inject(), inject()),
@@ -235,7 +279,7 @@ void _cubit() {
   );
   inject.registerLazySingleton(() => SettingsCubit(inject(), inject()));
   inject.registerLazySingleton(() => UiPrefsCubit(inject()));
-  inject.registerLazySingleton(() => ServiceChargeCubit(inject()));
+  inject.registerLazySingleton(() => ServiceChargeCubit(inject(), inject()));
   inject.registerLazySingleton(
     () => MainCubit(inject(), inject(), inject(), inject(), inject()),
   );
@@ -262,8 +306,15 @@ void _cubit() {
     () => LoginPinCubit(inject(), inject(), inject(), inject(), inject()),
   );
   inject.registerFactory(
-    () =>
-        DetailBloc(inject(), inject(), inject(), inject(), inject(), inject()),
+    () => DetailBloc(
+      inject(),
+      inject(),
+      inject(),
+      inject(),
+      inject(),
+      inject(),
+      inject(),
+    ),
   );
   inject.registerFactory(
     () => DepartmentSelectionCubit(inject()),
@@ -275,7 +326,7 @@ void _cubit() {
       connectivity: inject(),
       queue: inject(),
       lanHub: inject(),
-      client: inject(),
+      mainRepository: inject(),
       printerService: inject(),
       shiftBloc: inject(),
     ),
@@ -291,6 +342,7 @@ void _cubit() {
       createPaymentUsecase: inject(),
       getPaymentDetailWithId: inject(),
       printerService: inject(),
+      mainRepository: inject(),
     ),
   );
   inject.registerFactory(() => NotificationBloc());

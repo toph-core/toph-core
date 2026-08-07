@@ -19,13 +19,12 @@ import 'package:mary_ai_pos/core/services/connectivity/connectivity_cubit.dart';
 import 'package:mary_ai_pos/core/services/offline_queue/offline_queue_service.dart';
 import 'package:mary_ai_pos/core/services/offline_queue/pending_operation.dart';
 import 'package:mary_ai_pos/core/services/cache/cache_service.dart';
-import 'package:mary_ai_pos/core/api/dio_client.dart';
-import 'package:mary_ai_pos/core/api/list_api.dart';
 import 'package:mary_ai_pos/di.dart' show inject;
 import 'package:mary_ai_pos/features/view/main/data/models/archive_detail/archive_detail_model.dart';
 import 'package:mary_ai_pos/features/view/main/domain/usecase/create_payment_usecase.dart';
 import 'package:mary_ai_pos/features/view/main/domain/usecase/get_payment_detail_with_id_usecase.dart';
 import 'package:mary_ai_pos/features/view/main/domain/usecase/get_payment_detail_with_table_id_usecase.dart';
+import 'package:mary_ai_pos/features/view/main/domain/repository/main_repository.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/main/main_cubit.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/orders/orders_bloc.dart';
 
@@ -38,6 +37,7 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
   final CreatePaymentUsecase _createPaymentUsecase;
   final GetPaymentDetailWithIdUsecase _getPaymentDetailWithIdUsecase;
   final PrinterService _printerService;
+  final MainRepository _mainRepository;
 
   DateTime? _timerStartedAt;
   List<PauseInterval> _timerPauses = const [];
@@ -67,10 +67,12 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
     required CreatePaymentUsecase createPaymentUsecase,
     required GetPaymentDetailWithIdUsecase getPaymentDetailWithId,
     required PrinterService printerService,
+    required MainRepository mainRepository,
   }) : _getPaymentDetailWithTableIdUsecase = getPaymentDetailWithTableIdUsecase,
        _createPaymentUsecase = createPaymentUsecase,
        _getPaymentDetailWithIdUsecase = getPaymentDetailWithId,
        _printerService = printerService,
+       _mainRepository = mainRepository,
        super(const PaymentState()) {
     on<_Started>(_onStarted);
     on<_GetDetail>(_onGetDetail);
@@ -154,17 +156,22 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
 
       // Total 0 bo'lsa — /pay emas /cancel
       if (dueTot <= 0) {
-        try {
-          await inject<DioClient>().dio.post(
-            ListAPI.cancelOrder(state.detail!.id),
-          );
+        final result = await _mainRepository.cancelOrder(state.detail!.id);
+        final failure = result.fold((f) => f, (_) => null);
+        if (failure == null) {
           _paymentSucceeded = true;
           _onPaymentSuccess();
-        } catch (e) {
+        } else if (failure.isConnectivityIssue) {
+          // Internet yo'q — bekor qilishni offline queue ga saqla
+          await _enqueueCancelOrder();
+          if (isClosed) return;
+          _paymentSucceeded = true;
+          _onPaymentSuccess();
+        } else {
           if (!isClosed) emit(state.copyWith(status: Status.ERROR));
           showErrorMessage(
             navigatorKey.currentContext!,
-            e.toString(),
+            failure.getLocalizedMessage(navigatorKey.currentContext!),
           );
         }
         return;
@@ -230,14 +237,13 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
       return;
     }
     try {
-      final client = inject<DioClient>();
-      final res = await client.get(ListAPI.orderTableTimer(orderId));
-      final raw = res.data['data'];
-      if (raw is! Map) return;
+      final result = await _mainRepository.getOrderTableTimer(orderId);
+      final raw = result.fold((_) => null, (r) => r);
+      if (raw == null) return;
       final timerState =
           (raw['state'] ?? raw['timer_state'])?.toString().toLowerCase() ?? '';
       if (timerState == 'paused') {
-        await client.post(ListAPI.orderTableTimerResume(orderId));
+        await _mainRepository.resumeOrderTableTimer(orderId);
       }
       // closed / none / running — leave as-is; starting fresh would wipe time.
     } catch (_) {
@@ -318,6 +324,23 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
     showSuccessMessage(
       navigatorKey.currentContext!,
       "To'lov navbatga qo'shildi — internet kelganda yuboriladi",
+    );
+  }
+
+  Future<void> _enqueueCancelOrder() async {
+    final payload = jsonEncode({'order_id': state.detail!.id});
+    await inject<OfflineQueueService>().enqueue(
+      PendingOperation(
+        id: OfflineQueueService.newId(),
+        type: PendingOperationType.cancelOrder,
+        payload: payload,
+        tableId: state.tableId ?? state.detail!.tableId,
+        createdAt: DateTime.now(),
+      ),
+    );
+    showSuccessMessage(
+      navigatorKey.currentContext!,
+      "Bekor qilish navbatga qo'shildi — internet kelganda yuboriladi",
     );
   }
 
@@ -433,17 +456,41 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
         },
       );
     } else if (state.orderId != null) {
-      emit(state.copyWith(detailStatus: Status.LOADING, failure: null, detail: null));
+      // Cache-first, same pattern as the tableId branch above — needed for
+      // a takeaway order created offline: `CreateOrderBloc` caches a local
+      // snapshot under this same orderId (client-generated) before ever
+      // navigating here, since the order doesn't exist server-side yet.
+      final cachedRaw = cache.getOrderDetail(state.orderId!);
+      ArchiveDetailModel? cachedDetail;
+      if (cachedRaw != null) {
+        cachedDetail = ArchiveDetailModel.fromJson(cachedRaw);
+        final cachedTs = cache.getItemTimestamps(cachedDetail.id);
+        emit(state.copyWith(
+          detailStatus: Status.SUCCESS,
+          status: Status.SUCCESS,
+          detail: cachedDetail,
+          itemTimestamps: cachedTs,
+          failure: null,
+        ));
+      } else {
+        emit(state.copyWith(detailStatus: Status.LOADING, failure: null, detail: null));
+      }
+
+      if (!inject<ConnectivityCubit>().isOnline) return;
+
       final response = await _getPaymentDetailWithIdUsecase.call(state.orderId!);
       response.fold(
         (failure) {
-          showErrorMessage(
-            navigatorKey.currentContext!,
-            failure.getLocalizedMessage(navigatorKey.currentContext!),
-          );
-          emit(state.copyWith(status: Status.ERROR, detailStatus: Status.ERROR, failure: failure));
+          if (cachedDetail == null) {
+            showErrorMessage(
+              navigatorKey.currentContext!,
+              failure.getLocalizedMessage(navigatorKey.currentContext!),
+            );
+            emit(state.copyWith(status: Status.ERROR, detailStatus: Status.ERROR, failure: failure));
+          }
         },
         (detail) {
+          cache.saveOrderDetail(state.orderId!, (detail as ArchiveDetailModel).toJson());
           final prefill = PaymentBloc.effectiveTotal(detail, tableCharge: state.hourPrice);
           final currentEntered = int.tryParse(state.enterSum) ?? 0;
           final shouldPrefill = currentEntered <= 0 ||
@@ -469,11 +516,10 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
   /// ga yozadi. Bills javobida bu maydon yo'q.
   Future<void> _fetchItemTimestamps(String orderId) async {
     try {
-      final res = await inject<DioClient>().get(
-        ListAPI.orderItemsListByOrder(orderId),
-      );
-      if (isClosed) return;
-      final raw = res.data['data'];
+      final result = await _mainRepository.getOrderItemsRaw(orderId);
+      final res = result.fold((_) => null, (r) => r);
+      if (res == null || isClosed) return;
+      final raw = res['data'];
       final List<dynamic> list = raw is List
           ? raw
           : (raw is Map<String, dynamic> && raw['items'] is List

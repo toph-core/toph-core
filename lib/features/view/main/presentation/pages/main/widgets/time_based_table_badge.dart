@@ -1,12 +1,11 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:mary_ai_pos/core/api/list_api.dart';
-import 'package:mary_ai_pos/core/api/dio_client.dart';
 import 'package:mary_ai_pos/core/services/table_timer/table_timer_sync_service.dart';
 import 'package:mary_ai_pos/di.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/cafe_tables/cafe_tables_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/table_timer/table_timer_response_model.dart';
+import 'package:mary_ai_pos/features/view/main/domain/repository/main_repository.dart';
 
 const _indigo = Color(0xFFFB6633);
 const _kGreen = Color(0xFF16A34A);
@@ -177,17 +176,12 @@ class _TimeBasedTableBadgeState extends State<TimeBasedTableBadge> {
 
   Future<void> _sync() async {
     try {
-      final dio = inject<DioClient>().dio;
-      final orderRes = await dio.get(ListAPI.orderWithTableId(widget.table.id));
-      final data = orderRes.data['data'] as List?;
-
-      if (data == null || data.isEmpty) return;
-
-      final orderId = (data[0]['id'] as String?) ?? '';
+      final repo = inject<MainRepository>();
+      final orderId = await repo.getOrderIdWithTableId(widget.table.id);
       if (orderId.isEmpty) return;
 
-      final timerRes = await dio.get(ListAPI.orderTableTimer(orderId));
-      final raw = timerRes.data['data'] as Map<String, dynamic>?;
+      final timerResult = await repo.getOrderTableTimer(orderId);
+      final raw = timerResult.fold((_) => null, (r) => r);
       if (raw == null) return;
       final t = TableTimerResponse.fromJson(raw);
 
@@ -202,11 +196,11 @@ class _TimeBasedTableBadgeState extends State<TimeBasedTableBadge> {
 
     setState(() => _actionLoading = true);
     try {
-      final dio = inject<DioClient>().dio;
+      final repo = inject<MainRepository>();
       if (_timerState == 'running') {
-        await dio.post(ListAPI.orderTableTimerPause(_orderId));
+        await repo.pauseOrderTableTimer(_orderId);
       } else if (_timerState == 'paused') {
-        await dio.post(ListAPI.orderTableTimerResume(_orderId));
+        await repo.resumeOrderTableTimer(_orderId);
       }
       await _sync();
     } catch (_) {

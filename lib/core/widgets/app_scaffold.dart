@@ -9,6 +9,7 @@ import 'package:mary_ai_pos/core/widgets/styled_virtual_keyboard.dart';
 import 'package:mary_ai_pos/core/widgets/lan_solo_banner.dart';
 import 'package:mary_ai_pos/core/widgets/offline_banner.dart';
 import 'package:mary_ai_pos/di.dart';
+import 'package:mary_ai_pos/features/view/auth/presentation/cubit/bloc/user_bloc.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/main/main_cubit.dart';
 
 class AppScaffold extends StatefulWidget {
@@ -37,6 +38,13 @@ class AppScaffold extends StatefulWidget {
     _AppScaffoldState._closeKeyboard();
   }
 
+  /// Resets the one-time first-mount hydration gate — call on logout so a
+  /// re-login (different brand/user, same running app instance) triggers an
+  /// immediate re-hydration instead of waiting for the next periodic tick.
+  static void resetPrefetchGate() {
+    _AppScaffoldState._resetPrefetchGate();
+  }
+
   @override
   State<AppScaffold> createState() => _AppScaffoldState();
 }
@@ -53,6 +61,13 @@ class _AppScaffoldState extends State<AppScaffold> {
   // o'z throttle bor, lekin bu erda ham qo'shimcha darvoza qo'yamiz —
   // har yangi scaffold yaratilganda qayta urinishi to'xtatiladi).
   static bool _prefetchAttempted = false;
+
+  /// Called from `AuthCubit.logoutFromApp` — without this, a re-login to a
+  /// different brand/user in the same running app instance would never
+  /// re-trigger the immediate first-mount hydration (this flag would still
+  /// be `true` from the previous session), leaving the new tenant's data to
+  /// wait for the next periodic `SyncEngine` tick (up to 60s) instead.
+  static void _resetPrefetchGate() => _prefetchAttempted = false;
 
   static void _openKeyboard(
     TextEditingController controller,
@@ -84,6 +99,15 @@ class _AppScaffoldState extends State<AppScaffold> {
   Future<void> _syncOnReconnect() async {
     await inject<SyncEngine>().tick();
     if (mounted) context.read<MainCubit>().refreshTables();
+    // Joriy sessiyani ham qayta tekshiradi — offline-auth cache'da vaqt
+    // asosidagi muddat yo'q (§11 Phase 6), buning o'rniga: har safar aloqa
+    // tiklanganda serverdan haqiqiy javob so'raladi, va agar foydalanuvchi
+    // shu orada faolsizlantirilgan bo'lsa, `UserBloc._getUser` buni aniqlab
+    // login ekraniga qaytaradi hamda tegishli offline cache yozuvini
+    // o'chiradi — shift davomida "faolsizlantirilgan xodim hali ham
+    // ishlayapti" holatini keyingi muvaffaqiyatli aloqagacha emas, aynan shu
+    // yerda yopadi.
+    if (mounted) context.read<UserBloc>().add(const UserEvent.getUser());
   }
 
   @override

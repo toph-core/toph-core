@@ -1,14 +1,13 @@
 import 'dart:io' show File;
 
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:dio/dio.dart';
+import 'package:dartz/dartz.dart' show Either;
 import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:mary_ai_pos/core/api/dio_client.dart';
-import 'package:mary_ai_pos/core/api/list_api.dart';
 import 'package:mary_ai_pos/core/components/flush_bars.dart';
+import 'package:mary_ai_pos/core/error/failure.dart';
 import 'package:mary_ai_pos/core/extension/for_context.dart';
 import 'package:mary_ai_pos/core/extension/list_extension.dart';
 import 'package:mary_ai_pos/core/theme/tokens/theme_colors.dart';
@@ -22,6 +21,7 @@ import 'package:mary_ai_pos/di.dart';
 import 'package:mary_ai_pos/features/view/auth/data/models/user/user_model.dart';
 import 'package:mary_ai_pos/features/view/auth/presentation/cubit/bloc/user_bloc.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/category/category_model.dart';
+import 'package:mary_ai_pos/features/view/main/domain/repository/main_repository.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/main/widgets/main_header.dart';
 import 'package:mary_ai_pos/generated/l10n.dart';
 
@@ -35,7 +35,7 @@ class MenuManageScreen extends StatefulWidget {
 enum _AvailableItemsTab { ingredients, semiFinished }
 
 class _MenuManageScreenState extends State<MenuManageScreen> {
-  final DioClient _client = inject<DioClient>();
+  final MainRepository _repository = inject<MainRepository>();
   final _nameCtrl = TextEditingController();
   final _nameEnCtrl = TextEditingController();
   final _nameRuCtrl = TextEditingController();
@@ -161,12 +161,11 @@ class _MenuManageScreenState extends State<MenuManageScreen> {
   }
 
   /// Web `MaryAiFront`: `GET /goods/{id}` + `GET /translations?limit=1000` parallel.
-  Future<Response?> _safeGet(Future<Response> request) async {
-    try {
-      return await request;
-    } on DioException {
-      return null;
-    }
+  Future<Map<String, dynamic>?> _safeCall(
+    Future<Either<Failure, Map<String, dynamic>>> request,
+  ) async {
+    final result = await request;
+    return result.fold((_) => null, (r) => r);
   }
 
   void _fillTranslationsCacheFromResponse(dynamic raw) {
@@ -262,31 +261,25 @@ class _MenuManageScreenState extends State<MenuManageScreen> {
       _isLoadingCategories = true;
       _categoriesError = null;
     });
-    try {
-      final res = await _client.get(ListAPI.categories);
-      final list =
-          (res.data['data'] as List?)
-              ?.map((e) => CategoryModel.fromJson(e as Map<String, dynamic>))
-              .toList() ??
-          const <CategoryModel>[];
-      if (!mounted) return;
-      setState(() {
-        _categories = list;
-        _selectedCategory = list.isNotEmpty ? list.first : null;
-        _isLoadingCategories = false;
-      });
-      final editId = _editMealId;
-      if (editId != null && editId.isNotEmpty && !_isLoadingMeal) {
-        await _loadMealForEdit(editId);
-      }
-    } on DioException catch (e) {
-      if (!mounted) return;
+    final result = await _repository.getCategories();
+    if (!mounted) return;
+    final failure = result.fold((f) => f, (_) => null);
+    if (failure != null) {
       setState(() {
         _isLoadingCategories = false;
-        _categoriesError = e.response?.data is Map
-            ? e.response!.data['message']?.toString()
-            : null;
+        _categoriesError = failure is MessageFailure ? failure.message : null;
       });
+      return;
+    }
+    final list = result.fold((_) => const <CategoryModel>[], (r) => r);
+    setState(() {
+      _categories = list;
+      _selectedCategory = list.isNotEmpty ? list.first : null;
+      _isLoadingCategories = false;
+    });
+    final editId = _editMealId;
+    if (editId != null && editId.isNotEmpty && !_isLoadingMeal) {
+      await _loadMealForEdit(editId);
     }
   }
 
@@ -296,24 +289,24 @@ class _MenuManageScreenState extends State<MenuManageScreen> {
     try {
       // Web MaryAiFront: parallel `GET /goods/{id}` + `GET /translations?limit=1000` + `with-calculations`.
       final futures = await Future.wait([
-        _safeGet(_client.get(ListAPI.goodById(mealId))),
-        _safeGet(_client.get(ListAPI.translations(limit: 1000, offset: 0))),
-        _safeGet(_client.get(ListAPI.goodWithCalculationsById(mealId))),
+        _safeCall(_repository.getGoodById(mealId)),
+        _safeCall(_repository.getTranslationsList()),
+        _safeCall(_repository.getGoodWithCalculationsById(mealId)),
       ]);
       final goodRes = futures[0];
       final transRes = futures[1];
       final calcRes = futures[2];
 
       if (transRes != null) {
-        _fillTranslationsCacheFromResponse(transRes.data);
+        _fillTranslationsCacheFromResponse(transRes);
       }
 
       final calcData = calcRes != null
-          ? (calcRes.data['data'] ?? const {}) as Map<String, dynamic>
+          ? (calcRes['data'] ?? const {}) as Map<String, dynamic>
           : null;
 
       if (goodRes != null) {
-        final good = (goodRes.data['data'] ?? const {}) as Map<String, dynamic>;
+        final good = (goodRes['data'] ?? const {}) as Map<String, dynamic>;
         _applyGoodForForm(good);
         if (calcData != null) {
           _applyCalculationsOnly(calcData);
@@ -331,24 +324,22 @@ class _MenuManageScreenState extends State<MenuManageScreen> {
       } else {
         await _loadMealForEditFallback(mealId);
       }
-    } on DioException {
-      await _loadMealForEditFallback(mealId);
     } finally {
       if (mounted) setState(() => _isLoadingMeal = false);
     }
   }
 
   Future<void> _loadMealForEditFallback(String mealId) async {
-    try {
-      final res = await _client.get(
-        ListAPI.goodWithCalculationsById(mealId),
-        queryParameters: const {'include': 'translations'},
-      );
-      final data = (res.data['data'] ?? const {}) as Map<String, dynamic>;
-      _applyMealData(data);
-      await _hydrateNameTranslationFromList();
-      _itemsLoadedWithMeal = true;
-    } catch (_) {}
+    final result = await _repository.getGoodWithCalculationsById(
+      mealId,
+      includeTranslations: true,
+    );
+    final res = result.fold((_) => null, (r) => r);
+    if (res == null) return;
+    final data = (res['data'] ?? const {}) as Map<String, dynamic>;
+    _applyMealData(data);
+    await _hydrateNameTranslationFromList();
+    _itemsLoadedWithMeal = true;
   }
 
   void _applyMealData(Map<String, dynamic> data) {
@@ -412,10 +403,11 @@ class _MenuManageScreenState extends State<MenuManageScreen> {
     if (_translationsLoading) return;
     _translationsLoading = true;
     try {
-      final res = await _client.get(
-        ListAPI.translations(limit: 1000, offset: 0),
-      );
-      final list = _extractDataList(res.data);
+      final result = await _repository.getTranslationsList();
+      final res = result.fold((_) => null, (r) => r);
+      // optional source for edit form; silently skip if backend blocks this call.
+      if (res == null) return;
+      final list = _extractDataList(res);
       for (final row in list) {
         final id = (row['id'] ?? '').toString();
         if (id.isEmpty) continue;
@@ -430,8 +422,6 @@ class _MenuManageScreenState extends State<MenuManageScreen> {
         _nameEnCtrl.text = fallbackName;
         _nameRuCtrl.text = fallbackName;
       }
-    } on DioException {
-      // optional source for edit form; silently skip if backend blocks this call.
     } finally {
       _translationsLoading = false;
     }
@@ -448,11 +438,16 @@ class _MenuManageScreenState extends State<MenuManageScreen> {
     }
     final body = {'en': en, 'ru': ru, 'uz': uz};
     if (existingId != null && existingId.isNotEmpty) {
-      await _client.put(ListAPI.translationById(existingId), data: body);
+      final result = await _repository.updateTranslation(existingId, body);
+      final failure = result.fold((f) => f, (_) => null);
+      if (failure != null) throw failure;
       return existingId;
     }
-    final res = await _client.post(ListAPI.createTranslation, data: body);
-    final data = res.data['data'];
+    final result = await _repository.createTranslation(body);
+    final failure = result.fold((f) => f, (_) => null);
+    if (failure != null) throw failure;
+    final res = result.fold((_) => null, (r) => r)!;
+    final data = res['data'];
     if (data is Map<String, dynamic>) {
       return (data['id'] ?? '').toString();
     }
@@ -521,19 +516,13 @@ class _MenuManageScreenState extends State<MenuManageScreen> {
       };
 
       final headers = _scopeHeaders(user);
-      if (_isEditMode) {
-        await _client.put(
-          ListAPI.goodWithCalculationsById(_editMealId!),
-          data: payload,
-          headers: headers,
-        );
-      } else {
-        await _client.post(
-          ListAPI.goodsWithCalculations,
-          data: payload,
-          headers: headers,
-        );
-      }
+      final saveResult = await _repository.saveGoodWithCalculations(
+        mealId: _isEditMode ? _editMealId : null,
+        body: payload,
+        headers: headers,
+      );
+      final saveFailure = saveResult.fold((f) => f, (_) => null);
+      if (saveFailure != null) throw saveFailure;
 
       if (!mounted) return;
       _nameTranslationId = nameTransId;
@@ -556,12 +545,9 @@ class _MenuManageScreenState extends State<MenuManageScreen> {
       } else {
         _clearForm();
       }
-    } on DioException catch (e) {
+    } on Failure catch (e) {
       if (!mounted) return;
-      final message = e.response?.data is Map
-          ? (e.response!.data['message']?.toString() ?? 'Ошибка сохранения')
-          : 'Ошибка сохранения';
-      showErrorMessage(context, message);
+      showErrorMessage(context, e.getLocalizedMessage(context));
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
     }
@@ -578,9 +564,10 @@ class _MenuManageScreenState extends State<MenuManageScreen> {
     if (ok != true) return;
     if (!mounted) return;
     setState(() => _isSubmitting = true);
-    try {
-      await _client.delete(ListAPI.goodById(id));
-      if (!mounted) return;
+    final result = await _repository.deleteGood(id);
+    if (!mounted) return;
+    final failure = result.fold((f) => f, (_) => null);
+    if (failure == null) {
       showSuccessMessage(context, "O'chirildi");
       await Future<void>.delayed(const Duration(milliseconds: 350));
       if (!mounted) return;
@@ -589,15 +576,13 @@ class _MenuManageScreenState extends State<MenuManageScreen> {
       } else {
         navigatorKey.currentState?.pop(true);
       }
-    } on DioException catch (e) {
-      if (!mounted) return;
-      final msg = e.response?.data is Map
-          ? (e.response!.data['message']?.toString() ?? "O'chirilmadi")
-          : "O'chirilmadi";
-      showErrorMessage(context, msg);
-    } finally {
-      if (mounted) setState(() => _isSubmitting = false);
+    } else {
+      showErrorMessage(
+        context,
+        failure is MessageFailure ? failure.message : "O'chirilmadi",
+      );
     }
+    if (mounted) setState(() => _isSubmitting = false);
   }
 
   void _clearForm() {
@@ -621,25 +606,24 @@ class _MenuManageScreenState extends State<MenuManageScreen> {
     if (id == null || id.isEmpty) return;
     if (_loadingItems) return;
     setState(() => _loadingItems = true);
-    try {
-      final res = await _client.get(
-        ListAPI.goodWithCalculationsById(id),
-        queryParameters: const {'include': 'translations'},
-      );
-      final data = (res.data['data'] ?? const {}) as Map<String, dynamic>;
+    final result = await _repository.getGoodWithCalculationsById(
+      id,
+      includeTranslations: true,
+    );
+    if (!mounted) return;
+    final res = result.fold((_) => null, (r) => r);
+    if (res == null) {
+      showErrorMessage(context, S.current.strLoadCompositionError);
+    } else {
+      final data = (res['data'] ?? const {}) as Map<String, dynamic>;
       final parsed = _parseCalculationBuckets(data);
-      if (!mounted) return;
       setState(() {
         _ingredientCalculations = parsed.ingredients;
         _compoundCalculations = parsed.compounds;
         _itemsLoadedWithMeal = true;
       });
-    } on DioException {
-      if (!mounted) return;
-      showErrorMessage(context, S.current.strLoadCompositionError);
-    } finally {
-      if (mounted) setState(() => _loadingItems = false);
     }
+    if (mounted) setState(() => _loadingItems = false);
   }
 
   Future<void> _onItemsExpansionChanged(bool expanded) async {
@@ -663,55 +647,27 @@ class _MenuManageScreenState extends State<MenuManageScreen> {
       _loadingAvailableItems = true;
       _availableItemsError = null;
     });
-    try {
-      final ingredients = await _fetchFirstAvailableList([
-        const _FetchAttempt(path: '/api/v1/ingredients'),
-        const _FetchAttempt(path: '/api/v1/ingredients-lang'),
-      ]);
-      final compounds = await _fetchFirstAvailableList([
-        const _FetchAttempt(path: '/api/v1/compounds'),
-        const _FetchAttempt(path: '/api/v1/compounds-lang'),
-      ]);
-      if (!mounted) return;
+    // Cache-first (MainRepositoryImpl.getIngredients/getCompounds) — a prior
+    // successful fetch survives a later offline reopen of this screen.
+    final ingredientsResult = await _repository.getIngredients();
+    final compoundsResult = await _repository.getCompounds();
+    if (!mounted) return;
+    final ingredientsFailure = ingredientsResult.fold((f) => f, (_) => null);
+    final compoundsFailure = compoundsResult.fold((f) => f, (_) => null);
+    final failure = ingredientsFailure ?? compoundsFailure;
+    if (failure != null) {
       setState(() {
-        _availableIngredients = ingredients;
-        _availableCompounds = compounds;
+        _availableItemsError = failure is MessageFailure
+            ? failure.message
+            : 'Не удалось загрузить Ingredients/Semi-finished';
       });
-    } on DioException catch (e) {
-      if (!mounted) return;
+    } else {
       setState(() {
-        _availableItemsError = e.response?.data is Map
-            ? (e.response!.data['message']?.toString() ?? 'Ошибка загрузки')
-            : 'Ошибка загрузки';
+        _availableIngredients = ingredientsResult.fold((_) => const [], (r) => r);
+        _availableCompounds = compoundsResult.fold((_) => const [], (r) => r);
       });
-    } catch (_) {
-      if (!mounted) return;
-      setState(() {
-        _availableItemsError = 'Не удалось загрузить Ingredients/Semi-finished';
-      });
-    } finally {
-      if (mounted) setState(() => _loadingAvailableItems = false);
     }
-  }
-
-  Future<List<Map<String, dynamic>>> _fetchFirstAvailableList(
-    List<_FetchAttempt> attempts,
-  ) async {
-    DioException? lastError;
-    var hasSuccess = false;
-    for (final a in attempts) {
-      try {
-        final res = await _client.get(a.path);
-        hasSuccess = true;
-        final list = _extractDataList(res.data);
-        if (list.isNotEmpty) return list;
-      } on DioException catch (e) {
-        lastError = e;
-      }
-    }
-    if (hasSuccess) return const <Map<String, dynamic>>[];
-    if (lastError != null) throw lastError;
-    return const <Map<String, dynamic>>[];
+    if (mounted) setState(() => _loadingAvailableItems = false);
   }
 
   _CalculationBuckets _parseCalculationBuckets(Map<String, dynamic> data) {
@@ -2324,12 +2280,6 @@ class _MenuManageScreenState extends State<MenuManageScreen> {
       ),
     );
   }
-}
-
-class _FetchAttempt {
-  final String path;
-
-  const _FetchAttempt({required this.path});
 }
 
 class _CalculationBuckets {

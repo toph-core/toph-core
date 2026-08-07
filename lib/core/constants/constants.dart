@@ -39,6 +39,15 @@ enum ArchivesFilterType { All, Today, Week, month, Year, date }
 
 enum GoodsCategoryType { all, category }
 
+/// What a manager pincode is being used to authorize — passed into
+/// `requireManagerPincode` so the one shared gate can record a meaningful
+/// audit entry (§11 Phase 6, privileged-action audit log) instead of every
+/// call site needing to remember to log it separately. Stored as a plain
+/// string at rest (`PrivilegedActionAuditEntry.action`), same convention
+/// `PrintJob.state`/`jobType` already use for a small closed set of
+/// persisted-but-not-`@HiveType` values.
+enum PrivilegedAction { shiftOpen, shiftClose, voidOrderItem }
+
 enum PaymentType { cash, card, qr }
 
 enum DiscountType { money, percent }

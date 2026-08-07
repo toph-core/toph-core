@@ -1,16 +1,13 @@
 import 'dart:async';
 
-import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:mary_ai_pos/core/api/api_error_overlay.dart';
-import 'package:mary_ai_pos/core/api/dio_client.dart';
-import 'package:mary_ai_pos/core/api/list_api.dart';
 import 'package:mary_ai_pos/core/components/flush_bars.dart';
 import 'package:mary_ai_pos/core/extension/for_context.dart';
 import 'package:mary_ai_pos/core/theme/tokens/theme_colors.dart';
 import 'package:mary_ai_pos/core/widgets/app_scaffold.dart';
 import 'package:mary_ai_pos/di.dart';
+import 'package:mary_ai_pos/features/view/main/domain/repository/main_repository.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/settings/widgets/section_shell.dart';
 import 'package:mary_ai_pos/generated/l10n.dart';
 import 'package:number_paginator/number_paginator.dart';
@@ -32,7 +29,7 @@ class _UsersSectionState extends State<UsersSection> {
     'kitchen',
   ];
 
-  final DioClient _client = inject<DioClient>();
+  final MainRepository _repository = inject<MainRepository>();
   final NumberPaginatorController _paginatorController =
       NumberPaginatorController();
   final TextEditingController _searchCtrl = TextEditingController();
@@ -75,69 +72,41 @@ class _UsersSectionState extends State<UsersSection> {
       _loading = true;
       _error = null;
     });
-    try {
-      final isSearching = _isSearching;
-      final res = await _client.get(
-        isSearching ? ListAPI.usersSearch : ListAPI.users,
-        queryParameters: {
-          'limit': _pageSize,
-          'offset': (page - 1) * _pageSize,
-          if (isSearching) 'query': _searchQuery.trim(),
-          // List endpoint qo'shimcha `role` filtrini qo'llaydi; search endpoint
-          // server tomonida role filtrini qabul qilmaydi — natija filtri keyin.
-          if (!isSearching && _roleFilter != null) 'role': _roleFilter,
-        },
-      );
-      final root = res.data;
-      List<dynamic> data = const [];
-      int? total;
-      if (root is List) {
-        // /users/search — flat array (paginatsiya wrapper'siz)
-        data = root;
-      } else if (root is Map) {
-        if (root['data'] is List) data = root['data'] as List;
-        if (root['pagination'] is Map) {
-          final p = root['pagination'] as Map;
-          total = (p['total'] as num?)?.toInt();
+    final isSearching = _isSearching;
+    final result = await _repository.getAdminUsers(
+      limit: _pageSize,
+      offset: (page - 1) * _pageSize,
+      search: isSearching ? _searchQuery.trim() : null,
+      role: _roleFilter,
+    );
+    if (!mounted) return;
+    result.fold(
+      (failure) => setState(() {
+        _loading = false;
+        _error = failure.getLocalizedMessage(context);
+      }),
+      (data) {
+        var parsed = data.items.map(_AdminUser.fromJson).toList();
+        // Search rejimida role filtri serverda qabul qilinmagani sababli — clientda.
+        if (isSearching && _roleFilter != null) {
+          parsed = parsed.where((u) => u.role == _roleFilter).toList();
         }
-      }
-      var parsed = data
-          .map((e) => _AdminUser.fromJson(Map<String, dynamic>.from(e as Map)))
-          .toList();
-      // Search rejimida role filtri serverda qabul qilinmagani sababli — clientda.
-      if (isSearching && _roleFilter != null) {
-        parsed = parsed.where((u) => u.role == _roleFilter).toList();
-      }
-      if (!mounted) return;
-      setState(() {
-        _users = parsed;
-        _totalCount = total;
-        _page = page;
-        _loading = false;
-      });
-    } on DioException catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _loading = false;
-        _error = _readError(e) ?? S.current.strLoadError;
-      });
-    } catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _loading = false;
-        _error = e.toString();
-      });
-    }
+        setState(() {
+          _users = parsed;
+          _totalCount = data.total;
+          _page = page;
+          _loading = false;
+        });
+      },
+    );
   }
-
-  String? _readError(DioException e) => userFriendlyDioError(e);
 
   Future<void> _openEditor({_AdminUser? existing}) async {
     final saved = await showDialog<bool>(
       context: context,
       barrierDismissible: false,
       builder: (_) => _UserEditDialog(
-        client: _client,
+        repository: _repository,
         existing: existing,
       ),
     );
@@ -166,14 +135,12 @@ class _UsersSectionState extends State<UsersSection> {
       ),
     );
     if (ok != true || !mounted) return;
-    try {
-      await _client.delete(ListAPI.userById(u.id));
-      if (!mounted) return;
-      _load(page: _page);
-    } on DioException catch (e) {
-      if (!mounted) return;
-      showErrorMessage(context, _readError(e) ?? S.current.strDeleteError);
-    }
+    final result = await _repository.deleteUser(u.id);
+    if (!mounted) return;
+    result.fold(
+      (failure) => showErrorMessage(context, failure.getLocalizedMessage(context)),
+      (_) => _load(page: _page),
+    );
   }
 
   Future<void> _toggleActive(_AdminUser u, bool value) async {
@@ -182,20 +149,19 @@ class _UsersSectionState extends State<UsersSection> {
           .map((x) => x.id == u.id ? x.copyWith(isActive: value) : x)
           .toList();
     });
-    try {
-      await _client.put(
-        ListAPI.userById(u.id),
-        data: {'is_active': value},
-      );
-    } on DioException catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _users = _users
-            .map((x) => x.id == u.id ? x.copyWith(isActive: !value) : x)
-            .toList();
-      });
-      showErrorMessage(context, _readError(e) ?? S.current.strSaveError);
-    }
+    final result = await _repository.updateUser(u.id, {'is_active': value});
+    if (!mounted) return;
+    result.fold(
+      (failure) {
+        setState(() {
+          _users = _users
+              .map((x) => x.id == u.id ? x.copyWith(isActive: !value) : x)
+              .toList();
+        });
+        showErrorMessage(context, failure.getLocalizedMessage(context));
+      },
+      (_) {},
+    );
   }
 
   @override
@@ -603,10 +569,10 @@ class _UserCardState extends State<_UserCard> {
 }
 
 class _UserEditDialog extends StatefulWidget {
-  final DioClient client;
+  final MainRepository repository;
   final _AdminUser? existing;
 
-  const _UserEditDialog({required this.client, this.existing});
+  const _UserEditDialog({required this.repository, this.existing});
 
   @override
   State<_UserEditDialog> createState() => _UserEditDialogState();
@@ -682,11 +648,8 @@ class _UserEditDialogState extends State<_UserEditDialog> {
       _error = null;
     });
 
-    try {
-      if (_isCreate) {
-        await widget.client.post(
-          ListAPI.authRegister,
-          data: {
+    final result = _isCreate
+        ? await widget.repository.createUser({
             'fullName': _fullNameCtrl.text.trim(),
             'phoneNumber': _phoneCtrl.text.trim(),
             'username': _usernameCtrl.text.trim(),
@@ -694,13 +657,8 @@ class _UserEditDialogState extends State<_UserEditDialog> {
             if (_pincodeCtrl.text.trim().isNotEmpty)
               'pincode': _pincodeCtrl.text.trim(),
             'role': _role,
-          },
-        );
-      } else {
-        final e = widget.existing!;
-        await widget.client.put(
-          ListAPI.userById(e.id),
-          data: {
+          })
+        : await widget.repository.updateUser(widget.existing!.id, {
             'full_name': _fullNameCtrl.text.trim(),
             'username': _usernameCtrl.text.trim(),
             'phone_number': _phoneCtrl.text.trim(),
@@ -709,21 +667,16 @@ class _UserEditDialogState extends State<_UserEditDialog> {
             if (_pincodeCtrl.text.trim().isNotEmpty)
               'pincode': _pincodeCtrl.text.trim(),
             'is_active': _isActive,
-          },
-        );
-      }
-      if (!mounted) return;
-      Navigator.pop(context, true);
-    } on DioException catch (e) {
-      if (!mounted) return;
-      setState(() {
+          });
+    if (!mounted) return;
+    result.fold(
+      (failure) => setState(() {
         _saving = false;
-        _error = _readError(e) ?? 'Saqlashda xatolik';
-      });
-    }
+        _error = failure.getLocalizedMessage(context);
+      }),
+      (_) => Navigator.pop(context, true),
+    );
   }
-
-  String? _readError(DioException e) => userFriendlyDioError(e);
 
   @override
   Widget build(BuildContext context) {

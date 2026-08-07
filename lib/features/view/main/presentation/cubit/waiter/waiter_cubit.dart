@@ -254,7 +254,7 @@ class WaiterCubit extends Cubit<WaiterState> {
 
     await result.fold(
       (failure) async {
-        if (failure is ConnectionFailure) {
+        if (failure.isConnectivityIssue) {
           await _enqueueCancelLineItems([orderItemId], comment);
           if (!isClosed) {
             _applyOptimisticCancel(orderId: orderId, orderItemId: orderItemId);
@@ -321,25 +321,32 @@ class WaiterCubit extends Cubit<WaiterState> {
 
   Future<void> _enqueueAddItems({
     required String tableId,
-    required List<OrderItem> items,
+    required List<Map<String, dynamic>> payloadItems,
   }) async {
     await inject<OfflineQueueService>().enqueue(
       PendingOperation(
         id: OfflineQueueService.newId(),
         type: PendingOperationType.addItems,
-        payload: jsonEncode({'items': _itemsToPayload(items)}),
+        payload: jsonEncode({'items': payloadItems}),
         tableId: tableId,
         createdAt: DateTime.now(),
       ),
     );
   }
 
+  // client_item_id — backendning AddOrderItems idempotency kaliti
+  // (order_items.client_item_id, §13 risk #2): agar shu payload keyinroq
+  // offline outbox orqali qayta yuborilsa (masalan, birinchi javob
+  // yo'qolgani uchun), backend takroriy item yaratmasdan mavjudini
+  // qaytaradi. Online to'g'ridan-to'g'ri chaqiruv uchun bu maydon zarar
+  // keltirmaydi — u qayta urinilmaydi, shunchaki e'tiborga olinmaydi.
   List<Map<String, dynamic>> _itemsToPayload(List<OrderItem> items) => items
       .map(
         (item) => {
           'good_id': item.goods.id,
           'quantity': item.quantity,
           'comment': item.commet,
+          'client_item_id': generateUuidV4(),
         },
       )
       .toList();
@@ -373,21 +380,27 @@ class WaiterCubit extends Cubit<WaiterState> {
     if (items.isEmpty) return;
     emit(state.copyWith(isSendingItems: true, errorMessage: null));
 
+    // Built once so a connection-failure retry below (offline fallback)
+    // replays under the SAME client_item_ids — otherwise a response lost
+    // after the request already committed server-side would fall into the
+    // offline queue with fresh ids that don't match anything already
+    // created, defeating AddOrderItems' idempotency guard (§13 risk #2).
+    final payloadItems = _itemsToPayload(items);
     final result = await _repository.sendItems(
       orderId: orderId,
-      items: _itemsToPayload(items),
+      items: payloadItems,
     );
     if (isClosed) return;
 
     await result.fold(
       (failure) async {
-        if (failure is ConnectionFailure) {
+        if (failure.isConnectivityIssue) {
           final tableId = state.openOrders
                   .where((o) => o.id == orderId)
                   .firstOrNull
                   ?.tableId ??
               '';
-          await _enqueueAddItems(tableId: tableId, items: items);
+          await _enqueueAddItems(tableId: tableId, payloadItems: payloadItems);
           if (isClosed) return;
           _applyOptimisticAdd(orderId: orderId, items: items);
           emit(state.copyWith(isSendingItems: false));
@@ -574,7 +587,7 @@ class WaiterCubit extends Cubit<WaiterState> {
 
     await result.fold(
       (failure) async {
-        if (failure is ConnectionFailure) {
+        if (failure.isConnectivityIssue) {
           await _enqueueCloseOrder(
             orderId: orderId,
             tableId: order.tableId ?? '',
@@ -677,7 +690,7 @@ class WaiterCubit extends Cubit<WaiterState> {
 
     await result.fold(
       (failure) async {
-        if (failure is ConnectionFailure) {
+        if (failure.isConnectivityIssue) {
           await _enqueueCreateOrder(body);
           if (isClosed) return;
           _insertCreatedOrder(

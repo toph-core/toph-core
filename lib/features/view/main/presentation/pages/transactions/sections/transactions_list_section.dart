@@ -1,11 +1,9 @@
 import 'dart:async';
 
-import 'package:dio/dio.dart';
+import 'package:dartz/dartz.dart' show Either;
 import 'package:flutter/material.dart';
-import 'package:mary_ai_pos/core/api/api_error_overlay.dart';
-import 'package:mary_ai_pos/core/api/dio_client.dart';
-import 'package:mary_ai_pos/core/api/list_api.dart';
 import 'package:mary_ai_pos/core/components/flush_bars.dart';
+import 'package:mary_ai_pos/core/error/failure.dart';
 import 'package:mary_ai_pos/core/extension/date_time_extension.dart';
 import 'package:mary_ai_pos/core/extension/for_context.dart';
 import 'package:mary_ai_pos/core/theme/tokens/theme_colors.dart';
@@ -13,6 +11,7 @@ import 'package:mary_ai_pos/core/utils/app_formatter.dart';
 import 'package:mary_ai_pos/core/widgets/app_scaffold.dart';
 import 'package:mary_ai_pos/core/widgets/styled_virtual_keyboard.dart';
 import 'package:mary_ai_pos/di.dart';
+import 'package:mary_ai_pos/features/view/main/domain/repository/main_repository.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/settings/widgets/section_shell.dart';
 import 'package:mary_ai_pos/generated/l10n.dart';
 import 'package:number_paginator/number_paginator.dart';
@@ -70,7 +69,7 @@ class TransactionsListSection extends StatefulWidget {
 class _TransactionsListSectionState extends State<TransactionsListSection> {
   static const List<int> _pageSizeOptions = [20, 50, 100];
 
-  final DioClient _client = inject<DioClient>();
+  final MainRepository _repository = inject<MainRepository>();
   final NumberPaginatorController _paginatorController =
       NumberPaginatorController();
   final TextEditingController _searchCtrl = TextEditingController();
@@ -120,47 +119,21 @@ class _TransactionsListSectionState extends State<TransactionsListSection> {
   }
 
   Future<void> _loadCashRegisters() async {
-    try {
-      final res = await _client.get(
-        ListAPI.cashRegisters,
-        queryParameters: {'limit': 200},
-      );
-      final root = res.data;
-      List<dynamic> registers = const [];
-      if (root is Map && root['data'] is List) {
-        registers = root['data'] as List;
-      }
-      if (!mounted) return;
-      setState(() {
-        _cashRegisters = registers
-            .map((e) => _Option.fromJson(Map<String, dynamic>.from(e as Map)))
-            .toList();
-      });
-    } catch (_) {
-      // Reference data — filtr/formalarda bo'sh ro'yxat bilan ishlayveradi.
-    }
+    final result = await _repository.getCashRegisters();
+    final registers = result.fold((_) => null, (r) => r);
+    if (registers == null || !mounted) return;
+    setState(() {
+      _cashRegisters = registers.map(_Option.fromJson).toList();
+    });
   }
 
   Future<void> _loadGroupTransactions() async {
-    try {
-      final res = await _client.get(
-        ListAPI.groupTransactions,
-        queryParameters: {'limit': 200},
-      );
-      final root = res.data;
-      List<dynamic> categories = const [];
-      if (root is Map && root['data'] is List) {
-        categories = root['data'] as List;
-      }
-      if (!mounted) return;
-      setState(() {
-        _categories = categories
-            .map((e) => _Option.fromJson(Map<String, dynamic>.from(e as Map)))
-            .toList();
-      });
-    } catch (_) {
-      // Reference data — filtr/formalarda bo'sh ro'yxat bilan ishlayveradi.
-    }
+    final result = await _repository.getTransactionGroups();
+    final categories = result.fold((_) => null, (r) => r);
+    if (categories == null || !mounted) return;
+    setState(() {
+      _categories = categories.map(_Option.fromJson).toList();
+    });
   }
 
   Future<void> _load({required int page}) async {
@@ -168,52 +141,26 @@ class _TransactionsListSectionState extends State<TransactionsListSection> {
       _loading = true;
       _error = null;
     });
-    try {
-      final res = await _client.get(
-        ListAPI.transactions,
-        queryParameters: {
-          'limit': _pageSize,
-          'offset': (page - 1) * _pageSize,
-          if (_searchQuery.isNotEmpty) 'search': _searchQuery,
-          if (_typeFilter != null) 'type': _typeFilter,
-          if (_cashRegisterFilter != null)
-            'cash_register_id': _cashRegisterFilter,
-        },
-      );
-      final root = res.data;
-      List<dynamic> data = const [];
-      int? total;
-      if (root is Map) {
-        if (root['data'] is List) data = root['data'] as List;
-        if (root['pagination'] is Map) {
-          total = ((root['pagination'] as Map)['total'] as num?)?.toInt();
-        }
-      }
-      final parsed = data
-          .map(
-            (e) => _Transaction.fromJson(Map<String, dynamic>.from(e as Map)),
-          )
-          .toList();
-      if (!mounted) return;
-      setState(() {
-        _transactions = parsed;
-        _totalCount = total;
+    final result = await _repository.getTransactions(
+      limit: _pageSize,
+      offset: (page - 1) * _pageSize,
+      search: _searchQuery.isEmpty ? null : _searchQuery,
+      type: _typeFilter,
+      cashRegisterId: _cashRegisterFilter,
+    );
+    if (!mounted) return;
+    result.fold(
+      (failure) => setState(() {
+        _loading = false;
+        _error = failure.getLocalizedMessage(context);
+      }),
+      (data) => setState(() {
+        _transactions = data.items.map(_Transaction.fromJson).toList();
+        _totalCount = data.total;
         _page = page;
         _loading = false;
-      });
-    } on DioException catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _loading = false;
-        _error = userFriendlyDioError(e);
-      });
-    } catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _loading = false;
-        _error = e.toString();
-      });
-    }
+      }),
+    );
   }
 
   String _optionName(List<_Option> options, String? id) {
@@ -235,7 +182,7 @@ class _TransactionsListSectionState extends State<TransactionsListSection> {
       context: context,
       barrierDismissible: false,
       builder: (_) => _TransactionEditDialog(
-        client: _client,
+        repository: _repository,
         cashRegisters: _cashRegisters,
         categories: _categories,
       ),
@@ -248,7 +195,7 @@ class _TransactionsListSectionState extends State<TransactionsListSection> {
       context: context,
       barrierDismissible: false,
       builder: (_) => _TransactionEditDialog(
-        client: _client,
+        repository: _repository,
         cashRegisters: _cashRegisters,
         categories: _categories,
         existing: tx,
@@ -279,14 +226,12 @@ class _TransactionsListSectionState extends State<TransactionsListSection> {
       ),
     );
     if (ok != true || !mounted) return;
-    try {
-      await _client.delete(ListAPI.transactionById(tx.id));
-      if (!mounted) return;
-      _load(page: _page);
-    } on DioException catch (e) {
-      if (!mounted) return;
-      showErrorMessage(context, userFriendlyDioError(e));
-    }
+    final result = await _repository.deleteTransaction(tx.id);
+    if (!mounted) return;
+    result.fold(
+      (failure) => showErrorMessage(context, failure.getLocalizedMessage(context)),
+      (_) => _load(page: _page),
+    );
   }
 
   @override
@@ -751,13 +696,13 @@ class _TransactionCardState extends State<_TransactionCard> {
 }
 
 class _TransactionEditDialog extends StatefulWidget {
-  final DioClient client;
+  final MainRepository repository;
   final List<_Option> cashRegisters;
   final List<_Option> categories;
   final _Transaction? existing;
 
   const _TransactionEditDialog({
-    required this.client,
+    required this.repository,
     required this.cashRegisters,
     required this.categories,
     this.existing,
@@ -844,55 +789,48 @@ class _TransactionEditDialogState extends State<_TransactionEditDialog> {
       _error = null;
     });
 
-    try {
-      if (_isCreate) {
-        if (_isTransfer) {
-          await widget.client.post(
-            ListAPI.transactionsTransfer,
-            data: {
-              'from_cash_register_id': _fromCashRegisterId,
-              'to_cash_register_id': _toCashRegisterId,
-              if (_categoryId != null) 'group_transaction_id': _categoryId,
-              'amount': _rawAmount,
-              'description': _descriptionCtrl.text.trim(),
-              'pay_type': _payType,
-              'date': _toApiDateTime(_date),
-            },
-          );
-        } else {
-          await widget.client.post(
-            ListAPI.transactionsIncomeExpense,
-            data: {
-              'type': _createType.apiValue,
-              'cash_register_id': _cashRegisterId,
-              if (_categoryId != null) 'group_transaction_id': _categoryId,
-              'amount': _rawAmount,
-              'description': _descriptionCtrl.text.trim(),
-              'pay_type': _payType,
-              'date': _toApiDateTime(_date),
-            },
-          );
-        }
+    final Either<Failure, bool> result;
+    if (_isCreate) {
+      if (_isTransfer) {
+        result = await widget.repository.createTransferTransaction({
+          'from_cash_register_id': _fromCashRegisterId,
+          'to_cash_register_id': _toCashRegisterId,
+          if (_categoryId != null) 'group_transaction_id': _categoryId,
+          'amount': _rawAmount,
+          'description': _descriptionCtrl.text.trim(),
+          'pay_type': _payType,
+          'date': _toApiDateTime(_date),
+        });
       } else {
-        await widget.client.put(
-          ListAPI.transactionById(widget.existing!.id),
-          data: {
-            'amount': _rawAmount,
-            'description': _descriptionCtrl.text.trim(),
-            'pay_type': _payType,
-            'date': _toApiDateTime(_date),
-          },
-        );
+        result = await widget.repository.createIncomeExpenseTransaction({
+          'type': _createType.apiValue,
+          'cash_register_id': _cashRegisterId,
+          if (_categoryId != null) 'group_transaction_id': _categoryId,
+          'amount': _rawAmount,
+          'description': _descriptionCtrl.text.trim(),
+          'pay_type': _payType,
+          'date': _toApiDateTime(_date),
+        });
       }
-      if (!mounted) return;
-      Navigator.pop(context, true);
-    } on DioException catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _saving = false;
-        _error = userFriendlyDioError(e);
-      });
+    } else {
+      result = await widget.repository.updateTransaction(
+        widget.existing!.id,
+        {
+          'amount': _rawAmount,
+          'description': _descriptionCtrl.text.trim(),
+          'pay_type': _payType,
+          'date': _toApiDateTime(_date),
+        },
+      );
     }
+    if (!mounted) return;
+    result.fold(
+      (failure) => setState(() {
+        _saving = false;
+        _error = failure.getLocalizedMessage(context);
+      }),
+      (_) => Navigator.pop(context, true),
+    );
   }
 
   @override

@@ -9,6 +9,7 @@ import 'package:mary_ai_pos/core/constants/constants.dart';
 import 'package:mary_ai_pos/core/services/connectivity/connectivity_cubit.dart';
 import 'package:mary_ai_pos/core/services/offline_queue/offline_queue_service.dart';
 import 'package:mary_ai_pos/core/services/offline_queue/pending_operation.dart';
+import 'package:mary_ai_pos/core/services/print_queue/print_queue_service.dart';
 import 'package:mary_ai_pos/core/utils/jwt_utils.dart';
 import 'package:mary_ai_pos/di.dart';
 import 'package:mary_ai_pos/features/view/auth/presentation/cubit/bloc/user_bloc.dart';
@@ -62,7 +63,20 @@ class LanHubService {
         orElse: () => LanMode.disabled);
   }
 
-  Future<void> setMode(LanMode mode) => _prefs.setString(_keyMode, mode.name);
+  /// Reactive mirror of [mode] — for a sync-status screen that wants to show
+  /// the current role without its own polling timer. Seeded lazily (not at
+  /// field-initialization time) since `mode` reads `_prefs`, which is set in
+  /// the constructor body's initializer list, not before it.
+  BehaviorSubject<LanMode>? _modeController;
+  BehaviorSubject<LanMode> get _modeStream =>
+      _modeController ??= BehaviorSubject<LanMode>.seeded(mode);
+
+  Stream<LanMode> get onModeChanged => _modeStream.stream;
+
+  Future<void> setMode(LanMode mode) async {
+    await _prefs.setString(_keyMode, mode.name);
+    if (!_modeStream.isClosed) _modeStream.add(mode);
+  }
 
   String get serverIp => _prefs.getString(_keyServerIp) ?? '';
 
@@ -78,8 +92,12 @@ class LanHubService {
         await _server.start(
           authValidator: _validateIncomingAuth,
           onRelayOp: _handleRelayOp,
+          // Bo'lmasa server o'z clientlaridan kelgan broadcastlarni faqat
+          // boshqa clientlarga uzatadi, lekin o'zi hech qachon ko'rmaydi —
+          // masalan bu terminal biror USB printerga egalik qilsa, boshqa
+          // client'dan kelgan print-job e'lonini eshitolmay qoladi.
+          onBroadcast: _handleRemoteMessage,
         );
-        // Server o'zi ham broadcastni eshitadi (lekin client emas)
         await _watchForConflicts();
         break;
       case LanMode.client:
@@ -241,10 +259,41 @@ class LanHubService {
   }
 
   void _handleRemoteMessage(LanHubMessage msg) {
-    if (msg.type == LanHubMessageType.tableStatus &&
-        msg.tableId != null &&
-        msg.status != null) {
-      _tableUpdateController.add((tableId: msg.tableId!, status: msg.status!));
+    switch (msg.type) {
+      case LanHubMessageType.tableStatus:
+        if (msg.tableId != null && msg.status != null) {
+          _tableUpdateController.add((tableId: msg.tableId!, status: msg.status!));
+        }
+        break;
+      case LanHubMessageType.printJobAnnounce:
+        if (msg.printJobId != null &&
+            msg.printJobType != null &&
+            msg.printEntryId != null &&
+            msg.printPayloadBase64 != null) {
+          inject<PrintQueueService>().onRemoteAnnounce(
+            jobId: msg.printJobId!,
+            jobType: msg.printJobType!,
+            entryId: msg.printEntryId!,
+            payloadBase64: msg.printPayloadBase64!,
+          );
+        }
+        break;
+      case LanHubMessageType.printJobClaim:
+        if (msg.printJobId != null) {
+          inject<PrintQueueService>().onRemoteClaim(msg.printJobId!);
+        }
+        break;
+      case LanHubMessageType.printJobResult:
+        if (msg.printJobId != null && msg.printResult != null) {
+          inject<PrintQueueService>().onRemoteResult(
+            msg.printJobId!,
+            msg.printResult!,
+            msg.printError,
+          );
+        }
+        break;
+      default:
+        break;
     }
   }
 
@@ -254,6 +303,14 @@ class LanHubService {
     if (kDebugMode) {
       print('[LanHub] tableStatusChanged: $tableId → $status (mode: ${mode.name})');
     }
+    _sendOrBroadcast(msg);
+  }
+
+  /// Follower-or-leader-agnostic broadcast helper (Phase 5 print relay) —
+  /// mirrors [tableStatusChanged]'s own mode switch exactly, since a print
+  /// job's originator can just as easily be the `server` terminal itself as
+  /// any `client`.
+  void _sendOrBroadcast(LanHubMessage msg) {
     switch (mode) {
       case LanMode.server:
         _server.broadcast(msg);
@@ -266,9 +323,44 @@ class LanHubService {
     }
   }
 
+  /// Whether a print job could currently be relayed to another terminal at
+  /// all — `disabled` mode has no hub connection to broadcast over.
+  bool get canRelayPrintJobs => mode != LanMode.disabled;
+
+  void broadcastPrintJobAnnounce({
+    required String jobId,
+    required String jobType,
+    required String entryId,
+    required String payloadBase64,
+  }) {
+    _sendOrBroadcast(
+      LanHubMessage.printJobAnnounce(
+        jobId: jobId,
+        jobType: jobType,
+        entryId: entryId,
+        payloadBase64: payloadBase64,
+      ),
+    );
+  }
+
+  void broadcastPrintJobClaim(String jobId) {
+    _sendOrBroadcast(LanHubMessage.printJobClaim(jobId: jobId));
+  }
+
+  void broadcastPrintJobResult(String jobId, String result, String? error) {
+    _sendOrBroadcast(
+      LanHubMessage.printJobResult(jobId: jobId, result: result, error: error),
+    );
+  }
+
   int get clientCount => _server.clientCount;
   bool get isClientConnected => _client.isConnected;
   String? get lastAuthFailReason => _client.lastAuthFailReason;
+
+  /// Reactive mirror of [clientCount] (`server` mode peer count) — passed
+  /// straight through from `LanHubServer`, which owns the actual `Set` of
+  /// connected sockets.
+  ValueListenable<int> get clientCountListenable => _server.clientCountNotifier;
 
   /// Reactive mirror of [isClientConnected] — for `client` mode only, used by
   /// the app-wide "operating solo" indicator so it doesn't need its own
@@ -294,6 +386,10 @@ class LanHubService {
     if (!_hubConflictController.isClosed) await _hubConflictController.close();
     if (!_tableUpdateController.isClosed) {
       await _tableUpdateController.close();
+    }
+    final modeController = _modeController;
+    if (modeController != null && !modeController.isClosed) {
+      await modeController.close();
     }
   }
 }

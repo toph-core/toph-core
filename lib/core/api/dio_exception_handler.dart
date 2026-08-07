@@ -26,14 +26,21 @@ Failure handleDioException(DioException error) {
     final response = error.response;
     if (response != null) {
       final data = response.data;
+      final statusCode = response.statusCode ?? 0;
+
       // ===== Backend message =====
-      if (data is Map<String, dynamic>) {
+      // Only trust an `error` body as a *definite* answer for 4xx — a 5xx
+      // response is the server failing, not authoritatively rejecting the
+      // request, even if it happens to include an `error` field. Mapping a
+      // 5xx to `MessageFailure` here would make it look like a definite
+      // auth rejection to `isDefiniteAuthRejection`, which could purge a
+      // valid offline-cached credential during exactly the kind of backend
+      // outage that mechanism exists to survive.
+      if (statusCode >= 400 && statusCode < 500 && data is Map<String, dynamic>) {
         if (data['error'] != null) {
           return MessageFailure(data['error'].toString());
         }
       }
-
-      final statusCode = response.statusCode ?? 0;
 
       switch (statusCode) {
         case 400:
@@ -48,6 +55,9 @@ Failure handleDioException(DioException error) {
 
         case 404:
           return const NotFoundFailure();
+
+        case 409:
+          return const ConflictFailure();
 
         case 408:
           return const TimeoutFailure();

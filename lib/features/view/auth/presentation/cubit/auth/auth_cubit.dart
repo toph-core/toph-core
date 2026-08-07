@@ -5,7 +5,10 @@ import 'package:mary_ai_pos/core/auth/models/brand_id_token_pair/brand_id_token_
 import 'package:mary_ai_pos/core/auth/storage/token_storage_impl.dart';
 import 'package:mary_ai_pos/core/error/failure.dart';
 import 'package:mary_ai_pos/core/services/auth/offline_auth_cache.dart';
+import 'package:mary_ai_pos/core/services/cache/cache_service.dart';
 import 'package:mary_ai_pos/core/usecase/usecase.dart';
+import 'package:mary_ai_pos/core/widgets/app_scaffold.dart';
+import 'package:mary_ai_pos/di.dart' show inject;
 import 'package:mary_ai_pos/features/view/auth/domain/usecases/check_user_auth/check_user_auth.dart';
 import 'package:mary_ai_pos/features/view/auth/domain/usecases/check_user_auth/check_user_data_usecase.dart';
 import 'package:mary_ai_pos/features/view/auth/domain/usecases/login_with_brand/login_with_brand_usecase.dart';
@@ -72,23 +75,34 @@ class AuthCubit extends Cubit<AuthState> {
 
     result.fold(
       (failure) async {
-        if (failure is ConnectionFailure) {
-          final cached = _offlineAuthCache.validateAndGetUser(
-            req.brandId,
-            req.password,
+        if (failure.isDefiniteAuthRejection) {
+          // Server aniq javob berdi (masalan parol/brand endi yaroqsiz) —
+          // cache'ga tushmaymiz, aksincha uni o'chiramiz. Xuddi shu qoida
+          // LoginPinCubit'da ham bor — ikkalasi ham bitta "muddatsiz cache,
+          // faqat serverdan keyingi aniq javob bekor qiladi" mexanizmi.
+          await _offlineAuthCache.removeUser(req.brandId);
+          emit(state.copyWith(failure: failure, status: Status.ERROR));
+          return;
+        }
+        // Ulanish/timeout/server xatosi — aniq javob yo'q, cache'dan urinib
+        // ko'ramiz (avval faqat ConnectionFailure uchun edi; timeout/server
+        // xatosi ham xuddi shunday "aniqlanmagan", cache'ni rad etishga
+        // asos emas).
+        final cached = await _offlineAuthCache.validateAndGetUser(
+          req.brandId,
+          req.password,
+        );
+        if (cached != null) {
+          await _tokenStorage.writeAuthToken(
+            AuthTokenPair(
+              accessToken: cached.accessToken,
+              refreshToken: cached.refreshToken,
+            ),
           );
-          if (cached != null) {
-            await _tokenStorage.writeAuthToken(
-              AuthTokenPair(
-                accessToken: cached.accessToken,
-                refreshToken: cached.refreshToken,
-              ),
-            );
-            await _tokenStorage.writeBrandIdToken(req);
-            emit(state.copyWith(status: Status.SUCCESS));
-            onSuccess();
-            return;
-          }
+          await _tokenStorage.writeBrandIdToken(req);
+          emit(state.copyWith(status: Status.SUCCESS));
+          onSuccess();
+          return;
         }
         emit(state.copyWith(failure: failure, status: Status.ERROR));
       },
@@ -104,12 +118,23 @@ class AuthCubit extends Cubit<AuthState> {
 
     var result = await _logoutUseCase.call(NoParams());
 
-    result.fold(
-      (failure) {
+    await result.fold(
+      (failure) async {
         failure.showErrorMsg();
         emit(state.copyWith(failure: failure, status: Status.ERROR));
       },
-      (response) {
+      (response) async {
+        // Full re-provision, not just a session clear — this terminal may
+        // get bound to a different brand/branch next. The halls/tables/goods
+        // cache (CacheService) has no per-tenant scoping at all, so it must
+        // be wiped here or stale data from this tenant would silently mix
+        // into (or block) whatever the next one loads. See CacheService
+        // .clearAll's doc comment for the concrete failure mode this avoids.
+        await inject<CacheService>().clearAll();
+        // Otherwise a re-login to a different brand in this same running app
+        // instance never re-triggers the immediate first-mount hydration —
+        // see AppScaffold.resetPrefetchGate's doc comment.
+        AppScaffold.resetPrefetchGate();
         emit(state.copyWith(status: Status.SUCCESS));
         onSuccess();
       },

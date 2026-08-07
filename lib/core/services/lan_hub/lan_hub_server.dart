@@ -17,6 +17,17 @@ typedef LanAuthValidator = Future<bool> Function(String token, String branchId);
 /// `LanAuthValidator` returns a bare `bool` instead of an app-level type).
 typedef LanRelayHandler = Future<String> Function(LanHubMessage relayOpMessage);
 
+/// Notified whenever the server receives a broadcast-worthy message (i.e.
+/// anything that isn't `auth`/`relayOp`) from any client — **in addition to**
+/// it being forwarded to every other client via [_broadcastExcept]. Without
+/// this, a `server`-mode terminal has no way to react to its own clients'
+/// broadcasts at the app layer (it only ever relayed the raw bytes onward);
+/// harmless while the only broadcast type was cosmetic table-status, but a
+/// real gap once print-job relay (Phase 5) needs the leader terminal to be
+/// able to claim a job too, exactly like any other terminal — see
+/// offline-first-architecture-plan.md §11 Phase 5.
+typedef LanBroadcastListener = void Function(LanHubMessage message);
+
 class LanHubServer {
   static const defaultPort = 8765;
   static const _authTimeout = Duration(seconds: 5);
@@ -25,18 +36,31 @@ class LanHubServer {
   final Set<WebSocket> _clients = {};
   LanAuthValidator? _authValidator;
   LanRelayHandler? _onRelayOp;
+  LanBroadcastListener? _onBroadcast;
 
   bool get isRunning => _server != null;
   int get clientCount => _clients.length;
+
+  /// Reactive mirror of [clientCount] — for a sync-status screen to show a
+  /// live peer count in `server` mode without its own polling timer. One
+  /// instance per `LanHubServer`, which itself lives for the app's lifetime
+  /// (see `LanHubService`'s `_server` field) — surviving `start`/`stop`
+  /// cycles is what makes a single long-lived notifier here correct instead
+  /// of needing to be re-created on every restart.
+  final ValueNotifier<int> clientCountNotifier = ValueNotifier(0);
+
+  void _syncClientCount() => clientCountNotifier.value = _clients.length;
 
   Future<void> start({
     int port = defaultPort,
     required LanAuthValidator authValidator,
     required LanRelayHandler onRelayOp,
+    LanBroadcastListener? onBroadcast,
   }) async {
     if (_server != null) return;
     _authValidator = authValidator;
     _onRelayOp = onRelayOp;
+    _onBroadcast = onBroadcast;
     try {
       _server = await HttpServer.bind(InternetAddress.anyIPv4, port);
       _server!.listen(_handleRequest);
@@ -92,6 +116,7 @@ class LanHubServer {
           authorized = true;
           timeout?.cancel();
           _clients.add(ws);
+          _syncClientCount();
           if (kDebugMode) {
             print('[LanHub] Client authorized (total: ${_clients.length})');
           }
@@ -120,14 +145,19 @@ class LanHubServer {
         }
         // Hub clientdan kelgan xabarni barcha boshqa clientlarga yuboradi
         _broadcastExcept(data, ws);
+        // ...va bu terminalning o'z ilova qatlamiga ham yetkazadi — server
+        // ham (masalan) printer egasi bo'lishi mumkin.
+        if (msg != null) _onBroadcast?.call(msg);
       },
       onDone: () {
         _clients.remove(ws);
+        _syncClientCount();
         timeout?.cancel();
         if (kDebugMode) print('[LanHub] Client disconnected');
       },
       onError: (_) {
         _clients.remove(ws);
+        _syncClientCount();
         timeout?.cancel();
       },
       cancelOnError: true,
@@ -136,24 +166,30 @@ class LanHubServer {
 
   void broadcast(LanHubMessage message) {
     final json = message.toJson();
+    var removedAny = false;
     for (final ws in List.of(_clients)) {
       try {
         ws.add(json);
       } catch (_) {
         _clients.remove(ws);
+        removedAny = true;
       }
     }
+    if (removedAny) _syncClientCount();
   }
 
   void _broadcastExcept(String json, WebSocket sender) {
+    var removedAny = false;
     for (final ws in List.of(_clients)) {
       if (ws == sender) continue;
       try {
         ws.add(json);
       } catch (_) {
         _clients.remove(ws);
+        removedAny = true;
       }
     }
+    if (removedAny) _syncClientCount();
   }
 
   Future<void> stop() async {
@@ -161,9 +197,11 @@ class LanHubServer {
       await ws.close();
     }
     _clients.clear();
+    _syncClientCount();
     await _server?.close(force: true);
     _server = null;
     _authValidator = null;
     _onRelayOp = null;
+    _onBroadcast = null;
   }
 }

@@ -8,6 +8,9 @@ enum LanHubMessageType {
   authFail,
   relayOp,
   relayOpResult,
+  printJobAnnounce,
+  printJobClaim,
+  printJobResult,
 }
 
 class LanHubMessage {
@@ -49,6 +52,35 @@ class LanHubMessage {
   /// [relayOpResult] only: `RelayOpResult.name`.
   final String? result;
 
+  /// [printJobAnnounce]/[printJobClaim]/[printJobResult]: the print job's own
+  /// id (mirrors `PrintJob.id`) — correlates an announce with its eventual
+  /// claim and result, the same role `opId` plays for `relayOp`. Kept as a
+  /// separate field (not reusing `opId`) since a print-job relay is a
+  /// structurally different broadcast-and-claim exchange, not a directed
+  /// leader RPC — see offline-first-architecture-plan.md §11 Phase 5 for why
+  /// `relayOp`'s leader-only shape doesn't fit peer-to-peer print relay.
+  final String? printJobId;
+
+  /// [printJobAnnounce] only: `PrintJob.jobType` ('cashier' so far).
+  final String? printJobType;
+
+  /// [printJobAnnounce] only: target `PrinterSettingEntry.id` — a receiving
+  /// terminal claims iff it has a locally-saved Windows printer name for
+  /// this exact id (`CacheService.getUsbPrinterName`).
+  final String? printEntryId;
+
+  /// [printJobAnnounce] only: pre-rendered ESC/POS bytes, base64-encoded —
+  /// the claiming terminal only executes the transport step, never rebuilds
+  /// the receipt (it has none of the originator's order/cache context to do
+  /// so with).
+  final String? printPayloadBase64;
+
+  /// [printJobResult] only: `'printed'` or `'failed'`.
+  final String? printResult;
+
+  /// [printJobResult] only: human-readable failure detail, when present.
+  final String? printError;
+
   const LanHubMessage({
     required this.type,
     this.tableId,
@@ -62,6 +94,12 @@ class LanHubMessage {
     this.opTableId,
     this.opCreatedAt,
     this.result,
+    this.printJobId,
+    this.printJobType,
+    this.printEntryId,
+    this.printPayloadBase64,
+    this.printResult,
+    this.printError,
   });
 
   factory LanHubMessage.tableStatus({
@@ -119,6 +157,44 @@ class LanHubMessage {
         result: result,
       );
 
+  /// Broadcast by a terminal that needs a print job executed but doesn't own
+  /// the target USB printer itself (Phase 5 print relay). Every other
+  /// terminal receives this (same broadcast-to-all-except-sender path
+  /// `tableStatus` already rides on); only the one holding a matching
+  /// `CacheService.getUsbPrinterName(printEntryId)` acts on it.
+  factory LanHubMessage.printJobAnnounce({
+    required String jobId,
+    required String jobType,
+    required String entryId,
+    required String payloadBase64,
+  }) => LanHubMessage(
+        type: LanHubMessageType.printJobAnnounce,
+        printJobId: jobId,
+        printJobType: jobType,
+        printEntryId: entryId,
+        printPayloadBase64: payloadBase64,
+      );
+
+  /// Sent by whichever terminal decides it owns the announced printer —
+  /// tells the originator to stop its claim-wait timer and start its lease
+  /// timer instead.
+  factory LanHubMessage.printJobClaim({required String jobId}) =>
+      LanHubMessage(type: LanHubMessageType.printJobClaim, printJobId: jobId);
+
+  /// Sent by the claiming terminal once its local print attempt finishes
+  /// (either outcome) — the originator finalizes its `PrintJob` row on
+  /// receipt of this.
+  factory LanHubMessage.printJobResult({
+    required String jobId,
+    required String result,
+    String? error,
+  }) => LanHubMessage(
+        type: LanHubMessageType.printJobResult,
+        printJobId: jobId,
+        printResult: result,
+        printError: error,
+      );
+
   String toJson() => jsonEncode({
         'type': type.name,
         'table_id': tableId,
@@ -132,6 +208,12 @@ class LanHubMessage {
         if (opTableId != null) 'op_table_id': opTableId,
         if (opCreatedAt != null) 'op_created_at': opCreatedAt,
         if (result != null) 'result': result,
+        if (printJobId != null) 'print_job_id': printJobId,
+        if (printJobType != null) 'print_job_type': printJobType,
+        if (printEntryId != null) 'print_entry_id': printEntryId,
+        if (printPayloadBase64 != null) 'print_payload_b64': printPayloadBase64,
+        if (printResult != null) 'print_result': printResult,
+        if (printError != null) 'print_error': printError,
       });
 
   static LanHubMessage? tryParse(String raw) {
@@ -154,6 +236,12 @@ class LanHubMessage {
         opTableId: map['op_table_id'] as String?,
         opCreatedAt: map['op_created_at'] as String?,
         result: map['result'] as String?,
+        printJobId: map['print_job_id'] as String?,
+        printJobType: map['print_job_type'] as String?,
+        printEntryId: map['print_entry_id'] as String?,
+        printPayloadBase64: map['print_payload_b64'] as String?,
+        printResult: map['print_result'] as String?,
+        printError: map['print_error'] as String?,
       );
     } catch (_) {
       return null;

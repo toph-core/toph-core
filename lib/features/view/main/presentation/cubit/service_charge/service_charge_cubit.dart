@@ -1,6 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:mary_ai_pos/core/api/dio_client.dart';
-import 'package:mary_ai_pos/core/api/list_api.dart';
+import 'package:mary_ai_pos/core/services/connectivity/connectivity_cubit.dart';
+import 'package:mary_ai_pos/features/view/main/domain/repository/main_repository.dart';
 
 class ServiceChargeState {
   final double? value;
@@ -33,47 +33,49 @@ class ServiceChargeState {
 }
 
 class ServiceChargeCubit extends Cubit<ServiceChargeState> {
-  final DioClient _dio;
-  ServiceChargeCubit(this._dio) : super(const ServiceChargeState());
+  final MainRepository _repository;
+  final ConnectivityCubit _connectivity;
 
+  ServiceChargeCubit(this._repository, this._connectivity)
+      : super(const ServiceChargeState());
+
+  /// Reads cache-first (via `MainRepositoryImpl`) — a branch offline at boot
+  /// can still see its last-known service charge instead of a blank field.
   Future<void> load(String branchId) async {
     if (branchId.isEmpty) return;
     emit(state.copyWith(loading: true, error: null));
-    try {
-      final res = await _dio.get(ListAPI.branchById(branchId));
-      final data = res.data;
-      final body = (data is Map && data['data'] is Map)
-          ? data['data'] as Map
-          : (data as Map);
-      final raw = body['default_service_percent'];
-      double parsed = 0;
-      if (raw is num) {
-        parsed = raw.toDouble();
-      } else if (raw is String) {
-        parsed = double.tryParse(raw) ?? 0;
-      }
-      emit(state.copyWith(value: parsed, loading: false));
-    } catch (e) {
-      emit(state.copyWith(loading: false, error: e.toString()));
-    }
+    final result = await _repository.getServiceCharge(branchId);
+    result.fold(
+      (failure) => emit(state.copyWith(loading: false, error: failure.toString())),
+      (value) => emit(state.copyWith(value: value, loading: false)),
+    );
   }
 
+  /// Deliberately online-only, not queued — a single low-volume config
+  /// value with no reason to add offline-write complexity (see
+  /// offline-first-remediation-plan.md, Phase 4e). Fails fast with a clear
+  /// reason when offline instead of attempting the write and surfacing a
+  /// raw network error.
   Future<bool> save(String branchId, double value) async {
     if (branchId.isEmpty) return false;
-    emit(state.copyWith(saving: true, error: null));
-    try {
-      final asString = value == value.truncateToDouble()
-          ? value.toStringAsFixed(0)
-          : value.toString();
-      await _dio.put(
-        ListAPI.branchById(branchId),
-        data: {'default_service_percent': asString},
-      );
-      emit(state.copyWith(value: value, saving: false));
-      return true;
-    } catch (e) {
-      emit(state.copyWith(saving: false, error: e.toString()));
+    if (!_connectivity.isOnline) {
+      emit(state.copyWith(
+        saving: false,
+        error: "Ulanish yo'q — o'zgartirish uchun internet talab qilinadi.",
+      ));
       return false;
     }
+    emit(state.copyWith(saving: true, error: null));
+    final result = await _repository.saveServiceCharge(branchId, value);
+    return result.fold(
+      (failure) {
+        emit(state.copyWith(saving: false, error: failure.toString()));
+        return false;
+      },
+      (_) {
+        emit(state.copyWith(value: value, saving: false));
+        return true;
+      },
+    );
   }
 }

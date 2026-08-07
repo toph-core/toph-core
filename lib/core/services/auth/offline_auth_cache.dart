@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:mary_ai_pos/features/view/auth/data/models/user/user_model.dart';
 
@@ -39,6 +40,10 @@ class OfflineCachedUser {
 
 /// Barcha online login qilgan userlarni lokal saqlaydigan cache.
 /// Internet yo'qligida shu cache orqali login imkonini beradi.
+///
+/// Bu yerda parollar/pincodelar/tokenlar saqlanadi — shuning uchun
+/// `SharedPreferences` emas, OS-backed secure storage ishlatiladi
+/// (offline-first-architecture-plan.md §11 Phase 6).
 class OfflineAuthCache {
   static const _key = 'offline_users_v1';
 
@@ -46,13 +51,13 @@ class OfflineAuthCache {
   /// Key: "${brandId}_${pincode}"
   static const _pinKey = 'offline_pin_users_v1';
 
-  final SharedPreferences _prefs;
+  final FlutterSecureStorage _secure;
 
-  const OfflineAuthCache(this._prefs);
+  const OfflineAuthCache(this._secure);
 
-  Map<String, OfflineCachedUser> _readAll() {
+  Future<Map<String, OfflineCachedUser>> _readAll() async {
     try {
-      final raw = _prefs.getString(_key);
+      final raw = await _secure.read(key: _key);
       if (raw == null) return {};
       final map = jsonDecode(raw) as Map<String, dynamic>;
       return map.map(
@@ -67,9 +72,9 @@ class OfflineAuthCache {
   }
 
   Future<void> _writeAll(Map<String, OfflineCachedUser> map) async {
-    await _prefs.setString(
-      _key,
-      jsonEncode(map.map((k, v) => MapEntry(k, v.toJson()))),
+    await _secure.write(
+      key: _key,
+      value: jsonEncode(map.map((k, v) => MapEntry(k, v.toJson()))),
     );
   }
 
@@ -82,7 +87,7 @@ class OfflineAuthCache {
     required String refreshToken,
   }) async {
     if (brandId.isEmpty) return;
-    final all = _readAll();
+    final all = await _readAll();
     all[brandId] = OfflineCachedUser(
       brandId: brandId,
       password: password,
@@ -94,25 +99,37 @@ class OfflineAuthCache {
   }
 
   /// Offline login: brandId + password mos kelsa cached userni qaytaradi.
-  OfflineCachedUser? validateAndGetUser(String brandId, String password) {
+  Future<OfflineCachedUser?> validateAndGetUser(
+    String brandId,
+    String password,
+  ) async {
     if (brandId.isEmpty || password.isEmpty) return null;
-    final cached = _readAll()[brandId];
+    final cached = (await _readAll())[brandId];
     if (cached == null) return null;
     if (cached.password != password) return null;
     return cached;
   }
 
   /// UserBloc fallback: faqat brandId bilan (parol tekshirmasdan).
-  OfflineCachedUser? getCachedUser(String brandId) {
+  Future<OfflineCachedUser?> getCachedUser(String brandId) async {
     if (brandId.isEmpty) return null;
-    return _readAll()[brandId];
+    return (await _readAll())[brandId];
+  }
+
+  /// Server aniq rad javobini bergandan keyin chaqiriladi (masalan foydalanuvchi
+  /// endi faol emas) — shu brand-darajali cache endi offline holatda ham
+  /// ishlamasin. Vaqt asosidagi muddat yo'q — bu yagona bekor qilish yo'li.
+  Future<void> removeUser(String brandId) async {
+    if (brandId.isEmpty) return;
+    final all = await _readAll();
+    if (all.remove(brandId) != null) await _writeAll(all);
   }
 
   // ── Per-pincode cache ─────────────────────────────────────────────────────
 
-  Map<String, OfflineCachedUser> _readPins() {
+  Future<Map<String, OfflineCachedUser>> _readPins() async {
     try {
-      final raw = _prefs.getString(_pinKey);
+      final raw = await _secure.read(key: _pinKey);
       if (raw == null) return {};
       final map = jsonDecode(raw) as Map<String, dynamic>;
       return map.map(
@@ -124,9 +141,9 @@ class OfflineAuthCache {
   }
 
   Future<void> _writePins(Map<String, OfflineCachedUser> map) async {
-    await _prefs.setString(
-      _pinKey,
-      jsonEncode(map.map((k, v) => MapEntry(k, v.toJson()))),
+    await _secure.write(
+      key: _pinKey,
+      value: jsonEncode(map.map((k, v) => MapEntry(k, v.toJson()))),
     );
   }
 
@@ -139,7 +156,7 @@ class OfflineAuthCache {
     required String refreshToken,
   }) async {
     if (brandId.isEmpty || pincode.isEmpty) return;
-    final all = _readPins();
+    final all = await _readPins();
     all['${brandId}_$pincode'] = OfflineCachedUser(
       brandId: brandId,
       password: pincode,
@@ -151,8 +168,32 @@ class OfflineAuthCache {
   }
 
   /// Offline PIN login: pincode mos kelsa cached user qaytaradi.
-  OfflineCachedUser? getForPin(String brandId, String pincode) {
+  Future<OfflineCachedUser?> getForPin(String brandId, String pincode) async {
     if (brandId.isEmpty || pincode.isEmpty) return null;
-    return _readPins()['${brandId}_$pincode'];
+    return (await _readPins())['${brandId}_$pincode'];
+  }
+
+  /// [removeUser]ning pincode-darajali versiyasi — server shu aniq pincode
+  /// endi yaroqsiz deb aniq javob bergandan keyin chaqiriladi.
+  Future<void> removeForPin(String brandId, String pincode) async {
+    if (brandId.isEmpty || pincode.isEmpty) return;
+    final all = await _readPins();
+    if (all.remove('${brandId}_$pincode') != null) await _writePins(all);
+  }
+
+  /// One-time upgrade path for installs that predate the secure-storage
+  /// migration: moves the two cache blobs out of plaintext
+  /// `SharedPreferences` into secure storage, then deletes the plaintext
+  /// copy. Idempotent — a no-op once the plaintext keys are gone.
+  static Future<void> migrateLegacyPlaintext(
+    SharedPreferences prefs,
+    FlutterSecureStorage secure,
+  ) async {
+    for (final key in [_key, _pinKey]) {
+      final plain = prefs.getString(key);
+      if (plain == null) continue;
+      await secure.write(key: key, value: plain);
+      await prefs.remove(key);
+    }
   }
 }

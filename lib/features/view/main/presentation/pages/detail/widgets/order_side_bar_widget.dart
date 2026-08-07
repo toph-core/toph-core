@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:mary_ai_pos/core/constants/constants.dart';
 import 'package:mary_ai_pos/core/design_system/pos_design_system.dart';
 import 'package:mary_ai_pos/core/widgets/manager_pincode_dialog.dart';
 import 'package:mary_ai_pos/core/extension/for_context.dart';
@@ -766,7 +767,10 @@ class _EditExistingOrderItemDialogState
       );
       return;
     }
-    final authorized = await requireManagerPincode(context);
+    final authorized = await requireManagerPincode(
+      context,
+      action: PrivilegedAction.voidOrderItem,
+    );
     if (!authorized || !mounted) return;
     Navigator.of(context).pop((quantity: _qty, cancelComment: comment));
   }

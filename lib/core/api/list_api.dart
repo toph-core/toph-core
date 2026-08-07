@@ -7,6 +7,10 @@ class ListAPI {
   static const String user = "api/v1/user/me";
   static const String users = "api/v1/users";
   static const String usersSearch = "api/v1/users/search";
+  /// Staff list reachable by a normal terminal/waiter/cashier session — unlike
+  /// [users] (admin-only), this is the endpoint the backend's own doc comment
+  /// says is meant for "Flutter reads during initial data pull".
+  static const String usersStaff = "api/v1/users/staff";
   static String userById(String id) => "api/v1/users/$id";
   static const String authRegister = "api/v1/auth/register";
   static const String passwordUpdate = "api/v1/user/password-update";
@@ -35,6 +39,15 @@ class ListAPI {
   static const String goodsSearch = "/api/v1/goods/search";
   static String goodsPaginated({int limit = 100, int offset = 0}) =>
       "/api/v1/goods?limit=$limit&offset=$offset";
+
+  //! Ingredients / compounds (recipe-editor reference data) — each has a
+  //! `-lang` fallback path the backend may serve instead depending on
+  //! deployment; both are tried in order, see `MainDataSourcesImpl
+  //! .getIngredients`/`.getCompounds`.
+  static const String ingredients = "/api/v1/ingredients";
+  static const String ingredientsLang = "/api/v1/ingredients-lang";
+  static const String compounds = "/api/v1/compounds";
+  static const String compoundsLang = "/api/v1/compounds-lang";
 
   //! media
   static const String mediaAudio = "api/v1/media/audio/download";

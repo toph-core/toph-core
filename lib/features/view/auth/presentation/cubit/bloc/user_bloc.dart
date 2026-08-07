@@ -43,11 +43,21 @@ class UserBloc extends Bloc<UserEvent, UserState> {
     final response = await _getUserUsecase.call(NoParams());
     response.fold(
       (l) async {
-        if (l is ConnectionFailure) {
+        if (!l.isDefiniteAuthRejection) {
+          // Ulanish/timeout/server xatosi — aniq javob yo'q, cache'ga
+          // tushamiz (avval faqat ConnectionFailure uchun edi).
           await _tryOfflineUser(emit);
           return;
         }
-        // Token invalid or expired — force back to login
+        // Server aniq javob berdi: token/foydalanuvchi endi yaroqsiz. Bu
+        // ayni terminalda keyingi offline PIN/brand loginlar ham shu
+        // foydalanuvchi uchun ishlamasligi kerak — shuning uchun tegishli
+        // cache yozuvlarini ham o'chiramiz, shunchaki login ekraniga
+        // qaytarib qo'yish emas. Bu mexanizm reconnect paytida ham ishlaydi
+        // (`AppScaffold`ning har safar aloqa tiklanganda `UserEvent.getUser()`
+        // yuborishi orqali) — hozirgi sessiya davomida foydalanuvchi
+        // faolsizlantirilgan bo'lsa, keyingi muvaffaqiyatli aloqada aniqlanadi.
+        await _purgeOfflineCacheForCurrentUser();
         Navigator.pushNamedAndRemoveUntil(
           navigatorKey.currentContext!,
           AppRoutes.loginScreen,
@@ -107,6 +117,25 @@ class UserBloc extends Bloc<UserEvent, UserState> {
     } catch (_) {}
   }
 
+  /// [_updateOfflineCache]ning teskarisi — server bu foydalanuvchi/token endi
+  /// yaroqsiz deb aniq javob berganda chaqiriladi. Brand-darajali va (agar
+  /// mavjud bo'lsa) pincode-darajali cache yozuvlarini o'chiradi, shunda shu
+  /// terminaldagi keyingi offline login urinishlari ham rad etiladi — vaqt
+  /// asosidagi muddat emas, aynan shu mexanizm orqali.
+  Future<void> _purgeOfflineCacheForCurrentUser() async {
+    try {
+      final storage = inject<AppTokenStorage>();
+      final brandPair = await storage.readBrandIdToken();
+      if (brandPair == null) return;
+      final cache = inject<OfflineAuthCache>();
+      await cache.removeUser(brandPair.brandId);
+      final pincode = await storage.readLastPincode();
+      if (pincode != null && pincode.isNotEmpty) {
+        await cache.removeForPin(brandPair.brandId, pincode);
+      }
+    } catch (_) {}
+  }
+
   Future<void> _tryOfflineUser(Emitter<UserState> emit) async {
     try {
       final storage = inject<AppTokenStorage>();
@@ -119,7 +148,7 @@ class UserBloc extends Bloc<UserEvent, UserState> {
       final offlineCache = inject<OfflineAuthCache>();
 
       // 1. Brand-darajali cache
-      final cached = offlineCache.getCachedUser(brandPair.brandId);
+      final cached = await offlineCache.getCachedUser(brandPair.brandId);
       if (cached != null) {
         emit(state.copyWith(
           status: Status.SUCCESS,
@@ -131,7 +160,7 @@ class UserBloc extends Bloc<UserEvent, UserState> {
       // 2. Per-pin cache — so'nggi pincode bilan
       final pincode = await storage.readLastPincode();
       if (pincode != null && pincode.isNotEmpty) {
-        final pinCached = offlineCache.getForPin(brandPair.brandId, pincode);
+        final pinCached = await offlineCache.getForPin(brandPair.brandId, pincode);
         if (pinCached != null) {
           emit(state.copyWith(
             status: Status.SUCCESS,

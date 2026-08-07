@@ -29,7 +29,10 @@ Future<void> _confirmCancelOrderItem(
   final cubit = context.read<WaiterCubit>();
   final comment = await showCancelOrderItemDialog(context);
   if (comment == null || !context.mounted) return;
-  final authorized = await requireManagerPincode(context);
+  final authorized = await requireManagerPincode(
+    context,
+    action: PrivilegedAction.voidOrderItem,
+  );
   if (!authorized) return;
   await cubit.cancelOrderItem(
     orderItemId: orderItemId,

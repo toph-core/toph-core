@@ -251,5 +251,271 @@ void main() {
       );
       expect(server.clientCount, 0);
     });
+
+    test('a print-job announce from one client reaches another client with fields intact (Phase 5)', () async {
+      await server.start(
+        port: port,
+        authValidator: (token, branchId) async => true,
+        onRelayOp: (_) async => 'synced',
+      );
+
+      final sender = LanHubClient();
+      final receiver = LanHubClient();
+      await sender.connect(
+        '127.0.0.1',
+        port: port,
+        getCredentials: () async => (token: 't', branchId: 'b'),
+      );
+      await receiver.connect(
+        '127.0.0.1',
+        port: port,
+        getCredentials: () async => (token: 't', branchId: 'b'),
+      );
+      await _waitUntil(() => sender.isConnected && receiver.isConnected);
+
+      final received = <LanHubMessage>[];
+      receiver.onMessage.listen(received.add);
+      sender.send(
+        LanHubMessage.printJobAnnounce(
+          jobId: 'job-1',
+          jobType: 'cashier',
+          entryId: 'entry-9',
+          payloadBase64: 'aGVsbG8=',
+        ),
+      );
+
+      await _waitUntil(() => received.isNotEmpty);
+      expect(received.single.type, LanHubMessageType.printJobAnnounce);
+      expect(received.single.printJobId, 'job-1');
+      expect(received.single.printEntryId, 'entry-9');
+      expect(received.single.printPayloadBase64, 'aGVsbG8=');
+
+      await sender.dispose();
+      await receiver.dispose();
+    });
+
+    test('the server itself receives a broadcast-worthy message via onBroadcast, not just its other clients (Phase 5)', () async {
+      final serverSideReceived = <LanHubMessage>[];
+      await server.start(
+        port: port,
+        authValidator: (token, branchId) async => true,
+        onRelayOp: (_) async => 'synced',
+        onBroadcast: serverSideReceived.add,
+      );
+
+      final client = LanHubClient();
+      await client.connect(
+        '127.0.0.1',
+        port: port,
+        getCredentials: () async => (token: 't', branchId: 'b'),
+      );
+      await _waitUntil(() => client.isConnected);
+
+      client.send(
+        LanHubMessage.printJobClaim(jobId: 'job-2'),
+      );
+
+      await _waitUntil(() => serverSideReceived.isNotEmpty);
+      expect(serverSideReceived.single.type, LanHubMessageType.printJobClaim);
+      expect(serverSideReceived.single.printJobId, 'job-2');
+
+      await client.dispose();
+    });
+
+    test('clientCountNotifier tracks connects and disconnects (Phase 6 sync-status UI)', () async {
+      await server.start(
+        port: port,
+        authValidator: (token, branchId) async => true,
+        onRelayOp: (_) async => 'synced',
+      );
+
+      final seen = <int>[];
+      server.clientCountNotifier.addListener(
+        () => seen.add(server.clientCountNotifier.value),
+      );
+      expect(server.clientCountNotifier.value, 0);
+
+      final clientA = LanHubClient();
+      await clientA.connect(
+        '127.0.0.1',
+        port: port,
+        getCredentials: () async => (token: 't', branchId: 'b'),
+      );
+      await _waitUntil(() => server.clientCountNotifier.value == 1);
+
+      final clientB = LanHubClient();
+      await clientB.connect(
+        '127.0.0.1',
+        port: port,
+        getCredentials: () async => (token: 't', branchId: 'b'),
+      );
+      await _waitUntil(() => server.clientCountNotifier.value == 2);
+
+      await clientA.dispose();
+      await _waitUntil(() => server.clientCountNotifier.value == 1);
+
+      expect(
+        seen,
+        containsAllInOrder([1, 2, 1]),
+        reason: 'notifier should have fired for each connect/disconnect, in order',
+      );
+
+      await clientB.dispose();
+    });
+
+    // ── Deterministic resilience tests (§11 Phase 6) ──────────────────────
+    // The plan's own Phase 6 scope named five categories: partition
+    // simulation, clock-skew, leader-kill-mid-transaction, duplicate-
+    // delivery, and a full-shift soak test. The first three are covered
+    // here and in print_queue_service_test.dart's matching group, using the
+    // same real-socket harness as the rest of this file. Clock-skew was
+    // investigated rather than built: this codebase has no wall-clock-
+    // dependent correctness left to skew — Phase 6's own no-TTL decision
+    // means offline auth doesn't expire, `PrintJob`'s claim/lease timers are
+    // `Timer`s (event-loop-scheduled, immune to `DateTime.now()` changes,
+    // unlike a deadline computed from a stored timestamp), and
+    // `client_created_at` is sent to the backend for it to reconcile, not
+    // used for any local ordering decision. A full-shift soak test (real
+    // hours, many operations) doesn't fit a unit-test process without a
+    // fake-clock/dependency-injection refactor this slice didn't attempt —
+    // left for the real-hardware pass already flagged repeatedly across
+    // Phases 4-6, not silently dropped.
+    test('leader-kill-mid-relay: killing the server while a relayOp is in flight resolves via timeout, not a hang', () async {
+      await server.start(
+        port: port,
+        authValidator: (token, branchId) async => true,
+        // Deliberately slow — long enough that this test's own stop() call
+        // below reliably lands before any reply would ever be sent, so this
+        // is testing "the leader process is gone," not "the leader is slow"
+        // (that's the pre-existing "relay times out cleanly" test above).
+        onRelayOp: (_) async {
+          await Future.delayed(const Duration(seconds: 5));
+          return 'synced';
+        },
+      );
+
+      final client = LanHubClient();
+      await client.connect(
+        '127.0.0.1',
+        port: port,
+        getCredentials: () async => (token: 't', branchId: 'b'),
+      );
+      await _waitUntil(() => client.isConnected);
+
+      final relayFuture = client.relayOp(
+        opId: 'op-killed',
+        opType: 'payOrder',
+        opPayload: '{}',
+        opTableId: '',
+        opCreatedAt: DateTime.now().toIso8601String(),
+        timeout: const Duration(milliseconds: 400),
+      );
+
+      // Kill the leader mid-flight — a real process-loss/crash, not just a
+      // slow handler. The socket drops; relayOp has no separate "disconnect"
+      // hook (see LanHubClient.relayOp's doc comment reasoning: giving up
+      // early only matters for retry cost, never for correctness, since the
+      // op stays in the outbox either way), so this proves the bound is the
+      // explicit `timeout` param, not something that depends on the socket
+      // noticing the drop.
+      await Future.delayed(const Duration(milliseconds: 50));
+      await server.stop();
+
+      final sw = Stopwatch()..start();
+      final result = await relayFuture;
+      sw.stop();
+
+      expect(result, isNull);
+      expect(
+        sw.elapsed,
+        lessThan(const Duration(seconds: 2)),
+        reason: 'must resolve at the timeout, not hang until some other event',
+      );
+
+      await client.dispose();
+    });
+
+    test('partition-then-heal: a follower reconnects on its own once the leader comes back on the same port', () async {
+      await server.start(
+        port: port,
+        authValidator: (token, branchId) async => true,
+        onRelayOp: (_) async => 'synced',
+      );
+
+      final client = LanHubClient();
+      await client.connect(
+        '127.0.0.1',
+        port: port,
+        getCredentials: () async => (token: 't', branchId: 'b'),
+      );
+      await _waitUntil(() => client.isConnected);
+
+      // Simulate a LAN partition: the leader drops off the network entirely.
+      await server.stop();
+      await _waitUntil(() => !client.isConnected);
+
+      // Heals: the leader (or its replacement — same effect from a
+      // follower's point of view) comes back on the same port.
+      await server.start(
+        port: port,
+        authValidator: (token, branchId) async => true,
+        onRelayOp: (_) async => 'synced',
+      );
+
+      // LanHubClient's own exponential backoff starts at ~2s(+jitter) — no
+      // action from this test triggers the retry, proving reconnection is
+      // fully automatic, not something the caller has to notice and drive.
+      await _waitUntil(
+        () => client.isConnected,
+        timeout: const Duration(seconds: 8),
+      );
+
+      expect(client.isConnected, isTrue);
+      await client.dispose();
+    });
+
+    test('duplicate broadcast delivery: a printJobClaim delivered twice on the wire only reaches the app layer as two separate messages (dedup is PrintQueueService\'s job, not the transport\'s)', () async {
+      // The transport layer (LanHubServer/Client) makes no at-most-once
+      // promise — it's a plain broadcast relay. This test documents that
+      // boundary explicitly: sending the same message twice really does
+      // arrive twice here. `print_queue_service_test.dart`'s matching
+      // "duplicate delivery" group is what proves the *application* layer
+      // (`PrintQueueService.onRemoteClaim`/`onRemoteResult`) is where
+      // idempotency actually lives, via each job's own state guard — this
+      // test exists so that claim isn't just assumed.
+      await server.start(
+        port: port,
+        authValidator: (token, branchId) async => true,
+        onRelayOp: (_) async => 'synced',
+      );
+
+      final sender = LanHubClient();
+      final receiver = LanHubClient();
+      await sender.connect(
+        '127.0.0.1',
+        port: port,
+        getCredentials: () async => (token: 't', branchId: 'b'),
+      );
+      await receiver.connect(
+        '127.0.0.1',
+        port: port,
+        getCredentials: () async => (token: 't', branchId: 'b'),
+      );
+      await _waitUntil(() => sender.isConnected && receiver.isConnected);
+
+      final received = <LanHubMessage>[];
+      receiver.onMessage
+          .where((m) => m.type == LanHubMessageType.printJobClaim)
+          .listen(received.add);
+
+      sender.send(LanHubMessage.printJobClaim(jobId: 'job-dup'));
+      sender.send(LanHubMessage.printJobClaim(jobId: 'job-dup'));
+
+      await _waitUntil(() => received.length == 2);
+      expect(received.every((m) => m.printJobId == 'job-dup'), isTrue);
+
+      await sender.dispose();
+      await receiver.dispose();
+    });
   });
 }

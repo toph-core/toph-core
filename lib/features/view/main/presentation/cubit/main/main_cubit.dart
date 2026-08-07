@@ -180,10 +180,15 @@ class MainCubit extends Cubit<MainState> {
 
     // Cache-first: darhol keshdagi barcha stollarni ko'rsat (boshqa zal
     // tanlovidan qolgan state.tables ni "Barchasi" ostida ko'rsatish muammosini
-    // oldini olamiz)
+    // oldini olamiz). Faqat HOZIRGI zallarga tegishli qatorlar — cache'da
+    // qolib ketgan, hech qaysi joriy zalga mos kelmaydigan "yetim" stol
+    // yozuvlari (masalan, zal backend'da o'chirilgan/qayta yaratilgan
+    // bo'lsa) hech qachon ko'rsatilmasin.
+    final currentHallIds = halls.map((h) => h.id).toSet();
     final allCached = _cache
         .getTables()
         .map((e) => CafeTableModel.fromJson(e))
+        .where((t) => currentHallIds.contains(t.hallId))
         .toList();
     if (allCached.isNotEmpty) {
       emit(state.copyWith(

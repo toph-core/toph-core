@@ -1,15 +1,12 @@
 import 'dart:async';
 
-import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
-import 'package:mary_ai_pos/core/api/api_error_overlay.dart';
-import 'package:mary_ai_pos/core/api/dio_client.dart';
-import 'package:mary_ai_pos/core/api/list_api.dart';
 import 'package:mary_ai_pos/core/components/flush_bars.dart';
 import 'package:mary_ai_pos/core/extension/for_context.dart';
 import 'package:mary_ai_pos/core/widgets/app_scaffold.dart';
 import 'package:mary_ai_pos/core/widgets/styled_virtual_keyboard.dart';
 import 'package:mary_ai_pos/di.dart';
+import 'package:mary_ai_pos/features/view/main/domain/repository/main_repository.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/settings/widgets/section_shell.dart';
 import 'package:mary_ai_pos/generated/l10n.dart';
 
@@ -23,7 +20,7 @@ class TransactionCategoriesSection extends StatefulWidget {
 
 class _TransactionCategoriesSectionState
     extends State<TransactionCategoriesSection> {
-  final DioClient _client = inject<DioClient>();
+  final MainRepository _repository = inject<MainRepository>();
   final TextEditingController _searchCtrl = TextEditingController();
 
   bool _loading = true;
@@ -50,39 +47,20 @@ class _TransactionCategoriesSectionState
       _loading = true;
       _error = null;
     });
-    try {
-      final res = await _client.get(
-        ListAPI.groupTransactions,
-        queryParameters: {
-          'limit': 100,
-          'offset': 0,
-          if (_searchQuery.isNotEmpty) 'search': _searchQuery,
-        },
-      );
-      final root = res.data;
-      List<dynamic> data = const [];
-      if (root is Map && root['data'] is List) data = root['data'] as List;
-      final parsed = data
-          .map((e) => _Category.fromJson(Map<String, dynamic>.from(e as Map)))
-          .toList();
-      if (!mounted) return;
-      setState(() {
-        _categories = parsed;
+    final result = await _repository.getTransactionGroups(
+      search: _searchQuery.isEmpty ? null : _searchQuery,
+    );
+    if (!mounted) return;
+    result.fold(
+      (failure) => setState(() {
         _loading = false;
-      });
-    } on DioException catch (e) {
-      if (!mounted) return;
-      setState(() {
+        _error = failure.getLocalizedMessage(context);
+      }),
+      (data) => setState(() {
+        _categories = data.map(_Category.fromJson).toList();
         _loading = false;
-        _error = userFriendlyDioError(e);
-      });
-    } catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _loading = false;
-        _error = e.toString();
-      });
-    }
+      }),
+    );
   }
 
   void _onSearchChanged(String v) {
@@ -99,7 +77,7 @@ class _TransactionCategoriesSectionState
     final saved = await showDialog<bool>(
       context: context,
       barrierDismissible: false,
-      builder: (_) => _CategoryEditDialog(client: _client, existing: existing),
+      builder: (_) => _CategoryEditDialog(repository: _repository, existing: existing),
     );
     if (saved == true && mounted) _load();
   }
@@ -126,14 +104,12 @@ class _TransactionCategoriesSectionState
       ),
     );
     if (ok != true || !mounted) return;
-    try {
-      await _client.delete(ListAPI.groupTransactionById(c.id));
-      if (!mounted) return;
-      _load();
-    } on DioException catch (e) {
-      if (!mounted) return;
-      showErrorMessage(context, userFriendlyDioError(e));
-    }
+    final result = await _repository.deleteTransactionGroup(c.id);
+    if (!mounted) return;
+    result.fold(
+      (failure) => showErrorMessage(context, failure.getLocalizedMessage(context)),
+      (_) => _load(),
+    );
   }
 
   @override
@@ -338,10 +314,10 @@ class _CategoryCardState extends State<_CategoryCard> {
 }
 
 class _CategoryEditDialog extends StatefulWidget {
-  final DioClient client;
+  final MainRepository repository;
   final _Category? existing;
 
-  const _CategoryEditDialog({required this.client, this.existing});
+  const _CategoryEditDialog({required this.repository, this.existing});
 
   @override
   State<_CategoryEditDialog> createState() => _CategoryEditDialogState();
@@ -375,27 +351,18 @@ class _CategoryEditDialogState extends State<_CategoryEditDialog> {
       _saving = true;
       _error = null;
     });
-    try {
-      if (_isCreate) {
-        await widget.client.post(
-          ListAPI.groupTransactions,
-          data: {'name': _nameCtrl.text.trim()},
-        );
-      } else {
-        await widget.client.put(
-          ListAPI.groupTransactionById(widget.existing!.id),
-          data: {'name': _nameCtrl.text.trim()},
-        );
-      }
-      if (!mounted) return;
-      Navigator.pop(context, true);
-    } on DioException catch (e) {
-      if (!mounted) return;
-      setState(() {
+    final name = _nameCtrl.text.trim();
+    final result = _isCreate
+        ? await widget.repository.createTransactionGroup(name)
+        : await widget.repository.updateTransactionGroup(widget.existing!.id, name);
+    if (!mounted) return;
+    result.fold(
+      (failure) => setState(() {
         _saving = false;
-        _error = userFriendlyDioError(e);
-      });
-    }
+        _error = failure.getLocalizedMessage(context);
+      }),
+      (_) => Navigator.pop(context, true),
+    );
   }
 
   @override

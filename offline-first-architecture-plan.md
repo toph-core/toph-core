@@ -422,26 +422,45 @@ today on any 4xx.
 
 - Keep the `OfflineAuthCache` mechanism (it's the right idea) but: move storage off
   plaintext `SharedPreferences` onto platform secure storage (`flutter_secure_storage`
-  — Windows DPAPI / Keychain / Keystore under the hood); snapshot the role/permission
-  set alongside the cached credential so a server-side permission change is picked up
-  on the next successful online check rather than trusted forever from cache.
-- **TTL design changes given §1 Q4's answer (outage may be unbounded/permanent):** a
-  hard TTL that requires a cloud check-in to keep working (e.g. "locks out after
-  24h with no reconnect") isn't viable — it would eventually lock every employee out
-  of a branch that never reconnects, including whoever would need to fix that. Use a
-  **local-authority renewal model instead**: a local manager/admin PIN (itself
-  cached, at a longer-lived tier) can re-authorize other staff PINs entirely on-device
-  with no cloud involved, the same way a manager override already works for other
-  privileged actions. An opportunistic cloud re-check still happens whenever
-  connectivity is available and tightens the effective TTL, but it is never the
-  *only* path to renewal.
-- **Revocation lag** becomes bounded by that TTL, and — importantly — **visible**:
-  show staff "offline PIN login valid until HH:mm without reconnecting" rather than
-  an invisible background limit (extends §11 Phase 6 observability work).
-- **Privileged actions offline** (voids, discounts, drawer opens, price overrides):
-  none of this is queued or logged today (only 3 basic op types exist in the outbox
-  at all). Net-new: log locally with a full audit trail (actor, timestamp, HLC,
-  reason), sync on reconnect as its own entity, reviewable server-side.
+  — Windows DPAPI / Keychain / Keystore under the hood). **Done, §11 Phase 6
+  (2026-08-05, secure-storage-migration slice).**
+- **TTL design — superseded by direct decision, not built as originally sketched
+  below.** This section originally proposed a "local-authority renewal model" (a
+  cached manager PIN re-authorizing other staff PINs on-device, tightened
+  opportunistically by cloud re-checks) as the answer to §1 Q4's "outage may be
+  unbounded" constraint ruling out a hard TTL. That was a reasonable design on
+  paper but was never built — when the question was put to the user directly
+  during Phase 6 execution, the actual answer was simpler and more direct: **no
+  TTL of any kind, local-authority or time-based.** A cached credential stays
+  valid until the terminal gets an actual, authoritative rejection from the
+  server about it — see §11 Phase 6 for the full mechanism
+  (`Failure.isDefiniteAuthRejection`, cache purge on confirmed rejection,
+  reconnect-triggered re-validation). This makes the manager-PIN-renewal idea
+  above moot: there is no expiring tier to renew. Left here, struck through in
+  spirit rather than deleted, so a future reader doesn't rediscover the same
+  design space and wonder why it wasn't picked.
+- **Revocation lag** is bounded by reconnect frequency instead of a TTL — closer
+  the terminal's reconnects, tighter the lag; a terminal that never reconnects
+  again never learns of a revocation, an explicit accepted tradeoff (§11 Phase 6
+  "Residual gap, disclosed"). No operator-visible "valid until HH:mm" countdown
+  exists or is needed, since there's no countdown to show — this also means the
+  "TTL + operator-visible expiry" line item that appeared at the top of §11
+  Phase 6's original scope list was removed as stale once the no-TTL decision
+  was made.
+- **Privileged actions offline** (manager-gated voids and shift open/close — this
+  codebase's actual scope, narrower than the original prompt's own list of
+  "voids, discounts, drawer opens, price overrides," none of the latter three
+  being gated by a manager check anywhere in the code): **done, §11 Phase 6
+  (2026-08-05, fifth slice)**. Manager-pincode verification now falls back to
+  the same offline credential cache regular PIN login uses (no separate TTL
+  mechanism — reuses the first slice's "revoked only by the next definite
+  server rejection" design), and every attempt — approved or denied, online or
+  offline — is logged locally to a new append-only audit entity
+  (`PrivilegedActionAuditLogService`), reviewable on-device via the
+  sync-status section. **Not yet reviewable server-side** — no backend
+  endpoint exists to submit these off-device, disclosed rather than assumed;
+  sync-on-reconnect for this entity is real, un-started future work, not
+  silently dropped scope.
 
 ---
 
@@ -1113,24 +1132,848 @@ auth + core relay + solo banner + discovery/conflict-guard done 2026-08-01**
   follower's LAN link dropping mid-relay, actual hardware broadcast behavior) —
   Phase 6's soak test is where that's scoped to happen.
 
-**Phase 5 — Print subsystem: job queue + USB relay**
+**Branch note, 2026-08-05:** all of Phases 0-4 above were built on a branch
+(`offline-again`) that had, in the meantime, diverged from `main` — `main` had
+picked up independent, unrelated printer/receipt work (a "Test Printer" button,
+USB-printer selection by Windows printer name instead of a first-USB-found guess,
+an end-of-job beep signal, a cashier-receipt "closed by" name field, plus the
+`CacheService` storage backing the printer-name choice) done directly on `main`
+while this plan's execution stayed on its own branch. Since Phase 5 is exactly
+the print subsystem and would touch these same files, `main` was merged into
+`offline-again` **before** starting Phase 5 rather than after — building Phase 5
+on a printer_service.dart that was about to be stale would have guaranteed a
+harder conflict later, once Phase 5 had *also* added its own layer on top. The
+merge was a clean 3-way auto-merge with no textual conflicts (verified there
+were no leftover `<<<<<<<` markers anywhere in the tree); `flutter analyze` (69
+issues, unchanged baseline) and `flutter test` (22/23, same pre-existing
+unrelated `widget_test.dart` failure as every prior run this session) both
+confirmed clean before committing the merge. Phase 5 below is scoped against
+the **post-merge** printer subsystem, not the older pre-merge one.
+
+**Phase 5 — Print subsystem: job queue + USB relay — done 2026-08-05 (cashier,
+shift-close, and kitchen tickets all wired)**
 - `PrintJob` table, claim/lease state machine, LAN-relay path for USB-owned
   printers, persisted retry/reprint for kitchen tickets, dedupe for cashier/
   close-check receipts.
+- **Research done before writing any code:** a full read of the post-merge printer
+  subsystem (`printer_service.dart`, `printer_config*.dart`, `printers_section.dart`,
+  every call site) confirmed §8's original sketch's central claim exactly: a
+  `usb`-type printer not physically attached to the calling terminal fails outright
+  today (`_printViaWindowsRaw`'s `EnumPrinters(PRINTER_ENUM_LOCAL, ...)` is
+  inherently local-only), with zero cross-terminal delivery of any kind. Also
+  confirmed, and **corrected from §8's original sketch**: the Phase 4 sole-uplink
+  relay (`relayOp`/`relayOpResult`) is a **leader-only directed RPC** — only a
+  `client` sends, only the `server` answers, and the vocabulary (`RelayOpResult`'s
+  three cloud-sync outcomes) doesn't fit a claim/lease print handoff. It does not
+  reuse for print-job relay, which must be **peer-to-peer** (whichever terminal
+  physically owns a given USB printer might be a `client`, the `server`, or — if LAN
+  mode is off entirely — unreachable). What *does* reuse cleanly: the existing
+  broadcast-to-all-except-sender path `tableStatus` already rides on, needing zero
+  `LanHubServer` routing changes for the new message types themselves.
+- **A real, pre-existing gap found and fixed while designing this, not after:** a
+  `server`-mode terminal forwarded every client broadcast to its *other* clients but
+  never surfaced it to its own app layer — harmless while the only broadcast was
+  cosmetic table-status, but a real correctness bug for print relay, since the
+  leader terminal can just as easily be the one physically holding the USB printer
+  as any other. Fixed with a new optional `LanBroadcastListener` callback on
+  `LanHubServer.start()`, invoked alongside (not instead of) the existing
+  `_broadcastExcept` forwarding; `LanHubService` wires its own `_handleRemoteMessage`
+  to it for `server` mode, reusing the exact same dispatcher `client` mode already
+  used. Covered by a new dedicated test (below) — this is exactly the class of bug
+  that only shows up once you ask "does the leader's own role matter here," not
+  something `flutter analyze` or the existing test suite could have caught, since no
+  prior code path needed the server to react to its own clients' broadcasts.
+- **Done: `PrintJob` (persisted queue) + `PrintQueueService` (claim/lease state
+  machine), wired to the `cashier` and `shiftClose` receipt paths** (both target the
+  same single `close_check` printer via `PrinterConfigStorage
+  .closeCheckConfigOrFallback()`, so both fit one job per call cleanly):
+  - `PrintJob` (`lib/core/services/print_queue/print_job.dart`) — one new Hive
+    typeId (12; 10/11 already taken by `PendingOperation`). Deliberately **not**
+    three separate `@HiveType` enums for job-type/state — those are stored as plain
+    `String` fields (`state`, `jobType`) with a `PrintJobStateX` extension exposing
+    a real `PrintJobState` enum getter/setter, mirroring the exact convention
+    `LanHubMessage`/`RelayOpResult` already use for enum values crossing a
+    persistence/wire boundary. Avoids a second generated adapter for what's a small,
+    closed set of string constants — this is the "don't design for hypothetical
+    future requirements" call applied to schema, not just code: Phase 3's full
+    typed-Hive-record restructure was skipped as unneeded, and this doesn't quietly
+    reintroduce that scope through the back door for one new box.
+  - `PrintQueueService` (`lib/core/services/print_queue/print_queue_service.dart`)
+    — deliberately **zero import of `lan_hub_*`**, same reasoning
+    `OfflineQueueService` already established for avoiding a `LanHubService`
+    reference: this class already depends on `PrinterService` (for transport), so a
+    `LanHubService` import back into it would be a genuine two-way circular import,
+    not just an inconvenient one. The LAN side is three plain function-typed
+    callbacks (`PrintAnnounceBroadcaster`/`PrintClaimBroadcaster`/
+    `PrintResultBroadcaster`) + an `isLanRelayPossible` check, wired in `di.dart` to
+    new `LanHubService` methods (`broadcastPrintJobAnnounce`/`Claim`/`Result`,
+    `canRelayPrintJobs`) — same typedef-callback shape as
+    `LanAuthValidator`/`LanRelayHandler`.
+  - **Ownership determination reuses what already exists rather than inventing a
+    terminal-registry:** a terminal is treated as owning a USB printer iff it has a
+    non-empty `CacheService.getUsbPrinterName(entryId)` locally — confirmed via the
+    research above to be the closest thing to a "who owns this USB printer" concept
+    that already exists in this codebase. Deliberately did **not** resurrect
+    `getDeviceId()` for this (confirmed dead code, and confirmed broken on Windows
+    specifically — returns the literal string `'unknown_device'`, the actual POS
+    terminal platform) — instead added a fresh, separately-scoped random id
+    (`PrintQueueService.terminalId`, 16 hex chars, persisted in `SharedPreferences`
+    once per install) used only for `PrintJob.ownerTerminalId` bookkeeping/history,
+    never for the ownership decision itself.
+  - **Protocol:** originator persists a `queued` row, then broadcasts
+    `printJobAnnounce` (job id, type, target `entryId`, pre-rendered ESC/POS bytes
+    as base64 — the receipt is built once, wherever the job originates, and shipped
+    as bytes so a claiming terminal never needs the originator's order/cache
+    context to print it, keeping "transport/driver layer stays as-is" from §8's
+    original framing literally true). Every terminal receives it; only the one
+    holding a matching `getUsbPrinterName(entryId)` broadcasts `printJobClaim` and
+    attempts the print, then broadcasts `printJobResult`. The originator: waits up
+    to 3s (`claimWait`) for a claim, else fails visibly with an "unclaimed" reason;
+    once claimed, waits up to 10s (`lease`, per §8's own "recommend 10s") for a
+    result; either timeout gets **exactly one** automatic re-announce
+    (`retryCount`), then a permanent, clearly-worded failure — bounded retries, not
+    an unbounded loop that could risk a duplicate physical printout, per §8's own
+    exactly-once framing. A second/late claim for an already-`claimed` job is
+    ignored by construction (the state guard only accepts a claim while still
+    `queued`) — ​"first claim wins" needed no extra arbitration code.
+  - **Crash/restart recovery:** any `queued`/`claimed` row found at `init()` time
+    (no live timer survives a restart, so an interrupted job would otherwise sit
+    silently stuck forever) is swept to `failed` with a clear "interrupted by
+    restart" reason — visible for manual retry once Phase 6's print-status screen
+    exists, not silently lost.
+  - **`PrinterService` integration, kept minimal:** a new public `printRenderedBytes`
+    (thin wrapper over the existing private `_connectAndPrint` — no transport code
+    duplicated) plus an `attachPrintQueue` hook `di.dart` wires once both services
+    exist. `printCashierReceipt`/`printCashierReceiptFromDetail`/
+    `printShiftCloseReceipt` now call a new `_dispatchOrPrint` helper instead of
+    `_connectAndPrint` directly — routes through the queue when wired, falls back
+    to direct printing if somehow not (never a silent no-op). Their **public
+    signatures are unchanged**, so `WaiterCubit`/`PaymentBloc`'s existing call sites
+    needed zero edits — the queue-routing decision is fully encapsulated inside
+    `PrinterService`. The existing `if (!r.ok) { _notifyPrinterFailed(...) }` toast
+    logic at each of the three call sites is untouched and stays the **sole** place
+    a failure toast fires — `PrintQueueService` itself never shows one, deliberately,
+    since `submitJob`'s `Future` only resolves once the job is *fully* finalized
+    (including the whole relay lifecycle), so double-toasting was a real risk once
+    the relay path could also "fail" out from under an already-returned local
+    result if both places tried to notify.
+  - **Done: kitchen tickets, added 2026-08-05.** `printKitchenReceiptFor` already
+    grouped items by resolved destination printer before this — the only change
+    needed was firing one `submitJob` (`jobType: 'kitchen'`, no beep, matching
+    existing behavior) per destination group instead of calling `_connectAndPrint`
+    directly, reusing every piece of plumbing built for the cashier path above with
+    no new message types, no new state-machine code, no new schema.
+  - **A real behavior change made deliberately, not incidentally:** the old loop
+    printed each destination printer *sequentially* and `return`ed at the first
+    failure, silently never even attempting the remaining printers in that ticket.
+    That was fine when every attempt was fast (bounded TCP retries or an immediate
+    local USB check) but becomes a real problem now that one destination can be a
+    relayed job taking up to ~26s to resolve — sequential-with-early-return would
+    delay (or skip entirely) an unrelated, unaffected printer's urgent kitchen
+    ticket behind a single slow/failing one. Changed to fire every destination's
+    `submitJob` concurrently (`Future.wait`, no `await` between the calls) and
+    report **every** failure independently rather than stopping at the first —
+    strictly more information surfaced, not less, and no kitchen printer's ticket
+    is now held hostage by another's relay latency.
+  - **Disclosed tradeoff:** because `submitJob` doesn't resolve until the relay
+    concludes, a failure toast for a *relayed* print can now arrive up to
+    ~26s after the check was closed (claim-wait + lease, doubled by the one retry)
+    instead of near-instantly — acceptable given every call site was already
+    fire-and-forget/unawaited before this (per the research above, two of the three
+    weren't even wrapped in `unawaited()`), so nothing was blocking on this result
+    either before or after.
+  - *Verification:* `test/print_queue_service_test.dart` (8 tests) — real
+    `PrinterService`/`CacheService` instances throughout, no mocking framework, same
+    project convention as the LAN tests. Two outcomes are conveniently deterministic
+    on this (non-Windows) dev/CI machine without needing any fakery: a `usb`-type
+    print always fails immediately with a `Platform.isWindows` check
+    (distinguishes "claimed but the owner's print itself failed" from "never
+    claimed" cleanly), and a `cable`-type print against a real local loopback
+    `ServerSocket` always succeeds. Covers: a TCP job needing no relay; a USB job
+    this terminal owns printing locally with **zero broadcasts sent** (asserted
+    directly, not just inferred from the result); a USB job relayed end-to-end
+    between two `PrintQueueService` instances wired directly into each other's
+    `onRemote*` methods (bypassing the WebSocket transport, which is separately
+    covered — see below); the unclaimed-timeout-then-one-retry path; the
+    claimed-but-no-result lease-timeout-then-one-retry path; stale-job recovery on
+    init; and — the kitchen-wiring addition — a slow relayed job and a fast local
+    job submitted concurrently, with the fast one asserted **already `printed`**
+    while the slow one is still `queued` mid-flight (not just "both eventually
+    succeed," which wouldn't distinguish concurrent from sequential execution).
+    That last test deliberately exercises `PrintQueueService.submitJob` directly
+    rather than through `PrinterService.printKitchenReceiptFor` itself — the latter
+    reaches `CacheService`/`UserBloc` via ad-hoc `inject()` calls (pre-existing
+    pattern, not introduced by this slice) that would need the full DI graph
+    standing up just for this test; the concurrency risk actually being tested
+    lives entirely in `submitJob`/`Future.wait`, not in that dispatch loop itself,
+    so testing at that level was the better cost/value trade rather than building
+    out unrelated DI scaffolding to reach the same coverage indirectly.
+    Two new tests also added to `test/lan_hub_test.dart` (now 9, all still passing)
+    covering the wire-level pieces this file doesn't touch: the new
+    `printJobAnnounce`/`printJobClaim`/`printJobResult` message types actually
+    round-tripping through the real WebSocket JSON envelope between two real
+    clients, and — specifically — the new `onBroadcast` callback firing for the
+    server's own app layer (the blind-spot fix above), proven with a real
+    server+client pair, not just read from the code. Full suite: 32/33 (the one
+    failure is `widget_test.dart`'s pre-existing, unrelated counter-app boilerplate,
+    flagged in every session's run so far). `flutter analyze`: 69 issues, unchanged
+    baseline.
+  - *Verification still needed:* same category of gap as every other LAN-relay
+    piece so far — no test against two actual separate running app instances/
+    devices, and specifically for this slice: no real Windows-USB-printer hardware
+    test at all (this dev/CI environment is Linux, so the Win32 spooler path itself
+    has never actually run against a physical printer in any test this session has
+    written, only exercised via its `!Platform.isWindows` early-return).
 - *Acceptance:* closing a check on a terminal with no physically attached receipt
   printer produces exactly one printout on the owning terminal — including across a
   simulated claim-timeout (kill the owner mid-print: confirm one eventual reprint,
-  never zero, never two).
+  never zero, never two). **Met for cashier/shift-close and kitchen tickets alike**
+  per the claim/lease design and tests above — every print path this phase named
+  is now backed by a persisted, retryable, claim/lease-protected job. What remains
+  is the real-hardware/real-two-terminal verification flagged throughout, not
+  further scope.
 
-**Phase 6 — Offline auth hardening, observability, testing**
-- Secure-storage migration for cached credentials, TTL + operator-visible expiry,
-  privileged-action offline audit log.
+**Phase 6 — Offline auth hardening, observability, testing — complete
+2026-08-05: revocation-lag bounding, secure-storage migration, the
+sync-status UI, deterministic resilience tests, offline privileged-action
+authorization + audit logging, and the full-shift soak test**
+- Secure-storage migration for cached credentials, privileged-action offline
+  audit log.
 - Real sync-status UI: outbox depth, cluster role/peers, printer reachability,
   last-sync time, quarantine list with manual resolution — replacing today's binary
-  banner.
+  banner. **Done — see the dedicated bullet below for what "printer
+  reachability" ended up meaning in practice (inferred from failed-job
+  evidence, not an active health check).**
 - Deterministic tests: partition simulation, clock-skew, leader-kill-during-open-
   transaction, duplicate-delivery, full-shift offline-then-reconnect soak test —
   filling today's zero-coverage gap.
+- **Research done before writing any code, found the offline-auth cache had no
+  bound at all:** a full read of `OfflineAuthCache` and every login path
+  (`LoginPinCubit`, `AuthCubit`, `UserBloc`) confirmed the original prompt's own
+  "revocation lag" question (§1 "Offline authentication and authorization") was
+  never answered in code — a cached PIN/brand credential authenticated offline
+  **forever**, with no TTL, no expiry field, and no re-validation trigger of any
+  kind. `UserModel.isActive` was decoded from every login response and stored in
+  the cache but never once read back by any auth flow. Separately (a related but
+  distinct gap, noted and left open): manager-pincode-gated actions (void, shift
+  open/close) are online-only today with no offline fallback at all —
+  `VerifyManagerPincodeUsecase` hits the live endpoint unconditionally, so on a
+  genuinely offline terminal a manager currently **cannot** authorize a void or a
+  shift close, which cuts against the original prompt's framing of "privileged
+  actions performed offline" needing an audit trail — right now there's nothing to
+  audit there because the action can't happen offline at all. Out of scope for
+  this slice; flagged for whoever picks up the audit-log piece next, since it
+  changes what "privileged action while offline" even means in this codebase.
+- **Decision: no time-based TTL.** Asked directly (a genuine tradeoff the original
+  prompt's own "how long must an outage survive" question left unanswered, and
+  picking a wrong duration unilaterally risked either locking out legitimate staff
+  during a real outage or leaving a real security hole open) — **the answer was no
+  fixed expiry at all: a cached credential stays valid until the next time the
+  terminal gets an actual, authoritative answer from the server about it, and that
+  answer says no.** Not a 24h/72h/one-shift cutoff. This reframes "bounding
+  revocation lag" from a clock problem into a **connectivity-and-correctness**
+  problem: make sure every place that already talks to the server about a
+  credential (a) never lets a confirmed rejection get overridden by a stale cache
+  hit, and (b) actually happens often enough (not just at login) that a revoked
+  credential doesn't sit undetected for the entire session.
+- **Done: a shared `Failure.isDefiniteAuthRejection` classification**
+  (`lib/core/error/failure.dart`), the mechanism the whole design rests on —
+  distinguishes a real, authoritative "no" from the server (`ValidationFailure`,
+  `UnauthorizedFailure`, `UnauthenticatedFailure`, `NotFoundFailure`,
+  `MessageFailure` — the backend actually answered, and the answer was reject)
+  from simply failing to get one at all (`ConnectionFailure`, `TimeoutFailure`,
+  `ServerFailure`, `UnknownFailure`/`ParsingFailure`/`OtherFailure` — inconclusive,
+  by design still falls back to cache exactly like before). `ServerFailure` (5xx)
+  is deliberately classified as inconclusive, not a rejection — a backend bug or
+  outage says nothing about whether a specific credential is still valid, and
+  treating it as one would lock out a legitimate cached user over a server-side
+  problem that has nothing to do with them.
+- **Done: a real, pre-existing bug found and fixed, not incidental to this
+  design.** `LoginPinCubit.login()`'s online branch fell back to the offline cache
+  on **any** `LoginUsecase` failure, not just connection-class ones — meaning even
+  when the terminal *was* online and the server *did* authoritatively reject a
+  pincode (wrong code, inactive user), the code silently tried the unchecked
+  offline cache anyway and could still log the person in. This existed
+  independently of the "no TTL" design above; it would have undermined *any*
+  revocation mechanism, TTL-based or not, since the whole point of "ask the server
+  when you can" is defeated if a real rejection still falls through to cache.
+  Fixed by gating the fallback on `!failure.isDefiniteAuthRejection`
+  (`AuthCubit.loginWithBrandId` already had a narrower, correct-in-spirit version
+  of this — `if (failure is ConnectionFailure)` — widened it to the same shared
+  classification for consistency, since a bare timeout or a server 500 shouldn't
+  lock out a legitimate cached brand-login either, and `UserBloc._getUser`'s
+  session-restore path had the identical narrow check, widened the same way).
+- **Done: cache invalidation on a confirmed rejection** — `OfflineAuthCache`
+  gained `removeUser(brandId)`/`removeForPin(brandId, pincode)` (it previously had
+  no delete/remove capability at all, only overwrite). Wired into all three login
+  paths: a definite rejection during PIN login, brand login, or session-restore
+  now purges the matching cache entry instead of just showing an error — so the
+  *next* offline attempt with that same credential fails too, not just the
+  in-the-moment one.
+- **Done: reconnect-triggered session re-validation**, closing the gap for a
+  session that's *already* logged in when the underlying user gets deactivated —
+  without this, only *new* login attempts would ever re-check the server;
+  someone already mid-shift would keep working until they logged out or the app
+  restarted, no matter how many times connectivity came back. `AppScaffold
+  ._syncOnReconnect` (the same reconnect-edge handler that already drives
+  `SyncEngine.tick()` on every reconnect, from Phase 0) now also dispatches
+  `UserEvent.getUser()` — reusing `UserBloc._getUser`'s already-correct-shaped
+  fold (confirmed rejection → force logout + purge cache; inconclusive → fall back
+  to cache as before) rather than adding new logic for this path. Checked this
+  wouldn't cause a disruptive UI flash on every reconnect: the two `BlocListener
+  <UserBloc, UserState>`s in the app (`main_screen.dart`, `waiter_screen.dart`)
+  are both `listenWhen`-gated on `userMOdel` actually *changing* (null→non-null,
+  or a different user id), and `_getUser`'s `LOADING`/`SUCCESS` emissions in the
+  unchanged-user case never clear or replace `userMOdel` with a different value —
+  freezed structural equality means a same-user refresh is a silent no-op to both
+  listeners, confirmed by reading both gates rather than assumed.
+- *Verification:* `test/offline_auth_revocation_test.dart` (new, 10 tests) — the
+  `isDefiniteAuthRejection` classification exercised against every `Failure`
+  subtype in the codebase (not just a sample), and `OfflineAuthCache.removeUser`/
+  `removeForPin` against real `SharedPreferences` (mocked in-memory via
+  `SharedPreferences.setMockInitialValues`, not a mocking framework for the class
+  under test itself) — covering removal, no-op-on-already-absent, isolation (
+  removing one brand/pincode never touches another cached entry), and re-caching
+  after removal (the re-hire/re-approved case). **Deliberately not covered:**
+  `LoginPinCubit`/`AuthCubit`/`UserBloc` at the cubit level — each would need a
+  real `LoginUsecase`/`AuthRepository`/`DioClient` chain standing up to exercise
+  end to end, disproportionate to what's actually new in them (a few lines of
+  branching over the two primitives that *are* tested); verified by code review
+  instead, the same tradeoff already made for `PrinterService
+  .printKitchenReceiptFor`'s DI-entangled call sites in Phase 5. `flutter
+  analyze`: 69 issues, unchanged baseline. Full suite: 38/39 (the one failure is
+  `widget_test.dart`'s pre-existing, unrelated counter-app boilerplate, flagged in
+  every session run so far).
+- **Residual gap, disclosed:** this closes the *logic* side of revocation lag but
+  not the *opportunity* side — a terminal that genuinely never regains
+  connectivity (not "offline right now," but offline for its entire remaining
+  service life before being retired/replaced) still can't learn about a
+  revocation, by construction, since there's no time-based fallback to catch that
+  case. This was an explicit, informed tradeoff in the "no TTL" decision above,
+  not an oversight — the alternative (a hard cutoff) trades a rare, extreme case
+  for locking out staff during any ordinary outage that merely outlasts the
+  chosen TTL. Revisit only if real field use shows the extreme case actually
+  happening, with a concrete incident in hand rather than speculatively (same
+  "escalation condition, not a default" posture as Phase 3's own deferral).
+- **Done (2026-08-05, second slice): secure-storage migration.** All
+  credential-bearing storage — access/refresh tokens, the brand_id+password
+  pair, the last-used pincode, and both `OfflineAuthCache` blobs (brand-level
+  and per-pincode) — moved off plaintext `SharedPreferences` into OS-backed
+  secure storage via `flutter_secure_storage` (Keychain on iOS/macOS,
+  EncryptedSharedPreferences on Android, DPAPI-backed Credential Manager on
+  Windows, libsecret on Linux). Non-sensitive config (`appLanguage`,
+  `keyboardLanguage`, `posIsInitialized`) deliberately stayed in
+  `SharedPreferences` — `AppTokenStorage.isPosInitialized` is read
+  synchronously in several places, and secure storage has no synchronous read
+  API on any platform, so moving it would have forced those call sites into
+  async for no security benefit (that key holds no credential). Chose
+  `flutter_secure_storage` specifically because its two best-supported
+  backends (Windows DPAPI, Android EncryptedSharedPreferences) are exactly
+  the two platforms §1 Q2 identified as the actual POS/waiter targets;
+  Linux/macOS/web get a backend too (libsecret / Keychain / a weak
+  browser-storage fallback) but per §1 Q2 those aren't confirmed real
+  deployment targets, so their weaker guarantees (web in particular) weren't
+  litigated further here.
+  - **API ripple, deliberate:** `OfflineAuthCache`'s four read methods
+    (`getCachedUser`, `getForPin`, `validateAndGetUser`, plus the internal
+    `_readAll`/`_readPins`) had to become `Future`-returning — they were
+    synchronous under `SharedPreferences` but secure storage has no sync read
+    on any platform. Updated the five call sites this touched
+    (`AuthCubit.loginWithBrandId`, `UserBloc._tryOfflineUser` ×2,
+    `LoginPinCubit.login` ×2) to `await` them; all five were already inside
+    `async` functions, so this was a mechanical, zero-risk change, not a
+    structural one.
+  - **Done: a one-time upgrade path**, not a breaking change for existing
+    installs. `AppTokenStorage.migrateLegacyPlaintext` and
+    `OfflineAuthCache.migrateLegacyPlaintext` (both static, called
+    unconditionally from `initDi()` before anything reads a credential) check
+    each legacy plaintext key, move its value into secure storage if present,
+    and delete the plaintext copy. Idempotent by construction (a no-op once
+    the plaintext keys are gone), so it needs no "have I migrated" flag of
+    its own and is safe to run on every single startup. Without this, every
+    existing install would have been silently logged out and lost its
+    offline-auth cache on the first launch after upgrading — judged
+    unacceptable given this app's own "outage may be unbounded" premise (§1
+    Q4): the upgrade itself could land mid-outage.
+  - **Testing note:** the `flutter_test` sandbox has no OS keychain, so
+    `flutter_secure_storage`'s real backends can't run there (same category
+    of gap as the LAN/print-relay tests needing real sockets instead of real
+    hardware). Rather than reaching for a mocking framework, wrote
+    `test/support/in_memory_secure_storage.dart` —
+    `InMemorySecureStoragePlatform`, a real, small, correct implementation of
+    the plugin's own `FlutterSecureStoragePlatform` interface (six methods:
+    `read`/`write`/`delete`/`deleteAll`/`containsKey`/`readAll`, confirmed
+    stable by reading the installed `flutter_secure_storage_platform_interface`
+    package source directly), backed by a plain `Map`, installed via
+    `FlutterSecureStoragePlatform.instance = ...`. This is the same category
+    of stub `shared_preferences`'s own `setMockInitialValues` already
+    performs under the hood, just written out explicitly because
+    `flutter_secure_storage` doesn't ship an equivalent convenience helper.
+    Added `flutter_secure_storage_platform_interface` as a direct
+    dev-dependency (previously only transitive) since the fake needs to
+    import its types directly.
+  - *Verification:* `test/secure_storage_migration_test.dart` (new, 7 tests)
+    — asserts credential values written through `AppTokenStorage`/
+    `OfflineAuthCache` never appear in a plaintext dump of the underlying
+    `SharedPreferences` instance (the actual point of the migration, checked
+    directly rather than assumed from the routing code), confirms
+    non-sensitive keys still land in plain prefs, confirms `deleteAll` wipes
+    both backends, and covers `migrateLegacyPlaintext` for both classes
+    (moves-and-deletes-plaintext, safe no-op when nothing to migrate,
+    idempotent on a second run). `test/offline_auth_revocation_test.dart`
+    updated in place for the new async signatures and the
+    `InMemorySecureStoragePlatform` fake — all 10 of its existing cases still
+    pass unchanged in substance. `flutter analyze`: 69 issues, same baseline
+    (one incidental new info-level lint from `OfflineAuthCache(secureStorage)`
+    not being `const` was fixed immediately, not left as noise). Full suite:
+    45/46 (38/39 before this slice, plus the 7 new tests; the one failure is
+    still `widget_test.dart`'s pre-existing, unrelated counter-app
+    boilerplate).
+  - **Residual gap, disclosed:** verified against the in-memory fake only —
+    no real Windows/Android hardware run yet confirmed DPAPI/
+    EncryptedSharedPreferences actually round-trip correctly end to end, or
+    that `flutter_secure_storage`'s Windows backend behaves correctly across
+    a full app reinstall/machine-rename (Credential Manager entries can be
+    scoped in ways that matter for a kiosk-style always-on terminal). Same
+    "real hardware, not just real sockets" gap flagged for the LAN/print
+    subsystem in Phases 4-5 — deferred to the same eventual hardware pass
+    rather than blocking this slice on it.
+- **Done (2026-08-05, third slice): the real sync-status UI**, replacing the
+  original scope bullet's binary banner with actual numbers pulled from the
+  services that already track them, plus manual resolution for the two
+  places work could otherwise get silently stuck.
+  - **New: a quarantine mechanism for the offline outbox**, the single
+    biggest gap this slice found. `OfflineQueueService.syncAll`/`relayViaLan`
+    previously handled a terminal 4xx (or a LAN-relay `terminalFailure`)
+    identically to a real success: `_box.delete(op.id)`, no trace kept of
+    what was dropped or why — confirmed by reading the code, not assumed,
+    since the plan's own §5 already flagged "the silent drop that happens
+    today on any 4xx" as a known gap. Fixed with a new
+    `QuarantinedOperation` Hive model (typeId 13,
+    `lib/core/services/offline_queue/quarantined_operation.dart`) and box
+    (`offline_queue_quarantine`), a private `OfflineQueueService._quarantine`
+    helper fed by a shared `_dropped(reason)` helper that every one of the
+    six `_exec*` methods' drop sites (both exception-based and the three
+    early-return "this data is stale" cases) now funnels through instead of
+    returning `OpOutcome.dropped` directly, and two new public methods for
+    manual resolution — `retryQuarantined(id)` (re-enqueues under the same
+    id) and `dismissQuarantined(id)` (discards for good). The LAN-relay
+    path's `terminalFailure` case gets a generic reason string rather than
+    the server's actual error text — `LanHubMessage.relayOpResult` only ever
+    carried a bare `RelayOpResult` enum over the wire (see §7), not an error
+    string, and widening that wire format was judged out of scope for this
+    slice; flagged rather than silently accepted.
+  - **New: reactive backing on every service this screen reads**, added as
+    thin, additive getters rather than changing any existing behavior —
+    `OfflineQueueService.listenable`/`quarantineListenable` (`Box
+    .listenable()`, already reactive by construction, just not previously
+    exposed), `PrintQueueService.listenable` plus `queuedCount`/
+    `claimedCount`/`failedCount` (trivial filters over the existing `jobs`
+    getter), `LanHubServer.clientCountNotifier` (a `ValueNotifier<int>` — the
+    peer-connect/disconnect set had no notification hook at all before this,
+    a real gap since `LanNetworkSection`'s existing UI worked around the
+    same absence with a 2s polling `Timer` instead), `LanHubService
+    .onModeChanged`/`clientCountListenable` (mode changes had no stream
+    either — `LanSoloBanner`'s own doc comment already noted this and
+    piggybacked on the connection-state stream instead; a status screen
+    showing role text in *every* mode, not just detecting "solo," needed the
+    real thing), and `SyncEngine.lastSyncAt` (a `ValueNotifier<DateTime?>`,
+    persisted to `SharedPreferences` so a cold start doesn't show "never
+    synced" — the same persisted-timestamp idiom `CacheService` already uses
+    for goods-cache staleness, just not previously applied to the sync pass
+    as a whole). `SyncEngine.tick()` also gained an optional `force` param
+    (threaded to `OfflineQueueService.syncAll`'s existing `force`) so the
+    screen's "Hozir sinxronlash" button can bypass backoff — a manual retry
+    that still waits out a previous failure's exponential backoff defeats
+    the point of a manual retry.
+  - **New: print-job manual resolution** — `PrintQueueService
+    .retryFailedJob(id)` (rebuilds the original `PrinterConfig` from the
+    persisted `PrintJob` fields and resubmits under a fresh id, leaving the
+    original row as history rather than mutating it — the same "new row,
+    old row stays" pattern `retryQuarantined` uses) and `.dismissFailedJob
+    (id)`, closing the loop `_recoverStaleJobs`'s own doc comment already
+    promised ("visible for manual retry once Phase 6's print-status screen
+    exists"). **Scoping decision on "printer reachability"** (the original
+    scope bullet's own word choice): there is still no active health-check/
+    ping anywhere in `PrinterService` — building one (per-printer periodic
+    probes, a reachable/unreachable state machine) was judged a materially
+    bigger feature than this slice, and not obviously worth it against a
+    thermal receipt printer's actual failure mode (it's either plugged in
+    and working, or a job fails and says why). What the screen shows instead
+    is the evidence that already exists: queued/claimed/failed counts plus,
+    for each failed job, its `lastError` text — reachability *inferred* from
+    recent failures, not measured directly. Revisit only if real use shows
+    this inference is too slow to surface a genuinely offline printer.
+  - **New Settings section**, not a new top-level route:
+    `lib/features/view/main/presentation/pages/settings/sections
+    /sync_status_section.dart`, wired into `SettingsScreen`'s existing
+    `SettingsSection` enum/switch (same pattern every other section already
+    follows). Deliberately additive to the existing `OfflineBanner`/
+    `LanSoloBanner` rather than replacing them — those stay as the always-on
+    glanceable indicator; this is the detail view for someone actually
+    investigating a problem, reachable the same way every other settings
+    section is.
+  - *Verification:* `flutter analyze` unchanged at 69 (one incidental new
+    info-level lint, a missing `const`, fixed immediately). Full suite:
+    59/60 (46/47 before this slice, plus 15 new tests — the one failure is
+    still `widget_test.dart`'s pre-existing, unrelated counter-app
+    boilerplate). New coverage: `test/offline_queue_quarantine_test.dart`
+    (9 tests) exercises quarantining end-to-end through
+    `relayViaLan` (a `terminalFailure`/`synced`/`retryLater` result each
+    behaves correctly, `retryQuarantined`/`dismissQuarantined`,
+    newest-first ordering, both listenables firing) — deliberately *not*
+    through `syncAll`'s direct-to-cloud path, since that needs a real
+    `DioClient` backed by a real `ConnectivityCubit` (itself backed by
+    `connectivity_plus`'s platform channel, unavailable in this test
+    sandbox) to exercise end to end — the same class of gap already
+    disclosed for `LoginPinCubit`/`AuthCubit`/`UserBloc` earlier in this
+    phase, verified by code review instead (every `_exec*` drop site funnels
+    through the same shared `_dropped()` helper that the tested `relayViaLan`
+    path also uses, so the capture mechanism itself is exercised even though
+    the direct-to-cloud call sites aren't). `test/print_queue_service_test
+    .dart` gained 5 tests for the count getters and manual-retry/dismiss
+    methods, reusing the file's existing real-`PrinterService`,
+    deterministic-USB-failure harness. `test/lan_hub_test.dart` gained 1
+    test connecting two real loopback clients and disconnecting one,
+    asserting `clientCountNotifier` fires `[1, 2, 1]` in order.
+    `LanHubService.onModeChanged`/`clientCountListenable` and
+    `SyncEngine.lastSyncAt`'s persistence aren't covered by a dedicated
+    test — both are thin wrappers over already-tested or trivial primitives
+    (`BehaviorSubject`/`ValueNotifier`/`SharedPreferences` string round-trip)
+    sitting behind the same `ConnectivityCubit`/full-DI-graph wall as
+    `syncAll`'s direct path; verified by code review.
+  - **Residual gap, disclosed — interactive UI verification not done.**
+    Could not visually exercise the new screen in a running app at the time
+    this bullet was originally written: the Linux desktop build failed
+    outright without the `libsecret-1-dev` system package (a genuinely new
+    native build requirement introduced by `flutter_secure_storage`'s Linux
+    backend), and the Chrome web build fails on a pre-existing, unrelated
+    issue (`win32`, imported unconditionally by `printer_service.dart`,
+    doesn't compile for web at all — confirmed this predates this slice, not
+    caused by it, still open). The Linux half of this gap is now closed —
+    see **"Linux build fix"** below, added the same day once the user hit
+    this exact wall trying to run the app themselves. The web half remains:
+    neither Linux nor web is the confirmed real target anyway (§1 Q2:
+    Windows desktop, Android secondary) — same "real hardware, not just real
+    sockets/analyze" gap already flagged repeatedly for Phases 4-6.
+  - **Linux build fix (2026-08-05, same day, user-triggered):** installing
+    `libsecret-1-dev` (`sudo apt-get install libsecret-1-dev libjsoncpp-dev`)
+    got past the CMake configure step but hit a second, separate failure:
+    `flutter_secure_storage_linux` 1.2.3 vendors an old `nlohmann/json.hpp`
+    using spaced literal-operator syntax (`operator "" _json`) that this
+    environment's Clang 21 hard-errors on
+    (`-Wdeprecated-literal-operator`+`-Werror`) — not something to patch by
+    hand (it's inside the plugin's own vendored header, would be clobbered
+    by the next `pub get`). Fixed by upgrading `flutter_secure_storage` from
+    `^9.2.4` to `^10.3.1` (`flutter_secure_storage_linux` 1.2.3 → 3.0.1),
+    whose changelog confirms the Linux native side was rewritten in 10.0.0
+    specifically to "remove and replace" that dependency — confirmed via the
+    actual changelog before upgrading across a major version, not assumed.
+    No breaking changes to the `read`/`write`/`delete`/`deleteAll` surface
+    this app uses; `flutter_secure_storage_platform_interface` bumped
+    `^1.1.2` → `^2.0.2` alongside it (the test fake's abstract interface is
+    unchanged between those versions — confirmed by diffing the actual
+    source, not assumed either — so `test/support/in_memory_secure_storage
+    .dart` needed no changes). **One real, disclosed follow-on
+    consequence:** `flutter_secure_storage` 10.x's Android module declares
+    `minSdkVersion = 23` in its own `build.gradle` — confirmed by reading
+    the installed plugin's source directly, not assumed — which fails
+    Gradle's manifest merge against this app's previous minSdk of 21 (the
+    Flutter default, kept for `flutter_local_notifications`' own 21+
+    requirement). Fixed by raising `android/app/build.gradle.kts`'s
+    `minSdk` to `23` explicitly, dropping Android 5.0/5.1 (2014-2015)
+    support — not expected to matter given §1 Q2's read that Android here is
+    a secondary waiter handheld, not a target for decade-old hardware, but
+    **not verified against a real Android build in this environment** (the
+    Android SDK's license status is unresolved here, and accepting it
+    without being asked felt like the wrong call) — flag if this needs a
+    real Android build check. `flutter build linux --debug` now succeeds
+    end to end; `flutter analyze` (69, unchanged) and the full test suite
+    (66/67, same pre-existing unrelated failure) still pass after the
+    upgrade.
+- **Done (2026-08-05, fourth slice): a first deterministic resilience test
+  pass**, covering three of the five categories the original scope bullet
+  named — partition simulation, leader-kill-mid-transaction, and duplicate-
+  delivery — plus an explicit finding on the fourth (clock-skew) rather than
+  silently skipping it. All new tests run against the same real-socket
+  harness (`dart:io` `HttpServer`/`WebSocket` over loopback, real Hive boxes)
+  the rest of this phase's tests already use — no new test infrastructure,
+  no mocking framework.
+  - **Partition simulation:** `test/lan_hub_test.dart` gained
+    "partition-then-heal" — a real client connects, the server is stopped
+    (simulating the leader dropping off the LAN entirely, not just a slow
+    reply), the client's `isConnected` is confirmed to flip to `false`, the
+    server restarts on the same port, and the client is confirmed to
+    reconnect **on its own** within its existing exponential-backoff window
+    — no test code drives the reconnect. This is genuinely new coverage:
+    `LanHubClient`'s reconnect loop (`_scheduleReconnect`/`_doConnect`) had
+    never been exercised end-to-end by any prior test — every existing
+    connect test used a single connect-and-stay-connected (or
+    connect-and-get-rejected, which never recovers since the credentials
+    stay bad) path.
+  - **Leader-kill-mid-transaction:** `test/lan_hub_test.dart` gained
+    "leader-kill-mid-relay" — distinct from the pre-existing "relay times
+    out cleanly if the leader never replies" test (which keeps the server
+    process alive with a handler that just never answers). This one starts
+    a `relayOp`, then calls `server.stop()` while it's in flight — a real
+    process/connection loss, not a slow handler — and confirms the call
+    still resolves to `null` at its own `timeout` bound (asserted via a
+    `Stopwatch`, not just "eventually"), never hanging on the dropped
+    socket. Confirms by test what `LanHubClient.relayOp`'s own doc comment
+    already argued: there's no separate "give up early on disconnect" path,
+    the explicit timeout is the only bound, and that's an accepted design
+    choice (giving up early only changes retry cost, not correctness, since
+    an unresolved op just stays in the outbox either way).
+  - **Duplicate delivery:** split across both files, since the transport and
+    application layers each have their own claim here. `test/lan_hub_test
+    .dart` gained one test proving the transport layer makes **no**
+    at-most-once guarantee — the same broadcast sent twice really does
+    arrive twice at the app layer — establishing that dedup has to live
+    above the transport. `test/print_queue_service_test.dart` gained three
+    tests proving it does: a duplicate `onRemoteClaim` for an
+    already-claimed job doesn't reset the lease clock (which would let a
+    late/duplicate claimant repeatedly steal a job from whoever claimed it
+    first), a duplicate `onRemoteResult` for an already-resolved job can't
+    flip a real `printed` outcome back to `failed`, and — the strongest
+    version of this — a genuine race where **two** terminals both own the
+    same USB printer name and both claim the same announced job
+    concurrently, proving only the winner's claim is ever honored. All three
+    guards were already implemented (each with its own "first claim/result
+    already won" doc comment) before this slice — this pass is what actually
+    proved they hold, rather than trusting the comments.
+  - **Clock-skew — investigated, found not applicable to this codebase's
+    current design, not built as a test.** Read through every place a
+    timestamp affects correctness: `PrintJob`'s claim-wait/lease bounds are
+    `Timer`s (event-loop-scheduled — immune to `DateTime.now()` changes,
+    unlike a deadline computed by comparing two stored timestamps),
+    offline-auth has no TTL to skew after Phase 6's own no-TTL decision
+    (first slice), and `client_created_at` sent with a queued order is for
+    the **backend** to reconcile server-side, never compared against a local
+    clock. There is currently no wall-clock-dependent correctness left in
+    this client for a clock-skew test to exercise — noted here so the next
+    person doesn't rediscover the same absence and wonder if it was missed,
+    and so this conclusion gets revisited if a future change (e.g. a
+    client-side HLC for order numbering, §1 Q7) reintroduces the dependency.
+  - *Verification:* `flutter analyze` unchanged at 69. Full suite: 66/67
+    (59/60 before this slice, plus 7 new tests — the one failure is still
+    `widget_test.dart`'s pre-existing, unrelated counter-app boilerplate).
+    One real bug caught and fixed during writing, not shipped: an early
+    draft of the duplicate-`onRemoteResult` test called `submitJob` without
+    awaiting it (deliberately, to drive the claim/result sequence manually
+    while the job was still `queued`) but then called `onRemoteResult`
+    synchronously right after — before `submitJob`'s own async continuation
+    had reached the line registering the job's pending completer — so the
+    completer was never found and the test hung until the 30s framework
+    timeout. Fixed with an explicit yield (`await Future.delayed(...)`)
+    between submitting and manually driving the job, matching a pattern the
+    adjacent claim-duplicate test already used (there, incidentally, for a
+    different reason) — flagged here because the same race would bite any
+    future test written in this "submit without awaiting, then drive
+    `onRemoteClaim`/`onRemoteResult` by hand" style, not just this one.
+  - **Done (2026-08-05, sixth and final Phase 6 slice) — the full-shift
+    soak test.** Revisits the "not done" call above: it turned out not to
+    need the feared fake-clock/dependency-injection refactor after all.
+    `test/full_shift_soak_test.dart` compresses a simulated 8-hour shift
+    into a sub-second test run using `package:fake_async`, which fakes
+    `Timer`/`Timer.periodic` transparently via zone overrides — every
+    timing-sensitive mechanism in this codebase (print-job claim/lease,
+    LAN reconnect backoff, the sync engine's periodic tick) is already
+    `Timer`-driven, not wall-clock-polled, so all of that falls out for
+    free with zero production changes. The one genuine exception —
+    `OfflineQueueService`'s retry backoff, which compares
+    `DateTime.now().difference(_lastAttemptAt!)` against a computed backoff,
+    real wall-clock arithmetic rather than a `Timer` — got a minimal,
+    surgical fix instead of a broad refactor: swapped its two `DateTime
+    .now()` calls for `clock.now()` (`package:clock`, added as a normal
+    dependency), which `fake_async`'s `getClock`/`withClock` pairing can
+    fake in lockstep with the same simulated time `elapse()` advances.
+    Every other `DateTime.now()` call in the offline/print/LAN/audit
+    services was left alone — they're all record-keeping timestamps
+    (`createdAt`, `claimedAt`, quarantine/audit entry times), not inputs to
+    any elapsed-time decision, so faking them would have added risk for no
+    test value.
+    - **A real Hive-backend incompatibility found and worked around:**
+      `fake_async`'s `elapse()` only advances Timers and zone-scheduled
+      microtasks — it cannot advance real `dart:io` file I/O, which is what
+      Hive's disk-backed boxes use under the hood
+      (`RandomAccessFile.writeFrom` in `StorageBackendVm.writeFrames`). A
+      disk-backed box's `put`/`delete` would simply never resolve inside a
+      fake-time `elapse()`. Fix: every box this test opens uses Hive's
+      in-memory backend (`Hive.openBox(name, bytes: Uint8List(0))`) instead,
+      whose `writeFrames` is a plain `Future.value()` — a microtask,
+      which `elapse()` handles correctly. Confirmed by reading
+      `Keystore.beginTransaction` that the key/value map updates
+      synchronously on `put`/`delete`, before that Future even resolves —
+      the same "value visible immediately, Future completion is separate"
+      behavior already documented for the disk backend elsewhere in this
+      phase, so synchronous post-`elapse()` assertions against box state
+      are safe.
+    - **Also newly unblocks a gap disclosed repeatedly across this whole
+      phase:** a real `DioClient`/`ConnectivityCubit` pair, previously
+      "unavailable in this sandbox" because `connectivity_plus` needs a
+      platform channel. Its platform-interface package exposes a settable
+      `ConnectivityPlatform.instance` for exactly this purpose — the same
+      pattern `flutter_secure_storage_platform_interface` already used for
+      `InMemorySecureStoragePlatform` — so `test/support
+      /fake_connectivity_platform.dart` does the equivalent for
+      connectivity. Paired with `test/support/fake_http_client_adapter.dart`
+      (a real `HttpClientAdapter` implementation swapped onto
+      `DioClient.dio`'s already-public `httpClientAdapter` setter, so no
+      production constructor changed and no real socket ever opens), this
+      is the first test in this phase to exercise a genuine
+      `OfflineQueueService.syncAll` round trip end to end rather than
+      deferring the DioClient-dependent path to "verified by code review."
+      One incidental real-app wiring detail surfaced by actually
+      constructing a `DioClient` outside `di.dart`: its constructor
+      unconditionally adds `aliceDioAdapter` as an interceptor, which
+      throws `LateInitializationError` on every request until some `Alice`
+      instance calls `addAdapter` on it (`di.dart` does this today, so
+      production is unaffected) — the test mirrors that same wiring.
+    - **What the soak test actually covers**, three scenarios:
+      1. *Offline queue drain under repeated LAN partitions* — ~320 mixed
+         operations enqueued over a simulated 8h shift via `relayViaLan`,
+         against a leader connection that drops for three separate windows
+         (20min/15min/40min). Asserts every operation is eventually synced
+         or quarantined exactly once by shift end (no loss, no duplicate
+         processing), and that a deliberately-always-rejected operation
+         (every 37th) lands in quarantine, not silently dropped.
+      2. *Retry backoff over simulated hours* — a real `syncAll` against a
+         cloud endpoint that fails with `DioExceptionType.connectionError`
+         for 20 simulated minutes: asserts the op is never terminally
+         dropped (a connection error isn't a 4xx), and that backoff
+         actually suppresses most retries (well under 20 naive
+         5-second-interval attempts, but still making forward progress).
+         Then flips the fake network to succeed and asserts the op drains
+         within one bounded backoff window, and that a fresh failure right
+         after resets to the small base backoff rather than staying near
+         the 2-minute cap — proving `_consecutiveFailures` actually resets
+         on success, not just in theory.
+      3. *Print queue under volume* — 240 jobs submitted over a simulated
+         8h shift, each scripted into one of four outcomes (claimed &
+         printed promptly; never claimed by anyone, both retry attempts;
+         claimed but the claimer vanishes — lease expires, resolves on the
+         automatic retry; claimed then an explicit terminal failure).
+         Asserts every single job ends `printed` or `failed` — none left
+         `queued`/`claimed` — and that each job's actual outcome matches
+         its scripted variant.
+    - *Verification:* all 3 new tests pass, stable across 5 repeated runs
+      (backoff timing uses generous, non-flaky bounds precisely because the
+      backoff formula includes randomized jitter — see `_currentBackoff`).
+      `flutter analyze`: 69, unchanged. Full suite: 74/75 (70/71 before this
+      slice, plus 4 net new — the one failure is still `widget_test.dart`'s
+      pre-existing, unrelated counter-app boilerplate).
+    - **Residual gaps, disclosed:** this covers the mechanisms that matter
+      most under sustained real-world stress (queue drain, backoff, print
+      volume) but is still not the literal real-hardware, real-clock,
+      many-hour run — LAN partition timing here is scripted, not the
+      product of an actual flaky Wi-Fi network, and the printer claims are
+      simulated rather than real USB/TCP round trips (already covered
+      separately, without `fake_async`, in `print_queue_service_test.dart`
+      and `lan_hub_test.dart`). That real-hardware pass remains the one
+      thing this whole phase has consistently deferred, not newly
+      introduced here.
+- **Done (2026-08-05, fifth and final slice): offline privileged-action
+  authorization + audit logging.** Put the blocking policy question to the
+  user directly rather than assuming, the same way the no-TTL auth decision
+  was: **should a manager be able to authorize a void/shift-close entirely
+  offline?** Answer: yes, build it — the biggest-scope of the three options
+  offered (the alternative was auditing only the online-only status quo, or
+  deferring the whole item).
+  - **Offline manager-pincode verification** — `AuthDatasourceImpl
+    .verifyPincodeRole` (`lib/features/view/auth/data/data_sources
+    /auth_datasource.dart`) previously hit the live login-pincode endpoint
+    unconditionally, and `requireManagerPincode`'s `result.fold((_) =>
+    false, ...)` treated **any** failure — including a bare connection
+    error — identically to a wrong pincode. Confirmed by reading the code
+    directly before asking the user, not assumed. Fixed by reusing the
+    exact "no TTL, revoked only by the next definite server rejection"
+    mechanism the first Phase 6 slice already built, rather than inventing
+    a second one: checks `_client.isOnline` first (skips the network call
+    entirely when offline, mirroring `LoginPinCubit.login()`'s shape),
+    caches via `OfflineAuthCache.saveForPin` on every online success,
+    purges via `removeForPin` on a definite rejection
+    (`Failure.isDefiniteAuthRejection`), and falls back to the cache on an
+    inconclusive failure or while offline. Deliberately shares the *same*
+    per-pincode cache regular PIN login already populates — a manager who's
+    ever logged into or been verified on this terminal while online can be
+    verified offline later, whether that happened via a full login or via a
+    prior override check.
+  - **Widened `verifyPincodeRole`'s return type from `UserRole` to the full
+    `UserModel`**, threaded through `AuthRepository`/`AuthRepositoryImpl`/
+    `VerifyManagerPincodeUsecase` — a deliberate scope decision, not
+    incidental. An audit log that only knows "someone with the right role
+    approved this" isn't much of an audit log; recording *who* (the
+    approver's id/name) is the single most valuable field it can capture,
+    and the backend already returns the full user on this endpoint — it was
+    just being discarded down to a bare role. No other behavior change:
+    `role.isManagerOrAdmin` is now read off `user.role` at the call site
+    instead of the usecase returning it pre-extracted.
+  - **New: `PrivilegedActionAuditLogService`** (`lib/core/services/audit/`)
+    — a new `PrivilegedActionAuditEntry` Hive model (typeId 14, append-only,
+    nothing in the app ever deletes or edits an entry) recording the action
+    (`PrivilegedAction.shiftOpen/shiftClose/voidOrderItem`, a new small enum
+    in `constants.dart`), timestamp, approved/denied, whether it was
+    resolved offline, a denial reason, and both identities — who approved
+    and who requested (very often different people; the whole point of an
+    override is one person authorizing another's action). **Local-only, by
+    necessity, not by choice:** confirmed via `ListAPI` that no backend
+    endpoint exists yet to submit these for real off-device review — this
+    is a device-local record a manager/admin can review on this terminal
+    (surfaced read-only in the sync-status section, see below), not yet a
+    synced entity. Flagged, not silently accepted.
+  - **Recording centralized in one place, not scattered across call
+    sites:** `requireManagerPincode` (`lib/core/widgets
+    /manager_pincode_dialog.dart`) gained a required `action:
+    PrivilegedAction` parameter and now records exactly one audit entry
+    per attempt itself, inside the same `onConfirm` closure that already
+    resolves the pincode — every one of this gate's 4 existing call sites
+    (shift open/close toggle, close-shift screen, waiter bill panel,
+    order-item void) was updated to pass its `PrivilegedAction`, but none
+    of them had to be taught how to log anything. Auditing by construction
+    of the gate, not by convention every caller has to remember.
+  - **New card in the sync-status section** (§11 Phase 6, third slice) —
+    `_AuditLogCard`, read-only (nothing here needs manual resolution, these
+    are historical records), newest-10 shown with a total count, each row
+    showing the action, elapsed time, an `offline` badge when relevant, and
+    either the approver+requester or the denial reason.
+  - *Verification:* `test/privileged_action_audit_log_test.dart` (new, 5
+    tests) — approved/denied entry shape, newest-first ordering, multiple
+    independent entries, `listenable` firing. **Not covered:**
+    `AuthDatasourceImpl.verifyPincodeRole`'s online/offline/purge
+    orchestration and `requireManagerPincode`'s recording wiring — both
+    need a real `DioClient`/`ConnectivityCubit` (platform channel,
+    unavailable here) or a full widget+DI-graph test respectively; same
+    class of gap already disclosed multiple times this phase, verified by
+    code review instead — the primitives this orchestration is built from
+    (`OfflineAuthCache`'s per-pincode methods, `isDefiniteAuthRejection`)
+    are already fully tested elsewhere, and the new orchestration mirrors
+    `LoginPinCubit.login()`'s already-reviewed shape closely enough that
+    reviewing it side by side was the actual verification step. `flutter
+    analyze`: 69, unchanged. Full suite: 70/71 (66/67 before this slice,
+    plus 5 new tests — the one failure is still `widget_test.dart`'s
+    pre-existing, unrelated counter-app boilerplate).
+  - **Residual gaps, disclosed:** no backend endpoint to sync the audit log
+    off-device (noted above — a manager/admin can only review it on the
+    specific terminal it happened on, and only for as long as the local
+    Hive box survives an app reinstall); no retention/pruning policy for
+    this box yet (unbounded growth is the same open question flagged for
+    `PrintJob`/`QuarantinedOperation` in earlier slices — revisit together,
+    not separately, once real usage shows a pattern worth pruning against);
+    and the same "no real hardware run" caveat as the rest of this phase.
+  - Phase 6's original scope was fully done except the full-shift soak
+    test at this point — see the soak-test entry above (done later the
+    same day) for how that was closed out without the feared fake-clock
+    refactor.
+
+**Phase 6 status: complete.** Every item from the original Phase 6 scope —
+offline auth revocation, secure storage, the sync-status UI, deterministic
+resilience tests, offline privileged-action authorization + audit logging,
+and the full-shift soak test — shipped 2026-08-05. The one thing genuinely
+left for later is a *real-hardware* pass (Android/Windows secure storage,
+sync-status UI, reconnect/partition-healing, print claim/lease, all only
+verified via loopback/desktop/`fake_async` so far, never actual target
+devices on an actual flaky network) — not a Phase 6 checklist item, just
+the natural next validation step before relying on this in the field.
 
 **Phase 7 — Fiscal compliance gate (deferred — not currently in scope)**
 - Per discussion, explicitly deferred: no fiscal/OKKM integration exists today and
@@ -1191,14 +2034,193 @@ the direct-API path, kept intact until each phase is proven in the field for
    `/orders/batch` was deliberately not adopted** — its documented response
    (`{status, message}`, no per-order results) can't safely support telling which
    orders in a batch succeeded, so the outbox still replays orders as serial single
-   POSTs (unambiguous per-request status, at the cost of more round-trips). Whether
+   POSTs (unambiguous per-request status, at the cost of more round-trips). ~~Whether
    resending the same client order id is actually deduped server-side remains
    unverified — a cross-team question I can't resolve from the client alone.
    Order-item-level and non-order mutations (shift open/close, item cancel) have no
-   id-based dedup at all yet, only the outbox's own at-least-once replay.
+   id-based dedup at all yet, only the outbox's own at-least-once replay.~~
+   **Resolved 2026-08-06 — see §14: read the actual backend source instead of
+   guessing.** `/orders/batch`'s response turned out to already carry per-order
+   results (`CreateOrderBatchItemResult{Index, Status, Order, Error}`) — the
+   `{status, message}` this bullet describes was based on stale documentation,
+   not the real handler. Still not adopted (serial single POSTs remain simpler
+   and are already correct), but the actual dedup gaps this bullet worried about
+   were real and are now fixed server-side: `CreateOrder`'s client-id check had
+   a TOCTOU race, and `AddOrderItems`/`CancelOrderItem`/`CloseShift` had no
+   idempotency guard at all. All four fixed in the backend repo — full writeup
+   in §14.
 3. **Fiscal compliance (§1 Q6) — explicitly deferred, not currently blocking.** No
    fiscal/OKKM integration exists today, and per discussion this isn't being designed
    for right now; Phase 7 (§11) is paused rather than executed. Flagging so it isn't
    forgotten later: if fiscal integration gets scoped, revisit Phase 5's
    cashier-receipt design (§8) against whatever legal constraint applies — nothing
    built in Phases 0-6 assumes this is solved.
+
+---
+
+## 14. Backend idempotency hardening (2026-08-06)
+
+With every Phase 0-6 item done, went back to §13 risk #2's "unverified — a
+cross-team question I can't resolve from the client alone" and actually
+resolved it: read the backend's Go source directly (`~/Documents/work/MARY_AI/back`,
+a separate repo from this Flutter app) instead of leaving it as a guess. Checked
+every one of the six mutation types the offline queue relays
+(`createOrder`, `addItems`, `payOrder`, `openShift`, `closeShift`,
+`cancelLineItems`) for how each handles a retry whose *previous* attempt
+already committed server-side but whose response never reached this client
+(the exact case an at-least-once outbox exists to survive — a LAN relay
+drop, a timeout, an app crash mid-request).
+
+**Findings — three were already correct, three were real bugs:**
+
+- **Already correct, no changes:** `MarkOrderPaid` (order.go:1247) and
+  `CancelOrder` (order-level, order.go:1644) both have an explicit
+  "idempotent: if already done, return success" guard with a comment
+  naming this exact scenario. `OpenShift` (cash_register_shift.go:64) uses
+  a DB partial-unique-index instead of check-then-act and translates the
+  constraint violation into a clean error — the right way to do it.
+- **Bug: `CancelOrderItem`** (order.go, was line 3707) had no such guard —
+  "already cancelled" was a plain error, and the handler mapped every
+  service error to 500. The offline queue only ever treats 404 as "already
+  gone, move on"; a 500 is retried forever, so a cancel-line-item op whose
+  first response got lost sat in the outbox indefinitely, never resolving
+  (not data-corrupting, just permanently stuck).
+- **Bug: `CloseShift`** (cash_register_shift.go, was line 80) — the SQL's
+  `WHERE closed_at IS NULL` guard was already correct (no double-close
+  data corruption possible), but a retry matching zero rows just became a
+  generic error → 500 → same "stuck forever" outcome as above.
+- **Bug (self-healing): `CreateOrder`'s client-id dedup** (order.go, was
+  lines 211-222) reads "does this id already exist" in one transaction,
+  then inserts later — check-then-act, not atomic. A genuine race between
+  two concurrent attempts with the same client-generated order id could
+  both pass the check before either commits. Not data-corrupting (`id` is
+  the primary key, so the second insert fails with a constraint violation
+  rather than duplicating a row) but did surface as a spurious failed
+  request instead of the idempotent response the check was trying to give.
+- **Bug (not self-healing): `AddOrderItems`** (order.go, was line 140) —
+  every item got `ID: uuid.New()` with **no client-supplied idempotency
+  key anywhere in the request at all**. A lost-response retry didn't error
+  out — it silently created a second, fully duplicate set of items: double
+  quantity, double stock deduction, double totals on the bill. This was
+  the specific gap §13 risk #2 flagged as unverified; now confirmed with
+  code and fixed.
+
+**Fixes shipped, in the backend repo:**
+
+- `CancelOrderItem` and `CloseShift` now both return the existing
+  record instead of erroring when the target is already in its final
+  state — the exact pattern `MarkOrderPaid`/`CancelOrder` already used,
+  just applied consistently.
+- `CreateOrder`'s insert now catches a unique-violation on the id column
+  and, for a client-supplied id specifically, re-fetches and returns the
+  existing order instead of propagating the constraint error — closes the
+  TOCTOU window's failure mode without needing a heavier locking scheme.
+- **New: `order_items.client_item_id`** (migration
+  `70_order_items_client_id.up.sql` — `ALTER TABLE ... ADD COLUMN
+  client_item_id UUID`, plus a partial unique index on `(order_id,
+  client_item_id) WHERE client_item_id IS NOT NULL`). Optional — rows
+  without one are never deduplicated, so this doesn't constrain any
+  caller that doesn't opt in. `AddOrderItems` now checks for an existing
+  item by `(order_id, client_item_id)` before creating one, skipping
+  validation/stock-deduction/modifiers entirely on a dedup hit; the
+  create call itself is wrapped in a SQL savepoint
+  (`withOrderBatchSavepoint`, already used elsewhere in this file for
+  exactly this reason) so that the same check-then-act race window
+  `CreateOrder` has, if it happens here too, doesn't abort the rest of
+  the items in the same request — the unique-violation is caught and
+  turned into the same idempotent response the pre-check gives.
+- **Verified against real Postgres, not just `go build`:** stood up a
+  throwaway `postgres:15-alpine` container, applied all 70 migrations in
+  order (confirmed the full chain applies cleanly — first time this was
+  actually exercised end to end rather than assumed), then proved the new
+  constraint directly: two inserts with the same `(order_id,
+  client_item_id)` — the second genuinely fails with `duplicate key value
+  violates unique constraint`, exactly the case `AddOrderItems`'s recovery
+  path now catches; two inserts with `client_item_id IS NULL` for the same
+  order don't collide (the partial index correctly leaves non-opted-in
+  rows unconstrained); the down-migration cleanly drops both the index and
+  the column. Container discarded after.
+- Regenerated sqlc output for the schema change using the *pinned* sqlc
+  version (`v1.30.0`, read off the existing generated files' header
+  comment) rather than whatever `@latest` resolved to — an earlier attempt
+  with a newer sqlc pulled in ~40 unrelated files' worth of incidental
+  type-shape churn (`NullTableStatus` → `*TableStatus` and similar) from a
+  codegen behavior change between versions, which was reverted before
+  anything was committed. Matching the exact pinned version kept the diff
+  to exactly the two files the schema change actually touches
+  (`models.go`, `order.sql.go`).
+- `go build ./...`, `go vet ./...`, and the existing `internal/service`
+  test package all pass unchanged.
+
+**Fixed on the Flutter side too — the backend fix alone doesn't help
+without a matching client-generated id:** all three call sites that
+enqueue an `addItems` offline-queue operation
+(`create_order_bloc.dart`, `waiter_cubit.dart`, `detail_bloc.dart`) now
+generate a `client_item_id` per item and send it in the request. The
+important detail is *when* that id gets generated: in every one of these
+three call sites, there's an online attempt first, and only on
+`ConnectionFailure`/timeout does the offline-queue fallback kick in. If
+the id were generated fresh at enqueue time (as an earlier draft of this
+fix did), it wouldn't match whatever id the *lost-response* online attempt
+already used server-side — defeating the entire point. Fixed by
+generating the id(s) once, before the online attempt, and threading the
+same id(s) through to the offline-queue fallback if it falls through —
+mirroring `clientOrderId`'s already-established reasoning in
+`create_order_bloc.dart` ("Generated once per create attempt so a
+connection-failure retry replays under the SAME id"), just applied at the
+item level. `flutter analyze`: 69, unchanged. `flutter test`: 74/75 (same
+pre-existing unrelated `widget_test.dart` failure).
+
+**Residual/still open:** whether the backend's `/orders/batch` response
+shape being richer than assumed changes the earlier decision not to adopt
+it — not revisited here, serial single POSTs are still simpler and were
+already correct; only worth reconsidering if round-trip count becomes an
+actual measured problem. `payOrder`'s idempotency guard was reviewed and
+found correct but not independently load-tested for the same race window
+`CreateOrder`/`AddOrderItems` had (same check-then-act shape, just already
+guarded) — lower priority since it was already correct, not newly touched.
+
+### 14.1 Floor Map "wrong hall, zero tables" bug (2026-08-06, same day)
+
+Reported live via screenshot: Floor Map showed correctly-named hall tabs
+("1", "Zal") but every hall at `(0)` and "No tables" in the body. Traced
+to `CacheService` (`lib/core/services/cache/cache_service.dart`): its
+single Hive box (`pos_cache`) has **no per-brand/per-branch scoping at
+all**, and `AuthCubit.logoutFromApp` — the full re-provision flow that
+also drops `brand_id`/`pos_password` for onboarding a different
+restaurant onto this same terminal (`AuthRepositoryImpl.logoutFromApp`
+→ `AppTokenStorage.deleteAll()`) — never cleared it. A terminal reused
+across tenants would carry the previous tenant's cached halls/tables/goods
+straight into the new one: a stale table whose `hall_id` no longer matches
+any current hall simply vanishes from every hall-filtered view (matching
+the screenshot exactly — real hall names, zero matching tables), while
+`getHalls()`'s own network fetch (correctly scoped to whichever brand the
+current token belongs to) shows the right hall names regardless.
+
+Fixed two ways:
+- **Root cause:** `CacheService.clearAll()` (wipes the whole box — every
+  cached entity, not just halls/tables) called from
+  `AuthCubit.logoutFromApp` right after the token-storage wipe succeeds.
+  Regular staff `logout()` (same brand/branch, session-only) deliberately
+  does **not** call this — that cache is still valid and clearing it would
+  just force an unnecessary full re-fetch on the next login.
+- **Defense in depth:** `MainCubit.loadAllHallsTables` now filters its
+  cache-first table read down to rows whose `hallId` is among the
+  *current* halls before ever displaying them, rather than showing
+  whatever raw content the box happens to hold. This catches the same
+  orphaned-row symptom from any cause, not just a tenant switch, and as a
+  side effect stops a fully-orphaned cache from tripping the 30s "don't
+  refetch" throttle (an empty filtered result no longer counts as "cache
+  already has this hall's data").
+
+Not independently verified against a real device mid-bug (no access to
+the terminal in the screenshot, no logs beyond the one screenshot) — this
+is the most concrete, evidenced-from-source root cause found (confirmed
+no clear-on-logout path exists anywhere for this cache), not a confirmed
+reproduction. If a device is stuck in this state on a build that predates
+this fix, the existing manual refresh button only force-refetches tables
+for whatever hall ids are already in memory — it does not clear the
+underlying cache, so it will not recover a device whose in-memory `halls`
+state is itself derived from stale cache. A full logout-from-app +
+re-login is the only recovery path pre-fix. `flutter analyze`: 69,
+unchanged. `flutter test`: 74/75 (same pre-existing failure).

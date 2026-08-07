@@ -35,6 +35,51 @@ class PrinterService {
 
   final PrinterConfigStorage _storage;
 
+  /// Wired by `di.dart` once `PrintQueueService` exists — routes a
+  /// fully-rendered close-check-family receipt through the print-job queue
+  /// (local-print-vs-relay decision, claim/lease tracking, Phase 5) instead
+  /// of blasting bytes straight to the transport layer. Kept as a plain
+  /// function reference rather than a constructor dependency so this file
+  /// never has to import `print_queue_service.dart` — `PrintQueueService`
+  /// already depends on *this* class (for [printRenderedBytes]), and a
+  /// two-way import between them would be a real circular dependency, not
+  /// just an inconvenient one. Mirrors `LanAuthValidator`/`LanRelayHandler`'s
+  /// existing typedef-callback pattern for the same reason. `null` until
+  /// `di.dart` finishes wiring (nothing prints during `initDi()` itself, so
+  /// this is never actually called unset in practice) — falls back to
+  /// direct printing regardless, so a receipt can never silently vanish due
+  /// to wiring order.
+  Future<({bool ok, String? error})> Function(
+    PrinterConfig config,
+    List<int> bytes, {
+    required String jobType,
+    required bool beep,
+  })? _dispatchViaQueue;
+
+  void attachPrintQueue(
+    Future<({bool ok, String? error})> Function(
+      PrinterConfig config,
+      List<int> bytes, {
+      required String jobType,
+      required bool beep,
+    }) dispatch,
+  ) {
+    _dispatchViaQueue = dispatch;
+  }
+
+  Future<({bool ok, String? error})> _dispatchOrPrint(
+    PrinterConfig config,
+    List<int> bytes, {
+    required String jobType,
+    bool beep = true,
+  }) {
+    final dispatch = _dispatchViaQueue;
+    if (dispatch != null) {
+      return dispatch(config, bytes, jobType: jobType, beep: beep);
+    }
+    return _connectAndPrint(config, bytes, beep: beep);
+  }
+
   /// Hozir tizimga kirgan foydalanuvchi (buyurtmani qabul qilgan/qo'shgan kishi) — cheklarda ko'rsatish uchun.
   String get _waiterName => inject<UserBloc>().state.userMOdel?.fullName ?? '';
 
@@ -165,7 +210,7 @@ class PrinterService {
         departmentNames: deptInfo.names,
         departmentOrder: deptInfo.order,
       );
-      final r = await _connectAndPrint(config, bytes, beep: true);
+      final r = await _dispatchOrPrint(config, bytes, jobType: 'cashier');
       if (!r.ok) {
         _notifyPrinterFailed(
           config,
@@ -231,7 +276,7 @@ class PrinterService {
         // hech qachon "?" yoki bo'sh qator chiqmasligi uchun.
         closerName: _waiterName,
       );
-      final r = await _connectAndPrint(config, bytes, beep: true);
+      final r = await _dispatchOrPrint(config, bytes, jobType: 'cashier');
       if (!r.ok) {
         _notifyPrinterFailed(
           config,
@@ -268,7 +313,7 @@ class PrinterService {
         cashierLabel: cashierLabel,
         paperSize: config.paperSize,
       );
-      final r = await _connectAndPrint(config, bytes, beep: true);
+      final r = await _dispatchOrPrint(config, bytes, jobType: 'shiftClose');
       if (!r.ok) {
         _notifyPrinterFailed(
           config,
@@ -429,6 +474,8 @@ class PrinterService {
     }
     try {
       final categoryNames = _categoryNames;
+      final configsInOrder = <PrinterConfig>[];
+      final dispatches = <Future<({bool ok, String? error})>>[];
       for (final k in byKey.keys) {
         final config = cfgByKey[k]!;
         final sub = byKey[k]!;
@@ -443,15 +490,24 @@ class PrinterService {
           orderId: orderId,
           categoryNames: categoryNames,
         );
-        final r = await _connectAndPrint(config, bytes);
-        if (!r.ok) {
+        configsInOrder.add(config);
+        dispatches.add(
+          _dispatchOrPrint(config, bytes, jobType: 'kitchen', beep: false),
+        );
+      }
+      // Barchasi bir vaqtda yuboriladi — birinchi xatoda to'xtab qolmaydi.
+      // Relay orqali yuborilgan job (Phase 5) ~26s gacha davom etishi mumkin;
+      // ketma-ket kutish boshqa (relay kerak bo'lmagan) printerlarning
+      // cheklarini ham sababsiz kechiktirar edi — oshxona cheklari shoshilinch.
+      final results = await Future.wait(dispatches);
+      for (var i = 0; i < results.length; i++) {
+        if (!results[i].ok) {
           _notifyPrinterFailed(
-            config,
+            configsInOrder[i],
             title: 'Oshxona cheki chop etilmadi',
-            printerRole: 'category printer (backend) ${config.ip}',
-            detail: r.error,
+            printerRole: 'category printer (backend) ${configsInOrder[i].ip}',
+            detail: results[i].error,
           );
-          return;
         }
       }
     } catch (e, st) {
@@ -474,6 +530,18 @@ class PrinterService {
       }
     }
   }
+
+  /// Sends already-rendered ESC/POS bytes straight to a printer — no receipt
+  /// building or config lookup. Used by `PrintQueueService` (Phase 5) both
+  /// when this terminal executes its own locally-owned print and when it's
+  /// executing a job relayed here from another terminal — the receipt was
+  /// already rendered wherever the job originated, so only the transport
+  /// step happens here.
+  Future<({bool ok, String? error})> printRenderedBytes(
+    PrinterConfig config,
+    List<int> bytes, {
+    bool beep = true,
+  }) => _connectAndPrint(config, bytes, beep: beep);
 
   // ── Internal ──────────────────────────────────────────────────────────────
 

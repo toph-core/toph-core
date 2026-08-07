@@ -30,6 +30,12 @@ abstract class MainDataSources {
   Future<Either<Failure, List<CafeTableModel>>> getTablesByHallId(
     String hallId,
   );
+
+  /// All tables across every hall, unfiltered — used only by the login/
+  /// periodic hydration pass (`SyncEngine`) to warm the cache ahead of any
+  /// specific hall being opened. Regular table reads stay per-hall via
+  /// [getTablesByHallId], matching what `MainCubit` already does.
+  Future<Either<Failure, List<CafeTableModel>>> getAllTables();
   Future<Either<Failure, List<HallModel>>> getHalls();
   Future<Either<Failure, List<CategoryModel>>> getCategories();
   Future<Either<Failure, List<DepartmentModel>>> getDepartments();
@@ -83,6 +89,223 @@ abstract class MainDataSources {
   });
 
   Future<Either<Failure, List<PrinterSettingEntry>>> getPrinterSettings();
+
+  // ─── Order-item mutations (moved out of DetailBloc/CreateOrderBloc/
+  // PaymentBloc, which previously called DioClient directly for these) ────
+
+  /// Raw `/api/v1/order-items/order/{orderId}` response — kept as a decoded
+  /// Map rather than a parsed model because callers (`DetailBloc`'s existing-
+  /// item timestamp/line-id enrichment) do their own detailed parsing of a
+  /// shape this layer doesn't otherwise model; this only moves the network
+  /// call itself behind the interface, not the parsing logic.
+  Future<Either<Failure, Map<String, dynamic>>> getOrderItemsRaw(
+    String orderId,
+  );
+
+  /// `POST /api/v1/order-items` — adds new line item(s) to [orderId].
+  Future<Either<Failure, bool>> createOrderItems({
+    required String orderId,
+    required List<Map<String, dynamic>> items,
+  });
+
+  /// `POST /api/v1/orders/{orderId}/items` — the other "add items" endpoint,
+  /// used when appending to an already-open table's order (distinct request
+  /// shape from [createOrderItems] — the backend has two separate routes for
+  /// this, not a client inconsistency).
+  Future<Either<Failure, bool>> addItemsToOrder({
+    required String orderId,
+    required List<Map<String, dynamic>> items,
+  });
+
+  /// `POST /api/v1/order-items/{itemId}/cancel`. A 404 (already cancelled by
+  /// another client) is treated as success by the caller, not here — mirrors
+  /// how `OfflineQueueService._execCancelLineItems` already handles it.
+  Future<Either<Failure, bool>> cancelOrderItem(String itemId, {String? comment});
+
+  /// `POST /api/v1/orders/{orderId}/cancel` — whole-order cancel (e.g. a
+  /// zero-total/fully-discounted check).
+  Future<Either<Failure, bool>> cancelOrder(String orderId);
+
+  /// `POST /api/v1/orders/{orderId}/transfer` — move an order to a different
+  /// table. Deliberately online-only, same as before this moved behind a
+  /// repository interface — a table transfer racing another terminal's
+  /// concurrent transfer/order-close is exactly the 409 case callers need a
+  /// live answer for, not a queued one.
+  Future<Either<Failure, bool>> transferTable({
+    required String orderId,
+    required String targetTableId,
+  });
+
+  /// `GET /api/v1/branches/{id}` — reads just `default_service_percent`.
+  Future<Either<Failure, double>> getServiceCharge(String branchId);
+
+  /// `PUT /api/v1/branches/{id}` — updates `default_service_percent`.
+  Future<Either<Failure, bool>> saveServiceCharge(String branchId, double value);
+
+  /// `POST`/`PUT /api/v1/settings/printer-settings[/{id}]` — best-effort
+  /// backend mirror of a printer routing entry. Local storage
+  /// (`PrinterConfigStorage`) is always the source of truth on this
+  /// terminal; this is a background sync attempt, not a required step.
+  Future<Either<Failure, bool>> pushPrinterSetting(
+    Map<String, dynamic> body, {
+    String? existingId,
+  });
+
+  /// `DELETE /api/v1/settings/printer-settings/{id}` — best-effort mirror
+  /// of a local printer-entry deletion.
+  Future<Either<Failure, bool>> deletePrinterSetting(String id);
+
+  /// `GET /api/v1/group-transactions` — kept as raw maps (`{id, name}`)
+  /// rather than a dedicated model; this data is only ever consumed by the
+  /// transactions-settings screen and has no other reader.
+  Future<Either<Failure, List<Map<String, dynamic>>>> getTransactionGroups({
+    String? search,
+  });
+
+  Future<Either<Failure, bool>> createTransactionGroup(String name);
+
+  Future<Either<Failure, bool>> updateTransactionGroup(String id, String name);
+
+  Future<Either<Failure, bool>> deleteTransactionGroup(String id);
+
+  /// `GET /api/v1/cash-registers` — kept as raw maps, same reasoning as
+  /// [getTransactionGroups]: only consumed by the transactions-settings
+  /// screen's dropdowns.
+  Future<Either<Failure, List<Map<String, dynamic>>>> getCashRegisters();
+
+  /// `GET /api/v1/transactions` — paginated, filtered ledger. Genuinely live
+  /// data (like archives), not reference data — no cache layer, same as
+  /// `ArchivesLocalRepositoryImpl` only caching the default unfiltered page.
+  Future<Either<Failure, ({List<Map<String, dynamic>> items, int? total})>>
+      getTransactions({
+    required int limit,
+    required int offset,
+    String? search,
+    String? type,
+    String? cashRegisterId,
+  });
+
+  Future<Either<Failure, bool>> createIncomeExpenseTransaction(
+    Map<String, dynamic> body,
+  );
+
+  Future<Either<Failure, bool>> createTransferTransaction(
+    Map<String, dynamic> body,
+  );
+
+  Future<Either<Failure, bool>> updateTransaction(
+    String id,
+    Map<String, dynamic> body,
+  );
+
+  Future<Either<Failure, bool>> deleteTransaction(String id);
+
+  /// `GET /api/v1/users` (admin-only, distinct from the role-appropriate
+  /// [getUsers] used by the waiter-assignment dropdown) or
+  /// `GET /api/v1/users/search` when [search] is non-empty.
+  Future<Either<Failure, ({List<Map<String, dynamic>> items, int? total})>>
+      getAdminUsers({
+    required int limit,
+    required int offset,
+    String? search,
+    String? role,
+  });
+
+  /// `POST /api/v1/auth/register` — creates a new staff account.
+  Future<Either<Failure, bool>> createUser(Map<String, dynamic> body);
+
+  /// `PUT /api/v1/users/{id}`.
+  Future<Either<Failure, bool>> updateUser(String id, Map<String, dynamic> body);
+
+  /// `DELETE /api/v1/users/{id}`.
+  Future<Either<Failure, bool>> deleteUser(String id);
+
+  /// `DELETE /api/v1/halls/{id}`.
+  Future<Either<Failure, bool>> deleteHall(String id);
+
+  /// `POST /api/v1/halls`.
+  Future<Either<Failure, bool>> createHall(Map<String, dynamic> body);
+
+  /// `PUT /api/v1/halls/{id}`.
+  Future<Either<Failure, bool>> updateHall(String id, Map<String, dynamic> body);
+
+  /// `POST /api/v1/cafe-tables`.
+  Future<Either<Failure, bool>> createTable(Map<String, dynamic> body);
+
+  /// `PUT /api/v1/cafe-tables/{id}` — used both for a full edit and for a
+  /// position-only move (caller builds the full payload either way; the
+  /// backend has no partial-update variant).
+  Future<Either<Failure, bool>> updateTable(String id, Map<String, dynamic> body);
+
+  /// `DELETE /api/v1/cafe-tables/{id}`.
+  Future<Either<Failure, bool>> deleteTable(String id);
+
+  /// `POST /api/v1/categories`.
+  Future<Either<Failure, bool>> createCategory(String name);
+
+  /// `GET /api/v1/goods` with admin-facing pagination/search/category
+  /// filters — kept as a raw decoded response (not a parsed `List<GoodsModel>`)
+  /// because the menu-management screen's own response-shape-tolerant
+  /// parsing (several possible envelope shapes) stays in the widget, this
+  /// only moves the network call itself behind the interface.
+  Future<Either<Failure, Map<String, dynamic>>> searchGoodsAdmin({
+    required int limit,
+    required int offset,
+    String? categoryId,
+    String? search,
+  });
+
+  /// `GET /api/v1/orders/{orderId}/table-timer`.
+  Future<Either<Failure, Map<String, dynamic>?>> getOrderTableTimer(String orderId);
+
+  /// `POST /api/v1/orders/{orderId}/table-timer/resume`.
+  Future<Either<Failure, bool>> resumeOrderTableTimer(String orderId);
+
+  /// `POST /api/v1/orders/{orderId}/table-timer/pause`.
+  Future<Either<Failure, bool>> pauseOrderTableTimer(String orderId);
+
+  /// `GET /api/v1/goods/{id}` — raw response, kept undecoded for the same
+  /// reason as [searchGoodsAdmin]: the menu-management screen's own
+  /// tolerant-of-several-shapes parsing stays in the widget.
+  Future<Either<Failure, Map<String, dynamic>>> getGoodById(String id);
+
+  /// `GET /api/v1/translations?limit=1000&offset=0`.
+  Future<Either<Failure, Map<String, dynamic>>> getTranslationsList();
+
+  /// `GET /api/v1/goods/{id}/with-calculations`.
+  Future<Either<Failure, Map<String, dynamic>>> getGoodWithCalculationsById(
+    String id, {
+    bool includeTranslations = false,
+  });
+
+  /// `POST /api/v1/translations`.
+  Future<Either<Failure, Map<String, dynamic>>> createTranslation(
+    Map<String, dynamic> body,
+  );
+
+  /// `PUT /api/v1/translations/{id}`.
+  Future<Either<Failure, bool>> updateTranslation(
+    String id,
+    Map<String, dynamic> body,
+  );
+
+  /// `POST`/`PUT /api/v1/goods/with-calculations[/{id}]` — [mealId] null
+  /// means create, non-null means update.
+  Future<Either<Failure, bool>> saveGoodWithCalculations({
+    String? mealId,
+    required Map<String, dynamic> body,
+    Map<String, String>? headers,
+  });
+
+  /// `DELETE /api/v1/goods/{id}`.
+  Future<Either<Failure, bool>> deleteGood(String id);
+
+  /// Recipe-editor reference data — tries `/ingredients` then falls back to
+  /// `/ingredients-lang` (backend deployment-dependent), matching the
+  /// fallback behavior already in the menu-management screen this replaces.
+  Future<Either<Failure, List<Map<String, dynamic>>>> getIngredients();
+
+  Future<Either<Failure, List<Map<String, dynamic>>>> getCompounds();
 }
 
 class MainDataSourcesImpl implements MainDataSources {
@@ -257,12 +480,19 @@ class MainDataSourcesImpl implements MainDataSources {
 
   @override
   Future<Either<Failure, List<UserModel>>> getUsers() async {
-    // Vaqtincha: `GET /api/v1/users` — ba’zi rollarda 403; chaqiruv o‘chirilgan.
-    return const Right(<UserModel>[]);
-
-    /* Qayta yoqish:
+    // `GET /api/v1/users` is admin-only server-side (confirmed against the
+    // backend's RBAC config) — a normal waiter/cashier terminal session
+    // legitimately 403s there, which is why this used to be hard-disabled.
+    // `GET /api/v1/users/staff` is the role-appropriate endpoint (the
+    // backend's own doc comment: "Use for endpoints that Flutter reads
+    // during initial data pull") — reachable by admin/manager/superadmin AND
+    // a terminal-scoped session, so this now genuinely returns data instead
+    // of an unconditional empty list.
     try {
-      final response = await _client.get(ListAPI.users);
+      final response = await _client.get(
+        ListAPI.usersStaff,
+        queryParameters: {'limit': 500, 'offset': 0},
+      );
       final raw = response.data['data'];
       List<dynamic> list;
       if (raw is List) {
@@ -278,6 +508,15 @@ class MainDataSourcesImpl implements MainDataSources {
             .toList(),
       );
     } on DioException catch (exception) {
+      // A role that still can't reach /users/staff (unexpected, but not
+      // impossible) degrades to an empty list rather than surfacing a raw
+      // 403 to the waiter-assignment dropdown — same fail-soft behavior the
+      // previous hard-disabled stub gave every caller, just no longer
+      // unconditional.
+      if (exception.response?.statusCode == 403) {
+        if (kDebugMode) print('[getUsers] 403 on /users/staff — role lacks access');
+        return const Right(<UserModel>[]);
+      }
       return Left(handleDioException(exception));
     } on FormatException catch (e, st) {
       if (kDebugMode) print('ParsingError: $e\n$st');
@@ -289,7 +528,6 @@ class MainDataSourcesImpl implements MainDataSources {
       if (kDebugMode) print('Unknown error: $e\n$st');
       return const Left(UnknownFailure());
     }
-    */
   }
 
   @override
@@ -420,6 +658,33 @@ class MainDataSourcesImpl implements MainDataSources {
         queryParameters: {'limit': 1000},
       );
 
+      return Right(
+        (response.data['data'] as List?)
+                ?.map((e) => CafeTableModel.fromJson(e))
+                .toList() ??
+            [],
+      );
+    } on DioException catch (exception) {
+      return Left(handleDioException(exception));
+    } on FormatException catch (e, st) {
+      if (kDebugMode) print('ParsingError: $e\n$st');
+      return const Left(ParsingFailure());
+    } on TypeError catch (e, st) {
+      if (kDebugMode) print('ParsingError: $e\n$st');
+      return const Left(ParsingFailure());
+    } catch (e, st) {
+      if (kDebugMode) print('Unknown error: $e\n$st');
+      return const Left(UnknownFailure());
+    }
+  }
+
+  @override
+  Future<Either<Failure, List<CafeTableModel>>> getAllTables() async {
+    try {
+      final response = await _client.get(
+        ListAPI.cafeTables,
+        queryParameters: {'limit': 1000},
+      );
       return Right(
         (response.data['data'] as List?)
                 ?.map((e) => CafeTableModel.fromJson(e))
@@ -709,4 +974,804 @@ class MainDataSourcesImpl implements MainDataSources {
       return const Left(UnknownFailure());
     }
   }
+
+  @override
+  Future<Either<Failure, Map<String, dynamic>>> getOrderItemsRaw(
+    String orderId,
+  ) async {
+    try {
+      final response = await _client.get(
+        ListAPI.orderItemsListByOrder(orderId),
+      );
+      final data = response.data;
+      if (data is! Map<String, dynamic>) return const Left(ParsingFailure());
+      return Right(data);
+    } on DioException catch (exception) {
+      return Left(handleDioException(exception));
+    } catch (e, st) {
+      if (kDebugMode) print('Unknown error: $e\n$st');
+      return const Left(UnknownFailure());
+    }
+  }
+
+  @override
+  Future<Either<Failure, bool>> createOrderItems({
+    required String orderId,
+    required List<Map<String, dynamic>> items,
+  }) async {
+    try {
+      await _client.dio.post(
+        ListAPI.orderItemsCreate,
+        data: {'order_id': orderId, 'items': items},
+      );
+      return const Right(true);
+    } on DioException catch (exception) {
+      return Left(handleDioException(exception));
+    } catch (e, st) {
+      if (kDebugMode) print('Unknown error: $e\n$st');
+      return const Left(UnknownFailure());
+    }
+  }
+
+  @override
+  Future<Either<Failure, bool>> addItemsToOrder({
+    required String orderId,
+    required List<Map<String, dynamic>> items,
+  }) async {
+    try {
+      await _client.dio.post(
+        ListAPI.orderItems(orderId),
+        queryParameters: {'lang': 'uz'},
+        data: {'items': items},
+      );
+      return const Right(true);
+    } on DioException catch (exception) {
+      return Left(handleDioException(exception));
+    } catch (e, st) {
+      if (kDebugMode) print('Unknown error: $e\n$st');
+      return const Left(UnknownFailure());
+    }
+  }
+
+  @override
+  Future<Either<Failure, bool>> cancelOrderItem(
+    String itemId, {
+    String? comment,
+  }) async {
+    try {
+      await _client.dio.post(
+        ListAPI.orderItemCancel(itemId),
+        data: <String, dynamic>{
+          if (comment != null && comment.isNotEmpty) 'comment': comment,
+        },
+      );
+      return const Right(true);
+    } on DioException catch (exception) {
+      return Left(handleDioException(exception));
+    } catch (e, st) {
+      if (kDebugMode) print('Unknown error: $e\n$st');
+      return const Left(UnknownFailure());
+    }
+  }
+
+  @override
+  Future<Either<Failure, Map<String, dynamic>?>> getOrderTableTimer(
+    String orderId,
+  ) async {
+    try {
+      final response = await _client.get(ListAPI.orderTableTimer(orderId));
+      final raw = response.data['data'];
+      if (raw is! Map) return const Right(null);
+      return Right(raw.cast<String, dynamic>());
+    } on DioException catch (exception) {
+      return Left(handleDioException(exception));
+    } catch (e, st) {
+      if (kDebugMode) print('Unknown error: $e\n$st');
+      return const Left(UnknownFailure());
+    }
+  }
+
+  @override
+  Future<Either<Failure, bool>> cancelOrder(String orderId) async {
+    try {
+      await _client.dio.post(ListAPI.cancelOrder(orderId));
+      return const Right(true);
+    } on DioException catch (exception) {
+      return Left(handleDioException(exception));
+    } catch (e, st) {
+      if (kDebugMode) print('Unknown error: $e\n$st');
+      return const Left(UnknownFailure());
+    }
+  }
+
+  @override
+  Future<Either<Failure, bool>> resumeOrderTableTimer(String orderId) async {
+    try {
+      await _client.dio.post(ListAPI.orderTableTimerResume(orderId));
+      return const Right(true);
+    } on DioException catch (exception) {
+      return Left(handleDioException(exception));
+    } catch (e, st) {
+      if (kDebugMode) print('Unknown error: $e\n$st');
+      return const Left(UnknownFailure());
+    }
+  }
+
+  @override
+  Future<Either<Failure, bool>> transferTable({
+    required String orderId,
+    required String targetTableId,
+  }) async {
+    try {
+      await _client.dio.post(
+        ListAPI.orderTransfer(orderId),
+        data: {'target_table_id': targetTableId},
+      );
+      return const Right(true);
+    } on DioException catch (exception) {
+      return Left(handleDioException(exception));
+    } catch (e, st) {
+      if (kDebugMode) print('Unknown error: $e\n$st');
+      return const Left(UnknownFailure());
+    }
+  }
+
+  @override
+  Future<Either<Failure, double>> getServiceCharge(String branchId) async {
+    try {
+      final res = await _client.get(ListAPI.branchById(branchId));
+      final data = res.data;
+      final body = (data is Map && data['data'] is Map)
+          ? data['data'] as Map
+          : (data as Map);
+      final raw = body['default_service_percent'];
+      double parsed = 0;
+      if (raw is num) {
+        parsed = raw.toDouble();
+      } else if (raw is String) {
+        parsed = double.tryParse(raw) ?? 0;
+      }
+      return Right(parsed);
+    } on DioException catch (exception) {
+      return Left(handleDioException(exception));
+    } catch (e, st) {
+      if (kDebugMode) print('Unknown error: $e\n$st');
+      return const Left(UnknownFailure());
+    }
+  }
+
+  @override
+  Future<Either<Failure, bool>> saveServiceCharge(
+    String branchId,
+    double value,
+  ) async {
+    try {
+      final asString = value == value.truncateToDouble()
+          ? value.toStringAsFixed(0)
+          : value.toString();
+      await _client.put(
+        ListAPI.branchById(branchId),
+        data: {'default_service_percent': asString},
+      );
+      return const Right(true);
+    } on DioException catch (exception) {
+      return Left(handleDioException(exception));
+    } catch (e, st) {
+      if (kDebugMode) print('Unknown error: $e\n$st');
+      return const Left(UnknownFailure());
+    }
+  }
+
+  @override
+  Future<Either<Failure, bool>> pushPrinterSetting(
+    Map<String, dynamic> body, {
+    String? existingId,
+  }) async {
+    try {
+      if (existingId == null) {
+        await _client.post(ListAPI.printerSettings, data: body);
+      } else {
+        await _client.put('${ListAPI.printerSettings}/$existingId', data: body);
+      }
+      return const Right(true);
+    } on DioException catch (exception) {
+      return Left(handleDioException(exception));
+    } catch (e, st) {
+      if (kDebugMode) print('Unknown error: $e\n$st');
+      return const Left(UnknownFailure());
+    }
+  }
+
+  @override
+  Future<Either<Failure, bool>> deletePrinterSetting(String id) async {
+    try {
+      await _client.delete('${ListAPI.printerSettings}/$id');
+      return const Right(true);
+    } on DioException catch (exception) {
+      return Left(handleDioException(exception));
+    } catch (e, st) {
+      if (kDebugMode) print('Unknown error: $e\n$st');
+      return const Left(UnknownFailure());
+    }
+  }
+
+  @override
+  Future<Either<Failure, List<Map<String, dynamic>>>> getTransactionGroups({
+    String? search,
+  }) async {
+    try {
+      final res = await _client.get(
+        ListAPI.groupTransactions,
+        queryParameters: {
+          'limit': 100,
+          'offset': 0,
+          if (search != null && search.isNotEmpty) 'search': search,
+        },
+      );
+      final root = res.data;
+      final List<dynamic> data =
+          (root is Map && root['data'] is List) ? root['data'] as List : const [];
+      return Right(
+        data.map((e) => Map<String, dynamic>.from(e as Map)).toList(),
+      );
+    } on DioException catch (exception) {
+      return Left(handleDioException(exception));
+    } catch (e, st) {
+      if (kDebugMode) print('Unknown error: $e\n$st');
+      return const Left(UnknownFailure());
+    }
+  }
+
+  @override
+  Future<Either<Failure, bool>> createTransactionGroup(String name) async {
+    try {
+      await _client.post(ListAPI.groupTransactions, data: {'name': name});
+      return const Right(true);
+    } on DioException catch (exception) {
+      return Left(handleDioException(exception));
+    } catch (e, st) {
+      if (kDebugMode) print('Unknown error: $e\n$st');
+      return const Left(UnknownFailure());
+    }
+  }
+
+  @override
+  Future<Either<Failure, bool>> updateTransactionGroup(String id, String name) async {
+    try {
+      await _client.put(ListAPI.groupTransactionById(id), data: {'name': name});
+      return const Right(true);
+    } on DioException catch (exception) {
+      return Left(handleDioException(exception));
+    } catch (e, st) {
+      if (kDebugMode) print('Unknown error: $e\n$st');
+      return const Left(UnknownFailure());
+    }
+  }
+
+  @override
+  Future<Either<Failure, bool>> deleteTransactionGroup(String id) async {
+    try {
+      await _client.delete(ListAPI.groupTransactionById(id));
+      return const Right(true);
+    } on DioException catch (exception) {
+      return Left(handleDioException(exception));
+    } catch (e, st) {
+      if (kDebugMode) print('Unknown error: $e\n$st');
+      return const Left(UnknownFailure());
+    }
+  }
+
+  @override
+  Future<Either<Failure, List<Map<String, dynamic>>>> getCashRegisters() async {
+    try {
+      final res = await _client.get(
+        ListAPI.cashRegisters,
+        queryParameters: {'limit': 200},
+      );
+      final root = res.data;
+      final List<dynamic> data =
+          (root is Map && root['data'] is List) ? root['data'] as List : const [];
+      return Right(
+        data.map((e) => Map<String, dynamic>.from(e as Map)).toList(),
+      );
+    } on DioException catch (exception) {
+      return Left(handleDioException(exception));
+    } catch (e, st) {
+      if (kDebugMode) print('Unknown error: $e\n$st');
+      return const Left(UnknownFailure());
+    }
+  }
+
+  @override
+  Future<Either<Failure, ({List<Map<String, dynamic>> items, int? total})>>
+      getTransactions({
+    required int limit,
+    required int offset,
+    String? search,
+    String? type,
+    String? cashRegisterId,
+  }) async {
+    try {
+      final res = await _client.get(
+        ListAPI.transactions,
+        queryParameters: {
+          'limit': limit,
+          'offset': offset,
+          if (search != null && search.isNotEmpty) 'search': search,
+          if (type != null) 'type': type,
+          if (cashRegisterId != null) 'cash_register_id': cashRegisterId,
+        },
+      );
+      final root = res.data;
+      List<dynamic> data = const [];
+      int? total;
+      if (root is Map) {
+        if (root['data'] is List) data = root['data'] as List;
+        if (root['pagination'] is Map) {
+          total = ((root['pagination'] as Map)['total'] as num?)?.toInt();
+        }
+      }
+      return Right((
+        items: data.map((e) => Map<String, dynamic>.from(e as Map)).toList(),
+        total: total,
+      ));
+    } on DioException catch (exception) {
+      return Left(handleDioException(exception));
+    } catch (e, st) {
+      if (kDebugMode) print('Unknown error: $e\n$st');
+      return const Left(UnknownFailure());
+    }
+  }
+
+  @override
+  Future<Either<Failure, bool>> createIncomeExpenseTransaction(
+    Map<String, dynamic> body,
+  ) async {
+    try {
+      await _client.post(ListAPI.transactionsIncomeExpense, data: body);
+      return const Right(true);
+    } on DioException catch (exception) {
+      return Left(handleDioException(exception));
+    } catch (e, st) {
+      if (kDebugMode) print('Unknown error: $e\n$st');
+      return const Left(UnknownFailure());
+    }
+  }
+
+  @override
+  Future<Either<Failure, bool>> createTransferTransaction(
+    Map<String, dynamic> body,
+  ) async {
+    try {
+      await _client.post(ListAPI.transactionsTransfer, data: body);
+      return const Right(true);
+    } on DioException catch (exception) {
+      return Left(handleDioException(exception));
+    } catch (e, st) {
+      if (kDebugMode) print('Unknown error: $e\n$st');
+      return const Left(UnknownFailure());
+    }
+  }
+
+  @override
+  Future<Either<Failure, bool>> updateTransaction(
+    String id,
+    Map<String, dynamic> body,
+  ) async {
+    try {
+      await _client.put(ListAPI.transactionById(id), data: body);
+      return const Right(true);
+    } on DioException catch (exception) {
+      return Left(handleDioException(exception));
+    } catch (e, st) {
+      if (kDebugMode) print('Unknown error: $e\n$st');
+      return const Left(UnknownFailure());
+    }
+  }
+
+  @override
+  Future<Either<Failure, bool>> deleteTransaction(String id) async {
+    try {
+      await _client.delete(ListAPI.transactionById(id));
+      return const Right(true);
+    } on DioException catch (exception) {
+      return Left(handleDioException(exception));
+    } catch (e, st) {
+      if (kDebugMode) print('Unknown error: $e\n$st');
+      return const Left(UnknownFailure());
+    }
+  }
+
+  @override
+  Future<Either<Failure, ({List<Map<String, dynamic>> items, int? total})>>
+      getAdminUsers({
+    required int limit,
+    required int offset,
+    String? search,
+    String? role,
+  }) async {
+    try {
+      final isSearching = search != null && search.isNotEmpty;
+      final res = await _client.get(
+        isSearching ? ListAPI.usersSearch : ListAPI.users,
+        queryParameters: {
+          'limit': limit,
+          'offset': offset,
+          if (isSearching) 'query': search,
+          // List endpoint qo'shimcha `role` filtrini qo'llaydi; search endpoint
+          // server tomonida role filtrini qabul qilmaydi — natija filtri caller'da.
+          if (!isSearching && role != null) 'role': role,
+        },
+      );
+      final root = res.data;
+      List<dynamic> data = const [];
+      int? total;
+      if (root is List) {
+        data = root;
+      } else if (root is Map) {
+        if (root['data'] is List) data = root['data'] as List;
+        if (root['pagination'] is Map) {
+          total = ((root['pagination'] as Map)['total'] as num?)?.toInt();
+        }
+      }
+      return Right((
+        items: data.map((e) => Map<String, dynamic>.from(e as Map)).toList(),
+        total: total,
+      ));
+    } on DioException catch (exception) {
+      return Left(handleDioException(exception));
+    } catch (e, st) {
+      if (kDebugMode) print('Unknown error: $e\n$st');
+      return const Left(UnknownFailure());
+    }
+  }
+
+  @override
+  Future<Either<Failure, bool>> createUser(Map<String, dynamic> body) async {
+    try {
+      await _client.post(ListAPI.authRegister, data: body);
+      return const Right(true);
+    } on DioException catch (exception) {
+      return Left(handleDioException(exception));
+    } catch (e, st) {
+      if (kDebugMode) print('Unknown error: $e\n$st');
+      return const Left(UnknownFailure());
+    }
+  }
+
+  @override
+  Future<Either<Failure, bool>> updateUser(
+    String id,
+    Map<String, dynamic> body,
+  ) async {
+    try {
+      await _client.put(ListAPI.userById(id), data: body);
+      return const Right(true);
+    } on DioException catch (exception) {
+      return Left(handleDioException(exception));
+    } catch (e, st) {
+      if (kDebugMode) print('Unknown error: $e\n$st');
+      return const Left(UnknownFailure());
+    }
+  }
+
+  @override
+  Future<Either<Failure, bool>> deleteUser(String id) async {
+    try {
+      await _client.delete(ListAPI.userById(id));
+      return const Right(true);
+    } on DioException catch (exception) {
+      return Left(handleDioException(exception));
+    } catch (e, st) {
+      if (kDebugMode) print('Unknown error: $e\n$st');
+      return const Left(UnknownFailure());
+    }
+  }
+
+  @override
+  Future<Either<Failure, bool>> deleteHall(String id) async {
+    try {
+      await _client.delete('${ListAPI.halls}/$id');
+      return const Right(true);
+    } on DioException catch (exception) {
+      return Left(handleDioException(exception));
+    } catch (e, st) {
+      if (kDebugMode) print('Unknown error: $e\n$st');
+      return const Left(UnknownFailure());
+    }
+  }
+
+  @override
+  Future<Either<Failure, bool>> createHall(Map<String, dynamic> body) async {
+    try {
+      await _client.post(ListAPI.halls, data: body);
+      return const Right(true);
+    } on DioException catch (exception) {
+      return Left(handleDioException(exception));
+    } catch (e, st) {
+      if (kDebugMode) print('Unknown error: $e\n$st');
+      return const Left(UnknownFailure());
+    }
+  }
+
+  @override
+  Future<Either<Failure, bool>> updateHall(
+    String id,
+    Map<String, dynamic> body,
+  ) async {
+    try {
+      await _client.put('${ListAPI.halls}/$id', data: body);
+      return const Right(true);
+    } on DioException catch (exception) {
+      return Left(handleDioException(exception));
+    } catch (e, st) {
+      if (kDebugMode) print('Unknown error: $e\n$st');
+      return const Left(UnknownFailure());
+    }
+  }
+
+  @override
+  Future<Either<Failure, bool>> createTable(Map<String, dynamic> body) async {
+    try {
+      await _client.post(ListAPI.cafeTables, data: body);
+      return const Right(true);
+    } on DioException catch (exception) {
+      return Left(handleDioException(exception));
+    } catch (e, st) {
+      if (kDebugMode) print('Unknown error: $e\n$st');
+      return const Left(UnknownFailure());
+    }
+  }
+
+  @override
+  Future<Either<Failure, bool>> updateTable(
+    String id,
+    Map<String, dynamic> body,
+  ) async {
+    try {
+      await _client.put(ListAPI.cafeTableById(id), data: body);
+      return const Right(true);
+    } on DioException catch (exception) {
+      return Left(handleDioException(exception));
+    } catch (e, st) {
+      if (kDebugMode) print('Unknown error: $e\n$st');
+      return const Left(UnknownFailure());
+    }
+  }
+
+  @override
+  Future<Either<Failure, bool>> deleteTable(String id) async {
+    try {
+      await _client.delete(ListAPI.cafeTableById(id));
+      return const Right(true);
+    } on DioException catch (exception) {
+      return Left(handleDioException(exception));
+    } catch (e, st) {
+      if (kDebugMode) print('Unknown error: $e\n$st');
+      return const Left(UnknownFailure());
+    }
+  }
+
+  @override
+  Future<Either<Failure, bool>> createCategory(String name) async {
+    try {
+      await _client.post(ListAPI.categories, data: {'name': name});
+      return const Right(true);
+    } on DioException catch (exception) {
+      return Left(handleDioException(exception));
+    } catch (e, st) {
+      if (kDebugMode) print('Unknown error: $e\n$st');
+      return const Left(UnknownFailure());
+    }
+  }
+
+  @override
+  Future<Either<Failure, Map<String, dynamic>>> searchGoodsAdmin({
+    required int limit,
+    required int offset,
+    String? categoryId,
+    String? search,
+  }) async {
+    try {
+      final res = await _client.get(
+        ListAPI.goods,
+        queryParameters: {
+          'limit': limit,
+          'offset': offset,
+          if (categoryId != null) 'category_id': categoryId,
+          if (search != null && search.isNotEmpty) 'search': search,
+        },
+      );
+      final data = res.data;
+      if (data is! Map<String, dynamic>) return const Left(ParsingFailure());
+      return Right(data);
+    } on DioException catch (exception) {
+      return Left(handleDioException(exception));
+    } catch (e, st) {
+      if (kDebugMode) print('Unknown error: $e\n$st');
+      return const Left(UnknownFailure());
+    }
+  }
+
+  @override
+  Future<Either<Failure, bool>> pauseOrderTableTimer(String orderId) async {
+    try {
+      await _client.dio.post(ListAPI.orderTableTimerPause(orderId));
+      return const Right(true);
+    } on DioException catch (exception) {
+      return Left(handleDioException(exception));
+    } catch (e, st) {
+      if (kDebugMode) print('Unknown error: $e\n$st');
+      return const Left(UnknownFailure());
+    }
+  }
+
+  @override
+  Future<Either<Failure, Map<String, dynamic>>> getGoodById(String id) async {
+    try {
+      final res = await _client.get(ListAPI.goodById(id));
+      final data = res.data;
+      if (data is! Map<String, dynamic>) return const Left(ParsingFailure());
+      return Right(data);
+    } on DioException catch (exception) {
+      return Left(handleDioException(exception));
+    } catch (e, st) {
+      if (kDebugMode) print('Unknown error: $e\n$st');
+      return const Left(UnknownFailure());
+    }
+  }
+
+  @override
+  Future<Either<Failure, Map<String, dynamic>>> getTranslationsList() async {
+    try {
+      final res = await _client.get(ListAPI.translations(limit: 1000, offset: 0));
+      final data = res.data;
+      if (data is! Map<String, dynamic>) return const Left(ParsingFailure());
+      return Right(data);
+    } on DioException catch (exception) {
+      return Left(handleDioException(exception));
+    } catch (e, st) {
+      if (kDebugMode) print('Unknown error: $e\n$st');
+      return const Left(UnknownFailure());
+    }
+  }
+
+  @override
+  Future<Either<Failure, Map<String, dynamic>>> getGoodWithCalculationsById(
+    String id, {
+    bool includeTranslations = false,
+  }) async {
+    try {
+      final res = await _client.get(
+        ListAPI.goodWithCalculationsById(id),
+        queryParameters: includeTranslations ? const {'include': 'translations'} : null,
+      );
+      final data = res.data;
+      if (data is! Map<String, dynamic>) return const Left(ParsingFailure());
+      return Right(data);
+    } on DioException catch (exception) {
+      return Left(handleDioException(exception));
+    } catch (e, st) {
+      if (kDebugMode) print('Unknown error: $e\n$st');
+      return const Left(UnknownFailure());
+    }
+  }
+
+  @override
+  Future<Either<Failure, Map<String, dynamic>>> createTranslation(
+    Map<String, dynamic> body,
+  ) async {
+    try {
+      final res = await _client.post(ListAPI.createTranslation, data: body);
+      final data = res.data;
+      if (data is! Map<String, dynamic>) return const Left(ParsingFailure());
+      return Right(data);
+    } on DioException catch (exception) {
+      return Left(handleDioException(exception));
+    } catch (e, st) {
+      if (kDebugMode) print('Unknown error: $e\n$st');
+      return const Left(UnknownFailure());
+    }
+  }
+
+  @override
+  Future<Either<Failure, bool>> updateTranslation(
+    String id,
+    Map<String, dynamic> body,
+  ) async {
+    try {
+      await _client.put(ListAPI.translationById(id), data: body);
+      return const Right(true);
+    } on DioException catch (exception) {
+      return Left(handleDioException(exception));
+    } catch (e, st) {
+      if (kDebugMode) print('Unknown error: $e\n$st');
+      return const Left(UnknownFailure());
+    }
+  }
+
+  @override
+  Future<Either<Failure, bool>> saveGoodWithCalculations({
+    String? mealId,
+    required Map<String, dynamic> body,
+    Map<String, String>? headers,
+  }) async {
+    try {
+      if (mealId != null) {
+        await _client.put(
+          ListAPI.goodWithCalculationsById(mealId),
+          data: body,
+          headers: headers,
+        );
+      } else {
+        await _client.post(
+          ListAPI.goodsWithCalculations,
+          data: body,
+          headers: headers,
+        );
+      }
+      return const Right(true);
+    } on DioException catch (exception) {
+      return Left(handleDioException(exception));
+    } catch (e, st) {
+      if (kDebugMode) print('Unknown error: $e\n$st');
+      return const Left(UnknownFailure());
+    }
+  }
+
+  @override
+  Future<Either<Failure, bool>> deleteGood(String id) async {
+    try {
+      await _client.delete(ListAPI.goodById(id));
+      return const Right(true);
+    } on DioException catch (exception) {
+      return Left(handleDioException(exception));
+    } catch (e, st) {
+      if (kDebugMode) print('Unknown error: $e\n$st');
+      return const Left(UnknownFailure());
+    }
+  }
+
+  List<Map<String, dynamic>> _extractDataListFromRaw(dynamic raw) {
+    dynamic source = raw;
+    if (source is Map<String, dynamic>) {
+      source = source['data'] ?? source['items'] ?? source['results'] ?? const [];
+    }
+    if (source is Map<String, dynamic>) {
+      source = source['items'] ?? source['results'] ?? source['data'] ?? const [];
+    }
+    if (source is! List) return const [];
+    return source
+        .whereType<Map>()
+        .map((e) => Map<String, dynamic>.from(e))
+        .toList();
+  }
+
+  Future<Either<Failure, List<Map<String, dynamic>>>> _fetchFirstAvailableList(
+    List<String> paths,
+  ) async {
+    DioException? lastError;
+    var hasSuccess = false;
+    for (final path in paths) {
+      try {
+        final res = await _client.get(path);
+        hasSuccess = true;
+        final list = _extractDataListFromRaw(res.data);
+        if (list.isNotEmpty) return Right(list);
+      } on DioException catch (e) {
+        lastError = e;
+      }
+    }
+    if (hasSuccess) return const Right(<Map<String, dynamic>>[]);
+    if (lastError != null) return Left(handleDioException(lastError));
+    return const Right(<Map<String, dynamic>>[]);
+  }
+
+  @override
+  Future<Either<Failure, List<Map<String, dynamic>>>> getIngredients() =>
+      _fetchFirstAvailableList([ListAPI.ingredients, ListAPI.ingredientsLang]);
+
+  @override
+  Future<Either<Failure, List<Map<String, dynamic>>>> getCompounds() =>
+      _fetchFirstAvailableList([ListAPI.compounds, ListAPI.compoundsLang]);
 }

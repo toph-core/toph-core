@@ -23,8 +23,15 @@ android {
 
     defaultConfig {
         applicationId = "uz.yurtal.maryaipos.mary_ai_pos"
-        // flutter_local_notifications: minSdk 21+ kerak (default Flutter'da 21)
-        minSdk = flutter.minSdkVersion
+        // flutter_secure_storage 10.x's Android module declares minSdkVersion
+        // 23 in its own build.gradle — Gradle's manifest merge fails if the
+        // app's own minSdk is lower (was flutter's default of 21, kept for
+        // flutter_local_notifications' 21+ requirement above that). API 23 =
+        // Android 6.0 (2015); dropping 5.0/5.1 support is not expected to
+        // matter for this app's real deployment target (§1 Q2: Windows
+        // desktop primary, Android as a secondary waiter handheld — not
+        // aimed at decade-old hardware).
+        minSdk = 23
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName

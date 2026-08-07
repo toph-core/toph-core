@@ -1,16 +1,15 @@
 import 'dart:async' show unawaited;
 
-import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:mary_ai_pos/core/api/dio_client.dart';
-import 'package:mary_ai_pos/core/api/list_api.dart';
 import 'package:mary_ai_pos/core/common/dialog_action_buttons.dart';
 import 'package:mary_ai_pos/core/components/flush_bars.dart';
+import 'package:mary_ai_pos/core/error/failure.dart';
 import 'package:mary_ai_pos/core/services/cache/cache_service.dart';
 import 'package:mary_ai_pos/di.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/cafe_tables/cafe_tables_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/hall/hall_model.dart';
+import 'package:mary_ai_pos/features/view/main/domain/repository/main_repository.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/main/main_cubit.dart';
 import 'package:mary_ai_pos/generated/l10n.dart';
 
@@ -84,12 +83,12 @@ class _TransferTableDialogState extends State<_TransferTableDialog> {
     setState(() => _submitting = true);
     final main = context.read<MainCubit>();
     final nav = Navigator.of(context);
-    try {
-      final dio = inject<DioClient>().dio;
-      await dio.post(
-        ListAPI.orderTransfer(widget.orderId),
-        data: {'target_table_id': targetId},
-      );
+    final result = await inject<MainRepository>().transferTable(
+      orderId: widget.orderId,
+      targetTableId: targetId,
+    );
+    final failure = result.fold((f) => f, (_) => null);
+    if (failure == null) {
       // Eski cache-ni o'chiramiz: keyingi ochilishda server ma'lumoti olinadi.
       final cache = inject<CacheService>();
       await cache.evictOrderDetail(widget.sourceTableId);
@@ -104,26 +103,18 @@ class _TransferTableDialogState extends State<_TransferTableDialog> {
       unawaited(main.refreshTables(force: true));
       nav.pop(true);
       if (mounted) showInfoMessage(context, S.current.strOrderTransferred);
-    } on DioException catch (e) {
-      if (!mounted) return;
-      setState(() => _submitting = false);
-      final code = e.response?.statusCode;
-      final detail = e.response?.data is Map
-          ? (e.response?.data['details']?.toString() ??
-                e.response?.data['message']?.toString())
-          : null;
-      final msg = switch (code) {
-        409 => S.current.strSelectedTableIsBusy,
-        404 => S.current.strOrderOrTableNotFound,
-        400 => detail ?? S.current.strCannotTransfer,
-        _ => detail ?? e.message ?? S.current.strErrorOccurred,
-      };
-      showErrorMessage(context, msg);
-    } catch (e) {
-      if (!mounted) return;
-      setState(() => _submitting = false);
-      showErrorMessage(context, e.toString());
+      return;
     }
+    if (!mounted) return;
+    setState(() => _submitting = false);
+    final msg = switch (failure) {
+      ConflictFailure() => S.current.strSelectedTableIsBusy,
+      NotFoundFailure() => S.current.strOrderOrTableNotFound,
+      ValidationFailure() => S.current.strCannotTransfer,
+      MessageFailure(:final message) => message,
+      _ => S.current.strErrorOccurred,
+    };
+    showErrorMessage(context, msg);
   }
 
   @override

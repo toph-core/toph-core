@@ -16,6 +16,8 @@ enum PendingOperationType {
   closeShift,
   @HiveField(5)
   cancelLineItems,
+  @HiveField(6)
+  cancelOrder,
 }
 
 @HiveType(typeId: 11)

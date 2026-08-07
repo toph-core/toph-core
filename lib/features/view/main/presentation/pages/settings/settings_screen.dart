@@ -14,6 +14,7 @@ import 'package:mary_ai_pos/features/view/main/presentation/pages/settings/secti
 import 'package:mary_ai_pos/features/view/main/presentation/pages/settings/sections/printers_section.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/settings/sections/lan_network_section.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/settings/sections/receipt_info_section.dart';
+import 'package:mary_ai_pos/features/view/main/presentation/pages/settings/sections/sync_status_section.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/settings/sections/users_section.dart';
 
 enum SettingsSection {
@@ -23,6 +24,7 @@ enum SettingsSection {
   printers,
   receiptInfo,
   lanNetwork,
+  syncStatus,
 }
 
 extension _SectionMeta on SettingsSection {
@@ -40,6 +42,8 @@ extension _SectionMeta on SettingsSection {
         return Icons.receipt_long_outlined;
       case SettingsSection.lanNetwork:
         return Icons.router_outlined;
+      case SettingsSection.syncStatus:
+        return Icons.sync_outlined;
     }
   }
 
@@ -57,6 +61,8 @@ extension _SectionMeta on SettingsSection {
         return "Chek ma'lumotlari";
       case SettingsSection.lanNetwork:
         return S.current.strLanNetwork;
+      case SettingsSection.syncStatus:
+        return "Sinxronizatsiya holati";
     }
   }
 
@@ -74,6 +80,8 @@ extension _SectionMeta on SettingsSection {
         return 'Nom, manzil, telefon, STIR';
       case SettingsSection.lanNetwork:
         return S.current.strHubClientSettings;
+      case SettingsSection.syncStatus:
+        return "Navbat, klaster va printer holati";
     }
   }
 }
@@ -157,6 +165,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
         return const ReceiptInfoSection(key: ValueKey('receiptInfo'));
       case SettingsSection.lanNetwork:
         return const LanNetworkSection(key: ValueKey('lanNetwork'));
+      case SettingsSection.syncStatus:
+        return const SyncStatusSection(key: ValueKey('syncStatus'));
     }
   }
 }

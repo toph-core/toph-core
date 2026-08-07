@@ -5,8 +5,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:dio/dio.dart';
-import 'package:mary_ai_pos/core/api/dio_client.dart';
-import 'package:mary_ai_pos/core/api/list_api.dart';
 import 'package:mary_ai_pos/core/components/flush_bars.dart';
 import 'package:mary_ai_pos/core/utils/helper/helper_widget.dart';
 import 'package:mary_ai_pos/core/constants/constants.dart';
@@ -33,6 +31,7 @@ import 'package:mary_ai_pos/features/view/main/domain/usecase/get_goods_with_nam
 import 'package:mary_ai_pos/features/view/main/data/models/archive_detail/archive_detail_model.dart';
 import 'package:mary_ai_pos/features/view/main/domain/entities/archive_detail_entity.dart';
 import 'package:mary_ai_pos/features/view/main/domain/usecase/get_payment_detail_with_table_id_usecase.dart';
+import 'package:mary_ai_pos/features/view/main/domain/repository/main_repository.dart';
 
 part 'detail_event.dart';
 part 'detail_state.dart';
@@ -49,6 +48,7 @@ class DetailBloc extends Bloc<DetailEvent, DetailState> {
   final GetPaymentDetailWithTableIdUsecase _getPaymentDetailWithTableIdUsecase;
   final CacheService _cache;
   final PrinterService _printerService;
+  final MainRepository _mainRepository;
 
   ArchiveDetailEntity? lastDetail;
 
@@ -61,6 +61,10 @@ class DetailBloc extends Bloc<DetailEvent, DetailState> {
   DateTime? _lastCategoryFetchAt;
   String? _lastCategoryFetchId;
   static const _categoryFetchThrottle = Duration(seconds: 10);
+
+  // Kategoriyalarni tez-tez yuklashda burst so'rov yubormaslik uchun
+  DateTime? _lastCategoriesFetchAt;
+  static const _categoriesFetchThrottle = Duration(seconds: 30);
 
   // Existing item +/- backend sinxronizatsiya uchun:
   // - `_existingLineInfo`: UI itemining goods.name → underlying line item id'lari,
@@ -87,6 +91,7 @@ class DetailBloc extends Bloc<DetailEvent, DetailState> {
     this._getPaymentDetailWithTableIdUsecase,
     this._cache,
     this._printerService,
+    this._mainRepository,
   ) : super(const DetailState()) {
     on<_Started>(_onStarted);
     on<_GetCategories>(_onGetCategories);
@@ -135,6 +140,16 @@ class DetailBloc extends Bloc<DetailEvent, DetailState> {
     } else {
       emit(state.copyWith(status: Status.OTHER_LOADING));
     }
+
+    // Throttle: avoid burst requests when opening tables quickly.
+    // Only skip the network call if we already have cached categories.
+    if (cachedCats.isNotEmpty &&
+        _lastCategoriesFetchAt != null &&
+        DateTime.now().difference(_lastCategoriesFetchAt!) <
+            _categoriesFetchThrottle) {
+      return;
+    }
+    _lastCategoriesFetchAt = DateTime.now();
 
     // Orqa fonda network dan yangilanadi
     final result = await _getCategoriesUsecase(NoParams());
@@ -231,11 +246,10 @@ class DetailBloc extends Bloc<DetailEvent, DetailState> {
     Emitter<DetailState> emit,
   ) async {
     try {
-      final res = await inject<DioClient>().get(
-        ListAPI.orderItemsListByOrder(orderId),
-      );
-      if (isClosed) return;
-      final raw = res.data['data'];
+      final result = await _mainRepository.getOrderItemsRaw(orderId);
+      final res = result.fold((_) => null, (r) => r);
+      if (res == null || isClosed) return;
+      final raw = res['data'];
       final List<dynamic> list = raw is List
           ? raw
           : (raw is Map<String, dynamic> && raw['items'] is List
@@ -545,6 +559,13 @@ class DetailBloc extends Bloc<DetailEvent, DetailState> {
   }
 
   bool _isConnectionIssue(Object e) {
+    // Repository-layer call sites throw the `Failure` that
+    // `handleDioException` already classified (see `Failure
+    // .isConnectivityIssue`) instead of a raw `DioException` — check that
+    // first. Still-direct `DioException` catches elsewhere in this file
+    // (offline queue replay's own inline try/catch blocks) keep working via
+    // the fallback below.
+    if (e is Failure) return e.isConnectivityIssue;
     if (e is DioException) {
       return e.type == DioExceptionType.connectionError ||
           e.type == DioExceptionType.connectionTimeout ||
@@ -584,6 +605,7 @@ class DetailBloc extends Bloc<DetailEvent, DetailState> {
     required String goodId,
     required int quantity,
     required String comment,
+    required String clientItemId,
   }) async {
     await inject<OfflineQueueService>().enqueue(
       PendingOperation(
@@ -591,7 +613,16 @@ class DetailBloc extends Bloc<DetailEvent, DetailState> {
         type: PendingOperationType.addItems,
         payload: jsonEncode({
           'items': [
-            {'good_id': goodId, 'quantity': quantity, 'comment': comment},
+            {
+              'good_id': goodId,
+              'quantity': quantity,
+              'comment': comment,
+              // Backend AddOrderItems idempotency key (§13 risk #2) — the
+              // SAME id as this call's preceding online attempt (see
+              // callers), so a response lost after that attempt already
+              // committed server-side doesn't get duplicated here.
+              'client_item_id': clientItemId,
+            },
           ],
         }),
         tableId: tableId,
@@ -628,21 +659,17 @@ class DetailBloc extends Bloc<DetailEvent, DetailState> {
     ));
 
     final lineIds = _resolveLineIds(item);
-    final dio = inject<DioClient>().dio;
     final trimmedComment = cancelComment?.trim();
     try {
       for (final id in lineIds) {
-        try {
-          await dio.post(
-            ListAPI.orderItemCancel(id),
-            data: <String, dynamic>{
-              if (trimmedComment != null && trimmedComment.isNotEmpty)
-                'comment': trimmedComment,
-            },
-          );
-        } on DioException catch (e) {
-          // 404 — line allaqachon yo'q (boshqa client bekor qilgan) — davom etamiz
-          if (e.response?.statusCode != 404) rethrow;
+        final result = await _mainRepository.cancelOrderItem(
+          id,
+          comment: trimmedComment,
+        );
+        final failure = result.fold((f) => f, (_) => null);
+        // 404 — line allaqachon yo'q (boshqa client bekor qilgan) — davom etamiz
+        if (failure != null && failure is! NotFoundFailure) {
+          throw failure;
         }
       }
     } catch (e) {
@@ -751,23 +778,30 @@ class DetailBloc extends Bloc<DetailEvent, DetailState> {
         return;
       }
 
-      final dio = inject<DioClient>().dio;
+      // Generated once, before either branch's online attempt, so a
+      // connection-failure fallback below (offline queue) replays under
+      // the SAME id — backend AddOrderItems idempotency key
+      // (order_items.client_item_id, §13 risk #2). Without this, a response
+      // lost after the request already committed server-side would fall
+      // into the offline queue with a FRESH id that doesn't match anything
+      // already created, defeating the dedup.
+      final addItemClientId = generateUuidV4();
       try {
         if (delta > 0) {
           // Plus: yangi line item qo'shamiz
-          await dio.post(
-            ListAPI.orderItemsCreate,
-            data: {
-              'order_id': state.activeOrderId,
-              'items': [
-                {
-                  'good_id': snapshot.goodId,
-                  'quantity': delta,
-                  'comment': snapshot.comment,
-                },
-              ],
-            },
+          final result = await _mainRepository.createOrderItems(
+            orderId: state.activeOrderId!,
+            items: [
+              {
+                'good_id': snapshot.goodId,
+                'quantity': delta,
+                'comment': snapshot.comment,
+                'client_item_id': addItemClientId,
+              },
+            ],
           );
+          final failure = result.fold((f) => f, (_) => null);
+          if (failure != null) throw failure;
           // Oshxona cheki: mavjud buyurtmaga qo'shilgan yangi porsiyalar.
           _printKitchenForExistingAdd(
             goodId: snapshot.goodId,
@@ -780,33 +814,32 @@ class DetailBloc extends Bloc<DetailEvent, DetailState> {
           // bitta yangi line yaratamiz. Backend bitta line'ni bo'lish API
           // qilmaydi — shu yo'l yagona to'g'ri ish.
           for (final id in snapshot.originalLineIds) {
-            try {
-              await dio.post(
-                ListAPI.orderItemCancel(id),
-                data: <String, dynamic>{
-                  if (pendingCancelComment != null &&
-                      pendingCancelComment.isNotEmpty)
-                    'comment': pendingCancelComment,
-                },
-              );
-            } on DioException catch (e) {
-              if (e.response?.statusCode != 404) rethrow;
+            final cancelResult = await _mainRepository.cancelOrderItem(
+              id,
+              comment:
+                  (pendingCancelComment != null && pendingCancelComment.isNotEmpty)
+                      ? pendingCancelComment
+                      : null,
+            );
+            final cancelFailure = cancelResult.fold((f) => f, (_) => null);
+            if (cancelFailure != null && cancelFailure is! NotFoundFailure) {
+              throw cancelFailure;
             }
           }
           if (desiredQty > 0) {
-            await dio.post(
-              ListAPI.orderItemsCreate,
-              data: {
-                'order_id': state.activeOrderId,
-                'items': [
-                  {
-                    'good_id': snapshot.goodId,
-                    'quantity': desiredQty,
-                    'comment': snapshot.comment,
-                  },
-                ],
-              },
+            final addResult = await _mainRepository.createOrderItems(
+              orderId: state.activeOrderId!,
+              items: [
+                {
+                  'good_id': snapshot.goodId,
+                  'quantity': desiredQty,
+                  'comment': snapshot.comment,
+                  'client_item_id': addItemClientId,
+                },
+              ],
             );
+            final addFailure = addResult.fold((f) => f, (_) => null);
+            if (addFailure != null) throw addFailure;
           }
         }
       } catch (e) {
@@ -819,6 +852,7 @@ class DetailBloc extends Bloc<DetailEvent, DetailState> {
               goodId: snapshot.goodId,
               quantity: delta,
               comment: snapshot.comment,
+              clientItemId: addItemClientId,
             );
           } else {
             await _enqueueCancelLineItems(
@@ -831,6 +865,7 @@ class DetailBloc extends Bloc<DetailEvent, DetailState> {
                 goodId: snapshot.goodId,
                 quantity: desiredQty,
                 comment: snapshot.comment,
+                clientItemId: addItemClientId,
               );
             }
           }
@@ -931,25 +966,29 @@ class DetailBloc extends Bloc<DetailEvent, DetailState> {
       return;
     }
 
-    emit(state.copyWith(selectedCategoryId: event.id));
-
-    // Cache-first: show matching items immediately when available.
-    final allCached = _cache.getGoods();
+    // Cache-first: show this category's own last-known-good result
+    // immediately when available — not a client-side filter of the "all
+    // categories" cache (that showed a plausible-but-wrong slice on every
+    // switch, since it was never actually this category's own cached data,
+    // only populated when "all" itself had been viewed). And critically:
+    // don't clear to an empty/loading state first if we're about to have
+    // something to show — that alone was enough to cause a visible flash
+    // even when the cache hit was correct.
+    final cachedRaw = _cache.getGoodsForCategory(event.id);
     List<GoodsModel> cachedForCategory = const [];
-    if (allCached.isNotEmpty) {
-      cachedForCategory = allCached
-          .map((e) => GoodsModel.fromJson(e))
-          .where((g) => event.id == 'all' || g.categoryId == event.id)
-          .toList();
-      if (cachedForCategory.isNotEmpty) {
-        emit(
-          state.copyWith(status: Status.SUCCESS, goods: cachedForCategory),
-        );
-      } else {
-        emit(state.copyWith(status: Status.LOADING, goods: const []));
-      }
+    if (cachedRaw.isNotEmpty) {
+      cachedForCategory = cachedRaw.map((e) => GoodsModel.fromJson(e)).toList();
+      emit(state.copyWith(
+        selectedCategoryId: event.id,
+        status: Status.SUCCESS,
+        goods: cachedForCategory,
+      ));
     } else {
-      emit(state.copyWith(status: Status.LOADING, goods: const []));
+      emit(state.copyWith(
+        selectedCategoryId: event.id,
+        status: Status.LOADING,
+        goods: const [],
+      ));
     }
 
     // Throttle: avoid burst requests when switching categories quickly.
@@ -977,9 +1016,10 @@ class DetailBloc extends Bloc<DetailEvent, DetailState> {
         // Ignore stale responses if the user already switched category.
         if (state.selectedCategoryId != event.id) return;
 
-        if (event.id == 'all') {
-          _cache.saveGoods(goods.map((g) => g.toJson()).toList());
-        }
+        _cache.saveGoodsForCategory(
+          event.id,
+          goods.map((g) => g.toJson()).toList(),
+        );
 
         // Always show the network result for the active category.
         emit(state.copyWith(status: Status.SUCCESS, goods: goods));

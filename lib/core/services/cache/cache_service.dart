@@ -33,6 +33,33 @@ class CacheService {
 
   List<Map<String, dynamic>> getGoods() => _decode(_box.get(_goods));
 
+  // ─── Goods, per category ────────────────────────────────────────
+  // `_goods` above only ever holds the "all categories" list
+  // (`prefetchAllGoods`/`DetailBloc`'s own "all" fetch). Filtering that list
+  // client-side to approximate a single category's contents (what
+  // `DetailBloc._onSetSelectedCategoryId` used to do) shows a plausible but
+  // wrong slice the moment that list is stale relative to what the
+  // per-category endpoint actually returns — visible as a flash of the
+  // wrong items on every category switch, even a category visited moments
+  // earlier, since there was never a real per-category cache to hit. These
+  // methods give each category (including "all", aliased to the existing
+  // key above so `prefetchAllGoods` stays the single writer for it) its own
+  // genuine last-known-good cache entry.
+  static const _goodsByCategoryPrefix = 'cache_goods_cat:';
+
+  Future<void> saveGoodsForCategory(
+    String categoryId,
+    List<Map<String, dynamic>> items,
+  ) async {
+    if (categoryId == 'all') return saveGoods(items);
+    await _box.put('$_goodsByCategoryPrefix$categoryId', jsonEncode(items));
+  }
+
+  List<Map<String, dynamic>> getGoodsForCategory(String categoryId) {
+    if (categoryId == 'all') return getGoods();
+    return _decode(_box.get('$_goodsByCategoryPrefix$categoryId'));
+  }
+
   // ─── Departments ──────────────────────────────────────────────
   static const _departments = 'cache_departments';
 
@@ -40,6 +67,63 @@ class CacheService {
       _box.put(_departments, jsonEncode(items));
 
   List<Map<String, dynamic>> getDepartments() => _decode(_box.get(_departments));
+
+  // ─── Users / staff ────────────────────────────────────────────
+  // Populated by `SyncEngine`'s login-time/periodic hydration pass so the
+  // waiter-assignment dropdown (and any other staff-list consumer) has
+  // something to show offline instead of an empty list.
+  static const _users = 'cache_users';
+
+  Future<void> saveUsers(List<Map<String, dynamic>> items) async =>
+      _box.put(_users, jsonEncode(items));
+
+  List<Map<String, dynamic>> getUsers() => _decode(_box.get(_users));
+
+  // ─── Transaction groups ("categories" for transactions) ────────
+  // Same "what's on screen when connectivity drops" scope as archives/
+  // waiter-open-orders above — only the unfiltered default list is cached,
+  // not every search-query variant.
+  static const _transactionGroups = 'cache_transaction_groups';
+
+  Future<void> saveTransactionGroups(List<Map<String, dynamic>> items) async =>
+      _box.put(_transactionGroups, jsonEncode(items));
+
+  List<Map<String, dynamic>> getTransactionGroups() =>
+      _decode(_box.get(_transactionGroups));
+
+  // ─── Ingredients / compounds (recipe-editor reference data) ────
+  // Only consumed by the menu-management screen's ingredient/semi-finished
+  // picker — same "unfiltered default list" scope as transaction groups.
+  static const _ingredients = 'cache_ingredients';
+  static const _compounds = 'cache_compounds';
+
+  Future<void> saveIngredients(List<Map<String, dynamic>> items) async =>
+      _box.put(_ingredients, jsonEncode(items));
+
+  List<Map<String, dynamic>> getIngredients() => _decode(_box.get(_ingredients));
+
+  Future<void> saveCompounds(List<Map<String, dynamic>> items) async =>
+      _box.put(_compounds, jsonEncode(items));
+
+  List<Map<String, dynamic>> getCompounds() => _decode(_box.get(_compounds));
+
+  // ─── Service charge (per-branch config) ────────────────────────
+  static const _serviceChargePrefix = 'cache_service_charge:';
+
+  Future<void> saveServiceCharge(
+    String branchId,
+    Map<String, dynamic> json,
+  ) async => _box.put('$_serviceChargePrefix$branchId', jsonEncode(json));
+
+  Map<String, dynamic>? getServiceCharge(String branchId) {
+    final raw = _box.get('$_serviceChargePrefix$branchId');
+    if (raw == null) return null;
+    try {
+      return jsonDecode(raw as String) as Map<String, dynamic>;
+    } catch (_) {
+      return null;
+    }
+  }
 
   // ─── USB printer names (per-device, never synced to backend) ──
   // A `connection_type: usb` printer-settings entry is shared/synced across
@@ -180,6 +264,25 @@ class CacheService {
   static const _goodsFetchedAt = 'cache_goods_fetched_at';
   static const _goodsStale = Duration(minutes: 30);
 
+  // ─── Reference-data hydration staleness (categories/departments/halls/
+  // tables/users) ──────────────────────────────────────────────────────
+  // One shared timestamp for the whole bundle `SyncEngine` hydrates together
+  // — these are all small lists, so there's no value in a per-entity TTL
+  // the way goods' pagination-driven fetch needs one.
+  static const _referenceDataFetchedAt = 'cache_reference_data_fetched_at';
+  static const _referenceDataStale = Duration(minutes: 5);
+
+  bool isReferenceDataFresh() {
+    final raw = _box.get(_referenceDataFetchedAt) as String?;
+    if (raw == null) return false;
+    final ts = DateTime.tryParse(raw);
+    if (ts == null) return false;
+    return DateTime.now().difference(ts) < _referenceDataStale;
+  }
+
+  Future<void> markReferenceDataFetched() =>
+      _box.put(_referenceDataFetchedAt, DateTime.now().toIso8601String());
+
   // In-memory flag: prevents concurrent fetches within a single app session
   static bool _isFetchingGoods = false;
 
@@ -225,6 +328,23 @@ class CacheService {
       _isFetchingGoods = false;
     }
   }
+
+  /// Wipes every cached entity — categories, goods, halls, tables, users,
+  /// ingredients, compounds, service charge, order details, archives, waiter
+  /// open-orders, item timestamps, USB printer names, all of it. Only for a
+  /// full app re-provision (logout-from-app,
+  /// which also drops brand_id/pos_password — see `AuthRepositoryImpl
+  /// .logoutFromApp`): this box has no per-brand/per-branch scoping at all,
+  /// so switching this terminal to a different restaurant without wiping it
+  /// first would leave the old tenant's halls/tables sitting in cache,
+  /// silently mixed into (or blocking) the new tenant's data — e.g. a
+  /// stale table whose `hall_id` no longer matches any current hall just
+  /// vanishes from every filtered view, and a hall reused across tenants by
+  /// coincidence would show the wrong tables under the right name. Regular
+  /// staff `logout()` (same brand, same branch) must NOT call this — the
+  /// cache is still valid for that tenant and losing it would mean an
+  /// unnecessary full re-fetch on the next login.
+  Future<void> clearAll() => _box.clear();
 
   // ─── Helpers ──────────────────────────────────────────────────
   List<Map<String, dynamic>> _decode(dynamic raw) {

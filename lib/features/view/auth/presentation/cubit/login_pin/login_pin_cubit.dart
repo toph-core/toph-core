@@ -44,7 +44,7 @@ class LoginPinCubit extends Cubit<LoginPinState> {
 
     // Offline-first: internet yo'q bo'lsa darhol cache dan
     if (!_connectivity.isOnline) {
-      final cached = _offlineCache.getForPin(brandIdTokenPair.brandId, pincode);
+      final cached = await _offlineCache.getForPin(brandIdTokenPair.brandId, pincode);
       if (cached != null) {
         await _secureStorage.writeAuthToken(
           AuthTokenPair(
@@ -75,8 +75,20 @@ class LoginPinCubit extends Cubit<LoginPinState> {
 
     result.fold(
       (failure) async {
-        // API muvaffaqiyatsiz bo'lsa — offline cache dan urinib ko'r
-        final cached = _offlineCache.getForPin(brandIdTokenPair.brandId, pincode);
+        if (failure.isDefiniteAuthRejection) {
+          // Server aniq javob berdi: bu pincode endi yaroqsiz (noto'g'ri yoki
+          // foydalanuvchi faol emas). Cache'ga tushmaymiz — aksincha, shu
+          // pincode endi offline holatda ham ishlamasligi uchun uni cache'dan
+          // o'chiramiz. Muddat asosidagi tugash yo'q: bu yagona bekor qilish
+          // yo'li (server bilan keyingi haqiqiy aloqa).
+          await _offlineCache.removeForPin(brandIdTokenPair.brandId, pincode);
+          emit(state.copyWith(failure: failure, status: Status.ERROR, pin: ''));
+          return;
+        }
+        // Ulanish/timeout/server xatosi — bu pincode haqida hech qanday aniq
+        // javob olinmadi, faqat serverga yetib bo'lmadi. Eski xulq-atvor:
+        // cache'dan urinib ko'ramiz.
+        final cached = await _offlineCache.getForPin(brandIdTokenPair.brandId, pincode);
         if (cached != null) {
           await _secureStorage.writeAuthToken(
             AuthTokenPair(

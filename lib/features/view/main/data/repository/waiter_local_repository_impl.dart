@@ -14,6 +14,22 @@ import 'package:mary_ai_pos/features/view/main/data/models/order_line_item/order
 import 'package:mary_ai_pos/features/view/main/domain/repository/main_repository.dart';
 import 'package:mary_ai_pos/features/view/main/domain/repository/waiter_local_repository.dart';
 
+/// Coverage is deliberately uneven across this class's methods, not a gap —
+/// see offline-first-remediation-plan.md, Phase 5 / M1:
+/// - [getOpenOrders]: genuinely cache-first (first page only, same
+///   "what's on screen when connectivity drops" scope as archives/menu).
+/// - [getStaffWaiters]: cache-first too, but indirectly — it delegates to
+///   `MainRepository.getUsers()`, which is cache-first on its own.
+/// - [getOrderDetail]/[getOrderItems]: deliberately live-only, no cache. An
+///   open order keeps changing; a stale cached item list could understate
+///   what a guest currently owes — the same staleness-risk reasoning
+///   `TableTimerLocalRepositoryImpl` documents for its own live-only reads.
+/// - Every write method ([cancelOrderItem], [sendItems], [closeOrder],
+///   [createOrder]): no local persistence here by design — `WaiterCubit`
+///   itself is the layer that queues these into `OfflineQueueService` on a
+///   `ConnectionFailure` and applies the optimistic local state update; this
+///   repository's job is only to make the live attempt and report the
+///   failure type back up.
 class WaiterLocalRepositoryImpl implements WaiterLocalRepository {
   final DioClient _client;
   final MainRepository _remote;

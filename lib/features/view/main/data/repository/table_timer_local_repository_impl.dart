@@ -8,6 +8,17 @@ import 'package:mary_ai_pos/core/utils/order_conflict_helper.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/table_timer/table_timer_response_model.dart';
 import 'package:mary_ai_pos/features/view/main/domain/repository/table_timer_local_repository.dart';
 
+/// Despite the "Local" in the name (matching the `TableTimerLocalRepository`
+/// interface it implements, itself named to fit the app's repository-seam
+/// convention), this class deliberately has **no** local caching or offline
+/// queueing — every method here is a pure network passthrough. That's not an
+/// oversight: a table-timer session determines how much a guest owes, so the
+/// cloud is the metering source of truth (see offline-first-remediation-plan
+/// .md, Phase 5 / M1). Queuing a pause/resume for later replay risks billing
+/// the wrong interval. This repository exists purely to get `DioClient`/
+/// `ListAPI` usage out of the presentation layer (Rule 2 compliance) and
+/// centralize error mapping through the same `handleDioException` every
+/// other repository uses — it adds zero offline capability by design.
 class TableTimerLocalRepositoryImpl implements TableTimerLocalRepository {
   final DioClient _client;
 

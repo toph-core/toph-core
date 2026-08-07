@@ -12,7 +12,10 @@ import 'package:mary_ai_pos/core/routes/app_pages.dart';
 import 'package:mary_ai_pos/core/routes/app_routes.dart';
 import 'package:mary_ai_pos/core/service/app_version/app_update_service.dart';
 import 'package:mary_ai_pos/core/services/connectivity/connectivity_cubit.dart';
+import 'package:mary_ai_pos/core/services/audit/privileged_action_audit_entry.dart';
 import 'package:mary_ai_pos/core/services/offline_queue/pending_operation.dart';
+import 'package:mary_ai_pos/core/services/offline_queue/quarantined_operation.dart';
+import 'package:mary_ai_pos/core/services/print_queue/print_job.dart';
 import 'package:mary_ai_pos/core/theme/app_theme.dart';
 import 'package:mary_ai_pos/core/utils/helper/helper_widget.dart';
 import 'package:mary_ai_pos/core/utils/scroll_physics_modified.dart';
@@ -76,6 +79,9 @@ Future<void> main() async {
   await Hive.initFlutter();
   Hive.registerAdapter(PendingOperationTypeAdapter());
   Hive.registerAdapter(PendingOperationAdapter());
+  Hive.registerAdapter(PrintJobAdapter());
+  Hive.registerAdapter(QuarantinedOperationAdapter());
+  Hive.registerAdapter(PrivilegedActionAuditEntryAdapter());
 
   AppUpdateService.getCloudVersion();
   await SystemChrome.setPreferredOrientations([

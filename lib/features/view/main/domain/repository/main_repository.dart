@@ -23,6 +23,10 @@ abstract class MainRepository {
     String hallId,
   );
 
+  /// All tables across every hall — hydration-only, see
+  /// `MainDataSources.getAllTables`'s doc comment.
+  Future<Either<Failure, List<CafeTableModel>>> getAllTables();
+
   Future<Either<Failure, ShiftResponseModel>> openShift({
     required OpenShiftModel request,
   });
@@ -71,4 +75,145 @@ abstract class MainRepository {
   });
 
   Future<Either<Failure, List<PrinterSettingEntry>>> getPrinterSettings();
+
+  Future<Either<Failure, Map<String, dynamic>>> getOrderItemsRaw(String orderId);
+
+  Future<Either<Failure, bool>> createOrderItems({
+    required String orderId,
+    required List<Map<String, dynamic>> items,
+  });
+
+  Future<Either<Failure, bool>> addItemsToOrder({
+    required String orderId,
+    required List<Map<String, dynamic>> items,
+  });
+
+  Future<Either<Failure, bool>> cancelOrderItem(String itemId, {String? comment});
+
+  Future<Either<Failure, bool>> cancelOrder(String orderId);
+
+  Future<Either<Failure, bool>> transferTable({
+    required String orderId,
+    required String targetTableId,
+  });
+
+  Future<Either<Failure, Map<String, dynamic>?>> getOrderTableTimer(String orderId);
+
+  Future<Either<Failure, bool>> resumeOrderTableTimer(String orderId);
+
+  Future<Either<Failure, bool>> pauseOrderTableTimer(String orderId);
+
+  Future<String> getOrderIdWithTableId(String tableId);
+
+  Future<Either<Failure, double>> getServiceCharge(String branchId);
+
+  Future<Either<Failure, bool>> saveServiceCharge(String branchId, double value);
+
+  Future<Either<Failure, bool>> pushPrinterSetting(
+    Map<String, dynamic> body, {
+    String? existingId,
+  });
+
+  Future<Either<Failure, bool>> deletePrinterSetting(String id);
+
+  Future<Either<Failure, List<Map<String, dynamic>>>> getTransactionGroups({
+    String? search,
+  });
+
+  Future<Either<Failure, bool>> createTransactionGroup(String name);
+
+  Future<Either<Failure, bool>> updateTransactionGroup(String id, String name);
+
+  Future<Either<Failure, bool>> deleteTransactionGroup(String id);
+
+  Future<Either<Failure, List<Map<String, dynamic>>>> getCashRegisters();
+
+  Future<Either<Failure, ({List<Map<String, dynamic>> items, int? total})>>
+      getTransactions({
+    required int limit,
+    required int offset,
+    String? search,
+    String? type,
+    String? cashRegisterId,
+  });
+
+  Future<Either<Failure, bool>> createIncomeExpenseTransaction(
+    Map<String, dynamic> body,
+  );
+
+  Future<Either<Failure, bool>> createTransferTransaction(
+    Map<String, dynamic> body,
+  );
+
+  Future<Either<Failure, bool>> updateTransaction(
+    String id,
+    Map<String, dynamic> body,
+  );
+
+  Future<Either<Failure, bool>> deleteTransaction(String id);
+
+  Future<Either<Failure, ({List<Map<String, dynamic>> items, int? total})>>
+      getAdminUsers({
+    required int limit,
+    required int offset,
+    String? search,
+    String? role,
+  });
+
+  Future<Either<Failure, bool>> createUser(Map<String, dynamic> body);
+
+  Future<Either<Failure, bool>> updateUser(String id, Map<String, dynamic> body);
+
+  Future<Either<Failure, bool>> deleteUser(String id);
+
+  Future<Either<Failure, bool>> deleteHall(String id);
+
+  Future<Either<Failure, bool>> createHall(Map<String, dynamic> body);
+
+  Future<Either<Failure, bool>> updateHall(String id, Map<String, dynamic> body);
+
+  Future<Either<Failure, bool>> createTable(Map<String, dynamic> body);
+
+  Future<Either<Failure, bool>> updateTable(String id, Map<String, dynamic> body);
+
+  Future<Either<Failure, bool>> deleteTable(String id);
+
+  Future<Either<Failure, bool>> createCategory(String name);
+
+  Future<Either<Failure, Map<String, dynamic>>> searchGoodsAdmin({
+    required int limit,
+    required int offset,
+    String? categoryId,
+    String? search,
+  });
+
+  Future<Either<Failure, Map<String, dynamic>>> getGoodById(String id);
+
+  Future<Either<Failure, Map<String, dynamic>>> getTranslationsList();
+
+  Future<Either<Failure, Map<String, dynamic>>> getGoodWithCalculationsById(
+    String id, {
+    bool includeTranslations = false,
+  });
+
+  Future<Either<Failure, Map<String, dynamic>>> createTranslation(
+    Map<String, dynamic> body,
+  );
+
+  Future<Either<Failure, bool>> updateTranslation(
+    String id,
+    Map<String, dynamic> body,
+  );
+
+  Future<Either<Failure, bool>> saveGoodWithCalculations({
+    String? mealId,
+    required Map<String, dynamic> body,
+    Map<String, String>? headers,
+  });
+
+  Future<Either<Failure, bool>> deleteGood(String id);
+
+  Future<Either<Failure, List<Map<String, dynamic>>>> getIngredients();
+
+  Future<Either<Failure, List<Map<String, dynamic>>>> getCompounds();
 }

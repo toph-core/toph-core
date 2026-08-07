@@ -60,7 +60,12 @@ class WShiftBottom extends StatelessWidget {
                   onTap: () async {
                     final bloc = context.read<ShiftBloc>();
                     final isOpening = state.shift == null;
-                    final authorized = await requireManagerPincode(context);
+                    final authorized = await requireManagerPincode(
+                      context,
+                      action: isOpening
+                          ? PrivilegedAction.shiftOpen
+                          : PrivilegedAction.shiftClose,
+                    );
                     if (!authorized) return;
                     bloc.add(
                       isOpening

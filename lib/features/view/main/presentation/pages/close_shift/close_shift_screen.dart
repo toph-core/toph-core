@@ -1895,7 +1895,10 @@ class _CloseShiftCTA extends StatelessWidget {
     }
 
     final shiftBloc = context.read<ShiftBloc>();
-    final authorized = await requireManagerPincode(context);
+    final authorized = await requireManagerPincode(
+      context,
+      action: PrivilegedAction.shiftClose,
+    );
     if (authorized) {
       shiftBloc.add(const ShiftEvent.closeShift());
     }
