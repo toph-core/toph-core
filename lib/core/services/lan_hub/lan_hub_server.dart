@@ -17,6 +17,16 @@ typedef LanAuthValidator = Future<bool> Function(String token, String branchId);
 /// `LanAuthValidator` returns a bare `bool` instead of an app-level type).
 typedef LanRelayHandler = Future<String> Function(LanHubMessage relayOpMessage);
 
+/// §6: arbitrates one `leaseRequest` and returns the reply to send back —
+/// always a `leaseGranted`/`leaseRejected` message, never a raw string
+/// (unlike [LanRelayHandler]) since the caller needs the full message,
+/// `leaseHeldBy` included, to send straight back over the socket.
+typedef LanLeaseHandler = Future<LanHubMessage> Function(LanHubMessage leaseRequestMessage);
+
+/// §6 Lease Recovery: notifies the leader that a follower's lease-holding UI
+/// action has finished (committed or abandoned) — best-effort, no reply.
+typedef LanLeaseReleaseHandler = void Function(LanHubMessage leaseReleaseMessage);
+
 /// Notified whenever the server receives a broadcast-worthy message (i.e.
 /// anything that isn't `auth`/`relayOp`) from any client — **in addition to**
 /// it being forwarded to every other client via [_broadcastExcept]. Without
@@ -37,6 +47,8 @@ class LanHubServer {
   LanAuthValidator? _authValidator;
   LanRelayHandler? _onRelayOp;
   LanBroadcastListener? _onBroadcast;
+  LanLeaseHandler? _onLeaseRequest;
+  LanLeaseReleaseHandler? _onLeaseRelease;
 
   bool get isRunning => _server != null;
   int get clientCount => _clients.length;
@@ -56,11 +68,15 @@ class LanHubServer {
     required LanAuthValidator authValidator,
     required LanRelayHandler onRelayOp,
     LanBroadcastListener? onBroadcast,
+    LanLeaseHandler? onLeaseRequest,
+    LanLeaseReleaseHandler? onLeaseRelease,
   }) async {
     if (_server != null) return;
     _authValidator = authValidator;
     _onRelayOp = onRelayOp;
     _onBroadcast = onBroadcast;
+    _onLeaseRequest = onLeaseRequest;
+    _onLeaseRelease = onLeaseRelease;
     try {
       _server = await HttpServer.bind(InternetAddress.anyIPv4, port);
       _server!.listen(_handleRequest);
@@ -143,6 +159,23 @@ class LanHubServer {
           } catch (_) {}
           return;
         }
+        if (msg != null && msg.type == LanHubMessageType.leaseRequest) {
+          // Same leader-directed-RPC shape as relayOp above — a lease
+          // arbitration concerns exactly the requester and the leader, never
+          // other followers.
+          final handler = _onLeaseRequest;
+          final reply = handler == null
+              ? LanHubMessage.leaseRejected(tableId: msg.tableId ?? '')
+              : await handler(msg);
+          try {
+            ws.add(reply.toJson());
+          } catch (_) {}
+          return;
+        }
+        if (msg != null && msg.type == LanHubMessageType.leaseRelease) {
+          _onLeaseRelease?.call(msg);
+          return;
+        }
         // Hub clientdan kelgan xabarni barcha boshqa clientlarga yuboradi
         _broadcastExcept(data, ws);
         // ...va bu terminalning o'z ilova qatlamiga ham yetkazadi — server
@@ -203,5 +236,7 @@ class LanHubServer {
     _authValidator = null;
     _onRelayOp = null;
     _onBroadcast = null;
+    _onLeaseRequest = null;
+    _onLeaseRelease = null;
   }
 }

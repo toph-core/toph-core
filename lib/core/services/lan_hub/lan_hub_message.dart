@@ -11,6 +11,10 @@ enum LanHubMessageType {
   printJobAnnounce,
   printJobClaim,
   printJobResult,
+  leaseRequest,
+  leaseGranted,
+  leaseRejected,
+  leaseRelease,
 }
 
 class LanHubMessage {
@@ -81,6 +85,19 @@ class LanHubMessage {
   /// [printJobResult] only: human-readable failure detail, when present.
   final String? printError;
 
+  /// [leaseRequest]/[leaseGranted]/[leaseRejected]/[leaseRelease]: the
+  /// requesting terminal's own id — correlates a follower's request with the
+  /// leader's eventual reply, same role `opId` plays for `relayOp`. Reuses
+  /// [tableId] for the table being leased rather than a new field, since
+  /// every lease message concerns exactly one table.
+  final String? leaseTerminalId;
+
+  /// [leaseRejected] only: which terminal currently holds the table, when
+  /// known (offline-first-target-architecture.md §6) — surfaced to the
+  /// cashier as "already opened on another terminal", not required for the
+  /// arbitration logic itself.
+  final String? leaseHeldBy;
+
   const LanHubMessage({
     required this.type,
     this.tableId,
@@ -98,6 +115,8 @@ class LanHubMessage {
     this.printJobType,
     this.printEntryId,
     this.printPayloadBase64,
+    this.leaseTerminalId,
+    this.leaseHeldBy,
     this.printResult,
     this.printError,
   });
@@ -195,6 +214,45 @@ class LanHubMessage {
         printError: error,
       );
 
+  /// §6: sent by a follower's `LeaseManager.acquireTableLease` to ask the
+  /// leader to arbitrate a table open — a directed leader RPC, same shape as
+  /// `relayOp` above (single request, single correlated reply, never
+  /// broadcast to other followers).
+  factory LanHubMessage.leaseRequest({
+    required String tableId,
+    required String terminalId,
+  }) => LanHubMessage(
+        type: LanHubMessageType.leaseRequest,
+        tableId: tableId,
+        leaseTerminalId: terminalId,
+      );
+
+  factory LanHubMessage.leaseGranted({required String tableId}) =>
+      LanHubMessage(type: LanHubMessageType.leaseGranted, tableId: tableId);
+
+  factory LanHubMessage.leaseRejected({
+    required String tableId,
+    String? heldBy,
+  }) => LanHubMessage(
+        type: LanHubMessageType.leaseRejected,
+        tableId: tableId,
+        leaseHeldBy: heldBy,
+      );
+
+  /// Sent by a follower once its lease-holding UI action (the create-order
+  /// write, per §6) has either committed or been abandoned — lets the leader
+  /// evict its ephemeral claim before the TTL backstop would. Best-effort:
+  /// losing this message changes nothing (the TTL still evicts it), so it's
+  /// fire-and-forget, unlike `leaseRequest`.
+  factory LanHubMessage.leaseRelease({
+    required String tableId,
+    required String terminalId,
+  }) => LanHubMessage(
+        type: LanHubMessageType.leaseRelease,
+        tableId: tableId,
+        leaseTerminalId: terminalId,
+      );
+
   String toJson() => jsonEncode({
         'type': type.name,
         'table_id': tableId,
@@ -214,6 +272,8 @@ class LanHubMessage {
         if (printPayloadBase64 != null) 'print_payload_b64': printPayloadBase64,
         if (printResult != null) 'print_result': printResult,
         if (printError != null) 'print_error': printError,
+        if (leaseTerminalId != null) 'lease_terminal_id': leaseTerminalId,
+        if (leaseHeldBy != null) 'lease_held_by': leaseHeldBy,
       });
 
   static LanHubMessage? tryParse(String raw) {
@@ -242,6 +302,8 @@ class LanHubMessage {
         printPayloadBase64: map['print_payload_b64'] as String?,
         printResult: map['print_result'] as String?,
         printError: map['print_error'] as String?,
+        leaseTerminalId: map['lease_terminal_id'] as String?,
+        leaseHeldBy: map['lease_held_by'] as String?,
       );
     } catch (_) {
       return null;

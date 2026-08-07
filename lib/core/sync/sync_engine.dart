@@ -2,10 +2,16 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:mary_ai_pos/di.dart';
+import 'package:mary_ai_pos/features/view/auth/presentation/cubit/bloc/user_bloc.dart';
+import 'package:mary_ai_pos/features/view/main/data/models/cafe_tables/cafe_tables_model.dart';
+import 'package:mary_ai_pos/features/view/main/data/models/category/category_model.dart';
+import 'package:mary_ai_pos/features/view/main/data/models/goods/goods_model.dart';
 import 'package:mary_ai_pos/features/view/main/domain/repository/main_repository.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../api/dio_client.dart';
+import '../database/local_database.dart';
+import '../service/minio/minio_service.dart';
 import '../services/cache/cache_service.dart';
 import '../services/connectivity/connectivity_cubit.dart';
 import '../services/lan_hub/lan_hub_service.dart';
@@ -27,6 +33,7 @@ class SyncEngine {
   final DioClient _client;
   final LanHubService _lanHub;
   final SharedPreferences _prefs;
+  final LocalDatabase _localDb;
 
   Timer? _ticker;
   bool _tickRunning = false;
@@ -61,12 +68,14 @@ class SyncEngine {
     required DioClient client,
     required LanHubService lanHub,
     required SharedPreferences prefs,
+    required LocalDatabase localDb,
   })  : _queue = queue,
         _cache = cache,
         _connectivity = connectivity,
         _client = client,
         _lanHub = lanHub,
-        _prefs = prefs;
+        _prefs = prefs,
+        _localDb = localDb;
 
   void start() {
     _ticker ??= Timer.periodic(tickInterval, (_) => tick());
@@ -109,6 +118,7 @@ class SyncEngine {
         }
         if (_connectivity.isOnline) {
           await _cache.prefetchAllGoods(_client);
+          await _mirrorGoodsIntoLocalDb();
           await _hydrateReferenceData();
         }
         _recordSync();
@@ -119,6 +129,7 @@ class SyncEngine {
         await _queue.syncAll(_client, force: force);
       }
       await _cache.prefetchAllGoods(_client);
+      await _mirrorGoodsIntoLocalDb();
       await _hydrateReferenceData();
       _recordSync();
     } catch (e) {
@@ -159,18 +170,23 @@ class SyncEngine {
       final users = (await usersF).fold((_) => null, (r) => r);
       if (categories != null) {
         await _cache.saveCategories(categories.map((c) => c.toJson()).toList());
+        await _localDb.saveCategories(categories);
       }
       if (departments != null) {
         await _cache.saveDepartments(departments.map((d) => d.toJson()).toList());
+        await _localDb.saveDepartments(departments);
       }
       if (halls != null) {
         await _cache.saveHalls(halls.map((h) => h.toJson()).toList());
+        await _localDb.saveHalls(halls);
       }
       if (tables != null) {
         await _cache.saveTables(tables.map((t) => t.toJson()).toList());
+        await _localDb.saveTables(tables);
       }
       if (users != null && users.isNotEmpty) {
         await _cache.saveUsers(users.map((u) => u.toJson()).toList());
+        await _localDb.saveUsers(users);
       }
       // Only mark fresh if at least reference-data reads didn't all fail —
       // an all-null pass (e.g. a mid-request disconnect) shouldn't suppress
@@ -178,8 +194,181 @@ class SyncEngine {
       if (categories != null || departments != null || halls != null || tables != null) {
         await _cache.markReferenceDataFetched();
       }
+
+      // ── §8 Phase 1: entities that previously had NO hydration path at
+      // all (§0's SyncEngine row) — each independently best-effort so one
+      // entity's failure doesn't block the others or the five above.
+      await _hydrateIngredientsAndCompounds(repo);
+      await _hydrateTransactionGroups(repo);
+      await _hydratePrinterSettings(repo);
+      await _hydrateServiceCharge(repo);
+      if (categories != null) await _hydrateGoodsByCategory(repo, categories);
+      await _hydrateOpenOrderDetails(repo, tables ?? _localDb.getTables());
+      await _hydrateMenuImages();
     } catch (e) {
       if (kDebugMode) debugPrint('[SyncEngine] hydrateReferenceData error: $e');
+    }
+  }
+
+  /// `CacheService.prefetchAllGoods` (unchanged, still the only place that
+  /// actually does the paginated network fetch) only ever wrote into
+  /// `CacheService`'s flat blob box. Mirrors its result into `LocalDatabase`
+  /// too — no extra network call, just decoding what's already in memory —
+  /// so `LocalDatabase` becomes a real second source for "goods (all)"
+  /// alongside the per-category entries `_hydrateGoodsByCategory` below
+  /// writes. Best-effort: a decode failure here must not undo the cache
+  /// write that already succeeded.
+  Future<void> _mirrorGoodsIntoLocalDb() async {
+    try {
+      final raw = _cache.getGoods();
+      if (raw.isEmpty) return;
+      await _localDb.saveGoods(raw.map(GoodsModel.fromJson).toList());
+    } catch (e) {
+      if (kDebugMode) debugPrint('[SyncEngine] mirrorGoodsIntoLocalDb error: $e');
+    }
+  }
+
+  Future<void> _hydrateIngredientsAndCompounds(MainRepository repo) async {
+    try {
+      final ingredients = (await repo.getIngredients()).fold((_) => null, (r) => r);
+      if (ingredients != null) {
+        await _cache.saveIngredients(ingredients);
+        await _localDb.saveIngredients(ingredients);
+      }
+    } catch (e) {
+      if (kDebugMode) debugPrint('[SyncEngine] hydrateIngredients error: $e');
+    }
+    try {
+      final compounds = (await repo.getCompounds()).fold((_) => null, (r) => r);
+      if (compounds != null) {
+        await _cache.saveCompounds(compounds);
+        await _localDb.saveCompounds(compounds);
+      }
+    } catch (e) {
+      if (kDebugMode) debugPrint('[SyncEngine] hydrateCompounds error: $e');
+    }
+  }
+
+  Future<void> _hydrateTransactionGroups(MainRepository repo) async {
+    try {
+      final groups = (await repo.getTransactionGroups()).fold((_) => null, (r) => r);
+      if (groups != null) {
+        await _cache.saveTransactionGroups(groups);
+        await _localDb.saveTransactionGroups(groups);
+      }
+    } catch (e) {
+      if (kDebugMode) debugPrint('[SyncEngine] hydrateTransactionGroups error: $e');
+    }
+  }
+
+  Future<void> _hydratePrinterSettings(MainRepository repo) async {
+    try {
+      final entries = (await repo.getPrinterSettings()).fold((_) => null, (r) => r);
+      if (entries != null) await _localDb.savePrinterSettings(entries);
+    } catch (e) {
+      if (kDebugMode) debugPrint('[SyncEngine] hydratePrinterSettings error: $e');
+    }
+  }
+
+  /// Same DI-ordering reason the class doc above already explains for
+  /// `MainRepository`: resolved lazily via `inject`, mirroring the exact
+  /// `inject<UserBloc>().state.userMOdel?.branchId` pattern
+  /// `LanHubService` already uses for the same terminal's own branch.
+  Future<void> _hydrateServiceCharge(MainRepository repo) async {
+    try {
+      final branchId = inject<UserBloc>().state.userMOdel?.branchId ?? '';
+      if (branchId.isEmpty) return;
+      final value = (await repo.getServiceCharge(branchId)).fold((_) => null, (r) => r);
+      if (value != null) {
+        await _cache.saveServiceCharge(branchId, {'default_service_percent': value});
+        await _localDb.saveServiceCharge(branchId, value);
+      }
+    } catch (e) {
+      if (kDebugMode) debugPrint('[SyncEngine] hydrateServiceCharge error: $e');
+    }
+  }
+
+  /// `CacheService`'s own doc note on why "all goods" filtered client-side
+  /// isn't a real per-category cache applies here too — this is the genuine
+  /// per-category fetch that note says was previously missing entirely.
+  Future<void> _hydrateGoodsByCategory(
+    MainRepository repo,
+    List<CategoryModel> categories,
+  ) async {
+    for (final category in categories) {
+      try {
+        final goods =
+            (await repo.getGoodsByCategoryId(category.id)).fold((_) => null, (r) => r);
+        if (goods != null) {
+          await _cache.saveGoodsForCategory(
+            category.id,
+            goods.map((g) => g.toJson()).toList(),
+          );
+          await _localDb.saveGoodsForCategory(category.id, goods);
+        }
+      } catch (e) {
+        if (kDebugMode) {
+          debugPrint('[SyncEngine] hydrateGoodsByCategory(${category.id}) error: $e');
+        }
+      }
+    }
+  }
+
+  /// §1.2: order/bill state becomes a first-class `LocalDatabase` table kept
+  /// current by this hydration pass (in addition to Phase 2's local-write
+  /// path once that lands) — today's ad hoc `CacheService.saveOrderDetail`
+  /// only ever got written by whichever screen happened to be open.
+  /// Bounded to currently-busy tables, not every table, since a free table
+  /// has no order to fetch.
+  Future<void> _hydrateOpenOrderDetails(
+    MainRepository repo,
+    List<CafeTableModel> tables,
+  ) async {
+    for (final table in tables.where((t) => t.status == TableStatus.busy)) {
+      try {
+        final orderId = await repo.getOrderIdWithTableId(table.id);
+        if (orderId.isEmpty) continue;
+        final detail = (await repo.getOrderItemsRaw(orderId)).fold((_) => null, (r) => r);
+        if (detail != null) {
+          await _cache.saveOrderDetail(table.id, detail);
+          await _localDb.saveOrderDetail(table.id, detail);
+        }
+      } catch (e) {
+        if (kDebugMode) {
+          debugPrint('[SyncEngine] hydrateOpenOrderDetails(${table.id}) error: $e');
+        }
+      }
+    }
+  }
+
+  /// V9 fix (§9): hydrates every distinct menu-image object name referenced
+  /// by `LocalDatabase`'s "goods (all)" list, via the same
+  /// `MinioService.getImageByObjectName` the now-deleted-in-Phase-6
+  /// `FutureBuilder` in `menu_manage_screen.dart` calls directly today.
+  /// Skips object names already cached — an unconditional re-fetch every
+  /// tick would turn a small reference-data pass into a large one for a
+  /// menu with many pictured items.
+  Future<void> _hydrateMenuImages() async {
+    try {
+      final refs = _localDb
+          .getGoods()
+          .map((g) => g.pictureUrl)
+          .whereType<String>()
+          .where((r) => r.isNotEmpty)
+          .toSet();
+      for (final ref in refs) {
+        if (_localDb.getImage(ref) != null) continue;
+        try {
+          final bytes = await MinioService.instance.getImageByObjectName(ref);
+          if (bytes != null && bytes.isNotEmpty) {
+            await _localDb.saveImage(ref, bytes);
+          }
+        } catch (e) {
+          if (kDebugMode) debugPrint('[SyncEngine] hydrateMenuImages($ref) error: $e');
+        }
+      }
+    } catch (e) {
+      if (kDebugMode) debugPrint('[SyncEngine] hydrateMenuImages error: $e');
     }
   }
 

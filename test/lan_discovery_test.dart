@@ -100,6 +100,65 @@ void main() {
       );
     });
 
+    test('heartbeatExtra fields (role/priority/epoch/terminalId) reach the listener, and update per tick', () async {
+      // offline-first-target-architecture.md §7: LeaderElectionService rides
+      // this exact beacon as its heartbeat channel — a listener must see the
+      // leader-only fields, and see them change (e.g. an epoch bump) without
+      // the announce timer needing to restart.
+      final announcer = LanDiscoveryService();
+      final listener = LanDiscoveryService();
+      addTearDown(() async {
+        await announcer.dispose();
+        await listener.dispose();
+      });
+
+      var epoch = 1;
+      final heard = <HubAnnouncement>[];
+      listener.onAnnouncement.listen(heard.add);
+      await listener.startListening(port: port);
+      await announcer.startAnnouncing(
+        branchId: 'branch-1',
+        wsPort: 8765,
+        port: port,
+        heartbeatExtra: () => (
+          role: 'leader',
+          priority: 42,
+          epoch: epoch,
+          terminalId: 'terminal-A',
+        ),
+      );
+
+      await _waitUntil(() => heard.isNotEmpty);
+      expect(heard.first.role, 'leader');
+      expect(heard.first.priority, 42);
+      expect(heard.first.epoch, 1);
+      expect(heard.first.terminalId, 'terminal-A');
+
+      epoch = 2;
+      heard.clear();
+      await _waitUntil(() => heard.any((a) => a.epoch == 2), timeout: const Duration(seconds: 4));
+    });
+
+    test('an announcement with no heartbeatExtra leaves the new fields null (backward compatible)', () async {
+      final announcer = LanDiscoveryService();
+      final listener = LanDiscoveryService();
+      addTearDown(() async {
+        await announcer.dispose();
+        await listener.dispose();
+      });
+
+      final heard = <HubAnnouncement>[];
+      listener.onAnnouncement.listen(heard.add);
+      await listener.startListening(port: port);
+      await announcer.startAnnouncing(branchId: 'branch-1', wsPort: 8765, port: port);
+
+      await _waitUntil(() => heard.isNotEmpty);
+      expect(heard.first.role, isNull);
+      expect(heard.first.priority, isNull);
+      expect(heard.first.epoch, isNull);
+      expect(heard.first.terminalId, isNull);
+    });
+
     test('stop() halts further announcements', () async {
       final announcer = LanDiscoveryService();
       final listener = LanDiscoveryService();

@@ -7,9 +7,12 @@ import 'package:mary_ai_pos/core/api/dio_client.dart';
 import 'package:mary_ai_pos/core/services/audit/privileged_action_audit_log_service.dart';
 import 'package:mary_ai_pos/core/services/auth/offline_auth_cache.dart';
 import 'package:mary_ai_pos/core/service/receipt/receipt_info_storage.dart';
+import 'package:mary_ai_pos/core/database/local_database.dart';
 import 'package:mary_ai_pos/core/services/cache/cache_service.dart';
 import 'package:mary_ai_pos/core/services/connectivity/connectivity_cubit.dart';
 import 'package:mary_ai_pos/core/services/lan_hub/lan_hub_service.dart';
+import 'package:mary_ai_pos/core/services/lan_hub/leader_election_service.dart';
+import 'package:mary_ai_pos/core/services/lease/lease_manager.dart';
 import 'package:mary_ai_pos/core/services/offline_queue/offline_queue_service.dart';
 import 'package:mary_ai_pos/core/services/print_queue/print_queue_service.dart';
 import 'package:mary_ai_pos/core/services/table_timer/table_timer_sync_service.dart';
@@ -116,6 +119,12 @@ Future<void> initDi() async {
   final cacheService = await CacheService.init();
   inject.registerSingleton<CacheService>(cacheService);
 
+  // offline-first-target-architecture.md §8 Phase 0 — additive alongside
+  // CacheService, nothing reads from it yet except SyncEngine's hydration
+  // writes (§8 Phase 1).
+  final localDatabase = await LocalDatabase.init();
+  inject.registerSingleton<LocalDatabase>(localDatabase);
+
   final offlineQueue = await OfflineQueueService.init();
   inject.registerSingleton<OfflineQueueService>(offlineQueue);
 
@@ -139,6 +148,19 @@ Future<void> initDi() async {
   );
   inject.registerSingleton<LanHubService>(lanHubService);
 
+  // offline-first-target-architecture.md §8 Phase 3 — additive, not yet
+  // wired into CreateOrderBloc's table-open path (see EXECUTION_CONCERNS.md
+  // and the class doc on LeaseManager for why).
+  final leaseManager = LeaseManager(lanHub: lanHubService, localDb: localDatabase);
+  inject.registerSingleton<LeaseManager>(leaseManager);
+
+  // offline-first-target-architecture.md §8 Phase 4 — additive, disabled by
+  // default (see LeaderElectionService's class doc / EXECUTION_CONCERNS.md).
+  // start() itself no-ops unless a branch has explicitly opted in via
+  // setEnabled(true), so this call is safe to make unconditionally here.
+  final leaderElection = LeaderElectionService(lanHub: lanHubService, prefs: prefs);
+  inject.registerSingleton<LeaderElectionService>(leaderElection);
+
   final syncEngine = SyncEngine(
     queue: offlineQueue,
     cache: cacheService,
@@ -146,6 +168,7 @@ Future<void> initDi() async {
     client: dioClient,
     lanHub: lanHubService,
     prefs: prefs,
+    localDb: localDatabase,
   );
   syncEngine.start();
   inject.registerSingleton<SyncEngine>(syncEngine);
@@ -197,6 +220,9 @@ Future<void> initDi() async {
   // current user via `inject<UserBloc>()` for its branch id, and `UserBloc`
   // isn't registered until `_cubit()` above runs.
   await lanHubService.init();
+  // Same DI-ordering reason as lanHubService.init() above — start() itself
+  // is a no-op unless a branch opted in via setEnabled(true).
+  await leaderElection.start();
 }
 
 void _dataSources() {

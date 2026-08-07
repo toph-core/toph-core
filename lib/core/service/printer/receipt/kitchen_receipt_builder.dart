@@ -41,6 +41,13 @@ class KitchenReceiptBuilder {
     String? orderNumber,
     String? orderId,
     Map<String, String> categoryNames = const {},
+    // offline-first-target-architecture.md §12/§13: template-only half of the
+    // kitchen-cancellation gap — swaps the header so a cancellation notice is
+    // visually distinct from a normal fire ticket. Defaults to false so no
+    // existing call site's output changes. No call site passes `true` yet —
+    // wiring one is a kitchen-operations policy decision the design doc
+    // deliberately leaves open (open question 5), not resolved here.
+    bool cancelled = false,
   }) async {
     final profile = await CapabilityProfile.load();
     final gen = receiptGenerator(paperSize, profile);
@@ -51,7 +58,7 @@ class KitchenReceiptBuilder {
 
     // ── Header ──────────────────────────────────────────────────────────────
     bytes += gen.text(
-      '** КУХОННЫЙ ЧЕК **',
+      cancelled ? '** ОТМЕНА ЗАКАЗА **' : '** КУХОННЫЙ ЧЕК **',
       styles: const PosStyles(
         align: PosAlign.center,
         bold: true,

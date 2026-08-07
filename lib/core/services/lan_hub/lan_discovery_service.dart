@@ -6,11 +6,23 @@ import 'dart:math';
 import 'package:flutter/foundation.dart';
 
 /// One hub's self-announcement, as heard by a listener on the LAN.
+///
+/// [role]/[priority]/[epoch]/[terminalId] are optional — populated only by a
+/// `LeaderElectionService` (§7) using this same beacon as its heartbeat
+/// channel, per the design doc's explicit "the discovery beacon becomes the
+/// heartbeat channel, not a separate mechanism." A plain conflict-watch
+/// announcer (`LanHubService._watchForConflicts`, pre-§7) or an old build on
+/// the same LAN simply never sets them, and [tryParse] below leaves them
+/// null rather than failing — this type must stay parseable both ways.
 typedef HubAnnouncement = ({
   String ip,
   int port,
   String branchId,
   DateTime heardAt,
+  String? role,
+  int? priority,
+  int? epoch,
+  String? terminalId,
 });
 
 /// Lightweight UDP broadcast beacon — lets a `client` terminal find its
@@ -58,17 +70,41 @@ class LanDiscoveryService {
   /// listening — a `client` running [discoverHubs]-style scan, or another
   /// `server` watching for a conflicting duplicate — can hear this hub
   /// exists without being told its IP in advance.
+  ///
+  /// [heartbeatExtra], when given, is called fresh on every tick (not just
+  /// once at start) so a `LeaderElectionService` (§7) can ride this same
+  /// beacon as its heartbeat channel while its own `role`/`epoch` change
+  /// over time — e.g. an epoch bump on becoming leader — without needing to
+  /// restart the announce timer.
   Future<void> startAnnouncing({
     required String branchId,
     required int wsPort,
     int port = defaultPort,
+    ({String? role, int? priority, int? epoch, String? terminalId})
+        Function()? heartbeatExtra,
   }) async {
     await _ensureSocket(port);
     _announceTimer?.cancel();
     _announceTimer = Timer.periodic(_announceInterval, (_) {
-      _send(branchId: branchId, wsPort: wsPort);
+      final extra = heartbeatExtra?.call();
+      _send(
+        branchId: branchId,
+        wsPort: wsPort,
+        role: extra?.role,
+        priority: extra?.priority,
+        epoch: extra?.epoch,
+        terminalId: extra?.terminalId,
+      );
     });
-    _send(branchId: branchId, wsPort: wsPort); // birinchi announce darhol
+    final extra = heartbeatExtra?.call();
+    _send(
+      branchId: branchId,
+      wsPort: wsPort,
+      role: extra?.role,
+      priority: extra?.priority,
+      epoch: extra?.epoch,
+      terminalId: extra?.terminalId,
+    ); // birinchi announce darhol
   }
 
   /// Listener-only side: starts receiving broadcasts onto [onAnnouncement]
@@ -111,6 +147,10 @@ class LanDiscoveryService {
         port: wsPort,
         branchId: branchId,
         heardAt: DateTime.now(),
+        role: map['role'] as String?,
+        priority: map['priority'] as int?,
+        epoch: map['epoch'] as int?,
+        terminalId: map['terminal_id'] as String?,
       ));
     } catch (_) {
       // Boshqa ilova/qurilmaning shu portdagi UDP trafigi bo'lishi mumkin —
@@ -118,7 +158,14 @@ class LanDiscoveryService {
     }
   }
 
-  void _send({required String branchId, required int wsPort}) {
+  void _send({
+    required String branchId,
+    required int wsPort,
+    String? role,
+    int? priority,
+    int? epoch,
+    String? terminalId,
+  }) {
     final socket = _socket;
     if (socket == null) return;
     final payload = utf8.encode(jsonEncode({
@@ -126,6 +173,10 @@ class LanDiscoveryService {
       'instance_id': _instanceId,
       'branch_id': branchId,
       'ws_port': wsPort,
+      if (role != null) 'role': role,
+      if (priority != null) 'priority': priority,
+      if (epoch != null) 'epoch': epoch,
+      if (terminalId != null) 'terminal_id': terminalId,
     }));
     try {
       socket.send(payload, InternetAddress('255.255.255.255'), _activePort);

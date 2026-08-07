@@ -216,6 +216,44 @@ class LanHubClient {
     }
   }
 
+  /// §6: sends a `leaseRequest` and waits (bounded by [timeout]) for the
+  /// matching `leaseGranted`/`leaseRejected` — returns `null` if not
+  /// currently connected, the link drops mid-wait, or no reply arrives in
+  /// time (the caller's own unreachable-leader policy, §6's timeout table,
+  /// decides what a `null` means — this transport layer doesn't). Much
+  /// shorter timeout than [relayOp]'s: a lease arbitration is a single local
+  /// map lookup on the leader, not a cloud round trip, and §7 explicitly
+  /// budgets the whole leader-unreachable UX around a single-digit-seconds
+  /// wait, not [relayOp]'s 60s.
+  Future<LanHubMessage?> requestLease({
+    required String tableId,
+    required String terminalId,
+    Duration timeout = const Duration(seconds: 5),
+  }) async {
+    if (!isConnected) return null;
+    final completer = Completer<LanHubMessage?>();
+    late final StreamSubscription<LanHubMessage> sub;
+    sub = onMessage.listen((msg) {
+      if ((msg.type == LanHubMessageType.leaseGranted ||
+              msg.type == LanHubMessageType.leaseRejected) &&
+          msg.tableId == tableId) {
+        if (!completer.isCompleted) completer.complete(msg);
+      }
+    });
+    try {
+      send(LanHubMessage.leaseRequest(tableId: tableId, terminalId: terminalId));
+      return await completer.future.timeout(timeout, onTimeout: () => null);
+    } finally {
+      await sub.cancel();
+    }
+  }
+
+  /// §6 Lease Recovery: fire-and-forget, no reply expected — see
+  /// `LanHubMessage.leaseRelease`'s own doc for why losing this is harmless.
+  void releaseLease({required String tableId, required String terminalId}) {
+    send(LanHubMessage.leaseRelease(tableId: tableId, terminalId: terminalId));
+  }
+
   /// Ulanishni yopadi, ammo qayta ulanishga ruxsat beradi.
   Future<void> disconnect() async {
     await _ws?.close();

@@ -425,6 +425,7 @@ class PrinterService {
   Future<void> printKitchenReceipt({
     required OpenOrderModel order,
     required List<OrderItem> items,
+    bool cancelled = false,
   }) =>
       printKitchenReceiptFor(
         tableLine: 'Стол: ${order.tableNumber}',
@@ -432,6 +433,7 @@ class PrinterService {
         guestCount: order.guestCount,
         items: items,
         orderId: order.id,
+        cancelled: cancelled,
       );
 
   /// [printKitchenReceipt] bilan bir xil, lekin to'liq [OpenOrderModel] talab
@@ -443,6 +445,9 @@ class PrinterService {
     int guestCount = 0,
     String? orderNumber,
     String? orderId,
+    // See KitchenReceiptBuilder.buildWithHeader — template-only, no call
+    // site passes true yet (design doc §12/§13, open question 5).
+    bool cancelled = false,
   }) async {
     if (items.isEmpty) return;
     final byKey = <String, List<OrderItem>>{};
@@ -489,6 +494,7 @@ class PrinterService {
           orderNumber: orderNumber,
           orderId: orderId,
           categoryNames: categoryNames,
+          cancelled: cancelled,
         );
         configsInOrder.add(config);
         dispatches.add(

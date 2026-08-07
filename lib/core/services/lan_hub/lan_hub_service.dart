@@ -16,10 +16,13 @@ import 'package:mary_ai_pos/features/view/auth/presentation/cubit/bloc/user_bloc
 import 'package:rxdart/rxdart.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:mary_ai_pos/core/services/lease/lease_manager.dart';
+
 import 'lan_discovery_service.dart';
 import 'lan_hub_client.dart';
 import 'lan_hub_message.dart';
 import 'lan_hub_server.dart';
+import 'leader_election_service.dart';
 
 enum LanMode { disabled, server, client }
 
@@ -97,8 +100,20 @@ class LanHubService {
           // masalan bu terminal biror USB printerga egalik qilsa, boshqa
           // client'dan kelgan print-job e'lonini eshitolmay qoladi.
           onBroadcast: _handleRemoteMessage,
+          // §6: resolved lazily (LeaseManager is registered after
+          // LanHubService in di.dart, same DI-ordering reason as
+          // `inject<UserBloc>()` elsewhere in this file).
+          onLeaseRequest: (msg) => inject<LeaseManager>().handleLeaseRequestAsLeader(msg),
+          onLeaseRelease: (msg) => inject<LeaseManager>().handleLeaseReleaseAsLeader(msg),
         );
-        await _watchForConflicts();
+        // §7: once LeaderElectionService owns this terminal's UDP discovery
+        // socket as its heartbeat channel, running the plain warn-only
+        // conflict watcher at the same time would try to double-bind the
+        // same port. Disabled by default (LeaderElectionService.isEnabled),
+        // so this is a no-op change for every branch that hasn't opted in.
+        if (!(_prefs.getBool(LeaderElectionService.electionEnabledKey) ?? false)) {
+          await _watchForConflicts();
+        }
         break;
       case LanMode.client:
         final ip = serverIp;
@@ -256,6 +271,19 @@ class LanHubService {
       opCreatedAt: op.createdAt.toUtc().toIso8601String(),
     );
     return _parseRelayResult(resultName);
+  }
+
+  /// §6: follower side of the lease protocol — `LeaseManager.acquireTableLease`
+  /// delegates here in `client` mode, mirroring how [relayOperation] above
+  /// delegates to `_client.relayOp`.
+  Future<LanHubMessage?> requestLease({
+    required String tableId,
+    required String terminalId,
+  }) =>
+      _client.requestLease(tableId: tableId, terminalId: terminalId);
+
+  void releaseLease({required String tableId, required String terminalId}) {
+    _client.releaseLease(tableId: tableId, terminalId: terminalId);
   }
 
   void _handleRemoteMessage(LanHubMessage msg) {

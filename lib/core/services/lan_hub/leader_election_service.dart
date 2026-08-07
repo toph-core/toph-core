@@ -1,0 +1,252 @@
+import 'dart:async';
+import 'dart:math';
+
+import 'package:flutter/foundation.dart';
+import 'package:mary_ai_pos/core/services/print_queue/print_queue_service.dart';
+import 'package:mary_ai_pos/di.dart';
+import 'package:mary_ai_pos/features/view/auth/presentation/cubit/bloc/user_bloc.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+import 'lan_discovery_service.dart';
+import 'lan_hub_server.dart';
+import 'lan_hub_service.dart';
+
+/// offline-first-target-architecture.md §7 — automatic leader failover.
+///
+/// **Disabled by default** (see [electionEnabledKey]) — this is genuinely new
+/// runtime behavior for a terminal's LAN role, and §11 step 5's own rollout
+/// plan calls for "ships behind the existing manual `LanMode` toggle as a
+/// fallback until its own canary window clears" before it becomes the
+/// default. This sandbox has no way to run that canary against real
+/// multi-terminal hardware, so shipping it pre-enabled would skip the
+/// design doc's own rollout discipline, not just add caution on top of it.
+/// See EXECUTION_CONCERNS.md. Flipping [setEnabled] is the one manual step
+/// needed to turn this on for a branch; nothing else changes automatically.
+///
+/// Reuses the discovery beacon as the heartbeat channel (§7: "the discovery
+/// beacon becomes the heartbeat channel, not a separate mechanism") — when
+/// enabled, this owns that UDP socket instead of
+/// `LanHubService._watchForConflicts`' plain warn-only watcher (see the
+/// gate in `LanHubService.init()`), since two sockets can't bind the same
+/// UDP port in one process.
+enum ElectionRole { idle, follower, candidate, leader }
+
+class LeaderElectionService {
+  static const electionEnabledKey = 'lan_election_enabled';
+  static const _keyEpoch = 'lan_election_epoch';
+  static const _keyPriority = 'lan_election_priority';
+
+  final LanHubService _lanHub;
+  final SharedPreferences _prefs;
+  final LanDiscoveryService _discovery;
+  final String Function() _myTerminalId;
+  final String Function() _myBranchId;
+  final Random _random = Random();
+
+  /// ~2-3s per §7's concrete timing.
+  final Duration heartbeatInterval;
+
+  /// 3 consecutive misses (~6-9s) before a leader is considered dead, per §7.
+  final int missedBeatsBeforeDead;
+
+  /// Minimum wait before a candidate claims — priority shortens this per
+  /// terminal (see [_startElection]), it never lengthens it beyond this.
+  final Duration baseElectionWait;
+
+  LeaderElectionService({
+    required LanHubService lanHub,
+    required SharedPreferences prefs,
+    LanDiscoveryService? discovery,
+    String Function()? terminalId,
+    String Function()? branchId,
+    this.heartbeatInterval = const Duration(seconds: 3),
+    this.missedBeatsBeforeDead = 3,
+    this.baseElectionWait = const Duration(seconds: 1),
+  })  : _lanHub = lanHub,
+        _prefs = prefs,
+        _discovery = discovery ?? LanDiscoveryService(),
+        _myTerminalId =
+            terminalId ?? (() => inject<PrintQueueService>().terminalId),
+        _myBranchId =
+            branchId ?? (() => inject<UserBloc>().state.userMOdel?.branchId ?? '');
+
+  bool get isEnabled => _prefs.getBool(electionEnabledKey) ?? false;
+
+  /// The one manual step to turn this on/off for this terminal. Starts/stops
+  /// immediately rather than requiring an app restart.
+  Future<void> setEnabled(bool value) async {
+    await _prefs.setBool(electionEnabledKey, value);
+    if (value) {
+      await start();
+    } else {
+      await stop();
+    }
+  }
+
+  int get _epoch => _prefs.getInt(_keyEpoch) ?? 0;
+  Future<void> _persistEpoch(int epoch) => _prefs.setInt(_keyEpoch, epoch);
+
+  /// Open question 3 (design doc, "Open questions"): configured per-terminal
+  /// vs. derived automatically — left unresolved there, so this picks the
+  /// simpler of the two (a random fallback, persisted once) rather than
+  /// deciding the deferred question. [setPriority] lets a settings screen
+  /// override it later without this class needing to change.
+  int get priority {
+    final existing = _prefs.getInt(_keyPriority);
+    if (existing != null) return existing;
+    final generated = 1 + _random.nextInt(999);
+    unawaited(_prefs.setInt(_keyPriority, generated));
+    return generated;
+  }
+
+  Future<void> setPriority(int value) => _prefs.setInt(_keyPriority, value);
+
+  ElectionRole _role = ElectionRole.idle;
+  ElectionRole get role => _role;
+
+  String? _currentLeaderIp;
+  String? get currentLeaderIp => _currentLeaderIp;
+
+  final _roleController = StreamController<ElectionRole>.broadcast();
+  Stream<ElectionRole> get onRoleChanged => _roleController.stream;
+  void _setRole(ElectionRole r) {
+    _role = r;
+    if (!_roleController.isClosed) _roleController.add(r);
+  }
+
+  Timer? _watchdog;
+  Timer? _electionTimer;
+  DateTime? _lastHeartbeatHeardAt;
+  StreamSubscription<HubAnnouncement>? _sub;
+
+  bool get _isRunning => _sub != null;
+
+  Future<void> start() async {
+    if (!isEnabled || _isRunning) return;
+    final branchId = _myBranchId();
+    if (branchId.isEmpty) return;
+    await _discovery.startListening();
+    _sub = _discovery.onAnnouncement.listen((a) => _onAnnouncement(a, branchId));
+    // §7 "Reconnection re-discovery is non-blocking": start as a plain
+    // follower and let the first heartbeat window pass before ever
+    // considering an election — never claim just because nothing's been
+    // heard yet at t=0. Local UI/reads/writes are unaffected either way,
+    // this class only ever runs on background timers.
+    _lastHeartbeatHeardAt = DateTime.now();
+    _setRole(ElectionRole.follower);
+    _watchdog = Timer.periodic(heartbeatInterval, (_) => _checkLeaderAlive());
+  }
+
+  Future<void> stop() async {
+    await _sub?.cancel();
+    _sub = null;
+    _watchdog?.cancel();
+    _watchdog = null;
+    _electionTimer?.cancel();
+    _electionTimer = null;
+    await _discovery.stop();
+    _setRole(ElectionRole.idle);
+  }
+
+  void _onAnnouncement(HubAnnouncement a, String myBranchId) {
+    if (a.branchId != myBranchId) return;
+    final heardEpoch = a.epoch ?? 0;
+    if (heardEpoch < _epoch) return; // stale — a leader from a past epoch
+    _lastHeartbeatHeardAt = DateTime.now();
+
+    if (heardEpoch > _epoch) {
+      // Higher epoch always wins immediately, on both sides (§7).
+      unawaited(_adopt(a, heardEpoch));
+      return;
+    }
+
+    // Equal epoch: the presumed leader (or an equal-epoch peer) is still
+    // announcing. If we were mid-election on the belief it was dead, that
+    // belief was wrong (a transient miss, not an actual failure) — stand
+    // down instead of claiming over a leader that's still there.
+    if (a.terminalId == _myTerminalId()) return;
+    if (_role == ElectionRole.candidate) {
+      _electionTimer?.cancel();
+      _setRole(ElectionRole.follower);
+    }
+    if (_role != ElectionRole.leader) {
+      _currentLeaderIp = a.ip;
+    }
+    // Two different terminal ids announcing the SAME epoch as leader is a
+    // genuine segment-split (§7) — deliberately not auto-resolved here,
+    // same "detect, don't silently pick a winner" philosophy
+    // `LanHubService._watchForConflicts` already used for this case.
+  }
+
+  Future<void> _adopt(HubAnnouncement a, int epoch) async {
+    _electionTimer?.cancel();
+    await _persistEpoch(epoch);
+    _currentLeaderIp = a.ip;
+    if (a.terminalId == _myTerminalId()) return; // our own claim, echoed back
+    final alreadyFollowingThisLeader =
+        _lanHub.mode == LanMode.client && _lanHub.serverIp == a.ip;
+    if (alreadyFollowingThisLeader && _role == ElectionRole.follower) return;
+    await _becomeFollower(a.ip);
+  }
+
+  Future<void> _becomeFollower(String leaderIp) async {
+    if (kDebugMode) print('[LeaderElection] Adopting leader at $leaderIp (epoch $_epoch)');
+    _setRole(ElectionRole.follower);
+    await _lanHub.setServerIp(leaderIp);
+    await _lanHub.setMode(LanMode.client);
+    await _lanHub.restart();
+  }
+
+  void _checkLeaderAlive() {
+    if (!isEnabled) return;
+    if (_role == ElectionRole.leader || _role == ElectionRole.candidate) {
+      return; // we ARE the heartbeat source, or already electing
+    }
+    final last = _lastHeartbeatHeardAt;
+    final deadline = heartbeatInterval * missedBeatsBeforeDead;
+    if (last != null && DateTime.now().difference(last) < deadline) return;
+    _startElection();
+  }
+
+  /// Bully-algorithm collision avoidance, no vote round, no quorum (§7):
+  /// higher priority claims sooner; a candidate that hears a higher/equal
+  /// claim during its own wait stands down (`_onAnnouncement` above cancels
+  /// [_electionTimer] and reverts the role).
+  void _startElection() {
+    _setRole(ElectionRole.candidate);
+    final priorityFactor = (2000 / (priority + 1)).round();
+    final jitter = _random.nextInt(300);
+    final wait = baseElectionWait + Duration(milliseconds: priorityFactor + jitter);
+    _electionTimer?.cancel();
+    _electionTimer = Timer(wait, _claimLeadership);
+  }
+
+  Future<void> _claimLeadership() async {
+    if (_role != ElectionRole.candidate) return; // stood down while waiting
+    final branchId = _myBranchId();
+    if (branchId.isEmpty) return;
+    final newEpoch = _epoch + 1;
+    await _persistEpoch(newEpoch);
+    if (kDebugMode) print('[LeaderElection] Claiming leadership at epoch $newEpoch');
+    _setRole(ElectionRole.leader);
+    _currentLeaderIp = null; // this terminal IS the leader now
+    await _lanHub.setMode(LanMode.server);
+    await _lanHub.restart();
+    await _discovery.startAnnouncing(
+      branchId: branchId,
+      wsPort: LanHubServer.defaultPort,
+      heartbeatExtra: () => (
+        role: 'leader',
+        priority: priority,
+        epoch: _epoch,
+        terminalId: _myTerminalId(),
+      ),
+    );
+  }
+
+  Future<void> dispose() async {
+    await stop();
+    await _discovery.dispose();
+    if (!_roleController.isClosed) await _roleController.close();
+  }
+}

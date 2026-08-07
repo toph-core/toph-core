@@ -7,6 +7,8 @@ import 'package:flutter/foundation.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:mary_ai_pos/core/api/dio_client.dart';
 import 'package:mary_ai_pos/core/api/list_api.dart';
+import 'package:mary_ai_pos/core/utils/order_conflict_helper.dart';
+import 'package:mary_ai_pos/core/utils/uuid.dart';
 import 'pending_operation.dart';
 import 'quarantined_operation.dart';
 
@@ -267,8 +269,67 @@ class OfflineQueueService {
       payload['client_created_at'] = op.createdAt.toUtc().toIso8601String();
       await dio.post(ListAPI.orders, data: payload);
       return OpOutcome.synced;
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 409) {
+        final merged = await _mergeCreateOrderConflict(dio, op, e);
+        if (merged != null) return merged;
+      }
+      if (kDebugMode) print('[OfflineQueue] createOrder sync error: $e');
+      return _isTerminalError(e) ? _dropped(e.toString()) : OpOutcome.retryableFailure;
     } catch (e) {
       if (kDebugMode) print('[OfflineQueue] createOrder sync error: $e');
+      return _isTerminalError(e) ? _dropped(e.toString()) : OpOutcome.retryableFailure;
+    }
+  }
+
+  /// offline-first-target-architecture.md §6/§13: the online path
+  /// (`create_order_bloc.dart:213-227`) already merges a duplicate-table-open
+  /// 409 into the winning order by re-submitting the losing terminal's items
+  /// via add-items instead of discarding them. This replays the same merge
+  /// for the offline-replay executor, which previously fell straight through
+  /// to generic quarantine and silently dropped the bundled items. Returns
+  /// null (caller falls back to its existing terminal-error handling) when
+  /// the 409 body doesn't carry a resolvable winning order id — that
+  /// unparseable residual is unchanged, pending the design doc's open
+  /// question 4.
+  Future<OpOutcome?> _mergeCreateOrderConflict(
+    DioClient dio,
+    PendingOperation op,
+    DioException conflict,
+  ) async {
+    final data = conflict.response?.data;
+    final message =
+        (data is Map && data['error'] != null) ? data['error'].toString() : null;
+    final winningOrderId = extractExistingOrderIdFromConflict(message);
+    if (winningOrderId == null || winningOrderId.isEmpty) return null;
+
+    final payload = jsonDecode(op.payload) as Map<String, dynamic>;
+    final items =
+        (payload['items'] as List?)?.cast<Map<String, dynamic>>() ?? const [];
+    if (items.isEmpty) return OpOutcome.synced; // nothing to merge, order exists
+
+    try {
+      await dio.post(
+        ListAPI.orderItems(winningOrderId),
+        queryParameters: {'lang': 'uz'},
+        data: {
+          'items': [
+            for (final item in items)
+              {
+                'comment': item['comment'],
+                'good_id': item['good_id'],
+                'quantity': item['quantity'],
+                // Fresh at merge time, not reused from anywhere — this is
+                // genuinely this terminal's first submission attempt (the
+                // original create never landed under its own id).
+                'client_item_id': generateUuidV4(),
+              },
+          ],
+        },
+      );
+      return OpOutcome.synced;
+    } catch (e) {
+      if (kDebugMode) print('[OfflineQueue] createOrder 409-merge error: $e');
       return _isTerminalError(e) ? _dropped(e.toString()) : OpOutcome.retryableFailure;
     }
   }
