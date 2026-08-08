@@ -178,6 +178,7 @@ Future<void> initDi() async {
       localDb: localDatabase,
       cache: cacheService,
       syncEngine: syncEngine,
+      prefs: prefs,
     ),
   );
 

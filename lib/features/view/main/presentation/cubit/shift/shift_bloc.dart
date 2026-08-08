@@ -63,11 +63,14 @@ class ShiftBloc extends Bloc<ShiftEvent, ShiftState> {
     on<_PrintShiftReport>(_printShiftReport);
   }
 
-  static const String _kLocalShiftKey = 'pos_local_active_shift';
+  /// Public because the brand-switch wipe (`LoginDataScopeService`) must
+  /// clear this record too — with `_checkShift` local-only, a stale shift
+  /// from the previous brand would otherwise be presented as active.
+  static const String localShiftPrefsKey = 'pos_local_active_shift';
 
   ShiftResponseModel? _readLocalShift() {
     try {
-      final raw = _prefs.getString(_kLocalShiftKey);
+      final raw = _prefs.getString(localShiftPrefsKey);
       if (raw == null || raw.isEmpty) return null;
       final json = jsonDecode(raw);
       if (json is! Map<String, dynamic>) return null;
@@ -79,13 +82,13 @@ class ShiftBloc extends Bloc<ShiftEvent, ShiftState> {
 
   Future<void> _writeLocalShift(ShiftResponseModel shift) async {
     try {
-      await _prefs.setString(_kLocalShiftKey, jsonEncode(shift.toJson()));
+      await _prefs.setString(localShiftPrefsKey, jsonEncode(shift.toJson()));
     } catch (_) {}
   }
 
   Future<void> _clearLocalShift() async {
     try {
-      await _prefs.remove(_kLocalShiftKey);
+      await _prefs.remove(localShiftPrefsKey);
     } catch (_) {}
   }
 

@@ -67,6 +67,10 @@ String _typeLabel(PendingOperationType type) {
       return 'Pozitsiyani bekor qilish';
     case PendingOperationType.cancelOrder:
       return 'Buyurtmani bekor qilish';
+    case PendingOperationType.transferTable:
+      return "Stolni ko'chirish";
+    case PendingOperationType.timerAction:
+      return 'Stol taymeri amali';
   }
 }
 

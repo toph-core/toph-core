@@ -273,9 +273,13 @@ class WaiterLocalRepositoryImpl implements WaiterLocalRepository {
     );
     // Finish locally: the bill row is closed, the table is free — same side
     // effects the cashier pay flow performs, kept here so the waiter screen
-    // doesn't need its own second copy.
+    // doesn't need its own second copy. The local timer record goes too:
+    // SyncEngine only reconciles timers for *busy* tables, so a record left
+    // behind here would never age out and the next timed order on this
+    // table would reuse the paid order via createTimedOrder's guard.
     final bill = _findByOrderId(orderId);
     if (bill != null) await _localDb.evictOrderDetail(bill.key);
+    await _localDb.evictTableTimer(orderId);
     if (tableId.isNotEmpty) {
       await _localDb.updateTableStatus(tableId, TableStatus.free);
       _lanHub.tableStatusChanged(tableId, TableStatus.free.name);

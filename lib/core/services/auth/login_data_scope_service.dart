@@ -6,6 +6,9 @@ import 'package:mary_ai_pos/core/database/local_database.dart';
 import 'package:mary_ai_pos/core/services/cache/cache_service.dart';
 import 'package:mary_ai_pos/core/sync/sync_engine.dart';
 import 'package:mary_ai_pos/core/widgets/app_scaffold.dart';
+import 'package:mary_ai_pos/features/view/main/presentation/cubit/shift/shift_bloc.dart'
+    show ShiftBloc;
+import 'package:shared_preferences/shared_preferences.dart';
 
 /// CLIENT_FACING_OFFLINE_PLAN.md §1 — the brand/branch-aware retention rule
 /// applied on every successful PIN login, before any cached data is touched:
@@ -27,16 +30,19 @@ class LoginDataScopeService {
   final LocalDatabase _localDb;
   final CacheService _cache;
   final SyncEngine _syncEngine;
+  final SharedPreferences _prefs;
 
   LoginDataScopeService({
     required AppTokenStorage storage,
     required LocalDatabase localDb,
     required CacheService cache,
     required SyncEngine syncEngine,
+    required SharedPreferences prefs,
   })  : _storage = storage,
         _localDb = localDb,
         _cache = cache,
-        _syncEngine = syncEngine;
+        _syncEngine = syncEngine,
+        _prefs = prefs;
 
   /// Same claim-decode `ShiftBloc` uses — the JWT's `cash_register_id` is
   /// the only place the terminal's branch binding exists today (plan §1).
@@ -84,6 +90,11 @@ class LoginDataScopeService {
       // device-scoped and survives inside clearBrandScopedData.
       await _localDb.clearBrandScopedData();
       await _cache.clearAll();
+      // The active-shift record lives in SharedPreferences, not in any of
+      // the boxes above — and ShiftBloc._checkShift is local-only now, so a
+      // stale shift from the previous brand would be presented as this
+      // brand's active shift if it survived the wipe.
+      await _prefs.remove(ShiftBloc.localShiftPrefsKey);
       await _storage.setPosInitialized(false);
       // Without this, the first-mount hydration gate stays latched from the
       // previous brand's session — same reason AuthCubit.logoutFromApp
