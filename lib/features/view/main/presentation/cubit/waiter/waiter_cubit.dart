@@ -1,13 +1,10 @@
 import 'dart:async' show unawaited;
-import 'dart:convert';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mary_ai_pos/core/constants/constants.dart';
 import 'package:mary_ai_pos/core/error/failure.dart';
 import 'package:mary_ai_pos/core/service/printer/printer_service.dart';
 import 'package:mary_ai_pos/core/services/cache/cache_service.dart';
-import 'package:mary_ai_pos/core/services/offline_queue/offline_queue_service.dart';
-import 'package:mary_ai_pos/core/services/offline_queue/pending_operation.dart';
 import 'package:mary_ai_pos/core/utils/uuid.dart';
 import 'package:mary_ai_pos/di.dart';
 import 'package:mary_ai_pos/features/view/auth/data/models/user/user_model.dart';
@@ -20,7 +17,12 @@ import 'package:mary_ai_pos/features/view/main/presentation/cubit/shift/shift_bl
 
 part 'waiter_state.dart';
 
-/// Ofitsiant: `GET /orders/my`. Kassir: `GET /orders` (filial buyurtmalari).
+/// CLIENT_FACING_OFFLINE_PLAN.md §5: rebuilt local-first. Every read comes
+/// from `LocalDatabase` (via `WaiterLocalRepository`'s local synthesis) and
+/// every write is a single local commit through the already-correct
+/// repositories — no direct network call and no online/offline fork remains
+/// anywhere in this cubit. Both list modes currently serve the same local
+/// set (the order-detail box isn't waiter-scoped — see EXECUTION_CONCERNS.md).
 typedef OrdersListMode = WaiterOrdersListMode;
 
 class WaiterCubit extends Cubit<WaiterState> {
@@ -208,25 +210,6 @@ class WaiterCubit extends Cubit<WaiterState> {
     }
   }
 
-  Future<void> _enqueueCancelLineItems(
-    List<String> lineIds,
-    String? comment,
-  ) async {
-    if (lineIds.isEmpty) return;
-    await inject<OfflineQueueService>().enqueue(
-      PendingOperation(
-        id: OfflineQueueService.newId(),
-        type: PendingOperationType.cancelLineItems,
-        payload: jsonEncode({
-          'line_ids': lineIds,
-          if (comment != null && comment.isNotEmpty) 'comment': comment,
-        }),
-        tableId: '',
-        createdAt: DateTime.now(),
-      ),
-    );
-  }
-
   void _applyOptimisticCancel({
     required String orderId,
     required String orderItemId,
@@ -238,6 +221,10 @@ class WaiterCubit extends Cubit<WaiterState> {
     emit(state.copyWith(orderLineItems: updated));
   }
 
+  /// CLIENT_FACING_OFFLINE_PLAN.md §5: a single local commit (repository
+  /// marks the line cancelled locally + enqueues through
+  /// `OrdersRepository.cancelLineItems`) — the online/offline fork this
+  /// method used to carry is gone, there is nothing left to fork on.
   Future<void> cancelOrderItem({
     required String orderItemId,
     required String orderId,
@@ -246,35 +233,14 @@ class WaiterCubit extends Cubit<WaiterState> {
     if (orderItemId.isEmpty) return;
     emit(state.copyWith(cancellingOrderItemId: orderItemId));
 
-    final result = await _repository.cancelOrderItem(
+    await _repository.cancelOrderItem(
       orderItemId: orderItemId,
       comment: comment,
     );
     if (isClosed) return;
-
-    await result.fold(
-      (failure) async {
-        if (failure.isConnectivityIssue) {
-          await _enqueueCancelLineItems([orderItemId], comment);
-          if (!isClosed) {
-            _applyOptimisticCancel(orderId: orderId, orderItemId: orderItemId);
-            emit(state.copyWith(cancellingOrderItemId: null));
-          }
-          return;
-        }
-        emit(
-          state.copyWith(
-            cancellingOrderItemId: null,
-            errorMessage: _messageFor(failure, fallback: 'Xato yuz berdi'),
-          ),
-        );
-      },
-      (_) async {
-        emit(state.copyWith(cancellingOrderItemId: null));
-        await loadOrderItems(orderId);
-        await loadOpenOrders();
-      },
-    );
+    _applyOptimisticCancel(orderId: orderId, orderItemId: orderItemId);
+    emit(state.copyWith(cancellingOrderItemId: null));
+    await loadOpenOrders();
   }
 
   /// Loads saved line items (`GET /api/v1/order-items/order/{id}`).
@@ -319,38 +285,6 @@ class WaiterCubit extends Cubit<WaiterState> {
     emit(state.copyWith(panelMode: WaiterPanelMode.billDetail));
   }
 
-  Future<void> _enqueueAddItems({
-    required String tableId,
-    required List<Map<String, dynamic>> payloadItems,
-  }) async {
-    await inject<OfflineQueueService>().enqueue(
-      PendingOperation(
-        id: OfflineQueueService.newId(),
-        type: PendingOperationType.addItems,
-        payload: jsonEncode({'items': payloadItems}),
-        tableId: tableId,
-        createdAt: DateTime.now(),
-      ),
-    );
-  }
-
-  // client_item_id — backendning AddOrderItems idempotency kaliti
-  // (order_items.client_item_id, §13 risk #2): agar shu payload keyinroq
-  // offline outbox orqali qayta yuborilsa (masalan, birinchi javob
-  // yo'qolgani uchun), backend takroriy item yaratmasdan mavjudini
-  // qaytaradi. Online to'g'ridan-to'g'ri chaqiruv uchun bu maydon zarar
-  // keltirmaydi — u qayta urinilmaydi, shunchaki e'tiborga olinmaydi.
-  List<Map<String, dynamic>> _itemsToPayload(List<OrderItem> items) => items
-      .map(
-        (item) => {
-          'good_id': item.goods.id,
-          'quantity': item.quantity,
-          'comment': item.commet,
-          'client_item_id': generateUuidV4(),
-        },
-      )
-      .toList();
-
   void _applyOptimisticAdd({
     required String orderId,
     required List<OrderItem> items,
@@ -373,6 +307,9 @@ class WaiterCubit extends Cubit<WaiterState> {
     emit(state.copyWith(orderLineItems: [...state.orderLineItems, ...synthetic]));
   }
 
+  /// CLIENT_FACING_OFFLINE_PLAN.md §5: a single local commit through
+  /// `OrdersRepository.addItems` (same op, same idempotency keys the cashier
+  /// flow uses) — no online/offline fork, no direct POST.
   Future<void> sendItems({
     required String orderId,
     required List<OrderItem> items,
@@ -380,60 +317,27 @@ class WaiterCubit extends Cubit<WaiterState> {
     if (items.isEmpty) return;
     emit(state.copyWith(isSendingItems: true, errorMessage: null));
 
-    // Built once so a connection-failure retry below (offline fallback)
-    // replays under the SAME client_item_ids — otherwise a response lost
-    // after the request already committed server-side would fall into the
-    // offline queue with fresh ids that don't match anything already
-    // created, defeating AddOrderItems' idempotency guard (§13 risk #2).
-    final payloadItems = _itemsToPayload(items);
-    final result = await _repository.sendItems(
+    final tableId =
+        state.openOrders.where((o) => o.id == orderId).firstOrNull?.tableId ??
+            '';
+    await _repository.sendItems(
       orderId: orderId,
-      items: payloadItems,
+      tableId: tableId,
+      items: items,
     );
     if (isClosed) return;
-
-    await result.fold(
-      (failure) async {
-        if (failure.isConnectivityIssue) {
-          final tableId = state.openOrders
-                  .where((o) => o.id == orderId)
-                  .firstOrNull
-                  ?.tableId ??
-              '';
-          await _enqueueAddItems(tableId: tableId, payloadItems: payloadItems);
-          if (isClosed) return;
-          _applyOptimisticAdd(orderId: orderId, items: items);
-          emit(state.copyWith(isSendingItems: false));
-          // Fire-and-forget: faqat oshxona cheklari, backend online bo'lmasa
-          // ham LAN'dagi oshxona printeri ishlashi mumkin.
-          final order = state.openOrders.where((o) => o.id == orderId).firstOrNull;
-          if (order != null) {
-            unawaited(
-              _printerService.printKitchenReceipt(order: order, items: items),
-            );
-          }
-          return;
-        }
-        emit(
-          state.copyWith(
-            isSendingItems: false,
-            errorMessage: _messageFor(failure, fallback: 'Xato yuz berdi'),
-          ),
-        );
-      },
-      (_) async {
-        emit(state.copyWith(isSendingItems: false));
-        // Fire-and-forget: faqat oshxona cheklari (kategoriya printerlari). Kassa cheki faqat to'lovdan keyin (closeOrder).
-        final order = state.openOrders.where((o) => o.id == orderId).firstOrNull;
-        if (order != null) {
-          unawaited(
-            _printerService.printKitchenReceipt(order: order, items: items),
-          );
-        }
-        await loadOrderItems(orderId);
-        await loadOpenOrders();
-      },
-    );
+    _applyOptimisticAdd(orderId: orderId, items: items);
+    emit(state.copyWith(isSendingItems: false));
+    // Fire-and-forget: faqat oshxona cheklari (kategoriya printerlari) —
+    // backend ko'rinmasa ham LAN'dagi oshxona printeri ishlashi mumkin.
+    // Kassa cheki faqat to'lovdan keyin (closeOrder).
+    final order = state.openOrders.where((o) => o.id == orderId).firstOrNull;
+    if (order != null) {
+      unawaited(
+        _printerService.printKitchenReceipt(order: order, items: items),
+      );
+    }
+    await loadOpenOrders();
   }
 
   /// Backend `total_amount` is safe for normal tables only.
@@ -461,26 +365,9 @@ class WaiterCubit extends Cubit<WaiterState> {
     return sumLines.round() + serviceAmt;
   }
 
-  Future<void> _enqueueCloseOrder({
-    required String orderId,
-    required String tableId,
-    required Map<String, dynamic> payBody,
-  }) async {
-    await inject<OfflineQueueService>().enqueue(
-      PendingOperation(
-        id: OfflineQueueService.newId(),
-        type: PendingOperationType.payOrder,
-        payload: jsonEncode({'order_id': orderId, ...payBody}),
-        tableId: tableId,
-        createdAt: DateTime.now(),
-      ),
-    );
-  }
-
-  /// Shared by the online-success and offline-queued paths: printing and the
-  /// local "this order is closed" state update don't depend on whether the
-  /// `/pay` POST already landed or is sitting in the outbox — the amount was
-  /// already computed locally either way.
+  /// Printing and the local "this order is closed" state update — the pay
+  /// itself is always in the outbox by the time this runs (plan §5), the
+  /// amount was computed locally regardless.
   void _finishCloseOrderLocally({
     required OpenOrderModel order,
     required String orderId,
@@ -564,77 +451,27 @@ class WaiterCubit extends Cubit<WaiterState> {
 
     emit(state.copyWith(isClosingOrder: true, errorMessage: null));
 
-    final payBody = <String, dynamic>{
-      'payment_type': paymentType.name,
-      'customer_paid_amount': '$customerPaidAmount',
-    };
-    final hasDiscount = discountPercent > 0 || discountAmount > 0;
-    if (hasDiscount) {
-      if (discountPercent > 0) {
-        payBody['discount_percent'] = discountPercent.toStringAsFixed(0);
-      }
-      if (discountAmount > 0) {
-        payBody['discount_amount'] = discountAmount.round().toString();
-      }
-      payBody['discount_comment'] = '';
-    }
-
-    final result = await _repository.closeOrder(
+    // CLIENT_FACING_OFFLINE_PLAN.md §5: one pay path, not two — the
+    // repository delegates to `PaymentRepository.pay()` (local commit +
+    // outbox), frees the table and evicts the local bill. No fork.
+    await _repository.closeOrder(
       orderId: orderId,
-      payBody: payBody,
+      tableId: order.tableId ?? '',
+      paidAmount: customerPaidAmount,
+      paymentType: paymentType.name,
+      discountPercent: discountPercent,
+      discountAmount: discountAmount,
     );
     if (isClosed) return;
-
-    await result.fold(
-      (failure) async {
-        if (failure.isConnectivityIssue) {
-          await _enqueueCloseOrder(
-            orderId: orderId,
-            tableId: order.tableId ?? '',
-            payBody: payBody,
-          );
-          if (isClosed) return;
-          _finishCloseOrderLocally(
-            order: order,
-            orderId: orderId,
-            lineItems: lineItems,
-            base: base,
-            discountPercent: discountPercent,
-            discountAmount: discountAmount,
-          );
-          return;
-        }
-        emit(
-          state.copyWith(
-            isClosingOrder: false,
-            errorMessage: _messageFor(failure, fallback: 'Xato yuz berdi'),
-          ),
-        );
-      },
-      (_) async {
-        _finishCloseOrderLocally(
-          order: order,
-          orderId: orderId,
-          lineItems: lineItems,
-          base: base,
-          discountPercent: discountPercent,
-          discountAmount: discountAmount,
-        );
-        await loadOpenOrders();
-      },
+    _finishCloseOrderLocally(
+      order: order,
+      orderId: orderId,
+      lineItems: lineItems,
+      base: base,
+      discountPercent: discountPercent,
+      discountAmount: discountAmount,
     );
-  }
-
-  Future<void> _enqueueCreateOrder(Map<String, dynamic> body) async {
-    await inject<OfflineQueueService>().enqueue(
-      PendingOperation(
-        id: OfflineQueueService.newId(),
-        type: PendingOperationType.createOrder,
-        payload: jsonEncode(body),
-        tableId: body['table_id'] as String? ?? '',
-        createdAt: DateTime.now(),
-      ),
-    );
+    await loadOpenOrders();
   }
 
   void _insertCreatedOrder(OpenOrderModel newOrder, {required bool willLoadItems}) {
@@ -674,42 +511,19 @@ class WaiterCubit extends Cubit<WaiterState> {
 
     emit(state.copyWith(isCreatingOrder: true, errorMessage: null));
 
-    final clientOrderId = generateUuidV4();
-    final body = <String, dynamic>{
-      'id': clientOrderId,
-      'table_id': tableId,
-      'guest_count': guestCount,
-      'status': 'open',
-    };
-    if (waiterId != null && waiterId.isNotEmpty) {
-      body['waiter_id'] = waiterId;
-    }
-
-    final result = await _repository.createOrder(body);
+    // CLIENT_FACING_OFFLINE_PLAN.md §5: local commit — the repository
+    // enqueues the create, writes the local bill snapshot, marks the table
+    // busy. No connectivity fork; the old server-409 recovery became a
+    // local "open bill already on this table" reuse.
+    final result = await _repository.createOrder(
+      tableId: tableId,
+      guestCount: guestCount,
+      waiterId: waiterId,
+    );
     if (isClosed) return;
 
     await result.fold(
       (failure) async {
-        if (failure.isConnectivityIssue) {
-          await _enqueueCreateOrder(body);
-          if (isClosed) return;
-          _insertCreatedOrder(
-            OpenOrderModel(
-              id: clientOrderId,
-              name: name,
-              tableNumber: tableNumber,
-              hallName: hallName,
-              guestCount: guestCount,
-              openedAt: DateTime.now(),
-              tableId: tableId,
-              status: 'open',
-              totalAmount: '0',
-              orderType: 'dine_in',
-            ),
-            willLoadItems: false,
-          );
-          return;
-        }
         emit(
           state.copyWith(
             isCreatingOrder: false,
@@ -737,18 +551,17 @@ class WaiterCubit extends Cubit<WaiterState> {
             servicePercent: created.servicePercent,
             orderType: created.orderType ?? 'dine_in',
           ),
-          willLoadItems: true,
+          willLoadItems: false,
         );
         await loadOpenOrders();
-        await loadOrderItems(created.orderId);
       },
     );
   }
 
-  /// 409 conflict paytida chaqiriladi: buyurtma `state.openOrders`da
-  /// bo'lmasligi mumkin (masalan boshqa ofitsiantniki) — shuning uchun
-  /// `selectOrder`dan foydalanmaymiz, balki uni to'g'ridan-to'g'ri yuklab
-  /// ro'yxatga qo'shamiz.
+  /// Stolda allaqachon ochiq lokal schyot bor holatda chaqiriladi: buyurtma
+  /// `state.openOrders`da bo'lmasligi mumkin — shuning uchun `selectOrder`
+  /// o'rniga uni to'g'ridan-to'g'ri (lokal o'qish bilan) yuklab ro'yxatga
+  /// qo'shamiz.
   Future<void> _openExistingOrder(String orderId) async {
     final result = await _repository.getOrderDetail(orderId);
     if (isClosed) return;

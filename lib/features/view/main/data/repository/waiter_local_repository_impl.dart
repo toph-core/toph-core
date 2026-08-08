@@ -1,47 +1,125 @@
+import 'dart:convert';
+
 import 'package:dartz/dartz.dart';
-import 'package:dio/dio.dart';
-import 'package:mary_ai_pos/core/api/dio_client.dart';
-import 'package:mary_ai_pos/core/api/dio_exception_handler.dart';
-import 'package:mary_ai_pos/core/api/list_api.dart';
 import 'package:mary_ai_pos/core/constants/constants.dart';
+import 'package:mary_ai_pos/core/database/local_database.dart';
 import 'package:mary_ai_pos/core/error/failure.dart';
-import 'package:mary_ai_pos/core/services/cache/cache_service.dart';
-import 'package:mary_ai_pos/core/services/connectivity/connectivity_cubit.dart';
-import 'package:mary_ai_pos/core/utils/order_conflict_helper.dart';
+import 'package:mary_ai_pos/core/services/lan_hub/lan_hub_service.dart';
+import 'package:mary_ai_pos/core/services/offline_queue/offline_queue_service.dart';
+import 'package:mary_ai_pos/core/services/offline_queue/pending_operation.dart';
+import 'package:mary_ai_pos/core/utils/uuid.dart';
 import 'package:mary_ai_pos/features/view/auth/data/models/user/user_model.dart';
+import 'package:mary_ai_pos/features/view/main/data/models/archive_detail/archive_detail_model.dart';
+import 'package:mary_ai_pos/features/view/main/data/models/cafe_tables/cafe_tables_model.dart';
+import 'package:mary_ai_pos/features/view/main/data/models/hall/hall_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/open_order/open_order_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/order_line_item/order_line_item_model.dart';
-import 'package:mary_ai_pos/features/view/main/domain/repository/main_repository.dart';
+import 'package:mary_ai_pos/features/view/main/domain/repository/orders_repository.dart';
+import 'package:mary_ai_pos/features/view/main/domain/repository/payment_repository.dart';
 import 'package:mary_ai_pos/features/view/main/domain/repository/waiter_local_repository.dart';
+import 'package:mary_ai_pos/features/view/main/presentation/cubit/detail/detail_bloc.dart' show OrderItem;
 
-/// Coverage is deliberately uneven across this class's methods, not a gap —
-/// see offline-first-remediation-plan.md, Phase 5 / M1:
-/// - [getOpenOrders]: genuinely cache-first (first page only, same
-///   "what's on screen when connectivity drops" scope as archives/menu).
-/// - [getStaffWaiters]: cache-first too, but indirectly — it delegates to
-///   `MainRepository.getUsers()`, which is cache-first on its own.
-/// - [getOrderDetail]/[getOrderItems]: deliberately live-only, no cache. An
-///   open order keeps changing; a stale cached item list could understate
-///   what a guest currently owes — the same staleness-risk reasoning
-///   `TableTimerLocalRepositoryImpl` documents for its own live-only reads.
-/// - Every write method ([cancelOrderItem], [sendItems], [closeOrder],
-///   [createOrder]): no local persistence here by design — `WaiterCubit`
-///   itself is the layer that queues these into `OfflineQueueService` on a
-///   `ConnectionFailure` and applies the optimistic local state update; this
-///   repository's job is only to make the live attempt and report the
-///   failure type back up.
+/// CLIENT_FACING_OFFLINE_PLAN.md §5 — the rebuild of the plan's "largest
+/// single item." The previous implementation was, by its own doc comment,
+/// "a pure online transport": every read a live GET, every write a direct
+/// POST, outbox only as the Cubit's failure fallback. This one is the
+/// inverse and adds no second plumbing of its own:
+///
+/// - Reads are synthesized from `LocalDatabase` — the order-detail box
+///   (SyncEngine-hydrated + written by every local create), joined with the
+///   tables/halls boxes for numbers/names, and the users box for staff.
+/// - Writes delegate to the repositories that were already correct:
+///   `OrdersRepository.addItems`/`cancelLineItems` (same ops, same
+///   idempotency keys, same LAN broadcasts the cashier flow uses) and
+///   `PaymentRepository.pay` — one pay path, not the parallel `/pay` POST
+///   this class used to carry.
 class WaiterLocalRepositoryImpl implements WaiterLocalRepository {
-  final DioClient _client;
-  final MainRepository _remote;
-  final CacheService _cache;
-  final ConnectivityCubit _connectivity;
+  final LocalDatabase _localDb;
+  final OfflineQueueService _queue;
+  final OrdersRepository _orders;
+  final PaymentRepository _payment;
+  final LanHubService _lanHub;
 
   WaiterLocalRepositoryImpl(
-    this._client,
-    this._remote,
-    this._cache,
-    this._connectivity,
+    this._localDb,
+    this._queue,
+    this._orders,
+    this._payment,
+    this._lanHub,
   );
+
+  // ── Local synthesis helpers ─────────────────────────────────────────────
+
+  ArchiveDetailModel? _decodeDetail(Map<String, dynamic> raw) {
+    try {
+      return ArchiveDetailModel.fromJson(raw);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// The local bills that are genuinely "open" right now: dine-in entries
+  /// (box key = tableId) only while their table is still busy — which also
+  /// ages out stale rows from before an offline pay — and takeaway entries
+  /// (box key = the order's own id) only while their status is open.
+  List<({String key, ArchiveDetailModel detail, CafeTableModel? table})>
+      _openLocalBills() {
+    final tablesById = {for (final t in _localDb.getTables()) t.id: t};
+    final result =
+        <({String key, ArchiveDetailModel detail, CafeTableModel? table})>[];
+    for (final entry in _localDb.getOrderDetailEntries().entries) {
+      final detail = _decodeDetail(entry.value);
+      if (detail == null || detail.id.isEmpty) continue;
+      final table = tablesById[entry.key];
+      if (table != null) {
+        if (table.status != TableStatus.busy) continue;
+      } else {
+        // Takeaway (key == order id) or an unknown table — status-gated.
+        if (detail.status != OrderStatus.open) continue;
+      }
+      result.add((key: entry.key, detail: detail, table: table));
+    }
+    return result;
+  }
+
+  OpenOrderModel _toOpenOrder(
+    ArchiveDetailModel detail,
+    CafeTableModel? table,
+    Map<String, HallModel> hallsById,
+  ) {
+    final total = detail.grandTotal > 0 ? detail.grandTotal : detail.foodTotal;
+    return OpenOrderModel(
+      id: detail.id,
+      tableId: table?.id ?? (detail.tableId.isNotEmpty ? detail.tableId : null),
+      tableNumber: table?.number ?? detail.tableNumber.toInt(),
+      hallName: table != null
+          ? (hallsById[table.hallId]?.name ?? detail.hallName)
+          : detail.hallName,
+      guestCount: detail.guestCount.toInt(),
+      openedAt: detail.opened,
+      status: 'open',
+      totalAmount: total.round().toString(),
+      displayTotalAmount: total.round().toString(),
+      serviceAmount: detail.serviceAmount > 0
+          ? detail.serviceAmount.round().toString()
+          : null,
+      servicePercent: detail.servicePercent > 0 ? detail.servicePercent : null,
+      orderType: table == null ? 'takeaway' : 'dine_in',
+      tableType: table?.tableType,
+      tableAmount:
+          detail.tableAmount > 0 ? detail.tableAmount.toString() : null,
+    );
+  }
+
+  ({String key, ArchiveDetailModel detail, CafeTableModel? table})?
+      _findByOrderId(String orderId) {
+    for (final bill in _openLocalBills()) {
+      if (bill.detail.id == orderId) return bill;
+    }
+    return null;
+  }
+
+  // ── Reads ───────────────────────────────────────────────────────────────
 
   @override
   Future<Either<Failure, List<OpenOrderModel>>> getOpenOrders({
@@ -51,77 +129,18 @@ class WaiterLocalRepositoryImpl implements WaiterLocalRepository {
     int limit = 50,
     int offset = 0,
   }) async {
-    if (_connectivity.isOnline) {
-      final result = await _fetchOpenOrders(
-        mode: mode,
-        lang: lang,
-        scope: scope,
-        limit: limit,
-        offset: offset,
-      );
-      final ok = result.fold((_) => null, (r) => r);
-      if (ok != null) {
-        // Only the default first-page view is cached — same "what's on
-        // screen when connectivity drops" scope as archives/menu.
-        if (offset == 0) {
-          await _cache.saveWaiterOpenOrders(
-            mode.name,
-            ok.map((o) => o.toJson()).toList(),
-          );
-        }
-        return result;
-      }
-      // Online but the call itself failed — fall through to cache below.
-    }
-    final cachedList = _cache.getWaiterOpenOrders(mode.name);
-    if (cachedList.isEmpty) return const Left(ConnectionFailure());
-    try {
-      return Right(cachedList.map(OpenOrderModel.fromJson).toList());
-    } catch (_) {
-      return const Left(ConnectionFailure());
-    }
-  }
-
-  Future<Either<Failure, List<OpenOrderModel>>> _fetchOpenOrders({
-    required WaiterOrdersListMode mode,
-    required String lang,
-    required String scope,
-    required int limit,
-    required int offset,
-  }) async {
-    try {
-      final response = mode == WaiterOrdersListMode.branchOrders
-          ? await _client.get(
-              ListAPI.orders,
-              queryParameters: {'lang': lang, 'limit': limit, 'offset': offset},
-            )
-          : await _client.get(
-              ListAPI.ordersMy,
-              queryParameters: {
-                'lang': lang,
-                'scope': scope,
-                'limit': limit,
-                'offset': offset,
-              },
-            );
-      final rawData = response.data['data'];
-      List<dynamic> list;
-      if (rawData is List) {
-        list = rawData;
-      } else if (rawData is Map && rawData['data'] is List) {
-        list = rawData['data'] as List;
-      } else {
-        list = [];
-      }
-      final orders = list
-          .map((e) => OpenOrderModel.fromJson(e as Map<String, dynamic>))
-          .toList();
-      return Right(orders);
-    } on DioException catch (e) {
-      return Left(handleDioException(e));
-    } catch (_) {
-      return const Left(UnknownFailure());
-    }
+    final hallsById = {for (final h in _localDb.getHalls()) h.id: h};
+    final orders = _openLocalBills()
+        .map((b) => _toOpenOrder(b.detail, b.table, hallsById))
+        .toList()
+      ..sort((a, b) {
+        final ao = a.openedAt, bo = b.openedAt;
+        if (ao == null && bo == null) return 0;
+        if (ao == null) return 1;
+        if (bo == null) return -1;
+        return bo.compareTo(ao);
+      });
+    return Right(orders);
   }
 
   @override
@@ -129,19 +148,10 @@ class WaiterLocalRepositoryImpl implements WaiterLocalRepository {
     String orderId,
   ) async {
     if (orderId.isEmpty) return const Right(null);
-    try {
-      final response = await _client.get(
-        ListAPI.orderById(orderId),
-        queryParameters: {'lang': 'uz'},
-      );
-      final raw = response.data['data'];
-      if (raw is! Map<String, dynamic>) return const Right(null);
-      return Right(OpenOrderModel.fromJson(raw));
-    } on DioException catch (e) {
-      return Left(handleDioException(e));
-    } catch (_) {
-      return const Left(UnknownFailure());
-    }
+    final bill = _findByOrderId(orderId);
+    if (bill == null) return const Right(null);
+    final hallsById = {for (final h in _localDb.getHalls()) h.id: h};
+    return Right(_toOpenOrder(bill.detail, bill.table, hallsById));
   }
 
   @override
@@ -149,47 +159,52 @@ class WaiterLocalRepositoryImpl implements WaiterLocalRepository {
     String orderId,
   ) async {
     if (orderId.isEmpty) return const Right([]);
-    try {
-      final response = await _client.get(
-        ListAPI.orderItemsListByOrder(orderId),
-        queryParameters: {'lang': 'uz'},
-      );
-      final raw = response.data['data'];
-      List<dynamic> list;
-      if (raw is List) {
-        list = raw;
-      } else if (raw is Map<String, dynamic>) {
-        if (raw['items'] is List) {
-          list = raw['items'] as List;
-        } else if (raw['order'] is Map) {
-          final o = raw['order'] as Map;
-          list = o['items'] is List ? o['items'] as List : [];
-        } else {
-          list = [];
-        }
-      } else {
-        list = [];
-      }
-      final items = list
-          .whereType<Map>()
-          .map(
-            (e) => OrderLineItemModel.fromJson(Map<String, dynamic>.from(e)),
-          )
-          .toList();
-      return Right(items);
-    } on DioException catch (e) {
-      return Left(handleDioException(e));
-    } catch (_) {
-      return const Left(UnknownFailure());
-    }
+    final bill = _findByOrderId(orderId);
+    if (bill == null) return const Right([]);
+    return Right([
+      for (final g in bill.detail.goods)
+        OrderLineItemModel(
+          id: g.id,
+          goodId: g.goodId,
+          quantity: g.quantity,
+          price: g.price.toString(),
+          comment: g.comment.isEmpty ? null : g.comment,
+          goodName: g.name,
+          status: g.status,
+          createdAt: g.createdAt,
+        ),
+    ]);
   }
 
   @override
   Future<Either<Failure, List<UserModel>>> getStaffWaiters() async {
-    final result = await _remote.getUsers();
-    return result.map(
-      (users) => users.where((u) => u.role == UserRole.waiter).toList(),
-    );
+    final waiters = _localDb
+        .getUsers()
+        .where((u) => u.role == UserRole.waiter)
+        .toList();
+    return Right(waiters);
+  }
+
+  // ── Writes ──────────────────────────────────────────────────────────────
+
+  /// Patches the raw stored bill JSON for the entry containing [orderItemId]
+  /// so every local watcher sees the cancel immediately.
+  Future<void> _markLineCancelledLocally(String orderItemId) async {
+    for (final entry in _localDb.getOrderDetailEntries().entries) {
+      final items = entry.value['items'];
+      if (items is! List) continue;
+      var touched = false;
+      for (final item in items) {
+        if (item is Map && item['id'] == orderItemId) {
+          item['status'] = 'cancelled';
+          touched = true;
+        }
+      }
+      if (touched) {
+        await _localDb.saveOrderDetail(entry.key, entry.value);
+        return;
+      }
+    }
   }
 
   @override
@@ -197,100 +212,129 @@ class WaiterLocalRepositoryImpl implements WaiterLocalRepository {
     required String orderItemId,
     String? comment,
   }) async {
-    try {
-      await _client.post(
-        ListAPI.orderItemCancel(orderItemId),
-        queryParameters: {'lang': 'uz'},
-        data: <String, dynamic>{
-          if (comment != null && comment.trim().isNotEmpty)
-            'comment': comment.trim(),
-        },
-      );
-      return const Right(true);
-    } on DioException catch (e) {
-      return Left(handleDioException(e));
-    } catch (_) {
-      return const Left(UnknownFailure());
-    }
+    await _orders.cancelLineItems(lineIds: [orderItemId], comment: comment);
+    await _markLineCancelledLocally(orderItemId);
+    return const Right(true);
   }
 
   @override
   Future<Either<Failure, bool>> sendItems({
     required String orderId,
-    required List<Map<String, dynamic>> items,
+    required String tableId,
+    required List<OrderItem> items,
   }) async {
-    try {
-      await _client.post(
-        ListAPI.orderItems(orderId),
-        queryParameters: {'lang': 'uz'},
-        data: {'items': items},
-      );
-      return const Right(true);
-    } on DioException catch (e) {
-      return Left(handleDioException(e));
-    } catch (_) {
-      return const Left(UnknownFailure());
+    await _orders.addItems(tableId: tableId, orderId: orderId, items: items);
+    // Durable local bill patch — the same wire item shape the box already
+    // stores, so the reads above pick the new lines up on the next decode.
+    final bill = _findByOrderId(orderId);
+    if (bill != null) {
+      final raw = _localDb.getOrderDetail(bill.key);
+      if (raw != null) {
+        final list = raw['items'] is List
+            ? List<dynamic>.from(raw['items'] as List)
+            : <dynamic>[];
+        final now = DateTime.now().toIso8601String();
+        for (final item in items) {
+          list.add({
+            'id': generateUuidV4(),
+            'good_id': item.goods.id,
+            'good_name': item.goods.name,
+            'quantity': item.quantity,
+            'price': item.goods.price,
+            'comment': item.comment,
+            'status': 'pending',
+            'created_at': now,
+          });
+        }
+        raw['items'] = list;
+        await _localDb.saveOrderDetail(bill.key, raw);
+      }
     }
+    return const Right(true);
   }
 
   @override
   Future<Either<Failure, bool>> closeOrder({
     required String orderId,
-    required Map<String, dynamic> payBody,
+    required String tableId,
+    required int paidAmount,
+    required String paymentType,
+    double discountPercent = 0,
+    double discountAmount = 0,
   }) async {
-    try {
-      await _client.post(ListAPI.payToOrder(orderId), data: payBody);
-      return const Right(true);
-    } on DioException catch (e) {
-      return Left(handleDioException(e));
-    } catch (_) {
-      return const Left(UnknownFailure());
+    await _payment.pay(
+      orderId: orderId,
+      tableId: tableId,
+      paidAmount: paidAmount,
+      paymentType: paymentType,
+      applyService: true,
+      discountAmount: discountAmount > 0 ? discountAmount.round() : null,
+      discountPercent: discountPercent > 0 ? discountPercent.round() : null,
+    );
+    // Finish locally: the bill row is closed, the table is free — same side
+    // effects the cashier pay flow performs, kept here so the waiter screen
+    // doesn't need its own second copy.
+    final bill = _findByOrderId(orderId);
+    if (bill != null) await _localDb.evictOrderDetail(bill.key);
+    if (tableId.isNotEmpty) {
+      await _localDb.updateTableStatus(tableId, TableStatus.free);
+      _lanHub.tableStatusChanged(tableId, TableStatus.free.name);
     }
+    return const Right(true);
   }
 
   @override
-  Future<Either<Failure, WaiterCreateOrderResult>> createOrder(
-    Map<String, dynamic> body,
-  ) async {
-    try {
-      final response = await _client.post(ListAPI.orders, data: body);
-      final raw = response.data['data'];
-      final data = raw is Map<String, dynamic> ? raw : <String, dynamic>{};
-      final orderId = data['id'] as String? ?? '';
-      if (orderId.isEmpty) return const Left(EmptyFailure());
-      double? sp;
-      final rawSp = data['service_percent'];
-      if (rawSp is num) {
-        sp = rawSp.toDouble();
-      } else if (rawSp != null) {
-        sp = double.tryParse(rawSp.toString());
+  Future<Either<Failure, WaiterCreateOrderResult>> createOrder({
+    required String tableId,
+    required int guestCount,
+    String? waiterId,
+  }) async {
+    // Local double-open guard, replacing the old server-409 recovery: an
+    // open local bill already on this table is reused instead of enqueueing
+    // a duplicate create. A genuine cross-terminal race still merges at
+    // replay time via OfflineQueueService's 409 branch.
+    final existingRaw = _localDb.getOrderDetail(tableId);
+    if (existingRaw != null) {
+      final existing = _decodeDetail(existingRaw);
+      if (existing != null &&
+          existing.id.isNotEmpty &&
+          existing.status == OrderStatus.open) {
+        return Right(WaiterCreateOrderResult(existing.id, wasExisting: true));
       }
-      return Right(
-        WaiterCreateOrderResult(
-          orderId,
-          servicePercent: sp,
-          totalAmount: data['total_amount']?.toString(),
-          serviceAmount: data['service_amount']?.toString(),
-          orderType: data['order_type'] as String?,
-        ),
-      );
-    } on DioException catch (e) {
-      // 409 Conflict: stol allaqachon faol buyurtmaga ega. Xato ko'rsatish
-      // o'rniga mavjud buyurtmani yuklab, panelni o'shanga ochamiz — shu
-      // orqali orphan/duplicate bill hosil bo'lishining oldi olinadi.
-      if (e.response?.statusCode == 409) {
-        final raw = e.response?.data;
-        final msg = raw is Map
-            ? (raw['error'] ?? raw['message'])?.toString()
-            : null;
-        final existingId = extractExistingOrderIdFromConflict(msg);
-        if (existingId != null && existingId.isNotEmpty) {
-          return Right(WaiterCreateOrderResult(existingId, wasExisting: true));
-        }
-      }
-      return Left(handleDioException(e));
-    } catch (_) {
-      return const Left(UnknownFailure());
     }
+
+    final clientOrderId = generateUuidV4();
+    await _queue.enqueue(PendingOperation(
+      id: OfflineQueueService.newId(),
+      type: PendingOperationType.createOrder,
+      // Same body the old direct POST sent — including the waiter binding,
+      // which CreateOrderRequestModel doesn't model, hence the hand-built
+      // payload instead of OrdersRepository.createOrder here.
+      payload: jsonEncode({
+        'id': clientOrderId,
+        'table_id': tableId,
+        'guest_count': guestCount,
+        'status': 'open',
+        'order_type': 'dine_in',
+        'comment': '',
+        'items': <dynamic>[],
+        if (waiterId != null && waiterId.isNotEmpty) 'waiter_id': waiterId,
+      }),
+      tableId: tableId,
+      createdAt: DateTime.now(),
+    ));
+    await _orders.saveOrderDetailSnapshot(
+      tableId,
+      ArchiveDetailModel(
+        id: clientOrderId,
+        status: OrderStatus.open,
+        opened: DateTime.now(),
+        tableId: tableId,
+        guestCount: guestCount.toDouble(),
+      ).toJson(),
+    );
+    await _localDb.updateTableStatus(tableId, TableStatus.busy);
+    _lanHub.tableStatusChanged(tableId, TableStatus.busy.name);
+    return Right(WaiterCreateOrderResult(clientOrderId, orderType: 'dine_in'));
   }
 }

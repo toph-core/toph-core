@@ -260,8 +260,16 @@ void _repositories() {
   inject.registerLazySingleton<TableTimerLocalRepository>(
     () => TableTimerLocalRepositoryImpl(inject(), inject(), inject()),
   );
+  // CLIENT_FACING_OFFLINE_PLAN.md §5 — rebuilt local-first on LocalDatabase
+  // + the already-correct Orders/Payment repositories; no DioClient.
   inject.registerLazySingleton<WaiterLocalRepository>(
-    () => WaiterLocalRepositoryImpl(inject(), inject(), inject(), inject()),
+    () => WaiterLocalRepositoryImpl(
+      inject(),
+      inject(),
+      inject(),
+      inject(),
+      inject(),
+    ),
   );
 
   // offline-first-target-architecture.md §8 Phase 2 — the LocalRepository

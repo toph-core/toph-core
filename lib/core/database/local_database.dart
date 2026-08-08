@@ -342,6 +342,30 @@ class LocalDatabase {
 
   Future<void> evictOrderDetail(String tableId) => _orderDetail.delete(tableId);
 
+  /// All order/bill detail entries with their box keys (tableId for
+  /// dine-in, clientOrderId for takeaway) — CLIENT_FACING_OFFLINE_PLAN.md
+  /// §5's Waiter rebuild derives its open-orders list from this instead of
+  /// `GET /orders`. The box only ever holds open/busy-table bills plus the
+  /// occasional stale row, so a full decode stays small.
+  Map<String, Map<String, dynamic>> getOrderDetailEntries() {
+    final out = <String, Map<String, dynamic>>{};
+    for (final key in _orderDetail.keys) {
+      final decoded = _decodeMap(_orderDetail.get(key));
+      if (decoded != null) out[key.toString()] = decoded;
+    }
+    return out;
+  }
+
+  /// Fires on any change to any order-detail entry (unkeyed box watch).
+  Stream<Map<String, Map<String, dynamic>>> watchOrderDetailEntries() =>
+      Stream.multi((controller) {
+        controller.add(getOrderDetailEntries());
+        final sub = _orderDetail
+            .watch()
+            .listen((_) => controller.add(getOrderDetailEntries()));
+        controller.onCancel = sub.cancel;
+      });
+
   // ── Menu images (keyed by Minio object name, base64-encoded bytes — a
   // Box<String> stays the one storage shape this facade needs, rather than
   // adding a second Hive value type just for this one entity) ───────────
