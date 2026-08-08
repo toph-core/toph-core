@@ -26,7 +26,12 @@ enum TokensStorageKeys {
   posUser('pos_user'),
 
   /// Last successfully used pincode (for offline PIN login)
-  lastPincode('pos_last_pincode');
+  lastPincode('pos_last_pincode'),
+
+  /// Last authenticated brand id + cash_register_id pair — the comparison
+  /// point for CLIENT_FACING_OFFLINE_PLAN.md §1's brand/branch retention
+  /// rule on each new login
+  lastAuthContext('pos_last_auth_context');
 
   /// Key name
   final String keyName;
@@ -205,6 +210,36 @@ class AppTokenStorage {
 
   Future<void> writeLastPincode(String pincode) async =>
       _write(TokensStorageKeys.lastPincode, pincode);
+
+  /// The stored "last authenticated brand id + cash_register_id" pair
+  /// (CLIENT_FACING_OFFLINE_PLAN.md §1). Written after every successful
+  /// login; compared against the new login's context before any cached data
+  /// is touched. Not a credential, so it lives in plain `SharedPreferences`.
+  Future<({String brandId, String cashRegisterId})?> readLastAuthContext() async {
+    try {
+      final raw = await _read(TokensStorageKeys.lastAuthContext);
+      if (raw == null) return null;
+      final json = jsonDecode(raw) as Map<String, dynamic>;
+      return (
+        brandId: json['brand_id'] as String? ?? '',
+        cashRegisterId: json['cash_register_id'] as String? ?? '',
+      );
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<void> writeLastAuthContext({
+    required String brandId,
+    required String cashRegisterId,
+  }) =>
+      _write(
+        TokensStorageKeys.lastAuthContext,
+        jsonEncode({
+          'brand_id': brandId,
+          'cash_register_id': cashRegisterId,
+        }),
+      );
 
   Future<String?> readLastPincode() async => _read(TokensStorageKeys.lastPincode);
 

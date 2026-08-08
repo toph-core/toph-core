@@ -124,6 +124,7 @@ class SyncEngine {
           await _cache.prefetchAllGoods(_client);
           await _mirrorGoodsIntoLocalDb();
           await _hydrateReferenceData();
+          _refreshUserProfile();
         }
         _recordSync();
         return;
@@ -135,11 +136,56 @@ class SyncEngine {
       await _cache.prefetchAllGoods(_client);
       await _mirrorGoodsIntoLocalDb();
       await _hydrateReferenceData();
+      _refreshUserProfile();
       _recordSync();
     } catch (e) {
       if (kDebugMode) debugPrint('[SyncEngine] tick error: $e');
     } finally {
       _tickRunning = false;
+    }
+  }
+
+  /// CLIENT_FACING_OFFLINE_PLAN.md §1 — login-triggered hydration, called by
+  /// `LoginDataScopeService` for first-time setup (with [includeGoods], the
+  /// full catalog prep fetch) and for a same-brand branch switch (without —
+  /// additive branch-data refetch, the catalog isn't redownloaded). Bypasses
+  /// the reference-data freshness TTL: a login that changed brand/branch
+  /// must not be told "fetched 3 minutes ago, still fresh" about the
+  /// previous context's data.
+  Future<void> hydrateNow({bool includeGoods = false}) async {
+    if (!_connectivity.isOnline) return;
+    try {
+      if (includeGoods) {
+        await _cache.prefetchAllGoods(_client, force: true);
+        await _mirrorGoodsIntoLocalDb();
+      }
+      await _hydrateReferenceData(force: true);
+      _recordSync();
+    } catch (e) {
+      if (kDebugMode) debugPrint('[SyncEngine] hydrateNow error: $e');
+    }
+  }
+
+  DateTime? _lastProfileRefreshAt;
+  static const _profileRefreshInterval = Duration(minutes: 5);
+
+  /// CLIENT_FACING_OFFLINE_PLAN.md §1 — the server profile re-check
+  /// (`UserBloc`'s `getUser`, which also revalidates the session and purges
+  /// the offline-auth cache on a definite rejection) is initiated from here,
+  /// the background sync side, instead of from splash/`AppScaffold`'s
+  /// reconnect listener. Throttled so the periodic 60s tick doesn't turn a
+  /// once-per-reconnect call into a once-per-minute one.
+  void _refreshUserProfile() {
+    final now = DateTime.now();
+    if (_lastProfileRefreshAt != null &&
+        now.difference(_lastProfileRefreshAt!) < _profileRefreshInterval) {
+      return;
+    }
+    _lastProfileRefreshAt = now;
+    try {
+      inject<UserBloc>().add(const UserEvent.getUser());
+    } catch (e) {
+      if (kDebugMode) debugPrint('[SyncEngine] refreshUserProfile error: $e');
     }
   }
 

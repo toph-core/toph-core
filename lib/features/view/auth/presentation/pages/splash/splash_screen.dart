@@ -48,9 +48,11 @@ class _SplashScreenState extends State<SplashScreen> {
         if (!unAuth) {
           Navigator.pushReplacementNamed(context, AppRoutes.loginPinScreen);
         } else {
-          // Navigate immediately — don't wait for getUser API call
           Navigator.pushReplacementNamed(context, AppRoutes.mainScreen);
-          context.read<UserBloc>().add(const UserEvent.getUser());
+          // Local cached-profile read only — the server profile refresh is
+          // SyncEngine's job now, not something the UI layer initiates
+          // (CLIENT_FACING_OFFLINE_PLAN.md §1).
+          context.read<UserBloc>().add(const UserEvent.started());
         }
       } else {
         Navigator.pushReplacementNamed(context, AppRoutes.loginScreen);

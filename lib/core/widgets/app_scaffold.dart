@@ -9,7 +9,6 @@ import 'package:mary_ai_pos/core/widgets/styled_virtual_keyboard.dart';
 import 'package:mary_ai_pos/core/widgets/lan_solo_banner.dart';
 import 'package:mary_ai_pos/core/widgets/offline_banner.dart';
 import 'package:mary_ai_pos/di.dart';
-import 'package:mary_ai_pos/features/view/auth/presentation/cubit/bloc/user_bloc.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/main/main_cubit.dart';
 
 class AppScaffold extends StatefulWidget {
@@ -97,17 +96,12 @@ class _AppScaffoldState extends State<AppScaffold> {
   }
 
   Future<void> _syncOnReconnect() async {
+    // The session re-check on reconnect (offline-auth cache'ning muddatsiz
+    // yozuvlarini serverdan qayta tasdiqlash) endi shu tick ichida —
+    // `SyncEngine` o'zi `UserBloc`ga getUser yuboradi; UI qatlami boshqa
+    // to'g'ridan-to'g'ri so'rov boshlamaydi (CLIENT_FACING_OFFLINE_PLAN.md §1).
     await inject<SyncEngine>().tick();
     if (mounted) context.read<MainCubit>().refreshTables();
-    // Joriy sessiyani ham qayta tekshiradi — offline-auth cache'da vaqt
-    // asosidagi muddat yo'q (§11 Phase 6), buning o'rniga: har safar aloqa
-    // tiklanganda serverdan haqiqiy javob so'raladi, va agar foydalanuvchi
-    // shu orada faolsizlantirilgan bo'lsa, `UserBloc._getUser` buni aniqlab
-    // login ekraniga qaytaradi hamda tegishli offline cache yozuvini
-    // o'chiradi — shift davomida "faolsizlantirilgan xodim hali ham
-    // ishlayapti" holatini keyingi muvaffaqiyatli aloqagacha emas, aynan shu
-    // yerda yopadi.
-    if (mounted) context.read<UserBloc>().add(const UserEvent.getUser());
   }
 
   @override

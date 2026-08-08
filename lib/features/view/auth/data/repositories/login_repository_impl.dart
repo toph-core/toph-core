@@ -38,7 +38,11 @@ class AuthRepositoryImpl implements AuthRepository {
   Future<Either<Failure, bool>> loginWithBrandId(BrandIdTokenPair req) async {
     try {
       await _tokenStorage.writeBrandIdToken(req);
-      await _tokenStorage.setPosInitialized(true);
+      // NOT `setPosInitialized(true)` here anymore — that flag now means
+      // "first-time setup fetch actually completed", and is set by
+      // LoginDataScopeService once the initial hydration has landed data
+      // (CLIENT_FACING_OFFLINE_PLAN.md §1). Setting it at brand-login time,
+      // before any data exists locally, is what left it meaningless before.
       return const Right(true);
     } catch (e) {
       return const Left(CacheFailure());

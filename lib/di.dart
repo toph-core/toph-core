@@ -5,6 +5,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:mary_ai_pos/core/api/app_security_context.dart';
 import 'package:mary_ai_pos/core/api/dio_client.dart';
 import 'package:mary_ai_pos/core/services/audit/privileged_action_audit_log_service.dart';
+import 'package:mary_ai_pos/core/services/auth/login_data_scope_service.dart';
 import 'package:mary_ai_pos/core/services/auth/offline_auth_cache.dart';
 import 'package:mary_ai_pos/core/service/receipt/receipt_info_storage.dart';
 import 'package:mary_ai_pos/core/database/local_database.dart';
@@ -25,7 +26,6 @@ import 'package:mary_ai_pos/features/view/auth/domain/usecases/check_user_auth/c
 import 'package:mary_ai_pos/features/view/auth/domain/usecases/logout/logout_usecase.dart';
 import 'package:mary_ai_pos/features/view/auth/domain/usecases/user/get_user_usecase.dart';
 import 'package:mary_ai_pos/features/view/auth/presentation/cubit/bloc/user_bloc.dart';
-import 'package:mary_ai_pos/features/view/main/domain/usecase/check_shift_usecase.dart';
 import 'package:mary_ai_pos/features/view/main/data/repository/archives_local_repository_impl.dart';
 import 'package:mary_ai_pos/features/view/main/data/repository/menu_local_repository_impl.dart';
 import 'package:mary_ai_pos/features/view/main/data/repository/table_timer_local_repository_impl.dart';
@@ -172,6 +172,17 @@ Future<void> initDi() async {
   syncEngine.start();
   inject.registerSingleton<SyncEngine>(syncEngine);
 
+  // CLIENT_FACING_OFFLINE_PLAN.md §1 — the brand/branch retention rule
+  // applied on each successful PIN login.
+  inject.registerLazySingleton<LoginDataScopeService>(
+    () => LoginDataScopeService(
+      storage: tokenStorage,
+      localDb: localDatabase,
+      cache: cacheService,
+      syncEngine: syncEngine,
+    ),
+  );
+
   final MinioService minioService = MinioService.instance;
   minioService.configure(securityContext: securityContext);
   inject.registerLazySingleton(() => minioService);
@@ -291,7 +302,6 @@ void _useCase() {
   inject.registerLazySingleton(
     () => SyncPrinterSettingsUsecase(inject(), inject()),
   );
-  inject.registerLazySingleton(() => CheckShiftUsecase(inject()));
   inject.registerFactory(() => GetHourPriceUsecase(repository: inject()));
 }
 
@@ -317,7 +327,6 @@ void _cubit() {
   inject.registerLazySingleton(() => KeyboardCubit());
   inject.registerLazySingleton(
     () => ShiftBloc(
-      checkShiftUsecase: inject(),
       prefs: inject(),
       tokenStorage: inject(),
       printerService: inject(),
@@ -332,7 +341,14 @@ void _cubit() {
     ),
   );
   inject.registerFactory(
-    () => LoginPinCubit(inject(), inject(), inject(), inject(), inject()),
+    () => LoginPinCubit(
+      inject(),
+      inject(),
+      inject(),
+      inject(),
+      inject(),
+      inject(),
+    ),
   );
   inject.registerFactory(
     () => DetailBloc(

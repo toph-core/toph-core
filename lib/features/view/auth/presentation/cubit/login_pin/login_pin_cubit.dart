@@ -6,6 +6,7 @@ import 'package:mary_ai_pos/core/auth/models/brand_id_token_pair/brand_id_token_
 import 'package:mary_ai_pos/core/auth/storage/token_storage_impl.dart';
 import 'package:mary_ai_pos/core/error/failure.dart';
 import 'package:mary_ai_pos/core/routes/app_routes.dart';
+import 'package:mary_ai_pos/core/services/auth/login_data_scope_service.dart';
 import 'package:mary_ai_pos/core/services/auth/offline_auth_cache.dart';
 import 'package:mary_ai_pos/core/services/connectivity/connectivity_cubit.dart';
 import 'package:mary_ai_pos/core/usecase/usecase.dart';
@@ -23,6 +24,7 @@ class LoginPinCubit extends Cubit<LoginPinState> {
   final AppTokenStorage _secureStorage;
   final OfflineAuthCache _offlineCache;
   final ConnectivityCubit _connectivity;
+  final LoginDataScopeService _dataScope;
 
   LoginPinCubit(
     this._loginUsecase,
@@ -30,6 +32,7 @@ class LoginPinCubit extends Cubit<LoginPinState> {
     this._secureStorage,
     this._offlineCache,
     this._connectivity,
+    this._dataScope,
   ) : super(const LoginPinState());
 
   void login({required String pincode, required Function() onSuccess}) async {
@@ -52,6 +55,11 @@ class LoginPinCubit extends Cubit<LoginPinState> {
             refreshToken: cached.refreshToken,
           ),
         );
+        // Offline login ham "oxirgi pincode" hisoblanadi — UserBloc'ning
+        // lokal profil o'qishi aynan shu pincode bo'yicha to'g'ri
+        // ofitsiantni topishi uchun (CLIENT_FACING_OFFLINE_PLAN.md §1).
+        await _secureStorage.writeLastPincode(pincode);
+        await _dataScope.onSuccessfulLogin();
         emit(state.copyWith(status: Status.SUCCESS));
         onSuccess();
       } else {
@@ -96,6 +104,8 @@ class LoginPinCubit extends Cubit<LoginPinState> {
               refreshToken: cached.refreshToken,
             ),
           );
+          await _secureStorage.writeLastPincode(pincode);
+          await _dataScope.onSuccessfulLogin();
           emit(state.copyWith(status: Status.SUCCESS));
           onSuccess();
         } else {
@@ -105,6 +115,10 @@ class LoginPinCubit extends Cubit<LoginPinState> {
       (_) async {
         // Keyingi offline login uchun pincode ni saqla
         await _secureStorage.writeLastPincode(pincode);
+        // Brand/branch retention rule (CLIENT_FACING_OFFLINE_PLAN.md §1):
+        // shu yerda — token yozilgandan keyin, navigatsiyadan oldin —
+        // oxirgi brand+kassa juftligi bilan solishtiriladi.
+        await _dataScope.onSuccessfulLogin();
         emit(state.copyWith(status: Status.SUCCESS));
         onSuccess();
       },

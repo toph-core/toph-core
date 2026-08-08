@@ -13,7 +13,6 @@ import 'package:mary_ai_pos/core/utils/helper/helper_widget.dart';
 import 'package:mary_ai_pos/di.dart' show inject;
 import 'package:mary_ai_pos/features/view/auth/presentation/cubit/bloc/user_bloc.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/shift/shift_response_model.dart';
-import 'package:mary_ai_pos/features/view/main/domain/usecase/check_shift_usecase.dart';
 import 'package:mary_ai_pos/core/service/printer/printer_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -35,23 +34,22 @@ part 'shift_bloc.freezed.dart';
 /// EXECUTION_CONCERNS.md as a real, visible behavior change worth a second
 /// look, not something decided silently.
 ///
-/// `_checkShift` is unchanged — it's a one-time startup reconciliation
-/// ("is there already an open shift on this register") that needs a
-/// definitive server answer to be meaningful at all, already cache-first
-/// with a local fallback, and isn't one of the plan's own V1-V9 violations.
+/// `_checkShift` is local-only now (CLIENT_FACING_OFFLINE_PLAN.md §1): the
+/// local shift record is primary and no network call is initiated from this
+/// bloc at all. If shift state can drift from the server, reconciling it is
+/// the sync engine's job in the background, not this bloc's — flagged in
+/// EXECUTION_CONCERNS.md as a cross-side dependency, since no such
+/// reconciliation pass exists on that side yet.
 class ShiftBloc extends Bloc<ShiftEvent, ShiftState> {
-  late final CheckShiftUsecase _checkShiftUsecase;
   final SharedPreferences _prefs;
   final AppTokenStorage _tokenStorage;
   final PrinterService _printerService;
   //
   ShiftBloc({
-    required CheckShiftUsecase checkShiftUsecase,
     required SharedPreferences prefs,
     required AppTokenStorage tokenStorage,
     required PrinterService printerService,
-  }) : _checkShiftUsecase = checkShiftUsecase,
-       _prefs = prefs,
+  }) : _prefs = prefs,
        _tokenStorage = tokenStorage,
        _printerService = printerService,
        super(const ShiftState()) {
@@ -283,53 +281,22 @@ class ShiftBloc extends Bloc<ShiftEvent, ShiftState> {
     }
   }
 
+  /// CLIENT_FACING_OFFLINE_PLAN.md §1: the local shift record is primary —
+  /// no network call is initiated from here at all. The previous
+  /// server-first check (with local fallback) is gone; "no local shift" now
+  /// routes to the open-shift flow exactly like the server's "no active
+  /// shift" answer used to.
   Future<void> _checkShift(_CheckShift event, Emitter<ShiftState> emit) async {
     emit(state.copyWith(status: Status.LOADING));
-    final cashRegisterId = await _resolveCashRegisterId();
-    if (emit.isDone) return;
-    if (cashRegisterId.isEmpty) {
-      final local = _readLocalShift();
-      emit(state.copyWith(status: Status.SUCCESS, shift: local));
-      return;
-    }
-
-    final response = await _checkShiftUsecase.call(cashRegisterId);
-    if (emit.isDone) return;
-
-    // On a real failure (parse/network/server) we must NOT assume "no shift" —
-    // the server may already have an open shift. Keep the last-known local shift
-    // if present, and surface the failure without redirecting to the open-shift flow.
-    if (response.isLeft()) {
-      final failure = response.swap().getOrElse(() => const UnknownFailure());
-      final local = _readLocalShift();
-      final fallback = local ?? state.shift;
-      emit(
-        state.copyWith(
-          status: fallback != null ? Status.SUCCESS : Status.ERROR,
-          shift: fallback,
-          failure: failure,
-        ),
-      );
-      return;
-    }
-
-    ShiftResponseModel? resolved;
-    response.fold((_) {}, (r) => resolved = r);
-
-    // Genuine "no active shift" from server (Right(null)) → open-shift flow.
-    resolved ??= _readLocalShift();
-    if (resolved == null) {
+    final local = _readLocalShift();
+    if (local == null) {
       final ctx = navigatorKey.currentContext;
       if (ctx != null && ctx.mounted) {
         Navigator.pushNamed(ctx, AppRoutes.closeShiftScreen);
       }
-      await _clearLocalShift();
-    } else {
-      await _writeLocalShift(resolved!);
     }
-
     if (emit.isDone) return;
-    emit(state.copyWith(status: Status.SUCCESS, shift: resolved));
+    emit(state.copyWith(status: Status.SUCCESS, shift: local));
   }
 
   void _started(_Started event, Emitter<ShiftState> emit) {

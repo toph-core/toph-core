@@ -379,6 +379,37 @@ class LocalDatabase {
   Future<void> saveArchives(Map<String, dynamic> json) =>
       _saveByKey(_archives, _listKey, json);
 
+  // ── Login-scope clears (CLIENT_FACING_OFFLINE_PLAN.md §1) ──────────────
+  /// Brand switch: a new login to a *different* brand wipes every
+  /// account-scoped box before first-time setup runs fresh. Covers both the
+  /// brand-wide catalog boxes (categories, departments, goods,
+  /// goodsByCategory, ingredients, compounds — plus users, transaction
+  /// groups and menu images, which are brand-scoped by the same logic) and
+  /// the branch-scoped boxes (halls, tables, cashRegisters, archives,
+  /// orderDetail, serviceCharge) — the old brand's branch data is
+  /// meaningless under the new brand. `printerSettings` is deliberately NOT
+  /// cleared: it's device-scoped, a property of the physical hardware, not
+  /// the account (per the plan's approved box classification).
+  Future<void> clearBrandScopedData() async {
+    await Future.wait([
+      _categories.clear(),
+      _departments.clear(),
+      _halls.clear(),
+      _tables.clear(),
+      _users.clear(),
+      _goods.clear(),
+      _goodsByCategory.clear(),
+      _ingredients.clear(),
+      _compounds.clear(),
+      _transactionGroups.clear(),
+      _cashRegisters.clear(),
+      _serviceCharge.clear(),
+      _orderDetail.clear(),
+      _menuImages.clear(),
+      _archives.clear(),
+    ]);
+  }
+
   // ── Helpers ────────────────────────────────────────────────────────────
   List<Map<String, dynamic>> _decodeList(String? raw) {
     if (raw == null) return const [];

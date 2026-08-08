@@ -45,6 +45,29 @@ class AuthDatasourceImpl implements AuthDatasource {
       );
       await _tokenStorage.writeAuthToken(tokenPair);
 
+      // CLIENT_FACING_OFFLINE_PLAN.md §1: the login response already carries
+      // the user — cache it here (brand-level + per-pincode, same shape
+      // verifyPincodeRole caches) so the profile is locally readable
+      // immediately after a first-ever online login, without waiting for a
+      // background getUser round-trip.
+      final user = model.user;
+      if (user != null) {
+        await _offlineAuthCache.saveUser(
+          brandId: req.brandId,
+          password: req.password,
+          user: user,
+          accessToken: model.accessToken,
+          refreshToken: model.refreshToken,
+        );
+        await _offlineAuthCache.saveForPin(
+          brandId: req.brandId,
+          pincode: req.pincode,
+          user: user,
+          accessToken: model.accessToken,
+          refreshToken: model.refreshToken,
+        );
+      }
+
       return const Right(true);
     } on DioException catch (exception) {
       return Left(handleDioException(exception));

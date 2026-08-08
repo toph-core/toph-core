@@ -31,8 +31,19 @@ class UserBloc extends Bloc<UserEvent, UserState> {
     on<_GetUser>(_getUser);
   }
 
+  /// CLIENT_FACING_OFFLINE_PLAN.md §1: the server profile fetch is no longer
+  /// initiated from the UI layer (splash / AppScaffold's reconnect listener
+  /// used to fire this) — `SyncEngine.tick()` dispatches it from the
+  /// background sync side instead. The UI reads the cached profile via
+  /// [_started]. The handler's own logic is unchanged: refresh the offline
+  /// cache on success, purge it and return to login on a definite rejection.
   void _getUser(_GetUser event, emit) async {
-    emit(state.copyWith(status: Status.LOADING));
+    // No LOADING emit when a profile is already on screen — this now runs
+    // periodically in the background, and a status flicker on every tick
+    // would show through any screen watching this bloc.
+    if (state.userMOdel == null) {
+      emit(state.copyWith(status: Status.LOADING));
+    }
 
     // Internet yo'q — API ga murojaat qilmasdan darhol cachega o'tamiz
     if (!inject<ConnectivityCubit>().isOnline) {
@@ -184,5 +195,31 @@ class UserBloc extends Bloc<UserEvent, UserState> {
     );
   }
 
-  void _started(_Started event, emit) => emit(const UserState());
+  /// CLIENT_FACING_OFFLINE_PLAN.md §1: the UI-initiated path — a pure local
+  /// read of the cached profile, no network. Dispatched at app start
+  /// (main.dart) and after each login (splash). Prefers the per-pincode
+  /// entry (the waiter who actually logged in — offline logins update
+  /// `lastPincode` too now) over the brand-level one; silently a no-op when
+  /// nothing is cached yet, since this also fires before first login.
+  void _started(_Started event, emit) async {
+    try {
+      final storage = inject<AppTokenStorage>();
+      final brandPair = await storage.readBrandIdToken();
+      if (brandPair == null) return;
+      final cache = inject<OfflineAuthCache>();
+
+      OfflineCachedUser? cached;
+      final pincode = await storage.readLastPincode();
+      if (pincode != null && pincode.isNotEmpty) {
+        cached = await cache.getForPin(brandPair.brandId, pincode);
+      }
+      cached ??= await cache.getCachedUser(brandPair.brandId);
+      if (cached != null) {
+        emit(state.copyWith(
+          status: Status.SUCCESS,
+          userMOdel: UserModel.fromJson(cached.userModelJson),
+        ));
+      }
+    } catch (_) {}
+  }
 }
