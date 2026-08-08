@@ -10,6 +10,7 @@ import 'package:mary_ai_pos/features/view/main/data/models/cafe_tables/cafe_tabl
 import 'package:mary_ai_pos/features/view/main/data/models/category/category_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/goods/goods_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/pagination_request/pagination_request_model.dart';
+import 'package:mary_ai_pos/features/view/main/data/repository/table_timer_local_repository_impl.dart';
 import 'package:mary_ai_pos/features/view/main/domain/repository/main_repository.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -256,6 +257,7 @@ class SyncEngine {
       await _hydrateServiceCharge(repo);
       if (categories != null) await _hydrateGoodsByCategory(repo, categories);
       await _hydrateOpenOrderDetails(repo, tables ?? _localDb.getTables());
+      await _hydrateTableTimers(repo, tables ?? _localDb.getTables());
       await _hydrateMenuImages();
     } catch (e) {
       if (kDebugMode) debugPrint('[SyncEngine] hydrateReferenceData error: $e');
@@ -428,6 +430,47 @@ class SyncEngine {
       } catch (e) {
         if (kDebugMode) {
           debugPrint('[SyncEngine] hydrateOpenOrderDetails(${table.id}) error: $e');
+        }
+      }
+    }
+  }
+
+  /// CLIENT_FACING_OFFLINE_PLAN.md §2: table-timer state lives locally now
+  /// (`local_db_table_timers`, the sole runtime source for the timer UI) —
+  /// this pass reconciles the server's snapshot into that box for busy
+  /// time-based tables, replacing the two deleted 60s UI polls as the only
+  /// place server timer truth enters the terminal. Orders with queued,
+  /// not-yet-replayed local timer ops are skipped so hydration never stomps
+  /// unsynced local changes.
+  Future<void> _hydrateTableTimers(
+    MainRepository repo,
+    List<CafeTableModel> tables,
+  ) async {
+    for (final table in tables.where(
+      (t) =>
+          t.status == TableStatus.busy &&
+          (t.tableType?.toLowerCase() == 'time_based'),
+    )) {
+      try {
+        final orderId =
+            _localDb.getOrderDetail(table.id)?['id'] as String? ?? '';
+        if (orderId.isEmpty) continue;
+        if (TableTimerLocalRepositoryImpl.hasPendingLocalTimerOps(
+          _queue,
+          orderId,
+        )) {
+          continue;
+        }
+        final raw = (await repo.getOrderTableTimer(orderId))
+            .fold((_) => null, (r) => r);
+        if (raw == null) continue;
+        await _localDb.saveTableTimer(
+          orderId,
+          TableTimerLocalRepositoryImpl.normalizeServerSnapshot(raw),
+        );
+      } catch (e) {
+        if (kDebugMode) {
+          debugPrint('[SyncEngine] hydrateTableTimers(${table.id}) error: $e');
         }
       }
     }

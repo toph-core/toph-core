@@ -5,7 +5,7 @@ import 'package:mary_ai_pos/core/services/table_timer/table_timer_sync_service.d
 import 'package:mary_ai_pos/di.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/cafe_tables/cafe_tables_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/table_timer/table_timer_response_model.dart';
-import 'package:mary_ai_pos/features/view/main/domain/repository/main_repository.dart';
+import 'package:mary_ai_pos/features/view/main/domain/repository/table_timer_local_repository.dart';
 
 const _indigo = Color(0xFFFB6633);
 const _kGreen = Color(0xFF16A34A);
@@ -55,8 +55,8 @@ class _TimeBasedTableBadgeState extends State<TimeBasedTableBadge> {
   String _orderId = '';
 
   Timer? _tickTimer;
-  Timer? _syncTimer;
   StreamSubscription<String>? _syncSub;
+  StreamSubscription<TableTimerResponse?>? _localSub;
 
   bool get _isBusy => widget.table.status == TableStatus.busy;
 
@@ -64,20 +64,30 @@ class _TimeBasedTableBadgeState extends State<TimeBasedTableBadge> {
     _pricePerHour = widget.table.pricePerHour ?? '';
   }
 
+  /// CLIENT_FACING_OFFLINE_PLAN.md §2: this widget used to run its own,
+  /// fully independent 60s network poll plus direct pause/resume calls,
+  /// parallel to and bypassing `TableTimerCubit` entirely. It now reads the
+  /// same local timer state everything else does — a
+  /// `TableTimerLocalRepository.watchTimerForTable` subscription (fires on
+  /// local writes and SyncEngine hydrations alike) plus the in-memory
+  /// `TableTimerSyncService` bridge for same-frame cross-screen updates.
   @override
   void initState() {
     super.initState();
     _seedPriceFromTable();
-    // Cross-screen sync: another widget (order screen's TableTimerCubit,
-    // or another badge instance) may already know this table's live
-    // timer state — hydrate from it immediately instead of waiting for
-    // our own first poll.
+    // Cross-screen sync: the order screen's TableTimerCubit may already
+    // hold this table's live state — hydrate from it immediately.
     final cached = inject<TableTimerSyncService>().forTable(widget.table.id);
     if (cached != null) _absorbTimer(cached);
     _syncSub = inject<TableTimerSyncService>().updates.listen(
       _onExternalTimerUpdate,
     );
-    if (_isBusy) _startPolling();
+    _localSub = inject<TableTimerLocalRepository>()
+        .watchTimerForTable(widget.table.id)
+        .listen((t) {
+      if (!mounted || t == null) return;
+      setState(() => _absorbTimer(t));
+    });
   }
 
   void _onExternalTimerUpdate(String tableId) {
@@ -135,10 +145,9 @@ class _TimeBasedTableBadgeState extends State<TimeBasedTableBadge> {
     super.didUpdateWidget(old);
     final wasBusy = old.table.status == TableStatus.busy;
 
-    if (!wasBusy && _isBusy) {
-      _startPolling();
-    } else if (wasBusy && !_isBusy) {
-      _stopPolling();
+    if (wasBusy && !_isBusy) {
+      _tickTimer?.cancel();
+      _tickTimer = null;
       if (mounted) {
         setState(() {
           _loaded = false;
@@ -162,47 +171,27 @@ class _TimeBasedTableBadgeState extends State<TimeBasedTableBadge> {
     }
   }
 
-  void _startPolling() {
-    _sync();
-    _syncTimer = Timer.periodic(const Duration(seconds: 60), (_) => _sync());
-  }
-
-  void _stopPolling() {
-    _tickTimer?.cancel();
-    _syncTimer?.cancel();
-    _tickTimer = null;
-    _syncTimer = null;
-  }
-
-  Future<void> _sync() async {
-    try {
-      final repo = inject<MainRepository>();
-      final orderId = await repo.getOrderIdWithTableId(widget.table.id);
-      if (orderId.isEmpty) return;
-
-      final timerResult = await repo.getOrderTableTimer(orderId);
-      final raw = timerResult.fold((_) => null, (r) => r);
-      if (raw == null) return;
-      final t = TableTimerResponse.fromJson(raw);
-
-      if (!mounted) return;
-      setState(() => _absorbTimer(t));
-      _publish(t);
-    } catch (_) {}
-  }
-
+  /// Local pause/resume through the same repository the order screen uses —
+  /// a local state transition + outbox enqueue, no network await. The
+  /// repository write triggers `_localSub` (and the cubit's own
+  /// subscription, if the order screen is open) so both surfaces update
+  /// from the one shared record.
   Future<void> _togglePause() async {
     if (_orderId.isEmpty || _actionLoading) return;
 
     setState(() => _actionLoading = true);
     try {
-      final repo = inject<MainRepository>();
+      final repo = inject<TableTimerLocalRepository>();
+      TableTimerResponse? t;
       if (_timerState == 'running') {
-        await repo.pauseOrderTableTimer(_orderId);
+        t = (await repo.pauseTimer(_orderId)).fold((_) => null, (r) => r);
       } else if (_timerState == 'paused') {
-        await repo.resumeOrderTableTimer(_orderId);
+        t = (await repo.resumeTimer(_orderId)).fold((_) => null, (r) => r);
       }
-      await _sync();
+      if (t != null && mounted) {
+        setState(() => _absorbTimer(t!));
+        _publish(t);
+      }
     } catch (_) {
     } finally {
       if (mounted) setState(() => _actionLoading = false);
@@ -212,7 +201,9 @@ class _TimeBasedTableBadgeState extends State<TimeBasedTableBadge> {
   @override
   void dispose() {
     _syncSub?.cancel();
-    _stopPolling();
+    _localSub?.cancel();
+    _tickTimer?.cancel();
+    _tickTimer = null;
     super.dispose();
   }
 

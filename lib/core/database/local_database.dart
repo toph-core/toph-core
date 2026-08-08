@@ -62,6 +62,7 @@ class LocalDatabase {
   final Box<String> _orderDetail;
   final Box<String> _menuImages;
   final Box<String> _archives;
+  final Box<String> _tableTimers;
 
   LocalDatabase({
     required Box<String> categories,
@@ -80,6 +81,7 @@ class LocalDatabase {
     required Box<String> orderDetail,
     required Box<String> menuImages,
     required Box<String> archives,
+    required Box<String> tableTimers,
   })  : _categories = categories,
         _departments = departments,
         _halls = halls,
@@ -95,7 +97,8 @@ class LocalDatabase {
         _printerSettings = printerSettings,
         _orderDetail = orderDetail,
         _menuImages = menuImages,
-        _archives = archives;
+        _archives = archives,
+        _tableTimers = tableTimers;
 
   static Future<LocalDatabase> init() async {
     Future<Box<String>> open(String name) => Hive.openBox<String>(name);
@@ -116,6 +119,7 @@ class LocalDatabase {
       orderDetail: await open('local_db_order_detail'),
       menuImages: await open('local_db_menu_images'),
       archives: await open('local_db_archives'),
+      tableTimers: await open('local_db_table_timers'),
     );
   }
 
@@ -379,6 +383,40 @@ class LocalDatabase {
   Future<void> saveArchives(Map<String, dynamic> json) =>
       _saveByKey(_archives, _listKey, json);
 
+  // ── Table timers (CLIENT_FACING_OFFLINE_PLAN.md §2) — keyed by orderId.
+  // The elapsed/paused timer state that previously had no local home at all
+  // (the one entity §2 calls out as needing "a place to live"). Stored in
+  // the same wire shape `GET /orders/{id}/table-timer` returns, so a
+  // SyncEngine-hydrated server snapshot and a locally-written one decode
+  // through the same `TableTimerResponse.fromJson`. ───────────────────────
+  Stream<Map<String, dynamic>?> watchTableTimer(String orderId) =>
+      _watchByKey(_tableTimers, orderId);
+
+  Map<String, dynamic>? getTableTimer(String orderId) =>
+      _getByKey(_tableTimers, orderId);
+
+  Future<void> saveTableTimer(String orderId, Map<String, dynamic> json) =>
+      _saveByKey(_tableTimers, orderId, json);
+
+  Future<void> evictTableTimer(String orderId) => _tableTimers.delete(orderId);
+
+  /// All timer records — for per-table lookups (the table-map badge knows
+  /// its tableId, not its orderId). The box holds at most one record per
+  /// open order, so a scan is small.
+  List<Map<String, dynamic>> getTableTimers() => _tableTimers.values
+      .map(_decodeMap)
+      .whereType<Map<String, dynamic>>()
+      .toList(growable: false);
+
+  /// Fires on any change to any timer record (unkeyed box watch) — callers
+  /// filter by table/order themselves.
+  Stream<List<Map<String, dynamic>>> watchTableTimers() =>
+      Stream.multi((controller) {
+        controller.add(getTableTimers());
+        final sub = _tableTimers.watch().listen((_) => controller.add(getTableTimers()));
+        controller.onCancel = sub.cancel;
+      });
+
   // ── Login-scope clears (CLIENT_FACING_OFFLINE_PLAN.md §1) ──────────────
   /// Brand switch: a new login to a *different* brand wipes every
   /// account-scoped box before first-time setup runs fresh. Covers both the
@@ -407,6 +445,7 @@ class LocalDatabase {
       _orderDetail.clear(),
       _menuImages.clear(),
       _archives.clear(),
+      _tableTimers.clear(),
     ]);
   }
 

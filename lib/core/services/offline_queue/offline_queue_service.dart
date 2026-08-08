@@ -150,6 +150,10 @@ class OfflineQueueService {
         // After create (the order must exist server-side first), before pay
         // (a pay after a transfer should land against the final table).
         PendingOperationType.transferTable,
+        // Timer actions replay after the order exists and before pay closes
+        // the session; within the type they run oldest-first, preserving a
+        // start→pause→resume sequence exactly as the cashier performed it.
+        PendingOperationType.timerAction,
         PendingOperationType.payOrder,
         PendingOperationType.cancelOrder,
         PendingOperationType.openShift,
@@ -264,6 +268,36 @@ class OfflineQueueService {
         return _execCloseShift(dio, op);
       case PendingOperationType.transferTable:
         return _execTransferTable(dio, op);
+      case PendingOperationType.timerAction:
+        return _execTimerAction(dio, op);
+    }
+  }
+
+  /// CLIENT_FACING_OFFLINE_PLAN.md §2 — replays a queued table-timer
+  /// start/pause/resume against the same endpoints `TableTimerCubit` used to
+  /// call directly. The server prices intervals by *its own* receive time,
+  /// so a late replay bills a different interval than the terminal showed —
+  /// the accepted correctness tradeoff this conversion was signed off on
+  /// (see EXECUTION_CONCERNS.md).
+  Future<OpOutcome> _execTimerAction(DioClient dio, PendingOperation op) async {
+    try {
+      final payload = jsonDecode(op.payload) as Map<String, dynamic>;
+      final orderId = payload['order_id'] as String? ?? '';
+      final action = payload['action'] as String? ?? '';
+      final path = switch (action) {
+        'start' => ListAPI.orderTableTimerStart(orderId),
+        'pause' => ListAPI.orderTableTimerPause(orderId),
+        'resume' => ListAPI.orderTableTimerResume(orderId),
+        _ => '',
+      };
+      if (orderId.isEmpty || path.isEmpty) {
+        return _dropped("Timer amalida order_id yoki action noto'g'ri.");
+      }
+      await dio.post(path);
+      return OpOutcome.synced;
+    } catch (e) {
+      if (kDebugMode) print('[OfflineQueue] timerAction sync error: $e');
+      return _isTerminalError(e) ? _dropped(e.toString()) : OpOutcome.retryableFailure;
     }
   }
 

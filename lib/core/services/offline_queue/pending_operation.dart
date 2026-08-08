@@ -23,6 +23,16 @@ enum PendingOperationType {
   /// previously a direct awaited network call in `transfer_table_dialog`.
   @HiveField(7)
   transferTable,
+
+  /// CLIENT_FACING_OFFLINE_PLAN.md §2 — table-timer start/pause/resume,
+  /// previously direct network calls in `TableTimerCubit`/
+  /// `TimeBasedTableBadge`. One type for all three actions (payload carries
+  /// `action`) so an offline pause→resume→pause sequence replays in its
+  /// original order — `syncAll` groups ops by type, which would reorder
+  /// them if each action were its own type. Timed-order *creation* reuses
+  /// the existing [createOrder] type (same endpoint, empty items).
+  @HiveField(8)
+  timerAction,
 }
 
 @HiveType(typeId: 11)

@@ -256,8 +256,10 @@ void _repositories() {
   inject.registerLazySingleton<MenuLocalRepository>(
     () => MenuLocalRepositoryImpl(inject(), inject(), inject(), inject()),
   );
+  // CLIENT_FACING_OFFLINE_PLAN.md §2 — local-first now: LocalDatabase +
+  // outbox + OrdersRepository (for the timed-order create), no DioClient.
   inject.registerLazySingleton<TableTimerLocalRepository>(
-    () => TableTimerLocalRepositoryImpl(inject()),
+    () => TableTimerLocalRepositoryImpl(inject(), inject(), inject()),
   );
   inject.registerLazySingleton<WaiterLocalRepository>(
     () => WaiterLocalRepositoryImpl(inject(), inject(), inject(), inject()),

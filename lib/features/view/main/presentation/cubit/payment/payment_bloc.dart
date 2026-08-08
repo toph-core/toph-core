@@ -23,6 +23,7 @@ import 'package:mary_ai_pos/features/view/main/data/models/table_timer/table_tim
 import 'package:mary_ai_pos/features/view/main/domain/repository/main_repository.dart';
 import 'package:mary_ai_pos/features/view/main/domain/repository/orders_repository.dart';
 import 'package:mary_ai_pos/features/view/main/domain/repository/payment_repository.dart';
+import 'package:mary_ai_pos/features/view/main/domain/repository/table_timer_local_repository.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/main/main_cubit.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/orders/orders_bloc.dart';
 
@@ -204,14 +205,12 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
   bool _paymentSucceeded = false;
   bool get paymentSucceeded => _paymentSucceeded;
 
-  /// After a failed/cancelled pay attempt, resume the table timer so accrued
-  /// time is not left paused. Never start a fresh session — that would reset
-  /// accrued time to 0 (backend may close the session on a failed /pay).
-  /// Since `_payment` above never awaits the network anymore, the case this
-  /// guards against — a failed /pay that may have closed the timer
-  /// server-side — can no longer happen from inside this Bloc; kept for the
-  /// caller (`payment_screen.dart`, on leaving the screen without paying at
-  /// all) which still needs it for that unrelated reason.
+  /// After a cancelled pay attempt (leaving the screen without paying),
+  /// resume the table timer so accrued time is not left paused. Never start
+  /// a fresh session — that would reset accrued time to 0.
+  /// CLIENT_FACING_OFFLINE_PLAN.md §2/§6: a pure local operation now — the
+  /// local timer record is read and, if paused, resumed through the same
+  /// local-write-plus-outbox path every other timer mutation uses.
   Future<void> resumeTimerAfterFailedPay() async {
     if (_paymentSucceeded) return;
     final orderId = state.detail?.id ?? state.orderId;
@@ -220,17 +219,14 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
       return;
     }
     try {
-      final result = await _mainRepository.getOrderTableTimer(orderId);
-      final raw = result.fold((_) => null, (r) => r);
-      if (raw == null) return;
-      final timerState =
-          (raw['state'] ?? raw['timer_state'])?.toString().toLowerCase() ?? '';
-      if (timerState == 'paused') {
-        await _mainRepository.resumeOrderTableTimer(orderId);
+      final timerRepo = inject<TableTimerLocalRepository>();
+      final t = (await timerRepo.getTimer(orderId)).fold((_) => null, (r) => r);
+      if (t?.stateNormalized == 'paused') {
+        await timerRepo.resumeTimer(orderId);
       }
       // closed / none / running — leave as-is; starting fresh would wipe time.
     } catch (_) {
-      // Best-effort — detail screen will refetch timer on return.
+      // Best-effort — detail screen re-reads the local timer on return.
     }
   }
 
@@ -251,6 +247,13 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
       timerTotalSec: _timerTotalSec,
       timerPricePerHour: _timerPricePerHour,
     );
+    // The order is closed — drop its local timer record so a stale timer
+    // doesn't linger for the next order on this table (plan §2; the server
+    // closes its own timer when the queued /pay lands).
+    final paidOrderId = state.detail?.id;
+    if (paidOrderId != null && paidOrderId.isNotEmpty) {
+      unawaited(inject<TableTimerLocalRepository>().evictTimer(paidOrderId));
+    }
     final mainCubit = navigatorKey.currentContext!.read<MainCubit>();
     final effectiveTableId = state.tableId ?? state.detail?.tableId;
     if (effectiveTableId != null && effectiveTableId.isNotEmpty) {

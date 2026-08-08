@@ -75,6 +75,8 @@ class PendingOperationTypeAdapter extends TypeAdapter<PendingOperationType> {
         return PendingOperationType.cancelOrder;
       case 7:
         return PendingOperationType.transferTable;
+      case 8:
+        return PendingOperationType.timerAction;
       default:
         return PendingOperationType.createOrder;
     }
@@ -106,6 +108,9 @@ class PendingOperationTypeAdapter extends TypeAdapter<PendingOperationType> {
         break;
       case PendingOperationType.transferTable:
         writer.writeByte(7);
+        break;
+      case PendingOperationType.timerAction:
+        writer.writeByte(8);
         break;
     }
   }
