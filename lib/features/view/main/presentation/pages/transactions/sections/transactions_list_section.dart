@@ -12,6 +12,7 @@ import 'package:mary_ai_pos/core/widgets/app_scaffold.dart';
 import 'package:mary_ai_pos/core/widgets/styled_virtual_keyboard.dart';
 import 'package:mary_ai_pos/di.dart';
 import 'package:mary_ai_pos/features/view/main/domain/repository/main_repository.dart';
+import 'package:mary_ai_pos/features/view/main/domain/repository/transactions_repository.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/settings/widgets/section_shell.dart';
 import 'package:mary_ai_pos/generated/l10n.dart';
 import 'package:number_paginator/number_paginator.dart';
@@ -70,6 +71,8 @@ class _TransactionsListSectionState extends State<TransactionsListSection> {
   static const List<int> _pageSizeOptions = [20, 50, 100];
 
   final MainRepository _repository = inject<MainRepository>();
+  final TransactionsRepository _transactionsRepository =
+      inject<TransactionsRepository>();
   final NumberPaginatorController _paginatorController =
       NumberPaginatorController();
   final TextEditingController _searchCtrl = TextEditingController();
@@ -79,6 +82,8 @@ class _TransactionsListSectionState extends State<TransactionsListSection> {
   List<_Transaction> _transactions = const [];
   List<_Option> _cashRegisters = const [];
   List<_Option> _categories = const [];
+  StreamSubscription<List<Map<String, dynamic>>>? _cashRegistersSub;
+  StreamSubscription<List<Map<String, dynamic>>>? _groupsSub;
 
   int _page = 1;
   int _pageSize = 20;
@@ -104,35 +109,29 @@ class _TransactionsListSectionState extends State<TransactionsListSection> {
 
   @override
   void dispose() {
+    _cashRegistersSub?.cancel();
+    _groupsSub?.cancel();
     _searchDebounce?.cancel();
     _paginatorController.dispose();
     _searchCtrl.dispose();
     super.dispose();
   }
 
-  Future<void> _loadOptions() async {
-    // Ikkalasi mustaqil so'raladi — biri xato bersa ham (masalan
-    // cash-registers uchun rol yetarli bo'lmasa), ikkinchisi baribir
-    // yuklanaveradi. Har biri o'z xatosini o'zi ushlaydi, shuning uchun
-    // Future.wait bitta xato bilan ikkalasini ham bekor qilmaydi.
-    await Future.wait([_loadCashRegisters(), _loadGroupTransactions()]);
-  }
-
-  Future<void> _loadCashRegisters() async {
-    final result = await _repository.getCashRegisters();
-    final registers = result.fold((_) => null, (r) => r);
-    if (registers == null || !mounted) return;
-    setState(() {
-      _cashRegisters = registers.map(_Option.fromJson).toList();
+  /// offline-first-target-architecture.md §8 Phase 5: reactive reads over
+  /// TransactionsRepository/LocalDatabase (already hydrated by SyncEngine,
+  /// §8 Phase 1) instead of a fetch-on-init — both are small filter/picker
+  /// option lists, not the paginated ledger itself (`_load` below, which
+  /// stays a direct paginated `MainRepository.getTransactions` call — no
+  /// bounded local mirror to page through instead, same reasoning already
+  /// used elsewhere in this codebase for live search).
+  void _loadOptions() {
+    _cashRegistersSub = _transactionsRepository.watchCashRegisters().listen((registers) {
+      if (!mounted) return;
+      setState(() => _cashRegisters = registers.map(_Option.fromJson).toList());
     });
-  }
-
-  Future<void> _loadGroupTransactions() async {
-    final result = await _repository.getTransactionGroups();
-    final categories = result.fold((_) => null, (r) => r);
-    if (categories == null || !mounted) return;
-    setState(() {
-      _categories = categories.map(_Option.fromJson).toList();
+    _groupsSub = _transactionsRepository.watchTransactionGroups().listen((groups) {
+      if (!mounted) return;
+      setState(() => _categories = groups.map(_Option.fromJson).toList());
     });
   }
 
@@ -174,10 +173,6 @@ class _TransactionsListSectionState extends State<TransactionsListSection> {
   }
 
   Future<void> _openCreateDialog() async {
-    if (_categories.isEmpty || _cashRegisters.isEmpty) {
-      await _loadOptions();
-      if (!mounted) return;
-    }
     final saved = await showDialog<bool>(
       context: context,
       barrierDismissible: false,

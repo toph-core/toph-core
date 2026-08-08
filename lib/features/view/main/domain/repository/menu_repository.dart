@@ -16,6 +16,15 @@ abstract class MenuRepository {
   Stream<List<GoodsModel>> watchGoodsForCategory(String categoryId);
   List<GoodsModel> getGoodsForCategory(String categoryId);
 
+  /// §8 Phase 5 — the recipe editor's ingredient/semi-finished picker
+  /// (`menu_manage_screen.dart`). No dedicated model upstream — raw maps,
+  /// same shape `MainRepository.getIngredients()`/`getCompounds()` return.
+  Stream<List<Map<String, dynamic>>> watchIngredients();
+  List<Map<String, dynamic>> getIngredients();
+
+  Stream<List<Map<String, dynamic>>> watchCompounds();
+  List<Map<String, dynamic>> getCompounds();
+
   /// V9: menu images, hydrated by `SyncEngine` (§8 Phase 1) instead of a
   /// `FutureBuilder` fetching on every build.
   Stream<List<int>?> watchImage(String objectName);

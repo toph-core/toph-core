@@ -247,9 +247,88 @@ uploaded this session, before hydration would otherwise pick it up.
   see `EXECUTION_CONCERNS.md` #3 for why and what this codebase's own
   existing precedent for this gap is.
 
-## Phase 5 — Back-office tier — NOT DONE
+## Phase 5 — Back-office tier — PARTIAL (reads for 5 of 7 screens; all writes
+## deliberately untouched)
 
-Not attempted — see `EXECUTION_CONCERNS.md` #4.
+Scoped per the design doc's own recommendation for this phase's writes
+("online-required-with-clear-blocked-state for v1," §9's back-office row) —
+**no write in any of these seven screens was touched**: every
+create/update/delete still calls `MainRepository` directly, unchanged,
+online-required. Only reads were migrated, and only where migrating them
+didn't risk clobbering in-progress local UI state (see the two explicit
+exclusions below — found by tracing each screen's actual interaction model
+before touching it, not assumed).
+
+New infrastructure:
+- `LocalDatabase` gained a `cashRegisters` box + `watchCashRegisters`/
+  `getCashRegisters`/`saveCashRegisters`; `SyncEngine` now hydrates it
+  (`_hydrateCashRegisters`, same best-effort/independently-try-caught shape
+  as its siblings).
+- `MenuRepository` gained `watchIngredients`/`getIngredients`/
+  `watchCompounds`/`getCompounds` (both already hydrated by `SyncEngine`
+  since the Phase 1 pass — just needed a repository surface).
+- New `TransactionsRepository` (+ impl): `watchTransactionGroups`/
+  `getTransactionGroups`, `watchCashRegisters`/`getCashRegisters`.
+  Deliberately does **not** cover `getTransactions` (the paginated ledger)
+  or any write — see its own class doc.
+
+Screens migrated (reads only):
+- **`halls_tables_section.dart`**: the halls list (`_HallsTablesSectionState`)
+  is now a `TablesRepository.watchHalls()` subscription. **The nested
+  `_TablesDetailView`'s table list is deliberately NOT migrated** — it's an
+  active drag-and-drop position editor (`_pendingMoves`, `_stageMove`,
+  `_saveStagedMoves`) where `_tables` doubles as live-editing canvas state;
+  a background stream update (e.g. `SyncEngine`'s routine 60s tick) landing
+  mid-drag would silently overwrite unsaved position edits with the last-
+  synced server state. Left as the original one-shot
+  `MainRepository.getTablesByHallId` fetch, unchanged.
+- **`menu_meals_list_screen.dart`**: categories list →
+  `MenuRepository.watchCategories()`. The paginated `searchGoodsAdmin` goods
+  list is untouched.
+- **`menu_manage_screen.dart`**: categories → `MenuRepository
+  .watchCategories()`, with one deliberate behavior difference from a naive
+  port — the original code reset `_selectedCategory` to the list's first
+  entry on every load; done unconditionally, that's fine for a one-shot
+  fetch but would silently overwrite a category the user already picked
+  every time a background sync landed while this long-lived edit form is
+  open. The rewrite only auto-selects on the first update or if the
+  previously-selected category no longer exists. Ingredient/compound
+  pickers → `MenuRepository.watchIngredients`/`watchCompounds` (safe to
+  leave fully reactive — they're option-source lists, not a bound selected
+  value, so no equivalent clobbering risk).
+- **`transactions_list_section.dart`**: cash-register and transaction-group
+  filter/picker lists → `TransactionsRepository`. The paginated transaction
+  ledger itself (`getTransactions`) is untouched — no bounded local mirror
+  to page through instead.
+- **`transaction_categories_section.dart`**: hybrid — the unfiltered default
+  list is a live `TransactionsRepository.watchTransactionGroups()`
+  subscription; an active search query (this screen has server-side search,
+  unlike the others) cancels that subscription and falls back to the
+  original direct network search, resubscribing when the search is cleared.
+  Matches `MainRepositoryImpl.getTransactionGroups`'s own existing cache
+  fallback, which was already scoped to the unfiltered list only.
+
+**Not migrated, with specific reasons (not generic caution):**
+- `_TablesDetailView`'s table position editor — see above (active local
+  edit-state clobbering risk).
+- `users_section.dart` (`getAdminUsers`) and the paginated parts of
+  `menu_meals_list_screen.dart`/`transactions_list_section.dart`
+  (`searchGoodsAdmin`/`getTransactions`) — server-side paginated/searched,
+  no bounded local mirror to serve instead without a materially different
+  (and untested) caching strategy.
+- `service_charge_cubit.dart` — the one back-office screen backed by a real
+  Cubit rather than a bare `State` class; skipped for lack of a clean
+  repository home (it's a single branch-scoped value, doesn't fit
+  `MenuRepository`/`TablesRepository`/`TransactionsRepository`'s existing
+  domains) and because `MainRepositoryImpl.getServiceCharge` already has a
+  `CacheService` fallback today, unlike the other six screens which
+  genuinely had zero offline behavior.
+- **Every write in all seven screens** — see the scoping note at the top of
+  this section.
+
+See `EXECUTION_CONCERNS.md` #4 for the reasoning trail (including the three
+distinct correctness risks found and worked around while doing this: drag-
+state clobbering, search-vs-reactive hybrid, and selection-reset-mid-edit).
 
 ## Phase 6 — Delete dead code — PARTIAL
 

@@ -56,6 +56,7 @@ class LocalDatabase {
   final Box<String> _ingredients;
   final Box<String> _compounds;
   final Box<String> _transactionGroups;
+  final Box<String> _cashRegisters;
   final Box<String> _serviceCharge;
   final Box<String> _printerSettings;
   final Box<String> _orderDetail;
@@ -72,6 +73,7 @@ class LocalDatabase {
     required Box<String> ingredients,
     required Box<String> compounds,
     required Box<String> transactionGroups,
+    required Box<String> cashRegisters,
     required Box<String> serviceCharge,
     required Box<String> printerSettings,
     required Box<String> orderDetail,
@@ -86,6 +88,7 @@ class LocalDatabase {
         _ingredients = ingredients,
         _compounds = compounds,
         _transactionGroups = transactionGroups,
+        _cashRegisters = cashRegisters,
         _serviceCharge = serviceCharge,
         _printerSettings = printerSettings,
         _orderDetail = orderDetail,
@@ -104,6 +107,7 @@ class LocalDatabase {
       ingredients: await open('local_db_ingredients'),
       compounds: await open('local_db_compounds'),
       transactionGroups: await open('local_db_transaction_groups'),
+      cashRegisters: await open('local_db_cash_registers'),
       serviceCharge: await open('local_db_service_charge'),
       printerSettings: await open('local_db_printer_settings'),
       orderDetail: await open('local_db_order_detail'),
@@ -282,6 +286,14 @@ class LocalDatabase {
 
   Future<void> saveTransactionGroups(List<Map<String, dynamic>> items) =>
       _saveList(_transactionGroups, items);
+
+  // ── Cash registers (raw maps, §8 Phase 5 back-office tier) ────────────
+  Stream<List<Map<String, dynamic>>> watchCashRegisters() => _watchList(_cashRegisters);
+
+  List<Map<String, dynamic>> getCashRegisters() => _getList(_cashRegisters);
+
+  Future<void> saveCashRegisters(List<Map<String, dynamic>> items) =>
+      _saveList(_cashRegisters, items);
 
   // ── Service charge (per-branch bare percent, keyed by branchId) ───────
   Stream<double?> watchServiceCharge(String branchId) =>

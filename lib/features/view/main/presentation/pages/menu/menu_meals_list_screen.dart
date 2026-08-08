@@ -1,9 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mary_ai_pos/core/components/flush_bars.dart';
 import 'package:mary_ai_pos/core/design_system/pos_design_system.dart';
 import 'package:mary_ai_pos/core/error/failure.dart';
 import 'package:mary_ai_pos/core/extension/for_context.dart';
+import 'package:mary_ai_pos/core/sync/sync_engine.dart';
 import 'package:mary_ai_pos/core/utils/user_role_permissions.dart';
 import 'package:mary_ai_pos/core/routes/app_routes.dart';
 import 'package:mary_ai_pos/core/widgets/app_scaffold.dart';
@@ -12,6 +15,7 @@ import 'package:mary_ai_pos/features/view/auth/presentation/cubit/bloc/user_bloc
 import 'package:mary_ai_pos/features/view/main/data/models/category/category_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/goods/goods_model.dart';
 import 'package:mary_ai_pos/features/view/main/domain/repository/main_repository.dart';
+import 'package:mary_ai_pos/features/view/main/domain/repository/menu_repository.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/main/widgets/main_header.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/widgets/product_grid_card.dart';
 import 'package:mary_ai_pos/generated/l10n.dart';
@@ -30,6 +34,7 @@ class MenuMealsListScreen extends StatefulWidget {
 
 class _MenuMealsListScreenState extends State<MenuMealsListScreen> {
   final MainRepository _repository = inject<MainRepository>();
+  final MenuRepository _menuRepository = inject<MenuRepository>();
   final NumberPaginatorController _paginatorController =
       NumberPaginatorController();
   final TextEditingController _searchCtrl = TextEditingController();
@@ -47,6 +52,7 @@ class _MenuMealsListScreenState extends State<MenuMealsListScreen> {
   int _page = 1;
   int? _totalCount;
   String _searchQuery = '';
+  StreamSubscription<List<CategoryModel>>? _categoriesSub;
 
   int get _totalPages {
     final total = _totalCount;
@@ -58,44 +64,43 @@ class _MenuMealsListScreenState extends State<MenuMealsListScreen> {
   @override
   void initState() {
     super.initState();
+    // offline-first-target-architecture.md §8 Phase 5: reactive read over
+    // MenuRepository/LocalDatabase (already hydrated by SyncEngine, §8
+    // Phase 1) instead of a fetch-on-init. Writes (`createCategory` below)
+    // stay online-required (design doc open question 1) — see
+    // EXECUTION_CONCERNS.md.
+    _categoriesSub = _menuRepository.watchCategories().listen((categories) {
+      if (!mounted) return;
+      setState(() {
+        _categories = categories;
+        _loadingCategories = false;
+      });
+    });
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       final role = context.read<UserBloc>().state.userMOdel?.role;
-      if (role.canManageMenu) _loadAll();
+      if (role.canManageMenu) _loadGoods(page: 1);
     });
   }
 
   @override
   void dispose() {
+    _categoriesSub?.cancel();
     _paginatorController.dispose();
     _searchCtrl.dispose();
     _catSearchCtrl.dispose();
     super.dispose();
   }
 
-  Future<void> _loadAll() async {
-    await _loadCategories();
-    await _loadGoods(page: 1);
-  }
-
   // ── Categories ──────────────────────────────
-
-  Future<void> _loadCategories() async {
-    if (!mounted) return;
-    setState(() => _loadingCategories = true);
-    final result = await _repository.getCategories();
-    if (!mounted) return;
-    setState(() {
-      _categories = result.fold((_) => const [], (r) => r);
-      _loadingCategories = false;
-    });
-  }
 
   Future<void> _createCategory(String name) async {
     final result = await _repository.createCategory(name);
     final failure = result.fold((f) => f, (_) => null);
     if (failure != null) throw failure;
-    await _loadCategories();
+    // Force a sync pass so the new category shows up promptly rather than
+    // waiting for SyncEngine's next periodic tick.
+    await inject<SyncEngine>().tick(force: true);
   }
 
   void _openCategoryDialog() {

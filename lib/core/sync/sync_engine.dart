@@ -201,6 +201,7 @@ class SyncEngine {
       // entity's failure doesn't block the others or the five above.
       await _hydrateIngredientsAndCompounds(repo);
       await _hydrateTransactionGroups(repo);
+      await _hydrateCashRegisters(repo);
       await _hydratePrinterSettings(repo);
       await _hydrateServiceCharge(repo);
       if (categories != null) await _hydrateGoodsByCategory(repo, categories);
@@ -259,6 +260,18 @@ class SyncEngine {
       }
     } catch (e) {
       if (kDebugMode) debugPrint('[SyncEngine] hydrateTransactionGroups error: $e');
+    }
+  }
+
+  /// §8 Phase 5 (back-office tier) — `transactions_list_section.dart`'s cash
+  /// register picker, same "unfiltered default list" scope as transaction
+  /// groups above.
+  Future<void> _hydrateCashRegisters(MainRepository repo) async {
+    try {
+      final registers = (await repo.getCashRegisters()).fold((_) => null, (r) => r);
+      if (registers != null) await _localDb.saveCashRegisters(registers);
+    } catch (e) {
+      if (kDebugMode) debugPrint('[SyncEngine] hydrateCashRegisters error: $e');
     }
   }
 

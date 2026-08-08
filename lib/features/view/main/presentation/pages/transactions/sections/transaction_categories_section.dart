@@ -5,8 +5,10 @@ import 'package:mary_ai_pos/core/components/flush_bars.dart';
 import 'package:mary_ai_pos/core/extension/for_context.dart';
 import 'package:mary_ai_pos/core/widgets/app_scaffold.dart';
 import 'package:mary_ai_pos/core/widgets/styled_virtual_keyboard.dart';
+import 'package:mary_ai_pos/core/sync/sync_engine.dart';
 import 'package:mary_ai_pos/di.dart';
 import 'package:mary_ai_pos/features/view/main/domain/repository/main_repository.dart';
+import 'package:mary_ai_pos/features/view/main/domain/repository/transactions_repository.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/settings/widgets/section_shell.dart';
 import 'package:mary_ai_pos/generated/l10n.dart';
 
@@ -21,6 +23,8 @@ class TransactionCategoriesSection extends StatefulWidget {
 class _TransactionCategoriesSectionState
     extends State<TransactionCategoriesSection> {
   final MainRepository _repository = inject<MainRepository>();
+  final TransactionsRepository _transactionsRepository =
+      inject<TransactionsRepository>();
   final TextEditingController _searchCtrl = TextEditingController();
 
   bool _loading = true;
@@ -28,28 +32,48 @@ class _TransactionCategoriesSectionState
   List<_Category> _categories = const [];
   String _searchQuery = '';
   Timer? _searchDebounce;
+  StreamSubscription<List<Map<String, dynamic>>>? _groupsSub;
 
   @override
   void initState() {
     super.initState();
-    _load();
+    _subscribeToGroups();
   }
 
   @override
   void dispose() {
+    _groupsSub?.cancel();
     _searchDebounce?.cancel();
     _searchCtrl.dispose();
     super.dispose();
   }
 
+  /// offline-first-target-architecture.md §8 Phase 5: the unfiltered default
+  /// list is a reactive TransactionsRepository/LocalDatabase subscription
+  /// (already hydrated by SyncEngine, §8 Phase 1); an active search query
+  /// still goes straight to the network (`_load` below) — same "no bounded
+  /// local mirror to search against instead" reasoning already used
+  /// elsewhere in this codebase (e.g. DetailBloc's live goods search), and
+  /// matches `MainRepositoryImpl.getTransactionGroups`'s own existing cache
+  /// fallback, which was already scoped to the unfiltered list only.
+  void _subscribeToGroups() {
+    _groupsSub = _transactionsRepository.watchTransactionGroups().listen((groups) {
+      if (!mounted) return;
+      setState(() {
+        _categories = groups.map(_Category.fromJson).toList();
+        _loading = false;
+        _error = null;
+      });
+    });
+  }
+
   Future<void> _load() async {
+    if (_searchQuery.isEmpty) return; // reactive subscription already covers this
     setState(() {
       _loading = true;
       _error = null;
     });
-    final result = await _repository.getTransactionGroups(
-      search: _searchQuery.isEmpty ? null : _searchQuery,
-    );
+    final result = await _repository.getTransactionGroups(search: _searchQuery);
     if (!mounted) return;
     result.fold(
       (failure) => setState(() {
@@ -63,13 +87,35 @@ class _TransactionCategoriesSectionState
     );
   }
 
+  /// Re-syncs after a write. While actively searching, re-runs the search
+  /// (there's no local mirror of search results); otherwise just asks for a
+  /// fresh sync pass — the reactive subscription above picks it up.
+  Future<void> _refreshAfterWrite() async {
+    if (_searchQuery.isNotEmpty) {
+      await _load();
+    } else {
+      await inject<SyncEngine>().tick(force: true);
+    }
+  }
+
   void _onSearchChanged(String v) {
     setState(() {});
     _searchDebounce?.cancel();
     _searchDebounce = Timer(const Duration(milliseconds: 350), () {
       if (!mounted) return;
-      setState(() => _searchQuery = v.trim());
-      _load();
+      final newQuery = v.trim();
+      setState(() => _searchQuery = newQuery);
+      if (newQuery.isEmpty) {
+        // Back to the unfiltered list — resume the reactive subscription
+        // rather than a one-shot fetch.
+        _groupsSub?.cancel();
+        _subscribeToGroups();
+      } else {
+        // Stop reacting to the unfiltered list while a search is active, so
+        // an unrelated background sync can't overwrite search results.
+        _groupsSub?.cancel();
+        _load();
+      }
     });
   }
 
@@ -79,7 +125,7 @@ class _TransactionCategoriesSectionState
       barrierDismissible: false,
       builder: (_) => _CategoryEditDialog(repository: _repository, existing: existing),
     );
-    if (saved == true && mounted) _load();
+    if (saved == true && mounted) await _refreshAfterWrite();
   }
 
   Future<void> _confirmDelete(_Category c) async {
@@ -108,7 +154,7 @@ class _TransactionCategoriesSectionState
     if (!mounted) return;
     result.fold(
       (failure) => showErrorMessage(context, failure.getLocalizedMessage(context)),
-      (_) => _load(),
+      (_) => _refreshAfterWrite(),
     );
   }
 

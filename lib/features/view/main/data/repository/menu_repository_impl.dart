@@ -23,6 +23,18 @@ class MenuRepositoryImpl implements MenuRepository {
       _localDb.getGoodsForCategory(categoryId);
 
   @override
+  Stream<List<Map<String, dynamic>>> watchIngredients() => _localDb.watchIngredients();
+
+  @override
+  List<Map<String, dynamic>> getIngredients() => _localDb.getIngredients();
+
+  @override
+  Stream<List<Map<String, dynamic>>> watchCompounds() => _localDb.watchCompounds();
+
+  @override
+  List<Map<String, dynamic>> getCompounds() => _localDb.getCompounds();
+
+  @override
   Stream<List<int>?> watchImage(String objectName) => _localDb.watchImage(objectName);
 
   @override

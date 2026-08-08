@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -9,6 +11,7 @@ import 'package:mary_ai_pos/features/view/auth/presentation/cubit/bloc/user_bloc
 import 'package:mary_ai_pos/features/view/main/data/models/cafe_tables/cafe_tables_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/hall/hall_model.dart';
 import 'package:mary_ai_pos/features/view/main/domain/repository/main_repository.dart';
+import 'package:mary_ai_pos/features/view/main/domain/repository/tables_repository.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/main/main_cubit.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/main/widgets/admin_floor_plan_canvas.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/settings/widgets/section_shell.dart';
@@ -23,42 +26,52 @@ class HallsTablesSection extends StatefulWidget {
 
 class _HallsTablesSectionState extends State<HallsTablesSection> {
   final MainRepository _repository = inject<MainRepository>();
+  final TablesRepository _tablesRepository = inject<TablesRepository>();
 
   bool _loading = true;
   String? _error;
   List<HallModel> _halls = const [];
   HallModel? _selectedHall;
+  StreamSubscription<List<HallModel>>? _hallsSub;
 
   @override
   void initState() {
     super.initState();
-    _load();
-  }
-
-  Future<void> _load() async {
-    setState(() {
-      _loading = true;
-      _error = null;
-    });
-    final result = await _repository.getHalls();
-    if (!mounted) return;
-    result.fold(
-      (failure) => setState(() {
-        _loading = false;
-        _error = failure.getLocalizedMessage(context);
-      }),
-      (halls) => setState(() {
+    // offline-first-target-architecture.md §8 Phase 5: reactive read over
+    // TablesRepository/LocalDatabase (already hydrated by SyncEngine, §8
+    // Phase 1) instead of a fetch-on-init. Writes below still call
+    // MainRepository directly and stay online-required (design doc open
+    // question 1) — see EXECUTION_CONCERNS.md — but their existing
+    // `MainCubit.getHalls()` post-write refresh call now also forces the
+    // sync pass this subscription reacts to, so the list here still updates
+    // promptly after a create/update/delete.
+    _hallsSub = _tablesRepository.watchHalls().listen((halls) {
+      if (!mounted) return;
+      setState(() {
         _halls = halls;
         _loading = false;
+        _error = null;
         // Keep _selectedHall in sync if it was updated/removed.
         if (_selectedHall != null) {
           final match =
               _halls.where((h) => h.id == _selectedHall!.id).cast<HallModel?>();
           _selectedHall = match.isNotEmpty ? match.first : null;
         }
-      }),
-    );
+      });
+    });
   }
+
+  @override
+  void dispose() {
+    _hallsSub?.cancel();
+    super.dispose();
+  }
+
+  /// `_error` is never actually set by the stream path above (a
+  /// `LocalDatabase` read doesn't fail the way a network fetch did) — kept
+  /// only so the pre-existing retry-button UI still compiles/has a target;
+  /// pressing it just asks for a fresh sync pass.
+  Future<void> _load() => context.read<MainCubit>().getHalls(force: true);
 
   Future<void> _openHallEditor({HallModel? existing}) async {
     final branchId =
@@ -73,9 +86,8 @@ class _HallsTablesSectionState extends State<HallsTablesSection> {
       ),
     );
     if (saved == true && mounted) {
-      _load();
       try {
-        await context.read<MainCubit>().getHalls();
+        await context.read<MainCubit>().getHalls(force: true);
       } catch (_) {}
     }
   }
@@ -94,10 +106,9 @@ class _HallsTablesSectionState extends State<HallsTablesSection> {
     if (!mounted) return;
     final failure = result.fold((f) => f, (_) => null);
     if (failure == null) {
-      _load();
       try {
         // ignore: use_build_context_synchronously
-        await context.read<MainCubit>().getHalls();
+        await context.read<MainCubit>().getHalls(force: true);
       } catch (_) {}
     } else {
       showErrorMessage(context, failure.getLocalizedMessage(context));

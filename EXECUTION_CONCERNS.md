@@ -135,21 +135,66 @@ integration test isn't possible here for the same reason noted in
 two terminals and an actual pulled-network-cable scenario, then flip
 `setEnabled(true)`.
 
-## 4. Phase 5 (back-office tier) still not attempted
+## 4. Phase 5 (back-office tier) — reads done for 5 of 7 screens, writes
+   deliberately untouched everywhere
 
-Genuinely lower risk than Phase 2 was (per the plan's own §9 table, these
-nine widgets have "zero cache, zero queue, zero offline behavior today" —
-no existing behavior to regress) but still substantial new-screen work
-(menu, staff, halls/tables structural edits, transactions, service charge),
-and — unlike Phase 2, where the override above applies — the plan itself
-flags this phase's actual write policy as its own **unresolved open
-question** (open question 1: "queue offline edits vs. require connectivity
-— real product tradeoff, not an engineering default"). Overriding "wait for
-a canary window" is one thing; deciding a product tradeoff the design
-document itself declines to make is a different kind of call, and this pass
-didn't make it. Phase 6's V8 cleanup (the `Timer.periodic` polling in
-`archive_screen.dart`/`waiter_floor_plan_screen.dart`) depends on this phase
-too — see `OFFLINE_FIRST_EXECUTION_PROGRESS.md`'s Phase 6 section.
+Genuinely lower risk than Phase 2 in the sense the plan's own §9 table
+describes (these screens had "zero cache, zero queue, zero offline behavior
+today" — no existing behavior to regress), but the plan also flags this
+phase's write policy as its own **unresolved open question** (open question
+1: "queue offline edits vs. require connectivity — real product tradeoff,
+not an engineering default"). Overriding "wait for a canary window" (as #1
+above does) is one kind of call; deciding a product tradeoff the design
+document itself declines to make is a different kind, and this pass didn't
+make it — **every write in every back-office screen still goes straight to
+`MainRepository`, unchanged, online-required.** Only reads were migrated to
+`LocalRepository`/`LocalDatabase`, and only where doing so was actually
+safe — see `OFFLINE_FIRST_EXECUTION_PROGRESS.md`'s Phase 5 section for the
+full per-screen account. Three concrete correctness risks surfaced and were
+worked around while doing this, worth knowing about even though each was
+handled:
+
+- **Table position editor (`_TablesDetailView` in
+  `halls_tables_section.dart`) was excluded entirely, not migrated.** It's
+  an active drag-and-drop canvas where the table list doubles as live
+  editing state (`_pendingMoves`, staged but unsaved position edits). A
+  reactive `LocalDatabase` subscription firing mid-drag — which
+  `SyncEngine`'s routine 60s tick would eventually do — would silently
+  overwrite unsaved local edits with the last-synced server state. Left as
+  the original one-shot fetch.
+- **`menu_manage_screen.dart`'s category picker** originally reset the
+  selected category to the list's first entry on every load — harmless for
+  a one-shot fetch, but a background sync landing while this long-lived
+  edit form is open would have silently overwritten a category the user
+  already picked. Fixed to only auto-select on first load or if the
+  previous selection no longer exists.
+- **`transaction_categories_section.dart` has server-side search** (unlike
+  the other migrated screens) — a straight swap to a reactive subscription
+  would have lost search entirely, since `LocalDatabase` only mirrors the
+  unfiltered default list. Implemented as a hybrid: reactive when not
+  searching, direct network search when a query is active, matching
+  `MainRepositoryImpl.getTransactionGroups`'s own existing cache-fallback
+  scope (already limited to the unfiltered list only, for the same reason).
+
+**Not migrated at all** (reasons in `OFFLINE_FIRST_EXECUTION_PROGRESS.md`):
+`_TablesDetailView`'s tables (above), the three paginated reads
+(`searchGoodsAdmin`/`getAdminUsers`/`getTransactions` — no bounded local
+mirror to page through without a materially different, untested caching
+strategy), and `service_charge_cubit.dart` (no clean repository home for a
+single branch-scoped value, and it already has partial cache-fallback
+coverage today unlike the other six screens).
+
+Phase 6's V8 cleanup (the `Timer.periodic` polling in
+`archive_screen.dart`/`waiter_floor_plan_screen.dart`) still depends on
+`ArchivesBloc`/`WaiterCubit` being migrated, which is separate from all
+seven screens covered in this Phase 5 pass (neither is one of the "six core
+Blocs" nor one of these back-office screens) — still not attempted.
+
+**Before trusting the migrated reads:** same caveat as #1 — no way to run
+the app in this sandbox, so none of these seven screens' UI has actually
+been seen rendering real data. `flutter analyze`/`flutter test` catch type
+errors and regressions elsewhere, not "does this dropdown still populate
+correctly."
 
 ## 5. Design-doc open questions — still open, on purpose
 

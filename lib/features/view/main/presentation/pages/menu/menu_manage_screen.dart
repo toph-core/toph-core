@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io' show File;
 
 import 'package:cached_network_image/cached_network_image.dart';
@@ -13,6 +14,7 @@ import 'package:mary_ai_pos/core/extension/list_extension.dart';
 import 'package:mary_ai_pos/core/theme/tokens/theme_colors.dart';
 import 'package:mary_ai_pos/core/routes/app_routes.dart';
 import 'package:mary_ai_pos/core/service/minio/minio_service.dart';
+import 'package:mary_ai_pos/core/sync/sync_engine.dart';
 import 'package:mary_ai_pos/core/utils/app_formatter.dart';
 import 'package:mary_ai_pos/core/utils/user_role_permissions.dart';
 import 'package:mary_ai_pos/core/utils/helper/helper_widget.dart';
@@ -37,6 +39,11 @@ enum _AvailableItemsTab { ingredients, semiFinished }
 
 class _MenuManageScreenState extends State<MenuManageScreen> {
   final MainRepository _repository = inject<MainRepository>();
+  final MenuRepository _menuRepository = inject<MenuRepository>();
+  StreamSubscription<List<CategoryModel>>? _categoriesSub;
+  bool _categoriesLoadedOnce = false;
+  StreamSubscription<List<Map<String, dynamic>>>? _ingredientsSub;
+  StreamSubscription<List<Map<String, dynamic>>>? _compoundsSub;
   final _nameCtrl = TextEditingController();
   final _nameEnCtrl = TextEditingController();
   final _nameRuCtrl = TextEditingController();
@@ -234,7 +241,35 @@ class _MenuManageScreenState extends State<MenuManageScreen> {
   void initState() {
     super.initState();
     _pictureUrlCtrl.addListener(_onPictureUrlChanged);
-    _loadCategories();
+    // offline-first-target-architecture.md §8 Phase 5: reactive read over
+    // MenuRepository/LocalDatabase (already hydrated by SyncEngine, §8
+    // Phase 1). Deliberately does NOT reset `_selectedCategory` on every
+    // update the way a naive port of the old single-fetch logic would —
+    // this form stays open for a while during editing, and a background
+    // sync landing mid-edit must not silently clobber a category the user
+    // already picked.
+    _categoriesSub = _menuRepository.watchCategories().listen(_onCategoriesUpdated);
+  }
+
+  void _onCategoriesUpdated(List<CategoryModel> list) {
+    if (!mounted) return;
+    final firstLoad = !_categoriesLoadedOnce;
+    _categoriesLoadedOnce = true;
+    setState(() {
+      _categories = list;
+      _isLoadingCategories = false;
+      _categoriesError = null;
+      if (_selectedCategory == null ||
+          !list.any((c) => c.id == _selectedCategory!.id)) {
+        _selectedCategory = list.isNotEmpty ? list.first : null;
+      }
+    });
+    if (firstLoad) {
+      final editId = _editMealId;
+      if (editId != null && editId.isNotEmpty && !_isLoadingMeal) {
+        _loadMealForEdit(editId);
+      }
+    }
   }
 
   @override
@@ -257,27 +292,15 @@ class _MenuManageScreenState extends State<MenuManageScreen> {
     }
   }
 
+  /// `_categoriesError` is never actually set by the stream path in
+  /// `_onCategoriesUpdated` above (a `LocalDatabase` read doesn't fail the
+  /// way a network fetch did) — kept only so the pre-existing retry-button
+  /// UI still compiles/has a target; pressing it just asks for a fresh sync
+  /// pass.
   Future<void> _loadCategories() async {
-    setState(() {
-      _isLoadingCategories = true;
-      _categoriesError = null;
-    });
-    final result = await _repository.getCategories();
+    setState(() => _isLoadingCategories = true);
+    await inject<SyncEngine>().tick(force: true);
     if (!mounted) return;
-    final failure = result.fold((f) => f, (_) => null);
-    if (failure != null) {
-      setState(() {
-        _isLoadingCategories = false;
-        _categoriesError = failure is MessageFailure ? failure.message : null;
-      });
-      return;
-    }
-    final list = result.fold((_) => const <CategoryModel>[], (r) => r);
-    setState(() {
-      _categories = list;
-      _selectedCategory = list.isNotEmpty ? list.first : null;
-      _isLoadingCategories = false;
-    });
     final editId = _editMealId;
     if (editId != null && editId.isNotEmpty && !_isLoadingMeal) {
       await _loadMealForEdit(editId);
@@ -648,26 +671,22 @@ class _MenuManageScreenState extends State<MenuManageScreen> {
       _loadingAvailableItems = true;
       _availableItemsError = null;
     });
-    // Cache-first (MainRepositoryImpl.getIngredients/getCompounds) — a prior
-    // successful fetch survives a later offline reopen of this screen.
-    final ingredientsResult = await _repository.getIngredients();
-    final compoundsResult = await _repository.getCompounds();
-    if (!mounted) return;
-    final ingredientsFailure = ingredientsResult.fold((f) => f, (_) => null);
-    final compoundsFailure = compoundsResult.fold((f) => f, (_) => null);
-    final failure = ingredientsFailure ?? compoundsFailure;
-    if (failure != null) {
-      setState(() {
-        _availableItemsError = failure is MessageFailure
-            ? failure.message
-            : 'Не удалось загрузить Ingredients/Semi-finished';
-      });
-    } else {
-      setState(() {
-        _availableIngredients = ingredientsResult.fold((_) => const [], (r) => r);
-        _availableCompounds = compoundsResult.fold((_) => const [], (r) => r);
-      });
-    }
+    // offline-first-target-architecture.md §8 Phase 5: instant, local reads
+    // — MenuRepository/LocalDatabase, already hydrated by SyncEngine (§8
+    // Phase 1) — no network round trip needed for this picker list. Kept as
+    // a subscription (not a one-shot get) so a background sync landing
+    // while the meal editor is open (a colleague adding an ingredient
+    // elsewhere) updates the picker without needing to reopen the panel.
+    await _ingredientsSub?.cancel();
+    _ingredientsSub = _menuRepository.watchIngredients().listen((items) {
+      if (!mounted) return;
+      setState(() => _availableIngredients = items);
+    });
+    await _compoundsSub?.cancel();
+    _compoundsSub = _menuRepository.watchCompounds().listen((items) {
+      if (!mounted) return;
+      setState(() => _availableCompounds = items);
+    });
     if (mounted) setState(() => _loadingAvailableItems = false);
   }
 
@@ -964,6 +983,9 @@ class _MenuManageScreenState extends State<MenuManageScreen> {
 
   @override
   void dispose() {
+    _categoriesSub?.cancel();
+    _ingredientsSub?.cancel();
+    _compoundsSub?.cancel();
     _nameCtrl.dispose();
     _nameEnCtrl.dispose();
     _nameRuCtrl.dispose();

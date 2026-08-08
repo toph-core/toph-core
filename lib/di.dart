@@ -34,10 +34,12 @@ import 'package:mary_ai_pos/features/view/main/data/repository/orders_repository
 import 'package:mary_ai_pos/features/view/main/data/repository/payment_repository_impl.dart';
 import 'package:mary_ai_pos/features/view/main/data/repository/tables_repository_impl.dart';
 import 'package:mary_ai_pos/features/view/main/data/repository/menu_repository_impl.dart';
+import 'package:mary_ai_pos/features/view/main/data/repository/transactions_repository_impl.dart';
 import 'package:mary_ai_pos/features/view/main/domain/repository/orders_repository.dart';
 import 'package:mary_ai_pos/features/view/main/domain/repository/payment_repository.dart';
 import 'package:mary_ai_pos/features/view/main/domain/repository/tables_repository.dart';
 import 'package:mary_ai_pos/features/view/main/domain/repository/menu_repository.dart';
+import 'package:mary_ai_pos/features/view/main/domain/repository/transactions_repository.dart';
 import 'package:mary_ai_pos/features/view/main/domain/repository/archives_local_repository.dart';
 import 'package:mary_ai_pos/features/view/main/domain/repository/menu_local_repository.dart';
 import 'package:mary_ai_pos/features/view/main/domain/repository/table_timer_local_repository.dart';
@@ -265,6 +267,11 @@ void _repositories() {
   );
   inject.registerLazySingleton<MenuRepository>(
     () => MenuRepositoryImpl(localDb: inject()),
+  );
+  // §8 Phase 5 (back-office tier) — read-only, see TransactionsRepository's
+  // own class doc for what's deliberately not covered.
+  inject.registerLazySingleton<TransactionsRepository>(
+    () => TransactionsRepositoryImpl(localDb: inject()),
   );
 }
 
