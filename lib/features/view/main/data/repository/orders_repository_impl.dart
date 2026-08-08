@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:mary_ai_pos/core/constants/constants.dart';
 import 'package:mary_ai_pos/core/database/local_database.dart';
+import 'package:mary_ai_pos/core/services/cache/cache_service.dart';
 import 'package:mary_ai_pos/core/services/lan_hub/lan_hub_service.dart';
 import 'package:mary_ai_pos/core/services/offline_queue/offline_queue_service.dart';
 import 'package:mary_ai_pos/core/services/offline_queue/pending_operation.dart';
@@ -16,14 +17,32 @@ class OrdersRepositoryImpl implements OrdersRepository {
   final LocalDatabase _localDb;
   final OfflineQueueService _queue;
   final LanHubService _lanHub;
+  final CacheService _cache;
 
   OrdersRepositoryImpl({
     required LocalDatabase localDb,
     required OfflineQueueService queue,
     required LanHubService lanHub,
+    required CacheService cache,
   })  : _localDb = localDb,
         _queue = queue,
-        _lanHub = lanHub;
+        _lanHub = lanHub,
+        _cache = cache;
+
+  /// CLIENT_FACING_OFFLINE_PLAN.md §6: the add-item timestamp is captured
+  /// here, at the moment items are committed locally — the same
+  /// `name -> earliestCreatedAt` cache `PaymentBloc` used to fill from a
+  /// network `order-items` fetch on every detail update. Earliest wins, so
+  /// re-adding an item never moves its original time.
+  Future<void> _recordItemTimestamps(String orderId, List<OrderItem> items) async {
+    if (orderId.isEmpty || items.isEmpty) return;
+    final now = DateTime.now();
+    final merged = Map<String, DateTime>.from(_cache.getItemTimestamps(orderId));
+    for (final item in items) {
+      merged.putIfAbsent(item.goods.name, () => now);
+    }
+    await _cache.saveItemTimestamps(orderId, merged);
+  }
 
   ArchiveDetailModel? _decode(Map<String, dynamic>? json) {
     if (json == null) return null;
@@ -75,6 +94,7 @@ class OrdersRepositoryImpl implements OrdersRepository {
       tableId: tableId,
       createdAt: DateTime.now(),
     ));
+    await _recordItemTimestamps(clientOrderId, items);
     // Optimistic: mark the table busy for every terminal on the LAN — the
     // same side effect the old online/offline-forked code performed on
     // either path, now unconditional (§4: the local commit above already
@@ -100,6 +120,7 @@ class OrdersRepositoryImpl implements OrdersRepository {
       tableId: '',
       createdAt: DateTime.now(),
     ));
+    await _recordItemTimestamps(clientOrderId, items);
   }
 
   @override
@@ -128,6 +149,7 @@ class OrdersRepositoryImpl implements OrdersRepository {
       tableId: tableId,
       createdAt: DateTime.now(),
     ));
+    await _recordItemTimestamps(orderId, items);
     _lanHub.tableStatusChanged(tableId, TableStatus.busy.name);
   }
 

@@ -45,7 +45,6 @@ import 'package:mary_ai_pos/features/view/main/domain/repository/menu_local_repo
 import 'package:mary_ai_pos/features/view/main/domain/repository/table_timer_local_repository.dart';
 import 'package:mary_ai_pos/features/view/main/domain/repository/waiter_local_repository.dart';
 import 'package:mary_ai_pos/features/view/main/domain/usecase/get_departments_usecase.dart';
-import 'package:mary_ai_pos/features/view/main/domain/usecase/get_hour_price_usecase.dart';
 import 'package:mary_ai_pos/features/view/main/domain/usecase/sync_printer_settings_usecase.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/archive/archive_bloc.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/counter/counter_cubit.dart';
@@ -269,7 +268,12 @@ void _repositories() {
   // layer §1/§9 describe: reactive reads over LocalDatabase, writes that
   // commit locally (outbox enqueue) and return without awaiting the network.
   inject.registerLazySingleton<OrdersRepository>(
-    () => OrdersRepositoryImpl(localDb: inject(), queue: inject(), lanHub: inject()),
+    () => OrdersRepositoryImpl(
+      localDb: inject(),
+      queue: inject(),
+      lanHub: inject(),
+      cache: inject(),
+    ),
   );
   inject.registerLazySingleton<PaymentRepository>(
     () => PaymentRepositoryImpl(queue: inject()),
@@ -302,7 +306,6 @@ void _useCase() {
   inject.registerLazySingleton(
     () => SyncPrinterSettingsUsecase(inject(), inject()),
   );
-  inject.registerFactory(() => GetHourPriceUsecase(repository: inject()));
 }
 
 void _cubit() {
@@ -381,12 +384,11 @@ void _cubit() {
       ordersRepository: inject(),
       paymentRepository: inject(),
       printerService: inject(),
-      mainRepository: inject(),
     ),
   );
   inject.registerFactory(() => NotificationBloc());
   inject.registerLazySingleton(() => SavedOrdersBloc());
-  inject.registerFactory(() => HourPriceBloc(getHourPriceUsecase: inject()));
+  inject.registerFactory(() => HourPriceBloc(timerRepository: inject()));
   inject.registerFactory(
     () => WaiterCubit(inject(), inject(), inject()),
   );

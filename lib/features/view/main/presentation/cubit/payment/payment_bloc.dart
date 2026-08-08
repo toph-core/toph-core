@@ -20,7 +20,6 @@ import 'package:mary_ai_pos/features/view/main/data/models/cafe_tables/cafe_tabl
 import 'package:mary_ai_pos/features/view/main/domain/entities/archive_detail_entity.dart';
 import 'package:mary_ai_pos/core/service/printer/printer_service.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/table_timer/table_timer_response_model.dart';
-import 'package:mary_ai_pos/features/view/main/domain/repository/main_repository.dart';
 import 'package:mary_ai_pos/features/view/main/domain/repository/orders_repository.dart';
 import 'package:mary_ai_pos/features/view/main/domain/repository/payment_repository.dart';
 import 'package:mary_ai_pos/features/view/main/domain/repository/table_timer_local_repository.dart';
@@ -46,7 +45,6 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
   final OrdersRepository _ordersRepository;
   final PaymentRepository _paymentRepository;
   final PrinterService _printerService;
-  final MainRepository _mainRepository;
 
   StreamSubscription<ArchiveDetailModel?>? _detailSub;
 
@@ -77,11 +75,9 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
     required OrdersRepository ordersRepository,
     required PaymentRepository paymentRepository,
     required PrinterService printerService,
-    required MainRepository mainRepository,
   })  : _ordersRepository = ordersRepository,
         _paymentRepository = paymentRepository,
         _printerService = printerService,
-        _mainRepository = mainRepository,
         super(const PaymentState()) {
     on<_Started>(_onStarted);
     on<_GetDetail>(_onGetDetail);
@@ -359,6 +355,13 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
     final shouldPrefill = currentEntered <= 0 ||
         currentEntered == prefill ||
         (state.hourPrice > 0.01 && currentEntered < prefill);
+    // CLIENT_FACING_OFFLINE_PLAN.md §6: item timestamps are a pure local
+    // read now — `OrdersRepositoryImpl` records `name -> earliestCreatedAt`
+    // into the same cache at the moment items are committed locally, so the
+    // unconditional `/order-items` network fetch that used to fire on every
+    // detail update is gone. Items added by other terminals before that
+    // capture existed simply show no timestamp until a future sync-side
+    // hydration fills them (see EXECUTION_CONCERNS.md).
     emit(state.copyWith(
       status: Status.SUCCESS,
       detailStatus: Status.SUCCESS,
@@ -367,52 +370,6 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
       enterSum: shouldPrefill ? prefill.toString() : state.enterSum,
       failure: null,
     ));
-    if (detail.id.isNotEmpty) {
-      _fetchItemTimestamps(detail.id);
-    }
-  }
-
-  /// `/api/v1/order-items/order/{orderId}` orqali har bir itemning
-  /// `created_at` vaqtini olib, `state.itemTimestamps` (name -> earliest)
-  /// ga yozadi. Bills javobida bu maydon yo'q — `ArchiveDetailModel`ning bir
-  /// qismi emas, shuning uchun `LocalDatabase.watchOrderDetail` bunda
-  /// yordam bermaydi. Best-effort, offline'da yoki xato holida shunchaki
-  /// eskirgan/bo'sh timestamplar bilan qoladi.
-  Future<void> _fetchItemTimestamps(String orderId) async {
-    try {
-      final result = await _mainRepository.getOrderItemsRaw(orderId);
-      final res = result.fold((_) => null, (r) => r);
-      if (res == null || isClosed) return;
-      final raw = res['data'];
-      final List<dynamic> list = raw is List
-          ? raw
-          : (raw is Map<String, dynamic> && raw['items'] is List
-              ? raw['items'] as List
-              : const []);
-      final tsByName = <String, DateTime>{};
-      for (final entry in list.whereType<Map>()) {
-        final m = Map<String, dynamic>.from(entry);
-        final name = (m['good_name'] ?? m['name'] ?? '').toString();
-        if (name.isEmpty) continue;
-        final rawDate = m['created_at'] ?? m['createdAt'];
-        DateTime? created;
-        if (rawDate is String && rawDate.isNotEmpty) {
-          created = DateTime.tryParse(rawDate)?.toLocal();
-        }
-        if (created == null) continue;
-        final existing = tsByName[name];
-        if (existing == null || created.isBefore(existing)) {
-          tsByName[name] = created;
-        }
-      }
-      if (tsByName.isEmpty || isClosed) return;
-      // Cache — offline'da ham ko'rinadi
-      await inject<CacheService>().saveItemTimestamps(orderId, tsByName);
-      // emit'ni BLoC pattern qoidasiga muvofiq event orqali yuboramiz
-      add(PaymentEvent.itemTimestampsLoaded(timestamps: tsByName));
-    } catch (_) {
-      // Endpoint xatosi sukut bilan o'tib ketadi
-    }
   }
 
   void _onUpdatePaymentType(
