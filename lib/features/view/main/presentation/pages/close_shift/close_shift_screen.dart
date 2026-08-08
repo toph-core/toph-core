@@ -3,6 +3,7 @@ import 'package:mary_ai_pos/core/api/api.dart';
 import 'package:mary_ai_pos/core/design_system/pos_design_system.dart';
 import 'package:mary_ai_pos/core/extension/number_formatter.dart';
 import 'package:mary_ai_pos/core/routes/app_routes.dart';
+import 'package:mary_ai_pos/core/sync/sync_engine.dart';
 import 'package:mary_ai_pos/core/widgets/app_scaffold.dart';
 import 'package:mary_ai_pos/core/widgets/manager_pincode_dialog.dart';
 import 'package:mary_ai_pos/di.dart';
@@ -45,7 +46,6 @@ class CloseShiftScreen extends StatefulWidget {
 class _CloseShiftScreenState extends State<CloseShiftScreen> {
   Timer? _ticker;
   late final ArchivesBloc _archivesBloc;
-  int _tickCount = 0;
   bool _syncing = false;
 
   @override
@@ -53,15 +53,15 @@ class _CloseShiftScreenState extends State<CloseShiftScreen> {
     super.initState();
     _archivesBloc = inject<ArchivesBloc>()
       ..add(const ArchivesEvent.started());
+    // 1s UI tick only (elapsed-time display). The old "har 30 soniyada
+    // archive'larni fonda yangilash" force-refetch is gone
+    // (CLIENT_FACING_OFFLINE_PLAN.md §4) — ArchivesBloc's reactive
+    // `watchArchives()` stream keeps this report live from LocalDatabase,
+    // hydrated by SyncEngine in the background; a request trigger has no
+    // place here, same removal archive_screen already made for itself.
     _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
       if (!mounted) return;
-      _tickCount++;
       setState(() {});
-      // Har 30 soniyada archive'larni fonda yangilab turamiz — yangi
-      // to'lovlar smena hisobotida avtomatik paydo bo'ladi.
-      if (_tickCount % 30 == 0) {
-        _archivesBloc.add(const ArchivesEvent.getArchived());
-      }
     });
   }
 
@@ -76,7 +76,10 @@ class _CloseShiftScreenState extends State<CloseShiftScreen> {
     if (_syncing) return;
     setState(() => _syncing = true);
     context.read<ShiftBloc>().add(const ShiftEvent.checkShift());
-    _archivesBloc.add(const ArchivesEvent.getArchived());
+    // Manual "sync now": nudge the sync engine (outbox drain + hydration) —
+    // the archive list updates reactively when the hydrated box changes,
+    // the UI itself never awaits a request (plan §4).
+    unawaited(inject<SyncEngine>().tick(force: true));
     // Spinner ko'rsatish uchun qisqa delay
     await Future<void>.delayed(const Duration(milliseconds: 600));
     if (mounted) setState(() => _syncing = false);

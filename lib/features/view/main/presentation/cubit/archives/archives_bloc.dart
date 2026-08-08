@@ -8,7 +8,9 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:mary_ai_pos/core/components/flush_bars.dart';
 import 'package:mary_ai_pos/core/constants/constants.dart';
 import 'package:mary_ai_pos/core/error/failure.dart';
+import 'package:mary_ai_pos/core/sync/sync_engine.dart';
 import 'package:mary_ai_pos/core/utils/helper/helper_widget.dart';
+import 'package:mary_ai_pos/di.dart' show inject;
 import 'package:mary_ai_pos/features/view/main/data/models/archives_filter_request/archives_filter_request_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/pagination_request/pagination_request_model.dart';
 import 'package:mary_ai_pos/features/view/main/domain/entities/archive_detail_entity.dart';
@@ -207,11 +209,26 @@ class ArchivesBloc extends Bloc<ArchivesEvent, ArchivesState> {
     );
   }
 
+  /// CLIENT_FACING_OFFLINE_PLAN.md §4: the default view is local-first on
+  /// open. When the SyncEngine-hydrated snapshot already exists, it's shown
+  /// immediately (and stays live via the `watchArchives` subscription) with
+  /// only a background sync nudge — no UI-initiated fetch. The one
+  /// remaining `_GetArchived` on open is the first-fill fallback for a
+  /// terminal whose archives box has never been hydrated; filtered/
+  /// searched/paginated views still fetch via `_getArchived` because the
+  /// sync side only hydrates "today, page 1" — the cross-side gap the plan
+  /// flags explicitly (see EXECUTION_CONCERNS.md).
   void _onStarted(_Started event, Emitter<ArchivesState> emit) {
     emit(
       state.copyWith(textController: TextEditingController(), failure: null),
     );
-    add(const _GetArchived());
+    final hydrated = _archivesRepository.getHydratedArchives();
+    if (hydrated != null) {
+      add(ArchivesEvent.archivesUpdated(hydrated));
+      unawaited(inject<SyncEngine>().tick());
+    } else {
+      add(const _GetArchived());
+    }
   }
 
   void _onStatusChanged(_StatusChanged event, Emitter<ArchivesState> emit) {
@@ -219,7 +236,14 @@ class ArchivesBloc extends Bloc<ArchivesEvent, ArchivesState> {
   }
 
   void _onArchivesUpdated(_ArchivesUpdated event, Emitter<ArchivesState> emit) {
-    emit(state.copyWith(archives: event.archives, failure: null));
+    // status SUCCESS here too — on a hydrated-local open (plan §4) this is
+    // the only emit that ever carries data, there's no _getArchived fold
+    // behind it to set the status.
+    emit(state.copyWith(
+      archives: event.archives,
+      status: Status.SUCCESS,
+      failure: null,
+    ));
     if (event.archives.archives.isNotEmpty && state.selectArchive == null) {
       add(_SelectArchive(id: event.archives.archives[0].id));
     }

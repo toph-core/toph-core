@@ -29,6 +29,17 @@ class ArchivesLocalRepositoryImpl implements ArchivesLocalRepository {
         (raw) => raw == null ? null : ArchivesResponseModel.fromJson(raw),
       );
 
+  @override
+  ArchivesResponseEntity? getHydratedArchives() {
+    final raw = _localDb.getArchives();
+    if (raw == null) return null;
+    try {
+      return ArchivesResponseModel.fromJson(raw);
+    } catch (_) {
+      return null;
+    }
+  }
+
   bool _isFiltered(ArchivesFilterRequestEntity params) =>
       params.archiveNum != null ||
       params.startDate != null ||
