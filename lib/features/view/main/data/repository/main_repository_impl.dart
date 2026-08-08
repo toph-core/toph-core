@@ -19,7 +19,6 @@ import 'package:mary_ai_pos/features/view/main/domain/entities/archives_filter_r
 import 'package:mary_ai_pos/features/view/main/domain/entities/archives_response_entity.dart';
 import 'package:mary_ai_pos/features/view/main/domain/entities/hour_price_response_entity.dart';
 
-import 'package:mary_ai_pos/features/view/main/domain/entities/payment_pay_request_entity.dart';
 import 'package:mary_ai_pos/features/view/main/domain/repository/main_repository.dart';
 
 class MainRepositoryImpl implements MainRepository {
@@ -88,11 +87,6 @@ class MainRepositoryImpl implements MainRepository {
   }
 
   @override
-  Future<Either<Failure, ArchiveDetailEntity>> getPaymentDetailWithId(
-    String id,
-  ) async => await _dataSources.getPaymentDetailWithId(id);
-
-  @override
   Future<Either<Failure, List<CafeTableModel>>> getTablesByHallId(
     String hallId,
   ) {
@@ -156,11 +150,6 @@ class MainRepositoryImpl implements MainRepository {
   }
 
   @override
-  Future<Either<Failure, bool>> createPayment({
-    required PaymentPayRequestEntity request,
-  }) async => await _dataSources.createPayment(request: request);
-
-  @override
   Future<Either<Failure, List<PrinterSettingEntry>>> getPrinterSettings() =>
       _dataSources.getPrinterSettings();
 
@@ -168,18 +157,6 @@ class MainRepositoryImpl implements MainRepository {
   Future<Either<Failure, Map<String, dynamic>>> getOrderItemsRaw(
     String orderId,
   ) => _dataSources.getOrderItemsRaw(orderId);
-
-  @override
-  Future<Either<Failure, bool>> createOrderItems({
-    required String orderId,
-    required List<Map<String, dynamic>> items,
-  }) => _dataSources.createOrderItems(orderId: orderId, items: items);
-
-  @override
-  Future<Either<Failure, bool>> addItemsToOrder({
-    required String orderId,
-    required List<Map<String, dynamic>> items,
-  }) => _dataSources.addItemsToOrder(orderId: orderId, items: items);
 
   @override
   Future<Either<Failure, bool>> cancelOrderItem(String itemId, {String? comment}) =>

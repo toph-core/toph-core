@@ -190,6 +190,20 @@ Phase 6's V8 cleanup (the `Timer.periodic` polling in
 seven screens covered in this Phase 5 pass (neither is one of the "six core
 Blocs" nor one of these back-office screens) — still not attempted.
 
+Separately, Phase 6's dead-`MainRepository`-method cleanup (four methods —
+`createOrderItems`, `addItemsToOrder`, `getPaymentDetailWithId`,
+`createPayment` — plus the now-orphaned `PaymentPayRequestEntity`/
+`PaymentPayRequestModel`) is done — see
+`OFFLINE_FIRST_EXECUTION_PROGRESS.md`'s Phase 6 section. Flagging it here
+only because it's a pure deletion with no test coverage of its own (same
+caveat as everywhere else in this document): the zero-caller grep was run
+across `lib/` and `test/` before deleting, but there's no way in this
+sandbox to confirm nothing outside the repo (a native platform channel, a
+generated file this grep missed, reflection-style access) still reaches
+these symbols. Low risk — these were thin `dio` passthrough wrappers with
+easily greppable exact names — but worth a second look if anything related
+to order-item creation or payment posting misbehaves after merge.
+
 **Before trusting the migrated reads:** same caveat as #1 — no way to run
 the app in this sandbox, so none of these seven screens' UI has actually
 been seen rendering real data. `flutter analyze`/`flutter test` catch type

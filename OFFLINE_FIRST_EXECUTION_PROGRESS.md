@@ -337,13 +337,43 @@ done alongside `MenuRepository` since it was a small addition once that
 existed. V8 (the `Timer.periodic` polling in `archive_screen.dart`/
 `waiter_floor_plan_screen.dart`) is **not** — both depend on `ArchivesBloc`/
 `WaiterCubit` and their own repositories being migrated onto
-`LocalRepository`/`LocalDatabase` streams first, which is Phase 5 work
-(neither Bloc is one of the "six core Blocs" Phase 2 named), and Phase 5
-wasn't attempted this pass (see `EXECUTION_CONCERNS.md` #4). Deleting those
-timers without that migration would remove the only refresh mechanism those
-screens have. The dead-`main_repository_impl.dart`-passthrough-methods
-cleanup is also not attempted, for the same reason — Phase 5 hasn't reached
-those call sites.
+`LocalRepository`/`LocalDatabase` streams first. That's distinct from the
+Phase 5 back-office work (now done, see above): `ArchivesBloc`/`WaiterCubit`
+are neither one of the "six core Blocs" Phase 2 named nor one of the seven
+back-office screens Phase 5 covered, so this migration still hasn't been
+attempted. Deleting those timers without it would remove the only refresh
+mechanism those screens have.
+
+**Dead-`MainRepository`-method cleanup — DONE.** Once Phase 2 rewrote the
+five core Blocs onto the new `LocalRepository`s, four `MainRepository`
+methods lost every caller: `createOrderItems`, `addItemsToOrder`,
+`getPaymentDetailWithId`, `createPayment` (each superseded by
+`OrdersRepositoryImpl`/`PaymentRepositoryImpl`'s local-first writes).
+Verified zero remaining callers via grep across all of `lib/` and `test/`
+before removing anything. Removed the four declarations from
+`main_repository.dart`, the matching implementations from
+`main_repository_impl.dart`, and the matching interface + `dio` call-site
+implementations from `main_datasources.dart`. That in turn made
+`PaymentPayRequestEntity`/`PaymentPayRequestModel` fully unreferenced
+(confirmed via grep), so
+`lib/features/view/main/domain/entities/payment_pay_request_entity.dart` and
+`lib/features/view/main/data/models/payment_pay_request/` (model + generated
+`.freezed.dart`/`.g.dart`) were deleted outright, including the now-unused
+imports of the entity in the three files above. `cancelOrderItem` (still
+used by `waiter_cubit.dart`) and `getPaymentDetailWithTableId`/`createOrder`
+(still used by `DetailBloc`'s fallback and `SyncEngine` hydration
+respectively) were checked and kept — still live. Verified with
+`dart analyze` on the three edited files (0 errors, only the 3 pre-existing
+`use_null_aware_elements` infos) and a full `flutter analyze`/`flutter test`
+pass (74 issues/0 errors, 84 passing with the same 1 pre-existing unrelated
+failure — no change from the Phase 5 baseline, since this was a pure
+deletion).
+
+The remaining ~55+ passthrough methods in `main_repository_impl.dart`
+(back-office writes, paginated reads, etc.) were not audited this pass —
+most still have live callers from the unmigrated write paths described in
+Phase 5's scoping note, and a full per-method dead-code sweep of that file
+wasn't attempted.
 
 ## §13 gap fixes — DONE (both)
 

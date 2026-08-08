@@ -24,7 +24,6 @@ import 'package:mary_ai_pos/features/view/main/domain/entities/archives_filter_r
 import 'package:mary_ai_pos/features/view/main/domain/entities/archives_response_entity.dart';
 import 'package:mary_ai_pos/features/view/main/domain/entities/hour_price_response_entity.dart';
 
-import 'package:mary_ai_pos/features/view/main/domain/entities/payment_pay_request_entity.dart';
 
 abstract class MainDataSources {
   Future<Either<Failure, List<CafeTableModel>>> getTablesByHallId(
@@ -51,14 +50,6 @@ abstract class MainDataSources {
   Future<Either<Failure, ArchiveDetailEntity>> getPaymentDetailWithTableId(
     String id,
   );
-
-  Future<Either<Failure, ArchiveDetailEntity>> getPaymentDetailWithId(
-    String id,
-  );
-
-  Future<Either<Failure, bool>> createPayment({
-    required PaymentPayRequestEntity request,
-  });
 
   Future<Either<Failure, bool>> createOrder({
     required CreateOrderRequestModel request,
@@ -101,21 +92,6 @@ abstract class MainDataSources {
   Future<Either<Failure, Map<String, dynamic>>> getOrderItemsRaw(
     String orderId,
   );
-
-  /// `POST /api/v1/order-items` — adds new line item(s) to [orderId].
-  Future<Either<Failure, bool>> createOrderItems({
-    required String orderId,
-    required List<Map<String, dynamic>> items,
-  });
-
-  /// `POST /api/v1/orders/{orderId}/items` — the other "add items" endpoint,
-  /// used when appending to an already-open table's order (distinct request
-  /// shape from [createOrderItems] — the backend has two separate routes for
-  /// this, not a client inconsistency).
-  Future<Either<Failure, bool>> addItemsToOrder({
-    required String orderId,
-    required List<Map<String, dynamic>> items,
-  });
 
   /// `POST /api/v1/order-items/{itemId}/cancel`. A 404 (already cancelled by
   /// another client) is treated as success by the caller, not here — mirrors
@@ -562,32 +538,6 @@ class MainDataSourcesImpl implements MainDataSources {
   }
 
   @override
-  Future<Either<Failure, bool>> createPayment({
-    required PaymentPayRequestEntity request,
-  }) async {
-    try {
-      await _client.post(
-        ListAPI.payToOrder(request.orderId),
-        data: request.request(),
-      );
-      return const Right(true);
-    } on DioException catch (exception) {
-      return Left(handleDioException(exception));
-    } on FormatException catch (e, st) {
-      if (kDebugMode) print('ParsingError: $e\n$st');
-      return const Left(ParsingFailure());
-    } on TypeError catch (e, st) {
-      if (kDebugMode) print('ParsingError: $e\n$st');
-      return const Left(ParsingFailure());
-    } on String catch (e) {
-      return Left(MessageFailure(e));
-    } catch (e, st) {
-      if (kDebugMode) print('Unknown error: $e\n$st');
-      return const Left(UnknownFailure());
-    }
-  }
-
-  @override
   Future<Either<Failure, String>> createTakewayOrder({
     required CreateOrderRequestModel request,
   }) async {
@@ -784,29 +734,6 @@ class MainDataSourcesImpl implements MainDataSources {
   }
 
   @override
-  Future<Either<Failure, ArchiveDetailEntity>> getPaymentDetailWithId(
-    String id,
-  ) async {
-    try {
-      final response = await _client.dio.get(ListAPI.archiveWithId(id));
-      return Right(ArchiveDetailModel.fromJson(response.data['data']));
-    } on DioException catch (exception) {
-      return Left(handleDioException(exception));
-    } on FormatException catch (e, st) {
-      if (kDebugMode) print('ParsingError: $e\n$st');
-      return const Left(ParsingFailure());
-    } on TypeError catch (e, st) {
-      if (kDebugMode) print('ParsingError: $e\n$st');
-      return const Left(ParsingFailure());
-    } on String catch (e) {
-      return Left(MessageFailure(e));
-    } catch (e, st) {
-      if (kDebugMode) print('Unknown error: $e\n$st');
-      return const Left(UnknownFailure());
-    }
-  }
-
-  @override
   Future<Either<Failure, ArchiveDetailEntity>> getPaymentDetailWithTableId(
     String id,
   ) async {
@@ -986,45 +913,6 @@ class MainDataSourcesImpl implements MainDataSources {
       final data = response.data;
       if (data is! Map<String, dynamic>) return const Left(ParsingFailure());
       return Right(data);
-    } on DioException catch (exception) {
-      return Left(handleDioException(exception));
-    } catch (e, st) {
-      if (kDebugMode) print('Unknown error: $e\n$st');
-      return const Left(UnknownFailure());
-    }
-  }
-
-  @override
-  Future<Either<Failure, bool>> createOrderItems({
-    required String orderId,
-    required List<Map<String, dynamic>> items,
-  }) async {
-    try {
-      await _client.dio.post(
-        ListAPI.orderItemsCreate,
-        data: {'order_id': orderId, 'items': items},
-      );
-      return const Right(true);
-    } on DioException catch (exception) {
-      return Left(handleDioException(exception));
-    } catch (e, st) {
-      if (kDebugMode) print('Unknown error: $e\n$st');
-      return const Left(UnknownFailure());
-    }
-  }
-
-  @override
-  Future<Either<Failure, bool>> addItemsToOrder({
-    required String orderId,
-    required List<Map<String, dynamic>> items,
-  }) async {
-    try {
-      await _client.dio.post(
-        ListAPI.orderItems(orderId),
-        queryParameters: {'lang': 'uz'},
-        data: {'items': items},
-      );
-      return const Right(true);
     } on DioException catch (exception) {
       return Left(handleDioException(exception));
     } catch (e, st) {
