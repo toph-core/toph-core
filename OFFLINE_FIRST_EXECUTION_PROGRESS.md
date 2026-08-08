@@ -334,15 +334,59 @@ state clobbering, search-vs-reactive hybrid, and selection-reset-mid-edit).
 
 V9 (the `FutureBuilder` image fetch) is fixed — see Phase 2's section above,
 done alongside `MenuRepository` since it was a small addition once that
-existed. V8 (the `Timer.periodic` polling in `archive_screen.dart`/
-`waiter_floor_plan_screen.dart`) is **not** — both depend on `ArchivesBloc`/
-`WaiterCubit` and their own repositories being migrated onto
-`LocalRepository`/`LocalDatabase` streams first. That's distinct from the
-Phase 5 back-office work (now done, see above): `ArchivesBloc`/`WaiterCubit`
-are neither one of the "six core Blocs" Phase 2 named nor one of the seven
-back-office screens Phase 5 covered, so this migration still hasn't been
-attempted. Deleting those timers without it would remove the only refresh
-mechanism those screens have.
+existed.
+
+**V8 (the `Timer.periodic` polling in `archive_screen.dart`/
+`waiter_floor_plan_screen.dart`) — DONE.** Research first (see
+`EXECUTION_CONCERNS.md` for the full trail) corrected an earlier assumption:
+`waiter_floor_plan_screen.dart`'s timer was never wired to `WaiterCubit` at
+all — it only called `MainCubit.refreshTables()`, and `MainCubit` was
+already a pure `TablesRepository` stream consumer since Phase 2, so that
+timer was pure redundant weight duplicating `SyncEngine`'s own 60s tick.
+Deleted outright, no replacement — `waiter_floor_plan_screen.dart`,
+`_WaiterFloorPlanScreenState`. `WaiterCubit` itself was untouched; its reads
+(`loadOpenOrders`/`loadOrderDetail`/`loadOrderItems`) have no
+`Timer.periodic` anywhere and are a separate, larger migration (new
+`LocalDatabase` box + `SyncEngine` hydration for a paginated open-orders
+list) that V8 doesn't actually call for — not attempted.
+
+`archive_screen.dart`'s timer *did* drive a real fetch
+(`ArchivesBloc.getArchived(silent: true)`, re-syncing the default
+unfiltered/"today"/first-page view every 30s) with no existing
+`LocalDatabase` mirror to repoint onto, so this one needed new plumbing, per
+the plan's own V8 remedy ("Screens become stream consumers... `LocalRepository`
+(whichever domain each screen reads)"):
+- `LocalDatabase`: new `archives` box (`watchArchives`/`getArchives`/
+  `saveArchives`), one JSON blob under a fixed key — same shape
+  `ArchivesLocalRepositoryImpl` already blob-caches via `CacheService` for
+  offline reads, just made reactive.
+- `SyncEngine`: new `_hydrateArchives` step in `_hydrateReferenceData`,
+  fetching the same default `ArchivesFilterRequestModel()` (unfiltered,
+  "Today", first page, limit 20) `ArchivesLocalRepositoryImpl` already
+  treats as the one cacheable view.
+- `ArchivesLocalRepository`/`ArchivesLocalRepositoryImpl`: new
+  `watchArchives()`, sourced from `LocalDatabase.watchArchives()`.
+- `ArchivesBloc`: subscribes to `watchArchives()` in its constructor and
+  dispatches the (already-declared-but-never-fired) `archivesUpdated` event
+  — but only while `_isDefaultView` holds (no active search/date/status
+  filter, `filterType == Today`, and no "load more" pagination beyond the
+  single hydrated page). That guard exists for the same reason Phase 5 added
+  one for `menu_manage_screen.dart`'s category selection: without it, a
+  background hydration tick would silently replace an active search result
+  or an expanded (load-more'd) list with the unfiltered 20-item snapshot.
+  `_onArchivesUpdated` also gained the same "auto-select first archive if
+  nothing selected yet" behavior `_getArchived` already had, so a
+  local-cache-only cold start (offline, before the first network fetch
+  lands) still selects a row.
+- `archive_screen.dart`: `Timer.periodic`/`_bgRefreshTimer` deleted, along
+  with the now-unused `ConnectivityCubit` import.
+
+Filtered/searched/paginated-beyond-page-1 archive queries are still plain
+on-demand network calls via `getArchives()`/`getArchiveWithId()` — no
+bounded local mirror exists for those (same reasoning as the three
+paginated back-office reads: `getTransactions`/`getAdminUsers`/
+`searchGoodsAdmin`), and building one wasn't part of what V8 actually asks
+for (its own remedy column only calls for deleting the polling timers).
 
 **Dead-`MainRepository`-method cleanup — DONE.** Once Phase 2 rewrote the
 five core Blocs onto the new `LocalRepository`s, four `MainRepository`

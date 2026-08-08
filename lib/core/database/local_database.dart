@@ -61,6 +61,7 @@ class LocalDatabase {
   final Box<String> _printerSettings;
   final Box<String> _orderDetail;
   final Box<String> _menuImages;
+  final Box<String> _archives;
 
   LocalDatabase({
     required Box<String> categories,
@@ -78,6 +79,7 @@ class LocalDatabase {
     required Box<String> printerSettings,
     required Box<String> orderDetail,
     required Box<String> menuImages,
+    required Box<String> archives,
   })  : _categories = categories,
         _departments = departments,
         _halls = halls,
@@ -92,7 +94,8 @@ class LocalDatabase {
         _serviceCharge = serviceCharge,
         _printerSettings = printerSettings,
         _orderDetail = orderDetail,
-        _menuImages = menuImages;
+        _menuImages = menuImages,
+        _archives = archives;
 
   static Future<LocalDatabase> init() async {
     Future<Box<String>> open(String name) => Hive.openBox<String>(name);
@@ -112,6 +115,7 @@ class LocalDatabase {
       printerSettings: await open('local_db_printer_settings'),
       orderDetail: await open('local_db_order_detail'),
       menuImages: await open('local_db_menu_images'),
+      archives: await open('local_db_archives'),
     );
   }
 
@@ -358,6 +362,22 @@ class LocalDatabase {
       return null;
     }
   }
+
+  // ── Archives (§8 Phase 6 / V8) — mirrors only the default "first page,
+  // unfiltered, today" view `ArchivesLocalRepositoryImpl` already blob-caches
+  // via `CacheService` for offline reads, as one JSON object under a fixed
+  // key (same shape as `ArchivesResponseModel.toJson()`). Filtered/searched/
+  // paginated-beyond-page-1 queries still go straight to the network — no
+  // bounded local mirror exists for those, same reasoning as the three
+  // paginated back-office reads in §9's back-office row. This box exists so
+  // the archive screen's default view is `SyncEngine`-hydrated and reactive
+  // instead of driven by its own `Timer.periodic` silent refresh.
+  Stream<Map<String, dynamic>?> watchArchives() => _watchByKey(_archives, _listKey);
+
+  Map<String, dynamic>? getArchives() => _getByKey(_archives, _listKey);
+
+  Future<void> saveArchives(Map<String, dynamic> json) =>
+      _saveByKey(_archives, _listKey, json);
 
   // ── Helpers ────────────────────────────────────────────────────────────
   List<Map<String, dynamic>> _decodeList(String? raw) {

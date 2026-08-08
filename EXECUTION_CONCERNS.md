@@ -185,10 +185,8 @@ single branch-scoped value, and it already has partial cache-fallback
 coverage today unlike the other six screens).
 
 Phase 6's V8 cleanup (the `Timer.periodic` polling in
-`archive_screen.dart`/`waiter_floor_plan_screen.dart`) still depends on
-`ArchivesBloc`/`WaiterCubit` being migrated, which is separate from all
-seven screens covered in this Phase 5 pass (neither is one of the "six core
-Blocs" nor one of these back-office screens) — still not attempted.
+`archive_screen.dart`/`waiter_floor_plan_screen.dart`) is now done — see
+below and `OFFLINE_FIRST_EXECUTION_PROGRESS.md`'s Phase 6 section.
 
 Separately, Phase 6's dead-`MainRepository`-method cleanup (four methods —
 `createOrderItems`, `addItemsToOrder`, `getPaymentDetailWithId`,
@@ -209,6 +207,51 @@ the app in this sandbox, so none of these seven screens' UI has actually
 been seen rendering real data. `flutter analyze`/`flutter test` catch type
 errors and regressions elsewhere, not "does this dropdown still populate
 correctly."
+
+## 5a. V8 (`archive_screen.dart`/`waiter_floor_plan_screen.dart` polling) —
+    what's genuinely unverified
+
+`waiter_floor_plan_screen.dart`'s deletion is low-risk: the timer only
+called `MainCubit.refreshTables()`, which was already just a nudge to
+`SyncEngine.tick()` — nothing on screen was reading from that timer's
+effect directly, `MainCubit`'s halls/tables state was already a
+`TablesRepository` stream. Confirmed via research before touching it that
+`WaiterCubit` was never wired to this timer at all (an assumption in this
+document's own earlier drafts that turned out wrong) — no behavior change
+there.
+
+`archive_screen.dart`'s change is a real new data path, same caveat as
+Phase 2's #1: `flutter analyze`/`flutter test` confirm 0 errors and 84
+passing/1 pre-existing-unrelated-failure, but there is no dedicated test for
+`ArchivesBloc` (confirmed via grep before starting, same as the six core
+Blocs), and no way to run the app in this sandbox and actually watch the
+archive screen open, silently update in the background, or behave correctly
+mid-search. Two things worth a human's attention before trusting this:
+
+- **The `_isDefaultView` guard is a judgment call, not something the design
+  doc specifies.** It decides when a background hydration tick is allowed to
+  overwrite the bloc's `archives` state versus when it must be suppressed
+  (active search/filter, or the user has paginated past the first 20 rows).
+  Reasoned by analogy to the drag-editor and category-selection risks Phase
+  5 already found, but nobody has actually driven this screen with a mouse
+  to confirm the boundary is drawn in the right place — e.g. whether
+  reloading exactly 20 rows via "load more" (the boundary condition,
+  `<= 20`) should count as "still default" or not was a guess, not observed
+  behavior.
+- **Cold-start ordering between the reactive stream and the explicit fetch
+  is new.** `_onStarted` still fires an immediate `_GetArchived` network
+  call (unchanged) *and* the constructor's stream subscription can also fire
+  from whatever `SyncEngine` last hydrated, in whichever order those two
+  land. Both paths funnel through the same `_ArchivesUpdated`-shaped state
+  update and the same auto-select-first-row logic, so the intent is that
+  either order produces the same visible result — but this interleaving
+  didn't exist before this change and has no test covering it either order.
+
+**Before trusting this:** open the archive screen against a staging
+backend, confirm it still loads on open, confirm search/date/status filters
+still work and aren't clobbered by a background sync (wait out one
+`SyncEngine` tick — 60s — while a filter is active), and confirm "load more"
+past 20 rows survives a tick without resetting to 20.
 
 ## 5. Design-doc open questions — still open, on purpose
 

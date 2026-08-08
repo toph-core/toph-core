@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:bloc/bloc.dart';
@@ -22,6 +23,7 @@ part 'archives_bloc.freezed.dart';
 
 class ArchivesBloc extends Bloc<ArchivesEvent, ArchivesState> {
   final ArchivesLocalRepository _archivesRepository;
+  StreamSubscription<ArchivesResponseEntity?>? _archivesSub;
   //
   ArchivesBloc({required ArchivesLocalRepository archivesRepository})
     : _archivesRepository = archivesRepository,
@@ -43,7 +45,31 @@ class ArchivesBloc extends Bloc<ArchivesEvent, ArchivesState> {
           .debounceTime(const Duration(milliseconds: 600))
           .switchMap(mapper),
     );
+    // §8 Phase 6/V8 — replaces `archive_screen.dart`'s old `Timer.periodic`
+    // silent refresh. `SyncEngine` now hydrates the default (unfiltered,
+    // "today", first page) view into `LocalDatabase`; this bloc just
+    // consumes that as a stream instead of polling for it itself.
+    _archivesSub = _archivesRepository.watchArchives().listen((archives) {
+      if (archives != null && !isClosed && _isDefaultView) {
+        add(ArchivesEvent.archivesUpdated(archives));
+      }
+    });
   }
+
+  /// Whether the currently visible query matches exactly what `SyncEngine`
+  /// hydrates (§8 Phase 6/V8) — no search/date/status filter, default
+  /// "Today" filter type, and no "load more" pagination beyond the single
+  /// hydrated page. Guards the stream subscription above from clobbering an
+  /// active search/filter/expanded-pagination view with the unfiltered
+  /// snapshot, the same clobbering risk already handled for other screens in
+  /// Phase 5 (see EXECUTION_CONCERNS.md).
+  bool get _isDefaultView =>
+      state.filterType == ArchivesFilterType.Today &&
+      (state.textController?.text.isEmpty ?? true) &&
+      state.startFilterDate == null &&
+      state.endFilterDate == null &&
+      state.statusFilter == null &&
+      (state.archives?.archives.length ?? 0) <= 20;
 
   void _updateFilterType(_UpdateFilterType event, emit) {
     if (state.filterType != event.type) {
@@ -194,6 +220,9 @@ class ArchivesBloc extends Bloc<ArchivesEvent, ArchivesState> {
 
   void _onArchivesUpdated(_ArchivesUpdated event, Emitter<ArchivesState> emit) {
     emit(state.copyWith(archives: event.archives, failure: null));
+    if (event.archives.archives.isNotEmpty && state.selectArchive == null) {
+      add(_SelectArchive(id: event.archives.archives[0].id));
+    }
   }
 
   void _onFailureChanged(_FailureChanged event, Emitter<ArchivesState> emit) {
@@ -221,6 +250,7 @@ class ArchivesBloc extends Bloc<ArchivesEvent, ArchivesState> {
 
   @override
   Future<void> close() {
+    _archivesSub?.cancel();
     state.textController?.dispose();
     return super.close();
   }

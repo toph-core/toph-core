@@ -7,9 +7,7 @@ import 'package:mary_ai_pos/core/design_system/pos_breakpoints.dart';
 import 'package:mary_ai_pos/core/design_system/pos_dimensions.dart';
 import 'package:mary_ai_pos/core/extension/for_context.dart';
 import 'package:mary_ai_pos/core/routes/app_routes.dart';
-import 'package:mary_ai_pos/core/services/connectivity/connectivity_cubit.dart';
 import 'package:mary_ai_pos/core/widgets/app_scaffold.dart';
-import 'package:mary_ai_pos/di.dart';
 import 'package:mary_ai_pos/features/view/auth/presentation/cubit/bloc/user_bloc.dart';
 import 'package:mary_ai_pos/features/view/auth/presentation/cubit/settings/settings_cubit.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/cafe_tables/cafe_tables_model.dart';
@@ -65,25 +63,12 @@ class WaiterFloorPlanScreen extends StatefulWidget {
 }
 
 class _WaiterFloorPlanScreenState extends State<WaiterFloorPlanScreen> {
-  Timer? _bgRefreshTimer;
-
-  static const _bgRefreshInterval = Duration(minutes: 2);
-
-  @override
-  void initState() {
-    super.initState();
-    _bgRefreshTimer = Timer.periodic(_bgRefreshInterval, (_) {
-      if (inject<ConnectivityCubit>().isOnline && mounted) {
-        context.read<MainCubit>().refreshTables();
-      }
-    });
-  }
-
-  @override
-  void dispose() {
-    _bgRefreshTimer?.cancel();
-    super.dispose();
-  }
+  // §8 Phase 6/V8 — the old `Timer.periodic` here only ever nudged
+  // `MainCubit.refreshTables()`, which itself just calls `SyncEngine.tick()`;
+  // `MainCubit`'s halls/tables state is already a `TablesRepository`
+  // stream subscription (Phase 2), and `SyncEngine` already ticks on its own
+  // 60s timer, so this screen-owned timer was a second, redundant clock with
+  // no logic of its own worth keeping — deleted outright, no replacement.
 
   Future<void> _refresh() async {
     // Foydalanuvchi bosgan refresh — throttle ni chetlab o'tamiz

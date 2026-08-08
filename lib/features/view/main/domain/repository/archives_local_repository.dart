@@ -13,4 +13,10 @@ abstract class ArchivesLocalRepository {
   );
 
   Future<Either<Failure, ArchiveDetailEntity>> getArchiveWithId(String id);
+
+  /// Reactive read over the default (unfiltered, "today", first page) view —
+  /// `SyncEngine`-hydrated, per §8 Phase 6/V8. Emits `null` until the first
+  /// hydration lands. Filtered/searched/paginated-beyond-page-1 queries have
+  /// no local mirror and must still go through [getArchives].
+  Stream<ArchivesResponseEntity?> watchArchives();
 }

@@ -1,4 +1,5 @@
 import 'package:dartz/dartz.dart';
+import 'package:mary_ai_pos/core/database/local_database.dart';
 import 'package:mary_ai_pos/core/error/failure.dart';
 import 'package:mary_ai_pos/core/services/cache/cache_service.dart';
 import 'package:mary_ai_pos/core/services/connectivity/connectivity_cubit.dart';
@@ -14,8 +15,19 @@ class ArchivesLocalRepositoryImpl implements ArchivesLocalRepository {
   final MainRepository _remote;
   final CacheService _cache;
   final ConnectivityCubit _connectivity;
+  final LocalDatabase _localDb;
 
-  ArchivesLocalRepositoryImpl(this._remote, this._cache, this._connectivity);
+  ArchivesLocalRepositoryImpl(
+    this._remote,
+    this._cache,
+    this._connectivity,
+    this._localDb,
+  );
+
+  @override
+  Stream<ArchivesResponseEntity?> watchArchives() => _localDb.watchArchives().map(
+        (raw) => raw == null ? null : ArchivesResponseModel.fromJson(raw),
+      );
 
   bool _isFiltered(ArchivesFilterRequestEntity params) =>
       params.archiveNum != null ||

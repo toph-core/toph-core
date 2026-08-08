@@ -9,7 +9,6 @@ import 'package:mary_ai_pos/core/extension/date_time_extension.dart';
 import 'package:mary_ai_pos/core/extension/for_context.dart';
 import 'package:mary_ai_pos/core/extension/number_formatter.dart';
 import 'package:mary_ai_pos/core/routes/app_routes.dart';
-import 'package:mary_ai_pos/core/services/connectivity/connectivity_cubit.dart';
 import 'package:mary_ai_pos/core/utils/order_localizations.dart';
 import 'package:mary_ai_pos/core/utils/user_role_permissions.dart';
 import 'package:mary_ai_pos/core/widgets/app_scaffold.dart';
@@ -44,25 +43,19 @@ class ArchiveScreen extends StatefulWidget {
 }
 
 class _ArchiveScreenState extends State<ArchiveScreen> {
-  static const _bgRefreshInterval = Duration(seconds: 30);
-
   late final ArchivesBloc _bloc;
-  Timer? _bgRefreshTimer;
 
   @override
   void initState() {
     super.initState();
+    // §8 Phase 6/V8 — no more `Timer.periodic` silent refresh here;
+    // `ArchivesBloc` now subscribes to `SyncEngine`-hydrated archives
+    // reactively (see `archives_bloc.dart`'s constructor).
     _bloc = inject<ArchivesBloc>()..add(const ArchivesEvent.started());
-    _bgRefreshTimer = Timer.periodic(_bgRefreshInterval, (_) {
-      if (inject<ConnectivityCubit>().isOnline && mounted) {
-        _bloc.add(const ArchivesEvent.getArchived(silent: true));
-      }
-    });
   }
 
   @override
   void dispose() {
-    _bgRefreshTimer?.cancel();
     _bloc.close();
     super.dispose();
   }
