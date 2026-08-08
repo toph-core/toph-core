@@ -1,17 +1,21 @@
 import 'package:mary_ai_pos/features/view/main/data/models/category/category_model.dart';
+import 'package:mary_ai_pos/features/view/main/data/models/department/department_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/goods/goods_model.dart';
 
 /// offline-first-target-architecture.md §9 (V5) + V9 (menu images). Not to
 /// be confused with `MenuLocalRepository` (`menu_local_repository.dart`) —
-/// that's an earlier, still-live cache-first/Future-based repository for
-/// `DepartmentSelectionCubit`'s own screen, from a different, earlier
-/// migration pass (`offline-first-architecture-plan.md`); this one is the
-/// purely-reactive `watchX()` surface `DetailBloc`'s category/goods reads
-/// use, per this document's §1.2 shape. Both currently exist side by side —
-/// consolidating them is out of scope here (see EXECUTION_CONCERNS.md).
+/// that's the earlier, network-first-when-online/Future-based repository
+/// from an earlier migration pass (`offline-first-architecture-plan.md`);
+/// it's now only used for the live, uncached goods-name search
+/// (`searchGoodsByName`). `DepartmentSelectionCubit` reads departments/
+/// categories from this repository (purely-reactive `watchX()`/`getX()`
+/// over `LocalDatabase`), same as `DetailBloc`.
 abstract class MenuRepository {
   Stream<List<CategoryModel>> watchCategories();
   List<CategoryModel> getCategories();
+
+  Stream<List<DepartmentModel>> watchDepartments();
+  List<DepartmentModel> getDepartments();
 
   Stream<List<GoodsModel>> watchGoodsForCategory(String categoryId);
   List<GoodsModel> getGoodsForCategory(String categoryId);

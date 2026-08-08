@@ -140,6 +140,20 @@ class CreateOrderBloc extends Bloc<CreateOrderEvent, CreateOrderState> {
       items: event.orders,
       tableStatus: state.tableStatus,
     );
+    // Local order-detail snapshot, keyed by tableId — same shape
+    // `_handleTakeaway` below already writes for its own clientOrderId key.
+    // Without this, `DetailBloc.fetchBillOrders`'s only source for
+    // `activeOrderId` was its narrow live-fetch fallback, which silently
+    // no-ops while offline (see that method's doc comment) — so this table
+    // would show "busy" locally but "Buyurtma ID topilmadi" on every
+    // add-items attempt until connectivity returned and a fetch finally
+    // landed. Writing the snapshot here means `watchOrderDetail(tableId)`
+    // resolves `activeOrderId` immediately, offline or not.
+    await _ordersRepository.saveOrderDetailSnapshot(
+      state.tableId,
+      _buildLocalOrderSnapshot(id: clientOrderId, orders: event.orders).toJson(),
+    );
+    bindActiveOrder(clientOrderId);
     // Ephemeral claim cleared the instant this local write is confirmed —
     // same-process callback, not a network round trip (§6 Lease Recovery).
     _leaseManager.releaseTableLease(state.tableId);
@@ -197,27 +211,7 @@ class CreateOrderBloc extends Bloc<CreateOrderEvent, CreateOrderState> {
       items: orders,
     );
 
-    final foodTotal = orders.fold<double>(
-      0,
-      (s, o) => s + (double.tryParse(o.goods.price) ?? 0) * o.quantity,
-    );
-    final snapshot = ArchiveDetailModel(
-      id: clientOrderId,
-      status: OrderStatus.open,
-      opened: DateTime.now(),
-      guestCount: state.guestCount.toDouble(),
-      foodTotal: foodTotal,
-      goods: [
-        for (final o in orders)
-          OrderFoodModel(
-            goodId: o.goods.id,
-            name: o.goods.name,
-            quantity: o.quantity,
-            price: (double.tryParse(o.goods.price) ?? 0).round(),
-            comment: o.comment,
-          ) as OrderFoodEntity,
-      ],
-    );
+    final snapshot = _buildLocalOrderSnapshot(id: clientOrderId, orders: orders);
     await _ordersRepository.saveOrderDetailSnapshot(clientOrderId, snapshot.toJson());
 
     // Fire-and-forget: oshxona cheki (kategoriya printerlari).
@@ -234,6 +228,37 @@ class CreateOrderBloc extends Bloc<CreateOrderEvent, CreateOrderState> {
       arguments: {"order_id": clientOrderId},
     );
     emit(state.copyWith(status: Status.SUCCESS, success: true));
+  }
+
+  /// Local order-detail snapshot built purely from what the cashier just
+  /// entered — no server round trip. Used by both the dine-in "new order"
+  /// path and takeaway (`_handleTakeaway`), which save it under different
+  /// keys (tableId vs. clientOrderId respectively).
+  ArchiveDetailModel _buildLocalOrderSnapshot({
+    required String id,
+    required List<OrderItem> orders,
+  }) {
+    final foodTotal = orders.fold<double>(
+      0,
+      (s, o) => s + (double.tryParse(o.goods.price) ?? 0) * o.quantity,
+    );
+    return ArchiveDetailModel(
+      id: id,
+      status: OrderStatus.open,
+      opened: DateTime.now(),
+      guestCount: state.guestCount.toDouble(),
+      foodTotal: foodTotal,
+      goods: [
+        for (final o in orders)
+          OrderFoodModel(
+            goodId: o.goods.id,
+            name: o.goods.name,
+            quantity: o.quantity,
+            price: (double.tryParse(o.goods.price) ?? 0).round(),
+            comment: o.comment,
+          ) as OrderFoodEntity,
+      ],
+    );
   }
 
   void _started(_Started event, emit) => emit(

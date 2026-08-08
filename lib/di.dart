@@ -345,7 +345,7 @@ void _cubit() {
     ),
   );
   inject.registerFactory(
-    () => DepartmentSelectionCubit(inject()),
+    () => DepartmentSelectionCubit(inject(), inject()),
   );
   inject.registerFactory(
     () => CreateOrderBloc(

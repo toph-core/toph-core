@@ -8,59 +8,58 @@ import 'package:mary_ai_pos/features/view/main/data/models/category/category_mod
 import 'package:mary_ai_pos/features/view/main/data/models/department/department_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/goods/goods_model.dart';
 import 'package:mary_ai_pos/features/view/main/domain/repository/menu_local_repository.dart';
+import 'package:mary_ai_pos/features/view/main/domain/repository/menu_repository.dart';
 import 'package:mary_ai_pos/generated/l10n.dart';
 
+/// Offline-first: departments/categories come from `MenuRepository`, the
+/// reactive `LocalDatabase`-backed surface `SyncEngine` keeps hydrated
+/// (§8 Phase 1) and `DetailBloc`/`menu_meals_list_screen.dart` already read
+/// from — a synchronous local read plus a live subscription, never a network
+/// await, so opening this screen never blocks on a round-trip. Only goods
+/// search (`searchGoodsByName`) still goes through the older, live-only
+/// `MenuLocalRepository` — there's no bounded local mirror of the full
+/// catalog to search against instead (see that repository's doc comment).
 class DepartmentSelectionCubit extends Cubit<DepartmentSelectionState> {
-  DepartmentSelectionCubit(this._menuRepository)
+  DepartmentSelectionCubit(this._menuRepository, this._searchRepository)
     : super(const DepartmentSelectionState());
 
-  final MenuLocalRepository _menuRepository;
+  final MenuRepository _menuRepository;
+  final MenuLocalRepository _searchRepository;
+
+  StreamSubscription<List<DepartmentModel>>? _departmentsSub;
+  StreamSubscription<List<CategoryModel>>? _categoriesSub;
 
   Timer? _searchDebounce;
   static const _searchDebounceDuration = Duration(milliseconds: 500);
 
   static const String allDepartmentId = 'all';
 
-  Future<void> load() async {
-    emit(state.copyWith(status: Status.LOADING, clearFailure: true));
+  void load() {
+    _departmentsSub?.cancel();
+    _categoriesSub?.cancel();
+    _departmentsSub = _menuRepository.watchDepartments().listen(_onDepartments);
+    _categoriesSub = _menuRepository.watchCategories().listen(_onCategories);
+  }
 
-    final departmentsResult = await _menuRepository.getDepartments();
-    final categoriesResult = await _menuRepository.getCategories();
-
+  void _onDepartments(List<DepartmentModel> departments) {
     if (isClosed) return;
-
-    Failure? failure;
-    var departments = <DepartmentModel>[];
-    var categories = <CategoryModel>[];
-
-    departmentsResult.fold(
-      (f) => failure = f,
-      (list) => departments = list,
-    );
-    categoriesResult.fold(
-      (f) => failure ??= f,
-      (list) => categories = list,
-    );
-
-    if (failure != null && departments.isEmpty && categories.isEmpty) {
-      emit(state.copyWith(status: Status.ERROR, failure: failure));
-      return;
-    }
-
     final deptTabs = [
       DepartmentModel(id: allDepartmentId, name: S.current.all),
       ...departments,
     ];
-
     emit(
       state.copyWith(
         status: Status.SUCCESS,
         departments: deptTabs,
-        categories: categories,
-        selectedDepartmentId: allDepartmentId,
+        selectedDepartmentId: state.selectedDepartmentId ?? allDepartmentId,
         clearFailure: true,
       ),
     );
+  }
+
+  void _onCategories(List<CategoryModel> categories) {
+    if (isClosed) return;
+    emit(state.copyWith(status: Status.SUCCESS, categories: categories, clearFailure: true));
   }
 
   void selectDepartment(String departmentId) {
@@ -84,7 +83,7 @@ class DepartmentSelectionCubit extends Cubit<DepartmentSelectionState> {
   }
 
   Future<void> _searchGoods(String query) async {
-    final result = await _menuRepository.searchGoodsByName(query);
+    final result = await _searchRepository.searchGoodsByName(query);
     if (isClosed || state.searchQuery != query) return;
     result.fold(
       (failure) => emit(state.copyWith(matchedGoods: const [])),
@@ -95,6 +94,8 @@ class DepartmentSelectionCubit extends Cubit<DepartmentSelectionState> {
   @override
   Future<void> close() {
     _searchDebounce?.cancel();
+    _departmentsSub?.cancel();
+    _categoriesSub?.cancel();
     return super.close();
   }
 }

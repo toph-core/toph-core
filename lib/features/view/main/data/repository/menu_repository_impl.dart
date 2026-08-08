@@ -1,5 +1,6 @@
 import 'package:mary_ai_pos/core/database/local_database.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/category/category_model.dart';
+import 'package:mary_ai_pos/features/view/main/data/models/department/department_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/goods/goods_model.dart';
 import 'package:mary_ai_pos/features/view/main/domain/repository/menu_repository.dart';
 
@@ -13,6 +14,12 @@ class MenuRepositoryImpl implements MenuRepository {
 
   @override
   List<CategoryModel> getCategories() => _localDb.getCategories();
+
+  @override
+  Stream<List<DepartmentModel>> watchDepartments() => _localDb.watchDepartments();
+
+  @override
+  List<DepartmentModel> getDepartments() => _localDb.getDepartments();
 
   @override
   Stream<List<GoodsModel>> watchGoodsForCategory(String categoryId) =>
