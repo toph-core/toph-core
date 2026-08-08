@@ -7,13 +7,15 @@ import 'package:mary_ai_pos/features/view/main/data/models/department/department
 import 'package:mary_ai_pos/features/view/main/data/models/goods/goods_model.dart';
 import 'package:mary_ai_pos/features/view/main/domain/repository/main_repository.dart';
 import 'package:mary_ai_pos/features/view/main/domain/repository/menu_local_repository.dart';
+import 'package:mary_ai_pos/features/view/main/domain/repository/menu_repository.dart';
 
 class MenuLocalRepositoryImpl implements MenuLocalRepository {
   final MainRepository _remote;
   final CacheService _cache;
   final ConnectivityCubit _connectivity;
+  final MenuRepository _menu;
 
-  MenuLocalRepositoryImpl(this._remote, this._cache, this._connectivity);
+  MenuLocalRepositoryImpl(this._remote, this._cache, this._connectivity, this._menu);
 
   @override
   Future<Either<Failure, List<DepartmentModel>>> getDepartments() async {
@@ -54,8 +56,12 @@ class MenuLocalRepositoryImpl implements MenuLocalRepository {
     }
   }
 
+  /// CLIENT_FACING_OFFLINE_PLAN.md §3: no longer a network query — a local
+  /// filter over the already-synced goods box, via `MenuRepository`'s shared
+  /// implementation. The Either shape is kept for the existing caller; a
+  /// local read can't fail with a connection error, so this always Rights.
   @override
-  Future<Either<Failure, List<GoodsModel>>> searchGoodsByName(String query) {
-    return _remote.getGoodsWithName(query);
+  Future<Either<Failure, List<GoodsModel>>> searchGoodsByName(String query) async {
+    return Right(_menu.searchGoodsByName(query));
   }
 }

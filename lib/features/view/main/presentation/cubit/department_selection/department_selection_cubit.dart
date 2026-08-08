@@ -15,10 +15,10 @@ import 'package:mary_ai_pos/generated/l10n.dart';
 /// reactive `LocalDatabase`-backed surface `SyncEngine` keeps hydrated
 /// (§8 Phase 1) and `DetailBloc`/`menu_meals_list_screen.dart` already read
 /// from — a synchronous local read plus a live subscription, never a network
-/// await, so opening this screen never blocks on a round-trip. Only goods
-/// search (`searchGoodsByName`) still goes through the older, live-only
-/// `MenuLocalRepository` — there's no bounded local mirror of the full
-/// catalog to search against instead (see that repository's doc comment).
+/// await, so opening this screen never blocks on a round-trip. Goods search
+/// is a local filter too now (CLIENT_FACING_OFFLINE_PLAN.md §3) — the
+/// `MenuLocalRepository` call below resolves against the synced goods box,
+/// not the network.
 class DepartmentSelectionCubit extends Cubit<DepartmentSelectionState> {
   DepartmentSelectionCubit(this._menuRepository, this._searchRepository)
     : super(const DepartmentSelectionState());
@@ -68,8 +68,8 @@ class DepartmentSelectionCubit extends Cubit<DepartmentSelectionState> {
   }
 
   /// Categories are filtered locally (name contains) via [filteredCategories].
-  /// Matching menu items are fetched from the API (debounced), same endpoint
-  /// used by the Menus page's search.
+  /// Matching menu items come from a debounced local filter over the synced
+  /// goods box (CLIENT_FACING_OFFLINE_PLAN.md §3) — no network involved.
   void search(String query) {
     final q = query.trim();
     if (q == state.searchQuery) return;

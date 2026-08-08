@@ -18,6 +18,11 @@ enum PendingOperationType {
   cancelLineItems,
   @HiveField(6)
   cancelOrder,
+
+  /// CLIENT_FACING_OFFLINE_PLAN.md §7 — "transfer to another table",
+  /// previously a direct awaited network call in `transfer_table_dialog`.
+  @HiveField(7)
+  transferTable,
 }
 
 @HiveType(typeId: 11)

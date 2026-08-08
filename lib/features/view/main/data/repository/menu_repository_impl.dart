@@ -30,6 +30,20 @@ class MenuRepositoryImpl implements MenuRepository {
       _localDb.getGoodsForCategory(categoryId);
 
   @override
+  List<GoodsModel> searchGoodsByName(String query) {
+    final q = query.trim().toLowerCase();
+    if (q.isEmpty) return const [];
+    return _localDb
+        .getGoods()
+        .where(
+          (g) =>
+              g.name.toLowerCase().contains(q) ||
+              (g.nameI18n?.toLowerCase().contains(q) ?? false),
+        )
+        .toList(growable: false);
+  }
+
+  @override
   Stream<List<Map<String, dynamic>>> watchIngredients() => _localDb.watchIngredients();
 
   @override

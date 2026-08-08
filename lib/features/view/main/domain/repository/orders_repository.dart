@@ -65,4 +65,15 @@ abstract class OrdersRepository {
     required List<String> lineIds,
     String? comment,
   });
+
+  /// CLIENT_FACING_OFFLINE_PLAN.md §7: move an open order to another table —
+  /// a local commit (bill row re-keyed to the target table, both tables'
+  /// statuses patched, outbox enqueue) shaped exactly like the other write
+  /// methods here, replacing `transfer_table_dialog`'s old awaited direct
+  /// network call.
+  Future<void> transferTable({
+    required String orderId,
+    required String sourceTableId,
+    required String targetTableId,
+  });
 }

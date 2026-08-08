@@ -152,4 +152,33 @@ class OrdersRepositoryImpl implements OrdersRepository {
       createdAt: DateTime.now(),
     ));
   }
+
+  @override
+  Future<void> transferTable({
+    required String orderId,
+    required String sourceTableId,
+    required String targetTableId,
+  }) async {
+    // Re-key the local bill row so the detail screen (keyed by tableId)
+    // keeps showing this order at its new table without any refetch.
+    final detail = _localDb.getOrderDetail(sourceTableId);
+    if (detail != null) {
+      await _localDb.saveOrderDetail(targetTableId, detail);
+      await _localDb.evictOrderDetail(sourceTableId);
+    }
+    await _localDb.updateTableStatus(sourceTableId, TableStatus.free);
+    await _localDb.updateTableStatus(targetTableId, TableStatus.busy);
+    await _queue.enqueue(PendingOperation(
+      id: OfflineQueueService.newId(),
+      type: PendingOperationType.transferTable,
+      payload: jsonEncode({
+        'order_id': orderId,
+        'target_table_id': targetTableId,
+      }),
+      tableId: sourceTableId,
+      createdAt: DateTime.now(),
+    ));
+    _lanHub.tableStatusChanged(sourceTableId, TableStatus.free.name);
+    _lanHub.tableStatusChanged(targetTableId, TableStatus.busy.name);
+  }
 }

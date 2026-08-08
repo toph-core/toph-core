@@ -4,12 +4,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mary_ai_pos/core/common/dialog_action_buttons.dart';
 import 'package:mary_ai_pos/core/components/flush_bars.dart';
-import 'package:mary_ai_pos/core/error/failure.dart';
 import 'package:mary_ai_pos/core/services/cache/cache_service.dart';
 import 'package:mary_ai_pos/di.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/cafe_tables/cafe_tables_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/hall/hall_model.dart';
-import 'package:mary_ai_pos/features/view/main/domain/repository/main_repository.dart';
+import 'package:mary_ai_pos/features/view/main/domain/repository/orders_repository.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/main/main_cubit.dart';
 import 'package:mary_ai_pos/generated/l10n.dart';
 
@@ -76,6 +75,12 @@ class _TransferTableDialogState extends State<_TransferTableDialog> {
     super.dispose();
   }
 
+  /// CLIENT_FACING_OFFLINE_PLAN.md §7: a local write + outbox enqueue, same
+  /// shape as `OrdersRepository`'s other methods — no awaited network call
+  /// in this widget anymore. The local commit can't fail with a server
+  /// error; a genuine conflict (target table taken meanwhile on another
+  /// terminal) surfaces later via the outbox quarantine flow, like every
+  /// other queued write.
   Future<void> _submit() async {
     final targetId = _selectedTableId;
     if (targetId == null || _submitting) return;
@@ -83,38 +88,22 @@ class _TransferTableDialogState extends State<_TransferTableDialog> {
     setState(() => _submitting = true);
     final main = context.read<MainCubit>();
     final nav = Navigator.of(context);
-    final result = await inject<MainRepository>().transferTable(
+    await inject<OrdersRepository>().transferTable(
       orderId: widget.orderId,
+      sourceTableId: widget.sourceTableId,
       targetTableId: targetId,
     );
-    final failure = result.fold((f) => f, (_) => null);
-    if (failure == null) {
-      // Eski cache-ni o'chiramiz: keyingi ochilishda server ma'lumoti olinadi.
-      final cache = inject<CacheService>();
-      await cache.evictOrderDetail(widget.sourceTableId);
-      await cache.evictOrderDetail(targetId);
-      if (!mounted) return;
-      // Stol holatlarini darhol yangilab, broadcast qilamiz —
-      // boshqa POS qurilmalari ham real-time ko'rishi uchun.
-      main.broadcastTableStatus(widget.sourceTableId, TableStatus.free);
-      main.broadcastTableStatus(targetId, TableStatus.busy);
-      // Optimistik holatni server bilan tasdiqlaymiz — payment_bloc'dagi
-      // yopish oqimi ham xuddi shu naqshni ishlatadi.
-      unawaited(main.refreshTables(force: true));
-      nav.pop(true);
-      if (mounted) showInfoMessage(context, S.current.strOrderTransferred);
-      return;
-    }
+    // Eski (CacheService) qatlamdagi bill cache'ni ham tozalaymiz —
+    // LocalDatabase tomonini repository o'zi ko'chirib bo'ldi.
+    final cache = inject<CacheService>();
+    await cache.evictOrderDetail(widget.sourceTableId);
+    await cache.evictOrderDetail(targetId);
     if (!mounted) return;
-    setState(() => _submitting = false);
-    final msg = switch (failure) {
-      ConflictFailure() => S.current.strSelectedTableIsBusy,
-      NotFoundFailure() => S.current.strOrderOrTableNotFound,
-      ValidationFailure() => S.current.strCannotTransfer,
-      MessageFailure(:final message) => message,
-      _ => S.current.strErrorOccurred,
-    };
-    showErrorMessage(context, msg);
+    // Outbox tezroq drenajlanishi uchun sync engine'ga turtki (UI hech
+    // narsani kutmaydi).
+    unawaited(main.refreshTables(force: true));
+    nav.pop(true);
+    if (mounted) showInfoMessage(context, S.current.strOrderTransferred);
   }
 
   @override

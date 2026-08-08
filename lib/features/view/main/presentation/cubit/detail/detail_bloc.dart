@@ -23,7 +23,6 @@ import 'package:mary_ai_pos/features/view/main/data/models/food_additional/food_
 import 'package:mary_ai_pos/features/view/main/data/models/goods/goods_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/save_order/save_order_model.dart';
 import 'package:mary_ai_pos/features/view/main/domain/entities/save_order_entity.dart';
-import 'package:mary_ai_pos/features/view/main/domain/usecase/get_goods_with_name_usecase.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/archive_detail/archive_detail_model.dart';
 import 'package:mary_ai_pos/features/view/main/domain/entities/archive_detail_entity.dart';
 import 'package:mary_ai_pos/features/view/main/domain/repository/main_repository.dart';
@@ -58,7 +57,6 @@ EventTransformer<T> debounce<T>(Duration duration) {
 /// online-path 409/failure handling this file used to do inline is gone —
 /// nothing left to catch, since nothing here awaits the network anymore.
 class DetailBloc extends Bloc<DetailEvent, DetailState> {
-  final GetGoodsWithNameUseCase _getGoodsWithNameUseCase;
   final CacheService _cache;
   final PrinterService _printerService;
   final MainRepository _mainRepository;
@@ -90,7 +88,6 @@ class DetailBloc extends Bloc<DetailEvent, DetailState> {
   final Map<String, String> _pendingCancelComments = {};
 
   DetailBloc(
-    this._getGoodsWithNameUseCase,
     this._cache,
     this._printerService,
     this._mainRepository,
@@ -912,10 +909,11 @@ class DetailBloc extends Bloc<DetailEvent, DetailState> {
     emit(state.copyWith(selectedGoods: []));
   }
 
-  /// Live search against the goods catalog — not cached, and deliberately
-  /// still a real network call (unlike the reads above): there's no bounded
-  /// local mirror of the full catalog to search against instead. Offline
-  /// just means no results, same as before.
+  /// CLIENT_FACING_OFFLINE_PLAN.md §3: search is a local filter over the
+  /// already-synced goods box (`MenuRepository.searchGoodsByName`), not a
+  /// network query — the login/setup phase pulls the full catalog into
+  /// `LocalDatabase`, so the "no local mirror to search against" caveat this
+  /// path was built around no longer holds.
   Future<void> _onSearchTextChanged(
     _SearchTextChanged event,
     Emitter<DetailState> emit,
@@ -926,20 +924,12 @@ class DetailBloc extends Bloc<DetailEvent, DetailState> {
       }
       return;
     }
-    emit(state.copyWith(status: Status.LOADING, selectedCategoryId: "all"));
-    final result = await _getGoodsWithNameUseCase(event.text);
-    if (isClosed) return;
-    result.fold(
-      (failure) {
-        if (!isClosed) {
-          emit(state.copyWith(status: Status.ERROR, failure: failure));
-        }
-      },
-      (goods) {
-        if (!isClosed) {
-          emit(state.copyWith(status: Status.SUCCESS, goods: goods));
-        }
-      },
+    emit(
+      state.copyWith(
+        status: Status.SUCCESS,
+        selectedCategoryId: "all",
+        goods: _menuRepository.searchGoodsByName(event.text),
+      ),
     );
   }
 

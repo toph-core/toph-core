@@ -20,6 +20,13 @@ abstract class MenuRepository {
   Stream<List<GoodsModel>> watchGoodsForCategory(String categoryId);
   List<GoodsModel> getGoodsForCategory(String categoryId);
 
+  /// CLIENT_FACING_OFFLINE_PLAN.md §3: goods search is a local filter over
+  /// the already-synced goods box — the full catalog is pulled into
+  /// `LocalDatabase` at first-time setup / by `SyncEngine`'s hydration pass,
+  /// so there is no reason left to hit the network per keystroke. Matches on
+  /// `name` (and `nameI18n` when present), case-insensitive contains.
+  List<GoodsModel> searchGoodsByName(String query);
+
   /// §8 Phase 5 — the recipe editor's ingredient/semi-finished picker
   /// (`menu_manage_screen.dart`). No dedicated model upstream — raw maps,
   /// same shape `MainRepository.getIngredients()`/`getCompounds()` return.

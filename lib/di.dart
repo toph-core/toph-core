@@ -45,7 +45,6 @@ import 'package:mary_ai_pos/features/view/main/domain/repository/menu_local_repo
 import 'package:mary_ai_pos/features/view/main/domain/repository/table_timer_local_repository.dart';
 import 'package:mary_ai_pos/features/view/main/domain/repository/waiter_local_repository.dart';
 import 'package:mary_ai_pos/features/view/main/domain/usecase/get_departments_usecase.dart';
-import 'package:mary_ai_pos/features/view/main/domain/usecase/get_goods_with_name_usecase.dart';
 import 'package:mary_ai_pos/features/view/main/domain/usecase/get_hour_price_usecase.dart';
 import 'package:mary_ai_pos/features/view/main/domain/usecase/sync_printer_settings_usecase.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/archive/archive_bloc.dart';
@@ -255,7 +254,7 @@ void _repositories() {
     () => ArchivesLocalRepositoryImpl(inject(), inject(), inject(), inject()),
   );
   inject.registerLazySingleton<MenuLocalRepository>(
-    () => MenuLocalRepositoryImpl(inject(), inject(), inject()),
+    () => MenuLocalRepositoryImpl(inject(), inject(), inject(), inject()),
   );
   inject.registerLazySingleton<TableTimerLocalRepository>(
     () => TableTimerLocalRepositoryImpl(inject()),
@@ -295,7 +294,6 @@ void _useCase() {
   inject.registerLazySingleton(() => SetAppLanguageUscase(inject()));
   inject.registerLazySingleton(() => LoginWithBrandUsecase(inject()));
   inject.registerLazySingleton(() => GetDepartmentsUsecase(inject()));
-  inject.registerLazySingleton(() => GetGoodsWithNameUseCase(inject()));
   inject.registerLazySingleton(() => LogoutUsecase(inject()));
   inject.registerLazySingleton(() => CheckUserDataUsecase(inject()));
   inject.registerLazySingleton(() => GetUserUsecase(inject()));
@@ -352,7 +350,6 @@ void _cubit() {
   );
   inject.registerFactory(
     () => DetailBloc(
-      inject(),
       inject(),
       inject(),
       inject(),

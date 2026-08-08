@@ -147,6 +147,9 @@ class OfflineQueueService {
         PendingOperationType.createOrder,
         PendingOperationType.addItems,
         PendingOperationType.cancelLineItems,
+        // After create (the order must exist server-side first), before pay
+        // (a pay after a transfer should land against the final table).
+        PendingOperationType.transferTable,
         PendingOperationType.payOrder,
         PendingOperationType.cancelOrder,
         PendingOperationType.openShift,
@@ -259,6 +262,29 @@ class OfflineQueueService {
         return _execOpenShift(dio, op);
       case PendingOperationType.closeShift:
         return _execCloseShift(dio, op);
+      case PendingOperationType.transferTable:
+        return _execTransferTable(dio, op);
+    }
+  }
+
+  /// CLIENT_FACING_OFFLINE_PLAN.md §7 — replays `orders/{id}/transfer`, the
+  /// same endpoint `transfer_table_dialog` used to await directly.
+  Future<OpOutcome> _execTransferTable(DioClient dio, PendingOperation op) async {
+    try {
+      final payload = jsonDecode(op.payload) as Map<String, dynamic>;
+      final orderId = payload['order_id'] as String? ?? '';
+      final targetTableId = payload['target_table_id'] as String? ?? '';
+      if (orderId.isEmpty || targetTableId.isEmpty) {
+        return _dropped("Ko'chirish ma'lumotida order_id yoki target_table_id yo'q.");
+      }
+      await dio.post(
+        ListAPI.orderTransfer(orderId),
+        data: {'target_table_id': targetTableId},
+      );
+      return OpOutcome.synced;
+    } catch (e) {
+      if (kDebugMode) print('[OfflineQueue] transferTable sync error: $e');
+      return _isTerminalError(e) ? _dropped(e.toString()) : OpOutcome.retryableFailure;
     }
   }
 
