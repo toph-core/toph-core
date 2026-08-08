@@ -44,6 +44,11 @@ mixin _$DetailEvent {
             String itemKey, String tableId, int quantity, String? cancelComment)
         setExistingItemQuantity,
     required TResult Function(String itemKey, String tableId) syncExistingItem,
+    required TResult Function(List<CategoryModel> categories) categoriesUpdated,
+    required TResult Function(String categoryId, List<GoodsModel> goods)
+        goodsForCategoryUpdated,
+    required TResult Function(String tableId, ArchiveDetailModel? detail)
+        orderDetailUpdated,
   }) =>
       throw _privateConstructorUsedError;
   @optionalTypeArgs
@@ -71,6 +76,11 @@ mixin _$DetailEvent {
             String? cancelComment)?
         setExistingItemQuantity,
     TResult? Function(String itemKey, String tableId)? syncExistingItem,
+    TResult? Function(List<CategoryModel> categories)? categoriesUpdated,
+    TResult? Function(String categoryId, List<GoodsModel> goods)?
+        goodsForCategoryUpdated,
+    TResult? Function(String tableId, ArchiveDetailModel? detail)?
+        orderDetailUpdated,
   }) =>
       throw _privateConstructorUsedError;
   @optionalTypeArgs
@@ -98,6 +108,11 @@ mixin _$DetailEvent {
             String? cancelComment)?
         setExistingItemQuantity,
     TResult Function(String itemKey, String tableId)? syncExistingItem,
+    TResult Function(List<CategoryModel> categories)? categoriesUpdated,
+    TResult Function(String categoryId, List<GoodsModel> goods)?
+        goodsForCategoryUpdated,
+    TResult Function(String tableId, ArchiveDetailModel? detail)?
+        orderDetailUpdated,
     required TResult orElse(),
   }) =>
       throw _privateConstructorUsedError;
@@ -125,6 +140,10 @@ mixin _$DetailEvent {
     required TResult Function(_SetExistingItemQuantity value)
         setExistingItemQuantity,
     required TResult Function(_SyncExistingItem value) syncExistingItem,
+    required TResult Function(_CategoriesUpdated value) categoriesUpdated,
+    required TResult Function(_GoodsForCategoryUpdated value)
+        goodsForCategoryUpdated,
+    required TResult Function(_OrderDetailUpdated value) orderDetailUpdated,
   }) =>
       throw _privateConstructorUsedError;
   @optionalTypeArgs
@@ -147,6 +166,9 @@ mixin _$DetailEvent {
     TResult? Function(_DeleteExistingItem value)? deleteExistingItem,
     TResult? Function(_SetExistingItemQuantity value)? setExistingItemQuantity,
     TResult? Function(_SyncExistingItem value)? syncExistingItem,
+    TResult? Function(_CategoriesUpdated value)? categoriesUpdated,
+    TResult? Function(_GoodsForCategoryUpdated value)? goodsForCategoryUpdated,
+    TResult? Function(_OrderDetailUpdated value)? orderDetailUpdated,
   }) =>
       throw _privateConstructorUsedError;
   @optionalTypeArgs
@@ -169,6 +191,9 @@ mixin _$DetailEvent {
     TResult Function(_DeleteExistingItem value)? deleteExistingItem,
     TResult Function(_SetExistingItemQuantity value)? setExistingItemQuantity,
     TResult Function(_SyncExistingItem value)? syncExistingItem,
+    TResult Function(_CategoriesUpdated value)? categoriesUpdated,
+    TResult Function(_GoodsForCategoryUpdated value)? goodsForCategoryUpdated,
+    TResult Function(_OrderDetailUpdated value)? orderDetailUpdated,
     required TResult orElse(),
   }) =>
       throw _privateConstructorUsedError;
@@ -256,6 +281,11 @@ class _$StartedImpl implements _Started {
             String itemKey, String tableId, int quantity, String? cancelComment)
         setExistingItemQuantity,
     required TResult Function(String itemKey, String tableId) syncExistingItem,
+    required TResult Function(List<CategoryModel> categories) categoriesUpdated,
+    required TResult Function(String categoryId, List<GoodsModel> goods)
+        goodsForCategoryUpdated,
+    required TResult Function(String tableId, ArchiveDetailModel? detail)
+        orderDetailUpdated,
   }) {
     return started();
   }
@@ -286,6 +316,11 @@ class _$StartedImpl implements _Started {
             String? cancelComment)?
         setExistingItemQuantity,
     TResult? Function(String itemKey, String tableId)? syncExistingItem,
+    TResult? Function(List<CategoryModel> categories)? categoriesUpdated,
+    TResult? Function(String categoryId, List<GoodsModel> goods)?
+        goodsForCategoryUpdated,
+    TResult? Function(String tableId, ArchiveDetailModel? detail)?
+        orderDetailUpdated,
   }) {
     return started?.call();
   }
@@ -316,6 +351,11 @@ class _$StartedImpl implements _Started {
             String? cancelComment)?
         setExistingItemQuantity,
     TResult Function(String itemKey, String tableId)? syncExistingItem,
+    TResult Function(List<CategoryModel> categories)? categoriesUpdated,
+    TResult Function(String categoryId, List<GoodsModel> goods)?
+        goodsForCategoryUpdated,
+    TResult Function(String tableId, ArchiveDetailModel? detail)?
+        orderDetailUpdated,
     required TResult orElse(),
   }) {
     if (started != null) {
@@ -349,6 +389,10 @@ class _$StartedImpl implements _Started {
     required TResult Function(_SetExistingItemQuantity value)
         setExistingItemQuantity,
     required TResult Function(_SyncExistingItem value) syncExistingItem,
+    required TResult Function(_CategoriesUpdated value) categoriesUpdated,
+    required TResult Function(_GoodsForCategoryUpdated value)
+        goodsForCategoryUpdated,
+    required TResult Function(_OrderDetailUpdated value) orderDetailUpdated,
   }) {
     return started(this);
   }
@@ -374,6 +418,9 @@ class _$StartedImpl implements _Started {
     TResult? Function(_DeleteExistingItem value)? deleteExistingItem,
     TResult? Function(_SetExistingItemQuantity value)? setExistingItemQuantity,
     TResult? Function(_SyncExistingItem value)? syncExistingItem,
+    TResult? Function(_CategoriesUpdated value)? categoriesUpdated,
+    TResult? Function(_GoodsForCategoryUpdated value)? goodsForCategoryUpdated,
+    TResult? Function(_OrderDetailUpdated value)? orderDetailUpdated,
   }) {
     return started?.call(this);
   }
@@ -399,6 +446,9 @@ class _$StartedImpl implements _Started {
     TResult Function(_DeleteExistingItem value)? deleteExistingItem,
     TResult Function(_SetExistingItemQuantity value)? setExistingItemQuantity,
     TResult Function(_SyncExistingItem value)? syncExistingItem,
+    TResult Function(_CategoriesUpdated value)? categoriesUpdated,
+    TResult Function(_GoodsForCategoryUpdated value)? goodsForCategoryUpdated,
+    TResult Function(_OrderDetailUpdated value)? orderDetailUpdated,
     required TResult orElse(),
   }) {
     if (started != null) {
@@ -476,6 +526,11 @@ class _$GetCategoriesImpl implements _GetCategories {
             String itemKey, String tableId, int quantity, String? cancelComment)
         setExistingItemQuantity,
     required TResult Function(String itemKey, String tableId) syncExistingItem,
+    required TResult Function(List<CategoryModel> categories) categoriesUpdated,
+    required TResult Function(String categoryId, List<GoodsModel> goods)
+        goodsForCategoryUpdated,
+    required TResult Function(String tableId, ArchiveDetailModel? detail)
+        orderDetailUpdated,
   }) {
     return getCategories();
   }
@@ -506,6 +561,11 @@ class _$GetCategoriesImpl implements _GetCategories {
             String? cancelComment)?
         setExistingItemQuantity,
     TResult? Function(String itemKey, String tableId)? syncExistingItem,
+    TResult? Function(List<CategoryModel> categories)? categoriesUpdated,
+    TResult? Function(String categoryId, List<GoodsModel> goods)?
+        goodsForCategoryUpdated,
+    TResult? Function(String tableId, ArchiveDetailModel? detail)?
+        orderDetailUpdated,
   }) {
     return getCategories?.call();
   }
@@ -536,6 +596,11 @@ class _$GetCategoriesImpl implements _GetCategories {
             String? cancelComment)?
         setExistingItemQuantity,
     TResult Function(String itemKey, String tableId)? syncExistingItem,
+    TResult Function(List<CategoryModel> categories)? categoriesUpdated,
+    TResult Function(String categoryId, List<GoodsModel> goods)?
+        goodsForCategoryUpdated,
+    TResult Function(String tableId, ArchiveDetailModel? detail)?
+        orderDetailUpdated,
     required TResult orElse(),
   }) {
     if (getCategories != null) {
@@ -569,6 +634,10 @@ class _$GetCategoriesImpl implements _GetCategories {
     required TResult Function(_SetExistingItemQuantity value)
         setExistingItemQuantity,
     required TResult Function(_SyncExistingItem value) syncExistingItem,
+    required TResult Function(_CategoriesUpdated value) categoriesUpdated,
+    required TResult Function(_GoodsForCategoryUpdated value)
+        goodsForCategoryUpdated,
+    required TResult Function(_OrderDetailUpdated value) orderDetailUpdated,
   }) {
     return getCategories(this);
   }
@@ -594,6 +663,9 @@ class _$GetCategoriesImpl implements _GetCategories {
     TResult? Function(_DeleteExistingItem value)? deleteExistingItem,
     TResult? Function(_SetExistingItemQuantity value)? setExistingItemQuantity,
     TResult? Function(_SyncExistingItem value)? syncExistingItem,
+    TResult? Function(_CategoriesUpdated value)? categoriesUpdated,
+    TResult? Function(_GoodsForCategoryUpdated value)? goodsForCategoryUpdated,
+    TResult? Function(_OrderDetailUpdated value)? orderDetailUpdated,
   }) {
     return getCategories?.call(this);
   }
@@ -619,6 +691,9 @@ class _$GetCategoriesImpl implements _GetCategories {
     TResult Function(_DeleteExistingItem value)? deleteExistingItem,
     TResult Function(_SetExistingItemQuantity value)? setExistingItemQuantity,
     TResult Function(_SyncExistingItem value)? syncExistingItem,
+    TResult Function(_CategoriesUpdated value)? categoriesUpdated,
+    TResult Function(_GoodsForCategoryUpdated value)? goodsForCategoryUpdated,
+    TResult Function(_OrderDetailUpdated value)? orderDetailUpdated,
     required TResult orElse(),
   }) {
     if (getCategories != null) {
@@ -731,6 +806,11 @@ class _$InitSavedGoodsImpl implements _InitSavedGoods {
             String itemKey, String tableId, int quantity, String? cancelComment)
         setExistingItemQuantity,
     required TResult Function(String itemKey, String tableId) syncExistingItem,
+    required TResult Function(List<CategoryModel> categories) categoriesUpdated,
+    required TResult Function(String categoryId, List<GoodsModel> goods)
+        goodsForCategoryUpdated,
+    required TResult Function(String tableId, ArchiveDetailModel? detail)
+        orderDetailUpdated,
   }) {
     return initSavedGoods(savedGoods);
   }
@@ -761,6 +841,11 @@ class _$InitSavedGoodsImpl implements _InitSavedGoods {
             String? cancelComment)?
         setExistingItemQuantity,
     TResult? Function(String itemKey, String tableId)? syncExistingItem,
+    TResult? Function(List<CategoryModel> categories)? categoriesUpdated,
+    TResult? Function(String categoryId, List<GoodsModel> goods)?
+        goodsForCategoryUpdated,
+    TResult? Function(String tableId, ArchiveDetailModel? detail)?
+        orderDetailUpdated,
   }) {
     return initSavedGoods?.call(savedGoods);
   }
@@ -791,6 +876,11 @@ class _$InitSavedGoodsImpl implements _InitSavedGoods {
             String? cancelComment)?
         setExistingItemQuantity,
     TResult Function(String itemKey, String tableId)? syncExistingItem,
+    TResult Function(List<CategoryModel> categories)? categoriesUpdated,
+    TResult Function(String categoryId, List<GoodsModel> goods)?
+        goodsForCategoryUpdated,
+    TResult Function(String tableId, ArchiveDetailModel? detail)?
+        orderDetailUpdated,
     required TResult orElse(),
   }) {
     if (initSavedGoods != null) {
@@ -824,6 +914,10 @@ class _$InitSavedGoodsImpl implements _InitSavedGoods {
     required TResult Function(_SetExistingItemQuantity value)
         setExistingItemQuantity,
     required TResult Function(_SyncExistingItem value) syncExistingItem,
+    required TResult Function(_CategoriesUpdated value) categoriesUpdated,
+    required TResult Function(_GoodsForCategoryUpdated value)
+        goodsForCategoryUpdated,
+    required TResult Function(_OrderDetailUpdated value) orderDetailUpdated,
   }) {
     return initSavedGoods(this);
   }
@@ -849,6 +943,9 @@ class _$InitSavedGoodsImpl implements _InitSavedGoods {
     TResult? Function(_DeleteExistingItem value)? deleteExistingItem,
     TResult? Function(_SetExistingItemQuantity value)? setExistingItemQuantity,
     TResult? Function(_SyncExistingItem value)? syncExistingItem,
+    TResult? Function(_CategoriesUpdated value)? categoriesUpdated,
+    TResult? Function(_GoodsForCategoryUpdated value)? goodsForCategoryUpdated,
+    TResult? Function(_OrderDetailUpdated value)? orderDetailUpdated,
   }) {
     return initSavedGoods?.call(this);
   }
@@ -874,6 +971,9 @@ class _$InitSavedGoodsImpl implements _InitSavedGoods {
     TResult Function(_DeleteExistingItem value)? deleteExistingItem,
     TResult Function(_SetExistingItemQuantity value)? setExistingItemQuantity,
     TResult Function(_SyncExistingItem value)? syncExistingItem,
+    TResult Function(_CategoriesUpdated value)? categoriesUpdated,
+    TResult Function(_GoodsForCategoryUpdated value)? goodsForCategoryUpdated,
+    TResult Function(_OrderDetailUpdated value)? orderDetailUpdated,
     required TResult orElse(),
   }) {
     if (initSavedGoods != null) {
@@ -985,6 +1085,11 @@ class _$SetSelectedCategoryIdImpl implements _SetSelectedCategoryId {
             String itemKey, String tableId, int quantity, String? cancelComment)
         setExistingItemQuantity,
     required TResult Function(String itemKey, String tableId) syncExistingItem,
+    required TResult Function(List<CategoryModel> categories) categoriesUpdated,
+    required TResult Function(String categoryId, List<GoodsModel> goods)
+        goodsForCategoryUpdated,
+    required TResult Function(String tableId, ArchiveDetailModel? detail)
+        orderDetailUpdated,
   }) {
     return setSelectedCategoryId(id);
   }
@@ -1015,6 +1120,11 @@ class _$SetSelectedCategoryIdImpl implements _SetSelectedCategoryId {
             String? cancelComment)?
         setExistingItemQuantity,
     TResult? Function(String itemKey, String tableId)? syncExistingItem,
+    TResult? Function(List<CategoryModel> categories)? categoriesUpdated,
+    TResult? Function(String categoryId, List<GoodsModel> goods)?
+        goodsForCategoryUpdated,
+    TResult? Function(String tableId, ArchiveDetailModel? detail)?
+        orderDetailUpdated,
   }) {
     return setSelectedCategoryId?.call(id);
   }
@@ -1045,6 +1155,11 @@ class _$SetSelectedCategoryIdImpl implements _SetSelectedCategoryId {
             String? cancelComment)?
         setExistingItemQuantity,
     TResult Function(String itemKey, String tableId)? syncExistingItem,
+    TResult Function(List<CategoryModel> categories)? categoriesUpdated,
+    TResult Function(String categoryId, List<GoodsModel> goods)?
+        goodsForCategoryUpdated,
+    TResult Function(String tableId, ArchiveDetailModel? detail)?
+        orderDetailUpdated,
     required TResult orElse(),
   }) {
     if (setSelectedCategoryId != null) {
@@ -1078,6 +1193,10 @@ class _$SetSelectedCategoryIdImpl implements _SetSelectedCategoryId {
     required TResult Function(_SetExistingItemQuantity value)
         setExistingItemQuantity,
     required TResult Function(_SyncExistingItem value) syncExistingItem,
+    required TResult Function(_CategoriesUpdated value) categoriesUpdated,
+    required TResult Function(_GoodsForCategoryUpdated value)
+        goodsForCategoryUpdated,
+    required TResult Function(_OrderDetailUpdated value) orderDetailUpdated,
   }) {
     return setSelectedCategoryId(this);
   }
@@ -1103,6 +1222,9 @@ class _$SetSelectedCategoryIdImpl implements _SetSelectedCategoryId {
     TResult? Function(_DeleteExistingItem value)? deleteExistingItem,
     TResult? Function(_SetExistingItemQuantity value)? setExistingItemQuantity,
     TResult? Function(_SyncExistingItem value)? syncExistingItem,
+    TResult? Function(_CategoriesUpdated value)? categoriesUpdated,
+    TResult? Function(_GoodsForCategoryUpdated value)? goodsForCategoryUpdated,
+    TResult? Function(_OrderDetailUpdated value)? orderDetailUpdated,
   }) {
     return setSelectedCategoryId?.call(this);
   }
@@ -1128,6 +1250,9 @@ class _$SetSelectedCategoryIdImpl implements _SetSelectedCategoryId {
     TResult Function(_DeleteExistingItem value)? deleteExistingItem,
     TResult Function(_SetExistingItemQuantity value)? setExistingItemQuantity,
     TResult Function(_SyncExistingItem value)? syncExistingItem,
+    TResult Function(_CategoriesUpdated value)? categoriesUpdated,
+    TResult Function(_GoodsForCategoryUpdated value)? goodsForCategoryUpdated,
+    TResult Function(_OrderDetailUpdated value)? orderDetailUpdated,
     required TResult orElse(),
   }) {
     if (setSelectedCategoryId != null) {
@@ -1267,6 +1392,11 @@ class _$AddFoodAdditionalImpl implements _AddFoodAdditional {
             String itemKey, String tableId, int quantity, String? cancelComment)
         setExistingItemQuantity,
     required TResult Function(String itemKey, String tableId) syncExistingItem,
+    required TResult Function(List<CategoryModel> categories) categoriesUpdated,
+    required TResult Function(String categoryId, List<GoodsModel> goods)
+        goodsForCategoryUpdated,
+    required TResult Function(String tableId, ArchiveDetailModel? detail)
+        orderDetailUpdated,
   }) {
     return addFoodAdditional(additionals, orderId, comment);
   }
@@ -1297,6 +1427,11 @@ class _$AddFoodAdditionalImpl implements _AddFoodAdditional {
             String? cancelComment)?
         setExistingItemQuantity,
     TResult? Function(String itemKey, String tableId)? syncExistingItem,
+    TResult? Function(List<CategoryModel> categories)? categoriesUpdated,
+    TResult? Function(String categoryId, List<GoodsModel> goods)?
+        goodsForCategoryUpdated,
+    TResult? Function(String tableId, ArchiveDetailModel? detail)?
+        orderDetailUpdated,
   }) {
     return addFoodAdditional?.call(additionals, orderId, comment);
   }
@@ -1327,6 +1462,11 @@ class _$AddFoodAdditionalImpl implements _AddFoodAdditional {
             String? cancelComment)?
         setExistingItemQuantity,
     TResult Function(String itemKey, String tableId)? syncExistingItem,
+    TResult Function(List<CategoryModel> categories)? categoriesUpdated,
+    TResult Function(String categoryId, List<GoodsModel> goods)?
+        goodsForCategoryUpdated,
+    TResult Function(String tableId, ArchiveDetailModel? detail)?
+        orderDetailUpdated,
     required TResult orElse(),
   }) {
     if (addFoodAdditional != null) {
@@ -1360,6 +1500,10 @@ class _$AddFoodAdditionalImpl implements _AddFoodAdditional {
     required TResult Function(_SetExistingItemQuantity value)
         setExistingItemQuantity,
     required TResult Function(_SyncExistingItem value) syncExistingItem,
+    required TResult Function(_CategoriesUpdated value) categoriesUpdated,
+    required TResult Function(_GoodsForCategoryUpdated value)
+        goodsForCategoryUpdated,
+    required TResult Function(_OrderDetailUpdated value) orderDetailUpdated,
   }) {
     return addFoodAdditional(this);
   }
@@ -1385,6 +1529,9 @@ class _$AddFoodAdditionalImpl implements _AddFoodAdditional {
     TResult? Function(_DeleteExistingItem value)? deleteExistingItem,
     TResult? Function(_SetExistingItemQuantity value)? setExistingItemQuantity,
     TResult? Function(_SyncExistingItem value)? syncExistingItem,
+    TResult? Function(_CategoriesUpdated value)? categoriesUpdated,
+    TResult? Function(_GoodsForCategoryUpdated value)? goodsForCategoryUpdated,
+    TResult? Function(_OrderDetailUpdated value)? orderDetailUpdated,
   }) {
     return addFoodAdditional?.call(this);
   }
@@ -1410,6 +1557,9 @@ class _$AddFoodAdditionalImpl implements _AddFoodAdditional {
     TResult Function(_DeleteExistingItem value)? deleteExistingItem,
     TResult Function(_SetExistingItemQuantity value)? setExistingItemQuantity,
     TResult Function(_SyncExistingItem value)? syncExistingItem,
+    TResult Function(_CategoriesUpdated value)? categoriesUpdated,
+    TResult Function(_GoodsForCategoryUpdated value)? goodsForCategoryUpdated,
+    TResult Function(_OrderDetailUpdated value)? orderDetailUpdated,
     required TResult orElse(),
   }) {
     if (addFoodAdditional != null) {
@@ -1533,6 +1683,11 @@ class _$SelectGoodImpl implements _SelectGood {
             String itemKey, String tableId, int quantity, String? cancelComment)
         setExistingItemQuantity,
     required TResult Function(String itemKey, String tableId) syncExistingItem,
+    required TResult Function(List<CategoryModel> categories) categoriesUpdated,
+    required TResult Function(String categoryId, List<GoodsModel> goods)
+        goodsForCategoryUpdated,
+    required TResult Function(String tableId, ArchiveDetailModel? detail)
+        orderDetailUpdated,
   }) {
     return selectGood(good);
   }
@@ -1563,6 +1718,11 @@ class _$SelectGoodImpl implements _SelectGood {
             String? cancelComment)?
         setExistingItemQuantity,
     TResult? Function(String itemKey, String tableId)? syncExistingItem,
+    TResult? Function(List<CategoryModel> categories)? categoriesUpdated,
+    TResult? Function(String categoryId, List<GoodsModel> goods)?
+        goodsForCategoryUpdated,
+    TResult? Function(String tableId, ArchiveDetailModel? detail)?
+        orderDetailUpdated,
   }) {
     return selectGood?.call(good);
   }
@@ -1593,6 +1753,11 @@ class _$SelectGoodImpl implements _SelectGood {
             String? cancelComment)?
         setExistingItemQuantity,
     TResult Function(String itemKey, String tableId)? syncExistingItem,
+    TResult Function(List<CategoryModel> categories)? categoriesUpdated,
+    TResult Function(String categoryId, List<GoodsModel> goods)?
+        goodsForCategoryUpdated,
+    TResult Function(String tableId, ArchiveDetailModel? detail)?
+        orderDetailUpdated,
     required TResult orElse(),
   }) {
     if (selectGood != null) {
@@ -1626,6 +1791,10 @@ class _$SelectGoodImpl implements _SelectGood {
     required TResult Function(_SetExistingItemQuantity value)
         setExistingItemQuantity,
     required TResult Function(_SyncExistingItem value) syncExistingItem,
+    required TResult Function(_CategoriesUpdated value) categoriesUpdated,
+    required TResult Function(_GoodsForCategoryUpdated value)
+        goodsForCategoryUpdated,
+    required TResult Function(_OrderDetailUpdated value) orderDetailUpdated,
   }) {
     return selectGood(this);
   }
@@ -1651,6 +1820,9 @@ class _$SelectGoodImpl implements _SelectGood {
     TResult? Function(_DeleteExistingItem value)? deleteExistingItem,
     TResult? Function(_SetExistingItemQuantity value)? setExistingItemQuantity,
     TResult? Function(_SyncExistingItem value)? syncExistingItem,
+    TResult? Function(_CategoriesUpdated value)? categoriesUpdated,
+    TResult? Function(_GoodsForCategoryUpdated value)? goodsForCategoryUpdated,
+    TResult? Function(_OrderDetailUpdated value)? orderDetailUpdated,
   }) {
     return selectGood?.call(this);
   }
@@ -1676,6 +1848,9 @@ class _$SelectGoodImpl implements _SelectGood {
     TResult Function(_DeleteExistingItem value)? deleteExistingItem,
     TResult Function(_SetExistingItemQuantity value)? setExistingItemQuantity,
     TResult Function(_SyncExistingItem value)? syncExistingItem,
+    TResult Function(_CategoriesUpdated value)? categoriesUpdated,
+    TResult Function(_GoodsForCategoryUpdated value)? goodsForCategoryUpdated,
+    TResult Function(_OrderDetailUpdated value)? orderDetailUpdated,
     required TResult orElse(),
   }) {
     if (selectGood != null) {
@@ -1786,6 +1961,11 @@ class _$IncrementQuantityImpl implements _IncrementQuantity {
             String itemKey, String tableId, int quantity, String? cancelComment)
         setExistingItemQuantity,
     required TResult Function(String itemKey, String tableId) syncExistingItem,
+    required TResult Function(List<CategoryModel> categories) categoriesUpdated,
+    required TResult Function(String categoryId, List<GoodsModel> goods)
+        goodsForCategoryUpdated,
+    required TResult Function(String tableId, ArchiveDetailModel? detail)
+        orderDetailUpdated,
   }) {
     return incrementQuantity(goodsId);
   }
@@ -1816,6 +1996,11 @@ class _$IncrementQuantityImpl implements _IncrementQuantity {
             String? cancelComment)?
         setExistingItemQuantity,
     TResult? Function(String itemKey, String tableId)? syncExistingItem,
+    TResult? Function(List<CategoryModel> categories)? categoriesUpdated,
+    TResult? Function(String categoryId, List<GoodsModel> goods)?
+        goodsForCategoryUpdated,
+    TResult? Function(String tableId, ArchiveDetailModel? detail)?
+        orderDetailUpdated,
   }) {
     return incrementQuantity?.call(goodsId);
   }
@@ -1846,6 +2031,11 @@ class _$IncrementQuantityImpl implements _IncrementQuantity {
             String? cancelComment)?
         setExistingItemQuantity,
     TResult Function(String itemKey, String tableId)? syncExistingItem,
+    TResult Function(List<CategoryModel> categories)? categoriesUpdated,
+    TResult Function(String categoryId, List<GoodsModel> goods)?
+        goodsForCategoryUpdated,
+    TResult Function(String tableId, ArchiveDetailModel? detail)?
+        orderDetailUpdated,
     required TResult orElse(),
   }) {
     if (incrementQuantity != null) {
@@ -1879,6 +2069,10 @@ class _$IncrementQuantityImpl implements _IncrementQuantity {
     required TResult Function(_SetExistingItemQuantity value)
         setExistingItemQuantity,
     required TResult Function(_SyncExistingItem value) syncExistingItem,
+    required TResult Function(_CategoriesUpdated value) categoriesUpdated,
+    required TResult Function(_GoodsForCategoryUpdated value)
+        goodsForCategoryUpdated,
+    required TResult Function(_OrderDetailUpdated value) orderDetailUpdated,
   }) {
     return incrementQuantity(this);
   }
@@ -1904,6 +2098,9 @@ class _$IncrementQuantityImpl implements _IncrementQuantity {
     TResult? Function(_DeleteExistingItem value)? deleteExistingItem,
     TResult? Function(_SetExistingItemQuantity value)? setExistingItemQuantity,
     TResult? Function(_SyncExistingItem value)? syncExistingItem,
+    TResult? Function(_CategoriesUpdated value)? categoriesUpdated,
+    TResult? Function(_GoodsForCategoryUpdated value)? goodsForCategoryUpdated,
+    TResult? Function(_OrderDetailUpdated value)? orderDetailUpdated,
   }) {
     return incrementQuantity?.call(this);
   }
@@ -1929,6 +2126,9 @@ class _$IncrementQuantityImpl implements _IncrementQuantity {
     TResult Function(_DeleteExistingItem value)? deleteExistingItem,
     TResult Function(_SetExistingItemQuantity value)? setExistingItemQuantity,
     TResult Function(_SyncExistingItem value)? syncExistingItem,
+    TResult Function(_CategoriesUpdated value)? categoriesUpdated,
+    TResult Function(_GoodsForCategoryUpdated value)? goodsForCategoryUpdated,
+    TResult Function(_OrderDetailUpdated value)? orderDetailUpdated,
     required TResult orElse(),
   }) {
     if (incrementQuantity != null) {
@@ -2039,6 +2239,11 @@ class _$DecrementQuantityImpl implements _DecrementQuantity {
             String itemKey, String tableId, int quantity, String? cancelComment)
         setExistingItemQuantity,
     required TResult Function(String itemKey, String tableId) syncExistingItem,
+    required TResult Function(List<CategoryModel> categories) categoriesUpdated,
+    required TResult Function(String categoryId, List<GoodsModel> goods)
+        goodsForCategoryUpdated,
+    required TResult Function(String tableId, ArchiveDetailModel? detail)
+        orderDetailUpdated,
   }) {
     return decrementQuantity(goodsId);
   }
@@ -2069,6 +2274,11 @@ class _$DecrementQuantityImpl implements _DecrementQuantity {
             String? cancelComment)?
         setExistingItemQuantity,
     TResult? Function(String itemKey, String tableId)? syncExistingItem,
+    TResult? Function(List<CategoryModel> categories)? categoriesUpdated,
+    TResult? Function(String categoryId, List<GoodsModel> goods)?
+        goodsForCategoryUpdated,
+    TResult? Function(String tableId, ArchiveDetailModel? detail)?
+        orderDetailUpdated,
   }) {
     return decrementQuantity?.call(goodsId);
   }
@@ -2099,6 +2309,11 @@ class _$DecrementQuantityImpl implements _DecrementQuantity {
             String? cancelComment)?
         setExistingItemQuantity,
     TResult Function(String itemKey, String tableId)? syncExistingItem,
+    TResult Function(List<CategoryModel> categories)? categoriesUpdated,
+    TResult Function(String categoryId, List<GoodsModel> goods)?
+        goodsForCategoryUpdated,
+    TResult Function(String tableId, ArchiveDetailModel? detail)?
+        orderDetailUpdated,
     required TResult orElse(),
   }) {
     if (decrementQuantity != null) {
@@ -2132,6 +2347,10 @@ class _$DecrementQuantityImpl implements _DecrementQuantity {
     required TResult Function(_SetExistingItemQuantity value)
         setExistingItemQuantity,
     required TResult Function(_SyncExistingItem value) syncExistingItem,
+    required TResult Function(_CategoriesUpdated value) categoriesUpdated,
+    required TResult Function(_GoodsForCategoryUpdated value)
+        goodsForCategoryUpdated,
+    required TResult Function(_OrderDetailUpdated value) orderDetailUpdated,
   }) {
     return decrementQuantity(this);
   }
@@ -2157,6 +2376,9 @@ class _$DecrementQuantityImpl implements _DecrementQuantity {
     TResult? Function(_DeleteExistingItem value)? deleteExistingItem,
     TResult? Function(_SetExistingItemQuantity value)? setExistingItemQuantity,
     TResult? Function(_SyncExistingItem value)? syncExistingItem,
+    TResult? Function(_CategoriesUpdated value)? categoriesUpdated,
+    TResult? Function(_GoodsForCategoryUpdated value)? goodsForCategoryUpdated,
+    TResult? Function(_OrderDetailUpdated value)? orderDetailUpdated,
   }) {
     return decrementQuantity?.call(this);
   }
@@ -2182,6 +2404,9 @@ class _$DecrementQuantityImpl implements _DecrementQuantity {
     TResult Function(_DeleteExistingItem value)? deleteExistingItem,
     TResult Function(_SetExistingItemQuantity value)? setExistingItemQuantity,
     TResult Function(_SyncExistingItem value)? syncExistingItem,
+    TResult Function(_CategoriesUpdated value)? categoriesUpdated,
+    TResult Function(_GoodsForCategoryUpdated value)? goodsForCategoryUpdated,
+    TResult Function(_OrderDetailUpdated value)? orderDetailUpdated,
     required TResult orElse(),
   }) {
     if (decrementQuantity != null) {
@@ -2265,6 +2490,11 @@ class _$ClearGoodsImpl implements _ClearGoods {
             String itemKey, String tableId, int quantity, String? cancelComment)
         setExistingItemQuantity,
     required TResult Function(String itemKey, String tableId) syncExistingItem,
+    required TResult Function(List<CategoryModel> categories) categoriesUpdated,
+    required TResult Function(String categoryId, List<GoodsModel> goods)
+        goodsForCategoryUpdated,
+    required TResult Function(String tableId, ArchiveDetailModel? detail)
+        orderDetailUpdated,
   }) {
     return clearGoods();
   }
@@ -2295,6 +2525,11 @@ class _$ClearGoodsImpl implements _ClearGoods {
             String? cancelComment)?
         setExistingItemQuantity,
     TResult? Function(String itemKey, String tableId)? syncExistingItem,
+    TResult? Function(List<CategoryModel> categories)? categoriesUpdated,
+    TResult? Function(String categoryId, List<GoodsModel> goods)?
+        goodsForCategoryUpdated,
+    TResult? Function(String tableId, ArchiveDetailModel? detail)?
+        orderDetailUpdated,
   }) {
     return clearGoods?.call();
   }
@@ -2325,6 +2560,11 @@ class _$ClearGoodsImpl implements _ClearGoods {
             String? cancelComment)?
         setExistingItemQuantity,
     TResult Function(String itemKey, String tableId)? syncExistingItem,
+    TResult Function(List<CategoryModel> categories)? categoriesUpdated,
+    TResult Function(String categoryId, List<GoodsModel> goods)?
+        goodsForCategoryUpdated,
+    TResult Function(String tableId, ArchiveDetailModel? detail)?
+        orderDetailUpdated,
     required TResult orElse(),
   }) {
     if (clearGoods != null) {
@@ -2358,6 +2598,10 @@ class _$ClearGoodsImpl implements _ClearGoods {
     required TResult Function(_SetExistingItemQuantity value)
         setExistingItemQuantity,
     required TResult Function(_SyncExistingItem value) syncExistingItem,
+    required TResult Function(_CategoriesUpdated value) categoriesUpdated,
+    required TResult Function(_GoodsForCategoryUpdated value)
+        goodsForCategoryUpdated,
+    required TResult Function(_OrderDetailUpdated value) orderDetailUpdated,
   }) {
     return clearGoods(this);
   }
@@ -2383,6 +2627,9 @@ class _$ClearGoodsImpl implements _ClearGoods {
     TResult? Function(_DeleteExistingItem value)? deleteExistingItem,
     TResult? Function(_SetExistingItemQuantity value)? setExistingItemQuantity,
     TResult? Function(_SyncExistingItem value)? syncExistingItem,
+    TResult? Function(_CategoriesUpdated value)? categoriesUpdated,
+    TResult? Function(_GoodsForCategoryUpdated value)? goodsForCategoryUpdated,
+    TResult? Function(_OrderDetailUpdated value)? orderDetailUpdated,
   }) {
     return clearGoods?.call(this);
   }
@@ -2408,6 +2655,9 @@ class _$ClearGoodsImpl implements _ClearGoods {
     TResult Function(_DeleteExistingItem value)? deleteExistingItem,
     TResult Function(_SetExistingItemQuantity value)? setExistingItemQuantity,
     TResult Function(_SyncExistingItem value)? syncExistingItem,
+    TResult Function(_CategoriesUpdated value)? categoriesUpdated,
+    TResult Function(_GoodsForCategoryUpdated value)? goodsForCategoryUpdated,
+    TResult Function(_OrderDetailUpdated value)? orderDetailUpdated,
     required TResult orElse(),
   }) {
     if (clearGoods != null) {
@@ -2512,6 +2762,11 @@ class _$SearchTextChangedImpl implements _SearchTextChanged {
             String itemKey, String tableId, int quantity, String? cancelComment)
         setExistingItemQuantity,
     required TResult Function(String itemKey, String tableId) syncExistingItem,
+    required TResult Function(List<CategoryModel> categories) categoriesUpdated,
+    required TResult Function(String categoryId, List<GoodsModel> goods)
+        goodsForCategoryUpdated,
+    required TResult Function(String tableId, ArchiveDetailModel? detail)
+        orderDetailUpdated,
   }) {
     return searchTextChanged(text);
   }
@@ -2542,6 +2797,11 @@ class _$SearchTextChangedImpl implements _SearchTextChanged {
             String? cancelComment)?
         setExistingItemQuantity,
     TResult? Function(String itemKey, String tableId)? syncExistingItem,
+    TResult? Function(List<CategoryModel> categories)? categoriesUpdated,
+    TResult? Function(String categoryId, List<GoodsModel> goods)?
+        goodsForCategoryUpdated,
+    TResult? Function(String tableId, ArchiveDetailModel? detail)?
+        orderDetailUpdated,
   }) {
     return searchTextChanged?.call(text);
   }
@@ -2572,6 +2832,11 @@ class _$SearchTextChangedImpl implements _SearchTextChanged {
             String? cancelComment)?
         setExistingItemQuantity,
     TResult Function(String itemKey, String tableId)? syncExistingItem,
+    TResult Function(List<CategoryModel> categories)? categoriesUpdated,
+    TResult Function(String categoryId, List<GoodsModel> goods)?
+        goodsForCategoryUpdated,
+    TResult Function(String tableId, ArchiveDetailModel? detail)?
+        orderDetailUpdated,
     required TResult orElse(),
   }) {
     if (searchTextChanged != null) {
@@ -2605,6 +2870,10 @@ class _$SearchTextChangedImpl implements _SearchTextChanged {
     required TResult Function(_SetExistingItemQuantity value)
         setExistingItemQuantity,
     required TResult Function(_SyncExistingItem value) syncExistingItem,
+    required TResult Function(_CategoriesUpdated value) categoriesUpdated,
+    required TResult Function(_GoodsForCategoryUpdated value)
+        goodsForCategoryUpdated,
+    required TResult Function(_OrderDetailUpdated value) orderDetailUpdated,
   }) {
     return searchTextChanged(this);
   }
@@ -2630,6 +2899,9 @@ class _$SearchTextChangedImpl implements _SearchTextChanged {
     TResult? Function(_DeleteExistingItem value)? deleteExistingItem,
     TResult? Function(_SetExistingItemQuantity value)? setExistingItemQuantity,
     TResult? Function(_SyncExistingItem value)? syncExistingItem,
+    TResult? Function(_CategoriesUpdated value)? categoriesUpdated,
+    TResult? Function(_GoodsForCategoryUpdated value)? goodsForCategoryUpdated,
+    TResult? Function(_OrderDetailUpdated value)? orderDetailUpdated,
   }) {
     return searchTextChanged?.call(this);
   }
@@ -2655,6 +2927,9 @@ class _$SearchTextChangedImpl implements _SearchTextChanged {
     TResult Function(_DeleteExistingItem value)? deleteExistingItem,
     TResult Function(_SetExistingItemQuantity value)? setExistingItemQuantity,
     TResult Function(_SyncExistingItem value)? syncExistingItem,
+    TResult Function(_CategoriesUpdated value)? categoriesUpdated,
+    TResult Function(_GoodsForCategoryUpdated value)? goodsForCategoryUpdated,
+    TResult Function(_OrderDetailUpdated value)? orderDetailUpdated,
     required TResult orElse(),
   }) {
     if (searchTextChanged != null) {
@@ -2774,6 +3049,11 @@ class _$FetchBillOrdersImpl implements _FetchBillOrders {
             String itemKey, String tableId, int quantity, String? cancelComment)
         setExistingItemQuantity,
     required TResult Function(String itemKey, String tableId) syncExistingItem,
+    required TResult Function(List<CategoryModel> categories) categoriesUpdated,
+    required TResult Function(String categoryId, List<GoodsModel> goods)
+        goodsForCategoryUpdated,
+    required TResult Function(String tableId, ArchiveDetailModel? detail)
+        orderDetailUpdated,
   }) {
     return fetchBillOrders(billId, force);
   }
@@ -2804,6 +3084,11 @@ class _$FetchBillOrdersImpl implements _FetchBillOrders {
             String? cancelComment)?
         setExistingItemQuantity,
     TResult? Function(String itemKey, String tableId)? syncExistingItem,
+    TResult? Function(List<CategoryModel> categories)? categoriesUpdated,
+    TResult? Function(String categoryId, List<GoodsModel> goods)?
+        goodsForCategoryUpdated,
+    TResult? Function(String tableId, ArchiveDetailModel? detail)?
+        orderDetailUpdated,
   }) {
     return fetchBillOrders?.call(billId, force);
   }
@@ -2834,6 +3119,11 @@ class _$FetchBillOrdersImpl implements _FetchBillOrders {
             String? cancelComment)?
         setExistingItemQuantity,
     TResult Function(String itemKey, String tableId)? syncExistingItem,
+    TResult Function(List<CategoryModel> categories)? categoriesUpdated,
+    TResult Function(String categoryId, List<GoodsModel> goods)?
+        goodsForCategoryUpdated,
+    TResult Function(String tableId, ArchiveDetailModel? detail)?
+        orderDetailUpdated,
     required TResult orElse(),
   }) {
     if (fetchBillOrders != null) {
@@ -2867,6 +3157,10 @@ class _$FetchBillOrdersImpl implements _FetchBillOrders {
     required TResult Function(_SetExistingItemQuantity value)
         setExistingItemQuantity,
     required TResult Function(_SyncExistingItem value) syncExistingItem,
+    required TResult Function(_CategoriesUpdated value) categoriesUpdated,
+    required TResult Function(_GoodsForCategoryUpdated value)
+        goodsForCategoryUpdated,
+    required TResult Function(_OrderDetailUpdated value) orderDetailUpdated,
   }) {
     return fetchBillOrders(this);
   }
@@ -2892,6 +3186,9 @@ class _$FetchBillOrdersImpl implements _FetchBillOrders {
     TResult? Function(_DeleteExistingItem value)? deleteExistingItem,
     TResult? Function(_SetExistingItemQuantity value)? setExistingItemQuantity,
     TResult? Function(_SyncExistingItem value)? syncExistingItem,
+    TResult? Function(_CategoriesUpdated value)? categoriesUpdated,
+    TResult? Function(_GoodsForCategoryUpdated value)? goodsForCategoryUpdated,
+    TResult? Function(_OrderDetailUpdated value)? orderDetailUpdated,
   }) {
     return fetchBillOrders?.call(this);
   }
@@ -2917,6 +3214,9 @@ class _$FetchBillOrdersImpl implements _FetchBillOrders {
     TResult Function(_DeleteExistingItem value)? deleteExistingItem,
     TResult Function(_SetExistingItemQuantity value)? setExistingItemQuantity,
     TResult Function(_SyncExistingItem value)? syncExistingItem,
+    TResult Function(_CategoriesUpdated value)? categoriesUpdated,
+    TResult Function(_GoodsForCategoryUpdated value)? goodsForCategoryUpdated,
+    TResult Function(_OrderDetailUpdated value)? orderDetailUpdated,
     required TResult orElse(),
   }) {
     if (fetchBillOrders != null) {
@@ -3028,6 +3328,11 @@ class _$SetActiveOrderIdImpl implements _SetActiveOrderId {
             String itemKey, String tableId, int quantity, String? cancelComment)
         setExistingItemQuantity,
     required TResult Function(String itemKey, String tableId) syncExistingItem,
+    required TResult Function(List<CategoryModel> categories) categoriesUpdated,
+    required TResult Function(String categoryId, List<GoodsModel> goods)
+        goodsForCategoryUpdated,
+    required TResult Function(String tableId, ArchiveDetailModel? detail)
+        orderDetailUpdated,
   }) {
     return setActiveOrderId(orderId);
   }
@@ -3058,6 +3363,11 @@ class _$SetActiveOrderIdImpl implements _SetActiveOrderId {
             String? cancelComment)?
         setExistingItemQuantity,
     TResult? Function(String itemKey, String tableId)? syncExistingItem,
+    TResult? Function(List<CategoryModel> categories)? categoriesUpdated,
+    TResult? Function(String categoryId, List<GoodsModel> goods)?
+        goodsForCategoryUpdated,
+    TResult? Function(String tableId, ArchiveDetailModel? detail)?
+        orderDetailUpdated,
   }) {
     return setActiveOrderId?.call(orderId);
   }
@@ -3088,6 +3398,11 @@ class _$SetActiveOrderIdImpl implements _SetActiveOrderId {
             String? cancelComment)?
         setExistingItemQuantity,
     TResult Function(String itemKey, String tableId)? syncExistingItem,
+    TResult Function(List<CategoryModel> categories)? categoriesUpdated,
+    TResult Function(String categoryId, List<GoodsModel> goods)?
+        goodsForCategoryUpdated,
+    TResult Function(String tableId, ArchiveDetailModel? detail)?
+        orderDetailUpdated,
     required TResult orElse(),
   }) {
     if (setActiveOrderId != null) {
@@ -3121,6 +3436,10 @@ class _$SetActiveOrderIdImpl implements _SetActiveOrderId {
     required TResult Function(_SetExistingItemQuantity value)
         setExistingItemQuantity,
     required TResult Function(_SyncExistingItem value) syncExistingItem,
+    required TResult Function(_CategoriesUpdated value) categoriesUpdated,
+    required TResult Function(_GoodsForCategoryUpdated value)
+        goodsForCategoryUpdated,
+    required TResult Function(_OrderDetailUpdated value) orderDetailUpdated,
   }) {
     return setActiveOrderId(this);
   }
@@ -3146,6 +3465,9 @@ class _$SetActiveOrderIdImpl implements _SetActiveOrderId {
     TResult? Function(_DeleteExistingItem value)? deleteExistingItem,
     TResult? Function(_SetExistingItemQuantity value)? setExistingItemQuantity,
     TResult? Function(_SyncExistingItem value)? syncExistingItem,
+    TResult? Function(_CategoriesUpdated value)? categoriesUpdated,
+    TResult? Function(_GoodsForCategoryUpdated value)? goodsForCategoryUpdated,
+    TResult? Function(_OrderDetailUpdated value)? orderDetailUpdated,
   }) {
     return setActiveOrderId?.call(this);
   }
@@ -3171,6 +3493,9 @@ class _$SetActiveOrderIdImpl implements _SetActiveOrderId {
     TResult Function(_DeleteExistingItem value)? deleteExistingItem,
     TResult Function(_SetExistingItemQuantity value)? setExistingItemQuantity,
     TResult Function(_SyncExistingItem value)? syncExistingItem,
+    TResult Function(_CategoriesUpdated value)? categoriesUpdated,
+    TResult Function(_GoodsForCategoryUpdated value)? goodsForCategoryUpdated,
+    TResult Function(_OrderDetailUpdated value)? orderDetailUpdated,
     required TResult orElse(),
   }) {
     if (setActiveOrderId != null) {
@@ -3289,6 +3614,11 @@ class _$CancelOrderItemImpl implements _CancelOrderItem {
             String itemKey, String tableId, int quantity, String? cancelComment)
         setExistingItemQuantity,
     required TResult Function(String itemKey, String tableId) syncExistingItem,
+    required TResult Function(List<CategoryModel> categories) categoriesUpdated,
+    required TResult Function(String categoryId, List<GoodsModel> goods)
+        goodsForCategoryUpdated,
+    required TResult Function(String tableId, ArchiveDetailModel? detail)
+        orderDetailUpdated,
   }) {
     return cancelOrderItem(itemId, tableId);
   }
@@ -3319,6 +3649,11 @@ class _$CancelOrderItemImpl implements _CancelOrderItem {
             String? cancelComment)?
         setExistingItemQuantity,
     TResult? Function(String itemKey, String tableId)? syncExistingItem,
+    TResult? Function(List<CategoryModel> categories)? categoriesUpdated,
+    TResult? Function(String categoryId, List<GoodsModel> goods)?
+        goodsForCategoryUpdated,
+    TResult? Function(String tableId, ArchiveDetailModel? detail)?
+        orderDetailUpdated,
   }) {
     return cancelOrderItem?.call(itemId, tableId);
   }
@@ -3349,6 +3684,11 @@ class _$CancelOrderItemImpl implements _CancelOrderItem {
             String? cancelComment)?
         setExistingItemQuantity,
     TResult Function(String itemKey, String tableId)? syncExistingItem,
+    TResult Function(List<CategoryModel> categories)? categoriesUpdated,
+    TResult Function(String categoryId, List<GoodsModel> goods)?
+        goodsForCategoryUpdated,
+    TResult Function(String tableId, ArchiveDetailModel? detail)?
+        orderDetailUpdated,
     required TResult orElse(),
   }) {
     if (cancelOrderItem != null) {
@@ -3382,6 +3722,10 @@ class _$CancelOrderItemImpl implements _CancelOrderItem {
     required TResult Function(_SetExistingItemQuantity value)
         setExistingItemQuantity,
     required TResult Function(_SyncExistingItem value) syncExistingItem,
+    required TResult Function(_CategoriesUpdated value) categoriesUpdated,
+    required TResult Function(_GoodsForCategoryUpdated value)
+        goodsForCategoryUpdated,
+    required TResult Function(_OrderDetailUpdated value) orderDetailUpdated,
   }) {
     return cancelOrderItem(this);
   }
@@ -3407,6 +3751,9 @@ class _$CancelOrderItemImpl implements _CancelOrderItem {
     TResult? Function(_DeleteExistingItem value)? deleteExistingItem,
     TResult? Function(_SetExistingItemQuantity value)? setExistingItemQuantity,
     TResult? Function(_SyncExistingItem value)? syncExistingItem,
+    TResult? Function(_CategoriesUpdated value)? categoriesUpdated,
+    TResult? Function(_GoodsForCategoryUpdated value)? goodsForCategoryUpdated,
+    TResult? Function(_OrderDetailUpdated value)? orderDetailUpdated,
   }) {
     return cancelOrderItem?.call(this);
   }
@@ -3432,6 +3779,9 @@ class _$CancelOrderItemImpl implements _CancelOrderItem {
     TResult Function(_DeleteExistingItem value)? deleteExistingItem,
     TResult Function(_SetExistingItemQuantity value)? setExistingItemQuantity,
     TResult Function(_SyncExistingItem value)? syncExistingItem,
+    TResult Function(_CategoriesUpdated value)? categoriesUpdated,
+    TResult Function(_GoodsForCategoryUpdated value)? goodsForCategoryUpdated,
+    TResult Function(_OrderDetailUpdated value)? orderDetailUpdated,
     required TResult orElse(),
   }) {
     if (cancelOrderItem != null) {
@@ -3554,6 +3904,11 @@ class _$IncrementExistingItemImpl implements _IncrementExistingItem {
             String itemKey, String tableId, int quantity, String? cancelComment)
         setExistingItemQuantity,
     required TResult Function(String itemKey, String tableId) syncExistingItem,
+    required TResult Function(List<CategoryModel> categories) categoriesUpdated,
+    required TResult Function(String categoryId, List<GoodsModel> goods)
+        goodsForCategoryUpdated,
+    required TResult Function(String tableId, ArchiveDetailModel? detail)
+        orderDetailUpdated,
   }) {
     return incrementExistingItem(itemKey, tableId);
   }
@@ -3584,6 +3939,11 @@ class _$IncrementExistingItemImpl implements _IncrementExistingItem {
             String? cancelComment)?
         setExistingItemQuantity,
     TResult? Function(String itemKey, String tableId)? syncExistingItem,
+    TResult? Function(List<CategoryModel> categories)? categoriesUpdated,
+    TResult? Function(String categoryId, List<GoodsModel> goods)?
+        goodsForCategoryUpdated,
+    TResult? Function(String tableId, ArchiveDetailModel? detail)?
+        orderDetailUpdated,
   }) {
     return incrementExistingItem?.call(itemKey, tableId);
   }
@@ -3614,6 +3974,11 @@ class _$IncrementExistingItemImpl implements _IncrementExistingItem {
             String? cancelComment)?
         setExistingItemQuantity,
     TResult Function(String itemKey, String tableId)? syncExistingItem,
+    TResult Function(List<CategoryModel> categories)? categoriesUpdated,
+    TResult Function(String categoryId, List<GoodsModel> goods)?
+        goodsForCategoryUpdated,
+    TResult Function(String tableId, ArchiveDetailModel? detail)?
+        orderDetailUpdated,
     required TResult orElse(),
   }) {
     if (incrementExistingItem != null) {
@@ -3647,6 +4012,10 @@ class _$IncrementExistingItemImpl implements _IncrementExistingItem {
     required TResult Function(_SetExistingItemQuantity value)
         setExistingItemQuantity,
     required TResult Function(_SyncExistingItem value) syncExistingItem,
+    required TResult Function(_CategoriesUpdated value) categoriesUpdated,
+    required TResult Function(_GoodsForCategoryUpdated value)
+        goodsForCategoryUpdated,
+    required TResult Function(_OrderDetailUpdated value) orderDetailUpdated,
   }) {
     return incrementExistingItem(this);
   }
@@ -3672,6 +4041,9 @@ class _$IncrementExistingItemImpl implements _IncrementExistingItem {
     TResult? Function(_DeleteExistingItem value)? deleteExistingItem,
     TResult? Function(_SetExistingItemQuantity value)? setExistingItemQuantity,
     TResult? Function(_SyncExistingItem value)? syncExistingItem,
+    TResult? Function(_CategoriesUpdated value)? categoriesUpdated,
+    TResult? Function(_GoodsForCategoryUpdated value)? goodsForCategoryUpdated,
+    TResult? Function(_OrderDetailUpdated value)? orderDetailUpdated,
   }) {
     return incrementExistingItem?.call(this);
   }
@@ -3697,6 +4069,9 @@ class _$IncrementExistingItemImpl implements _IncrementExistingItem {
     TResult Function(_DeleteExistingItem value)? deleteExistingItem,
     TResult Function(_SetExistingItemQuantity value)? setExistingItemQuantity,
     TResult Function(_SyncExistingItem value)? syncExistingItem,
+    TResult Function(_CategoriesUpdated value)? categoriesUpdated,
+    TResult Function(_GoodsForCategoryUpdated value)? goodsForCategoryUpdated,
+    TResult Function(_OrderDetailUpdated value)? orderDetailUpdated,
     required TResult orElse(),
   }) {
     if (incrementExistingItem != null) {
@@ -3819,6 +4194,11 @@ class _$DecrementExistingItemImpl implements _DecrementExistingItem {
             String itemKey, String tableId, int quantity, String? cancelComment)
         setExistingItemQuantity,
     required TResult Function(String itemKey, String tableId) syncExistingItem,
+    required TResult Function(List<CategoryModel> categories) categoriesUpdated,
+    required TResult Function(String categoryId, List<GoodsModel> goods)
+        goodsForCategoryUpdated,
+    required TResult Function(String tableId, ArchiveDetailModel? detail)
+        orderDetailUpdated,
   }) {
     return decrementExistingItem(itemKey, tableId);
   }
@@ -3849,6 +4229,11 @@ class _$DecrementExistingItemImpl implements _DecrementExistingItem {
             String? cancelComment)?
         setExistingItemQuantity,
     TResult? Function(String itemKey, String tableId)? syncExistingItem,
+    TResult? Function(List<CategoryModel> categories)? categoriesUpdated,
+    TResult? Function(String categoryId, List<GoodsModel> goods)?
+        goodsForCategoryUpdated,
+    TResult? Function(String tableId, ArchiveDetailModel? detail)?
+        orderDetailUpdated,
   }) {
     return decrementExistingItem?.call(itemKey, tableId);
   }
@@ -3879,6 +4264,11 @@ class _$DecrementExistingItemImpl implements _DecrementExistingItem {
             String? cancelComment)?
         setExistingItemQuantity,
     TResult Function(String itemKey, String tableId)? syncExistingItem,
+    TResult Function(List<CategoryModel> categories)? categoriesUpdated,
+    TResult Function(String categoryId, List<GoodsModel> goods)?
+        goodsForCategoryUpdated,
+    TResult Function(String tableId, ArchiveDetailModel? detail)?
+        orderDetailUpdated,
     required TResult orElse(),
   }) {
     if (decrementExistingItem != null) {
@@ -3912,6 +4302,10 @@ class _$DecrementExistingItemImpl implements _DecrementExistingItem {
     required TResult Function(_SetExistingItemQuantity value)
         setExistingItemQuantity,
     required TResult Function(_SyncExistingItem value) syncExistingItem,
+    required TResult Function(_CategoriesUpdated value) categoriesUpdated,
+    required TResult Function(_GoodsForCategoryUpdated value)
+        goodsForCategoryUpdated,
+    required TResult Function(_OrderDetailUpdated value) orderDetailUpdated,
   }) {
     return decrementExistingItem(this);
   }
@@ -3937,6 +4331,9 @@ class _$DecrementExistingItemImpl implements _DecrementExistingItem {
     TResult? Function(_DeleteExistingItem value)? deleteExistingItem,
     TResult? Function(_SetExistingItemQuantity value)? setExistingItemQuantity,
     TResult? Function(_SyncExistingItem value)? syncExistingItem,
+    TResult? Function(_CategoriesUpdated value)? categoriesUpdated,
+    TResult? Function(_GoodsForCategoryUpdated value)? goodsForCategoryUpdated,
+    TResult? Function(_OrderDetailUpdated value)? orderDetailUpdated,
   }) {
     return decrementExistingItem?.call(this);
   }
@@ -3962,6 +4359,9 @@ class _$DecrementExistingItemImpl implements _DecrementExistingItem {
     TResult Function(_DeleteExistingItem value)? deleteExistingItem,
     TResult Function(_SetExistingItemQuantity value)? setExistingItemQuantity,
     TResult Function(_SyncExistingItem value)? syncExistingItem,
+    TResult Function(_CategoriesUpdated value)? categoriesUpdated,
+    TResult Function(_GoodsForCategoryUpdated value)? goodsForCategoryUpdated,
+    TResult Function(_OrderDetailUpdated value)? orderDetailUpdated,
     required TResult orElse(),
   }) {
     if (decrementExistingItem != null) {
@@ -4092,6 +4492,11 @@ class _$DeleteExistingItemImpl implements _DeleteExistingItem {
             String itemKey, String tableId, int quantity, String? cancelComment)
         setExistingItemQuantity,
     required TResult Function(String itemKey, String tableId) syncExistingItem,
+    required TResult Function(List<CategoryModel> categories) categoriesUpdated,
+    required TResult Function(String categoryId, List<GoodsModel> goods)
+        goodsForCategoryUpdated,
+    required TResult Function(String tableId, ArchiveDetailModel? detail)
+        orderDetailUpdated,
   }) {
     return deleteExistingItem(itemKey, tableId, cancelComment);
   }
@@ -4122,6 +4527,11 @@ class _$DeleteExistingItemImpl implements _DeleteExistingItem {
             String? cancelComment)?
         setExistingItemQuantity,
     TResult? Function(String itemKey, String tableId)? syncExistingItem,
+    TResult? Function(List<CategoryModel> categories)? categoriesUpdated,
+    TResult? Function(String categoryId, List<GoodsModel> goods)?
+        goodsForCategoryUpdated,
+    TResult? Function(String tableId, ArchiveDetailModel? detail)?
+        orderDetailUpdated,
   }) {
     return deleteExistingItem?.call(itemKey, tableId, cancelComment);
   }
@@ -4152,6 +4562,11 @@ class _$DeleteExistingItemImpl implements _DeleteExistingItem {
             String? cancelComment)?
         setExistingItemQuantity,
     TResult Function(String itemKey, String tableId)? syncExistingItem,
+    TResult Function(List<CategoryModel> categories)? categoriesUpdated,
+    TResult Function(String categoryId, List<GoodsModel> goods)?
+        goodsForCategoryUpdated,
+    TResult Function(String tableId, ArchiveDetailModel? detail)?
+        orderDetailUpdated,
     required TResult orElse(),
   }) {
     if (deleteExistingItem != null) {
@@ -4185,6 +4600,10 @@ class _$DeleteExistingItemImpl implements _DeleteExistingItem {
     required TResult Function(_SetExistingItemQuantity value)
         setExistingItemQuantity,
     required TResult Function(_SyncExistingItem value) syncExistingItem,
+    required TResult Function(_CategoriesUpdated value) categoriesUpdated,
+    required TResult Function(_GoodsForCategoryUpdated value)
+        goodsForCategoryUpdated,
+    required TResult Function(_OrderDetailUpdated value) orderDetailUpdated,
   }) {
     return deleteExistingItem(this);
   }
@@ -4210,6 +4629,9 @@ class _$DeleteExistingItemImpl implements _DeleteExistingItem {
     TResult? Function(_DeleteExistingItem value)? deleteExistingItem,
     TResult? Function(_SetExistingItemQuantity value)? setExistingItemQuantity,
     TResult? Function(_SyncExistingItem value)? syncExistingItem,
+    TResult? Function(_CategoriesUpdated value)? categoriesUpdated,
+    TResult? Function(_GoodsForCategoryUpdated value)? goodsForCategoryUpdated,
+    TResult? Function(_OrderDetailUpdated value)? orderDetailUpdated,
   }) {
     return deleteExistingItem?.call(this);
   }
@@ -4235,6 +4657,9 @@ class _$DeleteExistingItemImpl implements _DeleteExistingItem {
     TResult Function(_DeleteExistingItem value)? deleteExistingItem,
     TResult Function(_SetExistingItemQuantity value)? setExistingItemQuantity,
     TResult Function(_SyncExistingItem value)? syncExistingItem,
+    TResult Function(_CategoriesUpdated value)? categoriesUpdated,
+    TResult Function(_GoodsForCategoryUpdated value)? goodsForCategoryUpdated,
+    TResult Function(_OrderDetailUpdated value)? orderDetailUpdated,
     required TResult orElse(),
   }) {
     if (deleteExistingItem != null) {
@@ -4383,6 +4808,11 @@ class _$SetExistingItemQuantityImpl implements _SetExistingItemQuantity {
             String itemKey, String tableId, int quantity, String? cancelComment)
         setExistingItemQuantity,
     required TResult Function(String itemKey, String tableId) syncExistingItem,
+    required TResult Function(List<CategoryModel> categories) categoriesUpdated,
+    required TResult Function(String categoryId, List<GoodsModel> goods)
+        goodsForCategoryUpdated,
+    required TResult Function(String tableId, ArchiveDetailModel? detail)
+        orderDetailUpdated,
   }) {
     return setExistingItemQuantity(itemKey, tableId, quantity, cancelComment);
   }
@@ -4413,6 +4843,11 @@ class _$SetExistingItemQuantityImpl implements _SetExistingItemQuantity {
             String? cancelComment)?
         setExistingItemQuantity,
     TResult? Function(String itemKey, String tableId)? syncExistingItem,
+    TResult? Function(List<CategoryModel> categories)? categoriesUpdated,
+    TResult? Function(String categoryId, List<GoodsModel> goods)?
+        goodsForCategoryUpdated,
+    TResult? Function(String tableId, ArchiveDetailModel? detail)?
+        orderDetailUpdated,
   }) {
     return setExistingItemQuantity?.call(
         itemKey, tableId, quantity, cancelComment);
@@ -4444,6 +4879,11 @@ class _$SetExistingItemQuantityImpl implements _SetExistingItemQuantity {
             String? cancelComment)?
         setExistingItemQuantity,
     TResult Function(String itemKey, String tableId)? syncExistingItem,
+    TResult Function(List<CategoryModel> categories)? categoriesUpdated,
+    TResult Function(String categoryId, List<GoodsModel> goods)?
+        goodsForCategoryUpdated,
+    TResult Function(String tableId, ArchiveDetailModel? detail)?
+        orderDetailUpdated,
     required TResult orElse(),
   }) {
     if (setExistingItemQuantity != null) {
@@ -4477,6 +4917,10 @@ class _$SetExistingItemQuantityImpl implements _SetExistingItemQuantity {
     required TResult Function(_SetExistingItemQuantity value)
         setExistingItemQuantity,
     required TResult Function(_SyncExistingItem value) syncExistingItem,
+    required TResult Function(_CategoriesUpdated value) categoriesUpdated,
+    required TResult Function(_GoodsForCategoryUpdated value)
+        goodsForCategoryUpdated,
+    required TResult Function(_OrderDetailUpdated value) orderDetailUpdated,
   }) {
     return setExistingItemQuantity(this);
   }
@@ -4502,6 +4946,9 @@ class _$SetExistingItemQuantityImpl implements _SetExistingItemQuantity {
     TResult? Function(_DeleteExistingItem value)? deleteExistingItem,
     TResult? Function(_SetExistingItemQuantity value)? setExistingItemQuantity,
     TResult? Function(_SyncExistingItem value)? syncExistingItem,
+    TResult? Function(_CategoriesUpdated value)? categoriesUpdated,
+    TResult? Function(_GoodsForCategoryUpdated value)? goodsForCategoryUpdated,
+    TResult? Function(_OrderDetailUpdated value)? orderDetailUpdated,
   }) {
     return setExistingItemQuantity?.call(this);
   }
@@ -4527,6 +4974,9 @@ class _$SetExistingItemQuantityImpl implements _SetExistingItemQuantity {
     TResult Function(_DeleteExistingItem value)? deleteExistingItem,
     TResult Function(_SetExistingItemQuantity value)? setExistingItemQuantity,
     TResult Function(_SyncExistingItem value)? syncExistingItem,
+    TResult Function(_CategoriesUpdated value)? categoriesUpdated,
+    TResult Function(_GoodsForCategoryUpdated value)? goodsForCategoryUpdated,
+    TResult Function(_OrderDetailUpdated value)? orderDetailUpdated,
     required TResult orElse(),
   }) {
     if (setExistingItemQuantity != null) {
@@ -4651,6 +5101,11 @@ class _$SyncExistingItemImpl implements _SyncExistingItem {
             String itemKey, String tableId, int quantity, String? cancelComment)
         setExistingItemQuantity,
     required TResult Function(String itemKey, String tableId) syncExistingItem,
+    required TResult Function(List<CategoryModel> categories) categoriesUpdated,
+    required TResult Function(String categoryId, List<GoodsModel> goods)
+        goodsForCategoryUpdated,
+    required TResult Function(String tableId, ArchiveDetailModel? detail)
+        orderDetailUpdated,
   }) {
     return syncExistingItem(itemKey, tableId);
   }
@@ -4681,6 +5136,11 @@ class _$SyncExistingItemImpl implements _SyncExistingItem {
             String? cancelComment)?
         setExistingItemQuantity,
     TResult? Function(String itemKey, String tableId)? syncExistingItem,
+    TResult? Function(List<CategoryModel> categories)? categoriesUpdated,
+    TResult? Function(String categoryId, List<GoodsModel> goods)?
+        goodsForCategoryUpdated,
+    TResult? Function(String tableId, ArchiveDetailModel? detail)?
+        orderDetailUpdated,
   }) {
     return syncExistingItem?.call(itemKey, tableId);
   }
@@ -4711,6 +5171,11 @@ class _$SyncExistingItemImpl implements _SyncExistingItem {
             String? cancelComment)?
         setExistingItemQuantity,
     TResult Function(String itemKey, String tableId)? syncExistingItem,
+    TResult Function(List<CategoryModel> categories)? categoriesUpdated,
+    TResult Function(String categoryId, List<GoodsModel> goods)?
+        goodsForCategoryUpdated,
+    TResult Function(String tableId, ArchiveDetailModel? detail)?
+        orderDetailUpdated,
     required TResult orElse(),
   }) {
     if (syncExistingItem != null) {
@@ -4744,6 +5209,10 @@ class _$SyncExistingItemImpl implements _SyncExistingItem {
     required TResult Function(_SetExistingItemQuantity value)
         setExistingItemQuantity,
     required TResult Function(_SyncExistingItem value) syncExistingItem,
+    required TResult Function(_CategoriesUpdated value) categoriesUpdated,
+    required TResult Function(_GoodsForCategoryUpdated value)
+        goodsForCategoryUpdated,
+    required TResult Function(_OrderDetailUpdated value) orderDetailUpdated,
   }) {
     return syncExistingItem(this);
   }
@@ -4769,6 +5238,9 @@ class _$SyncExistingItemImpl implements _SyncExistingItem {
     TResult? Function(_DeleteExistingItem value)? deleteExistingItem,
     TResult? Function(_SetExistingItemQuantity value)? setExistingItemQuantity,
     TResult? Function(_SyncExistingItem value)? syncExistingItem,
+    TResult? Function(_CategoriesUpdated value)? categoriesUpdated,
+    TResult? Function(_GoodsForCategoryUpdated value)? goodsForCategoryUpdated,
+    TResult? Function(_OrderDetailUpdated value)? orderDetailUpdated,
   }) {
     return syncExistingItem?.call(this);
   }
@@ -4794,6 +5266,9 @@ class _$SyncExistingItemImpl implements _SyncExistingItem {
     TResult Function(_DeleteExistingItem value)? deleteExistingItem,
     TResult Function(_SetExistingItemQuantity value)? setExistingItemQuantity,
     TResult Function(_SyncExistingItem value)? syncExistingItem,
+    TResult Function(_CategoriesUpdated value)? categoriesUpdated,
+    TResult Function(_GoodsForCategoryUpdated value)? goodsForCategoryUpdated,
+    TResult Function(_OrderDetailUpdated value)? orderDetailUpdated,
     required TResult orElse(),
   }) {
     if (syncExistingItem != null) {
@@ -4812,6 +5287,894 @@ abstract class _SyncExistingItem implements DetailEvent {
   String get tableId;
   @JsonKey(ignore: true)
   _$$SyncExistingItemImplCopyWith<_$SyncExistingItemImpl> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class _$$CategoriesUpdatedImplCopyWith<$Res> {
+  factory _$$CategoriesUpdatedImplCopyWith(_$CategoriesUpdatedImpl value,
+          $Res Function(_$CategoriesUpdatedImpl) then) =
+      __$$CategoriesUpdatedImplCopyWithImpl<$Res>;
+  @useResult
+  $Res call({List<CategoryModel> categories});
+}
+
+/// @nodoc
+class __$$CategoriesUpdatedImplCopyWithImpl<$Res>
+    extends _$DetailEventCopyWithImpl<$Res, _$CategoriesUpdatedImpl>
+    implements _$$CategoriesUpdatedImplCopyWith<$Res> {
+  __$$CategoriesUpdatedImplCopyWithImpl(_$CategoriesUpdatedImpl _value,
+      $Res Function(_$CategoriesUpdatedImpl) _then)
+      : super(_value, _then);
+
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? categories = null,
+  }) {
+    return _then(_$CategoriesUpdatedImpl(
+      categories: null == categories
+          ? _value._categories
+          : categories // ignore: cast_nullable_to_non_nullable
+              as List<CategoryModel>,
+    ));
+  }
+}
+
+/// @nodoc
+
+class _$CategoriesUpdatedImpl implements _CategoriesUpdated {
+  const _$CategoriesUpdatedImpl({required final List<CategoryModel> categories})
+      : _categories = categories;
+
+  final List<CategoryModel> _categories;
+  @override
+  List<CategoryModel> get categories {
+    if (_categories is EqualUnmodifiableListView) return _categories;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(_categories);
+  }
+
+  @override
+  String toString() {
+    return 'DetailEvent.categoriesUpdated(categories: $categories)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$CategoriesUpdatedImpl &&
+            const DeepCollectionEquality()
+                .equals(other._categories, _categories));
+  }
+
+  @override
+  int get hashCode => Object.hash(
+      runtimeType, const DeepCollectionEquality().hash(_categories));
+
+  @JsonKey(ignore: true)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$CategoriesUpdatedImplCopyWith<_$CategoriesUpdatedImpl> get copyWith =>
+      __$$CategoriesUpdatedImplCopyWithImpl<_$CategoriesUpdatedImpl>(
+          this, _$identity);
+
+  @override
+  @optionalTypeArgs
+  TResult when<TResult extends Object?>({
+    required TResult Function() started,
+    required TResult Function() getCategories,
+    required TResult Function(List<OrderItem> savedGoods) initSavedGoods,
+    required TResult Function(String id) setSelectedCategoryId,
+    required TResult Function(List<FoodAdditionalModel> additionals,
+            String orderId, String comment)
+        addFoodAdditional,
+    required TResult Function(GoodsModel good) selectGood,
+    required TResult Function(String goodsId) incrementQuantity,
+    required TResult Function(String goodsId) decrementQuantity,
+    required TResult Function() clearGoods,
+    required TResult Function(String text) searchTextChanged,
+    required TResult Function(String billId, bool force) fetchBillOrders,
+    required TResult Function(String orderId) setActiveOrderId,
+    required TResult Function(String itemId, String tableId) cancelOrderItem,
+    required TResult Function(String itemKey, String tableId)
+        incrementExistingItem,
+    required TResult Function(String itemKey, String tableId)
+        decrementExistingItem,
+    required TResult Function(
+            String itemKey, String tableId, String? cancelComment)
+        deleteExistingItem,
+    required TResult Function(
+            String itemKey, String tableId, int quantity, String? cancelComment)
+        setExistingItemQuantity,
+    required TResult Function(String itemKey, String tableId) syncExistingItem,
+    required TResult Function(List<CategoryModel> categories) categoriesUpdated,
+    required TResult Function(String categoryId, List<GoodsModel> goods)
+        goodsForCategoryUpdated,
+    required TResult Function(String tableId, ArchiveDetailModel? detail)
+        orderDetailUpdated,
+  }) {
+    return categoriesUpdated(categories);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult? whenOrNull<TResult extends Object?>({
+    TResult? Function()? started,
+    TResult? Function()? getCategories,
+    TResult? Function(List<OrderItem> savedGoods)? initSavedGoods,
+    TResult? Function(String id)? setSelectedCategoryId,
+    TResult? Function(List<FoodAdditionalModel> additionals, String orderId,
+            String comment)?
+        addFoodAdditional,
+    TResult? Function(GoodsModel good)? selectGood,
+    TResult? Function(String goodsId)? incrementQuantity,
+    TResult? Function(String goodsId)? decrementQuantity,
+    TResult? Function()? clearGoods,
+    TResult? Function(String text)? searchTextChanged,
+    TResult? Function(String billId, bool force)? fetchBillOrders,
+    TResult? Function(String orderId)? setActiveOrderId,
+    TResult? Function(String itemId, String tableId)? cancelOrderItem,
+    TResult? Function(String itemKey, String tableId)? incrementExistingItem,
+    TResult? Function(String itemKey, String tableId)? decrementExistingItem,
+    TResult? Function(String itemKey, String tableId, String? cancelComment)?
+        deleteExistingItem,
+    TResult? Function(String itemKey, String tableId, int quantity,
+            String? cancelComment)?
+        setExistingItemQuantity,
+    TResult? Function(String itemKey, String tableId)? syncExistingItem,
+    TResult? Function(List<CategoryModel> categories)? categoriesUpdated,
+    TResult? Function(String categoryId, List<GoodsModel> goods)?
+        goodsForCategoryUpdated,
+    TResult? Function(String tableId, ArchiveDetailModel? detail)?
+        orderDetailUpdated,
+  }) {
+    return categoriesUpdated?.call(categories);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult maybeWhen<TResult extends Object?>({
+    TResult Function()? started,
+    TResult Function()? getCategories,
+    TResult Function(List<OrderItem> savedGoods)? initSavedGoods,
+    TResult Function(String id)? setSelectedCategoryId,
+    TResult Function(List<FoodAdditionalModel> additionals, String orderId,
+            String comment)?
+        addFoodAdditional,
+    TResult Function(GoodsModel good)? selectGood,
+    TResult Function(String goodsId)? incrementQuantity,
+    TResult Function(String goodsId)? decrementQuantity,
+    TResult Function()? clearGoods,
+    TResult Function(String text)? searchTextChanged,
+    TResult Function(String billId, bool force)? fetchBillOrders,
+    TResult Function(String orderId)? setActiveOrderId,
+    TResult Function(String itemId, String tableId)? cancelOrderItem,
+    TResult Function(String itemKey, String tableId)? incrementExistingItem,
+    TResult Function(String itemKey, String tableId)? decrementExistingItem,
+    TResult Function(String itemKey, String tableId, String? cancelComment)?
+        deleteExistingItem,
+    TResult Function(String itemKey, String tableId, int quantity,
+            String? cancelComment)?
+        setExistingItemQuantity,
+    TResult Function(String itemKey, String tableId)? syncExistingItem,
+    TResult Function(List<CategoryModel> categories)? categoriesUpdated,
+    TResult Function(String categoryId, List<GoodsModel> goods)?
+        goodsForCategoryUpdated,
+    TResult Function(String tableId, ArchiveDetailModel? detail)?
+        orderDetailUpdated,
+    required TResult orElse(),
+  }) {
+    if (categoriesUpdated != null) {
+      return categoriesUpdated(categories);
+    }
+    return orElse();
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult map<TResult extends Object?>({
+    required TResult Function(_Started value) started,
+    required TResult Function(_GetCategories value) getCategories,
+    required TResult Function(_InitSavedGoods value) initSavedGoods,
+    required TResult Function(_SetSelectedCategoryId value)
+        setSelectedCategoryId,
+    required TResult Function(_AddFoodAdditional value) addFoodAdditional,
+    required TResult Function(_SelectGood value) selectGood,
+    required TResult Function(_IncrementQuantity value) incrementQuantity,
+    required TResult Function(_DecrementQuantity value) decrementQuantity,
+    required TResult Function(_ClearGoods value) clearGoods,
+    required TResult Function(_SearchTextChanged value) searchTextChanged,
+    required TResult Function(_FetchBillOrders value) fetchBillOrders,
+    required TResult Function(_SetActiveOrderId value) setActiveOrderId,
+    required TResult Function(_CancelOrderItem value) cancelOrderItem,
+    required TResult Function(_IncrementExistingItem value)
+        incrementExistingItem,
+    required TResult Function(_DecrementExistingItem value)
+        decrementExistingItem,
+    required TResult Function(_DeleteExistingItem value) deleteExistingItem,
+    required TResult Function(_SetExistingItemQuantity value)
+        setExistingItemQuantity,
+    required TResult Function(_SyncExistingItem value) syncExistingItem,
+    required TResult Function(_CategoriesUpdated value) categoriesUpdated,
+    required TResult Function(_GoodsForCategoryUpdated value)
+        goodsForCategoryUpdated,
+    required TResult Function(_OrderDetailUpdated value) orderDetailUpdated,
+  }) {
+    return categoriesUpdated(this);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult? mapOrNull<TResult extends Object?>({
+    TResult? Function(_Started value)? started,
+    TResult? Function(_GetCategories value)? getCategories,
+    TResult? Function(_InitSavedGoods value)? initSavedGoods,
+    TResult? Function(_SetSelectedCategoryId value)? setSelectedCategoryId,
+    TResult? Function(_AddFoodAdditional value)? addFoodAdditional,
+    TResult? Function(_SelectGood value)? selectGood,
+    TResult? Function(_IncrementQuantity value)? incrementQuantity,
+    TResult? Function(_DecrementQuantity value)? decrementQuantity,
+    TResult? Function(_ClearGoods value)? clearGoods,
+    TResult? Function(_SearchTextChanged value)? searchTextChanged,
+    TResult? Function(_FetchBillOrders value)? fetchBillOrders,
+    TResult? Function(_SetActiveOrderId value)? setActiveOrderId,
+    TResult? Function(_CancelOrderItem value)? cancelOrderItem,
+    TResult? Function(_IncrementExistingItem value)? incrementExistingItem,
+    TResult? Function(_DecrementExistingItem value)? decrementExistingItem,
+    TResult? Function(_DeleteExistingItem value)? deleteExistingItem,
+    TResult? Function(_SetExistingItemQuantity value)? setExistingItemQuantity,
+    TResult? Function(_SyncExistingItem value)? syncExistingItem,
+    TResult? Function(_CategoriesUpdated value)? categoriesUpdated,
+    TResult? Function(_GoodsForCategoryUpdated value)? goodsForCategoryUpdated,
+    TResult? Function(_OrderDetailUpdated value)? orderDetailUpdated,
+  }) {
+    return categoriesUpdated?.call(this);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult maybeMap<TResult extends Object?>({
+    TResult Function(_Started value)? started,
+    TResult Function(_GetCategories value)? getCategories,
+    TResult Function(_InitSavedGoods value)? initSavedGoods,
+    TResult Function(_SetSelectedCategoryId value)? setSelectedCategoryId,
+    TResult Function(_AddFoodAdditional value)? addFoodAdditional,
+    TResult Function(_SelectGood value)? selectGood,
+    TResult Function(_IncrementQuantity value)? incrementQuantity,
+    TResult Function(_DecrementQuantity value)? decrementQuantity,
+    TResult Function(_ClearGoods value)? clearGoods,
+    TResult Function(_SearchTextChanged value)? searchTextChanged,
+    TResult Function(_FetchBillOrders value)? fetchBillOrders,
+    TResult Function(_SetActiveOrderId value)? setActiveOrderId,
+    TResult Function(_CancelOrderItem value)? cancelOrderItem,
+    TResult Function(_IncrementExistingItem value)? incrementExistingItem,
+    TResult Function(_DecrementExistingItem value)? decrementExistingItem,
+    TResult Function(_DeleteExistingItem value)? deleteExistingItem,
+    TResult Function(_SetExistingItemQuantity value)? setExistingItemQuantity,
+    TResult Function(_SyncExistingItem value)? syncExistingItem,
+    TResult Function(_CategoriesUpdated value)? categoriesUpdated,
+    TResult Function(_GoodsForCategoryUpdated value)? goodsForCategoryUpdated,
+    TResult Function(_OrderDetailUpdated value)? orderDetailUpdated,
+    required TResult orElse(),
+  }) {
+    if (categoriesUpdated != null) {
+      return categoriesUpdated(this);
+    }
+    return orElse();
+  }
+}
+
+abstract class _CategoriesUpdated implements DetailEvent {
+  const factory _CategoriesUpdated(
+          {required final List<CategoryModel> categories}) =
+      _$CategoriesUpdatedImpl;
+
+  List<CategoryModel> get categories;
+  @JsonKey(ignore: true)
+  _$$CategoriesUpdatedImplCopyWith<_$CategoriesUpdatedImpl> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class _$$GoodsForCategoryUpdatedImplCopyWith<$Res> {
+  factory _$$GoodsForCategoryUpdatedImplCopyWith(
+          _$GoodsForCategoryUpdatedImpl value,
+          $Res Function(_$GoodsForCategoryUpdatedImpl) then) =
+      __$$GoodsForCategoryUpdatedImplCopyWithImpl<$Res>;
+  @useResult
+  $Res call({String categoryId, List<GoodsModel> goods});
+}
+
+/// @nodoc
+class __$$GoodsForCategoryUpdatedImplCopyWithImpl<$Res>
+    extends _$DetailEventCopyWithImpl<$Res, _$GoodsForCategoryUpdatedImpl>
+    implements _$$GoodsForCategoryUpdatedImplCopyWith<$Res> {
+  __$$GoodsForCategoryUpdatedImplCopyWithImpl(
+      _$GoodsForCategoryUpdatedImpl _value,
+      $Res Function(_$GoodsForCategoryUpdatedImpl) _then)
+      : super(_value, _then);
+
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? categoryId = null,
+    Object? goods = null,
+  }) {
+    return _then(_$GoodsForCategoryUpdatedImpl(
+      categoryId: null == categoryId
+          ? _value.categoryId
+          : categoryId // ignore: cast_nullable_to_non_nullable
+              as String,
+      goods: null == goods
+          ? _value._goods
+          : goods // ignore: cast_nullable_to_non_nullable
+              as List<GoodsModel>,
+    ));
+  }
+}
+
+/// @nodoc
+
+class _$GoodsForCategoryUpdatedImpl implements _GoodsForCategoryUpdated {
+  const _$GoodsForCategoryUpdatedImpl(
+      {required this.categoryId, required final List<GoodsModel> goods})
+      : _goods = goods;
+
+  @override
+  final String categoryId;
+  final List<GoodsModel> _goods;
+  @override
+  List<GoodsModel> get goods {
+    if (_goods is EqualUnmodifiableListView) return _goods;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(_goods);
+  }
+
+  @override
+  String toString() {
+    return 'DetailEvent.goodsForCategoryUpdated(categoryId: $categoryId, goods: $goods)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$GoodsForCategoryUpdatedImpl &&
+            (identical(other.categoryId, categoryId) ||
+                other.categoryId == categoryId) &&
+            const DeepCollectionEquality().equals(other._goods, _goods));
+  }
+
+  @override
+  int get hashCode => Object.hash(
+      runtimeType, categoryId, const DeepCollectionEquality().hash(_goods));
+
+  @JsonKey(ignore: true)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$GoodsForCategoryUpdatedImplCopyWith<_$GoodsForCategoryUpdatedImpl>
+      get copyWith => __$$GoodsForCategoryUpdatedImplCopyWithImpl<
+          _$GoodsForCategoryUpdatedImpl>(this, _$identity);
+
+  @override
+  @optionalTypeArgs
+  TResult when<TResult extends Object?>({
+    required TResult Function() started,
+    required TResult Function() getCategories,
+    required TResult Function(List<OrderItem> savedGoods) initSavedGoods,
+    required TResult Function(String id) setSelectedCategoryId,
+    required TResult Function(List<FoodAdditionalModel> additionals,
+            String orderId, String comment)
+        addFoodAdditional,
+    required TResult Function(GoodsModel good) selectGood,
+    required TResult Function(String goodsId) incrementQuantity,
+    required TResult Function(String goodsId) decrementQuantity,
+    required TResult Function() clearGoods,
+    required TResult Function(String text) searchTextChanged,
+    required TResult Function(String billId, bool force) fetchBillOrders,
+    required TResult Function(String orderId) setActiveOrderId,
+    required TResult Function(String itemId, String tableId) cancelOrderItem,
+    required TResult Function(String itemKey, String tableId)
+        incrementExistingItem,
+    required TResult Function(String itemKey, String tableId)
+        decrementExistingItem,
+    required TResult Function(
+            String itemKey, String tableId, String? cancelComment)
+        deleteExistingItem,
+    required TResult Function(
+            String itemKey, String tableId, int quantity, String? cancelComment)
+        setExistingItemQuantity,
+    required TResult Function(String itemKey, String tableId) syncExistingItem,
+    required TResult Function(List<CategoryModel> categories) categoriesUpdated,
+    required TResult Function(String categoryId, List<GoodsModel> goods)
+        goodsForCategoryUpdated,
+    required TResult Function(String tableId, ArchiveDetailModel? detail)
+        orderDetailUpdated,
+  }) {
+    return goodsForCategoryUpdated(categoryId, goods);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult? whenOrNull<TResult extends Object?>({
+    TResult? Function()? started,
+    TResult? Function()? getCategories,
+    TResult? Function(List<OrderItem> savedGoods)? initSavedGoods,
+    TResult? Function(String id)? setSelectedCategoryId,
+    TResult? Function(List<FoodAdditionalModel> additionals, String orderId,
+            String comment)?
+        addFoodAdditional,
+    TResult? Function(GoodsModel good)? selectGood,
+    TResult? Function(String goodsId)? incrementQuantity,
+    TResult? Function(String goodsId)? decrementQuantity,
+    TResult? Function()? clearGoods,
+    TResult? Function(String text)? searchTextChanged,
+    TResult? Function(String billId, bool force)? fetchBillOrders,
+    TResult? Function(String orderId)? setActiveOrderId,
+    TResult? Function(String itemId, String tableId)? cancelOrderItem,
+    TResult? Function(String itemKey, String tableId)? incrementExistingItem,
+    TResult? Function(String itemKey, String tableId)? decrementExistingItem,
+    TResult? Function(String itemKey, String tableId, String? cancelComment)?
+        deleteExistingItem,
+    TResult? Function(String itemKey, String tableId, int quantity,
+            String? cancelComment)?
+        setExistingItemQuantity,
+    TResult? Function(String itemKey, String tableId)? syncExistingItem,
+    TResult? Function(List<CategoryModel> categories)? categoriesUpdated,
+    TResult? Function(String categoryId, List<GoodsModel> goods)?
+        goodsForCategoryUpdated,
+    TResult? Function(String tableId, ArchiveDetailModel? detail)?
+        orderDetailUpdated,
+  }) {
+    return goodsForCategoryUpdated?.call(categoryId, goods);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult maybeWhen<TResult extends Object?>({
+    TResult Function()? started,
+    TResult Function()? getCategories,
+    TResult Function(List<OrderItem> savedGoods)? initSavedGoods,
+    TResult Function(String id)? setSelectedCategoryId,
+    TResult Function(List<FoodAdditionalModel> additionals, String orderId,
+            String comment)?
+        addFoodAdditional,
+    TResult Function(GoodsModel good)? selectGood,
+    TResult Function(String goodsId)? incrementQuantity,
+    TResult Function(String goodsId)? decrementQuantity,
+    TResult Function()? clearGoods,
+    TResult Function(String text)? searchTextChanged,
+    TResult Function(String billId, bool force)? fetchBillOrders,
+    TResult Function(String orderId)? setActiveOrderId,
+    TResult Function(String itemId, String tableId)? cancelOrderItem,
+    TResult Function(String itemKey, String tableId)? incrementExistingItem,
+    TResult Function(String itemKey, String tableId)? decrementExistingItem,
+    TResult Function(String itemKey, String tableId, String? cancelComment)?
+        deleteExistingItem,
+    TResult Function(String itemKey, String tableId, int quantity,
+            String? cancelComment)?
+        setExistingItemQuantity,
+    TResult Function(String itemKey, String tableId)? syncExistingItem,
+    TResult Function(List<CategoryModel> categories)? categoriesUpdated,
+    TResult Function(String categoryId, List<GoodsModel> goods)?
+        goodsForCategoryUpdated,
+    TResult Function(String tableId, ArchiveDetailModel? detail)?
+        orderDetailUpdated,
+    required TResult orElse(),
+  }) {
+    if (goodsForCategoryUpdated != null) {
+      return goodsForCategoryUpdated(categoryId, goods);
+    }
+    return orElse();
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult map<TResult extends Object?>({
+    required TResult Function(_Started value) started,
+    required TResult Function(_GetCategories value) getCategories,
+    required TResult Function(_InitSavedGoods value) initSavedGoods,
+    required TResult Function(_SetSelectedCategoryId value)
+        setSelectedCategoryId,
+    required TResult Function(_AddFoodAdditional value) addFoodAdditional,
+    required TResult Function(_SelectGood value) selectGood,
+    required TResult Function(_IncrementQuantity value) incrementQuantity,
+    required TResult Function(_DecrementQuantity value) decrementQuantity,
+    required TResult Function(_ClearGoods value) clearGoods,
+    required TResult Function(_SearchTextChanged value) searchTextChanged,
+    required TResult Function(_FetchBillOrders value) fetchBillOrders,
+    required TResult Function(_SetActiveOrderId value) setActiveOrderId,
+    required TResult Function(_CancelOrderItem value) cancelOrderItem,
+    required TResult Function(_IncrementExistingItem value)
+        incrementExistingItem,
+    required TResult Function(_DecrementExistingItem value)
+        decrementExistingItem,
+    required TResult Function(_DeleteExistingItem value) deleteExistingItem,
+    required TResult Function(_SetExistingItemQuantity value)
+        setExistingItemQuantity,
+    required TResult Function(_SyncExistingItem value) syncExistingItem,
+    required TResult Function(_CategoriesUpdated value) categoriesUpdated,
+    required TResult Function(_GoodsForCategoryUpdated value)
+        goodsForCategoryUpdated,
+    required TResult Function(_OrderDetailUpdated value) orderDetailUpdated,
+  }) {
+    return goodsForCategoryUpdated(this);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult? mapOrNull<TResult extends Object?>({
+    TResult? Function(_Started value)? started,
+    TResult? Function(_GetCategories value)? getCategories,
+    TResult? Function(_InitSavedGoods value)? initSavedGoods,
+    TResult? Function(_SetSelectedCategoryId value)? setSelectedCategoryId,
+    TResult? Function(_AddFoodAdditional value)? addFoodAdditional,
+    TResult? Function(_SelectGood value)? selectGood,
+    TResult? Function(_IncrementQuantity value)? incrementQuantity,
+    TResult? Function(_DecrementQuantity value)? decrementQuantity,
+    TResult? Function(_ClearGoods value)? clearGoods,
+    TResult? Function(_SearchTextChanged value)? searchTextChanged,
+    TResult? Function(_FetchBillOrders value)? fetchBillOrders,
+    TResult? Function(_SetActiveOrderId value)? setActiveOrderId,
+    TResult? Function(_CancelOrderItem value)? cancelOrderItem,
+    TResult? Function(_IncrementExistingItem value)? incrementExistingItem,
+    TResult? Function(_DecrementExistingItem value)? decrementExistingItem,
+    TResult? Function(_DeleteExistingItem value)? deleteExistingItem,
+    TResult? Function(_SetExistingItemQuantity value)? setExistingItemQuantity,
+    TResult? Function(_SyncExistingItem value)? syncExistingItem,
+    TResult? Function(_CategoriesUpdated value)? categoriesUpdated,
+    TResult? Function(_GoodsForCategoryUpdated value)? goodsForCategoryUpdated,
+    TResult? Function(_OrderDetailUpdated value)? orderDetailUpdated,
+  }) {
+    return goodsForCategoryUpdated?.call(this);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult maybeMap<TResult extends Object?>({
+    TResult Function(_Started value)? started,
+    TResult Function(_GetCategories value)? getCategories,
+    TResult Function(_InitSavedGoods value)? initSavedGoods,
+    TResult Function(_SetSelectedCategoryId value)? setSelectedCategoryId,
+    TResult Function(_AddFoodAdditional value)? addFoodAdditional,
+    TResult Function(_SelectGood value)? selectGood,
+    TResult Function(_IncrementQuantity value)? incrementQuantity,
+    TResult Function(_DecrementQuantity value)? decrementQuantity,
+    TResult Function(_ClearGoods value)? clearGoods,
+    TResult Function(_SearchTextChanged value)? searchTextChanged,
+    TResult Function(_FetchBillOrders value)? fetchBillOrders,
+    TResult Function(_SetActiveOrderId value)? setActiveOrderId,
+    TResult Function(_CancelOrderItem value)? cancelOrderItem,
+    TResult Function(_IncrementExistingItem value)? incrementExistingItem,
+    TResult Function(_DecrementExistingItem value)? decrementExistingItem,
+    TResult Function(_DeleteExistingItem value)? deleteExistingItem,
+    TResult Function(_SetExistingItemQuantity value)? setExistingItemQuantity,
+    TResult Function(_SyncExistingItem value)? syncExistingItem,
+    TResult Function(_CategoriesUpdated value)? categoriesUpdated,
+    TResult Function(_GoodsForCategoryUpdated value)? goodsForCategoryUpdated,
+    TResult Function(_OrderDetailUpdated value)? orderDetailUpdated,
+    required TResult orElse(),
+  }) {
+    if (goodsForCategoryUpdated != null) {
+      return goodsForCategoryUpdated(this);
+    }
+    return orElse();
+  }
+}
+
+abstract class _GoodsForCategoryUpdated implements DetailEvent {
+  const factory _GoodsForCategoryUpdated(
+      {required final String categoryId,
+      required final List<GoodsModel> goods}) = _$GoodsForCategoryUpdatedImpl;
+
+  String get categoryId;
+  List<GoodsModel> get goods;
+  @JsonKey(ignore: true)
+  _$$GoodsForCategoryUpdatedImplCopyWith<_$GoodsForCategoryUpdatedImpl>
+      get copyWith => throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class _$$OrderDetailUpdatedImplCopyWith<$Res> {
+  factory _$$OrderDetailUpdatedImplCopyWith(_$OrderDetailUpdatedImpl value,
+          $Res Function(_$OrderDetailUpdatedImpl) then) =
+      __$$OrderDetailUpdatedImplCopyWithImpl<$Res>;
+  @useResult
+  $Res call({String tableId, ArchiveDetailModel? detail});
+
+  $ArchiveDetailModelCopyWith<$Res>? get detail;
+}
+
+/// @nodoc
+class __$$OrderDetailUpdatedImplCopyWithImpl<$Res>
+    extends _$DetailEventCopyWithImpl<$Res, _$OrderDetailUpdatedImpl>
+    implements _$$OrderDetailUpdatedImplCopyWith<$Res> {
+  __$$OrderDetailUpdatedImplCopyWithImpl(_$OrderDetailUpdatedImpl _value,
+      $Res Function(_$OrderDetailUpdatedImpl) _then)
+      : super(_value, _then);
+
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? tableId = null,
+    Object? detail = freezed,
+  }) {
+    return _then(_$OrderDetailUpdatedImpl(
+      tableId: null == tableId
+          ? _value.tableId
+          : tableId // ignore: cast_nullable_to_non_nullable
+              as String,
+      detail: freezed == detail
+          ? _value.detail
+          : detail // ignore: cast_nullable_to_non_nullable
+              as ArchiveDetailModel?,
+    ));
+  }
+
+  @override
+  @pragma('vm:prefer-inline')
+  $ArchiveDetailModelCopyWith<$Res>? get detail {
+    if (_value.detail == null) {
+      return null;
+    }
+
+    return $ArchiveDetailModelCopyWith<$Res>(_value.detail!, (value) {
+      return _then(_value.copyWith(detail: value));
+    });
+  }
+}
+
+/// @nodoc
+
+class _$OrderDetailUpdatedImpl implements _OrderDetailUpdated {
+  const _$OrderDetailUpdatedImpl({required this.tableId, this.detail});
+
+  @override
+  final String tableId;
+  @override
+  final ArchiveDetailModel? detail;
+
+  @override
+  String toString() {
+    return 'DetailEvent.orderDetailUpdated(tableId: $tableId, detail: $detail)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$OrderDetailUpdatedImpl &&
+            (identical(other.tableId, tableId) || other.tableId == tableId) &&
+            (identical(other.detail, detail) || other.detail == detail));
+  }
+
+  @override
+  int get hashCode => Object.hash(runtimeType, tableId, detail);
+
+  @JsonKey(ignore: true)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$OrderDetailUpdatedImplCopyWith<_$OrderDetailUpdatedImpl> get copyWith =>
+      __$$OrderDetailUpdatedImplCopyWithImpl<_$OrderDetailUpdatedImpl>(
+          this, _$identity);
+
+  @override
+  @optionalTypeArgs
+  TResult when<TResult extends Object?>({
+    required TResult Function() started,
+    required TResult Function() getCategories,
+    required TResult Function(List<OrderItem> savedGoods) initSavedGoods,
+    required TResult Function(String id) setSelectedCategoryId,
+    required TResult Function(List<FoodAdditionalModel> additionals,
+            String orderId, String comment)
+        addFoodAdditional,
+    required TResult Function(GoodsModel good) selectGood,
+    required TResult Function(String goodsId) incrementQuantity,
+    required TResult Function(String goodsId) decrementQuantity,
+    required TResult Function() clearGoods,
+    required TResult Function(String text) searchTextChanged,
+    required TResult Function(String billId, bool force) fetchBillOrders,
+    required TResult Function(String orderId) setActiveOrderId,
+    required TResult Function(String itemId, String tableId) cancelOrderItem,
+    required TResult Function(String itemKey, String tableId)
+        incrementExistingItem,
+    required TResult Function(String itemKey, String tableId)
+        decrementExistingItem,
+    required TResult Function(
+            String itemKey, String tableId, String? cancelComment)
+        deleteExistingItem,
+    required TResult Function(
+            String itemKey, String tableId, int quantity, String? cancelComment)
+        setExistingItemQuantity,
+    required TResult Function(String itemKey, String tableId) syncExistingItem,
+    required TResult Function(List<CategoryModel> categories) categoriesUpdated,
+    required TResult Function(String categoryId, List<GoodsModel> goods)
+        goodsForCategoryUpdated,
+    required TResult Function(String tableId, ArchiveDetailModel? detail)
+        orderDetailUpdated,
+  }) {
+    return orderDetailUpdated(tableId, detail);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult? whenOrNull<TResult extends Object?>({
+    TResult? Function()? started,
+    TResult? Function()? getCategories,
+    TResult? Function(List<OrderItem> savedGoods)? initSavedGoods,
+    TResult? Function(String id)? setSelectedCategoryId,
+    TResult? Function(List<FoodAdditionalModel> additionals, String orderId,
+            String comment)?
+        addFoodAdditional,
+    TResult? Function(GoodsModel good)? selectGood,
+    TResult? Function(String goodsId)? incrementQuantity,
+    TResult? Function(String goodsId)? decrementQuantity,
+    TResult? Function()? clearGoods,
+    TResult? Function(String text)? searchTextChanged,
+    TResult? Function(String billId, bool force)? fetchBillOrders,
+    TResult? Function(String orderId)? setActiveOrderId,
+    TResult? Function(String itemId, String tableId)? cancelOrderItem,
+    TResult? Function(String itemKey, String tableId)? incrementExistingItem,
+    TResult? Function(String itemKey, String tableId)? decrementExistingItem,
+    TResult? Function(String itemKey, String tableId, String? cancelComment)?
+        deleteExistingItem,
+    TResult? Function(String itemKey, String tableId, int quantity,
+            String? cancelComment)?
+        setExistingItemQuantity,
+    TResult? Function(String itemKey, String tableId)? syncExistingItem,
+    TResult? Function(List<CategoryModel> categories)? categoriesUpdated,
+    TResult? Function(String categoryId, List<GoodsModel> goods)?
+        goodsForCategoryUpdated,
+    TResult? Function(String tableId, ArchiveDetailModel? detail)?
+        orderDetailUpdated,
+  }) {
+    return orderDetailUpdated?.call(tableId, detail);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult maybeWhen<TResult extends Object?>({
+    TResult Function()? started,
+    TResult Function()? getCategories,
+    TResult Function(List<OrderItem> savedGoods)? initSavedGoods,
+    TResult Function(String id)? setSelectedCategoryId,
+    TResult Function(List<FoodAdditionalModel> additionals, String orderId,
+            String comment)?
+        addFoodAdditional,
+    TResult Function(GoodsModel good)? selectGood,
+    TResult Function(String goodsId)? incrementQuantity,
+    TResult Function(String goodsId)? decrementQuantity,
+    TResult Function()? clearGoods,
+    TResult Function(String text)? searchTextChanged,
+    TResult Function(String billId, bool force)? fetchBillOrders,
+    TResult Function(String orderId)? setActiveOrderId,
+    TResult Function(String itemId, String tableId)? cancelOrderItem,
+    TResult Function(String itemKey, String tableId)? incrementExistingItem,
+    TResult Function(String itemKey, String tableId)? decrementExistingItem,
+    TResult Function(String itemKey, String tableId, String? cancelComment)?
+        deleteExistingItem,
+    TResult Function(String itemKey, String tableId, int quantity,
+            String? cancelComment)?
+        setExistingItemQuantity,
+    TResult Function(String itemKey, String tableId)? syncExistingItem,
+    TResult Function(List<CategoryModel> categories)? categoriesUpdated,
+    TResult Function(String categoryId, List<GoodsModel> goods)?
+        goodsForCategoryUpdated,
+    TResult Function(String tableId, ArchiveDetailModel? detail)?
+        orderDetailUpdated,
+    required TResult orElse(),
+  }) {
+    if (orderDetailUpdated != null) {
+      return orderDetailUpdated(tableId, detail);
+    }
+    return orElse();
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult map<TResult extends Object?>({
+    required TResult Function(_Started value) started,
+    required TResult Function(_GetCategories value) getCategories,
+    required TResult Function(_InitSavedGoods value) initSavedGoods,
+    required TResult Function(_SetSelectedCategoryId value)
+        setSelectedCategoryId,
+    required TResult Function(_AddFoodAdditional value) addFoodAdditional,
+    required TResult Function(_SelectGood value) selectGood,
+    required TResult Function(_IncrementQuantity value) incrementQuantity,
+    required TResult Function(_DecrementQuantity value) decrementQuantity,
+    required TResult Function(_ClearGoods value) clearGoods,
+    required TResult Function(_SearchTextChanged value) searchTextChanged,
+    required TResult Function(_FetchBillOrders value) fetchBillOrders,
+    required TResult Function(_SetActiveOrderId value) setActiveOrderId,
+    required TResult Function(_CancelOrderItem value) cancelOrderItem,
+    required TResult Function(_IncrementExistingItem value)
+        incrementExistingItem,
+    required TResult Function(_DecrementExistingItem value)
+        decrementExistingItem,
+    required TResult Function(_DeleteExistingItem value) deleteExistingItem,
+    required TResult Function(_SetExistingItemQuantity value)
+        setExistingItemQuantity,
+    required TResult Function(_SyncExistingItem value) syncExistingItem,
+    required TResult Function(_CategoriesUpdated value) categoriesUpdated,
+    required TResult Function(_GoodsForCategoryUpdated value)
+        goodsForCategoryUpdated,
+    required TResult Function(_OrderDetailUpdated value) orderDetailUpdated,
+  }) {
+    return orderDetailUpdated(this);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult? mapOrNull<TResult extends Object?>({
+    TResult? Function(_Started value)? started,
+    TResult? Function(_GetCategories value)? getCategories,
+    TResult? Function(_InitSavedGoods value)? initSavedGoods,
+    TResult? Function(_SetSelectedCategoryId value)? setSelectedCategoryId,
+    TResult? Function(_AddFoodAdditional value)? addFoodAdditional,
+    TResult? Function(_SelectGood value)? selectGood,
+    TResult? Function(_IncrementQuantity value)? incrementQuantity,
+    TResult? Function(_DecrementQuantity value)? decrementQuantity,
+    TResult? Function(_ClearGoods value)? clearGoods,
+    TResult? Function(_SearchTextChanged value)? searchTextChanged,
+    TResult? Function(_FetchBillOrders value)? fetchBillOrders,
+    TResult? Function(_SetActiveOrderId value)? setActiveOrderId,
+    TResult? Function(_CancelOrderItem value)? cancelOrderItem,
+    TResult? Function(_IncrementExistingItem value)? incrementExistingItem,
+    TResult? Function(_DecrementExistingItem value)? decrementExistingItem,
+    TResult? Function(_DeleteExistingItem value)? deleteExistingItem,
+    TResult? Function(_SetExistingItemQuantity value)? setExistingItemQuantity,
+    TResult? Function(_SyncExistingItem value)? syncExistingItem,
+    TResult? Function(_CategoriesUpdated value)? categoriesUpdated,
+    TResult? Function(_GoodsForCategoryUpdated value)? goodsForCategoryUpdated,
+    TResult? Function(_OrderDetailUpdated value)? orderDetailUpdated,
+  }) {
+    return orderDetailUpdated?.call(this);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult maybeMap<TResult extends Object?>({
+    TResult Function(_Started value)? started,
+    TResult Function(_GetCategories value)? getCategories,
+    TResult Function(_InitSavedGoods value)? initSavedGoods,
+    TResult Function(_SetSelectedCategoryId value)? setSelectedCategoryId,
+    TResult Function(_AddFoodAdditional value)? addFoodAdditional,
+    TResult Function(_SelectGood value)? selectGood,
+    TResult Function(_IncrementQuantity value)? incrementQuantity,
+    TResult Function(_DecrementQuantity value)? decrementQuantity,
+    TResult Function(_ClearGoods value)? clearGoods,
+    TResult Function(_SearchTextChanged value)? searchTextChanged,
+    TResult Function(_FetchBillOrders value)? fetchBillOrders,
+    TResult Function(_SetActiveOrderId value)? setActiveOrderId,
+    TResult Function(_CancelOrderItem value)? cancelOrderItem,
+    TResult Function(_IncrementExistingItem value)? incrementExistingItem,
+    TResult Function(_DecrementExistingItem value)? decrementExistingItem,
+    TResult Function(_DeleteExistingItem value)? deleteExistingItem,
+    TResult Function(_SetExistingItemQuantity value)? setExistingItemQuantity,
+    TResult Function(_SyncExistingItem value)? syncExistingItem,
+    TResult Function(_CategoriesUpdated value)? categoriesUpdated,
+    TResult Function(_GoodsForCategoryUpdated value)? goodsForCategoryUpdated,
+    TResult Function(_OrderDetailUpdated value)? orderDetailUpdated,
+    required TResult orElse(),
+  }) {
+    if (orderDetailUpdated != null) {
+      return orderDetailUpdated(this);
+    }
+    return orElse();
+  }
+}
+
+abstract class _OrderDetailUpdated implements DetailEvent {
+  const factory _OrderDetailUpdated(
+      {required final String tableId,
+      final ArchiveDetailModel? detail}) = _$OrderDetailUpdatedImpl;
+
+  String get tableId;
+  ArchiveDetailModel? get detail;
+  @JsonKey(ignore: true)
+  _$$OrderDetailUpdatedImplCopyWith<_$OrderDetailUpdatedImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }
 
@@ -5127,7 +6490,7 @@ class _$DetailStateCopyWithImpl<$Res, $Val extends DetailState>
   @override
   $Res call({
     Object? status = null,
-    Object? failure = null,
+    Object? failure = freezed,
     Object? textController = freezed,
     Object? categories = freezed,
     Object? goods = freezed,
@@ -5142,7 +6505,7 @@ class _$DetailStateCopyWithImpl<$Res, $Val extends DetailState>
           ? _value.status
           : status // ignore: cast_nullable_to_non_nullable
               as Status,
-      failure: null == failure
+      failure: freezed == failure
           ? _value.failure
           : failure // ignore: cast_nullable_to_non_nullable
               as Failure,
@@ -5215,7 +6578,7 @@ class __$$DetailStateImplCopyWithImpl<$Res>
   @override
   $Res call({
     Object? status = null,
-    Object? failure = null,
+    Object? failure = freezed,
     Object? textController = freezed,
     Object? categories = freezed,
     Object? goods = freezed,
@@ -5230,7 +6593,7 @@ class __$$DetailStateImplCopyWithImpl<$Res>
           ? _value.status
           : status // ignore: cast_nullable_to_non_nullable
               as Status,
-      failure: null == failure
+      failure: freezed == failure
           ? _value.failure
           : failure // ignore: cast_nullable_to_non_nullable
               as Failure,
@@ -5369,7 +6732,7 @@ class _$DetailStateImpl implements _DetailState {
         (other.runtimeType == runtimeType &&
             other is _$DetailStateImpl &&
             (identical(other.status, status) || other.status == status) &&
-            (identical(other.failure, failure) || other.failure == failure) &&
+            const DeepCollectionEquality().equals(other.failure, failure) &&
             (identical(other.textController, textController) ||
                 other.textController == textController) &&
             const DeepCollectionEquality()
@@ -5391,7 +6754,7 @@ class _$DetailStateImpl implements _DetailState {
   int get hashCode => Object.hash(
       runtimeType,
       status,
-      failure,
+      const DeepCollectionEquality().hash(failure),
       textController,
       const DeepCollectionEquality().hash(_categories),
       const DeepCollectionEquality().hash(_goods),

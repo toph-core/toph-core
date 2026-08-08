@@ -20,9 +20,7 @@ cd "$(dirname "$0")/.."
 # this list in the same change that finishes that Bloc's Phase 2 rewrite —
 # per §11 step 2, this check must go live immediately for every file NOT
 # already violating it, so new violations are caught from day one.
-EXEMPT_DIRS=(
-  "lib/features/view/main/presentation/cubit/detail"
-)
+EXEMPT_DIRS=()
 
 PATTERN='package:dio/dio\.dart|core/api/dio_client\.dart|core/api/list_api\.dart'
 

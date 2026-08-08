@@ -1,14 +1,13 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:rxdart/rxdart.dart';
-import 'package:dio/dio.dart';
 import 'package:mary_ai_pos/core/components/flush_bars.dart';
 import 'package:mary_ai_pos/core/utils/helper/helper_widget.dart';
 import 'package:mary_ai_pos/core/constants/constants.dart';
-import 'dart:convert';
 
 import 'package:mary_ai_pos/core/service/printer/printer_service.dart';
 import 'package:mary_ai_pos/core/services/cache/cache_service.dart';
@@ -16,7 +15,6 @@ import 'package:mary_ai_pos/core/services/offline_queue/offline_queue_service.da
 import 'package:mary_ai_pos/core/services/offline_queue/pending_operation.dart';
 import 'package:mary_ai_pos/di.dart' show inject;
 import 'package:mary_ai_pos/core/error/failure.dart';
-import 'package:mary_ai_pos/core/usecase/usecase.dart';
 import 'package:mary_ai_pos/core/utils/uuid.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/cafe_tables/cafe_tables_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/category/category_model.dart';
@@ -25,13 +23,12 @@ import 'package:mary_ai_pos/features/view/main/data/models/food_additional/food_
 import 'package:mary_ai_pos/features/view/main/data/models/goods/goods_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/save_order/save_order_model.dart';
 import 'package:mary_ai_pos/features/view/main/domain/entities/save_order_entity.dart';
-import 'package:mary_ai_pos/features/view/main/domain/usecase/get_categories_usecase.dart';
-import 'package:mary_ai_pos/features/view/main/domain/usecase/get_goods_by_category_id_usecase.dart';
 import 'package:mary_ai_pos/features/view/main/domain/usecase/get_goods_with_name_usecase.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/archive_detail/archive_detail_model.dart';
 import 'package:mary_ai_pos/features/view/main/domain/entities/archive_detail_entity.dart';
-import 'package:mary_ai_pos/features/view/main/domain/usecase/get_payment_detail_with_table_id_usecase.dart';
 import 'package:mary_ai_pos/features/view/main/domain/repository/main_repository.dart';
+import 'package:mary_ai_pos/features/view/main/domain/repository/menu_repository.dart';
+import 'package:mary_ai_pos/features/view/main/domain/repository/orders_repository.dart';
 
 part 'detail_event.dart';
 part 'detail_state.dart';
@@ -41,35 +38,43 @@ EventTransformer<T> debounce<T>(Duration duration) {
   return (events, mapper) => events.debounceTime(duration).switchMap(mapper);
 }
 
+/// offline-first-target-architecture.md §4/§9 (V3/V5/V6).
+///
+/// Reads (categories, goods-by-category, order/bill detail) are
+/// `MenuRepository`/`OrdersRepository` `watchX()` subscriptions — no
+/// throttle fields, no awaited fetch usecase for the common case. Order/bill
+/// detail keeps one narrow live-fetch fallback (`_mainRepository
+/// .getPaymentDetailWithTableId`, only when `LocalDatabase` has nothing yet
+/// for this table) — a brand-new dine-in order has no other source for its
+/// bill row until `SyncEngine`'s next hydration pass lands one, since a
+/// dine-in create doesn't return the full order/bill payload synchronously
+/// (see EXECUTION_CONCERNS.md).
+///
+/// Existing-item add/cancel/qty (`_deleteExistingByKey`/
+/// `_onSyncExistingItem`) are local-first, always — a single
+/// `OrdersRepository` commit that returns without awaiting the network, so
+/// `existingSyncingNames` (the +/-/delete button-disable state) clears the
+/// instant the *local* write lands, not after a network round trip. The
+/// online-path 409/failure handling this file used to do inline is gone —
+/// nothing left to catch, since nothing here awaits the network anymore.
 class DetailBloc extends Bloc<DetailEvent, DetailState> {
-  final GetCategoriesUsecase _getCategoriesUsecase;
-  final GetGoodsByCategoryIdUseCase _getGoodsByCategoryIdUseCase;
   final GetGoodsWithNameUseCase _getGoodsWithNameUseCase;
-  final GetPaymentDetailWithTableIdUsecase _getPaymentDetailWithTableIdUsecase;
   final CacheService _cache;
   final PrinterService _printerService;
   final MainRepository _mainRepository;
+  final MenuRepository _menuRepository;
+  final OrdersRepository _ordersRepository;
 
   ArchiveDetailEntity? lastDetail;
 
-  // Duplikat /orders/table/{id} + /bills/{id} chaqiriqlarini kamaytirish uchun
-  DateTime? _lastBillFetchAt;
-  String? _lastBillFetchTableId;
-  static const _billFetchThrottle = Duration(seconds: 15);
-
-  // Kategoriyani tez-tez tanlashda /goods ga burst so'rov yubormaslik uchun
-  DateTime? _lastCategoryFetchAt;
-  String? _lastCategoryFetchId;
-  static const _categoryFetchThrottle = Duration(seconds: 10);
-
-  // Kategoriyalarni tez-tez yuklashda burst so'rov yubormaslik uchun
-  DateTime? _lastCategoriesFetchAt;
-  static const _categoriesFetchThrottle = Duration(seconds: 30);
+  StreamSubscription<List<CategoryModel>>? _categoriesSub;
+  StreamSubscription<List<GoodsModel>>? _goodsSub;
+  StreamSubscription<ArchiveDetailModel?>? _detailSub;
 
   // Existing item +/- backend sinxronizatsiya uchun:
   // - `_existingLineInfo`: UI itemining goods.name → underlying line item id'lari,
   //   good_id, va serverdagi joriy qty. Har bir /bills/{id} refetch dan keyin
-  //   `_enrichExistingGoodsWithLineDetails` da yangilanadi.
+  //   `_enrichExistingGoodsWithTimestamps` da yangilanadi.
   // - `_existingSnapshots`: foydalanuvchi tugmani bosgan paytdagi server holati
   //   (debounce davomida saqlanadi). Debounce tugagach, joriy UI qty bilan
   //   solishtirib net delta hisoblanadi.
@@ -85,21 +90,23 @@ class DetailBloc extends Bloc<DetailEvent, DetailState> {
   final Map<String, String> _pendingCancelComments = {};
 
   DetailBloc(
-    this._getCategoriesUsecase,
-    this._getGoodsByCategoryIdUseCase,
     this._getGoodsWithNameUseCase,
-    this._getPaymentDetailWithTableIdUsecase,
     this._cache,
     this._printerService,
     this._mainRepository,
+    this._menuRepository,
+    this._ordersRepository,
   ) : super(const DetailState()) {
     on<_Started>(_onStarted);
     on<_GetCategories>(_onGetCategories);
+    on<_CategoriesUpdated>(_onCategoriesUpdated);
     on<_InitSavedGoods>(_onInitSavedGoods);
     on<_FetchBillOrders>(_onFetchBillOrders);
+    on<_OrderDetailUpdated>(_onOrderDetailUpdated);
     on<_SetActiveOrderId>(_onSetActiveOrderId);
     on<_CancelOrderItem>(_onCancelOrderItem);
     on<_SetSelectedCategoryId>(_onSetSelectedCategoryId);
+    on<_GoodsForCategoryUpdated>(_onGoodsForCategoryUpdated);
     on<_AddFoodAdditional>(_onAddFoodAdditional);
     on<_SelectGood>(_onSelectGood);
     on<_IncrementQuantity>(_onIncrementQuantity);
@@ -126,58 +133,22 @@ class DetailBloc extends Bloc<DetailEvent, DetailState> {
     _GetCategories event,
     Emitter<DetailState> emit,
   ) async {
-    // Cache-first: darhol ko'rsat
-    final cachedCats = _cache.getCategories();
-    if (cachedCats.isNotEmpty) {
-      final cats = [
-        const CategoryModel(id: "all", name: "Hammasi"),
-        ...cachedCats.map((e) => CategoryModel.fromJson(e)),
-      ];
-      emit(state.copyWith(status: Status.SUCCESS, categories: cats));
-      if (state.selectedCategoryId == null) {
-        add(DetailEvent.setSelectedCategoryId(id: cats.first.id));
-      }
-    } else {
-      emit(state.copyWith(status: Status.OTHER_LOADING));
-    }
+    await _categoriesSub?.cancel();
+    _categoriesSub = _menuRepository.watchCategories().listen((categories) {
+      if (isClosed) return;
+      add(DetailEvent.categoriesUpdated(categories: categories));
+    });
+  }
 
-    // Throttle: avoid burst requests when opening tables quickly.
-    // Only skip the network call if we already have cached categories.
-    if (cachedCats.isNotEmpty &&
-        _lastCategoriesFetchAt != null &&
-        DateTime.now().difference(_lastCategoriesFetchAt!) <
-            _categoriesFetchThrottle) {
-      return;
+  void _onCategoriesUpdated(_CategoriesUpdated event, Emitter<DetailState> emit) {
+    final cats = [
+      const CategoryModel(id: "all", name: "Hammasi"),
+      ...event.categories,
+    ];
+    emit(state.copyWith(status: Status.SUCCESS, categories: cats));
+    if (state.selectedCategoryId == null && cats.isNotEmpty) {
+      add(DetailEvent.setSelectedCategoryId(id: cats.first.id));
     }
-    _lastCategoriesFetchAt = DateTime.now();
-
-    // Orqa fonda network dan yangilanadi
-    final result = await _getCategoriesUsecase(NoParams());
-    if (isClosed) return;
-    result.fold(
-      (failure) {
-        if (cachedCats.isEmpty && !isClosed) {
-          emit(state.copyWith(status: Status.ERROR, failure: failure));
-        }
-      },
-      (categories) {
-        if (isClosed) return;
-        _cache.saveCategories(
-          categories
-              .map((c) => {
-                    'id': c.id,
-                    'name': c.name,
-                    'department_id': c.departmentId,
-                  })
-              .toList(),
-        );
-        categories.insert(0, const CategoryModel(id: "all", name: "Hammasi"));
-        emit(state.copyWith(status: Status.SUCCESS, categories: categories));
-        if (state.selectedCategoryId == null && categories.isNotEmpty) {
-          add(DetailEvent.setSelectedCategoryId(id: categories.first.id));
-        }
-      },
-    );
   }
 
   void _onInitSavedGoods(_InitSavedGoods event, Emitter<DetailState> emit) {
@@ -193,51 +164,51 @@ class DetailBloc extends Bloc<DetailEvent, DetailState> {
     _FetchBillOrders event,
     Emitter<DetailState> emit,
   ) async {
-    // Cache-first: avval saqlangan detalni ko'rsat.
-    // `force: true` paytida cache-first emit qilmaymiz — bu mutatsiya
-    // (item +/- yoki delete) dan keyingi refetch. Cache hali eski qty saqlasa,
-    // optimistik UI ustidan eski qiymat qisqacha "miltillab" ko'rinardi.
-    final cached = _cache.getOrderDetail(event.billId);
-    if (cached != null && !event.force) {
-      _applyDetailToState(ArchiveDetailModel.fromJson(cached), event.billId, emit);
+    // Immediate, local: whatever LocalDatabase already has for this table
+    // (SyncEngine's hydration pass, or an earlier fetch this session).
+    final cachedDetail = _ordersRepository.getOrderDetail(event.billId);
+    if (cachedDetail != null) {
+      lastDetail = cachedDetail;
+      _applyDetailToState(cachedDetail, event.billId, emit);
     }
 
-    // Throttle: shu tableId uchun 15s ichida takroriy /bills/ + /orders/table/
-    // chaqiriqlari bloklanadi (widget rebuild dan kelgan duplicate eventlarni yutadi).
-    // `force: true` — user mutatsiyasi (item qo'shildi/bekor qilindi) dan keyin
-    // throttle'ni chetlab o'tamiz, yangi state darhol yuklanishi kerak.
-    // Agar cache yo'q bo'lsa (masalan transfer keyin evict qilindi) — ham
-    // throttle'ni chetlab o'tamiz, serverdan yangi ma'lumot olish shart.
-    final cacheWasAbsent = cached == null;
-    if (!event.force &&
-        !cacheWasAbsent &&
-        _lastBillFetchTableId == event.billId &&
-        _lastBillFetchAt != null &&
-        DateTime.now().difference(_lastBillFetchAt!) < _billFetchThrottle) {
-      return;
-    }
-    _lastBillFetchTableId = event.billId;
-    _lastBillFetchAt = DateTime.now();
+    // Stay subscribed for future updates — SyncEngine's periodic hydration,
+    // or this terminal's own next local write reflected back once it lands.
+    await _detailSub?.cancel();
+    _detailSub = _ordersRepository.watchOrderDetail(event.billId).listen((detail) {
+      if (isClosed) return;
+      add(DetailEvent.orderDetailUpdated(tableId: event.billId, detail: detail));
+    });
 
-    final result = await _getPaymentDetailWithTableIdUsecase.call(event.billId);
+    if (cachedDetail != null && !event.force) return;
+
+    // Narrow live-fetch fallback — a brand-new dine-in order has nothing in
+    // LocalDatabase yet (dine-in create doesn't return the full order/bill
+    // payload synchronously, and SyncEngine's own hydration pass may not
+    // have run yet). See class doc.
+    final result = await _mainRepository.getPaymentDetailWithTableId(event.billId);
     if (isClosed) return;
-    String? orderIdForTimestamps;
     result.fold(
-      (_) => null, // cache allaqachon ko'rsatilgan, hech nima qilmaymiz
+      (_) {}, // cache (if any) already shown; a fetch failure here is silent
       (detail) {
-        if (isClosed) return;
+        if (isClosed || detail is! ArchiveDetailModel) return;
         lastDetail = detail;
-        _cache.saveOrderDetail(event.billId, (detail as ArchiveDetailModel).toJson());
+        _ordersRepository.saveOrderDetailSnapshot(event.billId, detail.toJson());
         _applyDetailToState(detail, event.billId, emit);
-        orderIdForTimestamps = detail.id;
+        if (detail.id.isNotEmpty) {
+          unawaited(_enrichExistingGoodsWithTimestamps(detail.id, emit));
+        }
       },
     );
+  }
 
-    // Bill javobida items.created_at yo'q — `/api/v1/order-items/order/{id}`
-    // endpoint'idan timestamplarni olib, ko'rsatilgan itemlar ustidan merge
-    // qilamiz. Aks holda foydalanuvchi vaqtni ko'rmaydi.
-    if (orderIdForTimestamps != null && orderIdForTimestamps!.isNotEmpty) {
-      await _enrichExistingGoodsWithTimestamps(orderIdForTimestamps!, emit);
+  void _onOrderDetailUpdated(_OrderDetailUpdated event, Emitter<DetailState> emit) {
+    final detail = event.detail;
+    if (detail == null || isClosed) return;
+    lastDetail = detail;
+    _applyDetailToState(detail, event.tableId, emit);
+    if (detail.id.isNotEmpty) {
+      unawaited(_enrichExistingGoodsWithTimestamps(detail.id, emit));
     }
   }
 
@@ -450,7 +421,7 @@ class DetailBloc extends Bloc<DetailEvent, DetailState> {
 
   /// Optimistic +1. Server bilan sinxronlash debounce orqali keyinroq.
   /// `existingSyncingNames` darhol set qilinadi — UI tugmalar zudlik bilan
-  /// disable bo'ladi, refetch tugaguncha boshqa click qabul qilinmaydi.
+  /// disable bo'ladi, mahalliy yozuv tugaguncha boshqa click qabul qilinmaydi.
   void _onIncrementExistingItem(
     _IncrementExistingItem event,
     Emitter<DetailState> emit,
@@ -558,79 +529,9 @@ class DetailBloc extends Bloc<DetailEvent, DetailState> {
     ));
   }
 
-  bool _isConnectionIssue(Object e) {
-    // Repository-layer call sites throw the `Failure` that
-    // `handleDioException` already classified (see `Failure
-    // .isConnectivityIssue`) instead of a raw `DioException` — check that
-    // first. Still-direct `DioException` catches elsewhere in this file
-    // (offline queue replay's own inline try/catch blocks) keep working via
-    // the fallback below.
-    if (e is Failure) return e.isConnectivityIssue;
-    if (e is DioException) {
-      return e.type == DioExceptionType.connectionError ||
-          e.type == DioExceptionType.connectionTimeout ||
-          e.type == DioExceptionType.sendTimeout ||
-          e.type == DioExceptionType.receiveTimeout;
-    }
-    return false;
-  }
-
   /// Re-cancelling an already-cancelled line on replay is harmless — the
   /// backend (and `OfflineQueueService`'s replay) both tolerate a 404 there
-  /// as "already gone," matching the inline retry logic below.
-  Future<void> _enqueueCancelLineItems(
-    List<String> lineIds,
-    String? comment,
-  ) async {
-    if (lineIds.isEmpty) return;
-    await inject<OfflineQueueService>().enqueue(
-      PendingOperation(
-        id: OfflineQueueService.newId(),
-        type: PendingOperationType.cancelLineItems,
-        payload: jsonEncode({
-          'line_ids': lineIds,
-          if (comment != null && comment.isNotEmpty) 'comment': comment,
-        }),
-        tableId: '',
-        createdAt: DateTime.now(),
-      ),
-    );
-  }
-
-  /// Reuses the existing `addItems` op type (same shape `CreateOrderBloc`
-  /// already queues) rather than inventing a parallel mechanism — sync-time
-  /// replay resolves the order by table the same way either caller needs.
-  Future<void> _enqueueAddItem({
-    required String tableId,
-    required String goodId,
-    required int quantity,
-    required String comment,
-    required String clientItemId,
-  }) async {
-    await inject<OfflineQueueService>().enqueue(
-      PendingOperation(
-        id: OfflineQueueService.newId(),
-        type: PendingOperationType.addItems,
-        payload: jsonEncode({
-          'items': [
-            {
-              'good_id': goodId,
-              'quantity': quantity,
-              'comment': comment,
-              // Backend AddOrderItems idempotency key (§13 risk #2) — the
-              // SAME id as this call's preceding online attempt (see
-              // callers), so a response lost after that attempt already
-              // committed server-side doesn't get duplicated here.
-              'client_item_id': clientItemId,
-            },
-          ],
-        }),
-        tableId: tableId,
-        createdAt: DateTime.now(),
-      ),
-    );
-  }
-
+  /// as "already gone."
   Future<void> _deleteExistingByKey({
     required String itemKey,
     required String tableId,
@@ -648,48 +549,27 @@ class DetailBloc extends Bloc<DetailEvent, DetailState> {
 
     // Optimistic remove
     final updated = List<OrderItem>.from(state.existingGoods)..removeAt(idx);
-    emit(state.copyWith(existingGoods: updated));
-
-    // Delete davomida shu nomdagi item disable (item allaqachon listdan
-    // olib tashlangan, lekin agar refetch'da qaytib ko'rinsa ham clicklarni
-    // bloklaymiz).
     final itemName = item.goods.name;
     emit(state.copyWith(
+      existingGoods: updated,
       existingSyncingNames: {...state.existingSyncingNames, itemName},
     ));
 
     final lineIds = _resolveLineIds(item);
     final trimmedComment = cancelComment?.trim();
-    try {
-      for (final id in lineIds) {
-        final result = await _mainRepository.cancelOrderItem(
-          id,
-          comment: trimmedComment,
-        );
-        final failure = result.fold((f) => f, (_) => null);
-        // 404 — line allaqachon yo'q (boshqa client bekor qilgan) — davom etamiz
-        if (failure != null && failure is! NotFoundFailure) {
-          throw failure;
-        }
-      }
-    } catch (e) {
-      if (_isConnectionIssue(e)) {
-        // Offline — optimistic remove allaqachon bajarildi; bekor qilish
-        // ulanish tiklanganda qayta yuborilishi uchun navbatga qo'yiladi.
-        await _enqueueCancelLineItems(lineIds, trimmedComment);
-      }
-      // Boshqa xatolar: Toast'ni global Dio interceptor (dio_interceptor.dart)
-      // o'zi ko'rsatadi — bu yerda takror chaqirmaymiz, aks holda 2 ta
-      // snackbar chiqib ketadi.
-    } finally {
-      if (!isClosed) {
-        await _fetchBillOrdersInline(tableId, emit);
-        if (!isClosed) {
-          final next = Set<String>.from(state.existingSyncingNames)
-            ..remove(itemName);
-          emit(state.copyWith(existingSyncingNames: next));
-        }
-      }
+
+    // §4/§9 V3: single local commit, no network await — the optimistic
+    // removal above is already the UI's "done." No `_fetchBillOrdersInline`
+    // afterward: `lastDetail`'s server snapshot still includes this item
+    // (the cancel hasn't synced yet) and `_applyDetailToState`'s
+    // pending-merge only ever adds pending `addItems`, never subtracts a
+    // pending cancel — reapplying it here would make the just-deleted item
+    // reappear until the real sync lands.
+    await _ordersRepository.cancelLineItems(lineIds: lineIds, comment: trimmedComment);
+
+    if (!isClosed) {
+      final next = Set<String>.from(state.existingSyncingNames)..remove(itemName);
+      emit(state.copyWith(existingSyncingNames: next));
     }
   }
 
@@ -747,7 +627,6 @@ class DetailBloc extends Bloc<DetailEvent, DetailState> {
     try {
       if (snapshot == null) return;
       if (state.activeOrderId == null || state.activeOrderId!.isEmpty) {
-        await _fetchBillOrdersInline(event.tableId, emit);
         return;
       }
 
@@ -760,122 +639,98 @@ class DetailBloc extends Bloc<DetailEvent, DetailState> {
       }
       final desiredQty = current?.quantity ?? 0;
       final delta = desiredQty - snapshot.originalQty;
-      if (delta == 0) {
-        await _fetchBillOrdersInline(event.tableId, emit);
-        return;
-      }
+      if (delta == 0) return;
 
       if (snapshot.goodId.isEmpty) {
         // /order-items/order/{id} hali yuklanmagan yoki bo'sh — to'g'ri sync
-        // qila olmaymiz. Refetch orqali UI'ni revert qilamiz.
+        // qila olmaymiz.
         if (navigatorKey.currentContext != null) {
           showErrorMessage(
             navigatorKey.currentContext!,
             'Ma\'lumot yuklanmagan. Yana urinib ko\'ring.',
           );
         }
-        await _fetchBillOrdersInline(event.tableId, emit);
         return;
       }
 
-      // Generated once, before either branch's online attempt, so a
-      // connection-failure fallback below (offline queue) replays under
-      // the SAME id — backend AddOrderItems idempotency key
-      // (order_items.client_item_id, §13 risk #2). Without this, a response
-      // lost after the request already committed server-side would fall
-      // into the offline queue with a FRESH id that doesn't match anything
-      // already created, defeating the dedup.
+      // §4/§9 V3: single local commit per branch, no network await, no
+      // ConnectionFailure fork — matches the exact idempotency-key reuse
+      // reasoning `create_order_bloc.dart` already documents (§13 risk #2).
       final addItemClientId = generateUuidV4();
-      try {
-        if (delta > 0) {
-          // Plus: yangi line item qo'shamiz
-          final result = await _mainRepository.createOrderItems(
-            orderId: state.activeOrderId!,
-            items: [
-              {
-                'good_id': snapshot.goodId,
-                'quantity': delta,
-                'comment': snapshot.comment,
-                'client_item_id': addItemClientId,
-              },
-            ],
-          );
-          final failure = result.fold((f) => f, (_) => null);
-          if (failure != null) throw failure;
-          // Oshxona cheki: mavjud buyurtmaga qo'shilgan yangi porsiyalar.
-          _printKitchenForExistingAdd(
-            goodId: snapshot.goodId,
-            fallbackName: itemName ?? '',
-            quantity: delta,
-            comment: snapshot.comment,
-          );
-        } else {
-          // Minus: barcha original line'larni bekor qilamiz, qolgan qty bo'lsa
-          // bitta yangi line yaratamiz. Backend bitta line'ni bo'lish API
-          // qilmaydi — shu yo'l yagona to'g'ri ish.
-          for (final id in snapshot.originalLineIds) {
-            final cancelResult = await _mainRepository.cancelOrderItem(
-              id,
-              comment:
-                  (pendingCancelComment != null && pendingCancelComment.isNotEmpty)
-                      ? pendingCancelComment
-                      : null,
-            );
-            final cancelFailure = cancelResult.fold((f) => f, (_) => null);
-            if (cancelFailure != null && cancelFailure is! NotFoundFailure) {
-              throw cancelFailure;
-            }
-          }
-          if (desiredQty > 0) {
-            final addResult = await _mainRepository.createOrderItems(
-              orderId: state.activeOrderId!,
-              items: [
-                {
-                  'good_id': snapshot.goodId,
-                  'quantity': desiredQty,
-                  'comment': snapshot.comment,
-                  'client_item_id': addItemClientId,
-                },
-              ],
-            );
-            final addFailure = addResult.fold((f) => f, (_) => null);
-            if (addFailure != null) throw addFailure;
-          }
-        }
-      } catch (e) {
-        if (_isConnectionIssue(e)) {
-          // Offline — bajarilmagan o'zgarishni navbatga qo'yamiz, ulanish
-          // tiklanganda qayta ishlanadi.
-          if (delta > 0) {
-            await _enqueueAddItem(
-              tableId: event.tableId,
-              goodId: snapshot.goodId,
+      if (delta > 0) {
+        // Plus: yangi line item qo'shamiz
+        await _ordersRepository.addItems(
+          tableId: event.tableId,
+          orderId: state.activeOrderId!,
+          items: [
+            OrderItem(
+              goods: GoodsModel(
+                id: snapshot.goodId,
+                name: itemName ?? '',
+                price: '0',
+                categoryId: '',
+                cookTime: 0,
+                costPrice: '0',
+                description: '',
+                profit: '0',
+                profitMargin: '0',
+              ),
               quantity: delta,
               comment: snapshot.comment,
-              clientItemId: addItemClientId,
-            );
-          } else {
-            await _enqueueCancelLineItems(
-              snapshot.originalLineIds,
-              pendingCancelComment,
-            );
-            if (desiredQty > 0) {
-              await _enqueueAddItem(
-                tableId: event.tableId,
-                goodId: snapshot.goodId,
+            ),
+          ],
+          itemClientIds: [addItemClientId],
+        );
+        // Oshxona cheki: mavjud buyurtmaga qo'shilgan yangi porsiyalar.
+        _printKitchenForExistingAdd(
+          goodId: snapshot.goodId,
+          fallbackName: itemName ?? '',
+          quantity: delta,
+          comment: snapshot.comment,
+        );
+      } else {
+        // Minus: barcha original line'larni bekor qilamiz, qolgan qty bo'lsa
+        // bitta yangi line yaratamiz. Backend bitta line'ni bo'lish API
+        // qilmaydi — shu yo'l yagona to'g'ri ish.
+        await _ordersRepository.cancelLineItems(
+          lineIds: snapshot.originalLineIds,
+          comment: (pendingCancelComment != null && pendingCancelComment.isNotEmpty)
+              ? pendingCancelComment
+              : null,
+        );
+        if (desiredQty > 0) {
+          await _ordersRepository.addItems(
+            tableId: event.tableId,
+            orderId: state.activeOrderId!,
+            items: [
+              OrderItem(
+                goods: GoodsModel(
+                  id: snapshot.goodId,
+                  name: itemName ?? '',
+                  price: '0',
+                  categoryId: '',
+                  cookTime: 0,
+                  costPrice: '0',
+                  description: '',
+                  profit: '0',
+                  profitMargin: '0',
+                ),
                 quantity: desiredQty,
                 comment: snapshot.comment,
-                clientItemId: addItemClientId,
-              );
-            }
-          }
+              ),
+            ],
+            itemClientIds: [addItemClientId],
+          );
         }
-        // Boshqa xatolar: toast global Dio interceptor (dio_interceptor.dart)
-        // tomonidan ko'rsatiladi — bu yerda takror chaqirmaymiz.
       }
 
-      if (!isClosed) {
-        await _fetchBillOrdersInline(event.tableId, emit);
+      // Recompute from the last known server snapshot + the outbox op just
+      // enqueued above — a pure local operation, no network. Matches the
+      // pre-existing "pending delta shown as its own ⏳ line" convention
+      // this codebase already used for its offline path.
+      final detail = lastDetail;
+      if (!isClosed && detail is ArchiveDetailModel) {
+        _applyDetailToState(detail, event.tableId, emit);
       }
     } finally {
       if (itemName != null && !isClosed) {
@@ -931,19 +786,6 @@ class DetailBloc extends Bloc<DetailEvent, DetailState> {
     ));
   }
 
-  /// `_onFetchBillOrders` ni shu yerdan to'g'ridan-to'g'ri (`emit` bilan)
-  /// chaqirish — refetch tugaguncha kutib turish va undan keyin sync flag'ini
-  /// tozalash uchun zarur. `add()` orqali yuborilsa kuta olmaymiz.
-  Future<void> _fetchBillOrdersInline(
-    String tableId,
-    Emitter<DetailState> emit,
-  ) async {
-    await _onFetchBillOrders(
-      _FetchBillOrders(billId: tableId, force: true),
-      emit,
-    );
-  }
-
   /// Item uchun underlying server line id'larini topadi. Avval
   /// `_existingLineInfo` map'iga (bills+order-items dan to'plangan), agar
   /// topilmasa — `OrderItem.uniqueId` ni o'zini single id deb hisoblaymiz.
@@ -966,65 +808,31 @@ class DetailBloc extends Bloc<DetailEvent, DetailState> {
       return;
     }
 
-    // Cache-first: show this category's own last-known-good result
-    // immediately when available — not a client-side filter of the "all
-    // categories" cache (that showed a plausible-but-wrong slice on every
-    // switch, since it was never actually this category's own cached data,
-    // only populated when "all" itself had been viewed). And critically:
-    // don't clear to an empty/loading state first if we're about to have
-    // something to show — that alone was enough to cause a visible flash
-    // even when the cache hit was correct.
-    final cachedRaw = _cache.getGoodsForCategory(event.id);
-    List<GoodsModel> cachedForCategory = const [];
-    if (cachedRaw.isNotEmpty) {
-      cachedForCategory = cachedRaw.map((e) => GoodsModel.fromJson(e)).toList();
-      emit(state.copyWith(
-        selectedCategoryId: event.id,
-        status: Status.SUCCESS,
-        goods: cachedForCategory,
-      ));
-    } else {
-      emit(state.copyWith(
-        selectedCategoryId: event.id,
-        status: Status.LOADING,
-        goods: const [],
-      ));
-    }
+    // Immediate, local: whatever LocalDatabase already has for this
+    // category — not a client-side filter of the "all categories" cache
+    // (see MenuRepository's own doc for why that used to show a flash of
+    // stale data on every category switch).
+    final cachedForCategory = _menuRepository.getGoodsForCategory(event.id);
+    emit(state.copyWith(
+      selectedCategoryId: event.id,
+      status: cachedForCategory.isNotEmpty ? Status.SUCCESS : Status.LOADING,
+      goods: cachedForCategory,
+    ));
 
-    // Throttle: avoid burst requests when switching categories quickly.
-    // Only skip the network call if we already have something to show.
-    if (cachedForCategory.isNotEmpty &&
-        _lastCategoryFetchId == event.id &&
-        _lastCategoryFetchAt != null &&
-        DateTime.now().difference(_lastCategoryFetchAt!) <
-            _categoryFetchThrottle) {
-      return;
-    }
-    _lastCategoryFetchId = event.id;
-    _lastCategoryFetchAt = DateTime.now();
+    await _goodsSub?.cancel();
+    _goodsSub = _menuRepository.watchGoodsForCategory(event.id).listen((goods) {
+      if (isClosed) return;
+      add(DetailEvent.goodsForCategoryUpdated(categoryId: event.id, goods: goods));
+    });
+  }
 
-    final result = await _getGoodsByCategoryIdUseCase(event.id);
-    if (isClosed) return;
-    result.fold(
-      (failure) {
-        if (cachedForCategory.isEmpty && !isClosed) {
-          emit(state.copyWith(status: Status.ERROR, failure: failure));
-        }
-      },
-      (goods) {
-        if (isClosed) return;
-        // Ignore stale responses if the user already switched category.
-        if (state.selectedCategoryId != event.id) return;
-
-        _cache.saveGoodsForCategory(
-          event.id,
-          goods.map((g) => g.toJson()).toList(),
-        );
-
-        // Always show the network result for the active category.
-        emit(state.copyWith(status: Status.SUCCESS, goods: goods));
-      },
-    );
+  void _onGoodsForCategoryUpdated(
+    _GoodsForCategoryUpdated event,
+    Emitter<DetailState> emit,
+  ) {
+    // Ignore stale updates if the user already switched category.
+    if (state.selectedCategoryId != event.categoryId) return;
+    emit(state.copyWith(status: Status.SUCCESS, goods: event.goods));
   }
 
   void _onAddFoodAdditional(
@@ -1104,6 +912,10 @@ class DetailBloc extends Bloc<DetailEvent, DetailState> {
     emit(state.copyWith(selectedGoods: []));
   }
 
+  /// Live search against the goods catalog — not cached, and deliberately
+  /// still a real network call (unlike the reads above): there's no bounded
+  /// local mirror of the full catalog to search against instead. Offline
+  /// just means no results, same as before.
   Future<void> _onSearchTextChanged(
     _SearchTextChanged event,
     Emitter<DetailState> emit,
@@ -1157,6 +969,9 @@ class DetailBloc extends Bloc<DetailEvent, DetailState> {
     _existingSyncTimers.clear();
     _existingSnapshots.clear();
     _existingLineInfo.clear();
+    _categoriesSub?.cancel();
+    _goodsSub?.cancel();
+    _detailSub?.cancel();
     state.textController?.dispose();
     return super.close();
   }

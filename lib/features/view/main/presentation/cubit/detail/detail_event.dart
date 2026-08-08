@@ -69,4 +69,23 @@ class DetailEvent with _$DetailEvent {
     required String itemKey,
     required String tableId,
   }) = _SyncExistingItem;
+
+  /// Internal (§9 V5): `MenuRepository.watchCategories()` yangi qiymat
+  /// bergandan keyin — BLoC pattern qoidasiga muvofiq, raw stream callback
+  /// ichidan emas, event orqali `emit` qilinadi.
+  const factory DetailEvent.categoriesUpdated({
+    required List<CategoryModel> categories,
+  }) = _CategoriesUpdated;
+
+  /// Internal (§9 V5): `MenuRepository.watchGoodsForCategory()` yangilanishi.
+  const factory DetailEvent.goodsForCategoryUpdated({
+    required String categoryId,
+    required List<GoodsModel> goods,
+  }) = _GoodsForCategoryUpdated;
+
+  /// Internal (§9 V6): `OrdersRepository.watchOrderDetail()` yangilanishi.
+  const factory DetailEvent.orderDetailUpdated({
+    required String tableId,
+    ArchiveDetailModel? detail,
+  }) = _OrderDetailUpdated;
 }

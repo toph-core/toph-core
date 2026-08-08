@@ -195,6 +195,20 @@ class LocalDatabase {
   Stream<List<CafeTableModel>> watchTablesForHall(String hallId) =>
       watchTables().map((all) => all.where((t) => t.hallId == hallId).toList());
 
+  /// Local, immediate, durable table-status patch (§6/§9's `TablesRepository
+  /// .updateTableStatus`) — read-modify-write over the same list
+  /// [watchTables] serves, so every subscriber sees it on the next event
+  /// loop turn. A no-op if [tableId] isn't in the current list (e.g. a stale
+  /// LAN broadcast for a table deleted since).
+  Future<void> updateTableStatus(String tableId, TableStatus status) async {
+    final all = getTables();
+    final index = all.indexWhere((t) => t.id == tableId);
+    if (index == -1) return;
+    final updated = List<CafeTableModel>.from(all);
+    updated[index] = updated[index].copyWith(status: status);
+    await saveTables(updated);
+  }
+
   // ── Users / staff ────────────────────────────────────────────────────
   Stream<List<UserModel>> watchUsers() =>
       _watchList(_users).map((raw) => raw.map(UserModel.fromJson).toList());

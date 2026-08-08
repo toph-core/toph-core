@@ -22,6 +22,7 @@ import 'package:mary_ai_pos/features/view/auth/data/models/user/user_model.dart'
 import 'package:mary_ai_pos/features/view/auth/presentation/cubit/bloc/user_bloc.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/category/category_model.dart';
 import 'package:mary_ai_pos/features/view/main/domain/repository/main_repository.dart';
+import 'package:mary_ai_pos/features/view/main/domain/repository/menu_repository.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/main/widgets/main_header.dart';
 import 'package:mary_ai_pos/generated/l10n.dart';
 
@@ -2429,36 +2430,75 @@ class _MealImagePreview extends StatelessWidget {
       );
     }
 
-    return FutureBuilder<Uint8List?>(
-      future: MinioService.instance.getImageByObjectName(ref),
-      builder: (context, snap) {
-        if (snap.connectionState == ConnectionState.waiting) {
-          return SizedBox(
+    // offline-first-target-architecture.md §9 V9: reactive over
+    // MenuRepository/LocalDatabase (hydrated by SyncEngine, §8 Phase 1)
+    // instead of fetching from Minio on every build. The live-fetch
+    // FutureBuilder below only ever runs for the one case hydration can't
+    // cover yet — an image uploaded this session, before the next hydration
+    // tick — and write-throughs its result so it's durable/offline-capable
+    // from then on.
+    final menuRepo = inject<MenuRepository>();
+    return StreamBuilder<List<int>?>(
+      stream: menuRepo.watchImage(ref),
+      initialData: menuRepo.getImage(ref),
+      builder: (context, cachedSnap) {
+        final cached = cachedSnap.data;
+        if (cached != null && cached.isNotEmpty) {
+          return Container(
             height: 180,
-            child: Center(
-              child: CircularProgressIndicator.adaptive(
-                valueColor: AlwaysStoppedAnimation<Color>(colors.textTertiary),
-              ),
+            width: double.infinity,
+            decoration: BoxDecoration(
+              color: colors.bgSecondary,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: colors.border),
             ),
+            clipBehavior: Clip.antiAlias,
+            child: Image.memory(Uint8List.fromList(cached), fit: BoxFit.contain),
           );
         }
-        final bytes = snap.data;
-        if (bytes == null || bytes.isEmpty) {
-          return _mealImageError(colors);
-        }
-        return Container(
-          height: 180,
-          width: double.infinity,
-          decoration: BoxDecoration(
-            color: colors.bgSecondary,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: colors.border),
-          ),
-          clipBehavior: Clip.antiAlias,
-          child: Image.memory(bytes, fit: BoxFit.contain),
+        return FutureBuilder<Uint8List?>(
+          future: _fetchAndCacheImage(menuRepo, ref),
+          builder: (context, snap) {
+            if (snap.connectionState == ConnectionState.waiting) {
+              return SizedBox(
+                height: 180,
+                child: Center(
+                  child: CircularProgressIndicator.adaptive(
+                    valueColor: AlwaysStoppedAnimation<Color>(colors.textTertiary),
+                  ),
+                ),
+              );
+            }
+            final bytes = snap.data;
+            if (bytes == null || bytes.isEmpty) {
+              return _mealImageError(colors);
+            }
+            return Container(
+              height: 180,
+              width: double.infinity,
+              decoration: BoxDecoration(
+                color: colors.bgSecondary,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: colors.border),
+              ),
+              clipBehavior: Clip.antiAlias,
+              child: Image.memory(bytes, fit: BoxFit.contain),
+            );
+          },
         );
       },
     );
+  }
+
+  static Future<Uint8List?> _fetchAndCacheImage(
+    MenuRepository menuRepo,
+    String ref,
+  ) async {
+    final bytes = await MinioService.instance.getImageByObjectName(ref);
+    if (bytes != null && bytes.isNotEmpty) {
+      await menuRepo.saveImage(ref, bytes);
+    }
+    return bytes;
   }
 
   Widget _mealImageError(ThemeColors colors) {

@@ -26,27 +26,26 @@ import 'package:mary_ai_pos/features/view/auth/domain/usecases/logout/logout_use
 import 'package:mary_ai_pos/features/view/auth/domain/usecases/user/get_user_usecase.dart';
 import 'package:mary_ai_pos/features/view/auth/presentation/cubit/bloc/user_bloc.dart';
 import 'package:mary_ai_pos/features/view/main/domain/usecase/check_shift_usecase.dart';
-import 'package:mary_ai_pos/features/view/main/domain/usecase/close_shift_usecase.dart';
-import 'package:mary_ai_pos/features/view/main/domain/usecase/create_order_usecase.dart';
-import 'package:mary_ai_pos/features/view/main/domain/usecase/create_payment_usecase.dart';
-import 'package:mary_ai_pos/features/view/main/domain/usecase/create_take_away_order_usecase.dart';
 import 'package:mary_ai_pos/features/view/main/data/repository/archives_local_repository_impl.dart';
 import 'package:mary_ai_pos/features/view/main/data/repository/menu_local_repository_impl.dart';
 import 'package:mary_ai_pos/features/view/main/data/repository/table_timer_local_repository_impl.dart';
 import 'package:mary_ai_pos/features/view/main/data/repository/waiter_local_repository_impl.dart';
+import 'package:mary_ai_pos/features/view/main/data/repository/orders_repository_impl.dart';
+import 'package:mary_ai_pos/features/view/main/data/repository/payment_repository_impl.dart';
+import 'package:mary_ai_pos/features/view/main/data/repository/tables_repository_impl.dart';
+import 'package:mary_ai_pos/features/view/main/data/repository/menu_repository_impl.dart';
+import 'package:mary_ai_pos/features/view/main/domain/repository/orders_repository.dart';
+import 'package:mary_ai_pos/features/view/main/domain/repository/payment_repository.dart';
+import 'package:mary_ai_pos/features/view/main/domain/repository/tables_repository.dart';
+import 'package:mary_ai_pos/features/view/main/domain/repository/menu_repository.dart';
 import 'package:mary_ai_pos/features/view/main/domain/repository/archives_local_repository.dart';
 import 'package:mary_ai_pos/features/view/main/domain/repository/menu_local_repository.dart';
 import 'package:mary_ai_pos/features/view/main/domain/repository/table_timer_local_repository.dart';
 import 'package:mary_ai_pos/features/view/main/domain/repository/waiter_local_repository.dart';
-import 'package:mary_ai_pos/features/view/main/domain/usecase/get_categories_usecase.dart';
 import 'package:mary_ai_pos/features/view/main/domain/usecase/get_departments_usecase.dart';
-import 'package:mary_ai_pos/features/view/main/domain/usecase/get_goods_by_category_id_usecase.dart';
 import 'package:mary_ai_pos/features/view/main/domain/usecase/get_goods_with_name_usecase.dart';
 import 'package:mary_ai_pos/features/view/main/domain/usecase/get_hour_price_usecase.dart';
 import 'package:mary_ai_pos/features/view/main/domain/usecase/sync_printer_settings_usecase.dart';
-import 'package:mary_ai_pos/features/view/main/domain/usecase/get_payment_detail_with_id_usecase.dart';
-import 'package:mary_ai_pos/features/view/main/domain/usecase/get_payment_detail_with_table_id_usecase.dart';
-import 'package:mary_ai_pos/features/view/main/domain/usecase/open_shift_usecase.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/archive/archive_bloc.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/counter/counter_cubit.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/create_order/create_order_bloc.dart';
@@ -78,8 +77,6 @@ import 'package:mary_ai_pos/features/view/auth/presentation/cubit/settings/setti
 import 'package:mary_ai_pos/features/view/main/data/data_source/main_datasources.dart';
 import 'package:mary_ai_pos/features/view/main/data/repository/main_repository_impl.dart';
 import 'package:mary_ai_pos/features/view/main/domain/repository/main_repository.dart';
-import 'package:mary_ai_pos/features/view/main/domain/usecase/get_halls_usecase.dart';
-import 'package:mary_ai_pos/features/view/main/domain/usecase/get_tables_by_hall_id_usecase.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/main/main_cubit.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/table_timer/table_timer_cubit.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/waiter/waiter_cubit.dart';
@@ -253,6 +250,22 @@ void _repositories() {
   inject.registerLazySingleton<WaiterLocalRepository>(
     () => WaiterLocalRepositoryImpl(inject(), inject(), inject(), inject()),
   );
+
+  // offline-first-target-architecture.md §8 Phase 2 — the LocalRepository
+  // layer §1/§9 describe: reactive reads over LocalDatabase, writes that
+  // commit locally (outbox enqueue) and return without awaiting the network.
+  inject.registerLazySingleton<OrdersRepository>(
+    () => OrdersRepositoryImpl(localDb: inject(), queue: inject(), lanHub: inject()),
+  );
+  inject.registerLazySingleton<PaymentRepository>(
+    () => PaymentRepositoryImpl(queue: inject()),
+  );
+  inject.registerLazySingleton<TablesRepository>(
+    () => TablesRepositoryImpl(localDb: inject()),
+  );
+  inject.registerLazySingleton<MenuRepository>(
+    () => MenuRepositoryImpl(localDb: inject()),
+  );
 }
 
 void _useCase() {
@@ -263,30 +276,15 @@ void _useCase() {
   inject.registerLazySingleton(() => GetAppLangauageUsecase(inject()));
   inject.registerLazySingleton(() => SetAppLanguageUscase(inject()));
   inject.registerLazySingleton(() => LoginWithBrandUsecase(inject()));
-  inject.registerLazySingleton(() => GetTablesByHallIdUsecase(inject()));
-  inject.registerLazySingleton(() => GetHallsUsecase(inject()));
-  inject.registerLazySingleton(() => GetCategoriesUsecase(inject()));
   inject.registerLazySingleton(() => GetDepartmentsUsecase(inject()));
-  inject.registerLazySingleton(() => GetGoodsByCategoryIdUseCase(inject()));
   inject.registerLazySingleton(() => GetGoodsWithNameUseCase(inject()));
   inject.registerLazySingleton(() => LogoutUsecase(inject()));
   inject.registerLazySingleton(() => CheckUserDataUsecase(inject()));
-  inject.registerLazySingleton(() => CreateOrderUsecase(inject()));
-  inject.registerLazySingleton(() => CreatePaymentUsecase(inject()));
-  inject.registerLazySingleton(
-    () => GetPaymentDetailWithTableIdUsecase(inject()),
-  );
-  inject.registerLazySingleton(() => CreateTakeAwayOrderUsecase(inject()));
-  inject.registerFactory(
-    () => GetPaymentDetailWithIdUsecase(repository: inject()),
-  );
   inject.registerLazySingleton(() => GetUserUsecase(inject()));
   inject.registerLazySingleton(
     () => SyncPrinterSettingsUsecase(inject(), inject()),
   );
   inject.registerLazySingleton(() => CheckShiftUsecase(inject()));
-  inject.registerFactory(() => OpenShiftUsecase(inject()));
-  inject.registerFactory(() => CloseShiftUsecase(inject()));
   inject.registerFactory(() => GetHourPriceUsecase(repository: inject()));
 }
 
@@ -307,14 +305,12 @@ void _cubit() {
   inject.registerLazySingleton(() => UiPrefsCubit(inject()));
   inject.registerLazySingleton(() => ServiceChargeCubit(inject(), inject()));
   inject.registerLazySingleton(
-    () => MainCubit(inject(), inject(), inject(), inject(), inject()),
+    () => MainCubit(inject(), inject()),
   );
   inject.registerLazySingleton(() => KeyboardCubit());
   inject.registerLazySingleton(
     () => ShiftBloc(
       checkShiftUsecase: inject(),
-      openShiftUsecase: inject(),
-      closeShiftUsecase: inject(),
       prefs: inject(),
       tokenStorage: inject(),
       printerService: inject(),
@@ -339,7 +335,6 @@ void _cubit() {
       inject(),
       inject(),
       inject(),
-      inject(),
     ),
   );
   inject.registerFactory(
@@ -347,12 +342,9 @@ void _cubit() {
   );
   inject.registerFactory(
     () => CreateOrderBloc(
-      createOrderUsecase: inject(),
-      createTakeAwayOrderUsecase: inject(),
-      connectivity: inject(),
-      queue: inject(),
+      ordersRepository: inject(),
+      leaseManager: inject(),
       lanHub: inject(),
-      mainRepository: inject(),
       printerService: inject(),
       shiftBloc: inject(),
     ),
@@ -364,9 +356,8 @@ void _cubit() {
   inject.registerFactory(() => ArchiveBloc(archivesRepository: inject()));
   inject.registerFactory(
     () => PaymentBloc(
-      getPaymentDetailWithTableIdUsecase: inject(),
-      createPaymentUsecase: inject(),
-      getPaymentDetailWithId: inject(),
+      ordersRepository: inject(),
+      paymentRepository: inject(),
       printerService: inject(),
       mainRepository: inject(),
     ),

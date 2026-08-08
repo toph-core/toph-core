@@ -1,6 +1,3 @@
-import 'dart:async';
-import 'dart:convert';
-
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:mary_ai_pos/core/api/api.dart';
@@ -8,23 +5,15 @@ import 'package:mary_ai_pos/core/components/flush_bars.dart';
 import 'package:mary_ai_pos/core/error/failure.dart';
 import 'package:mary_ai_pos/core/routes/app_routes.dart';
 import 'package:mary_ai_pos/core/service/printer/printer_service.dart';
-import 'package:mary_ai_pos/core/services/cache/cache_service.dart';
-import 'package:mary_ai_pos/core/services/connectivity/connectivity_cubit.dart';
 import 'package:mary_ai_pos/core/services/lan_hub/lan_hub_service.dart';
-import 'package:mary_ai_pos/core/services/offline_queue/offline_queue_service.dart';
-import 'package:mary_ai_pos/core/services/offline_queue/pending_operation.dart';
+import 'package:mary_ai_pos/core/services/lease/lease_manager.dart';
 import 'package:mary_ai_pos/core/utils/helper/helper_widget.dart';
-import 'package:mary_ai_pos/core/utils/order_conflict_helper.dart';
 import 'package:mary_ai_pos/core/utils/uuid.dart';
-import 'package:mary_ai_pos/di.dart' show inject;
 import 'package:mary_ai_pos/features/view/main/data/models/archive_detail/archive_detail_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/cafe_tables/cafe_tables_model.dart';
-import 'package:mary_ai_pos/features/view/main/data/models/create_order/create_order_request_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/order_food/order_food_model.dart';
 import 'package:mary_ai_pos/features/view/main/domain/entities/order_food_entity.dart';
-import 'package:mary_ai_pos/features/view/main/domain/repository/main_repository.dart';
-import 'package:mary_ai_pos/features/view/main/domain/usecase/create_order_usecase.dart';
-import 'package:mary_ai_pos/features/view/main/domain/usecase/create_take_away_order_usecase.dart';
+import 'package:mary_ai_pos/features/view/main/domain/repository/orders_repository.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/detail/detail_bloc.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/shift/shift_bloc.dart';
 
@@ -32,13 +21,23 @@ part 'create_order_event.dart';
 part 'create_order_state.dart';
 part 'create_order_bloc.freezed.dart';
 
+/// offline-first-target-architecture.md §4/§6/§9 (V1). Every write here is a
+/// single local commit through `OrdersRepository` (outbox enqueue) that
+/// returns without ever awaiting the network — the UI's "success" and the
+/// local commit are the same event, whether this terminal is online,
+/// offline, or LAN-only. The one exception, per §6, is the table-open path:
+/// it waits on `LeaseManager.acquireTableLease` before that local commit,
+/// since that's the one case where two different local databases might each
+/// think they're right.
+///
+/// A duplicate table-open 409 (the online path used to catch this
+/// synchronously and merge into the winning order) is now handled entirely
+/// by `OfflineQueueService._execCreateOrder`'s own 409-merge branch at
+/// replay time — nothing left for this Bloc to do about it.
 class CreateOrderBloc extends Bloc<CreateOrderEvent, CreateOrderState> {
-  late final CreateOrderUsecase _createOrderUsecase;
-  late final CreateTakeAwayOrderUsecase _createTakeAwayOrderUsecase;
-  final ConnectivityCubit _connectivity;
-  final OfflineQueueService _queue;
+  final OrdersRepository _ordersRepository;
+  final LeaseManager _leaseManager;
   final LanHubService _lanHub;
-  final MainRepository _mainRepository;
   final PrinterService _printerService;
   final ShiftBloc _shiftBloc;
 
@@ -57,20 +56,14 @@ class CreateOrderBloc extends Bloc<CreateOrderEvent, CreateOrderState> {
       _tableNumber > 0 ? 'Стол: $_tableNumber' : 'Стол: —';
 
   CreateOrderBloc({
-    required CreateOrderUsecase createOrderUsecase,
-    required CreateTakeAwayOrderUsecase createTakeAwayOrderUsecase,
-    required ConnectivityCubit connectivity,
-    required OfflineQueueService queue,
+    required OrdersRepository ordersRepository,
+    required LeaseManager leaseManager,
     required LanHubService lanHub,
-    required MainRepository mainRepository,
     required PrinterService printerService,
     required ShiftBloc shiftBloc,
-  })  : _createOrderUsecase = createOrderUsecase,
-        _createTakeAwayOrderUsecase = createTakeAwayOrderUsecase,
-        _connectivity = connectivity,
-        _queue = queue,
+  })  : _ordersRepository = ordersRepository,
+        _leaseManager = leaseManager,
         _lanHub = lanHub,
-        _mainRepository = mainRepository,
         _printerService = printerService,
         _shiftBloc = shiftBloc,
         super(const CreateOrderState()) {
@@ -94,79 +87,16 @@ class CreateOrderBloc extends Bloc<CreateOrderEvent, CreateOrderState> {
 
     if (state.tableId.isEmpty) {
       // ── Takeaway ─────────────────────────────────────────────────
-      // Same client-generated-id idempotency pattern as dine-in below: the
-      // id is fixed once, before the online attempt, so a connection-failure
-      // fallback into the offline queue replays under the SAME id rather
-      // than risking a second order server-side if the original request
-      // actually landed before the response was lost.
       final clientOrderId = generateUuidV4();
-
-      if (!_connectivity.isOnline) {
-        await _handleOfflineTakeaway(
-          event.orders,
-          emit,
-          clientOrderId: clientOrderId,
-        );
-        return;
-      }
-
-      final response = await _createTakeAwayOrderUsecase.call(
-        CreateOrderRequestModel(
-          id: clientOrderId,
-          orderType: "takeaway",
-          foods: event.orders,
-        ),
-      );
-      await response.fold(
-        (l) async {
-          if (l is ConnectionFailure) {
-            await _handleOfflineTakeaway(
-              event.orders,
-              emit,
-              clientOrderId: clientOrderId,
-            );
-            return;
-          }
-          showErrorMessage(
-            navigatorKey.currentContext!,
-            l.getLocalizedMessage(navigatorKey.currentContext!),
-          );
-          emit(state.copyWith(status: Status.ERROR, failure: l));
-        },
-        (r) async {
-          // Fire-and-forget: oshxona cheki (kategoriya printerlari).
-          unawaited(_printerService.printKitchenReceiptFor(
-            tableLine: 'С собой',
-            guestCount: state.guestCount,
-            items: event.orders,
-            orderId: r,
-          ));
-          Navigator.pushNamed(
-            navigatorKey.currentContext!,
-            AppRoutes.paymentScreen,
-            arguments: {"order_id": r},
-          );
-          emit(state.copyWith(status: Status.SUCCESS, success: true));
-        },
-      );
+      await _handleTakeaway(event.orders, emit, clientOrderId: clientOrderId);
       return;
     }
 
     // ── Dine-in ────────────────────────────────────────────────
-    if (!_connectivity.isOnline) {
-      await _handleOfflineOrder(event.orders, emit);
-      return;
-    }
-
-    // Generated once per create attempt so a connection-failure retry (below)
-    // replays under the SAME id rather than risking a second order server-side
-    // if the original request actually landed before the response was lost.
-    final clientOrderId = generateUuidV4();
-
-    // Kalit qoida: agar `_activeOrderId` bog'langan bo'lsa — server'da
-    // mavjud buyurtmaga item qo'shamiz (POST /api/v1/order-items).
-    // `state.tableStatus` free bo'lsa ham shunday ishlaydi — UI holati
-    // eskirgan bo'lsa ham 409 conflict yuz bermaydi.
+    // Kalit qoida: agar `_activeOrderId` bog'langan bo'lsa — mavjud
+    // buyurtmaga item qo'shamiz. `state.tableStatus` free bo'lsa ham shunday
+    // ishlaydi — UI holati eskirgan bo'lsa ham muammo bo'lmaydi, chunki bu
+    // endi ham network-await emas, faqat lokal yozuv.
     if (_activeOrderId != null) {
       await _addItemsToExistingOrder(
         orderId: _activeOrderId!,
@@ -176,9 +106,9 @@ class CreateOrderBloc extends Bloc<CreateOrderEvent, CreateOrderState> {
       return;
     }
 
-    // Qo'shimcha himoya: stol busy lekin orderId hali bog'lanmagan — POST
-    // /orders qilmaymiz (409 oldini olish). Foydalanuvchi ekranni yangilab
-    // qayta urinsin (fetchBillOrders activeOrderId ni yozib qo'yadi).
+    // Qo'shimcha himoya: stol busy lekin orderId hali bog'lanmagan.
+    // Foydalanuvchi ekranni yangilab qayta urinsin (fetchBillOrders
+    // activeOrderId ni yozib qo'yadi).
     if (state.tableStatus == TableStatus.busy) {
       showErrorMessage(
         navigatorKey.currentContext!,
@@ -188,59 +118,39 @@ class CreateOrderBloc extends Bloc<CreateOrderEvent, CreateOrderState> {
       return;
     }
 
-    final request = CreateOrderRequestModel(
-      id: clientOrderId,
-      tableId: state.tableId,
-      comment: "Very good",
-      guestCount: state.guestCount,
-      foods: event.orders,
-      status: OrderStatus.open,
-      tableStatus: state.tableStatus,
-      orderType: "dine_in",
-    );
+    // §6: the one deliberate exception to "UI never waits on anything" —
+    // acquire the table lease before the local write.
+    final lease = await _leaseManager.acquireTableLease(state.tableId);
+    if (!lease.isGranted) {
+      showErrorMessage(
+        navigatorKey.currentContext!,
+        lease.isUnreachable
+            ? (lease.unreachableReason ?? "Stol egaligini tekshirib bo'lmadi.")
+            : "Bu stol allaqachon boshqa terminalda ochilgan.",
+      );
+      emit(state.copyWith(status: Status.ERROR));
+      return;
+    }
 
-    final response = await _createOrderUsecase.call(request);
-    response.fold(
-      (l) async {
-        if (l is ConnectionFailure) {
-          await _handleOfflineOrder(
-            event.orders,
-            emit,
-            clientOrderId: clientOrderId,
-          );
-          return;
-        }
-        // 409 Conflict: stol allaqachon faol buyurtmaga ega. Xato ko'rsatish
-        // o'rniga mavjud buyurtmaga bog'lanib, itemlarni o'shanga qo'shamiz —
-        // shu orqali orphan/duplicate bill hosil bo'lishining oldi olinadi.
-        if (l is MessageFailure) {
-          final existingId = extractExistingOrderIdFromConflict(l.message);
-          if (existingId != null && existingId.isNotEmpty) {
-            bindActiveOrder(existingId);
-            await _addItemsToExistingOrder(
-              orderId: existingId,
-              orders: event.orders,
-              emit: emit,
-            );
-            return;
-          }
-        }
-        l.showErrorMsg();
-        emit(state.copyWith(status: Status.ERROR, failure: l));
-      },
-      (r) {
-        _lanHub.tableStatusChanged(state.tableId, TableStatus.busy.name);
-        // Fire-and-forget: oshxona cheki (kategoriya printerlari).
-        // Eslatma: yangi dine-in order yaratilganda backend ID qaytarmaydi
-        // (faqat bool) — shuning uchun bu yerda orderId yo'q.
-        unawaited(_printerService.printKitchenReceiptFor(
-          tableLine: _kitchenTableLine,
-          guestCount: state.guestCount,
-          items: event.orders,
-        ));
-        emit(state.copyWith(status: Status.SUCCESS, success: r));
-      },
+    final clientOrderId = generateUuidV4();
+    await _ordersRepository.createOrder(
+      tableId: state.tableId,
+      clientOrderId: clientOrderId,
+      guestCount: state.guestCount,
+      items: event.orders,
+      tableStatus: state.tableStatus,
     );
+    // Ephemeral claim cleared the instant this local write is confirmed —
+    // same-process callback, not a network round trip (§6 Lease Recovery).
+    _leaseManager.releaseTableLease(state.tableId);
+
+    // Fire-and-forget: oshxona cheki (kategoriya printerlari).
+    unawaited(_printerService.printKitchenReceiptFor(
+      tableLine: _kitchenTableLine,
+      guestCount: state.guestCount,
+      items: event.orders,
+    ));
+    emit(state.copyWith(status: Status.SUCCESS, success: true));
   }
 
   Future<void> _addItemsToExistingOrder({
@@ -248,162 +158,44 @@ class CreateOrderBloc extends Bloc<CreateOrderEvent, CreateOrderState> {
     required List<OrderItem> orders,
     required Emitter<CreateOrderState> emit,
   }) async {
-    // Generated once so a connection-failure retry below (offline fallback)
-    // replays under the SAME ids — same reasoning as clientOrderId above,
-    // now for AddOrderItems' own idempotency key (order_items.client_item_id,
-    // §13 risk #2). Without this, a response lost after the request already
-    // committed server-side would fall into the offline queue with FRESH
-    // ids that don't match anything already created — defeating the dedup.
-    final itemClientIds = List.generate(orders.length, (_) => generateUuidV4());
-    try {
-      final result = await _mainRepository.createOrderItems(
-        orderId: orderId,
-        items: [
-          for (var i = 0; i < orders.length; i++)
-            {
-              'comment': orders[i].comment,
-              'good_id': orders[i].goods.id,
-              'quantity': orders[i].quantity,
-              'client_item_id': itemClientIds[i],
-            },
-        ],
-      );
-      final failure = result.fold((f) => f, (_) => null);
-      if (failure != null) throw failure;
-      _lanHub.tableStatusChanged(state.tableId, TableStatus.busy.name);
-      // Fire-and-forget: oshxona cheki (kategoriya printerlari).
-      unawaited(_printerService.printKitchenReceiptFor(
-        tableLine: _kitchenTableLine,
-        guestCount: state.guestCount,
-        items: orders,
-        orderId: orderId,
-      ));
-      emit(state.copyWith(status: Status.SUCCESS, success: true));
-    } catch (e) {
-      if (e is Failure && e.isConnectivityIssue) {
-        await _handleOfflineOrder(
-          orders,
-          emit,
-          orderId: orderId,
-          itemClientIds: itemClientIds,
-        );
-        return;
-      }
-      showErrorMessage(
-        navigatorKey.currentContext!,
-        e is Failure ? e.getLocalizedMessage(navigatorKey.currentContext!) : 'Xato yuz berdi',
-      );
-      emit(state.copyWith(status: Status.ERROR));
-    }
-  }
-
-  Future<void> _handleOfflineOrder(
-    List<OrderItem> orders,
-    Emitter<CreateOrderState> emit, {
-    String? orderId,
-    String? clientOrderId,
-    List<String>? itemClientIds,
-  }) async {
-    final tableId = state.tableId;
-    final createdAt = DateTime.now();
-
-    if (state.tableStatus == TableStatus.busy) {
-      // Mavjud orderga item qo'shish. client_item_id — backendning
-      // AddOrderItems idempotency kaliti (order_items.client_item_id, §13
-      // risk #2): shu id qayta yuborilsa (masalan, outbox operatsiyani
-      // qayta ursa), backend takroriy item yaratmaydi. Agar bu chaqiruv bir
-      // muvaffaqiyatsiz onlayn urinishdan keyin kelayotgan bo'lsa (ya'ni
-      // caller `itemClientIds` uzatgan bo'lsa), o'sha aynan bir xil id'lar
-      // qayta ishlatiladi — aks holda javob yo'qolgan-u so'rov aslida
-      // serverga yetib borgan holatda, bu yerda yangi id generatsiya qilish
-      // dedupni buzib, ikkinchi marta item yaratib qo'yardi.
-      final ids = itemClientIds ??
-          List.generate(orders.length, (_) => generateUuidV4());
-      final payload = {
-        'items': [
-          for (var i = 0; i < orders.length; i++)
-            {
-              'comment': orders[i].comment,
-              'good_id': orders[i].goods.id,
-              'quantity': orders[i].quantity,
-              'client_item_id': ids[i],
-            },
-        ],
-      };
-      await _queue.enqueue(PendingOperation(
-        id: OfflineQueueService.newId(),
-        type: PendingOperationType.addItems,
-        payload: jsonEncode(payload),
-        tableId: tableId,
-        createdAt: createdAt,
-      ));
-    } else {
-      // Yangi order yaratish — clientOrderId bo'lsa (allaqachon online urinish
-      // muvaffaqiyatsiz bo'lgan) o'shani qayta ishlatamiz, aks holda yangisini
-      // generatsiya qilamiz.
-      final request = CreateOrderRequestModel(
-        id: clientOrderId ?? generateUuidV4(),
-        tableId: tableId,
-        comment: "Very good",
-        guestCount: state.guestCount,
-        foods: orders,
-        status: OrderStatus.open,
-        tableStatus: state.tableStatus,
-        orderType: "dine_in",
-      );
-      await _queue.enqueue(PendingOperation(
-        id: OfflineQueueService.newId(),
-        type: PendingOperationType.createOrder,
-        payload: jsonEncode(request.request()),
-        tableId: tableId,
-        createdAt: createdAt,
-      ));
-    }
-
-    // Optimistic: stol band deb belgilash + LAN broadcast
-    _lanHub.tableStatusChanged(tableId, TableStatus.busy.name);
-    // Backend offline bo'lsa ham LAN'dagi oshxona printeri ishlashi mumkin —
-    // chek hozir chiqadi; queue sync paytida takror chop etilmaydi.
+    await _ordersRepository.addItems(
+      tableId: state.tableId,
+      orderId: orderId,
+      items: orders,
+    );
+    _lanHub.tableStatusChanged(state.tableId, TableStatus.busy.name);
+    // Fire-and-forget: oshxona cheki (kategoriya printerlari).
     unawaited(_printerService.printKitchenReceiptFor(
       tableLine: _kitchenTableLine,
       guestCount: state.guestCount,
       items: orders,
-      orderId: orderId ?? _activeOrderId,
+      orderId: orderId,
     ));
     emit(state.copyWith(status: Status.SUCCESS, success: true));
   }
 
-  /// Takeaway's offline path — no table to mark busy (nothing to broadcast
-  /// over LAN), and unlike dine-in there's no later "open the table" flow to
-  /// pay through, since takeaway pays immediately. Instead of skipping
-  /// payment until reconnection, this builds a local order-detail snapshot
-  /// from what was just entered and caches it under [clientOrderId] — the
-  /// same key `PaymentBloc._onGetDetail`'s orderId branch now checks first
-  /// (cache-first, mirroring its existing tableId branch) — so the cashier
-  /// can take payment right away exactly as they would online. The payment
-  /// itself then queues through `PaymentBloc`'s already-existing
-  /// `ConnectionFailure` → `payOrder` outbox path once attempted; the
+  /// Takeaway has no table to lease/mark busy, and unlike dine-in there's no
+  /// later "open the table" flow to pay through, since takeaway pays
+  /// immediately. This builds a local order-detail snapshot from what was
+  /// just entered and saves it under [clientOrderId] — the same key
+  /// `PaymentBloc`'s orderId branch reads (cache-first, via the same
+  /// `OrdersRepository.watchOrderDetail`) — so the cashier can take payment
+  /// right away exactly as they would online. The payment itself then
+  /// queues through `PaymentRepository`'s own local-first `pay()`; the
   /// `createOrder` op below syncs first in the same `syncAll` pass (see
   /// `OfflineQueueService.syncAll`'s fixed op-type ordering), so by the time
   /// `payOrder` replays, the order already exists server-side under this
   /// same client id.
-  Future<void> _handleOfflineTakeaway(
+  Future<void> _handleTakeaway(
     List<OrderItem> orders,
     Emitter<CreateOrderState> emit, {
     required String clientOrderId,
   }) async {
-    final request = CreateOrderRequestModel(
-      id: clientOrderId,
-      orderType: "takeaway",
-      foods: orders,
+    await _ordersRepository.createTakeawayOrder(
+      clientOrderId: clientOrderId,
+      guestCount: state.guestCount,
+      items: orders,
     );
-    await _queue.enqueue(PendingOperation(
-      id: OfflineQueueService.newId(),
-      type: PendingOperationType.createOrder,
-      payload: jsonEncode(request.createOrder()),
-      tableId: '',
-      createdAt: DateTime.now(),
-    ));
 
     final foodTotal = orders.fold<double>(
       0,
@@ -426,7 +218,7 @@ class CreateOrderBloc extends Bloc<CreateOrderEvent, CreateOrderState> {
           ) as OrderFoodEntity,
       ],
     );
-    await inject<CacheService>().saveOrderDetail(clientOrderId, snapshot.toJson());
+    await _ordersRepository.saveOrderDetailSnapshot(clientOrderId, snapshot.toJson());
 
     // Fire-and-forget: oshxona cheki (kategoriya printerlari).
     unawaited(_printerService.printKitchenReceiptFor(

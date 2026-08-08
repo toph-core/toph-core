@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/cupertino.dart';
@@ -8,23 +9,20 @@ import 'package:mary_ai_pos/core/components/flush_bars.dart';
 import 'package:mary_ai_pos/core/constants/constants.dart';
 import 'package:mary_ai_pos/core/error/failure.dart';
 import 'package:mary_ai_pos/core/routes/app_routes.dart';
+import 'package:mary_ai_pos/core/services/cache/cache_service.dart';
+import 'package:mary_ai_pos/core/services/offline_queue/offline_queue_service.dart';
+import 'package:mary_ai_pos/core/services/offline_queue/pending_operation.dart';
 import 'package:mary_ai_pos/core/utils/helper/helper_widget.dart';
 import 'package:mary_ai_pos/core/utils/order_totals.dart';
+import 'package:mary_ai_pos/di.dart' show inject;
+import 'package:mary_ai_pos/features/view/main/data/models/archive_detail/archive_detail_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/cafe_tables/cafe_tables_model.dart';
-import 'package:mary_ai_pos/features/view/main/data/models/payment_pay_request/payment_pay_request_model.dart';
 import 'package:mary_ai_pos/features/view/main/domain/entities/archive_detail_entity.dart';
 import 'package:mary_ai_pos/core/service/printer/printer_service.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/table_timer/table_timer_response_model.dart';
-import 'package:mary_ai_pos/core/services/connectivity/connectivity_cubit.dart';
-import 'package:mary_ai_pos/core/services/offline_queue/offline_queue_service.dart';
-import 'package:mary_ai_pos/core/services/offline_queue/pending_operation.dart';
-import 'package:mary_ai_pos/core/services/cache/cache_service.dart';
-import 'package:mary_ai_pos/di.dart' show inject;
-import 'package:mary_ai_pos/features/view/main/data/models/archive_detail/archive_detail_model.dart';
-import 'package:mary_ai_pos/features/view/main/domain/usecase/create_payment_usecase.dart';
-import 'package:mary_ai_pos/features/view/main/domain/usecase/get_payment_detail_with_id_usecase.dart';
-import 'package:mary_ai_pos/features/view/main/domain/usecase/get_payment_detail_with_table_id_usecase.dart';
 import 'package:mary_ai_pos/features/view/main/domain/repository/main_repository.dart';
+import 'package:mary_ai_pos/features/view/main/domain/repository/orders_repository.dart';
+import 'package:mary_ai_pos/features/view/main/domain/repository/payment_repository.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/main/main_cubit.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/orders/orders_bloc.dart';
 
@@ -32,12 +30,24 @@ part 'payment_event.dart';
 part 'payment_state.dart';
 part 'payment_bloc.freezed.dart';
 
+/// offline-first-target-architecture.md §4/§9 (V2/V6) + §12 rule 1.
+///
+/// Every write here (`pay`/cancel-zero-total) is a single local commit
+/// through `PaymentRepository` (outbox enqueue) that returns without ever
+/// awaiting the network — the highest-stakes write in this app gets the
+/// same shape every other local-first write does, no `ConnectionFailure`
+/// fork. Reads (`_onGetDetail`) are a pure `OrdersRepository.watchOrderDetail`
+/// projection — no throttle, no `ConnectivityCubit` gate, no awaited
+/// fetch usecase; whatever `SyncEngine`'s hydration pass or this terminal's
+/// own local writes last put in `LocalDatabase` is what's shown, online or
+/// offline alike.
 class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
-  final GetPaymentDetailWithTableIdUsecase _getPaymentDetailWithTableIdUsecase;
-  final CreatePaymentUsecase _createPaymentUsecase;
-  final GetPaymentDetailWithIdUsecase _getPaymentDetailWithIdUsecase;
+  final OrdersRepository _ordersRepository;
+  final PaymentRepository _paymentRepository;
   final PrinterService _printerService;
   final MainRepository _mainRepository;
+
+  StreamSubscription<ArchiveDetailModel?>? _detailSub;
 
   DateTime? _timerStartedAt;
   List<PauseInterval> _timerPauses = const [];
@@ -63,19 +73,18 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
   }
 
   PaymentBloc({
-    required GetPaymentDetailWithTableIdUsecase getPaymentDetailWithTableIdUsecase,
-    required CreatePaymentUsecase createPaymentUsecase,
-    required GetPaymentDetailWithIdUsecase getPaymentDetailWithId,
+    required OrdersRepository ordersRepository,
+    required PaymentRepository paymentRepository,
     required PrinterService printerService,
     required MainRepository mainRepository,
-  }) : _getPaymentDetailWithTableIdUsecase = getPaymentDetailWithTableIdUsecase,
-       _createPaymentUsecase = createPaymentUsecase,
-       _getPaymentDetailWithIdUsecase = getPaymentDetailWithId,
-       _printerService = printerService,
-       _mainRepository = mainRepository,
-       super(const PaymentState()) {
+  })  : _ordersRepository = ordersRepository,
+        _paymentRepository = paymentRepository,
+        _printerService = printerService,
+        _mainRepository = mainRepository,
+        super(const PaymentState()) {
     on<_Started>(_onStarted);
     on<_GetDetail>(_onGetDetail);
+    on<_DetailUpdated>(_onDetailUpdated);
     on<_UpdatePaymentType>(_onUpdatePaymentType);
     on<_UpdateEnterSum>(_onUpdateEnterSum);
     on<_Payment>(_payment);
@@ -146,81 +155,50 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
         : 1;
     final cashNeedsAmount =
         state.paymentType == PaymentType.cash && enteredAmt <= 0 && dueTot > 0;
-    if (state.detail != null && !cashNeedsAmount) {
-      // Cash sends entered amount; card/qr send the computed due total.
-      final paidAmount = state.paymentType == PaymentType.cash
-          ? enteredAmt
-          : dueTot;
+    if (state.detail == null || cashNeedsAmount) return;
 
-      emit(state.copyWith(status: Status.LOADING));
+    // Cash sends entered amount; card/qr send the computed due total.
+    final paidAmount =
+        state.paymentType == PaymentType.cash ? enteredAmt : dueTot;
 
-      // Total 0 bo'lsa — /pay emas /cancel
-      if (dueTot <= 0) {
-        final result = await _mainRepository.cancelOrder(state.detail!.id);
-        final failure = result.fold((f) => f, (_) => null);
-        if (failure == null) {
-          _paymentSucceeded = true;
-          _onPaymentSuccess();
-        } else if (failure.isConnectivityIssue) {
-          // Internet yo'q — bekor qilishni offline queue ga saqla
-          await _enqueueCancelOrder();
-          if (isClosed) return;
-          _paymentSucceeded = true;
-          _onPaymentSuccess();
-        } else {
-          if (!isClosed) emit(state.copyWith(status: Status.ERROR));
-          showErrorMessage(
-            navigatorKey.currentContext!,
-            failure.getLocalizedMessage(navigatorKey.currentContext!),
-          );
-        }
-        return;
-      }
+    emit(state.copyWith(status: Status.LOADING));
 
-      final tableChargeSom = state.hourPrice.round();
-      final response = await _createPaymentUsecase.call(
-        PaymentPayRequestModel(
-          orderId: state.detail!.id,
-          customPaidAmount: paidAmount,
-          discountAmount: state.discountType == DiscountType.money
-              ? int.tryParse(state.discountAmount) != null
-                    ? int.parse(state.discountAmount)
-                    : 0
-              : 0,
-          discountPercent: state.discountType == DiscountType.percent
-              ? int.tryParse(state.discountAmount) != null
-                    ? int.parse(state.discountAmount)
-                    : 0
-              : 0,
-          paymentType: state.paymentType,
-          tableCharge: tableChargeSom > 0 ? tableChargeSom : 0,
-          applyService: state.applyService,
-        ),
+    final effectiveTableId = state.tableId ?? state.detail!.tableId;
+
+    // Total 0 bo'lsa — /pay emas /cancel. Local-first: bitta lokal yozuv,
+    // hech qachon tarmoqni kutmaydi (§4).
+    if (dueTot <= 0) {
+      await _paymentRepository.cancelZeroTotalOrder(
+        orderId: state.detail!.id,
+        tableId: effectiveTableId,
       );
-      response.fold(
-        (l) async {
-          if (l is ConnectionFailure) {
-            // Internet yo'q — to'lovni offline queue ga saqla
-            await _enqueuePayment();
-            if (isClosed) return;
-            _paymentSucceeded = true;
-            _onPaymentSuccess();
-            return;
-          }
-          // Failed /pay may have closed the timer server-side — resume if possible.
-          await resumeTimerAfterFailedPay();
-          if (!isClosed) emit(state.copyWith(status: Status.ERROR));
-          showErrorMessage(
-            navigatorKey.currentContext!,
-            l.getLocalizedMessage(navigatorKey.currentContext!),
-          );
-        },
-        (r) {
-          _paymentSucceeded = true;
-          _onPaymentSuccess();
-        },
-      );
+      _paymentSucceeded = true;
+      _onPaymentSuccess();
+      return;
     }
+
+    final discountAmount = state.discountType == DiscountType.money
+        ? (int.tryParse(state.discountAmount) ?? 0)
+        : 0;
+    final discountPercent = state.discountType == DiscountType.percent
+        ? (int.tryParse(state.discountAmount) ?? 0)
+        : 0;
+
+    await _paymentRepository.pay(
+      orderId: state.detail!.id,
+      tableId: effectiveTableId,
+      paidAmount: paidAmount,
+      paymentType: state.paymentType.name,
+      applyService: state.applyService,
+      discountAmount: discountAmount,
+      discountPercent: discountPercent,
+    );
+    showSuccessMessage(
+      navigatorKey.currentContext!,
+      "To'lov navbatga qo'shildi — internet kelganda yuboriladi",
+    );
+    _paymentSucceeded = true;
+    _onPaymentSuccess();
   }
 
   bool _paymentSucceeded = false;
@@ -229,6 +207,11 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
   /// After a failed/cancelled pay attempt, resume the table timer so accrued
   /// time is not left paused. Never start a fresh session — that would reset
   /// accrued time to 0 (backend may close the session on a failed /pay).
+  /// Since `_payment` above never awaits the network anymore, the case this
+  /// guards against — a failed /pay that may have closed the timer
+  /// server-side — can no longer happen from inside this Bloc; kept for the
+  /// caller (`payment_screen.dart`, on leaving the screen without paying at
+  /// all) which still needs it for that unrelated reason.
   Future<void> resumeTimerAfterFailedPay() async {
     if (_paymentSucceeded) return;
     final orderId = state.detail?.id ?? state.orderId;
@@ -252,10 +235,6 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
   }
 
   void _onPaymentSuccess() {
-    showSuccessMessage(
-      navigatorKey.currentContext!,
-      "Buyurtma muvafaqqiyatli to'landi",
-    );
     final discPct = state.discountType == DiscountType.percent
         ? (int.tryParse(state.discountAmount) ?? 0).toDouble()
         : 0.0;
@@ -288,62 +267,14 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
       AppRoutes.mainScreen,
       (value) => true,
     );
-    // To'lovdan keyin backend holatini yangilaymiz — local status yangilandi,
-    // lekin boshqa stollar yoki serverdagi o'zgarishlar eskirgan bo'lishi mumkin.
+    // §5: fire-and-forget — an explicit "make sure this is fresh" nudge,
+    // not something this success path waits on.
     mainCubit.refreshTables(force: true);
   }
 
-  Future<void> _enqueuePayment() async {
-    final offlineExtra = pendingOfflineExtra(state.tableId);
-    final effectiveAmt =
-        effectiveTotal(state.detail!, tableCharge: state.hourPrice) + offlineExtra;
-    final enteredAmt = int.tryParse(state.enterSum) ?? 0;
-    final paidAmount =
-        state.paymentType == PaymentType.cash ? enteredAmt : effectiveAmt;
-    final payload = jsonEncode({
-      'order_id': state.detail!.id,
-      'customer_paid_amount': paidAmount.toString(),
-      'payment_type': state.paymentType.name,
-      'apply_service': state.applyService,
-      if ((int.tryParse(state.discountAmount) ?? 0) > 0 &&
-          state.discountType == DiscountType.money)
-        'discount_amount': int.parse(state.discountAmount),
-      if ((int.tryParse(state.discountAmount) ?? 0) > 0 &&
-          state.discountType == DiscountType.percent)
-        'discount_percent': int.parse(state.discountAmount),
-    });
-    await inject<OfflineQueueService>().enqueue(
-      PendingOperation(
-        id: OfflineQueueService.newId(),
-        type: PendingOperationType.payOrder,
-        payload: payload,
-        tableId: state.tableId ?? state.detail!.tableId,
-        createdAt: DateTime.now(),
-      ),
-    );
-    showSuccessMessage(
-      navigatorKey.currentContext!,
-      "To'lov navbatga qo'shildi — internet kelganda yuboriladi",
-    );
-  }
-
-  Future<void> _enqueueCancelOrder() async {
-    final payload = jsonEncode({'order_id': state.detail!.id});
-    await inject<OfflineQueueService>().enqueue(
-      PendingOperation(
-        id: OfflineQueueService.newId(),
-        type: PendingOperationType.cancelOrder,
-        payload: payload,
-        tableId: state.tableId ?? state.detail!.tableId,
-        createdAt: DateTime.now(),
-      ),
-    );
-    showSuccessMessage(
-      navigatorKey.currentContext!,
-      "Bekor qilish navbatga qo'shildi — internet kelganda yuboriladi",
-    );
-  }
-
+  /// Sums the cost of any not-yet-synced `addItems` ops queued for
+  /// [tableId] — the due total must include items already committed locally
+  /// (§4) even though the backend doesn't know about them yet.
   static int pendingOfflineExtra(String? tableId) {
     if (tableId == null) return 0;
     final queue = inject<OfflineQueueService>();
@@ -397,123 +328,53 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
     _GetDetail event,
     Emitter<PaymentState> emit,
   ) async {
-    final cache = inject<CacheService>();
+    final key = state.tableId ?? state.orderId;
+    if (key == null) return;
 
-    if (state.tableId != null) {
-      // Cache-first: avval saqlangan detalni ko'rsat
-      final cached = cache.getOrderDetail(state.tableId!);
-      if (cached != null) {
-        final cachedDetail = ArchiveDetailModel.fromJson(cached);
-        // Avvalgi sessiyada cache'lab qo'yilgan timestamplarni ham qo'llaymiz
-        final cachedTs = cache.getItemTimestamps(cachedDetail.id);
-        emit(state.copyWith(
-          detailStatus: Status.SUCCESS,
-          status: Status.SUCCESS,
-          detail: cachedDetail,
-          itemTimestamps: cachedTs,
-          failure: null,
-        ));
-      } else {
-        emit(state.copyWith(detailStatus: Status.LOADING, failure: null, detail: null));
-      }
+    await _detailSub?.cancel();
+    _detailSub = _ordersRepository.watchOrderDetail(key).listen((detail) {
+      if (isClosed) return;
+      add(PaymentEvent.detailUpdated(detail: detail));
+    });
+  }
 
-      if (!inject<ConnectivityCubit>().isOnline) return;
-
-      final response = await _getPaymentDetailWithTableIdUsecase.call(state.tableId!);
-      response.fold(
-        (failure) {
-          if (cached == null) {
-            showErrorMessage(
-              navigatorKey.currentContext!,
-              failure.getLocalizedMessage(navigatorKey.currentContext!),
-            );
-            emit(state.copyWith(status: Status.ERROR, detailStatus: Status.ERROR, failure: failure));
-          }
-        },
-        (detail) {
-          cache.saveOrderDetail(state.tableId!, (detail as ArchiveDetailModel).toJson());
-          // Dastlabki to'lov oynasida "Qabul qilingan" ni aniq summa bilan
-          // avtomatik to'ldirib qo'yamiz (agar kassir hali hech nima kiritmagan bo'lsa).
-          final prefill = PaymentBloc.effectiveTotal(detail, tableCharge: state.hourPrice);
-          final currentEntered = int.tryParse(state.enterSum) ?? 0;
-          // Prefill when empty, OR when enterSum is still the stale under-total
-          // (old formula omitted service on table charge).
-          final shouldPrefill = currentEntered <= 0 ||
-              currentEntered == prefill ||
-              (state.hourPrice > 0.01 && currentEntered < prefill);
-          emit(state.copyWith(
-            status: Status.SUCCESS,
-            detailStatus: Status.SUCCESS,
-            detail: detail,
-            enterSum: shouldPrefill ? prefill.toString() : state.enterSum,
-            failure: null,
-          ));
-          // Item timestamps — bills javobida yo'q, /order-items/order/{id}
-          // dan olib alohida fetch qilamiz (UI vaqtni ko'rsatishi uchun).
-          if (detail.id.isNotEmpty) {
-            _fetchItemTimestamps(detail.id);
-          }
-        },
-      );
-    } else if (state.orderId != null) {
-      // Cache-first, same pattern as the tableId branch above — needed for
-      // a takeaway order created offline: `CreateOrderBloc` caches a local
-      // snapshot under this same orderId (client-generated) before ever
-      // navigating here, since the order doesn't exist server-side yet.
-      final cachedRaw = cache.getOrderDetail(state.orderId!);
-      ArchiveDetailModel? cachedDetail;
-      if (cachedRaw != null) {
-        cachedDetail = ArchiveDetailModel.fromJson(cachedRaw);
-        final cachedTs = cache.getItemTimestamps(cachedDetail.id);
-        emit(state.copyWith(
-          detailStatus: Status.SUCCESS,
-          status: Status.SUCCESS,
-          detail: cachedDetail,
-          itemTimestamps: cachedTs,
-          failure: null,
-        ));
-      } else {
-        emit(state.copyWith(detailStatus: Status.LOADING, failure: null, detail: null));
-      }
-
-      if (!inject<ConnectivityCubit>().isOnline) return;
-
-      final response = await _getPaymentDetailWithIdUsecase.call(state.orderId!);
-      response.fold(
-        (failure) {
-          if (cachedDetail == null) {
-            showErrorMessage(
-              navigatorKey.currentContext!,
-              failure.getLocalizedMessage(navigatorKey.currentContext!),
-            );
-            emit(state.copyWith(status: Status.ERROR, detailStatus: Status.ERROR, failure: failure));
-          }
-        },
-        (detail) {
-          cache.saveOrderDetail(state.orderId!, (detail as ArchiveDetailModel).toJson());
-          final prefill = PaymentBloc.effectiveTotal(detail, tableCharge: state.hourPrice);
-          final currentEntered = int.tryParse(state.enterSum) ?? 0;
-          final shouldPrefill = currentEntered <= 0 ||
-              currentEntered == prefill ||
-              (state.hourPrice > 0.01 && currentEntered < prefill);
-          emit(state.copyWith(
-            status: Status.SUCCESS,
-            detailStatus: Status.SUCCESS,
-            detail: detail,
-            enterSum: shouldPrefill ? prefill.toString() : state.enterSum,
-            failure: null,
-          ));
-          if (detail.id.isNotEmpty) {
-            _fetchItemTimestamps(detail.id);
-          }
-        },
-      );
+  void _onDetailUpdated(_DetailUpdated event, Emitter<PaymentState> emit) {
+    final detail = event.detail;
+    if (detail == null) {
+      // Nothing in LocalDatabase yet for this key — SyncEngine's hydration
+      // pass (or this order's own local-first create) hasn't landed a row
+      // here yet. Not an error: the stream will fire again the instant it
+      // does.
+      emit(state.copyWith(detailStatus: Status.LOADING, failure: null, detail: null));
+      return;
+    }
+    final cachedTs = inject<CacheService>().getItemTimestamps(detail.id);
+    final prefill = PaymentBloc.effectiveTotal(detail, tableCharge: state.hourPrice);
+    final currentEntered = int.tryParse(state.enterSum) ?? 0;
+    // Prefill when empty, OR when enterSum is still the stale under-total
+    // (old formula omitted service on table charge).
+    final shouldPrefill = currentEntered <= 0 ||
+        currentEntered == prefill ||
+        (state.hourPrice > 0.01 && currentEntered < prefill);
+    emit(state.copyWith(
+      status: Status.SUCCESS,
+      detailStatus: Status.SUCCESS,
+      detail: detail,
+      itemTimestamps: cachedTs,
+      enterSum: shouldPrefill ? prefill.toString() : state.enterSum,
+      failure: null,
+    ));
+    if (detail.id.isNotEmpty) {
+      _fetchItemTimestamps(detail.id);
     }
   }
 
   /// `/api/v1/order-items/order/{orderId}` orqali har bir itemning
   /// `created_at` vaqtini olib, `state.itemTimestamps` (name -> earliest)
-  /// ga yozadi. Bills javobida bu maydon yo'q.
+  /// ga yozadi. Bills javobida bu maydon yo'q — `ArchiveDetailModel`ning bir
+  /// qismi emas, shuning uchun `LocalDatabase.watchOrderDetail` bunda
+  /// yordam bermaydi. Best-effort, offline'da yoki xato holida shunchaki
+  /// eskirgan/bo'sh timestamplar bilan qoladi.
   Future<void> _fetchItemTimestamps(String orderId) async {
     try {
       final result = await _mainRepository.getOrderItemsRaw(orderId);
@@ -582,6 +443,7 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
 
   @override
   Future<void> close() {
+    _detailSub?.cancel();
     state.textController?.dispose();
     return super.close();
   }

@@ -21,6 +21,7 @@ mixin _$PaymentEvent {
     required TResult Function(String? tableId, String? orderId) started,
     required TResult Function(String symbol) updateEnterSum,
     required TResult Function() getDetail,
+    required TResult Function(ArchiveDetailModel? detail) detailUpdated,
     required TResult Function() payment,
     required TResult Function(DiscountType dicountType) updateDiscountType,
     required TResult Function(String amount) updateDiscountAmount,
@@ -36,6 +37,7 @@ mixin _$PaymentEvent {
     TResult? Function(String? tableId, String? orderId)? started,
     TResult? Function(String symbol)? updateEnterSum,
     TResult? Function()? getDetail,
+    TResult? Function(ArchiveDetailModel? detail)? detailUpdated,
     TResult? Function()? payment,
     TResult? Function(DiscountType dicountType)? updateDiscountType,
     TResult? Function(String amount)? updateDiscountAmount,
@@ -50,6 +52,7 @@ mixin _$PaymentEvent {
     TResult Function(String? tableId, String? orderId)? started,
     TResult Function(String symbol)? updateEnterSum,
     TResult Function()? getDetail,
+    TResult Function(ArchiveDetailModel? detail)? detailUpdated,
     TResult Function()? payment,
     TResult Function(DiscountType dicountType)? updateDiscountType,
     TResult Function(String amount)? updateDiscountAmount,
@@ -65,6 +68,7 @@ mixin _$PaymentEvent {
     required TResult Function(_Started value) started,
     required TResult Function(_UpdateEnterSum value) updateEnterSum,
     required TResult Function(_GetDetail value) getDetail,
+    required TResult Function(_DetailUpdated value) detailUpdated,
     required TResult Function(_Payment value) payment,
     required TResult Function(_DiscountType value) updateDiscountType,
     required TResult Function(_UpdateDiscountAmount value) updateDiscountAmount,
@@ -79,6 +83,7 @@ mixin _$PaymentEvent {
     TResult? Function(_Started value)? started,
     TResult? Function(_UpdateEnterSum value)? updateEnterSum,
     TResult? Function(_GetDetail value)? getDetail,
+    TResult? Function(_DetailUpdated value)? detailUpdated,
     TResult? Function(_Payment value)? payment,
     TResult? Function(_DiscountType value)? updateDiscountType,
     TResult? Function(_UpdateDiscountAmount value)? updateDiscountAmount,
@@ -93,6 +98,7 @@ mixin _$PaymentEvent {
     TResult Function(_Started value)? started,
     TResult Function(_UpdateEnterSum value)? updateEnterSum,
     TResult Function(_GetDetail value)? getDetail,
+    TResult Function(_DetailUpdated value)? detailUpdated,
     TResult Function(_Payment value)? payment,
     TResult Function(_DiscountType value)? updateDiscountType,
     TResult Function(_UpdateDiscountAmount value)? updateDiscountAmount,
@@ -198,6 +204,7 @@ class _$StartedImpl implements _Started {
     required TResult Function(String? tableId, String? orderId) started,
     required TResult Function(String symbol) updateEnterSum,
     required TResult Function() getDetail,
+    required TResult Function(ArchiveDetailModel? detail) detailUpdated,
     required TResult Function() payment,
     required TResult Function(DiscountType dicountType) updateDiscountType,
     required TResult Function(String amount) updateDiscountAmount,
@@ -216,6 +223,7 @@ class _$StartedImpl implements _Started {
     TResult? Function(String? tableId, String? orderId)? started,
     TResult? Function(String symbol)? updateEnterSum,
     TResult? Function()? getDetail,
+    TResult? Function(ArchiveDetailModel? detail)? detailUpdated,
     TResult? Function()? payment,
     TResult? Function(DiscountType dicountType)? updateDiscountType,
     TResult? Function(String amount)? updateDiscountAmount,
@@ -233,6 +241,7 @@ class _$StartedImpl implements _Started {
     TResult Function(String? tableId, String? orderId)? started,
     TResult Function(String symbol)? updateEnterSum,
     TResult Function()? getDetail,
+    TResult Function(ArchiveDetailModel? detail)? detailUpdated,
     TResult Function()? payment,
     TResult Function(DiscountType dicountType)? updateDiscountType,
     TResult Function(String amount)? updateDiscountAmount,
@@ -254,6 +263,7 @@ class _$StartedImpl implements _Started {
     required TResult Function(_Started value) started,
     required TResult Function(_UpdateEnterSum value) updateEnterSum,
     required TResult Function(_GetDetail value) getDetail,
+    required TResult Function(_DetailUpdated value) detailUpdated,
     required TResult Function(_Payment value) payment,
     required TResult Function(_DiscountType value) updateDiscountType,
     required TResult Function(_UpdateDiscountAmount value) updateDiscountAmount,
@@ -271,6 +281,7 @@ class _$StartedImpl implements _Started {
     TResult? Function(_Started value)? started,
     TResult? Function(_UpdateEnterSum value)? updateEnterSum,
     TResult? Function(_GetDetail value)? getDetail,
+    TResult? Function(_DetailUpdated value)? detailUpdated,
     TResult? Function(_Payment value)? payment,
     TResult? Function(_DiscountType value)? updateDiscountType,
     TResult? Function(_UpdateDiscountAmount value)? updateDiscountAmount,
@@ -288,6 +299,7 @@ class _$StartedImpl implements _Started {
     TResult Function(_Started value)? started,
     TResult Function(_UpdateEnterSum value)? updateEnterSum,
     TResult Function(_GetDetail value)? getDetail,
+    TResult Function(_DetailUpdated value)? detailUpdated,
     TResult Function(_Payment value)? payment,
     TResult Function(_DiscountType value)? updateDiscountType,
     TResult Function(_UpdateDiscountAmount value)? updateDiscountAmount,
@@ -383,6 +395,7 @@ class _$UpdateEnterSumImpl implements _UpdateEnterSum {
     required TResult Function(String? tableId, String? orderId) started,
     required TResult Function(String symbol) updateEnterSum,
     required TResult Function() getDetail,
+    required TResult Function(ArchiveDetailModel? detail) detailUpdated,
     required TResult Function() payment,
     required TResult Function(DiscountType dicountType) updateDiscountType,
     required TResult Function(String amount) updateDiscountAmount,
@@ -401,6 +414,7 @@ class _$UpdateEnterSumImpl implements _UpdateEnterSum {
     TResult? Function(String? tableId, String? orderId)? started,
     TResult? Function(String symbol)? updateEnterSum,
     TResult? Function()? getDetail,
+    TResult? Function(ArchiveDetailModel? detail)? detailUpdated,
     TResult? Function()? payment,
     TResult? Function(DiscountType dicountType)? updateDiscountType,
     TResult? Function(String amount)? updateDiscountAmount,
@@ -418,6 +432,7 @@ class _$UpdateEnterSumImpl implements _UpdateEnterSum {
     TResult Function(String? tableId, String? orderId)? started,
     TResult Function(String symbol)? updateEnterSum,
     TResult Function()? getDetail,
+    TResult Function(ArchiveDetailModel? detail)? detailUpdated,
     TResult Function()? payment,
     TResult Function(DiscountType dicountType)? updateDiscountType,
     TResult Function(String amount)? updateDiscountAmount,
@@ -439,6 +454,7 @@ class _$UpdateEnterSumImpl implements _UpdateEnterSum {
     required TResult Function(_Started value) started,
     required TResult Function(_UpdateEnterSum value) updateEnterSum,
     required TResult Function(_GetDetail value) getDetail,
+    required TResult Function(_DetailUpdated value) detailUpdated,
     required TResult Function(_Payment value) payment,
     required TResult Function(_DiscountType value) updateDiscountType,
     required TResult Function(_UpdateDiscountAmount value) updateDiscountAmount,
@@ -456,6 +472,7 @@ class _$UpdateEnterSumImpl implements _UpdateEnterSum {
     TResult? Function(_Started value)? started,
     TResult? Function(_UpdateEnterSum value)? updateEnterSum,
     TResult? Function(_GetDetail value)? getDetail,
+    TResult? Function(_DetailUpdated value)? detailUpdated,
     TResult? Function(_Payment value)? payment,
     TResult? Function(_DiscountType value)? updateDiscountType,
     TResult? Function(_UpdateDiscountAmount value)? updateDiscountAmount,
@@ -473,6 +490,7 @@ class _$UpdateEnterSumImpl implements _UpdateEnterSum {
     TResult Function(_Started value)? started,
     TResult Function(_UpdateEnterSum value)? updateEnterSum,
     TResult Function(_GetDetail value)? getDetail,
+    TResult Function(_DetailUpdated value)? detailUpdated,
     TResult Function(_Payment value)? payment,
     TResult Function(_DiscountType value)? updateDiscountType,
     TResult Function(_UpdateDiscountAmount value)? updateDiscountAmount,
@@ -540,6 +558,7 @@ class _$GetDetailImpl implements _GetDetail {
     required TResult Function(String? tableId, String? orderId) started,
     required TResult Function(String symbol) updateEnterSum,
     required TResult Function() getDetail,
+    required TResult Function(ArchiveDetailModel? detail) detailUpdated,
     required TResult Function() payment,
     required TResult Function(DiscountType dicountType) updateDiscountType,
     required TResult Function(String amount) updateDiscountAmount,
@@ -558,6 +577,7 @@ class _$GetDetailImpl implements _GetDetail {
     TResult? Function(String? tableId, String? orderId)? started,
     TResult? Function(String symbol)? updateEnterSum,
     TResult? Function()? getDetail,
+    TResult? Function(ArchiveDetailModel? detail)? detailUpdated,
     TResult? Function()? payment,
     TResult? Function(DiscountType dicountType)? updateDiscountType,
     TResult? Function(String amount)? updateDiscountAmount,
@@ -575,6 +595,7 @@ class _$GetDetailImpl implements _GetDetail {
     TResult Function(String? tableId, String? orderId)? started,
     TResult Function(String symbol)? updateEnterSum,
     TResult Function()? getDetail,
+    TResult Function(ArchiveDetailModel? detail)? detailUpdated,
     TResult Function()? payment,
     TResult Function(DiscountType dicountType)? updateDiscountType,
     TResult Function(String amount)? updateDiscountAmount,
@@ -596,6 +617,7 @@ class _$GetDetailImpl implements _GetDetail {
     required TResult Function(_Started value) started,
     required TResult Function(_UpdateEnterSum value) updateEnterSum,
     required TResult Function(_GetDetail value) getDetail,
+    required TResult Function(_DetailUpdated value) detailUpdated,
     required TResult Function(_Payment value) payment,
     required TResult Function(_DiscountType value) updateDiscountType,
     required TResult Function(_UpdateDiscountAmount value) updateDiscountAmount,
@@ -613,6 +635,7 @@ class _$GetDetailImpl implements _GetDetail {
     TResult? Function(_Started value)? started,
     TResult? Function(_UpdateEnterSum value)? updateEnterSum,
     TResult? Function(_GetDetail value)? getDetail,
+    TResult? Function(_DetailUpdated value)? detailUpdated,
     TResult? Function(_Payment value)? payment,
     TResult? Function(_DiscountType value)? updateDiscountType,
     TResult? Function(_UpdateDiscountAmount value)? updateDiscountAmount,
@@ -630,6 +653,7 @@ class _$GetDetailImpl implements _GetDetail {
     TResult Function(_Started value)? started,
     TResult Function(_UpdateEnterSum value)? updateEnterSum,
     TResult Function(_GetDetail value)? getDetail,
+    TResult Function(_DetailUpdated value)? detailUpdated,
     TResult Function(_Payment value)? payment,
     TResult Function(_DiscountType value)? updateDiscountType,
     TResult Function(_UpdateDiscountAmount value)? updateDiscountAmount,
@@ -648,6 +672,209 @@ class _$GetDetailImpl implements _GetDetail {
 
 abstract class _GetDetail implements PaymentEvent {
   const factory _GetDetail() = _$GetDetailImpl;
+}
+
+/// @nodoc
+abstract class _$$DetailUpdatedImplCopyWith<$Res> {
+  factory _$$DetailUpdatedImplCopyWith(
+          _$DetailUpdatedImpl value, $Res Function(_$DetailUpdatedImpl) then) =
+      __$$DetailUpdatedImplCopyWithImpl<$Res>;
+  @useResult
+  $Res call({ArchiveDetailModel? detail});
+
+  $ArchiveDetailModelCopyWith<$Res>? get detail;
+}
+
+/// @nodoc
+class __$$DetailUpdatedImplCopyWithImpl<$Res>
+    extends _$PaymentEventCopyWithImpl<$Res, _$DetailUpdatedImpl>
+    implements _$$DetailUpdatedImplCopyWith<$Res> {
+  __$$DetailUpdatedImplCopyWithImpl(
+      _$DetailUpdatedImpl _value, $Res Function(_$DetailUpdatedImpl) _then)
+      : super(_value, _then);
+
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? detail = freezed,
+  }) {
+    return _then(_$DetailUpdatedImpl(
+      detail: freezed == detail
+          ? _value.detail
+          : detail // ignore: cast_nullable_to_non_nullable
+              as ArchiveDetailModel?,
+    ));
+  }
+
+  @override
+  @pragma('vm:prefer-inline')
+  $ArchiveDetailModelCopyWith<$Res>? get detail {
+    if (_value.detail == null) {
+      return null;
+    }
+
+    return $ArchiveDetailModelCopyWith<$Res>(_value.detail!, (value) {
+      return _then(_value.copyWith(detail: value));
+    });
+  }
+}
+
+/// @nodoc
+
+class _$DetailUpdatedImpl implements _DetailUpdated {
+  const _$DetailUpdatedImpl({this.detail});
+
+  @override
+  final ArchiveDetailModel? detail;
+
+  @override
+  String toString() {
+    return 'PaymentEvent.detailUpdated(detail: $detail)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$DetailUpdatedImpl &&
+            (identical(other.detail, detail) || other.detail == detail));
+  }
+
+  @override
+  int get hashCode => Object.hash(runtimeType, detail);
+
+  @JsonKey(ignore: true)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$DetailUpdatedImplCopyWith<_$DetailUpdatedImpl> get copyWith =>
+      __$$DetailUpdatedImplCopyWithImpl<_$DetailUpdatedImpl>(this, _$identity);
+
+  @override
+  @optionalTypeArgs
+  TResult when<TResult extends Object?>({
+    required TResult Function(String? tableId, String? orderId) started,
+    required TResult Function(String symbol) updateEnterSum,
+    required TResult Function() getDetail,
+    required TResult Function(ArchiveDetailModel? detail) detailUpdated,
+    required TResult Function() payment,
+    required TResult Function(DiscountType dicountType) updateDiscountType,
+    required TResult Function(String amount) updateDiscountAmount,
+    required TResult Function(PaymentType paymentType) updatePaymentType,
+    required TResult Function(double hourPrice) upadeHourPrice,
+    required TResult Function(Map<String, DateTime> timestamps)
+        itemTimestampsLoaded,
+    required TResult Function(bool applyService) updateApplyService,
+  }) {
+    return detailUpdated(detail);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult? whenOrNull<TResult extends Object?>({
+    TResult? Function(String? tableId, String? orderId)? started,
+    TResult? Function(String symbol)? updateEnterSum,
+    TResult? Function()? getDetail,
+    TResult? Function(ArchiveDetailModel? detail)? detailUpdated,
+    TResult? Function()? payment,
+    TResult? Function(DiscountType dicountType)? updateDiscountType,
+    TResult? Function(String amount)? updateDiscountAmount,
+    TResult? Function(PaymentType paymentType)? updatePaymentType,
+    TResult? Function(double hourPrice)? upadeHourPrice,
+    TResult? Function(Map<String, DateTime> timestamps)? itemTimestampsLoaded,
+    TResult? Function(bool applyService)? updateApplyService,
+  }) {
+    return detailUpdated?.call(detail);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult maybeWhen<TResult extends Object?>({
+    TResult Function(String? tableId, String? orderId)? started,
+    TResult Function(String symbol)? updateEnterSum,
+    TResult Function()? getDetail,
+    TResult Function(ArchiveDetailModel? detail)? detailUpdated,
+    TResult Function()? payment,
+    TResult Function(DiscountType dicountType)? updateDiscountType,
+    TResult Function(String amount)? updateDiscountAmount,
+    TResult Function(PaymentType paymentType)? updatePaymentType,
+    TResult Function(double hourPrice)? upadeHourPrice,
+    TResult Function(Map<String, DateTime> timestamps)? itemTimestampsLoaded,
+    TResult Function(bool applyService)? updateApplyService,
+    required TResult orElse(),
+  }) {
+    if (detailUpdated != null) {
+      return detailUpdated(detail);
+    }
+    return orElse();
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult map<TResult extends Object?>({
+    required TResult Function(_Started value) started,
+    required TResult Function(_UpdateEnterSum value) updateEnterSum,
+    required TResult Function(_GetDetail value) getDetail,
+    required TResult Function(_DetailUpdated value) detailUpdated,
+    required TResult Function(_Payment value) payment,
+    required TResult Function(_DiscountType value) updateDiscountType,
+    required TResult Function(_UpdateDiscountAmount value) updateDiscountAmount,
+    required TResult Function(_UpdatePaymentType value) updatePaymentType,
+    required TResult Function(_UpdateHourPrice value) upadeHourPrice,
+    required TResult Function(_ItemTimestampsLoaded value) itemTimestampsLoaded,
+    required TResult Function(_UpdateApplyService value) updateApplyService,
+  }) {
+    return detailUpdated(this);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult? mapOrNull<TResult extends Object?>({
+    TResult? Function(_Started value)? started,
+    TResult? Function(_UpdateEnterSum value)? updateEnterSum,
+    TResult? Function(_GetDetail value)? getDetail,
+    TResult? Function(_DetailUpdated value)? detailUpdated,
+    TResult? Function(_Payment value)? payment,
+    TResult? Function(_DiscountType value)? updateDiscountType,
+    TResult? Function(_UpdateDiscountAmount value)? updateDiscountAmount,
+    TResult? Function(_UpdatePaymentType value)? updatePaymentType,
+    TResult? Function(_UpdateHourPrice value)? upadeHourPrice,
+    TResult? Function(_ItemTimestampsLoaded value)? itemTimestampsLoaded,
+    TResult? Function(_UpdateApplyService value)? updateApplyService,
+  }) {
+    return detailUpdated?.call(this);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult maybeMap<TResult extends Object?>({
+    TResult Function(_Started value)? started,
+    TResult Function(_UpdateEnterSum value)? updateEnterSum,
+    TResult Function(_GetDetail value)? getDetail,
+    TResult Function(_DetailUpdated value)? detailUpdated,
+    TResult Function(_Payment value)? payment,
+    TResult Function(_DiscountType value)? updateDiscountType,
+    TResult Function(_UpdateDiscountAmount value)? updateDiscountAmount,
+    TResult Function(_UpdatePaymentType value)? updatePaymentType,
+    TResult Function(_UpdateHourPrice value)? upadeHourPrice,
+    TResult Function(_ItemTimestampsLoaded value)? itemTimestampsLoaded,
+    TResult Function(_UpdateApplyService value)? updateApplyService,
+    required TResult orElse(),
+  }) {
+    if (detailUpdated != null) {
+      return detailUpdated(this);
+    }
+    return orElse();
+  }
+}
+
+abstract class _DetailUpdated implements PaymentEvent {
+  const factory _DetailUpdated({final ArchiveDetailModel? detail}) =
+      _$DetailUpdatedImpl;
+
+  ArchiveDetailModel? get detail;
+  @JsonKey(ignore: true)
+  _$$DetailUpdatedImplCopyWith<_$DetailUpdatedImpl> get copyWith =>
+      throw _privateConstructorUsedError;
 }
 
 /// @nodoc
@@ -691,6 +918,7 @@ class _$PaymentImpl implements _Payment {
     required TResult Function(String? tableId, String? orderId) started,
     required TResult Function(String symbol) updateEnterSum,
     required TResult Function() getDetail,
+    required TResult Function(ArchiveDetailModel? detail) detailUpdated,
     required TResult Function() payment,
     required TResult Function(DiscountType dicountType) updateDiscountType,
     required TResult Function(String amount) updateDiscountAmount,
@@ -709,6 +937,7 @@ class _$PaymentImpl implements _Payment {
     TResult? Function(String? tableId, String? orderId)? started,
     TResult? Function(String symbol)? updateEnterSum,
     TResult? Function()? getDetail,
+    TResult? Function(ArchiveDetailModel? detail)? detailUpdated,
     TResult? Function()? payment,
     TResult? Function(DiscountType dicountType)? updateDiscountType,
     TResult? Function(String amount)? updateDiscountAmount,
@@ -726,6 +955,7 @@ class _$PaymentImpl implements _Payment {
     TResult Function(String? tableId, String? orderId)? started,
     TResult Function(String symbol)? updateEnterSum,
     TResult Function()? getDetail,
+    TResult Function(ArchiveDetailModel? detail)? detailUpdated,
     TResult Function()? payment,
     TResult Function(DiscountType dicountType)? updateDiscountType,
     TResult Function(String amount)? updateDiscountAmount,
@@ -747,6 +977,7 @@ class _$PaymentImpl implements _Payment {
     required TResult Function(_Started value) started,
     required TResult Function(_UpdateEnterSum value) updateEnterSum,
     required TResult Function(_GetDetail value) getDetail,
+    required TResult Function(_DetailUpdated value) detailUpdated,
     required TResult Function(_Payment value) payment,
     required TResult Function(_DiscountType value) updateDiscountType,
     required TResult Function(_UpdateDiscountAmount value) updateDiscountAmount,
@@ -764,6 +995,7 @@ class _$PaymentImpl implements _Payment {
     TResult? Function(_Started value)? started,
     TResult? Function(_UpdateEnterSum value)? updateEnterSum,
     TResult? Function(_GetDetail value)? getDetail,
+    TResult? Function(_DetailUpdated value)? detailUpdated,
     TResult? Function(_Payment value)? payment,
     TResult? Function(_DiscountType value)? updateDiscountType,
     TResult? Function(_UpdateDiscountAmount value)? updateDiscountAmount,
@@ -781,6 +1013,7 @@ class _$PaymentImpl implements _Payment {
     TResult Function(_Started value)? started,
     TResult Function(_UpdateEnterSum value)? updateEnterSum,
     TResult Function(_GetDetail value)? getDetail,
+    TResult Function(_DetailUpdated value)? detailUpdated,
     TResult Function(_Payment value)? payment,
     TResult Function(_DiscountType value)? updateDiscountType,
     TResult Function(_UpdateDiscountAmount value)? updateDiscountAmount,
@@ -869,6 +1102,7 @@ class _$DiscountTypeImpl implements _DiscountType {
     required TResult Function(String? tableId, String? orderId) started,
     required TResult Function(String symbol) updateEnterSum,
     required TResult Function() getDetail,
+    required TResult Function(ArchiveDetailModel? detail) detailUpdated,
     required TResult Function() payment,
     required TResult Function(DiscountType dicountType) updateDiscountType,
     required TResult Function(String amount) updateDiscountAmount,
@@ -887,6 +1121,7 @@ class _$DiscountTypeImpl implements _DiscountType {
     TResult? Function(String? tableId, String? orderId)? started,
     TResult? Function(String symbol)? updateEnterSum,
     TResult? Function()? getDetail,
+    TResult? Function(ArchiveDetailModel? detail)? detailUpdated,
     TResult? Function()? payment,
     TResult? Function(DiscountType dicountType)? updateDiscountType,
     TResult? Function(String amount)? updateDiscountAmount,
@@ -904,6 +1139,7 @@ class _$DiscountTypeImpl implements _DiscountType {
     TResult Function(String? tableId, String? orderId)? started,
     TResult Function(String symbol)? updateEnterSum,
     TResult Function()? getDetail,
+    TResult Function(ArchiveDetailModel? detail)? detailUpdated,
     TResult Function()? payment,
     TResult Function(DiscountType dicountType)? updateDiscountType,
     TResult Function(String amount)? updateDiscountAmount,
@@ -925,6 +1161,7 @@ class _$DiscountTypeImpl implements _DiscountType {
     required TResult Function(_Started value) started,
     required TResult Function(_UpdateEnterSum value) updateEnterSum,
     required TResult Function(_GetDetail value) getDetail,
+    required TResult Function(_DetailUpdated value) detailUpdated,
     required TResult Function(_Payment value) payment,
     required TResult Function(_DiscountType value) updateDiscountType,
     required TResult Function(_UpdateDiscountAmount value) updateDiscountAmount,
@@ -942,6 +1179,7 @@ class _$DiscountTypeImpl implements _DiscountType {
     TResult? Function(_Started value)? started,
     TResult? Function(_UpdateEnterSum value)? updateEnterSum,
     TResult? Function(_GetDetail value)? getDetail,
+    TResult? Function(_DetailUpdated value)? detailUpdated,
     TResult? Function(_Payment value)? payment,
     TResult? Function(_DiscountType value)? updateDiscountType,
     TResult? Function(_UpdateDiscountAmount value)? updateDiscountAmount,
@@ -959,6 +1197,7 @@ class _$DiscountTypeImpl implements _DiscountType {
     TResult Function(_Started value)? started,
     TResult Function(_UpdateEnterSum value)? updateEnterSum,
     TResult Function(_GetDetail value)? getDetail,
+    TResult Function(_DetailUpdated value)? detailUpdated,
     TResult Function(_Payment value)? payment,
     TResult Function(_DiscountType value)? updateDiscountType,
     TResult Function(_UpdateDiscountAmount value)? updateDiscountAmount,
@@ -1054,6 +1293,7 @@ class _$UpdateDiscountAmountImpl implements _UpdateDiscountAmount {
     required TResult Function(String? tableId, String? orderId) started,
     required TResult Function(String symbol) updateEnterSum,
     required TResult Function() getDetail,
+    required TResult Function(ArchiveDetailModel? detail) detailUpdated,
     required TResult Function() payment,
     required TResult Function(DiscountType dicountType) updateDiscountType,
     required TResult Function(String amount) updateDiscountAmount,
@@ -1072,6 +1312,7 @@ class _$UpdateDiscountAmountImpl implements _UpdateDiscountAmount {
     TResult? Function(String? tableId, String? orderId)? started,
     TResult? Function(String symbol)? updateEnterSum,
     TResult? Function()? getDetail,
+    TResult? Function(ArchiveDetailModel? detail)? detailUpdated,
     TResult? Function()? payment,
     TResult? Function(DiscountType dicountType)? updateDiscountType,
     TResult? Function(String amount)? updateDiscountAmount,
@@ -1089,6 +1330,7 @@ class _$UpdateDiscountAmountImpl implements _UpdateDiscountAmount {
     TResult Function(String? tableId, String? orderId)? started,
     TResult Function(String symbol)? updateEnterSum,
     TResult Function()? getDetail,
+    TResult Function(ArchiveDetailModel? detail)? detailUpdated,
     TResult Function()? payment,
     TResult Function(DiscountType dicountType)? updateDiscountType,
     TResult Function(String amount)? updateDiscountAmount,
@@ -1110,6 +1352,7 @@ class _$UpdateDiscountAmountImpl implements _UpdateDiscountAmount {
     required TResult Function(_Started value) started,
     required TResult Function(_UpdateEnterSum value) updateEnterSum,
     required TResult Function(_GetDetail value) getDetail,
+    required TResult Function(_DetailUpdated value) detailUpdated,
     required TResult Function(_Payment value) payment,
     required TResult Function(_DiscountType value) updateDiscountType,
     required TResult Function(_UpdateDiscountAmount value) updateDiscountAmount,
@@ -1127,6 +1370,7 @@ class _$UpdateDiscountAmountImpl implements _UpdateDiscountAmount {
     TResult? Function(_Started value)? started,
     TResult? Function(_UpdateEnterSum value)? updateEnterSum,
     TResult? Function(_GetDetail value)? getDetail,
+    TResult? Function(_DetailUpdated value)? detailUpdated,
     TResult? Function(_Payment value)? payment,
     TResult? Function(_DiscountType value)? updateDiscountType,
     TResult? Function(_UpdateDiscountAmount value)? updateDiscountAmount,
@@ -1144,6 +1388,7 @@ class _$UpdateDiscountAmountImpl implements _UpdateDiscountAmount {
     TResult Function(_Started value)? started,
     TResult Function(_UpdateEnterSum value)? updateEnterSum,
     TResult Function(_GetDetail value)? getDetail,
+    TResult Function(_DetailUpdated value)? detailUpdated,
     TResult Function(_Payment value)? payment,
     TResult Function(_DiscountType value)? updateDiscountType,
     TResult Function(_UpdateDiscountAmount value)? updateDiscountAmount,
@@ -1239,6 +1484,7 @@ class _$UpdatePaymentTypeImpl implements _UpdatePaymentType {
     required TResult Function(String? tableId, String? orderId) started,
     required TResult Function(String symbol) updateEnterSum,
     required TResult Function() getDetail,
+    required TResult Function(ArchiveDetailModel? detail) detailUpdated,
     required TResult Function() payment,
     required TResult Function(DiscountType dicountType) updateDiscountType,
     required TResult Function(String amount) updateDiscountAmount,
@@ -1257,6 +1503,7 @@ class _$UpdatePaymentTypeImpl implements _UpdatePaymentType {
     TResult? Function(String? tableId, String? orderId)? started,
     TResult? Function(String symbol)? updateEnterSum,
     TResult? Function()? getDetail,
+    TResult? Function(ArchiveDetailModel? detail)? detailUpdated,
     TResult? Function()? payment,
     TResult? Function(DiscountType dicountType)? updateDiscountType,
     TResult? Function(String amount)? updateDiscountAmount,
@@ -1274,6 +1521,7 @@ class _$UpdatePaymentTypeImpl implements _UpdatePaymentType {
     TResult Function(String? tableId, String? orderId)? started,
     TResult Function(String symbol)? updateEnterSum,
     TResult Function()? getDetail,
+    TResult Function(ArchiveDetailModel? detail)? detailUpdated,
     TResult Function()? payment,
     TResult Function(DiscountType dicountType)? updateDiscountType,
     TResult Function(String amount)? updateDiscountAmount,
@@ -1295,6 +1543,7 @@ class _$UpdatePaymentTypeImpl implements _UpdatePaymentType {
     required TResult Function(_Started value) started,
     required TResult Function(_UpdateEnterSum value) updateEnterSum,
     required TResult Function(_GetDetail value) getDetail,
+    required TResult Function(_DetailUpdated value) detailUpdated,
     required TResult Function(_Payment value) payment,
     required TResult Function(_DiscountType value) updateDiscountType,
     required TResult Function(_UpdateDiscountAmount value) updateDiscountAmount,
@@ -1312,6 +1561,7 @@ class _$UpdatePaymentTypeImpl implements _UpdatePaymentType {
     TResult? Function(_Started value)? started,
     TResult? Function(_UpdateEnterSum value)? updateEnterSum,
     TResult? Function(_GetDetail value)? getDetail,
+    TResult? Function(_DetailUpdated value)? detailUpdated,
     TResult? Function(_Payment value)? payment,
     TResult? Function(_DiscountType value)? updateDiscountType,
     TResult? Function(_UpdateDiscountAmount value)? updateDiscountAmount,
@@ -1329,6 +1579,7 @@ class _$UpdatePaymentTypeImpl implements _UpdatePaymentType {
     TResult Function(_Started value)? started,
     TResult Function(_UpdateEnterSum value)? updateEnterSum,
     TResult Function(_GetDetail value)? getDetail,
+    TResult Function(_DetailUpdated value)? detailUpdated,
     TResult Function(_Payment value)? payment,
     TResult Function(_DiscountType value)? updateDiscountType,
     TResult Function(_UpdateDiscountAmount value)? updateDiscountAmount,
@@ -1424,6 +1675,7 @@ class _$UpdateHourPriceImpl implements _UpdateHourPrice {
     required TResult Function(String? tableId, String? orderId) started,
     required TResult Function(String symbol) updateEnterSum,
     required TResult Function() getDetail,
+    required TResult Function(ArchiveDetailModel? detail) detailUpdated,
     required TResult Function() payment,
     required TResult Function(DiscountType dicountType) updateDiscountType,
     required TResult Function(String amount) updateDiscountAmount,
@@ -1442,6 +1694,7 @@ class _$UpdateHourPriceImpl implements _UpdateHourPrice {
     TResult? Function(String? tableId, String? orderId)? started,
     TResult? Function(String symbol)? updateEnterSum,
     TResult? Function()? getDetail,
+    TResult? Function(ArchiveDetailModel? detail)? detailUpdated,
     TResult? Function()? payment,
     TResult? Function(DiscountType dicountType)? updateDiscountType,
     TResult? Function(String amount)? updateDiscountAmount,
@@ -1459,6 +1712,7 @@ class _$UpdateHourPriceImpl implements _UpdateHourPrice {
     TResult Function(String? tableId, String? orderId)? started,
     TResult Function(String symbol)? updateEnterSum,
     TResult Function()? getDetail,
+    TResult Function(ArchiveDetailModel? detail)? detailUpdated,
     TResult Function()? payment,
     TResult Function(DiscountType dicountType)? updateDiscountType,
     TResult Function(String amount)? updateDiscountAmount,
@@ -1480,6 +1734,7 @@ class _$UpdateHourPriceImpl implements _UpdateHourPrice {
     required TResult Function(_Started value) started,
     required TResult Function(_UpdateEnterSum value) updateEnterSum,
     required TResult Function(_GetDetail value) getDetail,
+    required TResult Function(_DetailUpdated value) detailUpdated,
     required TResult Function(_Payment value) payment,
     required TResult Function(_DiscountType value) updateDiscountType,
     required TResult Function(_UpdateDiscountAmount value) updateDiscountAmount,
@@ -1497,6 +1752,7 @@ class _$UpdateHourPriceImpl implements _UpdateHourPrice {
     TResult? Function(_Started value)? started,
     TResult? Function(_UpdateEnterSum value)? updateEnterSum,
     TResult? Function(_GetDetail value)? getDetail,
+    TResult? Function(_DetailUpdated value)? detailUpdated,
     TResult? Function(_Payment value)? payment,
     TResult? Function(_DiscountType value)? updateDiscountType,
     TResult? Function(_UpdateDiscountAmount value)? updateDiscountAmount,
@@ -1514,6 +1770,7 @@ class _$UpdateHourPriceImpl implements _UpdateHourPrice {
     TResult Function(_Started value)? started,
     TResult Function(_UpdateEnterSum value)? updateEnterSum,
     TResult Function(_GetDetail value)? getDetail,
+    TResult Function(_DetailUpdated value)? detailUpdated,
     TResult Function(_Payment value)? payment,
     TResult Function(_DiscountType value)? updateDiscountType,
     TResult Function(_UpdateDiscountAmount value)? updateDiscountAmount,
@@ -1618,6 +1875,7 @@ class _$ItemTimestampsLoadedImpl implements _ItemTimestampsLoaded {
     required TResult Function(String? tableId, String? orderId) started,
     required TResult Function(String symbol) updateEnterSum,
     required TResult Function() getDetail,
+    required TResult Function(ArchiveDetailModel? detail) detailUpdated,
     required TResult Function() payment,
     required TResult Function(DiscountType dicountType) updateDiscountType,
     required TResult Function(String amount) updateDiscountAmount,
@@ -1636,6 +1894,7 @@ class _$ItemTimestampsLoadedImpl implements _ItemTimestampsLoaded {
     TResult? Function(String? tableId, String? orderId)? started,
     TResult? Function(String symbol)? updateEnterSum,
     TResult? Function()? getDetail,
+    TResult? Function(ArchiveDetailModel? detail)? detailUpdated,
     TResult? Function()? payment,
     TResult? Function(DiscountType dicountType)? updateDiscountType,
     TResult? Function(String amount)? updateDiscountAmount,
@@ -1653,6 +1912,7 @@ class _$ItemTimestampsLoadedImpl implements _ItemTimestampsLoaded {
     TResult Function(String? tableId, String? orderId)? started,
     TResult Function(String symbol)? updateEnterSum,
     TResult Function()? getDetail,
+    TResult Function(ArchiveDetailModel? detail)? detailUpdated,
     TResult Function()? payment,
     TResult Function(DiscountType dicountType)? updateDiscountType,
     TResult Function(String amount)? updateDiscountAmount,
@@ -1674,6 +1934,7 @@ class _$ItemTimestampsLoadedImpl implements _ItemTimestampsLoaded {
     required TResult Function(_Started value) started,
     required TResult Function(_UpdateEnterSum value) updateEnterSum,
     required TResult Function(_GetDetail value) getDetail,
+    required TResult Function(_DetailUpdated value) detailUpdated,
     required TResult Function(_Payment value) payment,
     required TResult Function(_DiscountType value) updateDiscountType,
     required TResult Function(_UpdateDiscountAmount value) updateDiscountAmount,
@@ -1691,6 +1952,7 @@ class _$ItemTimestampsLoadedImpl implements _ItemTimestampsLoaded {
     TResult? Function(_Started value)? started,
     TResult? Function(_UpdateEnterSum value)? updateEnterSum,
     TResult? Function(_GetDetail value)? getDetail,
+    TResult? Function(_DetailUpdated value)? detailUpdated,
     TResult? Function(_Payment value)? payment,
     TResult? Function(_DiscountType value)? updateDiscountType,
     TResult? Function(_UpdateDiscountAmount value)? updateDiscountAmount,
@@ -1708,6 +1970,7 @@ class _$ItemTimestampsLoadedImpl implements _ItemTimestampsLoaded {
     TResult Function(_Started value)? started,
     TResult Function(_UpdateEnterSum value)? updateEnterSum,
     TResult Function(_GetDetail value)? getDetail,
+    TResult Function(_DetailUpdated value)? detailUpdated,
     TResult Function(_Payment value)? payment,
     TResult Function(_DiscountType value)? updateDiscountType,
     TResult Function(_UpdateDiscountAmount value)? updateDiscountAmount,
@@ -1804,6 +2067,7 @@ class _$UpdateApplyServiceImpl implements _UpdateApplyService {
     required TResult Function(String? tableId, String? orderId) started,
     required TResult Function(String symbol) updateEnterSum,
     required TResult Function() getDetail,
+    required TResult Function(ArchiveDetailModel? detail) detailUpdated,
     required TResult Function() payment,
     required TResult Function(DiscountType dicountType) updateDiscountType,
     required TResult Function(String amount) updateDiscountAmount,
@@ -1822,6 +2086,7 @@ class _$UpdateApplyServiceImpl implements _UpdateApplyService {
     TResult? Function(String? tableId, String? orderId)? started,
     TResult? Function(String symbol)? updateEnterSum,
     TResult? Function()? getDetail,
+    TResult? Function(ArchiveDetailModel? detail)? detailUpdated,
     TResult? Function()? payment,
     TResult? Function(DiscountType dicountType)? updateDiscountType,
     TResult? Function(String amount)? updateDiscountAmount,
@@ -1839,6 +2104,7 @@ class _$UpdateApplyServiceImpl implements _UpdateApplyService {
     TResult Function(String? tableId, String? orderId)? started,
     TResult Function(String symbol)? updateEnterSum,
     TResult Function()? getDetail,
+    TResult Function(ArchiveDetailModel? detail)? detailUpdated,
     TResult Function()? payment,
     TResult Function(DiscountType dicountType)? updateDiscountType,
     TResult Function(String amount)? updateDiscountAmount,
@@ -1860,6 +2126,7 @@ class _$UpdateApplyServiceImpl implements _UpdateApplyService {
     required TResult Function(_Started value) started,
     required TResult Function(_UpdateEnterSum value) updateEnterSum,
     required TResult Function(_GetDetail value) getDetail,
+    required TResult Function(_DetailUpdated value) detailUpdated,
     required TResult Function(_Payment value) payment,
     required TResult Function(_DiscountType value) updateDiscountType,
     required TResult Function(_UpdateDiscountAmount value) updateDiscountAmount,
@@ -1877,6 +2144,7 @@ class _$UpdateApplyServiceImpl implements _UpdateApplyService {
     TResult? Function(_Started value)? started,
     TResult? Function(_UpdateEnterSum value)? updateEnterSum,
     TResult? Function(_GetDetail value)? getDetail,
+    TResult? Function(_DetailUpdated value)? detailUpdated,
     TResult? Function(_Payment value)? payment,
     TResult? Function(_DiscountType value)? updateDiscountType,
     TResult? Function(_UpdateDiscountAmount value)? updateDiscountAmount,
@@ -1894,6 +2162,7 @@ class _$UpdateApplyServiceImpl implements _UpdateApplyService {
     TResult Function(_Started value)? started,
     TResult Function(_UpdateEnterSum value)? updateEnterSum,
     TResult Function(_GetDetail value)? getDetail,
+    TResult Function(_DetailUpdated value)? detailUpdated,
     TResult Function(_Payment value)? payment,
     TResult Function(_DiscountType value)? updateDiscountType,
     TResult Function(_UpdateDiscountAmount value)? updateDiscountAmount,

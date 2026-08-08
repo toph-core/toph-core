@@ -11,39 +11,46 @@ import 'package:mary_ai_pos/core/services/offline_queue/offline_queue_service.da
 import 'package:mary_ai_pos/core/services/offline_queue/pending_operation.dart';
 import 'package:mary_ai_pos/core/utils/helper/helper_widget.dart';
 import 'package:mary_ai_pos/di.dart' show inject;
-import 'package:mary_ai_pos/features/view/auth/presentation/cubit/auth/auth_cubit.dart';
 import 'package:mary_ai_pos/features/view/auth/presentation/cubit/bloc/user_bloc.dart';
-import 'package:mary_ai_pos/features/view/main/data/models/close_shift/close_shift_request_model.dart';
-import 'package:mary_ai_pos/features/view/main/data/models/open_shift/open_shift_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/shift/shift_response_model.dart';
 import 'package:mary_ai_pos/features/view/main/domain/usecase/check_shift_usecase.dart';
-import 'package:mary_ai_pos/features/view/main/domain/usecase/close_shift_usecase.dart';
 import 'package:mary_ai_pos/core/service/printer/printer_service.dart';
-import 'package:mary_ai_pos/features/view/main/domain/usecase/open_shift_usecase.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 part 'shift_event.dart';
 part 'shift_state.dart';
 part 'shift_bloc.freezed.dart';
 
+/// offline-first-target-architecture.md §4/§8 Phase 2. `_openShift`/
+/// `_closeShift` are local-first, always — a single local commit (write the
+/// local shift record + enqueue the outbox op) that returns without
+/// awaiting the network, same shape every other write in this app now has.
+/// Previously both awaited the real `OpenShiftUsecase`/`CloseShiftUsecase`
+/// call first and only fell back to the queue on a connectivity-classified
+/// failure; a genuine validation rejection (e.g. "already has an open
+/// shift") was therefore visible synchronously. That synchronous rejection
+/// is gone now — a real conflict surfaces later via `OfflineQueueService`'s
+/// quarantine box (§12 rule 5's "deliberate fallback for genuinely
+/// ambiguous cases"), not as an immediate on-screen error. Flagged in
+/// EXECUTION_CONCERNS.md as a real, visible behavior change worth a second
+/// look, not something decided silently.
+///
+/// `_checkShift` is unchanged — it's a one-time startup reconciliation
+/// ("is there already an open shift on this register") that needs a
+/// definitive server answer to be meaningful at all, already cache-first
+/// with a local fallback, and isn't one of the plan's own V1-V9 violations.
 class ShiftBloc extends Bloc<ShiftEvent, ShiftState> {
   late final CheckShiftUsecase _checkShiftUsecase;
-  late final OpenShiftUsecase _openShiftUsecase;
-  late final CloseShiftUsecase _closeShiftUsecase;
   final SharedPreferences _prefs;
   final AppTokenStorage _tokenStorage;
   final PrinterService _printerService;
   //
   ShiftBloc({
     required CheckShiftUsecase checkShiftUsecase,
-    required OpenShiftUsecase openShiftUsecase,
-    required CloseShiftUsecase closeShiftUsecase,
     required SharedPreferences prefs,
     required AppTokenStorage tokenStorage,
     required PrinterService printerService,
   }) : _checkShiftUsecase = checkShiftUsecase,
-       _openShiftUsecase = openShiftUsecase,
-       _closeShiftUsecase = closeShiftUsecase,
        _prefs = prefs,
        _tokenStorage = tokenStorage,
        _printerService = printerService,
@@ -154,182 +161,50 @@ class ShiftBloc extends Bloc<ShiftEvent, ShiftState> {
     );
   }
 
+  /// §4/§9: local-first, always. `local_...` id stands in until sync
+  /// replaces it — `OfflineQueueService.syncAll` resolves the real shift by
+  /// `cash_register_id` at replay time (`_execCloseShift`), not by this id.
+  /// No `AuthCubit.logout()` call here, unlike the old synchronous-success
+  /// path — that immediate-logout behavior only ever fired when the online
+  /// call had already been confirmed by the server; since every close is
+  /// now deferred to replay, this mirrors what the old *offline* branches
+  /// already did (no logout), not the old online branch. Flagged in
+  /// EXECUTION_CONCERNS.md — a real, visible UX change worth a second look.
   Future<void> _closeShift(_CloseShift event, Emitter<ShiftState> emit) async {
     final shift = state.shift;
     if (shift == null) return;
 
-    /// Offline rejimda ochilgan smena — `local_...` ID serverda yo'q, UUID emas.
-    /// Yopishda API chaqirsak 500 (invalid UUID) beradi. Bu holatda ham close
-    /// operatsiyasi navbatga qo'yiladi — ulanish tiklanganda avval navbatdagi
-    /// openShift, keyin closeShift qayta ishlanadi (`OfflineQueueService.syncAll`
-    /// tur bo'yicha guruhlab, shu tartibda qayta yuboradi).
-    if (shift.id.startsWith('local_')) {
-      emit(state.copyWith(status: Status.LOADING));
-      await _printShiftCloseFromState(state);
-      await _enqueueCloseShift(shift.cashRegisterId);
-      await _clearLocalShift();
-      if (emit.isDone) return;
-      showSuccessMessage(
-        navigatorKey.currentContext!,
-        'Smena yopildi (offline, ulanish tiklanganda serverga yuboriladi).',
-      );
-      emit(
-        state.copyWith(
-          status: Status.SUCCESS,
-          shift: null,
-          cardSum: '0',
-          cashSum: '0',
-        ),
-      );
-      return;
-    }
-
     emit(state.copyWith(status: Status.LOADING));
-    final response = await _closeShiftUsecase.call(
-      CloseShiftRequestModel(
-        shiftId: shift.id,
-        closingCard: 0,
-        closingCash: 0,
+    await _printShiftCloseFromState(state);
+    await _enqueueCloseShift(shift.cashRegisterId);
+    await _clearLocalShift();
+    if (emit.isDone) return;
+    showSuccessMessage(
+      navigatorKey.currentContext!,
+      'Smena yopildi — internet kelganda yakunlanadi.',
+    );
+    emit(
+      state.copyWith(
+        status: Status.SUCCESS,
+        shift: null,
+        cardSum: '0',
+        cashSum: '0',
       ),
     );
-    if (emit.isDone) return;
-
-    // Success path
-    if (response.isRight()) {
-      await _printShiftCloseFromState(state);
-      navigatorKey.currentContext!.read<AuthCubit>().logout(
-        onSuccess: () => Navigator.pushNamedAndRemoveUntil(
-          navigatorKey.currentContext!,
-          AppRoutes.loginPinScreen,
-          (route) => false,
-        ),
-      );
-      showSuccessMessage(
-        navigatorKey.currentContext!,
-        "Smena muvafaqqiyatli yopildi",
-      );
-      emit(
-        state.copyWith(
-          status: Status.SUCCESS,
-          shift: null,
-          cardSum: '0',
-          cashSum: '0',
-        ),
-      );
-      await _clearLocalShift();
-      return;
-    }
-
-    // Connectivity-only failure → queue for real replay instead of an error
-    // dead end (previously only the already-`local_`-prefixed case above was
-    // offline-friendly at all; a real shift that failed to close offline just
-    // showed an error with no recovery path).
-    final failure = response.swap().getOrElse(() => const UnknownFailure());
-    if (failure.isConnectivityIssue) {
-      await _printShiftCloseFromState(state);
-      await _enqueueCloseShift(shift.cashRegisterId);
-      await _clearLocalShift();
-      if (emit.isDone) return;
-      showSuccessMessage(
-        navigatorKey.currentContext!,
-        'Smena yopildi (offline, ulanish tiklanganda serverga yuboriladi).',
-      );
-      emit(
-        state.copyWith(
-          status: Status.SUCCESS,
-          shift: null,
-          cardSum: '0',
-          cashSum: '0',
-        ),
-      );
-      return;
-    }
-
-    // Failure path (legacy local-shift bookkeeping fallback)
-    final local = _readLocalShift();
-    if (local != null && (state.shift?.id == local.id)) {
-      await _clearLocalShift();
-      if (emit.isDone) return;
-      showSuccessMessage(
-        navigatorKey.currentContext!,
-        "Smena yopildi (offline).",
-      );
-      emit(
-        state.copyWith(
-          status: Status.SUCCESS,
-          shift: null,
-          cardSum: '0',
-          cashSum: '0',
-        ),
-      );
-      return;
-    }
-
-    // Real (non-connection) rejection — surface it; do not fabricate a closure.
-    showErrorMessage(
-      navigatorKey.currentContext!,
-      failure.getLocalizedMessage(navigatorKey.currentContext!),
-    );
-    emit(state.copyWith(status: Status.ERROR, failure: failure));
   }
 
+  /// §4/§9: local-first, always — a synthetic `local_...` shift is written
+  /// and the open queued unconditionally, no network await first. A real
+  /// validation rejection (e.g. "already has an open shift" on this
+  /// register) is no longer visible synchronously — see the class doc.
   Future<void> _openShift(_OpenShift evente, Emitter<ShiftState> emit) async {
     emit(state.copyWith(status: Status.LOADING));
     final cashRegisterId = await _resolveCashRegisterId();
     final cashierId = _resolveCashierId();
     final openCash = int.tryParse(state.cashSum) ?? 0;
     final openCard = int.tryParse(state.cardSum) ?? 0;
-
-    final response = await _openShiftUsecase.call(
-      OpenShiftModel(
-        cashRegisterId: cashRegisterId,
-        cashierId: cashierId,
-        openCardSum: openCard,
-        openCashSum: openCash,
-      ),
-    );
-    if (emit.isDone) return;
-
-    // Success path
-    if (response.isRight()) {
-      final r = response.getOrElse(
-        () => const ShiftResponseModel(),
-      );
-      await _writeLocalShift(r);
-      Navigator.pushNamedAndRemoveUntil(
-        navigatorKey.currentContext!,
-        AppRoutes.mainScreen,
-        (router) => true,
-      );
-      showSuccessMessage(
-        navigatorKey.currentContext!,
-        "Smena muvafaqqiyatli ochildi",
-      );
-      emit(
-        state.copyWith(
-          status: Status.SUCCESS,
-          shift: r,
-          cardSum: '0',
-          cashSum: '0',
-        ),
-      );
-      return;
-    }
-
-    // Real (non-connection) rejection — surface it; do not fabricate a shift.
-    final failure = response.swap().getOrElse(() => const UnknownFailure());
-    if (!failure.isConnectivityIssue) {
-      showErrorMessage(
-        navigatorKey.currentContext!,
-        failure.getLocalizedMessage(navigatorKey.currentContext!),
-      );
-      emit(state.copyWith(status: Status.ERROR, failure: failure));
-      return;
-    }
-
-    // Connection failure → offline-friendly local shift, queued for real
-    // replay once connectivity returns (see `OfflineQueueService.syncAll`).
     final now = DateTime.now();
+
     final local = ShiftResponseModel(
       id: 'local_${now.millisecondsSinceEpoch}',
       cashRegisterId: cashRegisterId,
@@ -362,7 +237,7 @@ class ShiftBloc extends Bloc<ShiftEvent, ShiftState> {
     );
     showSuccessMessage(
       navigatorKey.currentContext!,
-      "Smena ochildi (offline).",
+      "Smena ochildi",
     );
     emit(
       state.copyWith(

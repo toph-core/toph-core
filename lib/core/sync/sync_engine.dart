@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:mary_ai_pos/di.dart';
 import 'package:mary_ai_pos/features/view/auth/presentation/cubit/bloc/user_bloc.dart';
+import 'package:mary_ai_pos/features/view/main/data/models/archive_detail/archive_detail_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/cafe_tables/cafe_tables_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/category/category_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/goods/goods_model.dart';
@@ -315,9 +316,15 @@ class SyncEngine {
   }
 
   /// §1.2: order/bill state becomes a first-class `LocalDatabase` table kept
-  /// current by this hydration pass (in addition to Phase 2's local-write
-  /// path once that lands) — today's ad hoc `CacheService.saveOrderDetail`
-  /// only ever got written by whichever screen happened to be open.
+  /// current by this hydration pass and by Phase 2's local-write path.
+  /// Deliberately `getPaymentDetailWithTableId` (the `archiveWithId`-backed
+  /// bill/totals shape `ArchiveDetailModel` parses — the same one
+  /// `DetailBloc`/`PaymentBloc` already cache under this exact key via
+  /// `CacheService.saveOrderDetail`), **not** `getOrderItemsRaw` (a
+  /// differently-shaped `order-items` list endpoint used only by
+  /// `OfflineQueueService`'s executors internally) — an earlier draft of
+  /// this method used the latter, which would have handed `DetailBloc`/
+  /// `PaymentBloc` JSON their `ArchiveDetailModel.fromJson` can't parse.
   /// Bounded to currently-busy tables, not every table, since a free table
   /// has no order to fetch.
   Future<void> _hydrateOpenOrderDetails(
@@ -326,12 +333,12 @@ class SyncEngine {
   ) async {
     for (final table in tables.where((t) => t.status == TableStatus.busy)) {
       try {
-        final orderId = await repo.getOrderIdWithTableId(table.id);
-        if (orderId.isEmpty) continue;
-        final detail = (await repo.getOrderItemsRaw(orderId)).fold((_) => null, (r) => r);
-        if (detail != null) {
-          await _cache.saveOrderDetail(table.id, detail);
-          await _localDb.saveOrderDetail(table.id, detail);
+        final detail = (await repo.getPaymentDetailWithTableId(table.id))
+            .fold((_) => null, (r) => r);
+        if (detail is ArchiveDetailModel) {
+          final json = detail.toJson();
+          await _cache.saveOrderDetail(table.id, json);
+          await _localDb.saveOrderDetail(table.id, json);
         }
       } catch (e) {
         if (kDebugMode) {

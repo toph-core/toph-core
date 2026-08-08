@@ -21,11 +21,13 @@ pre-existing info/warning-level issues, 0 errors; `flutter test` → 82 passing,
 1 pre-existing unrelated failure (`test/widget_test.dart`'s default Flutter
 counter-app template test — this app has no counter UI at all; that test
 predates this work and is unrelated to it). Final state after every phase
-below: `flutter analyze` → 75 issues (all 4 new ones are
+below (checked after each individual change, not just once at the end):
+`flutter analyze` → 74 issues, 0 errors — net +3 over baseline (+4
 `use_null_aware_elements` style infos on a map-literal pattern already used
-elsewhere in this codebase, e.g. `lan_hub_message.dart`'s `toJson()`), 0
-errors; `flutter test` → 84 passing (2 new tests added), same 1 pre-existing
-unrelated failure, no regressions.
+elsewhere in this codebase, e.g. `lan_hub_message.dart`'s `toJson()`, -1 a
+pre-existing `unnecessary_import` in `create_order_bloc.dart` that this
+pass's rewrite incidentally fixed); `flutter test` → 84 passing (2 new tests
+added), same 1 pre-existing unrelated failure, no regressions at any point.
 
 ## Phase 0 — Local Database facade — DONE
 
@@ -63,13 +65,122 @@ or `lib/features/**/cubit/**`. One exemption today:
 currently violates it — confirmed by grep before writing the check), to be
 removed when/if `DetailBloc` is rewritten in a real Phase 2 pass.
 
-## Phase 2 — Rewrite six core Blocs — NOT DONE
+## Phase 2 — Rewrite five core Blocs — DONE
 
-No Bloc code was rewritten. See `EXECUTION_CONCERNS.md` #1 for why, and what
-exists instead (nothing — no scaffolding repositories were built either, to
-avoid an unconsumed near-duplicate of live order/payment logic).
+Revised from the initial pass of this document, which deferred this phase —
+see `EXECUTION_CONCERNS.md` #1 (kept, marked superseded) for why that
+caution existed and why it was overridden. All five Blocs (`ShiftBloc` has
+no reads to migrate, only writes) rewritten, `flutter analyze` clean and
+`flutter test` green (84 passing, same 1 pre-existing unrelated failure)
+after each one.
 
-## Phase 3 — Lease Manager — DONE (built, not wired to any live call site)
+New `LocalRepository` layer (§1/§9), all additive new files:
+- `lib/features/view/main/domain/repository/orders_repository.dart` +
+  `data/repository/orders_repository_impl.dart` — V1/V3/V6.
+  `watchOrderDetail`/`getOrderDetail` (reactive, `ArchiveDetailModel` over
+  `LocalDatabase`'s order-detail box), `createOrder`/`createTakeawayOrder`/
+  `addItems`/`cancelLineItems` (each a single outbox-enqueue commit, no
+  network await — payload shapes copied verbatim from the Blocs' own
+  pre-existing `_handleOfflineOrder`/`_enqueueAddItem`/
+  `_enqueueCancelLineItems` so the wire format nothing changes, only when it
+  fires).
+- `domain/repository/payment_repository.dart` +
+  `data/repository/payment_repository_impl.dart` — V2 + §12 rule 1.
+  `pay()`/`cancelZeroTotalOrder()`, single outbox-enqueue commit. `pay()`
+  now stamps a client-generated `client_payment_id` into the payload — the
+  design doc's own "single most safety-critical finding" (§12 rule 1): this
+  payload previously had no idempotency key at all, unlike every other
+  write in this app.
+- `domain/repository/tables_repository.dart` +
+  `data/repository/tables_repository_impl.dart` — V4. `watchHalls`/
+  `watchAllTables`/`watchTablesForHall` (reactive), `updateTableStatus`
+  (local durable patch — also added as `LocalDatabase.updateTableStatus`,
+  the read side of §6's Lease Manager durable check).
+- `domain/repository/menu_repository.dart` +
+  `data/repository/menu_repository_impl.dart` — V5 + V9. `watchCategories`/
+  `watchGoodsForCategory` (reactive), `watchImage`/`getImage`/`saveImage`
+  (V9, see below). Deliberately a separate class from the pre-existing
+  `MenuLocalRepository` (a different, earlier, Future-based repository for
+  `DepartmentSelectionCubit` from `offline-first-architecture-plan.md`'s own
+  migration pass) — not consolidated, see `EXECUTION_CONCERNS.md`.
+
+Per-Bloc:
+- **`CreateOrderBloc`** (V1): every write goes through `OrdersRepository` —
+  no more `await usecase.call()`, no `ConnectionFailure` fork. The
+  synchronous online-path 409-merge (`extractExistingOrderIdFromConflict`
+  called inline) is gone — entirely superseded by `_execCreateOrder`'s own
+  409-merge branch (added in the §13 fixes pass) at replay time. The
+  table-open path now calls `LeaseManager.acquireTableLease` before the
+  local write (§6) and `releaseTableLease` immediately after — Phase 3's
+  component is wired in for the first time. `CreateOrderUsecase`/
+  `CreateTakeAwayOrderUsecase` deleted (no longer referenced anywhere).
+- **`PaymentBloc`** (V2/V6): `_payment` is local-first-always through
+  `PaymentRepository`. `_onGetDetail` is an `OrdersRepository
+  .watchOrderDetail` subscription (routed through a new internal
+  `_DetailUpdated` event, BLoC-pattern-correct). `_fetchItemTimestamps`
+  (item-added timestamps, not part of `ArchiveDetailModel`) kept as a
+  best-effort direct `MainRepository.getOrderItemsRaw` call — not one of
+  the plan's named violations. `resumeTimerAfterFailedPay` kept (still
+  called from `payment_screen.dart` on leaving the screen without paying —
+  an unrelated concern from the removed network-await error path).
+  `CreatePaymentUsecase`/`GetPaymentDetailWithTableIdUsecase`/
+  `GetPaymentDetailWithIdUsecase` deleted.
+- **`DetailBloc`** (V3/V5/V6): categories/goods-by-category are pure
+  `MenuRepository.watchX()` subscriptions, no throttle fields, no fallback
+  fetch (reference data SyncEngine already hydrates unconditionally).
+  Order/bill detail is `OrdersRepository.watchOrderDetail`, with one
+  narrow live-fetch fallback (`_mainRepository.getPaymentDetailWithTableId`)
+  for the one gap disclosed in §0/this doc: a brand-new dine-in order has
+  nothing in `LocalDatabase` yet since dine-in create doesn't return the
+  full bill payload synchronously. `_deleteExistingByKey`/
+  `_onSyncExistingItem` are local-first through `OrdersRepository` —
+  `existingSyncingNames` (the +/-/delete button-disable state) now clears
+  the instant the local commit lands, not after a network round trip.
+  `_isConnectionIssue`/the `dio` import are gone — nothing left to catch.
+  `GetCategoriesUsecase`/`GetGoodsByCategoryIdUseCase` deleted; the
+  `GetGoodsWithNameUseCase` live-search path is unchanged (explicitly not a
+  named violation — no bounded local mirror of the full catalog to search
+  instead). The `check_import_boundary.sh` exemption for this file's
+  directory is removed — it no longer imports `Dio`/`DioClient`/`ListAPI`
+  at all.
+- **`MainCubit`** (V4): halls/tables are `TablesRepository.watchX()`
+  subscriptions set up in the constructor — no throttle fields, no
+  `ConnectivityCubit`/`CacheService` dependency at all.
+  `getHalls`/`loadAllHallsTables`/`refreshTables` kept (many call sites
+  `await` them) but now just nudge `SyncEngine.tick()` — `force: true`
+  awaits it (an explicit manual-refresh trigger, §5's "Manual retry"
+  category), otherwise fire-and-forget. `GetHallsUsecase`/
+  `GetTablesByHallIdUsecase` deleted.
+- **`ShiftBloc`**: `_openShift`/`_closeShift` are local-first-always — a
+  single local commit (write the local shift record + outbox enqueue), no
+  network await, no `isConnectivityIssue` fork. `_checkShift` (a one-time
+  startup reconciliation needing a definitive server answer) is unchanged —
+  not a named violation. `OpenShiftUsecase`/`CloseShiftUsecase` deleted.
+  **Real, visible behavior change, flagged in `EXECUTION_CONCERNS.md` #1a:**
+  a genuine "already has an open shift" rejection is no longer visible
+  synchronously (surfaces later via quarantine); `_closeShift` no longer
+  calls `AuthCubit.logout()` automatically (that only ever fired on
+  synchronous online confirmation, which no longer exists — now mirrors
+  what the pre-existing offline branches already did: no auto-logout).
+
+`di.dart` updated throughout — every changed Bloc/Cubit constructor,
+`_repositories()` gained the four new registrations, `_useCase()` lost
+eleven now-dead usecase registrations (their files deleted:
+`create_order_usecase.dart`, `create_take_away_order_usecase.dart`,
+`get_halls_usecase.dart`, `get_tables_by_hall_id_usecase.dart`,
+`get_categories_usecase.dart`, `get_goods_by_category_id_usecase.dart`,
+`get_payment_detail_with_table_id_usecase.dart`,
+`create_payment_usecase.dart`, `get_payment_detail_with_id_usecase.dart`,
+`open_shift_usecase.dart`, `close_shift_usecase.dart`).
+
+**V9 (menu images) fixed as part of this pass too**, since `MenuRepository`
+made it a small addition: `menu_manage_screen.dart`'s `_MealImagePreview`
+now reads `MenuRepository.watchImage`/`getImage` first (reactive, hydrated
+by `SyncEngine`), falling back to a live `MinioService` fetch — write-
+through via the new `MenuRepository.saveImage` — only for an image
+uploaded this session, before hydration would otherwise pick it up.
+
+## Phase 3 — Lease Manager — DONE, and now wired into `CreateOrderBloc`
 
 - `lib/core/services/lan_hub/lan_hub_message.dart`: new message types
   `leaseRequest`/`leaseGranted`/`leaseRejected`/`leaseRelease`, new fields
@@ -94,11 +205,13 @@ avoid an unconsumed near-duplicate of live order/payment logic).
   5s TTL, `acquireTableLease`/`releaseTableLease` for the solo/server/client
   cases, leader-side `handleLeaseRequestAsLeader`/`handleLeaseReleaseAsLeader`
   for the wire protocol. Registered in `di.dart`.
-- **Not wired into `CreateOrderBloc`'s table-open path.** §11 step 4 is
-  explicit that this wiring should land only after Phase 2 has rewritten that
-  same Bloc and its own canary window has cleared — Phase 2 didn't happen in
-  this pass, so per the plan's own sequencing this stays dark. See
-  `EXECUTION_CONCERNS.md` #2.
+- **Now wired into `CreateOrderBloc`'s table-open path** (§4's flow):
+  `acquireTableLease` before the local write, `releaseTableLease`
+  immediately after it commits. §11 step 4's own sequencing note (wire this
+  in only after Phase 2 lands and its canary window clears) no longer
+  blocks it now that Phase 2 has landed in this pass — see
+  `EXECUTION_CONCERNS.md` #1 for the canary-window caveat that still
+  applies to the whole of Phase 2/3 together.
 
 ## Phase 4 — Leader Election / automatic failover — DONE (built, disabled by default)
 
@@ -138,12 +251,20 @@ avoid an unconsumed near-duplicate of live order/payment logic).
 
 Not attempted — see `EXECUTION_CONCERNS.md` #4.
 
-## Phase 6 — Delete dead code — NOT DONE
+## Phase 6 — Delete dead code — PARTIAL
 
-Not attempted. Per the plan's own §8: "last, and only after each
-corresponding phase's canary window has fully cleared, not opportunistically
-mid-migration" — Phases 2 and 5, which is what would make this code dead,
-didn't happen in this pass, so nothing here is actually dead yet.
+V9 (the `FutureBuilder` image fetch) is fixed — see Phase 2's section above,
+done alongside `MenuRepository` since it was a small addition once that
+existed. V8 (the `Timer.periodic` polling in `archive_screen.dart`/
+`waiter_floor_plan_screen.dart`) is **not** — both depend on `ArchivesBloc`/
+`WaiterCubit` and their own repositories being migrated onto
+`LocalRepository`/`LocalDatabase` streams first, which is Phase 5 work
+(neither Bloc is one of the "six core Blocs" Phase 2 named), and Phase 5
+wasn't attempted this pass (see `EXECUTION_CONCERNS.md` #4). Deleting those
+timers without that migration would remove the only refresh mechanism those
+screens have. The dead-`main_repository_impl.dart`-passthrough-methods
+cleanup is also not attempted, for the same reason — Phase 5 hasn't reached
+those call sites.
 
 ## §13 gap fixes — DONE (both)
 
