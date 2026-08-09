@@ -1,3 +1,4 @@
+import 'package:clock/clock.dart';
 import 'package:mary_ai_pos/core/database/local_database.dart';
 import 'package:mary_ai_pos/core/services/lan_hub/lan_hub_message.dart';
 import 'package:mary_ai_pos/core/services/lan_hub/lan_hub_service.dart';
@@ -19,13 +20,16 @@ import 'package:mary_ai_pos/features/view/main/data/models/cafe_tables/cafe_tabl
 /// `OrdersRepository`/`CreateOrderBloc` as an ordinary follow-up step (§4's
 /// flow), called only after a `granted` result here.
 ///
-/// **Not yet wired into `CreateOrderBloc`'s table-open path.** §11 step 4 is
-/// explicit that this wiring should land only after Phase 2 has rewritten
-/// that same Bloc onto `LocalRepository`/`LocalDatabase` and that rewrite's
-/// own canary window has cleared — specifically so a table-open regression
-/// can be attributed to one change at a time. This class is additive and
-/// dark until then, the same way Phase 0's `LocalDatabase` shipped dark
-/// before Phase 1 read from it. See EXECUTION_CONCERNS.md.
+/// **Wiring status (BACKEND_SYNC_PLAN.md §6):** this WAS fully wired into
+/// `CreateOrderBloc`'s table-open path; those two call sites are currently
+/// commented out per CLIENT_FACING_OFFLINE_PLAN.md carve-out #2 (table-open
+/// is a pure local write for now, the double-booking race is deferred to
+/// its own work item). So the class is "wired but inert" — kept registered,
+/// server-side lease handlers still attached in `LanHubService.init`, and
+/// re-enabling is a two-line uncomment in `create_order_bloc.dart`. When it
+/// re-enables, note the Waiter screen's create path
+/// (`WaiterLocalRepositoryImpl.createOrder`) enqueues directly and must be
+/// routed through this lease too — see EXECUTION_CONCERNS.md.
 class LeaseResult {
   final bool isGranted;
 
@@ -167,7 +171,10 @@ class LeaseManager {
         .any((t) => t.id == tableId && t.status == TableStatus.busy);
     if (busy) return const LeaseResult.rejected();
 
-    final now = DateTime.now();
+    // package:clock (not raw DateTime.now()) so lease_manager_test.dart can
+    // compress the TTL window via withClock — same reasoning as
+    // OfflineQueueService's backoff clock.
+    final now = clock.now();
     final existing = _ephemeralClaims[tableId];
     if (existing != null &&
         now.difference(existing.claimedAt) < _ephemeralTtl &&

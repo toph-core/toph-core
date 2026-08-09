@@ -145,9 +145,9 @@ Future<void> initDi() async {
   );
   inject.registerSingleton<LanHubService>(lanHubService);
 
-  // offline-first-target-architecture.md §8 Phase 3 — additive, not yet
-  // wired into CreateOrderBloc's table-open path (see EXECUTION_CONCERNS.md
-  // and the class doc on LeaseManager for why).
+  // BACKEND_SYNC_PLAN.md §6 — wired into CreateOrderBloc's table-open path,
+  // whose call sites are currently commented out per the client-facing
+  // plan's carve-out #2 ("wired but inert"; see LeaseManager's class doc).
   final leaseManager = LeaseManager(lanHub: lanHubService, localDb: localDatabase);
   inject.registerSingleton<LeaseManager>(leaseManager);
 
