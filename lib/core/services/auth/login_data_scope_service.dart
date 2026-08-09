@@ -5,7 +5,6 @@ import 'package:mary_ai_pos/core/auth/storage/token_storage_impl.dart';
 import 'package:mary_ai_pos/core/database/local_database.dart';
 import 'package:mary_ai_pos/core/services/cache/cache_service.dart';
 import 'package:mary_ai_pos/core/sync/sync_engine.dart';
-import 'package:mary_ai_pos/core/widgets/app_scaffold.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/shift/shift_bloc.dart'
     show ShiftBloc;
 import 'package:shared_preferences/shared_preferences.dart';
@@ -96,10 +95,9 @@ class LoginDataScopeService {
       // brand's active shift if it survived the wipe.
       await _prefs.remove(ShiftBloc.localShiftPrefsKey);
       await _storage.setPosInitialized(false);
-      // Without this, the first-mount hydration gate stays latched from the
-      // previous brand's session — same reason AuthCubit.logoutFromApp
-      // already resets it.
-      AppScaffold.resetPrefetchGate();
+      // (AppScaffold's first-mount prefetch gate is gone — sync triggers
+      // are centralized in SyncEngine per BACKEND_SYNC_PLAN.md §5, and the
+      // re-hydration below is what replaces the old gate reset.)
     }
 
     await _storage.writeLastAuthContext(

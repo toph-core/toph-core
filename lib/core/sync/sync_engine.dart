@@ -42,6 +42,8 @@ class SyncEngine {
 
   Timer? _ticker;
   bool _tickRunning = false;
+  StreamSubscription<bool>? _connectivitySub;
+  StreamSubscription<bool>? _lanClientSub;
 
   static const tickInterval = Duration(seconds: 60);
   static const _lastSyncKey = 'sync_engine_last_success_at';
@@ -82,13 +84,45 @@ class SyncEngine {
         _prefs = prefs,
         _localDb = localDb;
 
+  /// BACKEND_SYNC_PLAN.md §5: every sync trigger now lives here, in one
+  /// place, instead of being scattered across widget lifecycles:
+  ///  - periodic (60s ticker, unchanged);
+  ///  - app-startup (the immediate tick below — previously AppScaffold's
+  ///    one-shot first-mount prefetch gate);
+  ///  - internet reconnect-edge (the connectivity subscription — previously
+  ///    AppScaffold's own listener);
+  ///  - LAN reconnect-edge (§5 gap 2 — a follower whose link to the leader
+  ///    comes back relays its outbox immediately instead of waiting for the
+  ///    next periodic tick; `tick()` already routes through `relayViaLan`
+  ///    in client mode);
+  ///  - local-write (§5 gap 1 — `OfflineQueueService.enqueue` nudges
+  ///    `tick()` on every enqueue, see its doc);
+  ///  - manual retry (`tick(force: true)` from the sync-status screen,
+  ///    unchanged).
   void start() {
     _ticker ??= Timer.periodic(tickInterval, (_) => tick());
+    _connectivitySub ??= _connectivity.stream.listen((isOnline) {
+      if (isOnline) tick();
+    });
+    _lanClientSub ??= _lanHub.onClientConnectionChanged.listen((connected) {
+      if (connected) tick();
+    });
+    // Deferred a microtask: start() runs inside initDi() *before*
+    // _repositories() registers MainRepository, and the hydration pass
+    // resolves it lazily via inject — the microtask runs at initDi's next
+    // suspension point, by which time every registration is done.
+    scheduleMicrotask(() {
+      if (_connectivity.isOnline) unawaited(tick());
+    });
   }
 
   void stop() {
     _ticker?.cancel();
     _ticker = null;
+    _connectivitySub?.cancel();
+    _connectivitySub = null;
+    _lanClientSub?.cancel();
+    _lanClientSub = null;
   }
 
   /// Runs one sync pass: drain the outbox, then opportunistically refresh

@@ -1,3 +1,4 @@
+import 'dart:async' show unawaited;
 import 'dart:convert';
 import 'dart:math';
 
@@ -7,8 +8,10 @@ import 'package:flutter/foundation.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:mary_ai_pos/core/api/dio_client.dart';
 import 'package:mary_ai_pos/core/api/list_api.dart';
+import 'package:mary_ai_pos/core/sync/sync_engine.dart';
 import 'package:mary_ai_pos/core/utils/order_conflict_helper.dart';
 import 'package:mary_ai_pos/core/utils/uuid.dart';
+import 'package:mary_ai_pos/di.dart' show inject;
 import 'pending_operation.dart';
 import 'quarantined_operation.dart';
 
@@ -49,7 +52,21 @@ class OfflineQueueService {
   /// on every put/delete, no extra bookkeeping needed on top.
   ValueListenable<Box<PendingOperation>> get listenable => _box.listenable();
 
-  Future<void> enqueue(PendingOperation op) => _box.put(op.id, op);
+  /// BACKEND_SYNC_PLAN.md §5 gap 1: a local write is itself a sync trigger.
+  /// Every enqueue nudges `SyncEngine.tick()` (one central hook here rather
+  /// than at each of the ~10 enqueue call sites) so, in the common online
+  /// case, a fresh op syncs immediately instead of waiting out the 60s
+  /// periodic timer. Safe to fire liberally: `tick()` is re-entrancy-guarded
+  /// and `syncAll` has its own failure backoff, so a nudge during an
+  /// in-flight or backing-off pass is a no-op, not a storm. Lazily resolved
+  /// and try/caught so a bare `OfflineQueueService` (tests, early startup)
+  /// still enqueues fine without a registered engine.
+  Future<void> enqueue(PendingOperation op) async {
+    await _box.put(op.id, op);
+    try {
+      unawaited(inject<SyncEngine>().tick());
+    } catch (_) {}
+  }
 
   /// Newest-first — a manual-resolution screen cares about the most recent
   /// drop, not the oldest.

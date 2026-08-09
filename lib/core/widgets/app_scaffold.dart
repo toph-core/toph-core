@@ -1,15 +1,8 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:mary_ai_pos/core/services/connectivity/connectivity_cubit.dart';
-import 'package:mary_ai_pos/core/sync/sync_engine.dart';
 import 'package:mary_ai_pos/core/widgets/app_sidebar.dart';
 import 'package:mary_ai_pos/core/widgets/styled_virtual_keyboard.dart';
 import 'package:mary_ai_pos/core/widgets/lan_solo_banner.dart';
 import 'package:mary_ai_pos/core/widgets/offline_banner.dart';
-import 'package:mary_ai_pos/di.dart';
-import 'package:mary_ai_pos/features/view/main/presentation/cubit/main/main_cubit.dart';
 
 class AppScaffold extends StatefulWidget {
   final String activeRoute;
@@ -37,36 +30,16 @@ class AppScaffold extends StatefulWidget {
     _AppScaffoldState._closeKeyboard();
   }
 
-  /// Resets the one-time first-mount hydration gate — call on logout so a
-  /// re-login (different brand/user, same running app instance) triggers an
-  /// immediate re-hydration instead of waiting for the next periodic tick.
-  static void resetPrefetchGate() {
-    _AppScaffoldState._resetPrefetchGate();
-  }
-
   @override
   State<AppScaffold> createState() => _AppScaffoldState();
 }
 
 class _AppScaffoldState extends State<AppScaffold> {
-  StreamSubscription<bool>? _connectivitySub;
   final ValueNotifier<bool> _showVirtualKeyboard = ValueNotifier<bool>(false);
   final ValueNotifier<TextEditingController?> _keyboardController = ValueNotifier<TextEditingController?>(null);
   ValueChanged<String>? _keyboardOnChanged;
 
   static _AppScaffoldState? _instance;
-
-  // Ilova ichida prefetch faqat bir marta triggerlanadi (CacheService'da ham
-  // o'z throttle bor, lekin bu erda ham qo'shimcha darvoza qo'yamiz —
-  // har yangi scaffold yaratilganda qayta urinishi to'xtatiladi).
-  static bool _prefetchAttempted = false;
-
-  /// Called from `AuthCubit.logoutFromApp` — without this, a re-login to a
-  /// different brand/user in the same running app instance would never
-  /// re-trigger the immediate first-mount hydration (this flag would still
-  /// be `true` from the previous session), leaving the new tenant's data to
-  /// wait for the next periodic `SyncEngine` tick (up to 60s) instead.
-  static void _resetPrefetchGate() => _prefetchAttempted = false;
 
   static void _openKeyboard(
     TextEditingController controller,
@@ -81,33 +54,20 @@ class _AppScaffoldState extends State<AppScaffold> {
     _instance?._showVirtualKeyboard.value = false;
   }
 
+  // BACKEND_SYNC_PLAN.md §5 (structural note): this widget no longer owns
+  // any sync trigger. The app-startup tick and the reconnect-edge tick both
+  // live in SyncEngine.start() now, and the old one-shot first-mount
+  // prefetch gate (with its logout reset) is superseded by
+  // LoginDataScopeService's login-triggered hydrateNow().
   @override
   void initState() {
     super.initState();
     _instance = this;
-    _connectivitySub = inject<ConnectivityCubit>().stream.listen((isOnline) {
-      if (isOnline) _syncOnReconnect();
-    });
-    // Birinchi ochilishda bir marta (keyingi scaffoldlar triggerlamaydi)
-    if (!_prefetchAttempted && inject<ConnectivityCubit>().isOnline) {
-      _prefetchAttempted = true;
-      inject<SyncEngine>().tick();
-    }
-  }
-
-  Future<void> _syncOnReconnect() async {
-    // The session re-check on reconnect (offline-auth cache'ning muddatsiz
-    // yozuvlarini serverdan qayta tasdiqlash) endi shu tick ichida —
-    // `SyncEngine` o'zi `UserBloc`ga getUser yuboradi; UI qatlami boshqa
-    // to'g'ridan-to'g'ri so'rov boshlamaydi (CLIENT_FACING_OFFLINE_PLAN.md §1).
-    await inject<SyncEngine>().tick();
-    if (mounted) context.read<MainCubit>().refreshTables();
   }
 
   @override
   void dispose() {
     if (_instance == this) _instance = null;
-    _connectivitySub?.cancel();
     _showVirtualKeyboard.dispose();
     _keyboardController.dispose();
     super.dispose();

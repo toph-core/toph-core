@@ -7,7 +7,6 @@ import 'package:mary_ai_pos/core/error/failure.dart';
 import 'package:mary_ai_pos/core/services/auth/offline_auth_cache.dart';
 import 'package:mary_ai_pos/core/services/cache/cache_service.dart';
 import 'package:mary_ai_pos/core/usecase/usecase.dart';
-import 'package:mary_ai_pos/core/widgets/app_scaffold.dart';
 import 'package:mary_ai_pos/di.dart' show inject;
 import 'package:mary_ai_pos/features/view/auth/domain/usecases/check_user_auth/check_user_auth.dart';
 import 'package:mary_ai_pos/features/view/auth/domain/usecases/check_user_auth/check_user_data_usecase.dart';
@@ -130,11 +129,9 @@ class AuthCubit extends Cubit<AuthState> {
         // be wiped here or stale data from this tenant would silently mix
         // into (or block) whatever the next one loads. See CacheService
         // .clearAll's doc comment for the concrete failure mode this avoids.
+        // (No prefetch-gate reset anymore — the next login's re-hydration is
+        // LoginDataScopeService's job, BACKEND_SYNC_PLAN.md §5.)
         await inject<CacheService>().clearAll();
-        // Otherwise a re-login to a different brand in this same running app
-        // instance never re-triggers the immediate first-mount hydration —
-        // see AppScaffold.resetPrefetchGate's doc comment.
-        AppScaffold.resetPrefetchGate();
         emit(state.copyWith(status: Status.SUCCESS));
         onSuccess();
       },
