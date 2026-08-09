@@ -167,7 +167,10 @@ Future<void> initDi() async {
     prefs: prefs,
     localDb: localDatabase,
   );
-  syncEngine.start();
+  // NOTE: start() is deliberately deferred until after _cubit() below —
+  // its immediate startup tick resolves MainRepository/UserBloc lazily, and
+  // `await PrintQueueService.init` further down would otherwise give its
+  // microtask a chance to run before those registrations exist.
   inject.registerSingleton<SyncEngine>(syncEngine);
 
   // CLIENT_FACING_OFFLINE_PLAN.md §1 — the brand/branch retention rule
@@ -224,6 +227,11 @@ Future<void> initDi() async {
   _repositories();
   _useCase();
   _cubit();
+
+  // BACKEND_SYNC_PLAN.md §5: every registration the startup tick's
+  // hydration pass resolves lazily (MainRepository, UserBloc, ...) exists
+  // by this point — see the note at the SyncEngine registration above.
+  syncEngine.start();
 
   // Deferred until here: `client` mode's initial connect attempt reads the
   // current user via `inject<UserBloc>()` for its branch id, and `UserBloc`

@@ -213,10 +213,13 @@ as a **settings toggle, default OFF**; coalescing built as
   is one central hook inside `OfflineQueueService.enqueue` (lazy-injected,
   guarded), not per-call-site `unawaited(tick())` at ~10 places. Same
   effect, less duplication; `retryQuarantined` gets the nudge for free.
-- **§5 startup trigger ordering:** `SyncEngine.start()` runs inside
-  `initDi()` before repositories register, so the immediate startup tick is
-  deferred by one microtask. If `initDi` ever gains an `await` between
-  `syncEngine.start()` and `_repositories()`, revisit.
+- **§5 startup trigger ordering:** `SyncEngine.start()` is called from
+  `initDi()` only *after* `_cubit()` — i.e. after every registration the
+  startup tick's hydration pass resolves lazily. (An earlier draft deferred
+  the tick by a microtask instead; the review pass showed that didn't clear
+  the existing `await PrintQueueService.init` and was replaced by this
+  ordering.) Keep `start()` after the registration block if `initDi` is
+  ever reshuffled.
 - **§5 gap 3 (leader→follower broadcast) deferred** per product answer:
   terminals are assumed to have their own internet; LAN-only followers only
   get reference data via the leader-relayed *outbox*, not reads. If a

@@ -107,13 +107,11 @@ class SyncEngine {
     _lanClientSub ??= _lanHub.onClientConnectionChanged.listen((connected) {
       if (connected) tick();
     });
-    // Deferred a microtask: start() runs inside initDi() *before*
-    // _repositories() registers MainRepository, and the hydration pass
-    // resolves it lazily via inject — the microtask runs at initDi's next
-    // suspension point, by which time every registration is done.
-    scheduleMicrotask(() {
-      if (_connectivity.isOnline) unawaited(tick());
-    });
+    // The app-startup tick. Callers must invoke start() only after every
+    // DI registration the hydration pass resolves lazily (MainRepository,
+    // UserBloc) exists — di.dart calls this after _cubit() for exactly
+    // that reason.
+    if (_connectivity.isOnline) unawaited(tick());
   }
 
   void stop() {
