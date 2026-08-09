@@ -171,11 +171,30 @@ class LeaderElectionService {
     }
     if (_role != ElectionRole.leader) {
       _currentLeaderIp = a.ip;
+      return;
     }
-    // Two different terminal ids announcing the SAME epoch as leader is a
-    // genuine segment-split (§7) — deliberately not auto-resolved here,
-    // same "detect, don't silently pick a winner" philosophy
-    // `LanHubService._watchForConflicts` already used for this case.
+    // BACKEND_SYNC_PLAN.md §7 gap 2 — the deterministic tiebreak that was
+    // missing. We are LEADER and a *different* terminal announces the same
+    // epoch as leader: the exact landing spot for two candidates that both
+    // computed the same new epoch and claimed before hearing each other.
+    // Resolve it the same way on both sides — lexicographically smaller
+    // terminal id wins — so a simultaneous-claim collision converges
+    // deterministically instead of however timing falls out. (The loser
+    // stands down and adopts the winner; the winner ignores the loser's
+    // announcement and keeps announcing, which is what makes the loser's
+    // side of this same comparison fire.) A genuine long-lived segment
+    // split still surfaces via LanHubService's conflict warning; this only
+    // auto-resolves the symmetric-claim race.
+    final peerId = a.terminalId;
+    if (peerId == null || peerId.isEmpty) return; // pre-§7 announcer — ignore
+    if ((a.role ?? '') != 'leader') return;
+    if (peerId.compareTo(_myTerminalId()) < 0) {
+      if (kDebugMode) {
+        print('[LeaderElection] Equal-epoch collision at epoch $_epoch — '
+            'standing down for $peerId (deterministic tiebreak)');
+      }
+      unawaited(_adopt(a, heardEpoch));
+    }
   }
 
   Future<void> _adopt(HubAnnouncement a, int epoch) async {
@@ -191,6 +210,9 @@ class LeaderElectionService {
 
   Future<void> _becomeFollower(String leaderIp) async {
     if (kDebugMode) print('[LeaderElection] Adopting leader at $leaderIp (epoch $_epoch)');
+    // If we were announcing as leader (tiebreak stand-down), stop the
+    // heartbeat but keep the socket listening — no-op otherwise.
+    _discovery.stopAnnouncing();
     _setRole(ElectionRole.follower);
     await _lanHub.setServerIp(leaderIp);
     await _lanHub.setMode(LanMode.client);

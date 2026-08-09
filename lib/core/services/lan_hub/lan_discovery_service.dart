@@ -183,6 +183,16 @@ class LanDiscoveryService {
     } catch (_) {}
   }
 
+  /// Stops the announce beacon only, keeping the socket (and therefore
+  /// [onAnnouncement] listening) alive — for a leader standing down to
+  /// follower on the §7 equal-epoch tiebreak, which must stop heartbeating
+  /// as leader but keep hearing the winner's heartbeats. No-op when this
+  /// instance wasn't announcing.
+  void stopAnnouncing() {
+    _announceTimer?.cancel();
+    _announceTimer = null;
+  }
+
   /// Stops announcing (if this instance was) and releases the UDP socket —
   /// safe to call whether or not [startAnnouncing]/[startListening] ran.
   Future<void> stop() async {
