@@ -89,11 +89,13 @@ class LeaseManager {
   /// print-job owner already does.
   String get _myTerminalId => inject<PrintQueueService>().terminalId;
 
-  /// §6's one public entry point for the UI side (only `CreateOrderBloc`'s
-  /// table-open path, once wired). Resolves the current `LanMode` at call
-  /// time rather than caching it — the mode can change between one
-  /// table-open attempt and the next (a manager reconfiguring in the
-  /// settings screen, or Phase 4 failover once that lands).
+  /// §6's one public entry point for table-open arbitration — three call
+  /// paths: `CreateOrderBloc._createOrder` (cashier dine-in),
+  /// `WaiterLocalRepositoryImpl.createOrder`, and
+  /// `TableTimerLocalRepositoryImpl.createTimedOrder`. Resolves the current
+  /// `LanMode` at call time rather than caching it — the mode can change
+  /// between one table-open attempt and the next (a manager reconfiguring
+  /// in the settings screen, or leader-election failover).
   Future<LeaseResult> acquireTableLease(String tableId) async {
     switch (_lanHub.mode) {
       case LanMode.disabled:
