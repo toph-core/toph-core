@@ -22,13 +22,18 @@ class PendingOperationAdapter extends TypeAdapter<PendingOperation> {
       payload: fields[2] as String,
       tableId: fields[3] as String,
       createdAt: fields[4] as DateTime,
+      // Absent on records written before these fields existed — the fields
+      // map simply has no entry, so read them defensively.
+      coalesceKey: fields[5] as String?,
+      retryCount: fields[6] == null ? 0 : fields[6] as int,
+      lastAttemptAt: fields[7] as DateTime?,
     );
   }
 
   @override
   void write(BinaryWriter writer, PendingOperation obj) {
     writer
-      ..writeByte(5)
+      ..writeByte(8)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -38,7 +43,13 @@ class PendingOperationAdapter extends TypeAdapter<PendingOperation> {
       ..writeByte(3)
       ..write(obj.tableId)
       ..writeByte(4)
-      ..write(obj.createdAt);
+      ..write(obj.createdAt)
+      ..writeByte(5)
+      ..write(obj.coalesceKey)
+      ..writeByte(6)
+      ..write(obj.retryCount)
+      ..writeByte(7)
+      ..write(obj.lastAttemptAt);
   }
 
   @override

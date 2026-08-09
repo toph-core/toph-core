@@ -191,7 +191,67 @@ before table-open) is no longer in effect; table-open is a pure local write
 per CLIENT_FACING_OFFLINE_PLAN.md carve-out #2.* If that document is
 restored, carry this note into it.
 
-## 10. Accepted exclusions (approved)
+## 10. BACKEND_SYNC_PLAN.md execution notes
+
+Executed after (and on top of) the client-facing plan, with these product
+answers: LAN reference-data broadcast **deferred**; leader election exposed
+as a **settings toggle, default OFF**; coalescing built as
+**mechanism-only** (timer taps all replay); per-op retry tracking is
+**observability-only** (no auto-quarantine).
+
+- **Gaps the plan listed that the client-facing execution had already
+  closed** (the plan was written against the pre-rebuild code): the Waiter
+  payment path now goes through `PaymentRepository.pay()` and therefore
+  carries `client_payment_id`; the Waiter online/offline forks are gone.
+  One nuance the plan's §6 assumed wrong: the rebuilt
+  `WaiterLocalRepositoryImpl.createOrder` enqueues its own payload (to keep
+  `waiter_id`) rather than calling `OrdersRepository.createOrder`, so when
+  the lease carve-out is reverted the Waiter create path must be routed
+  through `LeaseManager` explicitly — noted in `lease_manager.dart`'s class
+  doc.
+- **§5 deviation from the letter of the plan:** the local-write→tick wiring
+  is one central hook inside `OfflineQueueService.enqueue` (lazy-injected,
+  guarded), not per-call-site `unawaited(tick())` at ~10 places. Same
+  effect, less duplication; `retryQuarantined` gets the nudge for free.
+- **§5 startup trigger ordering:** `SyncEngine.start()` runs inside
+  `initDi()` before repositories register, so the immediate startup tick is
+  deferred by one microtask. If `initDi` ever gains an `await` between
+  `syncEngine.start()` and `_repositories()`, revisit.
+- **§5 gap 3 (leader→follower broadcast) deferred** per product answer:
+  terminals are assumed to have their own internet; LAN-only followers only
+  get reference data via the leader-relayed *outbox*, not reads. If a
+  LAN-only-follower deployment appears, this is the first thing to build.
+- **§7 tiebreak semantics:** the equal-epoch collision now resolves
+  deterministically (lexicographically smaller terminal id wins) only when
+  *both* sides announce role `leader`. A long-lived genuine segment split
+  still only warns (LanHubService conflict watcher) — unchanged philosophy.
+- **§7 toggle runtime caveat:** enabling election at runtime while this
+  terminal is in `server` mode with the plain conflict watcher active means
+  both want the same UDP port; the discovery socket bind is best-effort
+  (logged failure). An app restart after flipping the toggle is the clean
+  path — `LanHubService.init()` gates the conflict watcher on the election
+  pref at startup. Not engineered around in this pass.
+- **§7 rollout:** per the plan, do NOT flip the new toggle outside a pilot
+  multi-terminal venue until `leader_election_test.dart` has run green in
+  CI and the pilot has soaked.
+- **§12 coalescing concurrency edge:** replacement guarantees one op per
+  key *in the queue*; an op already handed to an in-flight `syncAll` POST
+  can't be recalled, so old+new can both reach the wire in that window.
+  Irrelevant while no call site sets a key.
+- **§12 retry counters** reset when a quarantined op is manually retried
+  (`toRetryable` builds a fresh op) — intentional: a manual retry is a new
+  attempt series.
+- **Tests written blind:** `lease_manager_test.dart` and
+  `leader_election_test.dart` are the first tests these services have ever
+  had, but this environment has no Dart toolchain — they have never been
+  *run*. Run `flutter test` before trusting them; expect at worst minor
+  compile fixes, not design problems.
+- **Election `start()` while logged out:** `setEnabled(true)` from the
+  settings screen calls `start()`, which no-ops if the user's branch id is
+  empty. The toggle then shows enabled but the service is idle until the
+  next app start with a logged-in user. Cosmetic, worth a follow-up.
+
+## 11. Accepted exclusions (approved — client-facing plan)
 
 - `service_charge_cubit.save()` — stays intentionally online-only,
   fail-fast (back-office config write).

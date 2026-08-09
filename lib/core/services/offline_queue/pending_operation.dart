@@ -54,11 +54,36 @@ class PendingOperation extends HiveObject {
   @HiveField(4)
   final DateTime createdAt;
 
+  /// BACKEND_SYNC_PLAN.md §12 rule 4 — optional deterministic coalescing
+  /// key (e.g. `"timer:{orderId}"`). When set, `OfflineQueueService.enqueue`
+  /// REPLACES any still-queued op carrying the same key instead of
+  /// appending, so repeated rapid edits of the same logical thing collapse
+  /// to one op. `null` (every current call site) keeps the historical
+  /// append-always behavior — the mechanism ships ahead of any user, per
+  /// the plan's recommendation, and per product decision the timer ops
+  /// deliberately do NOT use it yet (every tap replays).
+  @HiveField(5)
+  final String? coalesceKey;
+
+  /// BACKEND_SYNC_PLAN.md §12 — per-op retry observability, so a single
+  /// stuck op is distinguishable from a healthy queue. Incremented by
+  /// `syncAll` on each retryable failure; deliberately NOT a quarantine
+  /// trigger (per product decision — a long server outage must not silently
+  /// stop payments from retrying). Mutable + persisted via HiveObject.save.
+  @HiveField(6)
+  int retryCount;
+
+  @HiveField(7)
+  DateTime? lastAttemptAt;
+
   PendingOperation({
     required this.id,
     required this.type,
     required this.payload,
     required this.tableId,
     required this.createdAt,
+    this.coalesceKey,
+    this.retryCount = 0,
+    this.lastAttemptAt,
   });
 }

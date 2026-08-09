@@ -61,7 +61,24 @@ class OfflineQueueService {
   /// in-flight or backing-off pass is a no-op, not a storm. Lazily resolved
   /// and try/caught so a bare `OfflineQueueService` (tests, early startup)
   /// still enqueues fine without a registered engine.
+  /// BACKEND_SYNC_PLAN.md §12 rule 4: when [PendingOperation.coalesceKey]
+  /// is set, any still-queued op with the same key is replaced instead of
+  /// appended-to (repeated rapid edits of one logical thing collapse to the
+  /// newest op). Best-effort against an in-flight sync: an op being POSTed
+  /// right now can't be recalled, so replacement only guarantees the *queue*
+  /// holds one op per key, not that the old one never reached the wire.
+  /// No current call site sets a key — mechanism ships ahead of any user.
   Future<void> enqueue(PendingOperation op) async {
+    final key = op.coalesceKey;
+    if (key != null && key.isNotEmpty) {
+      final matching = _box.values
+          .where((o) => o.coalesceKey == key && o.id != op.id)
+          .map((o) => o.id)
+          .toList();
+      for (final staleId in matching) {
+        await _box.delete(staleId);
+      }
+    }
     await _box.put(op.id, op);
     try {
       unawaited(inject<SyncEngine>().tick());
@@ -189,6 +206,14 @@ class OfflineQueueService {
               break;
             case OpOutcome.retryableFailure:
               hadFailure = true;
+              // §12 per-op retry observability (see PendingOperation) —
+              // counted, persisted, surfaced in the sync-status screen;
+              // never a quarantine trigger.
+              op.retryCount += 1;
+              op.lastAttemptAt = clock.now();
+              try {
+                await op.save();
+              } catch (_) {}
               break;
             case OpOutcome.notReadyYet:
               break;
@@ -236,6 +261,13 @@ class OfflineQueueService {
         }
         // retryLater: leave queued; still try the rest of this pass — one
         // op's transient issue shouldn't block unrelated ones.
+        else {
+          op.retryCount += 1;
+          op.lastAttemptAt = clock.now();
+          try {
+            await op.save();
+          } catch (_) {}
+        }
       }
     } finally {
       _isRelaying = false;

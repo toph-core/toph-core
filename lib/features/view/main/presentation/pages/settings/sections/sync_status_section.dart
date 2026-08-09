@@ -216,6 +216,11 @@ class _OutboxCardState extends State<_OutboxCard> {
       builder: (context, box, _) {
         final depth = box.length;
         final attempt = queue.lastAttemptAt;
+        // §12 per-op retry observability: a single stuck op is visible as a
+        // high worst-case retry count even when the rest of the queue is
+        // healthy.
+        final maxRetries =
+            box.values.fold<int>(0, (m, o) => o.retryCount > m ? o.retryCount : m);
         return SoftCard(
           padding: const EdgeInsets.all(18),
           child: Column(
@@ -228,7 +233,8 @@ class _OutboxCardState extends State<_OutboxCard> {
                 subtitle: depth == 0
                     ? "Barcha operatsiyalar sinxronlangan"
                     : '$depth ta operatsiya kutilmoqda'
-                        '${attempt != null ? ' — oxirgi urinish ${attempt.timeAgo}' : ''}',
+                        '${attempt != null ? ' — oxirgi urinish ${attempt.timeAgo}' : ''}'
+                        '${maxRetries > 0 ? " — eng ko'p qayta urinish: $maxRetries" : ''}',
                 trailing: _SmallButton(
                   label: 'Hozir sinxronlash',
                   onTap: depth == 0 ? null : _syncNow,
