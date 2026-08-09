@@ -25,11 +25,11 @@ part 'create_order_bloc.freezed.dart';
 /// single local commit through `OrdersRepository` (outbox enqueue) that
 /// returns without ever awaiting the network — the UI's "success" and the
 /// local commit are the same event, whether this terminal is online,
-/// offline, or LAN-only. The §6 table-open lease wait that used to be the
-/// one exception is currently commented out per CLIENT_FACING_OFFLINE_PLAN.md
-/// carve-out #2 — table-open is a pure local write for now, and the
-/// double-booking race the lease guarded is deferred to its own later piece
-/// of work (see offline-first-target-architecture.md §6's follow-up note).
+/// offline, or LAN-only. The one exception, per §6, is the table-open path:
+/// it awaits `LeaseManager.acquireTableLease` before the local commit —
+/// re-enabled per LAN_HUB_AND_LEASING_PLAN.md §9.1 (the client plan's
+/// temporary carve-out #2 is reverted), with §9.3's answered policy: a
+/// rejection blocks, an unreachable leader allows-with-warning.
 ///
 /// A duplicate table-open 409 (the online path used to catch this
 /// synchronously and merge into the winning order) is now handled entirely
@@ -37,9 +37,6 @@ part 'create_order_bloc.freezed.dart';
 /// replay time — nothing left for this Bloc to do about it.
 class CreateOrderBloc extends Bloc<CreateOrderEvent, CreateOrderState> {
   final OrdersRepository _ordersRepository;
-  // Kept (not deleted) while the lease calls are commented out — carve-out
-  // #2 keeps LeaseManager wired so re-enabling is a two-line uncomment.
-  // ignore: unused_field
   final LeaseManager _leaseManager;
   final LanHubService _lanHub;
   final PrinterService _printerService;
@@ -122,23 +119,31 @@ class CreateOrderBloc extends Bloc<CreateOrderEvent, CreateOrderState> {
       return;
     }
 
-    // CLIENT_FACING_OFFLINE_PLAN.md carve-out #2: the lease wait is
-    // commented out (NOT deleted — LeaseManager and its service stay
-    // intact). Table-open is a pure local write like everything else for
-    // now; the double-booking race this guarded against is picked back up
-    // later as its own piece of work. See EXECUTION_CONCERNS.md and the
-    // follow-up note in offline-first-target-architecture.md §6.
-    // final lease = await _leaseManager.acquireTableLease(state.tableId);
-    // if (!lease.isGranted) {
-    //   showErrorMessage(
-    //     navigatorKey.currentContext!,
-    //     lease.isUnreachable
-    //         ? (lease.unreachableReason ?? "Stol egaligini tekshirib bo'lmadi.")
-    //         : "Bu stol allaqachon boshqa terminalda ochilgan.",
-    //   );
-    //   emit(state.copyWith(status: Status.ERROR));
-    //   return;
-    // }
+    // LAN_HUB_AND_LEASING_PLAN.md §5/§9 — the lease is back (the
+    // client-facing plan's carve-out #2 is reverted per product decision,
+    // now that LeaseManager has test coverage). Policy per §9.3's answered
+    // open question: a REJECTION (the leader says another terminal holds
+    // this table) still blocks; UNREACHABLE (the leader couldn't be asked
+    // at all) now allows the open with a visible "unverified" warning
+    // instead of freezing the floor — the §6 lease-recovery reasoning
+    // applies, and a rare double-open's damage is absorbed by the
+    // 409-merge at outbox replay.
+    final lease = await _leaseManager.acquireTableLease(state.tableId);
+    if (!lease.isGranted && !lease.isUnreachable) {
+      showErrorMessage(
+        navigatorKey.currentContext!,
+        "Bu stol allaqachon boshqa terminalda ochilgan.",
+      );
+      emit(state.copyWith(status: Status.ERROR));
+      return;
+    }
+    if (lease.isUnreachable) {
+      showInfoMessage(
+        navigatorKey.currentContext!,
+        "Stol egaligi tekshirilmadi (yetakchiga ulanish yo'q) — "
+        "buyurtma baribir ochildi.",
+      );
+    }
 
     final clientOrderId = generateUuidV4();
     await _ordersRepository.createOrder(
@@ -162,9 +167,13 @@ class CreateOrderBloc extends Bloc<CreateOrderEvent, CreateOrderState> {
       _buildLocalOrderSnapshot(id: clientOrderId, orders: event.orders).toJson(),
     );
     bindActiveOrder(clientOrderId);
-    // Lease release commented out together with the acquire above
-    // (carve-out #2) — nothing is held, so there is nothing to release.
-    // _leaseManager.releaseTableLease(state.tableId);
+    // Ephemeral claim cleared the instant this local write is confirmed —
+    // same-process callback or one LAN message, never a network wait (§6
+    // Lease Recovery). Only a granted lease holds anything; an unreachable
+    // pass-through held nothing, and releasing is harmless either way.
+    if (lease.isGranted) {
+      _leaseManager.releaseTableLease(state.tableId);
+    }
 
     // Fire-and-forget: oshxona cheki (kategoriya printerlari).
     unawaited(_printerService.printKitchenReceiptFor(

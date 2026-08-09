@@ -4,6 +4,7 @@ import 'package:dartz/dartz.dart';
 import 'package:mary_ai_pos/core/constants/constants.dart';
 import 'package:mary_ai_pos/core/database/local_database.dart';
 import 'package:mary_ai_pos/core/error/failure.dart';
+import 'package:mary_ai_pos/core/services/lease/lease_manager.dart';
 import 'package:mary_ai_pos/core/services/offline_queue/offline_queue_service.dart';
 import 'package:mary_ai_pos/core/services/offline_queue/pending_operation.dart';
 import 'package:mary_ai_pos/core/utils/uuid.dart';
@@ -48,8 +49,14 @@ class TableTimerLocalRepositoryImpl implements TableTimerLocalRepository {
   final LocalDatabase _localDb;
   final OfflineQueueService _queue;
   final OrdersRepository _orders;
+  final LeaseManager _lease;
 
-  TableTimerLocalRepositoryImpl(this._localDb, this._queue, this._orders);
+  TableTimerLocalRepositoryImpl(
+    this._localDb,
+    this._queue,
+    this._orders,
+    this._lease,
+  );
 
   // ── Record engine ───────────────────────────────────────────────────────
 
@@ -234,6 +241,16 @@ class TableTimerLocalRepositoryImpl implements TableTimerLocalRepository {
       }
     }
 
+    // LAN_HUB_AND_LEASING_PLAN.md §5/§8: the timed-order create is a
+    // table-open too — same lease gate as the other two paths, same §9.3
+    // policy (rejection blocks, unreachable allows with a visible flag).
+    final lease = await _lease.acquireTableLease(tableId);
+    if (!lease.isGranted && !lease.isUnreachable) {
+      return const Left(
+        MessageFailure("Bu stol allaqachon boshqa terminalda ochilgan."),
+      );
+    }
+
     final clientOrderId = generateUuidV4();
     // Same endpoint/payload the old direct call used (`POST /orders`, empty
     // items) — reuses the existing createOrder outbox op and its replay
@@ -270,7 +287,14 @@ class TableTimerLocalRepositoryImpl implements TableTimerLocalRepository {
       'price_per_hour': _tablePriceFor(tableId),
       'pauses': <Map<String, dynamic>>[],
     });
-    return Right(TimedOrderCreateResult(clientOrderId));
+    // Local commit done — clear the ephemeral claim (only a grant held one).
+    if (lease.isGranted) {
+      _lease.releaseTableLease(tableId);
+    }
+    return Right(TimedOrderCreateResult(
+      clientOrderId,
+      leaseUnverified: lease.isUnreachable,
+    ));
   }
 
   @override

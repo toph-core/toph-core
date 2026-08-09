@@ -254,7 +254,41 @@ as a **settings toggle, default OFF**; coalescing built as
   empty. The toggle then shows enabled but the service is idle until the
   next app start with a logged-in user. Cosmetic, worth a follow-up.
 
-## 11. Accepted exclusions (approved — client-facing plan)
+## 11. LAN_HUB_AND_LEASING_PLAN.md execution notes
+
+That plan is a design deep-dive on BACKEND_SYNC_PLAN.md §6/§7; its §10
+action items (tiebreak, both test files, stale doc comments, waiter-path
+routing) were already delivered by the two earlier execution passes. What
+this third pass changed, per the two product answers to its §9 open
+questions:
+
+- **§9.1 — the lease is BACK (client carve-out #2 reverted).** All three
+  table-open paths now await `LeaseManager.acquireTableLease` before their
+  local commit: `CreateOrderBloc` (uncommented, with the new policy),
+  `WaiterLocalRepositoryImpl.createOrder`, and
+  `TableTimerLocalRepositoryImpl.createTimedOrder` (the third path the plan
+  didn't know about — it was created by the client pass's timer rework).
+  This restores the one deliberate exception to "the UI never awaits the
+  network": in client mode a table-open now waits up to the 5s lease
+  timeout when the leader is slow. Solo/`disabled` and `server` modes
+  arbitrate purely in-memory — zero added latency for a single-terminal
+  venue, which is every venue until LAN mode is configured.
+- **§9.3 — unreachable ≠ rejected, decided.** A rejection ("held by
+  another terminal") blocks. An unreachable leader now ALLOWS the open
+  with a visible "Stol egaligi tekshirilmadi" info message on all three
+  paths (`leaseUnverified` flags on the two repository results). The
+  accepted risk: two followers opening the same table during a leader
+  outage double-open it; the damage (lost items) is absorbed by the
+  existing outbox 409-merge, per the plan's §6 lease-recovery reasoning.
+- The plan document itself is now partially stale by design — its §4 "one
+  genuine gap" (tiebreak), §8 status table, and §10 items describe the
+  pre-execution code. It was kept verbatim as the user's document;
+  current status lives in the code comments and this file.
+- `lease_manager_test.dart` covers the arbitration; the new call-site
+  policy (block vs allow-with-warning) lives in the blocs/repositories and
+  has no dedicated test — same tests-written-blind caveat as §10 above.
+
+## 12. Accepted exclusions (approved — client-facing plan)
 
 - `service_charge_cubit.save()` — stays intentionally online-only,
   fail-fast (back-office config write).

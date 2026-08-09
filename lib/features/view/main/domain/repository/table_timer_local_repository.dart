@@ -24,7 +24,16 @@ class TimedOrderCreateResult {
   /// conflict branch.)
   final bool wasExisting;
 
-  const TimedOrderCreateResult(this.orderId, {this.wasExisting = false});
+  /// LAN_HUB_AND_LEASING_PLAN.md §9.3: `true` when the table-open went
+  /// ahead without lease arbitration (LAN leader unreachable) — surface a
+  /// visible warning, don't treat it as a clean grant.
+  final bool leaseUnverified;
+
+  const TimedOrderCreateResult(
+    this.orderId, {
+    this.wasExisting = false,
+    this.leaseUnverified = false,
+  });
 }
 
 /// What `TableTimerCubit`/`TimeBasedTableBadge` depend on for table-timer

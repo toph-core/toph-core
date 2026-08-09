@@ -21,6 +21,12 @@ class WaiterCreateOrderResult {
   final String? serviceAmount;
   final String? orderType;
 
+  /// LAN_HUB_AND_LEASING_PLAN.md §9.3: `true` when the table-open went
+  /// ahead without lease arbitration because the LAN leader was
+  /// unreachable — the caller should surface a visible "egalik
+  /// tekshirilmadi" warning, not treat it as a clean grant.
+  final bool leaseUnverified;
+
   const WaiterCreateOrderResult(
     this.orderId, {
     this.wasExisting = false,
@@ -28,6 +34,7 @@ class WaiterCreateOrderResult {
     this.totalAmount,
     this.serviceAmount,
     this.orderType,
+    this.leaseUnverified = false,
   });
 }
 
@@ -93,8 +100,12 @@ abstract class WaiterLocalRepository {
     double discountAmount,
   });
 
-  /// Local commit: enqueues the create (client-generated id, optional
-  /// waiter binding), writes the local bill snapshot, marks the table busy.
+  /// Local commit, gated by the same table lease `CreateOrderBloc` awaits
+  /// (LAN_HUB_AND_LEASING_PLAN.md §5/§8 — this path must not bypass the
+  /// double-booking guard): a rejection returns a `Failure`, an unreachable
+  /// leader allows the open with `leaseUnverified` set. On grant/allow:
+  /// enqueues the create (client-generated id, optional waiter binding),
+  /// writes the local bill snapshot, marks the table busy.
   Future<Either<Failure, WaiterCreateOrderResult>> createOrder({
     required String tableId,
     required int guestCount,

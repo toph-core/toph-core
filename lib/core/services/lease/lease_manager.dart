@@ -20,16 +20,16 @@ import 'package:mary_ai_pos/features/view/main/data/models/cafe_tables/cafe_tabl
 /// `OrdersRepository`/`CreateOrderBloc` as an ordinary follow-up step (§4's
 /// flow), called only after a `granted` result here.
 ///
-/// **Wiring status (BACKEND_SYNC_PLAN.md §6):** this WAS fully wired into
-/// `CreateOrderBloc`'s table-open path; those two call sites are currently
-/// commented out per CLIENT_FACING_OFFLINE_PLAN.md carve-out #2 (table-open
-/// is a pure local write for now, the double-booking race is deferred to
-/// its own work item). So the class is "wired but inert" — kept registered,
-/// server-side lease handlers still attached in `LanHubService.init`, and
-/// re-enabling is a two-line uncomment in `create_order_bloc.dart`. When it
-/// re-enables, note the Waiter screen's create path
-/// (`WaiterLocalRepositoryImpl.createOrder`) enqueues directly and must be
-/// routed through this lease too — see EXECUTION_CONCERNS.md.
+/// **Wiring status (LAN_HUB_AND_LEASING_PLAN.md §9.1 — active again):** the
+/// client plan's temporary carve-out #2 has been reverted per product
+/// decision, and ALL THREE table-open paths now await this lease before
+/// their local commit: `CreateOrderBloc._createOrder` (cashier dine-in),
+/// `WaiterLocalRepositoryImpl.createOrder` (waiter screen), and
+/// `TableTimerLocalRepositoryImpl.createTimedOrder` (time-based tables).
+/// Call-site policy per §9.3's answered open question: a REJECTION blocks
+/// the open; an UNREACHABLE leader allows it with a visible "egalik
+/// tekshirilmadi" warning — a dead leader must not freeze the floor, and
+/// the rare double-open's damage is absorbed by the outbox 409-merge.
 class LeaseResult {
   final bool isGranted;
 

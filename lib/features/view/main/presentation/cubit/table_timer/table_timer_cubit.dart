@@ -1,7 +1,9 @@
 import 'dart:async';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:mary_ai_pos/core/components/flush_bars.dart';
 import 'package:mary_ai_pos/core/error/failure.dart';
+import 'package:mary_ai_pos/core/utils/helper/helper_widget.dart';
 import 'package:mary_ai_pos/core/services/table_timer/table_timer_sync_service.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/open_order/open_order_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/table_timer/table_timer_response_model.dart';
@@ -314,6 +316,18 @@ class TableTimerCubit extends Cubit<TableTimerState> {
       (created) async {
         _activeOrderId = created.orderId;
         emit(state.copyWith(isLoading: false));
+        // §9.3 policy: opened without lease arbitration (leader
+        // unreachable) — visible warning, not a silent clean grant.
+        if (created.leaseUnverified) {
+          final ctx = navigatorKey.currentContext;
+          if (ctx != null && ctx.mounted) {
+            showInfoMessage(
+              ctx,
+              "Stol egaligi tekshirilmadi (yetakchiga ulanish yo'q) — "
+              "buyurtma baribir ochildi.",
+            );
+          }
+        }
         if (created.wasExisting) {
           // Shu stolda allaqachon lokal timer bor — holatini o'qib davom
           // etamiz (ishlayotgan bo'lishi mumkin).

@@ -145,9 +145,9 @@ Future<void> initDi() async {
   );
   inject.registerSingleton<LanHubService>(lanHubService);
 
-  // BACKEND_SYNC_PLAN.md §6 — wired into CreateOrderBloc's table-open path,
-  // whose call sites are currently commented out per the client-facing
-  // plan's carve-out #2 ("wired but inert"; see LeaseManager's class doc).
+  // LAN_HUB_AND_LEASING_PLAN.md — active again on all three table-open
+  // paths (CreateOrderBloc, waiter create, timed-order create); see
+  // LeaseManager's class doc for the rejection/unreachable policy.
   final leaseManager = LeaseManager(lanHub: lanHubService, localDb: localDatabase);
   inject.registerSingleton<LeaseManager>(leaseManager);
 
@@ -266,13 +266,16 @@ void _repositories() {
   );
   // CLIENT_FACING_OFFLINE_PLAN.md §2 — local-first now: LocalDatabase +
   // outbox + OrdersRepository (for the timed-order create), no DioClient.
+  // The timed-order create is lease-gated (LAN_HUB_AND_LEASING_PLAN.md §8).
   inject.registerLazySingleton<TableTimerLocalRepository>(
-    () => TableTimerLocalRepositoryImpl(inject(), inject(), inject()),
+    () => TableTimerLocalRepositoryImpl(inject(), inject(), inject(), inject()),
   );
   // CLIENT_FACING_OFFLINE_PLAN.md §5 — rebuilt local-first on LocalDatabase
-  // + the already-correct Orders/Payment repositories; no DioClient.
+  // + the already-correct Orders/Payment repositories; no DioClient. The
+  // create path is lease-gated (LAN_HUB_AND_LEASING_PLAN.md §8).
   inject.registerLazySingleton<WaiterLocalRepository>(
     () => WaiterLocalRepositoryImpl(
+      inject(),
       inject(),
       inject(),
       inject(),

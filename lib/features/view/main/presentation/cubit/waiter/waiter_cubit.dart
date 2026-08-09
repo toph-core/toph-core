@@ -1,8 +1,10 @@
 import 'dart:async' show unawaited;
 
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:mary_ai_pos/core/components/flush_bars.dart';
 import 'package:mary_ai_pos/core/constants/constants.dart';
 import 'package:mary_ai_pos/core/error/failure.dart';
+import 'package:mary_ai_pos/core/utils/helper/helper_widget.dart';
 import 'package:mary_ai_pos/core/service/printer/printer_service.dart';
 import 'package:mary_ai_pos/core/services/cache/cache_service.dart';
 import 'package:mary_ai_pos/core/utils/uuid.dart';
@@ -535,6 +537,18 @@ class WaiterCubit extends Cubit<WaiterState> {
         if (created.wasExisting) {
           await _openExistingOrder(created.orderId);
           return;
+        }
+        // §9.3 policy: opened without lease arbitration (leader
+        // unreachable) — visible warning, not a silent clean grant.
+        if (created.leaseUnverified) {
+          final ctx = navigatorKey.currentContext;
+          if (ctx != null && ctx.mounted) {
+            showInfoMessage(
+              ctx,
+              "Stol egaligi tekshirilmadi (yetakchiga ulanish yo'q) — "
+              "buyurtma baribir ochildi.",
+            );
+          }
         }
         _insertCreatedOrder(
           OpenOrderModel(

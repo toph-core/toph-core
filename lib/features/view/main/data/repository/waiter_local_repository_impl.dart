@@ -5,6 +5,7 @@ import 'package:mary_ai_pos/core/constants/constants.dart';
 import 'package:mary_ai_pos/core/database/local_database.dart';
 import 'package:mary_ai_pos/core/error/failure.dart';
 import 'package:mary_ai_pos/core/services/lan_hub/lan_hub_service.dart';
+import 'package:mary_ai_pos/core/services/lease/lease_manager.dart';
 import 'package:mary_ai_pos/core/services/offline_queue/offline_queue_service.dart';
 import 'package:mary_ai_pos/core/services/offline_queue/pending_operation.dart';
 import 'package:mary_ai_pos/core/utils/uuid.dart';
@@ -39,6 +40,7 @@ class WaiterLocalRepositoryImpl implements WaiterLocalRepository {
   final OrdersRepository _orders;
   final PaymentRepository _payment;
   final LanHubService _lanHub;
+  final LeaseManager _lease;
 
   WaiterLocalRepositoryImpl(
     this._localDb,
@@ -46,6 +48,7 @@ class WaiterLocalRepositoryImpl implements WaiterLocalRepository {
     this._orders,
     this._payment,
     this._lanHub,
+    this._lease,
   );
 
   // ── Local synthesis helpers ─────────────────────────────────────────────
@@ -307,6 +310,17 @@ class WaiterLocalRepositoryImpl implements WaiterLocalRepository {
       }
     }
 
+    // LAN_HUB_AND_LEASING_PLAN.md §5/§8: this second table-open path goes
+    // through the same lease gate CreateOrderBloc awaits — the recurring
+    // "fix landed on one path, not its duplicate" gap, closed. Same §9.3
+    // policy: rejection blocks, unreachable allows with a visible flag.
+    final lease = await _lease.acquireTableLease(tableId);
+    if (!lease.isGranted && !lease.isUnreachable) {
+      return const Left(
+        MessageFailure("Bu stol allaqachon boshqa terminalda ochilgan."),
+      );
+    }
+
     final clientOrderId = generateUuidV4();
     await _queue.enqueue(PendingOperation(
       id: OfflineQueueService.newId(),
@@ -339,6 +353,14 @@ class WaiterLocalRepositoryImpl implements WaiterLocalRepository {
     );
     await _localDb.updateTableStatus(tableId, TableStatus.busy);
     _lanHub.tableStatusChanged(tableId, TableStatus.busy.name);
-    return Right(WaiterCreateOrderResult(clientOrderId, orderType: 'dine_in'));
+    // Local commit done — clear the ephemeral claim (only a grant held one).
+    if (lease.isGranted) {
+      _lease.releaseTableLease(tableId);
+    }
+    return Right(WaiterCreateOrderResult(
+      clientOrderId,
+      orderType: 'dine_in',
+      leaseUnverified: lease.isUnreachable,
+    ));
   }
 }
