@@ -2,12 +2,13 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mary_ai_pos/core/components/flush_bars.dart';
 import 'package:mary_ai_pos/core/extension/for_context.dart';
 import 'package:mary_ai_pos/core/theme/tokens/theme_colors.dart';
 import 'package:mary_ai_pos/core/widgets/app_scaffold.dart';
 import 'package:mary_ai_pos/di.dart';
-import 'package:mary_ai_pos/features/view/main/domain/repository/main_repository.dart';
+import 'package:mary_ai_pos/features/view/main/presentation/cubit/users/users_cubit.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/settings/widgets/section_shell.dart';
 import 'package:mary_ai_pos/generated/l10n.dart';
 import 'package:number_paginator/number_paginator.dart';
@@ -29,88 +30,34 @@ class _UsersSectionState extends State<UsersSection> {
     'kitchen',
   ];
 
-  final MainRepository _repository = inject<MainRepository>();
+  /// Resolved as a cubit, not a repository. The section used to hold a
+  /// `MainRepository` and drive its own paging, which is the coupling §7 rules
+  /// out — the widget now knows about filters and rows, and nothing about where
+  /// either comes from.
+  final UsersCubit _cubit = inject<UsersCubit>();
   final NumberPaginatorController _paginatorController =
       NumberPaginatorController();
   final TextEditingController _searchCtrl = TextEditingController();
-
-  bool _loading = true;
-  String? _error;
-  List<_AdminUser> _users = const [];
-  int _page = 1;
-  int _pageSize = 20;
-  int? _totalCount;
-  String? _roleFilter;
-  String _searchQuery = '';
   Timer? _searchDebounce;
-
-  bool get _isSearching => _searchQuery.trim().isNotEmpty;
-
-  int get _totalPages {
-    final t = _totalCount;
-    if (t == null || t <= 0) return 1;
-    final p = (t + _pageSize - 1) ~/ _pageSize;
-    return p > 0 ? p : 1;
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    _load(page: 1);
-  }
 
   @override
   void dispose() {
     _searchDebounce?.cancel();
     _paginatorController.dispose();
     _searchCtrl.dispose();
+    _cubit.close();
     super.dispose();
   }
 
-  Future<void> _load({required int page}) async {
-    setState(() {
-      _loading = true;
-      _error = null;
-    });
-    final isSearching = _isSearching;
-    final result = await _repository.getAdminUsers(
-      limit: _pageSize,
-      offset: (page - 1) * _pageSize,
-      search: isSearching ? _searchQuery.trim() : null,
-      role: _roleFilter,
-    );
-    if (!mounted) return;
-    result.fold(
-      (failure) => setState(() {
-        _loading = false;
-        _error = failure.getLocalizedMessage(context);
-      }),
-      (data) {
-        var parsed = data.items.map(_AdminUser.fromJson).toList();
-        // Search rejimida role filtri serverda qabul qilinmagani sababli — clientda.
-        if (isSearching && _roleFilter != null) {
-          parsed = parsed.where((u) => u.role == _roleFilter).toList();
-        }
-        setState(() {
-          _users = parsed;
-          _totalCount = data.total;
-          _page = page;
-          _loading = false;
-        });
-      },
-    );
-  }
-
+  /// No reload after save. The list is a subscription to the replica, so a
+  /// write that lands locally reaches this screen the same way replication's
+  /// changes do — the old `_load(page: _page)` refetch had nothing left to do.
   Future<void> _openEditor({_AdminUser? existing}) async {
-    final saved = await showDialog<bool>(
+    await showDialog<bool>(
       context: context,
       barrierDismissible: false,
-      builder: (_) => _UserEditDialog(
-        repository: _repository,
-        existing: existing,
-      ),
+      builder: (_) => _UserEditDialog(cubit: _cubit, existing: existing),
     );
-    if (saved == true && mounted) _load(page: _page);
   }
 
   Future<void> _confirmDelete(_AdminUser u) async {
@@ -135,80 +82,89 @@ class _UsersSectionState extends State<UsersSection> {
       ),
     );
     if (ok != true || !mounted) return;
-    final result = await _repository.deleteUser(u.id);
-    if (!mounted) return;
-    result.fold(
-      (failure) => showErrorMessage(context, failure.getLocalizedMessage(context)),
-      (_) => _load(page: _page),
-    );
+    // Synchronous: the row is gone from the replica and the DELETE is queued
+    // before this returns. Nothing to await, so nothing to fail on the network.
+    if (!_cubit.deleteUser(u.id) && mounted) {
+      showErrorMessage(context, _cubit.state.error ?? S.current.strError);
+    }
   }
 
-  Future<void> _toggleActive(_AdminUser u, bool value) async {
-    setState(() {
-      _users = _users
-          .map((x) => x.id == u.id ? x.copyWith(isActive: value) : x)
-          .toList();
-    });
-    final result = await _repository.updateUser(u.id, {'is_active': value});
-    if (!mounted) return;
-    result.fold(
-      (failure) {
-        setState(() {
-          _users = _users
-              .map((x) => x.id == u.id ? x.copyWith(isActive: !value) : x)
-              .toList();
-        });
-        showErrorMessage(context, failure.getLocalizedMessage(context));
-      },
-      (_) {},
-    );
+  /// The optimistic-update-and-roll-back dance this used to do is gone with the
+  /// network call that needed it. The local write *is* the update the operator
+  /// sees; if the server later refuses it, quarantine releases the row and
+  /// replication reverts it — visibly, and for a stated reason.
+  void _toggleActive(_AdminUser u, bool value) {
+    if (!_cubit.updateUser(u.id, {'is_active': value})) {
+      showErrorMessage(context, _cubit.state.error ?? S.current.strError);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    return SectionShell(
-      title: S.current.strRestaurantStaff,
-      subtitle: _isSearching
-          ? 'Topildi: ${_users.length} ta xodim'
-          : (_totalCount == null
-              ? S.current.strUsersRolesPerms
-              : 'Jami: $_totalCount ta xodim'),
-      trailing: SectionPrimaryButton(
-        icon: Icons.person_add_alt_1_rounded,
-        label: S.current.strAddNewEmployee,
-        onPressed: () => _openEditor(),
+    return BlocProvider<UsersCubit>.value(
+      value: _cubit,
+      child: BlocConsumer<UsersCubit, UsersState>(
+        listenWhen: (a, b) => a.notice != b.notice && b.notice != null,
+        listener: (context, state) {
+          final notice = state.notice;
+          if (notice == null) return;
+          // Informational, not a failure: the write was accepted, it is simply
+          // not on screen yet.
+          showInfoMessage(context, notice);
+          _cubit.acknowledge();
+        },
+        builder: (context, state) {
+          final users = state.items.map(_AdminUser.fromJson).toList();
+          return SectionShell(
+            title: S.current.strRestaurantStaff,
+            subtitle: state.isSearching
+                ? 'Topildi: ${state.total} ta xodim'
+                : (state.total == 0
+                    ? S.current.strUsersRolesPerms
+                    : 'Jami: ${state.total} ta xodim'),
+            trailing: SectionPrimaryButton(
+              icon: Icons.person_add_alt_1_rounded,
+              label: S.current.strAddNewEmployee,
+              onPressed: () => _openEditor(),
+            ),
+            child: _buildBody(state, users),
+          );
+        },
       ),
-      child: _buildBody(),
     );
   }
 
-  Widget _buildBody() {
+  Widget _buildBody(UsersState state, List<_AdminUser> users) {
     return Column(
       children: [
-        _buildFilters(),
+        _buildFilters(state),
         const SizedBox(height: 14),
-        Expanded(child: _buildList()),
-        // Search rejimida server total count qaytarmaydi — paginatsiya ko'rsatilmaydi.
-        if (_users.isNotEmpty && !_isSearching) ...[
+        Expanded(child: _buildList(state, users)),
+        // Shown while searching too, which it could not be before: the search
+        // endpoint returned no total, so the old screen had no page count to
+        // render. One local query answers filter and count together.
+        if (users.isNotEmpty) ...[
           const SizedBox(height: 8),
-          _buildPaginator(),
+          _buildPaginator(state),
         ],
       ],
     );
   }
 
+  /// The debounce stays, for a different reason than before. It used to space
+  /// out network requests; now it spaces out re-subscriptions, which are cheap
+  /// — so it is only about not re-sorting the list under the operator's cursor
+  /// on every keystroke.
   void _onSearchChanged(String v) {
     setState(() {}); // suffixIcon ko'rinishini yangilash uchun
     _searchDebounce?.cancel();
     _searchDebounce = Timer(const Duration(milliseconds: 350), () {
       if (!mounted) return;
-      if (_searchQuery == v.trim()) return;
-      setState(() => _searchQuery = v.trim());
-      _load(page: 1);
+      _cubit.setSearch(v);
     });
   }
 
-  Widget _buildFilters() {
+  Widget _buildFilters(UsersState state) {
     final colors = context.colors;
     return Row(
       children: [
@@ -229,8 +185,8 @@ class _UsersSectionState extends State<UsersSection> {
                       onPressed: () {
                         _searchDebounce?.cancel();
                         _searchCtrl.clear();
-                        setState(() => _searchQuery = '');
-                        _load(page: 1);
+                        setState(() {});
+                        _cubit.setSearch('');
                       },
                     ),
               hintText: S.current.strSearchNameOrUsername,
@@ -242,8 +198,7 @@ class _UsersSectionState extends State<UsersSection> {
             onChanged: _onSearchChanged,
             onSubmitted: (v) {
               _searchDebounce?.cancel();
-              setState(() => _searchQuery = v.trim());
-              _load(page: 1);
+              _cubit.setSearch(v);
             },
           ),
         ),
@@ -251,7 +206,7 @@ class _UsersSectionState extends State<UsersSection> {
         SizedBox(
           width: 200,
           child: DropdownButtonFormField<String?>(
-            value: _roleFilter,
+            value: state.role,
             decoration: InputDecoration(
               labelText: S.current.strRole,
               isDense: true,
@@ -271,56 +226,23 @@ class _UsersSectionState extends State<UsersSection> {
                 ),
               ),
             ],
-            onChanged: (v) {
-              setState(() => _roleFilter = v);
-              _load(page: 1);
-            },
+            onChanged: _cubit.setRole,
           ),
         ),
       ],
     );
   }
 
-  Widget _buildList() {
-    final colors = context.colors;
-    if (_loading) {
-      return const Center(child: CircularProgressIndicator.adaptive());
-    }
-    if (_error != null) {
-      return Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.error_outline, size: 32, color: colors.systemError),
-            const SizedBox(height: 10),
-            SizedBox(
-              width: 320,
-              child: Text(
-                _error!,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: colors.systemError,
-                  fontFamily: 'Inter',
-                  fontSize: 13,
-                ),
-              ),
-            ),
-            const SizedBox(height: 12),
-            SectionPrimaryButton(
-              icon: Icons.refresh_rounded,
-              label: S.current.strRetry,
-              onPressed: () => _load(page: _page),
-            ),
-          ],
-        ),
-      );
-    }
-    if (_users.isEmpty) {
-      if (_isSearching) {
+  /// No loading branch and no retry button. Both existed to cover a network
+  /// round trip: the read is now synchronous against the replica, so there is
+  /// no state between asking and having the rows, and nothing to retry.
+  Widget _buildList(UsersState state, List<_AdminUser> users) {
+    if (users.isEmpty) {
+      if (state.isSearching) {
         return SectionEmptyState(
           icon: Icons.search_off_rounded,
           title: S.current.strNoDataFound,
-          subtitle: '"${_searchQuery.trim()}" bo\'yicha xodim topilmadi',
+          subtitle: '"${state.search}" bo\'yicha xodim topilmadi',
         );
       }
       return SectionEmptyState(
@@ -337,10 +259,10 @@ class _UsersSectionState extends State<UsersSection> {
     }
     return ListView.separated(
       padding: EdgeInsets.zero,
-      itemCount: _users.length,
+      itemCount: users.length,
       separatorBuilder: (_, _) => const SizedBox(height: 10),
       itemBuilder: (_, i) {
-        final u = _users[i];
+        final u = users[i];
         return _UserCard(
           user: u,
           onEdit: () => _openEditor(existing: u),
@@ -351,7 +273,7 @@ class _UsersSectionState extends State<UsersSection> {
     );
   }
 
-  Widget _buildPaginator() {
+  Widget _buildPaginator(UsersState state) {
     final colors = context.colors;
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -368,12 +290,9 @@ class _UsersSectionState extends State<UsersSection> {
             height: 44,
             child: NumberPaginator(
               controller: _paginatorController,
-              numberPages: _totalPages,
-              initialPage: (_page - 1).clamp(0, _totalPages - 1),
-              onPageChange: (i) {
-                if (_loading) return;
-                _load(page: i + 1);
-              },
+              numberPages: state.totalPages,
+              initialPage: (state.page - 1).clamp(0, state.totalPages - 1),
+              onPageChange: (i) => _cubit.setPage(i + 1),
               child: const SizedBox(
                 height: 40,
                 child: Row(
@@ -397,7 +316,7 @@ class _UsersSectionState extends State<UsersSection> {
           ),
           child: DropdownButtonHideUnderline(
             child: DropdownButton<int>(
-              value: _pageSize,
+              value: state.pageSize,
               isDense: true,
               icon: Icon(Icons.expand_more_rounded,
                   color: colors.textSecondary),
@@ -414,9 +333,7 @@ class _UsersSectionState extends State<UsersSection> {
                       ))
                   .toList(),
               onChanged: (v) {
-                if (v == null || v == _pageSize || _loading) return;
-                setState(() => _pageSize = v);
-                _load(page: 1);
+                if (v != null) _cubit.setPageSize(v);
               },
             ),
           ),
@@ -569,10 +486,10 @@ class _UserCardState extends State<_UserCard> {
 }
 
 class _UserEditDialog extends StatefulWidget {
-  final MainRepository repository;
+  final UsersCubit cubit;
   final _AdminUser? existing;
 
-  const _UserEditDialog({required this.repository, this.existing});
+  const _UserEditDialog({required this.cubit, this.existing});
 
   @override
   State<_UserEditDialog> createState() => _UserEditDialogState();
@@ -640,7 +557,15 @@ class _UserEditDialogState extends State<_UserEditDialog> {
     return null;
   }
 
-  Future<void> _save() async {
+  /// Not a `Future` any more, and `_saving` never becomes true for long enough
+  /// to render: the write commits locally and returns. The double-submit guard
+  /// stays because a fast second tap is still a second write.
+  ///
+  /// The two bodies keep their different key styles — `fullName` for register,
+  /// `full_name` for update — because they are two different endpoints' request
+  /// shapes, and the request is what the outbox replays. Only the update body
+  /// doubles as a local row, and only its keys have to match the server's.
+  void _save() {
     if (_saving) return;
     if (!(_formKey.currentState?.validate() ?? false)) return;
     setState(() {
@@ -648,8 +573,8 @@ class _UserEditDialogState extends State<_UserEditDialog> {
       _error = null;
     });
 
-    final result = _isCreate
-        ? await widget.repository.createUser({
+    final ok = _isCreate
+        ? widget.cubit.createUser({
             'fullName': _fullNameCtrl.text.trim(),
             'phoneNumber': _phoneCtrl.text.trim(),
             'username': _usernameCtrl.text.trim(),
@@ -658,7 +583,7 @@ class _UserEditDialogState extends State<_UserEditDialog> {
               'pincode': _pincodeCtrl.text.trim(),
             'role': _role,
           })
-        : await widget.repository.updateUser(widget.existing!.id, {
+        : widget.cubit.updateUser(widget.existing!.id, {
             'full_name': _fullNameCtrl.text.trim(),
             'username': _usernameCtrl.text.trim(),
             'phone_number': _phoneCtrl.text.trim(),
@@ -668,14 +593,16 @@ class _UserEditDialogState extends State<_UserEditDialog> {
               'pincode': _pincodeCtrl.text.trim(),
             'is_active': _isActive,
           });
+
     if (!mounted) return;
-    result.fold(
-      (failure) => setState(() {
+    if (ok) {
+      Navigator.pop(context, true);
+    } else {
+      setState(() {
         _saving = false;
-        _error = failure.getLocalizedMessage(context);
-      }),
-      (_) => Navigator.pop(context, true),
-    );
+        _error = widget.cubit.state.error;
+      });
+    }
   }
 
   @override
@@ -1038,16 +965,6 @@ class _AdminUser {
     if (username != null && username!.isNotEmpty) return username!;
     return 'No name';
   }
-
-  _AdminUser copyWith({bool? isActive}) => _AdminUser(
-        id: id,
-        fullName: fullName,
-        username: username,
-        role: role,
-        isActive: isActive ?? this.isActive,
-        email: email,
-        phoneNumber: phoneNumber,
-      );
 
   factory _AdminUser.fromJson(Map<String, dynamic> json) {
     return _AdminUser(

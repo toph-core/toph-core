@@ -164,17 +164,6 @@ abstract class MainDataSources {
 
   Future<Either<Failure, bool>> deleteTransaction(String id);
 
-  /// `GET /api/v1/users` (admin-only, distinct from the role-appropriate
-  /// [getUsers] used by the waiter-assignment dropdown) or
-  /// `GET /api/v1/users/search` when [search] is non-empty.
-  Future<Either<Failure, ({List<Map<String, dynamic>> items, int? total})>>
-      getAdminUsers({
-    required int limit,
-    required int offset,
-    String? search,
-    String? role,
-  });
-
   /// `POST /api/v1/auth/register` — creates a new staff account.
   Future<Either<Failure, bool>> createUser(Map<String, dynamic> body);
 
@@ -1196,50 +1185,6 @@ class MainDataSourcesImpl implements MainDataSources {
     try {
       await _client.delete(ListAPI.transactionById(id));
       return const Right(true);
-    } on DioException catch (exception) {
-      return Left(handleDioException(exception));
-    } catch (e, st) {
-      if (kDebugMode) print('Unknown error: $e\n$st');
-      return const Left(UnknownFailure());
-    }
-  }
-
-  @override
-  Future<Either<Failure, ({List<Map<String, dynamic>> items, int? total})>>
-      getAdminUsers({
-    required int limit,
-    required int offset,
-    String? search,
-    String? role,
-  }) async {
-    try {
-      final isSearching = search != null && search.isNotEmpty;
-      final res = await _client.get(
-        isSearching ? ListAPI.usersSearch : ListAPI.users,
-        queryParameters: {
-          'limit': limit,
-          'offset': offset,
-          if (isSearching) 'query': search,
-          // List endpoint qo'shimcha `role` filtrini qo'llaydi; search endpoint
-          // server tomonida role filtrini qabul qilmaydi — natija filtri caller'da.
-          if (!isSearching && role != null) 'role': role,
-        },
-      );
-      final root = res.data;
-      List<dynamic> data = const [];
-      int? total;
-      if (root is List) {
-        data = root;
-      } else if (root is Map) {
-        if (root['data'] is List) data = root['data'] as List;
-        if (root['pagination'] is Map) {
-          total = ((root['pagination'] as Map)['total'] as num?)?.toInt();
-        }
-      }
-      return Right((
-        items: data.map((e) => Map<String, dynamic>.from(e as Map)).toList(),
-        total: total,
-      ));
     } on DioException catch (exception) {
       return Left(handleDioException(exception));
     } catch (e, st) {

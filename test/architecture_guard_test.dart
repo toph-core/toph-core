@@ -155,7 +155,6 @@ void main() {
       'lib/features/view/main/presentation/pages/menu/menu_meals_list_screen.dart',
       'lib/features/view/main/presentation/pages/settings/sections/halls_tables_section.dart',
       'lib/features/view/main/presentation/pages/settings/sections/printers_section.dart',
-      'lib/features/view/main/presentation/pages/settings/sections/users_section.dart',
       'lib/features/view/main/presentation/pages/transactions/sections/transaction_categories_section.dart',
       'lib/features/view/main/presentation/pages/transactions/sections/transactions_list_section.dart',
     };

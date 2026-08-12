@@ -5,8 +5,6 @@ class ListAPI {
   static const String loginPinCode = "api/v1/auth/login-pincode";
   static const String refresh = "api/v1/auth/refresh";
   static const String user = "api/v1/user/me";
-  static const String users = "api/v1/users";
-  static const String usersSearch = "api/v1/users/search";
   /// Staff list reachable by a normal terminal/waiter/cashier session — unlike
   /// [users] (admin-only), this is the endpoint the backend's own doc comment
   /// says is meant for "Flutter reads during initial data pull".

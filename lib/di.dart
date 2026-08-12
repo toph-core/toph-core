@@ -40,6 +40,10 @@ import 'package:mary_ai_pos/features/view/auth/domain/usecases/logout/logout_use
 import 'package:mary_ai_pos/features/view/auth/domain/usecases/user/get_user_usecase.dart';
 import 'package:mary_ai_pos/features/view/auth/presentation/cubit/bloc/user_bloc.dart';
 import 'package:mary_ai_pos/features/view/main/data/repository/archives_local_repository_impl.dart';
+import 'package:mary_ai_pos/features/view/main/data/repository/users_local_repository_impl.dart';
+import 'package:mary_ai_pos/features/view/main/data/outbox/users_outbox.dart';
+import 'package:mary_ai_pos/features/view/main/domain/repository/users_local_repository.dart';
+import 'package:mary_ai_pos/features/view/main/presentation/cubit/users/users_cubit.dart';
 import 'package:mary_ai_pos/features/view/main/data/repository/menu_local_repository_impl.dart';
 import 'package:mary_ai_pos/features/view/main/data/repository/table_timer_local_repository_impl.dart';
 import 'package:mary_ai_pos/features/view/main/data/repository/waiter_local_repository_impl.dart';
@@ -286,6 +290,12 @@ Future<void> initDi() async {
   _useCase();
   _cubit();
 
+  // OFFLINE_FIRST_EVERYWHERE_PLAN.md Phase 4 — the outbox stops being dormant
+  // here. Registered after `_repositories()` because a handler resolves the
+  // remote repository it sends through; one call per migrated screen, so the
+  // registry stays a readable list of what is actually on the queue.
+  registerUsersOutboxHandlers(outboxExecutors, inject<MainRepository>());
+
   // BACKEND_SYNC_PLAN.md §5: every registration the startup tick's
   // hydration pass resolves lazily (MainRepository, UserBloc, ...) exists
   // by this point — see the note at the SyncEngine registration above.
@@ -318,6 +328,12 @@ void _repositories() {
   );
   inject.registerLazySingleton<ArchivesLocalRepository>(
     () => ArchivesLocalRepositoryImpl(inject(), inject(), inject()),
+  );
+  // OFFLINE_FIRST_EVERYWHERE_PLAN.md Phase 4 — the staff screen reads the
+  // replica and writes through the outbox. Takes LocalDatabase + LocalWriter
+  // and nothing else: no datasource, no DioClient, no ConnectivityCubit fork.
+  inject.registerLazySingleton<UsersLocalRepository>(
+    () => UsersLocalRepositoryImpl(inject<replica.LocalDatabase>(), inject()),
   );
   inject.registerLazySingleton<MenuLocalRepository>(
     () => MenuLocalRepositoryImpl(inject(), inject(), inject(), inject()),
@@ -406,6 +422,10 @@ void _cubit() {
     () => MainCubit(inject(), inject()),
   );
   inject.registerLazySingleton(() => KeyboardCubit());
+  // A factory, not a singleton: UsersCubit holds a replica subscription and the
+  // staff screen's filter state, and closes both on dispose. A singleton would
+  // be handed out closed the second time the screen opened.
+  inject.registerFactory(() => UsersCubit(inject()));
   inject.registerLazySingleton(
     () => ShiftBloc(
       prefs: inject(),

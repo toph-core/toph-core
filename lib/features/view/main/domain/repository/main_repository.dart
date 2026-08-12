@@ -124,14 +124,6 @@ abstract class MainRepository {
 
   Future<Either<Failure, bool>> deleteTransaction(String id);
 
-  Future<Either<Failure, ({List<Map<String, dynamic>> items, int? total})>>
-      getAdminUsers({
-    required int limit,
-    required int offset,
-    String? search,
-    String? role,
-  });
-
   Future<Either<Failure, bool>> createUser(Map<String, dynamic> body);
 
   Future<Either<Failure, bool>> updateUser(String id, Map<String, dynamic> body);

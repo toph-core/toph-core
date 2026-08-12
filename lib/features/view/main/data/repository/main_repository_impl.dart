@@ -284,20 +284,6 @@ class MainRepositoryImpl implements MainRepository {
       _dataSources.deleteTransaction(id);
 
   @override
-  Future<Either<Failure, ({List<Map<String, dynamic>> items, int? total})>>
-      getAdminUsers({
-    required int limit,
-    required int offset,
-    String? search,
-    String? role,
-  }) => _dataSources.getAdminUsers(
-        limit: limit,
-        offset: offset,
-        search: search,
-        role: role,
-      );
-
-  @override
   Future<Either<Failure, bool>> createUser(Map<String, dynamic> body) =>
       _dataSources.createUser(body);
 
