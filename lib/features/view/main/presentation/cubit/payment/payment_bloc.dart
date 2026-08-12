@@ -13,7 +13,7 @@ import 'package:mary_ai_pos/core/services/cache/cache_service.dart';
 import 'package:mary_ai_pos/core/services/offline_queue/offline_queue_service.dart';
 import 'package:mary_ai_pos/core/services/offline_queue/pending_operation.dart';
 import 'package:mary_ai_pos/core/utils/helper/helper_widget.dart';
-import 'package:mary_ai_pos/core/utils/order_totals.dart';
+import 'package:mary_ai_pos/core/pricing/order_totals.dart';
 import 'package:mary_ai_pos/di.dart' show inject;
 import 'package:mary_ai_pos/features/view/main/data/models/archive_detail/archive_detail_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/cafe_tables/cafe_tables_model.dart';
@@ -53,11 +53,20 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
   int _timerTotalSec = 0;
   String? _timerPricePerHour;
 
+  /// Branch service percent handed over at navigation time, used when the
+  /// order detail itself reports 0. Carried as a plain field rather than in
+  /// `PaymentState` for the same reason the timer info above is: adding a
+  /// freezed field would mean regenerating `payment_bloc.freezed.dart`.
+  double _servicePercent = 0;
+
   // Public read-only getters for UI (preview modal)
   DateTime? get timerStartedAt => _timerStartedAt;
   List<PauseInterval> get timerPauses => _timerPauses;
   int get timerTotalSec => _timerTotalSec;
   String? get timerPricePerHour => _timerPricePerHour;
+  double get servicePercent => _servicePercent;
+
+  void setServicePercent(double percent) => _servicePercent = percent;
 
   void setTimerInfo({
     DateTime? startedAt,
@@ -108,8 +117,9 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
     final detail = state.detail;
     String? newEnterSum;
     if (detail != null) {
-      final oldExpected = effectiveTotal(detail, tableCharge: state.hourPrice);
-      final newExpected = effectiveTotal(detail, tableCharge: event.hourPrice);
+      final oldExpected = totals(detail: detail).grandTotal;
+      final newExpected =
+          totals(detail: detail, tableCharge: event.hourPrice).grandTotal;
       final currentEntered = int.tryParse(state.enterSum) ?? 0;
       if (currentEntered == 0 || currentEntered == oldExpected) {
         newEnterSum = newExpected.toString();
@@ -145,14 +155,14 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
       emit(state.copyWith(discountType: event.dicountType));
 
   void _payment(_Payment event, Emitter<PaymentState> emit) async {
+    if (state.detail == null) return;
     final enteredAmt = int.tryParse(state.enterSum) ?? 0;
-    final dueTot = state.detail != null
-        ? effectiveTotal(state.detail!, tableCharge: state.hourPrice) +
-            pendingOfflineExtra(state.tableId)
-        : 1;
+    // Exactly the number the cashier is looking at — see [totals].
+    final due = totals();
+    final dueTot = due.grandTotal;
     final cashNeedsAmount =
         state.paymentType == PaymentType.cash && enteredAmt <= 0 && dueTot > 0;
-    if (state.detail == null || cashNeedsAmount) return;
+    if (cashNeedsAmount) return;
 
     // Cash sends entered amount; card/qr send the computed due total.
     final paidAmount =
@@ -189,6 +199,7 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
       applyService: state.applyService,
       discountAmount: discountAmount,
       discountPercent: discountPercent,
+      tableCharge: due.tableCharge,
     );
     showSuccessMessage(
       navigatorKey.currentContext!,
@@ -302,12 +313,31 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
     return extra;
   }
 
-  /// Authoritative payment total — delegates to [OrderTotals] (main formula).
-  static int effectiveTotal(
-    ArchiveDetailEntity detail, {
-    double tableCharge = 0,
-  }) {
-    return OrderTotals.fromDetail(detail, tableCharge: tableCharge).grandTotal;
+  /// The authoritative payment total, assembled in exactly one place.
+  ///
+  /// The payment screen renders this and [_payment] charges it. They used to
+  /// build their own totals from different subsets of the same state — the
+  /// screen passed the discount, the service toggle and the branch service
+  /// percent; the pay path passed none of them — so a card or QR payment
+  /// charged the *undiscounted, service-included* amount while the cashier
+  /// looked at the discounted one. One assembly point makes that class of
+  /// divergence unrepresentable rather than merely fixed.
+  ///
+  /// [detail] and [tableCharge] override state only for callers that need to
+  /// price a value not committed to state yet (a detail still in flight, or a
+  /// prospective table charge being compared against the current one).
+  OrderTotals totals({ArchiveDetailEntity? detail, double? tableCharge}) {
+    final target = detail ?? state.detail;
+    if (target == null) return OrderTotals.compute(itemsAmount: 0);
+    return OrderTotals.forPayment(
+      detail: target,
+      tableCharge: tableCharge ?? state.hourPrice,
+      offlineExtra: pendingOfflineExtra(state.tableId).toDouble(),
+      servicePercent: _servicePercent,
+      discountType: state.discountType,
+      discountRaw: state.discountAmount,
+      includeService: state.applyService,
+    );
   }
 
   Future<void> _onStarted(_Started event, emit) async {
@@ -348,7 +378,7 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
       return;
     }
     final cachedTs = inject<CacheService>().getItemTimestamps(detail.id);
-    final prefill = PaymentBloc.effectiveTotal(detail, tableCharge: state.hourPrice);
+    final prefill = totals(detail: detail).grandTotal;
     final currentEntered = int.tryParse(state.enterSum) ?? 0;
     // Prefill when empty, OR when enterSum is still the stale under-total
     // (old formula omitted service on table charge).

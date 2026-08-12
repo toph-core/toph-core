@@ -98,6 +98,10 @@ abstract class WaiterLocalRepository {
     required String paymentType,
     double discountPercent,
     double discountAmount,
+
+    /// Frozen table charge carried on the order, pinned into the pay payload
+    /// for the same reason `PaymentRepository.pay` pins it.
+    int tableCharge,
   });
 
   /// Local commit, gated by the same table lease `CreateOrderBloc` awaits

@@ -16,13 +16,11 @@ import 'package:mary_ai_pos/features/view/main/data/models/create_order/create_o
 import 'package:mary_ai_pos/features/view/main/data/models/department/department_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/goods/goods_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/hall/hall_model.dart';
-import 'package:mary_ai_pos/features/view/main/data/models/hour_price/hour_price_response_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/open_shift/open_shift_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/shift/shift_response_model.dart';
 import 'package:mary_ai_pos/features/view/main/domain/entities/archive_detail_entity.dart';
 import 'package:mary_ai_pos/features/view/main/domain/entities/archives_filter_request_entity.dart';
 import 'package:mary_ai_pos/features/view/main/domain/entities/archives_response_entity.dart';
-import 'package:mary_ai_pos/features/view/main/domain/entities/hour_price_response_entity.dart';
 
 
 abstract class MainDataSources {
@@ -73,10 +71,6 @@ abstract class MainDataSources {
 
   Future<Either<Failure, bool>> closeShift({
     required CloseShiftRequestModel request,
-  });
-
-  Future<Either<Failure, HourPriceResponseEntity>> getHourPrice({
-    required String orderId,
   });
 
   Future<Either<Failure, List<PrinterSettingEntry>>> getPrinterSettings();
@@ -313,30 +307,6 @@ class MainDataSourcesImpl implements MainDataSources {
     } on TypeError catch (e, st) {
       if (kDebugMode) print('ParsingError: $e\n$st');
       return const Left(ParsingFailure());
-    } catch (e, st) {
-      if (kDebugMode) print('Unknown error: $e\n$st');
-      return const Left(UnknownFailure());
-    }
-  }
-
-  @override
-  Future<Either<Failure, HourPriceResponseEntity>> getHourPrice({
-    required String orderId,
-  }) async {
-    try {
-      final getOrderId = await getOrderIdWithTableId(tableId: orderId);
-      final response = await _client.get(ListAPI.orderHourPrice(getOrderId));
-      return Right(HourPriceResponseModel.fromJson(response.data['data']));
-    } on DioException catch (exception) {
-      return Left(handleDioException(exception));
-    } on FormatException catch (e, st) {
-      if (kDebugMode) print('ParsingError: $e\n$st');
-      return const Left(ParsingFailure());
-    } on TypeError catch (e, st) {
-      if (kDebugMode) print('ParsingError: $e\n$st');
-      return const Left(ParsingFailure());
-    } on String catch (e) {
-      return Left(MessageFailure(e));
     } catch (e, st) {
       if (kDebugMode) print('Unknown error: $e\n$st');
       return const Left(UnknownFailure());

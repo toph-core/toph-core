@@ -264,6 +264,7 @@ class WaiterLocalRepositoryImpl implements WaiterLocalRepository {
     required String paymentType,
     double discountPercent = 0,
     double discountAmount = 0,
+    int tableCharge = 0,
   }) async {
     await _payment.pay(
       orderId: orderId,
@@ -273,6 +274,7 @@ class WaiterLocalRepositoryImpl implements WaiterLocalRepository {
       applyService: true,
       discountAmount: discountAmount > 0 ? discountAmount.round() : null,
       discountPercent: discountPercent > 0 ? discountPercent.round() : null,
+      tableCharge: tableCharge,
     );
     // Finish locally: the bill row is closed, the table is free — same side
     // effects the cashier pay flow performs, kept here so the waiter screen

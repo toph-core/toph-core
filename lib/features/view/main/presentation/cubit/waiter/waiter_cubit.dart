@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mary_ai_pos/core/components/flush_bars.dart';
 import 'package:mary_ai_pos/core/constants/constants.dart';
 import 'package:mary_ai_pos/core/error/failure.dart';
+import 'package:mary_ai_pos/core/pricing/order_totals.dart';
 import 'package:mary_ai_pos/core/utils/helper/helper_widget.dart';
 import 'package:mary_ai_pos/core/service/printer/printer_service.dart';
 import 'package:mary_ai_pos/core/services/cache/cache_service.dart';
@@ -354,17 +355,22 @@ class WaiterCubit extends Cubit<WaiterState> {
     final tableCharge = order.tableAmountInt.toDouble();
     final servicePct = order.servicePercent ?? 0;
 
-    if (tableCharge > 0.01) {
-      // Service applies to items only — table_charge is not serviced.
-      final serviceAmt = (sumLines * servicePct / 100).round();
-      return sumLines.round() + tableCharge.round() + serviceAmt;
+    // Trust the server's recorded total only for a synced order carrying no
+    // table charge — the same Phase 4 seam documented on
+    // `OrderTotals.fromDetail`, and the same reason it is left standing here.
+    if (tableCharge <= 0.01) {
+      final apiTotal = order.totalAmountValue;
+      if (apiTotal > 0) return apiTotal.round();
     }
 
-    final apiTotal = order.totalAmountValue;
-    if (apiTotal > 0) return apiTotal.round();
-
-    final serviceAmt = (sumLines * servicePct / 100).round();
-    return sumLines.round() + serviceAmt;
+    // Phase 3: this used to be a fourth hand-rolled copy of the pay formula.
+    // The waiter and the cashier now price a check through the same engine,
+    // so the two screens cannot disagree about what a table owes.
+    return OrderTotals.compute(
+      itemsAmount: sumLines,
+      tableCharge: tableCharge,
+      servicePercent: servicePct,
+    ).grandTotal;
   }
 
   /// Printing and the local "this order is closed" state update — the pay
@@ -463,6 +469,7 @@ class WaiterCubit extends Cubit<WaiterState> {
       paymentType: paymentType.name,
       discountPercent: discountPercent,
       discountAmount: discountAmount,
+      tableCharge: order.tableAmountInt,
     );
     if (isClosed) return;
     _finishCloseOrderLocally(

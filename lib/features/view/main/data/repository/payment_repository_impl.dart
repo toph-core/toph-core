@@ -19,6 +19,7 @@ class PaymentRepositoryImpl implements PaymentRepository {
     required bool applyService,
     int? discountAmount,
     int? discountPercent,
+    int tableCharge = 0,
   }) async {
     final payload = jsonEncode({
       'order_id': orderId,
@@ -35,6 +36,10 @@ class PaymentRepositoryImpl implements PaymentRepository {
       // (OfflineQueueService.syncAll's backoff loop) resends the identical
       // id rather than a fresh one per attempt.
       'client_payment_id': generateUuidV4(),
+      // Phase 3: pin the table charge to the clock the receipt was printed
+      // against. The value is frozen into the persisted payload here, so a
+      // replay hours later still bills the minutes the customer actually sat.
+      if (tableCharge > 0) 'table_charge': tableCharge,
       if (discountAmount != null && discountAmount > 0)
         'discount_amount': discountAmount,
       if (discountPercent != null && discountPercent > 0)

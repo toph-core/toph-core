@@ -15,6 +15,16 @@ abstract class PaymentRepository {
     required bool applyService,
     int? discountAmount,
     int? discountPercent,
+
+    /// The locally-computed time-based table charge, in so'm.
+    ///
+    /// Sent so the server prices the check against the clock the customer was
+    /// actually charged on. Without it the backend re-derives the charge from
+    /// its own timer when the queued pay replays, which for an offline check
+    /// is a *later* clock than the one on the receipt — the customer is billed
+    /// for the minutes between closing the table and the terminal coming back
+    /// online.
+    int tableCharge = 0,
   });
 
   /// A fully-discounted/comped check closed with nothing due — `/cancel`,

@@ -5,7 +5,7 @@ import 'package:mary_ai_pos/core/api/api.dart';
 import 'package:mary_ai_pos/core/design_system/pos_design_system.dart';
 import 'package:mary_ai_pos/core/extension/for_context.dart';
 import 'package:mary_ai_pos/core/extension/number_formatter.dart';
-import 'package:mary_ai_pos/core/utils/order_totals.dart';
+import 'package:mary_ai_pos/core/pricing/order_totals.dart';
 import 'package:mary_ai_pos/core/services/cache/cache_service.dart';
 import 'package:mary_ai_pos/core/services/offline_queue/offline_queue_service.dart';
 import 'package:mary_ai_pos/core/services/offline_queue/pending_operation.dart';
@@ -38,7 +38,6 @@ class PaymentScreen extends StatefulWidget {
 
 class _PaymentScreenState extends State<PaymentScreen> {
   final _discountFocused = ValueNotifier<bool>(false);
-  bool _includeService = true;
 
   late final args =
       ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>;
@@ -75,6 +74,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
           BlocProvider(
             create: (_) {
               final bloc = inject<PaymentBloc>()
+                ..setServicePercent(_servicePercent)
                 ..add(PaymentEvent.started(tableId: tableId, orderId: orderId));
               if (_passedHourAmount > 0) {
                 bloc.add(
@@ -133,21 +133,10 @@ class _PaymentScreenState extends State<PaymentScreen> {
                 );
               }
 
-              final discountAmt = int.tryParse(state.discountAmount) ?? 0;
-              final totals = OrderTotals.fromDetail(
-                state.detail!,
-                tableCharge: state.hourPrice,
-                offlineExtra: PaymentBloc.pendingOfflineExtra(state.tableId)
-                    .toDouble(),
-                servicePercentFallback: _servicePercent,
-                discountPercent: state.discountType == DiscountType.money
-                    ? 0
-                    : discountAmt.toDouble(),
-                discountAmount: state.discountType == DiscountType.money
-                    ? discountAmt.toDouble()
-                    : 0,
-                includeService: _includeService,
-              );
+              // Phase 3: the displayed total and the charged total are now the
+              // same call on the same state — the screen no longer assembles
+              // its own inputs. See `PaymentBloc.totals`.
+              final totals = context.read<PaymentBloc>().totals();
               final finalTotal = totals.grandTotal;
               final serviceToggleAmt = totals.serviceAmount;
 
@@ -171,7 +160,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
                             detail: state.detail!,
                             tableId: tableId,
                             servicePercentFallback: _servicePercent,
-                            includeService: _includeService,
+                            includeService: state.applyService,
                             onToggleService: (v) {
                               final bloc = context.read<PaymentBloc>();
                               final entered =
@@ -181,7 +170,10 @@ class _PaymentScreenState extends State<PaymentScreen> {
                                   v ? serviceToggleAmt : -serviceToggleAmt;
                               final newTotal =
                                   (finalTotal + delta).clamp(0, 999999999);
-                              setState(() => _includeService = v);
+                              // `state.applyService` is the only copy of this
+                              // flag now; the BlocBuilder above rebuilds off
+                              // it, so there is no screen-local mirror to keep
+                              // in sync (and none to fall out of sync).
                               bloc.add(PaymentEvent.updateApplyService(
                                 applyService: v,
                               ));

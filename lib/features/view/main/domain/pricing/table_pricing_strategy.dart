@@ -64,7 +64,9 @@ class TimeBasedAccruingPricing extends TablePricingStrategy {
     if (timer.stateNormalized == 'running' && price > 0) {
       return ((displayActiveSec / 3600.0) * price).round();
     }
-    // Paused/closed — server qaytargan summa avtoritar.
+    // Paused/closed — timer yozuvidagi summa avtoritar. (Nomi tarixiy:
+    // `currentAmount` endi serverdan emas, `TableTimerLocalRepository._compute`
+    // dan keladi — lokal soat bo'yicha hisoblanadi.)
     final fromApi = parseAmountToInt(timer.currentAmount);
     if (fromApi > 0) return fromApi;
     if (price == 0) return 0;

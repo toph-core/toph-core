@@ -14,7 +14,6 @@ import 'package:mary_ai_pos/features/view/main/data/models/shift/shift_response_
 import 'package:mary_ai_pos/features/view/main/domain/entities/archive_detail_entity.dart';
 import 'package:mary_ai_pos/features/view/main/domain/entities/archives_filter_request_entity.dart';
 import 'package:mary_ai_pos/features/view/main/domain/entities/archives_response_entity.dart';
-import 'package:mary_ai_pos/features/view/main/domain/entities/hour_price_response_entity.dart';
 
 
 abstract class MainRepository {
@@ -47,10 +46,6 @@ abstract class MainRepository {
 
   Future<Either<Failure, String>> createTakewayOrder({
     required CreateOrderRequestModel request,
-  });
-
-  Future<Either<Failure, HourPriceResponseEntity>> getHourPrice({
-    required String orderId,
   });
 
   Future<Either<Failure, List<CategoryModel>>> getCategories();
