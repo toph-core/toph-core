@@ -31,7 +31,11 @@ library;
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:sqlite3/sqlite3.dart';
+// `sqlite3` exports its own `SqlType` (the C-level column type constants).
+// This layer's `SqlType` is the schema-registry enum that drives column
+// generation, and it is the one every call site here means, so the package's
+// is hidden rather than prefixed.
+import 'package:sqlite3/sqlite3.dart' hide SqlType;
 
 import 'entity_registry.dart';
 
