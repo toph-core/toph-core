@@ -149,7 +149,6 @@ void main() {
     // waiting on Phase 4; the count is the remaining work, and it only ever
     // goes down.
     const pending = {
-      'lib/features/view/main/presentation/pages/detail/widgets/transfer_table_dialog.dart',
       'lib/features/view/main/presentation/pages/main/widgets/time_based_table_badge.dart',
       'lib/features/view/main/presentation/pages/menu/menu_manage_screen.dart',
       'lib/features/view/main/presentation/pages/menu/menu_meals_list_screen.dart',

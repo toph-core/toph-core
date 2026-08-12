@@ -178,44 +178,27 @@ class LocalDatabase {
       _saveList(_departments, items.map((e) => e.toJson()).toList());
 
   // ── Halls ────────────────────────────────────────────────────────────
-  Stream<List<HallModel>> watchHalls() =>
-      _watchList(_halls).map((raw) => raw.map(HallModel.fromJson).toList());
-
-  List<HallModel> getHalls() => _getList(_halls).map(HallModel.fromJson).toList();
-
+  /// Written by the hydration pass, read by nobody. Halls are served from the
+  /// replica now (`TablesRepository`); this stays only until the hydration
+  /// pass itself is retired with the last screen that depends on this store.
   Future<void> saveHalls(List<HallModel> items) =>
       _saveList(_halls, items.map((e) => e.toJson()).toList());
 
   // ── Tables ───────────────────────────────────────────────────────────
-  Stream<List<CafeTableModel>> watchTables() =>
-      _watchList(_tables).map((raw) => raw.map(CafeTableModel.fromJson).toList());
-
+  /// Still read by the timer and hydration paths, which have not moved yet.
+  /// No screen reads it — those go through `TablesRepository` to the replica.
+  ///
+  /// Note what is gone: the reactive variants, the per-hall filter, and
+  /// `updateTableStatus`. That last one was the reason occupancy was fragile —
+  /// it patched `status` inside this cached list, and the next hydration pass
+  /// replaced the list wholesale with the server's rows, resetting every busy
+  /// table to whatever the server last knew. Occupancy is now a local-authority
+  /// record in the replica, which replication cannot overwrite.
   List<CafeTableModel> getTables() =>
       _getList(_tables).map(CafeTableModel.fromJson).toList();
 
   Future<void> saveTables(List<CafeTableModel> items) =>
       _saveList(_tables, items.map((e) => e.toJson()).toList());
-
-  /// Derived, not separately stored — same source list as [watchTables],
-  /// filtered client-side. A single indexed lookup over an already-small
-  /// list, not the kind of join the design doc reserves for a relational
-  /// engine.
-  Stream<List<CafeTableModel>> watchTablesForHall(String hallId) =>
-      watchTables().map((all) => all.where((t) => t.hallId == hallId).toList());
-
-  /// Local, immediate, durable table-status patch (§6/§9's `TablesRepository
-  /// .updateTableStatus`) — read-modify-write over the same list
-  /// [watchTables] serves, so every subscriber sees it on the next event
-  /// loop turn. A no-op if [tableId] isn't in the current list (e.g. a stale
-  /// LAN broadcast for a table deleted since).
-  Future<void> updateTableStatus(String tableId, TableStatus status) async {
-    final all = getTables();
-    final index = all.indexWhere((t) => t.id == tableId);
-    if (index == -1) return;
-    final updated = List<CafeTableModel>.from(all);
-    updated[index] = updated[index].copyWith(status: status);
-    await saveTables(updated);
-  }
 
   // ── Users / staff ────────────────────────────────────────────────────
   Stream<List<UserModel>> watchUsers() =>

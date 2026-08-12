@@ -62,7 +62,7 @@ class LocalDatabase {
   LocalDatabase._(this._db);
 
   /// Current schema version. Bump when [_migrate] gains a step.
-  static const schemaVersion = 1;
+  static const schemaVersion = 2;
 
   /// Opens the database at [path], creating and migrating the schema.
   /// Pass `:memory:` for tests.
@@ -127,6 +127,16 @@ class LocalDatabase {
         entity_id TEXT NOT NULL,
         since     INTEGER NOT NULL,
         PRIMARY KEY (entity, entity_id)
+      )
+    ''');
+
+    // Local-authority table occupancy. Never written by replication, never
+    // read from the feed — see [LocalTables.tableStatus].
+    _db.execute('''
+      CREATE TABLE IF NOT EXISTS ${LocalTables.tableStatus} (
+        table_id   TEXT PRIMARY KEY NOT NULL,
+        status     TEXT NOT NULL,
+        updated_at INTEGER NOT NULL
       )
     ''');
 
@@ -361,6 +371,43 @@ class LocalDatabase {
     _changes.add(touched);
   }
 
+  // ── Local table occupancy ──────────────────────────────────────────────
+
+  /// Records a table as free/busy/away. Local authority — see
+  /// [LocalTables.tableStatus].
+  ///
+  /// Notifies `cafe_tables` watchers rather than its own table name, because
+  /// every consumer reads occupancy *through* a table query. One notification
+  /// key means a status change and a floor-plan edit wake the same streams,
+  /// and no caller has to subscribe to both.
+  void setTableStatus(String tableId, String status) {
+    _db.execute(
+      'INSERT OR REPLACE INTO ${LocalTables.tableStatus} '
+      '(table_id, status, updated_at) VALUES (?, ?, ?)',
+      [tableId, status, DateTime.now().millisecondsSinceEpoch],
+    );
+    _touch('cafe_tables');
+  }
+
+  /// Every locally-known occupancy, as `tableId → status`.
+  Map<String, String> tableStatuses() {
+    final rows = _db.select(
+      'SELECT table_id, status FROM ${LocalTables.tableStatus}',
+    );
+    return {
+      for (final row in rows) row['table_id'] as String: row['status'] as String,
+    };
+  }
+
+  /// Drops occupancy for tables that no longer exist, so the overlay does not
+  /// accumulate rows for deleted tables forever.
+  void pruneTableStatuses() {
+    _db.execute(
+      'DELETE FROM ${LocalTables.tableStatus} WHERE table_id NOT IN '
+      '(SELECT id FROM cafe_tables)',
+    );
+  }
+
   // ── Local-write guard ──────────────────────────────────────────────────
 
   /// Marks a row as locally modified and not yet confirmed by the server.
@@ -432,7 +479,17 @@ class LocalDatabase {
   /// belonging to a different tenant must never be replayed into this one.
   void clearAll() {
     transaction(() {
-      for (final spec in kReplicatedEntities) {
+      // Local-authority table occupancy. Never written by replication, never
+    // read from the feed — see [LocalTables.tableStatus].
+    _db.execute('''
+      CREATE TABLE IF NOT EXISTS ${LocalTables.tableStatus} (
+        table_id   TEXT PRIMARY KEY NOT NULL,
+        status     TEXT NOT NULL,
+        updated_at INTEGER NOT NULL
+      )
+    ''');
+
+    for (final spec in kReplicatedEntities) {
         _db.execute('DELETE FROM ${spec.name}');
         _touch(spec.name);
       }
@@ -446,6 +503,16 @@ class LocalDatabase {
   /// Row counts per replicated table — for the sync-status screen and tests.
   Map<String, int> tableCounts() {
     final out = <String, int>{};
+    // Local-authority table occupancy. Never written by replication, never
+    // read from the feed — see [LocalTables.tableStatus].
+    _db.execute('''
+      CREATE TABLE IF NOT EXISTS ${LocalTables.tableStatus} (
+        table_id   TEXT PRIMARY KEY NOT NULL,
+        status     TEXT NOT NULL,
+        updated_at INTEGER NOT NULL
+      )
+    ''');
+
     for (final spec in kReplicatedEntities) {
       final rows = _db.select('SELECT COUNT(*) AS n FROM ${spec.name}');
       out[spec.name] = (rows.first['n'] as num).toInt();

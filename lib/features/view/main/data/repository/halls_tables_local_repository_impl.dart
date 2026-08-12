@@ -25,40 +25,19 @@ class HallsTablesLocalRepositoryImpl implements HallsTablesLocalRepository {
 
   @override
   Stream<List<HallModel>> watchHalls() =>
-      _query.watchHalls().map((rows) => _decode(rows, HallModel.fromJson));
+      _query.watchHalls().map((rows) => decodeRows(rows, HallModel.fromJson));
 
   @override
-  List<HallModel> getHalls() => _decode(_query.halls(), HallModel.fromJson);
+  List<HallModel> getHalls() => decodeRows(_query.halls(), HallModel.fromJson);
 
   @override
   Stream<List<CafeTableModel>> watchTablesForHall(String hallId) => _query
       .watchTablesForHall(hallId)
-      .map((rows) => _decode(rows, CafeTableModel.fromJson));
+      .map((rows) => decodeRows(rows, CafeTableModel.fromJson));
 
   @override
   List<CafeTableModel> getTablesForHall(String hallId) =>
-      _decode(_query.tablesForHall(hallId), CafeTableModel.fromJson);
-
-  /// Skips rows the model cannot parse instead of failing the whole list.
-  ///
-  /// Both models declare geometry (`width`, `pos_x`, …) non-nullable, so one
-  /// row missing a field would otherwise throw and blank the entire floor plan.
-  /// A replica is fed by whatever the server logged; one malformed row should
-  /// cost that row, not the screen.
-  static List<T> _decode<T>(
-    List<Map<String, dynamic>> rows,
-    T Function(Map<String, dynamic>) fromJson,
-  ) {
-    final out = <T>[];
-    for (final row in rows) {
-      try {
-        out.add(fromJson(row));
-      } catch (_) {
-        continue;
-      }
-    }
-    return out;
-  }
+      decodeRows(_query.tablesForHall(hallId), CafeTableModel.fromJson);
 
   // ── Writes ───────────────────────────────────────────────────────────
 
@@ -133,4 +112,25 @@ class HallsTablesLocalRepositoryImpl implements HallsTablesLocalRepository {
       return Left(MessageFailure('$e'));
     }
   }
+}
+
+/// Skips rows the model cannot parse instead of failing the whole list.
+///
+/// Both hall and table models declare geometry (`width`, `pos_x`, …)
+/// non-nullable, so one row missing a field would otherwise throw and blank the
+/// entire floor plan. A replica is fed by whatever the server logged; one
+/// malformed row should cost that row, not the screen.
+List<T> decodeRows<T>(
+  List<Map<String, dynamic>> rows,
+  T Function(Map<String, dynamic>) fromJson,
+) {
+  final out = <T>[];
+  for (final row in rows) {
+    try {
+      out.add(fromJson(row));
+    } catch (_) {
+      continue;
+    }
+  }
+  return out;
 }

@@ -1,14 +1,9 @@
-import 'dart:async' show unawaited;
-
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mary_ai_pos/core/common/dialog_action_buttons.dart';
 import 'package:mary_ai_pos/core/components/flush_bars.dart';
-import 'package:mary_ai_pos/core/services/cache/cache_service.dart';
-import 'package:mary_ai_pos/di.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/cafe_tables/cafe_tables_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/hall/hall_model.dart';
-import 'package:mary_ai_pos/features/view/main/domain/repository/orders_repository.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/main/main_cubit.dart';
 import 'package:mary_ai_pos/generated/l10n.dart';
 
@@ -75,33 +70,25 @@ class _TransferTableDialogState extends State<_TransferTableDialog> {
     super.dispose();
   }
 
-  /// CLIENT_FACING_OFFLINE_PLAN.md §7: a local write + outbox enqueue, same
-  /// shape as `OrdersRepository`'s other methods — no awaited network call
-  /// in this widget anymore. The local commit can't fail with a server
-  /// error; a genuine conflict (target table taken meanwhile on another
-  /// terminal) surfaces later via the outbox quarantine flow, like every
-  /// other queued write.
+  /// The whole action is one cubit call now — the bill re-key, both tables'
+  /// occupancy, the cache eviction and the queued `PUT` all live behind it,
+  /// where the widget cannot get the order wrong.
+  ///
+  /// The local commit cannot fail with a server error; a genuine conflict
+  /// (the target table claimed meanwhile on another terminal) surfaces later
+  /// through the outbox quarantine flow, like every other queued write.
   Future<void> _submit() async {
     final targetId = _selectedTableId;
     if (targetId == null || _submitting) return;
 
     setState(() => _submitting = true);
-    final main = context.read<MainCubit>();
     final nav = Navigator.of(context);
-    await inject<OrdersRepository>().transferTable(
-      orderId: widget.orderId,
-      sourceTableId: widget.sourceTableId,
-      targetTableId: targetId,
-    );
-    // Eski (CacheService) qatlamdagi bill cache'ni ham tozalaymiz —
-    // LocalDatabase tomonini repository o'zi ko'chirib bo'ldi.
-    final cache = inject<CacheService>();
-    await cache.evictOrderDetail(widget.sourceTableId);
-    await cache.evictOrderDetail(targetId);
+    await context.read<MainCubit>().transferOrder(
+          orderId: widget.orderId,
+          sourceTableId: widget.sourceTableId,
+          targetTableId: targetId,
+        );
     if (!mounted) return;
-    // Outbox tezroq drenajlanishi uchun sync engine'ga turtki (UI hech
-    // narsani kutmaydi).
-    unawaited(main.refreshTables(force: true));
     nav.pop(true);
     if (mounted) showInfoMessage(context, S.current.strOrderTransferred);
   }

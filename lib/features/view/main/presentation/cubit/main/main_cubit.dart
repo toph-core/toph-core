@@ -7,6 +7,7 @@ import 'package:mary_ai_pos/core/sync/sync_engine.dart';
 import 'package:mary_ai_pos/di.dart' show inject;
 import 'package:mary_ai_pos/features/view/main/data/models/cafe_tables/cafe_tables_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/hall/hall_model.dart';
+import 'package:mary_ai_pos/features/view/main/domain/repository/orders_repository.dart';
 import 'package:mary_ai_pos/features/view/main/domain/repository/tables_repository.dart';
 
 part 'main_cubit.freezed.dart';
@@ -21,12 +22,14 @@ part 'main_state.dart';
 class MainCubit extends Cubit<MainState> {
   final TablesRepository _tablesRepository;
   final LanHubService _lanHub;
+  final OrdersRepository _orders;
 
   StreamSubscription<({String tableId, String status})>? _lanSub;
   StreamSubscription<List<HallModel>>? _hallsSub;
   StreamSubscription<List<CafeTableModel>>? _tablesSub;
 
-  MainCubit(this._tablesRepository, this._lanHub) : super(const MainState()) {
+  MainCubit(this._tablesRepository, this._lanHub, this._orders)
+      : super(const MainState()) {
     _lanSub = _lanHub.onRemoteTableUpdate.listen(_applyRemoteTableUpdate);
     _hallsSub = _tablesRepository.watchHalls().listen((halls) {
       emit(state.copyWith(halls: halls, status: Status.SUCCESS));
@@ -65,6 +68,31 @@ class MainCubit extends Cubit<MainState> {
   /// app.
   void updateTableStatus(String id, TableStatus status) {
     unawaited(_tablesRepository.updateTableStatus(id, status));
+  }
+
+  /// Moves an open order to another table.
+  ///
+  /// Local and immediate, like every other write here: the bill is re-keyed,
+  /// both tables' occupancy flips, and the `PUT` is queued. Callers get the
+  /// result of the local commit, not of the server round trip — which is why
+  /// the dialog can close on it.
+  ///
+  /// The occupancy flip is what makes this safe to do offline. Both tables'
+  /// new state is local-authority and broadcast over the LAN, so a second
+  /// terminal will not offer the target table to someone else while this
+  /// transfer is still queued.
+  Future<void> transferOrder({
+    required String orderId,
+    required String sourceTableId,
+    required String targetTableId,
+  }) async {
+    await _orders.transferTable(
+      orderId: orderId,
+      sourceTableId: sourceTableId,
+      targetTableId: targetTableId,
+    );
+    // A nudge, not a dependency — the move is already on screen.
+    unawaited(inject<SyncEngine>().tick(force: true));
   }
 
   /// Stol holati o'zgarganda LAN hub ga broadcast qilish.

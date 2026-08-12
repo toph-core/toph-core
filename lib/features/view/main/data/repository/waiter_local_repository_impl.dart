@@ -16,6 +16,7 @@ import 'package:mary_ai_pos/features/view/main/data/models/hall/hall_model.dart'
 import 'package:mary_ai_pos/features/view/main/data/models/open_order/open_order_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/order_line_item/order_line_item_model.dart';
 import 'package:mary_ai_pos/features/view/main/domain/repository/orders_repository.dart';
+import 'package:mary_ai_pos/features/view/main/domain/repository/tables_repository.dart';
 import 'package:mary_ai_pos/features/view/main/domain/repository/payment_repository.dart';
 import 'package:mary_ai_pos/features/view/main/domain/repository/waiter_local_repository.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/detail/detail_bloc.dart' show OrderItem;
@@ -42,6 +43,9 @@ class WaiterLocalRepositoryImpl implements WaiterLocalRepository {
   final LanHubService _lanHub;
   final LeaseManager _lease;
 
+  /// See [OrdersRepositoryImpl] — occupancy is the replica's now.
+  final TablesRepository _tables;
+
   WaiterLocalRepositoryImpl(
     this._localDb,
     this._queue,
@@ -49,6 +53,7 @@ class WaiterLocalRepositoryImpl implements WaiterLocalRepository {
     this._payment,
     this._lanHub,
     this._lease,
+    this._tables,
   );
 
   // ── Local synthesis helpers ─────────────────────────────────────────────
@@ -67,7 +72,7 @@ class WaiterLocalRepositoryImpl implements WaiterLocalRepository {
   /// (box key = the order's own id) only while their status is open.
   List<({String key, ArchiveDetailModel detail, CafeTableModel? table})>
       _openLocalBills() {
-    final tablesById = {for (final t in _localDb.getTables()) t.id: t};
+    final tablesById = {for (final t in _tables.getAllTables()) t.id: t};
     final result =
         <({String key, ArchiveDetailModel detail, CafeTableModel? table})>[];
     for (final entry in _localDb.getOrderDetailEntries().entries) {
@@ -132,7 +137,7 @@ class WaiterLocalRepositoryImpl implements WaiterLocalRepository {
     int limit = 50,
     int offset = 0,
   }) async {
-    final hallsById = {for (final h in _localDb.getHalls()) h.id: h};
+    final hallsById = {for (final h in _tables.getHalls()) h.id: h};
     final orders = _openLocalBills()
         .map((b) => _toOpenOrder(b.detail, b.table, hallsById))
         .toList()
@@ -153,7 +158,7 @@ class WaiterLocalRepositoryImpl implements WaiterLocalRepository {
     if (orderId.isEmpty) return const Right(null);
     final bill = _findByOrderId(orderId);
     if (bill == null) return const Right(null);
-    final hallsById = {for (final h in _localDb.getHalls()) h.id: h};
+    final hallsById = {for (final h in _tables.getHalls()) h.id: h};
     return Right(_toOpenOrder(bill.detail, bill.table, hallsById));
   }
 
@@ -286,7 +291,7 @@ class WaiterLocalRepositoryImpl implements WaiterLocalRepository {
     if (bill != null) await _localDb.evictOrderDetail(bill.key);
     await _localDb.evictTableTimer(orderId);
     if (tableId.isNotEmpty) {
-      await _localDb.updateTableStatus(tableId, TableStatus.free);
+      await _tables.updateTableStatus(tableId, TableStatus.free);
       _lanHub.tableStatusChanged(tableId, TableStatus.free.name);
     }
     return const Right(true);
@@ -353,7 +358,7 @@ class WaiterLocalRepositoryImpl implements WaiterLocalRepository {
         guestCount: guestCount.toDouble(),
       ).toJson(),
     );
-    await _localDb.updateTableStatus(tableId, TableStatus.busy);
+    await _tables.updateTableStatus(tableId, TableStatus.busy);
     _lanHub.tableStatusChanged(tableId, TableStatus.busy.name);
     // Local commit done — clear the ephemeral claim (only a grant held one).
     if (lease.isGranted) {

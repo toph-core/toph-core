@@ -369,6 +369,7 @@ void _repositories() {
       inject(),
       inject(),
       inject(),
+      inject(),
     ),
   );
 
@@ -381,13 +382,16 @@ void _repositories() {
       queue: inject(),
       lanHub: inject(),
       cache: inject(),
+      tables: inject(),
     ),
   );
   inject.registerLazySingleton<PaymentRepository>(
     () => PaymentRepositoryImpl(queue: inject()),
   );
+  // Phase 4: halls/tables reads and occupancy move to the replica. The Hive
+  // store still backs menus, bills and timers until their own screens follow.
   inject.registerLazySingleton<TablesRepository>(
-    () => TablesRepositoryImpl(localDb: inject()),
+    () => TablesRepositoryImpl(localDb: inject<replica.LocalDatabase>()),
   );
   inject.registerLazySingleton<MenuRepository>(
     () => MenuRepositoryImpl(localDb: inject()),
@@ -433,7 +437,7 @@ void _cubit() {
   inject.registerLazySingleton(() => UiPrefsCubit(inject()));
   inject.registerLazySingleton(() => ServiceChargeCubit(inject(), inject()));
   inject.registerLazySingleton(
-    () => MainCubit(inject(), inject()),
+    () => MainCubit(inject(), inject(), inject()),
   );
   inject.registerLazySingleton(() => KeyboardCubit());
   // A factory, not a singleton: UsersCubit holds a replica subscription and the

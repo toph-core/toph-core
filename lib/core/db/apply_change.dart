@@ -84,15 +84,21 @@ class ChangeApplier {
 
     return _db.transaction(() {
       var stats = const ApplyStats();
+      var sawTables = false;
       if (changes is Map) {
         for (final entry in changes.entries) {
           final entity = entry.key.toString();
           final value = entry.value;
           if (value is Map) {
             stats = _applyEntityChanges(entity, value, stats);
+            if (entity == 'cafe_tables') sawTables = true;
           }
         }
       }
+      // Local occupancy is keyed by table id and is not replicated, so a table
+      // deleted upstream would otherwise leave its status row behind forever.
+      // Cheap, and only when tables actually changed.
+      if (sawTables) _db.pruneTableStatuses();
       if (cursor is num) {
         final next = cursor.toInt();
         // Never move the cursor backwards: a retried or out-of-order batch must

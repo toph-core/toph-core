@@ -102,7 +102,22 @@ class LocalTables {
   static const outbox = '_outbox';
   static const pending = '_pending';
 
-  static const all = {meta, outbox, pending};
+  /// Live table occupancy, and the one table here the server does not own.
+  ///
+  /// Everything else in this database is a replica: the server decides, the
+  /// change log delivers, local rows follow. Table status is the exception —
+  /// it is decided *here*, by a cashier opening an order or a peer terminal's
+  /// LAN broadcast, and the server only learns of it indirectly, when the
+  /// order that caused it syncs.
+  ///
+  /// So it cannot live in `cafe_tables`: a replication pass would overwrite
+  /// the venue's live occupancy with whatever the server last logged, which
+  /// offline is nothing at all. It is kept beside that table and overlaid on
+  /// read, which also means a hall rename from the server still lands normally
+  /// — the two kinds of truth stay separable instead of fighting over one row.
+  static const tableStatus = '_table_status';
+
+  static const all = {meta, outbox, pending, tableStatus};
 
   const LocalTables._();
 }

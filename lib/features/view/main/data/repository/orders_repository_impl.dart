@@ -11,6 +11,7 @@ import 'package:mary_ai_pos/features/view/main/data/models/archive_detail/archiv
 import 'package:mary_ai_pos/features/view/main/data/models/cafe_tables/cafe_tables_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/create_order/create_order_request_model.dart';
 import 'package:mary_ai_pos/features/view/main/domain/repository/orders_repository.dart';
+import 'package:mary_ai_pos/features/view/main/domain/repository/tables_repository.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/detail/detail_bloc.dart' show OrderItem;
 
 class OrdersRepositoryImpl implements OrdersRepository {
@@ -19,15 +20,22 @@ class OrdersRepositoryImpl implements OrdersRepository {
   final LanHubService _lanHub;
   final CacheService _cache;
 
+  /// Occupancy moved out of the Hive store into the replica's local-authority
+  /// table, so it is set through the repository that owns it rather than by
+  /// rewriting a cached row here.
+  final TablesRepository _tables;
+
   OrdersRepositoryImpl({
     required LocalDatabase localDb,
     required OfflineQueueService queue,
     required LanHubService lanHub,
     required CacheService cache,
+    required TablesRepository tables,
   })  : _localDb = localDb,
         _queue = queue,
         _lanHub = lanHub,
-        _cache = cache;
+        _cache = cache,
+        _tables = tables;
 
   /// CLIENT_FACING_OFFLINE_PLAN.md §6: the add-item timestamp is captured
   /// here, at the moment items are committed locally — the same
@@ -188,8 +196,13 @@ class OrdersRepositoryImpl implements OrdersRepository {
       await _localDb.saveOrderDetail(targetTableId, detail);
       await _localDb.evictOrderDetail(sourceTableId);
     }
-    await _localDb.updateTableStatus(sourceTableId, TableStatus.free);
-    await _localDb.updateTableStatus(targetTableId, TableStatus.busy);
+    // The older CacheService bill cache is keyed by table too, and a stale
+    // entry there would resurrect the order at its old table. Evicting it
+    // belongs with the re-key above, not in the dialog that triggers it.
+    await _cache.evictOrderDetail(sourceTableId);
+    await _cache.evictOrderDetail(targetTableId);
+    await _tables.updateTableStatus(sourceTableId, TableStatus.free);
+    await _tables.updateTableStatus(targetTableId, TableStatus.busy);
     await _queue.enqueue(PendingOperation(
       id: OfflineQueueService.newId(),
       type: PendingOperationType.transferTable,

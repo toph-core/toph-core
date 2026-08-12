@@ -213,4 +213,70 @@ void main() {
       await sub.cancel();
     });
   });
+
+  group('live occupancy overlays the replicated status', () {
+    test('a local status wins over the row the server logged', () {
+      put('cafe_tables', table(id: 't-1'));
+      expect(query.tables().single['status'], 'free');
+
+      db.setTableStatus('t-1', 'busy');
+
+      expect(query.tables().single['status'], 'busy');
+      expect(query.tablesForHall('h-1').single['status'], 'busy');
+    });
+
+    test('tables with no local status keep the replicated one', () {
+      put('cafe_tables', table(id: 't-1', number: 1));
+      put('cafe_tables', table(id: 't-2', number: 2));
+      db.setTableStatus('t-2', 'busy');
+
+      expect(
+        {for (final t in query.tables()) t['id']: t['status']},
+        {'t-1': 'free', 't-2': 'busy'},
+      );
+    });
+
+    test('a replication pass no longer wipes the venue’s occupancy', () {
+      // The bug this separation fixes. Occupancy used to be a field inside the
+      // cached table row, and the periodic reference-data hydration replaced
+      // that row wholesale with the server's — so every refresh reset a busy
+      // table to whatever the server last knew, which offline is nothing.
+      put('cafe_tables', table(id: 't-1'));
+      db.setTableStatus('t-1', 'busy');
+
+      // The server re-sends the table, still believing it free.
+      put('cafe_tables', table(id: 't-1', posX: 999));
+
+      final row = query.tables().single;
+      expect(row['status'], 'busy', reason: 'local occupancy survives the pull');
+      expect(row['pos_x'], 999, reason: 'server geometry still lands');
+    });
+
+    test('occupancy changes wake table subscribers', () async {
+      put('cafe_tables', table(id: 't-1'));
+
+      final seen = <List<CafeTableModel>>[];
+      final sub = repo.watchTablesForHall('h-1').listen(seen.add);
+      await Future<void>.delayed(Duration.zero);
+
+      db.setTableStatus('t-1', 'busy');
+      await Future<void>.delayed(Duration.zero);
+
+      expect(seen, hasLength(2));
+      expect(seen.last.single.status, TableStatus.busy);
+      await sub.cancel();
+    });
+
+    test('pruning drops occupancy for tables that no longer exist', () {
+      put('cafe_tables', table(id: 't-1'));
+      db.setTableStatus('t-1', 'busy');
+      db.setTableStatus('t-gone', 'busy');
+      expect(db.tableStatuses(), hasLength(2));
+
+      db.pruneTableStatuses();
+
+      expect(db.tableStatuses().keys, ['t-1']);
+    });
+  });
 }
+
