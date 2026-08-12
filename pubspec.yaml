@@ -93,6 +93,16 @@ dependencies:
   file_selector: ^1.1.0
   number_paginator: ^1.1.2
   hive_flutter: ^1.1.0
+  # OFFLINE_FIRST_EVERYWHERE_PLAN.md Phase 0 — the single local database.
+  # `sqlite3` (not Drift) because the replica's schema is generated from
+  # `entity_registry.dart` rather than declared per-table, which leaves nothing
+  # for Drift's codegen to type; and because this API is *synchronous*, so a
+  # screen reads the database inside build() with no await and no loading
+  # state. `sqlite3_flutter_libs` ships the native library for every target.
+  sqlite3: ^2.4.0
+  sqlite3_flutter_libs: ^0.5.20
+  path: ^1.9.0
+  path_provider: ^2.1.4
   connectivity_plus: ^6.1.4
   # OS-backed secure storage (Keychain/EncryptedSharedPreferences/DPAPI/libsecret)
   # for offline auth credentials — see §11 Phase 6, secure-storage migration.

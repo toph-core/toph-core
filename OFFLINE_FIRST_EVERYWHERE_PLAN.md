@@ -69,9 +69,21 @@ Hive's model is one JSON blob per key; each of those queries becomes "decode eve
 filter in Dart." That does not hold up at catalog scale and cannot express the
 back-office screens at all.
 
-**Decision: Drift (SQLite).** Relational, reactive (`watch()` returns a `Stream` per
-query — exactly the UI contract the spec requires), and it maps 1:1 onto the change-log
-feed, which is row-oriented.
+**Decision: SQLite.** Relational, reactive, and it maps 1:1 onto the change-log feed,
+which is row-oriented.
+
+> **Revised during Phase 0: raw `package:sqlite3`, not Drift.** Three reasons surfaced
+> once the schema was actually built. (a) The schema is *generated* from the entity
+> registry rather than declared per table, so there is nothing for Drift's codegen to
+> type — its main benefit does not apply. (b) Drift needs `build_runner`, and this repo
+> commits its generated output; a foundational layer that will not compile until a
+> codegen step runs is a sharp edge. (c) `package:sqlite3` is **synchronous**, so a
+> screen can read inside `build()` with no `await` and no `FutureBuilder` — which is
+> precisely the "always feels local" property this architecture exists for. An async
+> database would have reintroduced a loading state on every screen in the name of
+> offline-first. Reactivity, the one thing Drift gave for free, is ~40 lines
+> (`LocalDatabase.watch`) because invalidation is per-table and all writes already
+> funnel through one class.
 
 **Schema = a mirror of the tenant schema**, one table per replicated entity, columns
 matching `migrations/tenants/*.up.sql`. Local-only additions:
@@ -262,17 +274,37 @@ distribute is already a serialized change list.
 
 None of these block Phases 0-4; they raise the ceiling.
 
-1. **Change-log triggers for 5 missing tables.** `transactions`, `transaction_category`,
-   `cash_registers`, `printer_settings`, `cash_register_shifts` have no trigger. Every
-   other POS entity does. One line each, reusing the existing `log_change()` function:
+1. **Change-log triggers for 8 missing tables.** One line each, reusing the existing
+   `log_change()` function:
 
    ```sql
    CREATE TRIGGER trg_change_log_transactions AFTER INSERT OR UPDATE OR DELETE
      ON transactions FOR EACH ROW EXECUTE FUNCTION log_change('id');
    ```
-   Until this lands, those screens read a locally-mirrored copy maintained by the outbox
-   on write, and refresh fully only at bootstrap. **This is the single highest-value
-   backend change** — it is what makes the transactions and printer screens fully live.
+
+   | Table | Why it matters |
+   |---|---|
+   | `table_time_sessions` | **Critical.** Time-based table billing. `TableTimeSession.final_amount` and the session's active seconds drive `table_charge` — the largest line on a billiard/PS bill. Without a trigger the timer cannot replicate at all. |
+   | `modifiers` | The modifier catalog. `order_item_modifiers` and `modifier_calculation` *are* logged, so we replicate which modifiers an order line used and what they cost — but not their names or prices. |
+   | `goods_modifiers` | Which modifiers a good offers. Without it the order screen cannot show modifier options offline. |
+   | `transactions` | The cash ledger screen. |
+   | `transaction_category` | Its filter list. |
+   | `cash_registers` | Register picker, shift assignment. |
+   | `printer_settings` | Printer configuration screen. |
+   | `cash_register_shifts` | Shift open/close reconciliation. |
+
+   The first three are the ones that block *cashier-facing* functionality;
+   `table_time_sessions` in particular is load-bearing for an entire table type. Until
+   these land, those screens read a locally-mirrored copy maintained by the outbox on
+   write and refresh fully only at bootstrap. **This is the highest-value backend
+   change.**
+
+5. **Stop shipping credentials in the feed.** `users` rows are logged whole, so
+   `hash_password` and `pincode` travel to every terminal in the venue. The client
+   redacts both before writing to disk (`entity_registry.dart`, `redactKeys`), so this
+   is contained — but the fix belongs server-side: have `log_change()` strip them from
+   the payload, or exclude the columns from the trigger. Client-side redaction protects
+   the disk, not the wire.
 
 2. **A bootstrap snapshot endpoint.** `change_log` has no retention or compaction, so
    `last_sync_cursor = 0` replays *every mutation in the tenant's history* — including
