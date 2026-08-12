@@ -16,6 +16,10 @@ import 'package:mary_ai_pos/core/database/local_database.dart';
 import 'package:mary_ai_pos/core/db/apply_change.dart' as replica;
 import 'package:mary_ai_pos/core/db/local_database.dart' as replica;
 import 'package:mary_ai_pos/core/db/local_database_factory.dart' as replica;
+import 'package:mary_ai_pos/core/outbox/local_writer.dart';
+import 'package:mary_ai_pos/core/outbox/outbox_drainer.dart';
+import 'package:mary_ai_pos/core/outbox/outbox_executor.dart';
+import 'package:mary_ai_pos/core/outbox/outbox_store.dart';
 import 'package:mary_ai_pos/core/sync/replication_service.dart';
 import 'package:mary_ai_pos/core/sync/sync_api_client.dart';
 import 'package:mary_ai_pos/core/services/cache/cache_service.dart';
@@ -140,6 +144,28 @@ Future<void> initDi() async {
   inject.registerSingleton<replica.LocalDatabase>(replicaDb);
   inject.registerSingleton<replica.ChangeApplier>(changeApplier);
 
+  // OFFLINE_FIRST_EVERYWHERE_PLAN.md Phase 2 — the outbox, in the same SQLite
+  // file as the replica so a local row and its queued send commit together.
+  // The executor registry is deliberately empty here: Phase 4 registers a
+  // handler as each repository moves across, and an empty registry keeps the
+  // drainer dormant rather than quarantining what it cannot yet send.
+  final outboxStore = OutboxStore(replicaDb);
+  final outboxExecutors = OutboxExecutors();
+  inject.registerSingleton<OutboxStore>(outboxStore);
+  inject.registerSingleton<OutboxExecutors>(outboxExecutors);
+  inject.registerSingleton<LocalWriter>(LocalWriter(
+    db: replicaDb,
+    applier: changeApplier,
+    outbox: outboxStore,
+  ));
+  final outboxDrainer = OutboxDrainer(
+    store: outboxStore,
+    executors: outboxExecutors,
+    db: replicaDb,
+    applier: changeApplier,
+  );
+  inject.registerSingleton<OutboxDrainer>(outboxDrainer);
+
   final offlineQueue = await OfflineQueueService.init();
   inject.registerSingleton<OfflineQueueService>(offlineQueue);
 
@@ -197,6 +223,7 @@ Future<void> initDi() async {
     prefs: prefs,
     localDb: localDatabase,
     replication: replicationService,
+    outbox: outboxDrainer,
   );
   // NOTE: start() is deliberately deferred until after _cubit() below —
   // its immediate startup tick resolves MainRepository/UserBloc lazily, and

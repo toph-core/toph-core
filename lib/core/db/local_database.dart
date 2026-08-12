@@ -263,6 +263,19 @@ class LocalDatabase {
     _touch(entity);
   }
 
+  /// Runs a statement against a local-only table and wakes its watchers.
+  ///
+  /// The narrow seam `OutboxStore` needs: replicated rows are written through
+  /// [upsert]/[deleteRow], but `_outbox` has its own columns and lifecycle and
+  /// does not belong in the entity registry. Notification still routes through
+  /// [_touch] so a queue-depth indicator observes the outbox exactly the way a
+  /// screen observes `goods` — and so a write inside [transaction] coalesces
+  /// with the rest of the batch.
+  void executeOn(String table, String sql, [List<Object?> params = const []]) {
+    _db.execute(sql, params);
+    _touch(table);
+  }
+
   int? _deletedAt(Map<String, dynamic> data) {
     final raw = data['deleted_at'];
     if (raw == null) return null;

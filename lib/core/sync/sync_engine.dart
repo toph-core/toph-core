@@ -20,6 +20,7 @@ import '../service/minio/minio_service.dart';
 import '../services/cache/cache_service.dart';
 import '../services/connectivity/connectivity_cubit.dart';
 import '../services/lan_hub/lan_hub_service.dart';
+import '../outbox/outbox_drainer.dart';
 import '../services/offline_queue/offline_queue_service.dart';
 import 'replication_service.dart';
 
@@ -47,6 +48,12 @@ class SyncEngine {
   /// `CacheService`/`LocalDatabase`. Phase 4 moves the screens across and
   /// deletes the hydration half.
   final ReplicationService _replication;
+
+  /// Phase 2 — replay of locally-queued writes. Dormant until Phase 4
+  /// registers executors; the drain call below is a no-op against an empty
+  /// registry, so wiring it now costs nothing and means no trigger has to be
+  /// added later.
+  final OutboxDrainer _outbox;
 
   Timer? _ticker;
   bool _tickRunning = false;
@@ -85,6 +92,7 @@ class SyncEngine {
     required SharedPreferences prefs,
     required LocalDatabase localDb,
     required ReplicationService replication,
+    required OutboxDrainer outbox,
   })  : _queue = queue,
         _cache = cache,
         _connectivity = connectivity,
@@ -92,7 +100,8 @@ class SyncEngine {
         _lanHub = lanHub,
         _prefs = prefs,
         _localDb = localDb,
-        _replication = replication;
+        _replication = replication,
+        _outbox = outbox;
 
   /// The replication loop, for the login flow's one-time bootstrap and the
   /// sync-status screen. Exposed here rather than injected directly anywhere
@@ -173,6 +182,7 @@ class SyncEngine {
           // inbound data will arrive from the leader's LAN relay, not from its
           // own uplink. Until then a follower replicates the same way a leader
           // does, matching the behaviour the hydration calls below already had.
+          await _outbox.drain();
           await _replication.drain();
           await _cache.prefetchAllGoods(_client);
           await _mirrorGoodsIntoLocalDb();
@@ -186,10 +196,15 @@ class SyncEngine {
       if (_queue.hasItems) {
         await _queue.syncAll(_client, force: force);
       }
-      // Replication runs before the legacy hydration so that, once the screens
-      // move in Phase 4, deleting everything below this line is the whole
-      // change. A failure here returns a result rather than throwing, so it
-      // cannot stop the outbox drain above or the hydration below.
+      // Send before receiving: draining the outbox first means the pull in the
+      // same pass already reflects what this terminal just wrote, rather than
+      // returning a version `_pending` then has to shield.
+      //
+      // Both sit above the legacy hydration so that, once the screens move in
+      // Phase 4, deleting everything below this line is the whole change.
+      // Neither throws — each returns a result — so a sync failure cannot stop
+      // the hydration below it.
+      await _outbox.drain();
       await _replication.drain();
       await _cache.prefetchAllGoods(_client);
       await _mirrorGoodsIntoLocalDb();
