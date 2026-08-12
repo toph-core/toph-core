@@ -10,6 +10,7 @@
 // suite's convention.
 
 import 'dart:async';
+import 'dart:io';
 
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -361,4 +362,47 @@ void main() {
       expect(svc.role, ElectionRole.leader);
     });
   });
+
+  group('Phase 6 — on by default', () {
+    test('an untouched terminal has election enabled', () async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+
+      expect(LeaderElectionService.enabledByDefault, isTrue);
+      expect(LeaderElectionService.isEnabledIn(prefs), isTrue);
+    });
+
+    test('the kill switch still wins over the default', () async {
+      SharedPreferences.setMockInitialValues({
+        LeaderElectionService.electionEnabledKey: false,
+      });
+      final prefs = await SharedPreferences.getInstance();
+
+      expect(LeaderElectionService.isEnabledIn(prefs), isFalse);
+    });
+
+    test('LanHubService reads the same default this service does', () async {
+      // The trap in flipping this. `LanHubService.init` gates its conflict
+      // watcher on the same flag, and used to read the key itself with its own
+      // `?? false`. Left that way, a fresh install would have run the election
+      // *and* the watcher, both binding the same discovery socket — the two
+      // paths silently disagreeing, which is the exact failure mode §9's
+      // guardrails exist to catch.
+      final source = File(
+        'lib/core/services/lan_hub/lan_hub_service.dart',
+      ).readAsStringSync();
+
+      expect(
+        source.contains('LeaderElectionService.isEnabledIn(_prefs)'),
+        isTrue,
+        reason: 'LanHubService must ask for the default, not re-declare it',
+      );
+      expect(
+        source.contains('getBool(LeaderElectionService.electionEnabledKey)'),
+        isFalse,
+        reason: 'reading the key directly reintroduces a second default',
+      );
+    });
+  });
 }
+

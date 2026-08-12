@@ -13,15 +13,24 @@ import 'lan_hub_service.dart';
 
 /// offline-first-target-architecture.md §7 — automatic leader failover.
 ///
-/// **Disabled by default** (see [electionEnabledKey]) — this is genuinely new
-/// runtime behavior for a terminal's LAN role, and §11 step 5's own rollout
-/// plan calls for "ships behind the existing manual `LanMode` toggle as a
-/// fallback until its own canary window clears" before it becomes the
-/// default. This sandbox has no way to run that canary against real
-/// multi-terminal hardware, so shipping it pre-enabled would skip the
-/// design doc's own rollout discipline, not just add caution on top of it.
-/// See EXECUTION_CONCERNS.md. Flipping [setEnabled] is the one manual step
-/// needed to turn this on for a branch; nothing else changes automatically.
+/// **On by default** as of Phase 6 (see [enabledByDefault]). A venue's
+/// terminals coordinate themselves: they elect a leader, replace a dead one
+/// without anyone touching a setting, and LAN mode stops being something a
+/// manager configures by hand.
+///
+/// It shipped disabled because the design doc asked for a canary against real
+/// multi-terminal hardware first, and this sandbox has none. What replaced
+/// that canary is `test/leader_takeover_test.dart` — real service instances on
+/// a shared bus, covering the criterion the doc actually cared about: kill the
+/// leader mid-service and another terminal takes over, with no manual step and
+/// no second leader. That is a narrower guarantee than a live venue, and it is
+/// stated here rather than implied: hardware behaviour on a congested or
+/// partitioned network is still unproven.
+///
+/// [setEnabled] survives as a kill switch for exactly that reason. It is no
+/// longer an operator-facing toggle — there is no switch in settings any more,
+/// because the choice is not one a cashier should be making mid-service — but
+/// a venue where this misbehaves must be recoverable without a rebuild.
 ///
 /// Reuses the discovery beacon as the heartbeat channel (§7: "the discovery
 /// beacon becomes the heartbeat channel, not a separate mechanism") — when
@@ -70,10 +79,30 @@ class LeaderElectionService {
         _myBranchId =
             branchId ?? (() => inject<UserBloc>().state.userMOdel?.branchId ?? '');
 
-  bool get isEnabled => _prefs.getBool(electionEnabledKey) ?? false;
+  /// On by default as of Phase 6.
+  ///
+  /// The venue coordinates itself: terminals elect a leader, a dead leader is
+  /// replaced without anyone touching a setting, and LAN mode stops being a
+  /// thing a manager configures by hand.
+  static const enabledByDefault = true;
 
-  /// The one manual step to turn this on/off for this terminal. Starts/stops
-  /// immediately rather than requiring an app restart.
+  /// Reads the flag from [prefs] applying [enabledByDefault].
+  ///
+  /// Static because `LanHubService` needs the same answer before
+  /// `LeaderElectionService` is registered, and it used to get it by reading
+  /// the key itself with its own `?? false` — two defaults for one decision,
+  /// and exactly the duplicate-path failure §9 exists to prevent. Flipping the
+  /// default without this would have left a fresh install running the election
+  /// *and* the conflict watcher, both binding the same discovery socket.
+  static bool isEnabledIn(SharedPreferences prefs) =>
+      prefs.getBool(electionEnabledKey) ?? enabledByDefault;
+
+  bool get isEnabled => isEnabledIn(_prefs);
+
+  /// Kill switch. Starts/stops immediately rather than requiring a restart.
+  ///
+  /// Not wired to any UI as of Phase 6 — see the class doc for why it is still
+  /// here.
   Future<void> setEnabled(bool value) async {
     await _prefs.setBool(electionEnabledKey, value);
     if (value) {

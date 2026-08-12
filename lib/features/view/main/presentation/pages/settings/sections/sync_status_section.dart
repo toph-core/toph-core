@@ -6,7 +6,6 @@ import 'package:mary_ai_pos/core/extension/for_context.dart';
 import 'package:mary_ai_pos/core/services/audit/privileged_action_audit_entry.dart';
 import 'package:mary_ai_pos/core/services/audit/privileged_action_audit_log_service.dart';
 import 'package:mary_ai_pos/core/services/lan_hub/lan_hub_service.dart';
-import 'package:mary_ai_pos/core/services/lan_hub/leader_election_service.dart';
 import 'package:mary_ai_pos/core/services/offline_queue/offline_queue_service.dart';
 import 'package:mary_ai_pos/core/services/offline_queue/pending_operation.dart';
 import 'package:mary_ai_pos/core/services/offline_queue/quarantined_operation.dart';
@@ -40,8 +39,6 @@ class SyncStatusSection extends StatelessWidget {
           _LastSyncCard(),
           SizedBox(height: 14),
           _ClusterCard(),
-          SizedBox(height: 14),
-          _ElectionCard(),
           SizedBox(height: 14),
           _PrintQueueCard(),
           SizedBox(height: 14),
@@ -280,6 +277,17 @@ class _LastSyncCard extends StatelessWidget {
 
 // ── Cluster ─────────────────────────────────────────────────────────────
 
+/// Venue network health, with no mention of which terminal leads.
+///
+/// This used to be titled "Klaster — Hub" / "Klaster — Client", which named
+/// this terminal's cluster role. Since Phase 6 that role is elected, transient,
+/// and can change mid-shift without anyone doing anything — showing it invited
+/// a cashier to reason about something they neither control nor should.
+///
+/// What survives is the part that is actually diagnostic: whether this terminal
+/// is talking to the rest of the venue. A follower that has silently lost the
+/// leader looks identical to a healthy one otherwise, and that is worth being
+/// able to see.
 class _ClusterCard extends StatelessWidget {
   const _ClusterCard();
 
@@ -298,18 +306,19 @@ class _ClusterCard extends StatelessWidget {
             LanMode.disabled => _CardHeader(
                 icon: Icons.lan_outlined,
                 iconColor: colors.textSecondary,
-                title: 'Klaster',
+                title: 'Tarmoq',
                 subtitle: "LAN o'chirilgan — faqat bulut orqali ishlaydi",
               ),
             LanMode.server => ValueListenableBuilder<int>(
                 valueListenable: lanHub.clientCountListenable,
                 builder: (context, count, _) => _CardHeader(
-                  icon: Icons.dns_outlined,
-                  iconColor: count > 0 ? colors.systemSuccess : colors.textSecondary,
-                  title: 'Klaster — Hub',
+                  icon: Icons.lan_outlined,
+                  iconColor:
+                      count > 0 ? colors.systemSuccess : colors.textSecondary,
+                  title: 'Tarmoq',
                   subtitle: count == 0
-                      ? 'Hech qanday qurilma ulanmagan'
-                      : '$count ta qurilma ulangan',
+                      ? 'Boshqa terminal ulanmagan'
+                      : '$count ta terminal bilan sinxron',
                 ),
               ),
             LanMode.client => StreamBuilder<bool>(
@@ -318,11 +327,12 @@ class _ClusterCard extends StatelessWidget {
                 builder: (context, connSnap) {
                   final connected = connSnap.data ?? false;
                   return _CardHeader(
-                    icon: Icons.wifi_outlined,
-                    iconColor: connected ? colors.systemSuccess : colors.systemError,
-                    title: 'Klaster — Client',
+                    icon: Icons.lan_outlined,
+                    iconColor:
+                        connected ? colors.systemSuccess : colors.systemError,
+                    title: 'Tarmoq',
                     subtitle: connected
-                        ? 'Hub ga ulangan'
+                        ? 'Filial tarmog\'i bilan sinxron'
                         : (lanHub.lastAuthFailReason != null
                             ? "Ulanmadi (${lanHub.lastAuthFailReason})"
                             : "Ulanmadi — qayta urinmoqda"),
@@ -332,76 +342,6 @@ class _ClusterCard extends StatelessWidget {
           },
         );
       },
-    );
-  }
-}
-
-// ── Leader election (BACKEND_SYNC_PLAN.md §7) ───────────────────────────
-
-/// The enable path LeaderElectionService never had: a per-venue toggle,
-/// default OFF, wired straight to [LeaderElectionService.setEnabled] (which
-/// starts/stops the service immediately, no restart needed). Per the plan's
-/// own rollout discipline this should be flipped on at a pilot
-/// multi-terminal venue first, not globally — the toggle governs which
-/// terminal thinks it's the LAN leader.
-class _ElectionCard extends StatefulWidget {
-  const _ElectionCard();
-
-  @override
-  State<_ElectionCard> createState() => _ElectionCardState();
-}
-
-class _ElectionCardState extends State<_ElectionCard> {
-  final _election = inject<LeaderElectionService>();
-  bool _busy = false;
-
-  String _roleLabel(ElectionRole role) => switch (role) {
-        ElectionRole.idle => "O'chirilgan",
-        ElectionRole.follower => 'Follower — yetakchini kuzatmoqda',
-        ElectionRole.candidate => 'Saylov ketmoqda…',
-        ElectionRole.leader => 'Bu terminal yetakchi',
-      };
-
-  Future<void> _toggle(bool value) async {
-    if (_busy) return;
-    setState(() => _busy = true);
-    await _election.setEnabled(value);
-    if (mounted) setState(() => _busy = false);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.colors;
-    return SoftCard(
-      padding: const EdgeInsets.all(18),
-      child: StreamBuilder<ElectionRole>(
-        stream: _election.onRoleChanged,
-        initialData: _election.role,
-        builder: (context, snap) {
-          final role = snap.data ?? ElectionRole.idle;
-          final enabled = _election.isEnabled;
-          return Row(
-            children: [
-              Expanded(
-                child: _CardHeader(
-                  icon: Icons.how_to_vote_outlined,
-                  iconColor: role == ElectionRole.leader
-                      ? colors.systemSuccess
-                      : colors.textSecondary,
-                  title: 'Avtomatik yetakchi saylovi',
-                  subtitle: enabled
-                      ? _roleLabel(role)
-                      : "O'chirilgan — LAN rejimi qo'lda boshqariladi",
-                ),
-              ),
-              Switch(
-                value: enabled,
-                onChanged: _busy ? null : _toggle,
-              ),
-            ],
-          );
-        },
-      ),
     );
   }
 }

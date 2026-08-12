@@ -109,10 +109,15 @@ class LanHubService {
         );
         // §7: once LeaderElectionService owns this terminal's UDP discovery
         // socket as its heartbeat channel, running the plain warn-only
-        // conflict watcher at the same time would try to double-bind the
-        // same port. Disabled by default (LeaderElectionService.isEnabled),
-        // so this is a no-op change for every branch that hasn't opted in.
-        if (!(_prefs.getBool(LeaderElectionService.electionEnabledKey) ?? false)) {
+        // conflict watcher at the same time would try to double-bind the same
+        // port. Since Phase 6 election is on by default, so this branch is now
+        // the exception rather than the rule — it runs only where the kill
+        // switch has been thrown.
+        //
+        // Asked through `isEnabledIn` rather than reading the key here: this
+        // used to apply its own `?? false`, which would have silently become a
+        // second, contradictory default the moment the real one flipped.
+        if (!LeaderElectionService.isEnabledIn(_prefs)) {
           await _watchForConflicts();
         }
         break;
