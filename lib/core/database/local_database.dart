@@ -61,7 +61,6 @@ class LocalDatabase {
   final Box<String> _printerSettings;
   final Box<String> _orderDetail;
   final Box<String> _menuImages;
-  final Box<String> _archives;
   final Box<String> _tableTimers;
 
   LocalDatabase({
@@ -80,7 +79,6 @@ class LocalDatabase {
     required Box<String> printerSettings,
     required Box<String> orderDetail,
     required Box<String> menuImages,
-    required Box<String> archives,
     required Box<String> tableTimers,
   })  : _categories = categories,
         _departments = departments,
@@ -97,7 +95,6 @@ class LocalDatabase {
         _printerSettings = printerSettings,
         _orderDetail = orderDetail,
         _menuImages = menuImages,
-        _archives = archives,
         _tableTimers = tableTimers;
 
   static Future<LocalDatabase> init() async {
@@ -118,7 +115,6 @@ class LocalDatabase {
       printerSettings: await open('local_db_printer_settings'),
       orderDetail: await open('local_db_order_detail'),
       menuImages: await open('local_db_menu_images'),
-      archives: await open('local_db_archives'),
       tableTimers: await open('local_db_table_timers'),
     );
   }
@@ -391,22 +387,6 @@ class LocalDatabase {
     }
   }
 
-  // ── Archives (§8 Phase 6 / V8) — mirrors only the default "first page,
-  // unfiltered, today" view `ArchivesLocalRepositoryImpl` already blob-caches
-  // via `CacheService` for offline reads, as one JSON object under a fixed
-  // key (same shape as `ArchivesResponseModel.toJson()`). Filtered/searched/
-  // paginated-beyond-page-1 queries still go straight to the network — no
-  // bounded local mirror exists for those, same reasoning as the three
-  // paginated back-office reads in §9's back-office row. This box exists so
-  // the archive screen's default view is `SyncEngine`-hydrated and reactive
-  // instead of driven by its own `Timer.periodic` silent refresh.
-  Stream<Map<String, dynamic>?> watchArchives() => _watchByKey(_archives, _listKey);
-
-  Map<String, dynamic>? getArchives() => _getByKey(_archives, _listKey);
-
-  Future<void> saveArchives(Map<String, dynamic> json) =>
-      _saveByKey(_archives, _listKey, json);
-
   // ── Table timers (CLIENT_FACING_OFFLINE_PLAN.md §2) — keyed by orderId.
   // The elapsed/paused timer state that previously had no local home at all
   // (the one entity §2 calls out as needing "a place to live"). Stored in
@@ -447,7 +427,7 @@ class LocalDatabase {
   /// brand-wide catalog boxes (categories, departments, goods,
   /// goodsByCategory, ingredients, compounds — plus users, transaction
   /// groups and menu images, which are brand-scoped by the same logic) and
-  /// the branch-scoped boxes (halls, tables, cashRegisters, archives,
+  /// the branch-scoped boxes (halls, tables, cashRegisters,
   /// orderDetail, serviceCharge) — the old brand's branch data is
   /// meaningless under the new brand. `printerSettings` is deliberately NOT
   /// cleared: it's device-scoped, a property of the physical hardware, not
@@ -468,7 +448,6 @@ class LocalDatabase {
       _serviceCharge.clear(),
       _orderDetail.clear(),
       _menuImages.clear(),
-      _archives.clear(),
       _tableTimers.clear(),
     ]);
   }

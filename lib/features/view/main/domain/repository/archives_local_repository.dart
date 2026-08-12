@@ -5,27 +5,32 @@ import 'package:mary_ai_pos/features/view/main/domain/entities/archives_filter_r
 import 'package:mary_ai_pos/features/view/main/domain/entities/archives_response_entity.dart';
 
 /// What `ArchivesBloc`/`ArchiveBloc` depend on instead of calling usecases
-/// (and, transitively, `DioClient`) directly — cache-first, connectivity-aware.
-/// See offline-first-architecture-plan.md §3/§11 Phase 2.
+/// (and, transitively, `DioClient`) directly.
+///
+/// OFFLINE_FIRST_EVERYWHERE_PLAN.md Phase 4: the list side is a query over the
+/// replicated `orders` table now, not a cache-first fetch. Every filter, date
+/// range, bill-number search and page is answered locally and identically,
+/// online or off — the old split, where only "today, page 1" had a local
+/// answer, is gone.
 abstract class ArchivesLocalRepository {
+  /// One page of archives for [params]. Never touches the network, and
+  /// therefore never fails with a `ConnectionFailure`.
   Future<Either<Failure, ArchivesResponseEntity>> getArchives(
     ArchivesFilterRequestEntity params,
   );
 
+  /// Bill detail by id. The one method still going to the network first,
+  /// falling back to a per-id cache: a local detail needs a projection over
+  /// `orders` + `order_items` + `goods` that does not exist yet.
   Future<Either<Failure, ArchiveDetailEntity>> getArchiveWithId(String id);
 
-  /// Reactive read over the default (unfiltered, "today", first page) view —
-  /// `SyncEngine`-hydrated, per §8 Phase 6/V8. Emits `null` until the first
-  /// hydration lands. Filtered/searched/paginated-beyond-page-1 queries have
-  /// no local mirror and must still go through [getArchives] — a real
-  /// cross-side dependency (CLIENT_FACING_OFFLINE_PLAN.md §4): converting
-  /// them client-side is pointless until the sync side hydrates more than
-  /// "today, page 1" into the archives box.
+  /// Reactive read over the default view (unfiltered, "today", first page) —
+  /// what the screen shows on open. Re-emits whenever replication changes any
+  /// table the page reads from.
   Stream<ArchivesResponseEntity?> watchArchives();
 
-  /// Synchronous snapshot of the same hydrated default view — `null` until
-  /// the first hydration lands. Lets `ArchivesBloc` decide on open whether
-  /// the default view can be served locally (plan §4) or still needs the
-  /// one legacy network fetch as a first-fill fallback.
+  /// Synchronous snapshot of the same default view. Unlike the hydration-era
+  /// version this is never `null` for lack of a mirror — an empty replica
+  /// simply yields an empty page.
   ArchivesResponseEntity? getHydratedArchives();
 }

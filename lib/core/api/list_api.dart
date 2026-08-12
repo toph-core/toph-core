@@ -66,7 +66,6 @@ class ListAPI {
   /// Orders assigned to / history for a waiter.
   static String ordersByWaiter(String waiterId) =>
       "api/v1/orders/waiter/$waiterId";
-  static const String archives = "/api/v1/bills";
   static String archiveWithId(String id) => "/api/v1/bills/$id";
   static String orderWithTableId(String id) => "/api/v1/orders/table/$id";
   static String orderItemsListByOrder(String orderId) =>

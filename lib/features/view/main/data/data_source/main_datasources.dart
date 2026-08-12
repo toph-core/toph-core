@@ -8,7 +8,6 @@ import 'package:mary_ai_pos/core/service/printer/printer_setting_entry.dart';
 import 'package:mary_ai_pos/core/error/failure.dart';
 import 'package:mary_ai_pos/features/view/auth/data/models/user/user_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/archive_detail/archive_detail_model.dart';
-import 'package:mary_ai_pos/features/view/main/data/models/archives_response/archives_response_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/cafe_tables/cafe_tables_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/category/category_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/close_shift/close_shift_request_model.dart';
@@ -19,8 +18,6 @@ import 'package:mary_ai_pos/features/view/main/data/models/hall/hall_model.dart'
 import 'package:mary_ai_pos/features/view/main/data/models/open_shift/open_shift_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/shift/shift_response_model.dart';
 import 'package:mary_ai_pos/features/view/main/domain/entities/archive_detail_entity.dart';
-import 'package:mary_ai_pos/features/view/main/domain/entities/archives_filter_request_entity.dart';
-import 'package:mary_ai_pos/features/view/main/domain/entities/archives_response_entity.dart';
 
 
 abstract class MainDataSources {
@@ -40,9 +37,6 @@ abstract class MainDataSources {
     String categoryId,
   );
   Future<Either<Failure, List<GoodsModel>>> getGoodsWithName(String name);
-  Future<Either<Failure, ArchivesResponseEntity>> getArchives(
-    ArchivesFilterRequestEntity request,
-  );
   Future<Either<Failure, ArchiveDetailEntity>> getArchiveWithId(String id);
 
   Future<Either<Failure, ArchiveDetailEntity>> getPaymentDetailWithTableId(
@@ -807,36 +801,6 @@ class MainDataSourcesImpl implements MainDataSources {
       return Right(
         list.map((e) => GoodsModel.fromJson(e)).toList(),
       );
-    } on DioException catch (exception) {
-      return Left(handleDioException(exception));
-    } on FormatException catch (e, st) {
-      if (kDebugMode) print('ParsingError: $e\n$st');
-      return const Left(ParsingFailure());
-    } on TypeError catch (e, st) {
-      if (kDebugMode) print('ParsingError: $e\n$st');
-      return const Left(ParsingFailure());
-    } catch (e, st) {
-      if (kDebugMode) print('Unknown error: $e\n$st');
-      return const Left(UnknownFailure());
-    }
-  }
-
-  @override
-  Future<Either<Failure, ArchivesResponseEntity>> getArchives(
-    ArchivesFilterRequestEntity request,
-  ) async {
-    try {
-      final response = await _client.dio.get(
-        ListAPI.archives,
-        queryParameters: request.request(),
-      );
-      Map<String, dynamic> json = response.data['data'];
-      json['pagination'] = {
-        "total": response.data['data']['total'],
-        "limit": response.data['data']['limit'],
-        "offset": response.data['data']['offset'],
-      };
-      return Right(ArchivesResponseModel.fromJson(json));
     } on DioException catch (exception) {
       return Left(handleDioException(exception));
     } on FormatException catch (e, st) {

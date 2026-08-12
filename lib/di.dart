@@ -317,7 +317,7 @@ void _repositories() {
     () => MainRepositoryImpl(inject(), inject(), inject()),
   );
   inject.registerLazySingleton<ArchivesLocalRepository>(
-    () => ArchivesLocalRepositoryImpl(inject(), inject(), inject(), inject()),
+    () => ArchivesLocalRepositoryImpl(inject(), inject(), inject()),
   );
   inject.registerLazySingleton<MenuLocalRepository>(
     () => MenuLocalRepositoryImpl(inject(), inject(), inject(), inject()),

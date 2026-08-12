@@ -80,9 +80,9 @@ class CacheService {
   List<Map<String, dynamic>> getUsers() => _decode(_box.get(_users));
 
   // ─── Transaction groups ("categories" for transactions) ────────
-  // Same "what's on screen when connectivity drops" scope as archives/
-  // waiter-open-orders above — only the unfiltered default list is cached,
-  // not every search-query variant.
+  // Same "what's on screen when connectivity drops" scope as the
+  // waiter-open-orders list below — only the unfiltered default list is
+  // cached, not every search-query variant.
   static const _transactionGroups = 'cache_transaction_groups';
 
   Future<void> saveTransactionGroups(List<Map<String, dynamic>> items) async =>
@@ -174,26 +174,13 @@ class CacheService {
     }
   }
 
-  // ─── Archives (history) ─────────────────────────────────────────
-  // Only the most recent unfiltered/first-page list is cached — archive
-  // history can be large and query-shaped (date range, status, search), so
-  // this isn't meant to mirror every filter combination, just what's on
-  // screen the moment connectivity drops.
-  static const _archivesList = 'cache_archives_list';
+  // ─── Archive detail (history) ───────────────────────────────────
+  // The list itself is no longer cached here: Phase 4 made it a query over
+  // the replicated `orders` table, so every filter, date range and page is
+  // answered locally instead of just the one view a blob could hold. Bill
+  // *detail* still caches per id, until the local projection over
+  // `orders` + `order_items` + `goods` exists to replace it.
   static const _archiveDetailPrefix = 'cache_archive_detail:';
-
-  Future<void> saveArchivesList(Map<String, dynamic> json) async =>
-      _box.put(_archivesList, jsonEncode(json));
-
-  Map<String, dynamic>? getArchivesList() {
-    final raw = _box.get(_archivesList);
-    if (raw == null) return null;
-    try {
-      return jsonDecode(raw as String) as Map<String, dynamic>;
-    } catch (_) {
-      return null;
-    }
-  }
 
   Future<void> saveArchiveDetail(String id, Map<String, dynamic> json) async =>
       _box.put('$_archiveDetailPrefix$id', jsonEncode(json));
@@ -211,7 +198,7 @@ class CacheService {
   // ─── Waiter open orders ───────────────────────────────────────
   // Keyed by list mode ("myOrders" / "branchOrders") — only the default
   // first-page view is cached, same "what's on screen when connectivity
-  // drops" scope as the archives list above.
+  // drops" scope as the transaction groups above.
   static const _waiterOpenOrdersPrefix = 'cache_waiter_open_orders:';
 
   Future<void> saveWaiterOpenOrders(
@@ -330,7 +317,8 @@ class CacheService {
   }
 
   /// Wipes every cached entity — categories, goods, halls, tables, users,
-  /// ingredients, compounds, service charge, order details, archives, waiter
+  /// ingredients, compounds, service charge, order details, archive
+  /// details, waiter
   /// open-orders, item timestamps, USB printer names, all of it. Only for a
   /// full app re-provision (logout-from-app,
   /// which also drops brand_id/pos_password — see `AuthRepositoryImpl

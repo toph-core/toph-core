@@ -4,12 +4,9 @@ import 'package:flutter/foundation.dart';
 import 'package:mary_ai_pos/di.dart';
 import 'package:mary_ai_pos/features/view/auth/presentation/cubit/bloc/user_bloc.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/archive_detail/archive_detail_model.dart';
-import 'package:mary_ai_pos/features/view/main/data/models/archives_filter_request/archives_filter_request_model.dart';
-import 'package:mary_ai_pos/features/view/main/data/models/archives_response/archives_response_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/cafe_tables/cafe_tables_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/category/category_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/goods/goods_model.dart';
-import 'package:mary_ai_pos/features/view/main/data/models/pagination_request/pagination_request_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/repository/table_timer_local_repository_impl.dart';
 import 'package:mary_ai_pos/features/view/main/domain/repository/main_repository.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -324,7 +321,6 @@ class SyncEngine {
       await _hydrateIngredientsAndCompounds(repo);
       await _hydrateTransactionGroups(repo);
       await _hydrateCashRegisters(repo);
-      await _hydrateArchives(repo);
       await _hydratePrinterSettings(repo);
       await _hydrateServiceCharge(repo);
       if (categories != null) await _hydrateGoodsByCategory(repo, categories);
@@ -372,28 +368,6 @@ class SyncEngine {
       }
     } catch (e) {
       if (kDebugMode) debugPrint('[SyncEngine] hydrateCompounds error: $e');
-    }
-  }
-
-  /// §8 Phase 6/V8 — mirrors only the default "first page, unfiltered,
-  /// today" archive view `archive_screen.dart` shows on open, matching
-  /// exactly what `ArchivesLocalRepositoryImpl` already blob-caches for
-  /// offline reads (same default `ArchivesFilterRequestModel()` shape).
-  /// Replaces that screen's own `Timer.periodic` silent refresh — the
-  /// archive screen becomes a `watchArchives()` stream consumer instead.
-  Future<void> _hydrateArchives(MainRepository repo) async {
-    try {
-      final result = await repo.getArchives(
-        const ArchivesFilterRequestModel(
-          pagination: PaginationRequestModel(limit: 20),
-        ),
-      );
-      final ok = result.fold((_) => null, (r) => r);
-      if (ok != null) {
-        await _localDb.saveArchives((ok as ArchivesResponseModel).toJson());
-      }
-    } catch (e) {
-      if (kDebugMode) debugPrint('[SyncEngine] hydrateArchives error: $e');
     }
   }
 
