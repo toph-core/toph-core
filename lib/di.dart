@@ -44,12 +44,16 @@ import 'package:mary_ai_pos/features/view/auth/domain/usecases/user/get_user_use
 import 'package:mary_ai_pos/features/view/auth/presentation/cubit/bloc/user_bloc.dart';
 import 'package:mary_ai_pos/features/view/main/data/repository/archives_local_repository_impl.dart';
 import 'package:mary_ai_pos/features/view/main/data/repository/halls_tables_local_repository_impl.dart';
+import 'package:mary_ai_pos/features/view/main/data/repository/menu_admin_local_repository_impl.dart';
 import 'package:mary_ai_pos/features/view/main/data/repository/users_local_repository_impl.dart';
 import 'package:mary_ai_pos/features/view/main/data/outbox/halls_tables_outbox.dart';
+import 'package:mary_ai_pos/features/view/main/data/outbox/menu_admin_outbox.dart';
 import 'package:mary_ai_pos/features/view/main/data/outbox/users_outbox.dart';
 import 'package:mary_ai_pos/features/view/main/domain/repository/halls_tables_local_repository.dart';
+import 'package:mary_ai_pos/features/view/main/domain/repository/menu_admin_local_repository.dart';
 import 'package:mary_ai_pos/features/view/main/domain/repository/users_local_repository.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/halls_tables/halls_tables_cubit.dart';
+import 'package:mary_ai_pos/features/view/main/presentation/cubit/menu_admin/menu_goods_cubit.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/users/users_cubit.dart';
 import 'package:mary_ai_pos/features/view/main/data/repository/menu_local_repository_impl.dart';
 import 'package:mary_ai_pos/features/view/main/data/repository/table_timer_local_repository_impl.dart';
@@ -312,6 +316,7 @@ Future<void> initDi() async {
   // registry stays a readable list of what is actually on the queue.
   registerUsersOutboxHandlers(outboxExecutors, inject<MainRepository>());
   registerHallsTablesOutboxHandlers(outboxExecutors, inject<MainRepository>());
+  registerMenuAdminOutboxHandlers(outboxExecutors, inject<MainRepository>());
 
   // BACKEND_SYNC_PLAN.md §5: every registration the startup tick's
   // hydration pass resolves lazily (MainRepository, UserBloc, ...) exists
@@ -355,6 +360,12 @@ void _repositories() {
   // Same shape for halls & tables. Note this deliberately does *not* replace
   // `TablesRepository`, which still serves the floor plan and waiter screens
   // from the Hive store — those move in their own commits, per screen.
+  inject.registerLazySingleton<MenuAdminLocalRepository>(
+    () => MenuAdminLocalRepositoryImpl(
+      inject<replica.LocalDatabase>(),
+      inject(),
+    ),
+  );
   inject.registerLazySingleton<HallsTablesLocalRepository>(
     () => HallsTablesLocalRepositoryImpl(
       inject<replica.LocalDatabase>(),
@@ -457,6 +468,7 @@ void _cubit() {
   // be handed out closed the second time the screen opened.
   inject.registerFactory(() => UsersCubit(inject()));
   inject.registerFactory(() => HallsTablesCubit(inject()));
+  inject.registerFactory(() => MenuGoodsCubit(inject()));
   inject.registerLazySingleton(
     () => ShiftBloc(
       prefs: inject(),

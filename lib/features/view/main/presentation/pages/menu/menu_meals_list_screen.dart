@@ -14,8 +14,7 @@ import 'package:mary_ai_pos/di.dart';
 import 'package:mary_ai_pos/features/view/auth/presentation/cubit/bloc/user_bloc.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/category/category_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/goods/goods_model.dart';
-import 'package:mary_ai_pos/features/view/main/domain/repository/main_repository.dart';
-import 'package:mary_ai_pos/features/view/main/domain/repository/menu_repository.dart';
+import 'package:mary_ai_pos/features/view/main/presentation/cubit/menu_admin/menu_goods_cubit.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/main/widgets/main_header.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/widgets/product_grid_card.dart';
 import 'package:mary_ai_pos/generated/l10n.dart';
@@ -33,59 +32,17 @@ class MenuMealsListScreen extends StatefulWidget {
 }
 
 class _MenuMealsListScreenState extends State<MenuMealsListScreen> {
-  final MainRepository _repository = inject<MainRepository>();
-  final MenuRepository _menuRepository = inject<MenuRepository>();
+  final MenuGoodsCubit _cubit = inject<MenuGoodsCubit>();
   final NumberPaginatorController _paginatorController =
       NumberPaginatorController();
   final TextEditingController _searchCtrl = TextEditingController();
   final TextEditingController _catSearchCtrl = TextEditingController();
 
   static const List<int> _pageSizeOptions = [20, 50, 100];
-  int _pageSize = 20;
-
-  List<CategoryModel> _categories = const [];
-  List<GoodsModel> _goods = const [];
-  String? _selectedCategoryId; // null = barcha taomlar
-  bool _loadingCategories = true;
-  bool _loadingGoods = true;
-  String? _errorGoods;
-  int _page = 1;
-  int? _totalCount;
-  String _searchQuery = '';
-  StreamSubscription<List<CategoryModel>>? _categoriesSub;
-
-  int get _totalPages {
-    final total = _totalCount;
-    if (total == null || total <= 0) return 1;
-    final p = (total + _pageSize - 1) ~/ _pageSize;
-    return p > 0 ? p : 1;
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    // offline-first-target-architecture.md §8 Phase 5: reactive read over
-    // MenuRepository/LocalDatabase (already hydrated by SyncEngine, §8
-    // Phase 1) instead of a fetch-on-init. Writes (`createCategory` below)
-    // stay online-required (design doc open question 1) — see
-    // EXECUTION_CONCERNS.md.
-    _categoriesSub = _menuRepository.watchCategories().listen((categories) {
-      if (!mounted) return;
-      setState(() {
-        _categories = categories;
-        _loadingCategories = false;
-      });
-    });
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      final role = context.read<UserBloc>().state.userMOdel?.role;
-      if (role.canManageMenu) _loadGoods(page: 1);
-    });
-  }
 
   @override
   void dispose() {
-    _categoriesSub?.cancel();
+    _cubit.close();
     _paginatorController.dispose();
     _searchCtrl.dispose();
     _catSearchCtrl.dispose();
@@ -94,13 +51,14 @@ class _MenuMealsListScreenState extends State<MenuMealsListScreen> {
 
   // ── Categories ──────────────────────────────
 
-  Future<void> _createCategory(String name) async {
-    final result = await _repository.createCategory(name);
-    final failure = result.fold((f) => f, (_) => null);
-    if (failure != null) throw failure;
-    // Force a sync pass so the new category shows up promptly rather than
-    // waiting for SyncEngine's next periodic tick.
-    await inject<SyncEngine>().tick(force: true);
+  /// The category is queued, not created locally — `/categories` assigns the
+  /// id, so a local row would become a second identity for it. The cubit's
+  /// notice says as much; the sync nudge just shortens the wait.
+  void _createCategory(String name) {
+    if (!_cubit.createCategory(name)) {
+      throw const MessageFailure("Kategoriya qo'shilmadi");
+    }
+    unawaited(inject<SyncEngine>().tick(force: true));
   }
 
   void _openCategoryDialog() {
@@ -109,7 +67,7 @@ class _MenuMealsListScreenState extends State<MenuMealsListScreen> {
       builder: (_) => _CategoryDialog(
         onCreate: (name) async {
           try {
-            await _createCategory(name);
+            _createCategory(name);
           } catch (e) {
             if (!mounted) return;
             _showSnack(
@@ -125,43 +83,14 @@ class _MenuMealsListScreenState extends State<MenuMealsListScreen> {
 
   // ── Goods ────────────────────────────────────
 
-  Future<void> _loadGoods({required int page}) async {
-    if (!mounted) return;
-    setState(() {
-      _loadingGoods = true;
-      _errorGoods = null;
-    });
-    final result = await _repository.searchGoodsAdmin(
-      limit: _pageSize,
-      offset: (page - 1) * _pageSize,
-      categoryId: _selectedCategoryId,
-      search: _searchQuery.isEmpty ? null : _searchQuery,
-    );
-    if (!mounted) return;
-    result.fold(
-      (failure) => setState(() {
-        _loadingGoods = false;
-        _errorGoods = failure is MessageFailure
-            ? failure.message
-            : "Taomlar yuklanmadi";
-      }),
-      (data) => setState(() {
-        _goods = _extractGoodsList(data);
-        _page = page;
-        _totalCount = _extractTotalCount(data);
-        _loadingGoods = false;
-      }),
-    );
-  }
-
   Future<void> _openManage({String? mealId}) async {
+    // No reload on return: the list is a subscription, so an edit made in the
+    // manage screen is already reflected.
     await Navigator.pushNamed(
       context,
       AppRoutes.menuManageScreen,
       arguments: mealId == null ? null : {'meal_id': mealId},
     );
-    if (!mounted) return;
-    await _loadGoods(page: _page);
   }
 
   void _showSnack(String msg, {bool success = false}) {
@@ -172,39 +101,12 @@ class _MenuMealsListScreenState extends State<MenuMealsListScreen> {
     }
   }
 
-  List<GoodsModel> _extractGoodsList(dynamic raw) {
-    dynamic source = raw;
-    if (source is Map<String, dynamic>) {
-      source =
-          source['data'] ?? source['items'] ?? source['results'] ?? const [];
-    }
-    if (source is Map<String, dynamic>) {
-      source =
-          source['items'] ?? source['results'] ?? source['data'] ?? const [];
-    }
-    if (source is! List) return const [];
-    return source
-        .whereType<Map>()
-        .map((e) => GoodsModel.fromJson(Map<String, dynamic>.from(e)))
-        .toList();
-  }
-
-  int? _extractTotalCount(dynamic raw) {
-    if (raw is! Map<String, dynamic>) return null;
-    for (final c in [
-      raw['count'],
-      raw['total'],
-      raw['meta'] is Map ? (raw['meta'] as Map)['total'] : null,
-      raw['pagination'] is Map ? (raw['pagination'] as Map)['total'] : null,
-    ]) {
-      if (c is num) return c.toInt();
-      if (c is String) {
-        final p = int.tryParse(c);
-        if (p != null) return p;
-      }
-    }
-    return null;
-  }
+  // `_extractGoodsList` and `_extractTotalCount` are gone with the endpoint.
+  // They existed because the response envelope varied — the list arrived under
+  // `data`, `items` or `results` depending on the path, and the total under
+  // `count`, `total`, `meta.total`, `pagination.total`, or not at all. When the
+  // total was missing the screen hid its paginator entirely, so a menu of 300
+  // items looked like a menu of 20. A local `COUNT(*)` has one shape.
 
   // ── Build ────────────────────────────────────
 
@@ -230,24 +132,29 @@ class _MenuMealsListScreenState extends State<MenuMealsListScreen> {
                     ),
                   );
                 }
-                return Row(
+                return BlocProvider<MenuGoodsCubit>.value(
+                  value: _cubit,
+                  child: BlocConsumer<MenuGoodsCubit, MenuGoodsState>(
+                    listenWhen: (a, b) =>
+                        a.notice != b.notice && b.notice != null,
+                    listener: (context, state) {
+                      showInfoMessage(context, state.notice!);
+                      _cubit.acknowledge();
+                    },
+                    builder: (context, goodsState) => Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     // ── Chap panel: Kategoriyalar ──
                     SizedBox(
                       width: 260,
                       child: _CategoriesPanel(
-                        categories: _categories,
-                        loading: _loadingCategories,
-                        selectedId: _selectedCategoryId,
+                        categories: goodsState.categories,
+                        selectedId: goodsState.categoryId,
                         searchCtrl: _catSearchCtrl,
                         onSelect: (id) {
-                          setState(() {
-                            _selectedCategoryId = id;
-                            _searchQuery = '';
-                            _searchCtrl.clear();
-                          });
-                          _loadGoods(page: 1);
+                          _searchCtrl.clear();
+                          _cubit.setSearch('');
+                          _cubit.setCategory(id);
                         },
                         onAdd: () => _openCategoryDialog(),
                       ),
@@ -260,33 +167,26 @@ class _MenuMealsListScreenState extends State<MenuMealsListScreen> {
                     // ── O'ng panel: Taomlar ──
                     Expanded(
                       child: _GoodsPanel(
-                        goods: _goods,
-                        categories: _categories,
-                        loading: _loadingGoods,
-                        error: _errorGoods,
-                        page: _page,
-                        totalCount: _totalCount ?? 0,
-                        totalPages: _totalPages,
-                        pageSize: _pageSize,
+                        goods: goodsState.goods,
+                        categories: goodsState.categories,
+                        page: goodsState.page,
+                        totalCount: goodsState.total,
+                        totalPages: _cubit.pageCount,
+                        pageSize: _cubit.pageSize,
                         pageSizeOptions: _pageSizeOptions,
                         paginatorController: _paginatorController,
                         searchCtrl: _searchCtrl,
-                        selectedCategoryId: _selectedCategoryId,
-                        onSearch: (q) {
-                          setState(() => _searchQuery = q);
-                          _loadGoods(page: 1);
-                        },
-                        onPageChange: (p) => _loadGoods(page: p),
-                        onPageSizeChange: (sz) {
-                          setState(() => _pageSize = sz);
-                          _loadGoods(page: 1);
-                        },
+                        selectedCategoryId: goodsState.categoryId,
+                        onSearch: _cubit.setSearch,
+                        onPageChange: _cubit.setPage,
+                        onPageSizeChange: _cubit.setPageSize,
                         onEdit: (g) => _openManage(mealId: g.id),
                         onNew: () => _openManage(),
-                        onRetry: () => _loadGoods(page: _page),
                       ),
                     ),
                   ],
+                    ),
+                  ),
                 );
               },
             ),
@@ -303,7 +203,6 @@ class _MenuMealsListScreenState extends State<MenuMealsListScreen> {
 
 class _CategoriesPanel extends StatefulWidget {
   final List<CategoryModel> categories;
-  final bool loading;
   final String? selectedId;
   final TextEditingController searchCtrl;
   final void Function(String? id) onSelect;
@@ -311,7 +210,6 @@ class _CategoriesPanel extends StatefulWidget {
 
   const _CategoriesPanel({
     required this.categories,
-    required this.loading,
     required this.selectedId,
     required this.searchCtrl,
     required this.onSelect,
@@ -386,9 +284,9 @@ class _CategoriesPanelState extends State<_CategoriesPanel> {
             onTap: () => widget.onSelect(null),
           ),
           Expanded(
-            child: widget.loading
-                ? const Center(child: CircularProgressIndicator.adaptive())
-                : filtered.isEmpty
+            // No spinner: categories come from the same synchronous read as the
+            // goods list, so "empty" means empty rather than "not yet".
+            child: filtered.isEmpty
                 ? Padding(
                     padding: const EdgeInsets.all(16),
                     child: Text(
@@ -543,8 +441,6 @@ class _CatItemWithActions extends StatelessWidget {
 class _GoodsPanel extends StatelessWidget {
   final List<GoodsModel> goods;
   final List<CategoryModel> categories;
-  final bool loading;
-  final String? error;
   final int page;
   final int totalCount;
   final int totalPages;
@@ -558,13 +454,10 @@ class _GoodsPanel extends StatelessWidget {
   final void Function(int) onPageSizeChange;
   final void Function(GoodsModel) onEdit;
   final VoidCallback onNew;
-  final VoidCallback onRetry;
 
   const _GoodsPanel({
     required this.goods,
     required this.categories,
-    required this.loading,
-    required this.error,
     required this.page,
     required this.totalCount,
     required this.totalPages,
@@ -578,7 +471,6 @@ class _GoodsPanel extends StatelessWidget {
     required this.onPageSizeChange,
     required this.onEdit,
     required this.onNew,
-    required this.onRetry,
   });
 
   @override
@@ -650,12 +542,11 @@ class _GoodsPanel extends StatelessWidget {
           ),
         ),
         // ── Content ──
+        // No skeleton and no error state: the page comes from one synchronous
+        // query, so there is nothing between asking and having it, and a local
+        // read has no failure for a retry button to retry.
         Expanded(
-          child: loading
-              ? const _GoodsSkeleton()
-              : error != null
-              ? _GoodsErrorState(message: error!, onRetry: onRetry)
-              : goods.isEmpty
+          child: goods.isEmpty
               ? _GoodsEmptyState(onNew: onNew)
               : LayoutBuilder(
                   builder: (context, constraints) {
@@ -703,99 +594,26 @@ class _GoodsPanel extends StatelessWidget {
                 ),
         ),
         // ── Pagination ──
-        if (!loading && error == null)
-          _PaginationBar(
-            page: page,
-            totalPages: totalPages,
-            pageSize: pageSize,
-            pageSizeOptions: pageSizeOptions,
-            paginatorController: paginatorController,
-            onPageChange: onPageChange,
-            onPageSizeChange: onPageSizeChange,
-          ),
+        // Always shown. It used to be conditional on a successful fetch that
+        // also had to have carried a usable total — and when the envelope did
+        // not, the paginator vanished and a 300-item menu looked like 20.
+        _PaginationBar(
+          page: page,
+          totalPages: totalPages,
+          pageSize: pageSize,
+          pageSizeOptions: pageSizeOptions,
+          paginatorController: paginatorController,
+          onPageChange: onPageChange,
+          onPageSizeChange: onPageSizeChange,
+        ),
       ],
     );
   }
 }
 
 // ═══════════════════════════════════════════════════════
-// Skeleton / Empty / Error states
+// Empty state
 // ═══════════════════════════════════════════════════════
-
-class _GoodsSkeleton extends StatelessWidget {
-  const _GoodsSkeleton();
-
-  @override
-  Widget build(BuildContext context) {
-    final c = context.colors;
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        const minCardW = 160.0;
-        const gap = 10.0;
-        final w = constraints.maxWidth - 48;
-        final cols = (w / (minCardW + gap)).floor().clamp(3, 7);
-        return GridView.builder(
-          padding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
-          itemCount: cols * 3,
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: cols,
-            crossAxisSpacing: gap,
-            mainAxisSpacing: gap,
-            childAspectRatio: 0.92,
-          ),
-          itemBuilder: (_, _) => Container(
-            decoration: BoxDecoration(
-              color: c.bgDefault,
-              border: Border.all(color: c.border),
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Expanded(
-                  flex: 5,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: c.bgSecondary,
-                      borderRadius: const BorderRadius.vertical(
-                        top: Radius.circular(15),
-                      ),
-                    ),
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Container(
-                        height: 12,
-                        width: 120,
-                        decoration: BoxDecoration(
-                          color: c.bgSecondary,
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Container(
-                        height: 14,
-                        width: 80,
-                        decoration: BoxDecoration(
-                          color: c.bgSecondary,
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-}
 
 class _GoodsEmptyState extends StatelessWidget {
   final VoidCallback onNew;
@@ -848,42 +666,6 @@ class _GoodsEmptyState extends StatelessWidget {
             label: S.current.strNewMeal,
             icon: Icons.add_rounded,
             onTap: onNew,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _GoodsErrorState extends StatelessWidget {
-  final String message;
-  final VoidCallback onRetry;
-
-  const _GoodsErrorState({required this.message, required this.onRetry});
-
-  @override
-  Widget build(BuildContext context) {
-    final c = context.colors;
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.error_outline_rounded, size: 36, color: c.systemError),
-          const SizedBox(height: 12),
-          Text(
-            message,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 13,
-              color: c.systemError,
-              fontFamily: 'Inter',
-            ),
-          ),
-          const SizedBox(height: 14),
-          FilledButton.icon(
-            onPressed: onRetry,
-            icon: const Icon(Icons.refresh_rounded, size: 16),
-            label: Text(S.current.strRetry),
           ),
         ],
       ),

@@ -151,7 +151,6 @@ void main() {
     const pending = {
       'lib/features/view/main/presentation/pages/main/widgets/time_based_table_badge.dart',
       'lib/features/view/main/presentation/pages/menu/menu_manage_screen.dart',
-      'lib/features/view/main/presentation/pages/menu/menu_meals_list_screen.dart',
       'lib/features/view/main/presentation/pages/settings/sections/printers_section.dart',
       'lib/features/view/main/presentation/pages/transactions/sections/transaction_categories_section.dart',
       'lib/features/view/main/presentation/pages/transactions/sections/transactions_list_section.dart',
