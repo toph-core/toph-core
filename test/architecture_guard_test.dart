@@ -175,12 +175,9 @@ void main() {
   });
 
   group('§7 — no build-time fetching', () {
-    // Both remaining uses are image loading, which Phase 4 replaces with a
-    // StreamBuilder over the local image table.
-    const pending = {
-      'lib/core/common/custom_network_image.dart',
-      'lib/features/view/main/presentation/pages/menu/menu_manage_screen.dart',
-    };
+    // Empty, and staying that way. Both former entries were image loading,
+    // now a StreamBuilder over the repository's local image store.
+    const pending = <String>{};
 
     test('no new FutureBuilder', () {
       _ratchet(

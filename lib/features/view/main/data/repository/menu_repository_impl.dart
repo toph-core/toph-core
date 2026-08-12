@@ -1,4 +1,6 @@
 import 'package:mary_ai_pos/core/database/local_database.dart';
+import 'package:mary_ai_pos/core/media/local_image_cache.dart';
+import 'package:mary_ai_pos/core/service/minio/minio_service.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/category/category_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/department/department_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/goods/goods_model.dart';
@@ -8,6 +10,19 @@ class MenuRepositoryImpl implements MenuRepository {
   final LocalDatabase _localDb;
 
   MenuRepositoryImpl({required LocalDatabase localDb}) : _localDb = localDb;
+
+  /// The image state machine, wired to the Hive store and the Minio fetcher.
+  /// Lives in `core/media` so it can be tested without either.
+  late final LocalImageCache _images = LocalImageCache(
+    watch: _localDb.watchImage,
+    read: _localDb.getImage,
+    write: _localDb.saveImage,
+    fetch: MinioService.instance.getImageByObjectName,
+  );
+
+  @override
+  Stream<LocalImage> imageStream(String objectName) =>
+      _images.stream(objectName);
 
   @override
   Stream<List<CategoryModel>> watchCategories() => _localDb.watchCategories();

@@ -544,12 +544,12 @@ class SyncEngine {
   }
 
   /// V9 fix (§9): hydrates every distinct menu-image object name referenced
-  /// by `LocalDatabase`'s "goods (all)" list, via the same
-  /// `MinioService.getImageByObjectName` the now-deleted-in-Phase-6
-  /// `FutureBuilder` in `menu_manage_screen.dart` calls directly today.
-  /// Skips object names already cached — an unconditional re-fetch every
-  /// tick would turn a small reference-data pass into a large one for a
-  /// menu with many pictured items.
+  /// by `LocalDatabase`'s "goods (all)" list.
+  ///
+  /// This is the ahead-of-time half; `MenuRepository.imageStream` is the
+  /// on-demand half, for an image a screen asks for before this pass has
+  /// reached it. Both write to the same store and skip what is already
+  /// cached, so whichever gets there first wins and the other is a no-op.
   Future<void> _hydrateMenuImages() async {
     try {
       final refs = _localDb

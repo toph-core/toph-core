@@ -3,11 +3,13 @@ import 'dart:typed_data';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:mary_ai_pos/core/media/local_image_cache.dart';
 import 'package:mary_ai_pos/core/common/custom_shimmer_container.dart';
 import 'package:mary_ai_pos/core/extension/for_context.dart';
 import 'package:mary_ai_pos/core/extension/widget_extension.dart';
-import 'package:mary_ai_pos/core/service/minio/minio_service.dart';
 import 'package:mary_ai_pos/core/values/app_assets.dart';
+import 'package:mary_ai_pos/di.dart';
+import 'package:mary_ai_pos/features/view/main/domain/repository/menu_repository.dart';
 
 class CustomCachedNetworkImage extends StatelessWidget {
   final String? imageUrl;
@@ -43,30 +45,36 @@ class CustomCachedNetworkImage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (minioObjectName != null) {
-      // Load from Minio bytes
-      return FutureBuilder<Uint8List?>(
-        future: MinioService.instance.getImageByObjectName(minioObjectName!),
+      // Was a FutureBuilder straight onto MinioService, which meant a fetch per
+      // build and nothing kept: `MinioService` memoizes only per process, so
+      // these images were re-downloaded every app start and simply did not
+      // exist offline. The repository serves them from disk and fetches once on
+      // a miss — same pixels, one request, and they survive a restart.
+      return StreamBuilder<LocalImage>(
+        stream: inject<MenuRepository>().imageStream(minioObjectName!),
         builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
+          final image = snapshot.data;
+          if (image == null || image.status == ImageStatus.loading) {
             return _placeholder();
           }
-
-          if (snapshot.hasData && snapshot.data != null) {
-            return ClipRRect(
-              borderRadius: borderRadius ?? BorderRadius.zero,
-              child: Image.memory(
-                snapshot.data!,
-                height: height,
-                width: width,
-                fit: fit ?? BoxFit.cover,
-                gaplessPlayback: true,
-                errorBuilder: (context, error, stack) =>
-                    _resolveErrorWidget(context),
-              ),
-            );
+          final bytes = image.bytes;
+          if (image.status == ImageStatus.missing ||
+              bytes == null ||
+              bytes.isEmpty) {
+            return _resolveErrorWidget(context);
           }
-
-          return _resolveErrorWidget(context);
+          return ClipRRect(
+            borderRadius: borderRadius ?? BorderRadius.zero,
+            child: Image.memory(
+              Uint8List.fromList(bytes),
+              height: height,
+              width: width,
+              fit: fit ?? BoxFit.cover,
+              gaplessPlayback: true,
+              errorBuilder: (context, error, stack) =>
+                  _resolveErrorWidget(context),
+            ),
+          );
         },
       );
     }

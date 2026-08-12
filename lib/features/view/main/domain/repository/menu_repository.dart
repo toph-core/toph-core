@@ -1,3 +1,4 @@
+import 'package:mary_ai_pos/core/media/local_image_cache.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/category/category_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/department/department_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/goods/goods_model.dart';
@@ -36,15 +37,27 @@ abstract class MenuRepository {
   Stream<List<Map<String, dynamic>>> watchCompounds();
   List<Map<String, dynamic>> getCompounds();
 
-  /// V9: menu images, hydrated by `SyncEngine` (§8 Phase 1) instead of a
-  /// `FutureBuilder` fetching on every build.
+  /// The only way a widget should ask for a menu image.
+  ///
+  /// Emits from the local store, and on a miss fetches once in the background
+  /// and write-throughs, so the same subscription turns into [ImageStatus.ready]
+  /// when the bytes land. That is the whole reason this replaced two
+  /// `FutureBuilder`s: a future rebuilt on every build refetches on every
+  /// build, and the widget ends up owning retry, dedupe and caching decisions
+  /// it has no business making.
+  ///
+  /// It also closes a real hole. The `minioObjectName` path in
+  /// `CustomCachedNetworkImage` had no local store at all — `MinioService`
+  /// memoizes per process, so it was one fetch per image per app run and
+  /// nothing survived a restart. Those images did not exist offline. Now every
+  /// image a terminal has ever displayed is on disk.
+  Stream<LocalImage> imageStream(String objectName);
+
+  /// V9: menu images, hydrated by `SyncEngine` (§8 Phase 1).
   Stream<List<int>?> watchImage(String objectName);
   List<int>? getImage(String objectName);
 
-  /// Write-through for the one case `SyncEngine`'s own hydration pass can't
-  /// cover yet — an image just uploaded this session, before the next
-  /// hydration cycle would otherwise pick it up. The menu-editor screen's
-  /// live-fetch fallback calls this so the result becomes durable/
-  /// offline-capable immediately rather than only after the next tick.
+  /// Write-through for an image just uploaded this session, before the next
+  /// hydration cycle would otherwise pick it up.
   Future<void> saveImage(String objectName, List<int> bytes);
 }

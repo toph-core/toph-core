@@ -36,7 +36,8 @@ class MinioService {
     );
   }
 
-  /// `FutureBuilder` har `build`da yangi `Future` bersa ham xuddi shu instance qaytadi — qayta so‘rov yo‘q.
+  /// Takroriy so‘rov bo‘lmaydi. Rasm keshi endi `MenuRepository.imageStream`
+  /// zimmasida — bu yerdagi memoizatsiya faqat jarayon ichida, diskda emas.
   Future<Uint8List?> getImageByObjectName(String objectName) {
     final key = objectName.trim();
     if (key.isEmpty) return SynchronousFuture(null);
