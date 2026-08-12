@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:dartz/dartz.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mary_ai_pos/core/error/failure.dart';
+import 'package:mary_ai_pos/features/view/main/domain/repository/local_write_result.dart';
 import 'package:mary_ai_pos/features/view/main/domain/repository/users_local_repository.dart';
 
 /// OFFLINE_FIRST_EVERYWHERE_PLAN.md §7 — the screen stopped resolving
@@ -152,7 +153,7 @@ class UsersCubit extends Cubit<UsersState> {
   /// Synchronous throughout — the repository's mutations return a value, not a
   /// future, so there is no await anywhere on this path and no window in which
   /// the UI could be waiting on anything.
-  bool _apply(Either<Failure, UserWriteResult> Function() write) {
+  bool _apply(Either<Failure, LocalWriteResult> Function() write) {
     final result = write();
     return result.fold(
       (failure) {
@@ -162,7 +163,7 @@ class UsersCubit extends Cubit<UsersState> {
       (outcome) {
         emit(state.copyWith(
           error: null,
-          notice: outcome == UserWriteResult.queued
+          notice: outcome == LocalWriteResult.queued
               ? 'Navbatga qo\'yildi — sinxronlashtirilgach ro\'yxatda ko\'rinadi.'
               : null,
         ));

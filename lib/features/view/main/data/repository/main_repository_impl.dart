@@ -79,13 +79,6 @@ class MainRepositoryImpl implements MainRepository {
   }
 
   @override
-  Future<Either<Failure, List<CafeTableModel>>> getTablesByHallId(
-    String hallId,
-  ) {
-    return _dataSources.getTablesByHallId(hallId);
-  }
-
-  @override
   Future<Either<Failure, String>> createTakewayOrder({
     required CreateOrderRequestModel request,
   }) async => await _dataSources.createTakewayOrder(request: request);

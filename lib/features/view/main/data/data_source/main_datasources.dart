@@ -21,14 +21,9 @@ import 'package:mary_ai_pos/features/view/main/domain/entities/archive_detail_en
 
 
 abstract class MainDataSources {
-  Future<Either<Failure, List<CafeTableModel>>> getTablesByHallId(
-    String hallId,
-  );
-
-  /// All tables across every hall, unfiltered — used only by the login/
-  /// periodic hydration pass (`SyncEngine`) to warm the cache ahead of any
-  /// specific hall being opened. Regular table reads stay per-hall via
-  /// [getTablesByHallId], matching what `MainCubit` already does.
+  /// All tables across every hall. The per-hall read that used to sit beside
+  /// this is gone — the halls & tables screen reads `cafe_tables` from the
+  /// replica now, so nothing asks the server for one hall's tables.
   Future<Either<Failure, List<CafeTableModel>>> getAllTables();
   Future<Either<Failure, List<HallModel>>> getHalls();
   Future<Either<Failure, List<CategoryModel>>> getCategories();
@@ -537,36 +532,6 @@ class MainDataSourcesImpl implements MainDataSources {
         await _client.post(ListAPI.orders, data: request.request());
       }
       return const Right(true);
-    } on DioException catch (exception) {
-      return Left(handleDioException(exception));
-    } on FormatException catch (e, st) {
-      if (kDebugMode) print('ParsingError: $e\n$st');
-      return const Left(ParsingFailure());
-    } on TypeError catch (e, st) {
-      if (kDebugMode) print('ParsingError: $e\n$st');
-      return const Left(ParsingFailure());
-    } catch (e, st) {
-      if (kDebugMode) print('Unknown error: $e\n$st');
-      return const Left(UnknownFailure());
-    }
-  }
-
-  @override
-  Future<Either<Failure, List<CafeTableModel>>> getTablesByHallId(
-    String hallId,
-  ) async {
-    try {
-      final response = await _client.get(
-        "${ListAPI.cafeTablesByHallId}/$hallId",
-        queryParameters: {'limit': 1000},
-      );
-
-      return Right(
-        (response.data['data'] as List?)
-                ?.map((e) => CafeTableModel.fromJson(e))
-                .toList() ??
-            [],
-      );
     } on DioException catch (exception) {
       return Left(handleDioException(exception));
     } on FormatException catch (e, st) {

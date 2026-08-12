@@ -15,10 +15,6 @@ import 'package:mary_ai_pos/features/view/main/domain/entities/archive_detail_en
 
 
 abstract class MainRepository {
-  Future<Either<Failure, List<CafeTableModel>>> getTablesByHallId(
-    String hallId,
-  );
-
   /// All tables across every hall — hydration-only, see
   /// `MainDataSources.getAllTables`'s doc comment.
   Future<Either<Failure, List<CafeTableModel>>> getAllTables();

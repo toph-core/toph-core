@@ -1,5 +1,5 @@
 /// OFFLINE_FIRST_EVERYWHERE_PLAN.md Phase 2/4 — the retry-or-quarantine
-/// decision, and the `users` handlers that are the first to use it.
+/// decision, and the handlers that use it.
 ///
 /// This is the rule with the widest blast radius in the outbox: get "transient"
 /// wrong and a recoverable write is thrown away; get "permanent" wrong and a
@@ -13,6 +13,7 @@ import 'package:mary_ai_pos/core/error/failure.dart';
 import 'package:mary_ai_pos/core/outbox/failure_outcome.dart';
 import 'package:mary_ai_pos/core/outbox/outbox_executor.dart';
 import 'package:mary_ai_pos/core/outbox/outbox_operation.dart';
+import 'package:mary_ai_pos/features/view/main/data/outbox/halls_tables_outbox.dart';
 import 'package:mary_ai_pos/features/view/main/data/outbox/users_outbox.dart';
 import 'package:mary_ai_pos/features/view/main/domain/repository/main_repository.dart';
 
@@ -44,6 +45,48 @@ class _FakeMainRepository implements MainRepository {
   @override
   Future<Either<Failure, bool>> deleteUser(String id) async {
     calls.add('delete:$id');
+    return deleteResult;
+  }
+
+  @override
+  Future<Either<Failure, bool>> createHall(Map<String, dynamic> body) async {
+    calls.add('createHall');
+    return createResult;
+  }
+
+  @override
+  Future<Either<Failure, bool>> updateHall(
+    String id,
+    Map<String, dynamic> body,
+  ) async {
+    calls.add('updateHall:$id');
+    return updateResult;
+  }
+
+  @override
+  Future<Either<Failure, bool>> deleteHall(String id) async {
+    calls.add('deleteHall:$id');
+    return deleteResult;
+  }
+
+  @override
+  Future<Either<Failure, bool>> createTable(Map<String, dynamic> body) async {
+    calls.add('createTable');
+    return createResult;
+  }
+
+  @override
+  Future<Either<Failure, bool>> updateTable(
+    String id,
+    Map<String, dynamic> body,
+  ) async {
+    calls.add('updateTable:$id');
+    return updateResult;
+  }
+
+  @override
+  Future<Either<Failure, bool>> deleteTable(String id) async {
+    calls.add('deleteTable:$id');
     return deleteResult;
   }
 
@@ -200,6 +243,92 @@ void main() {
 
       expect(result.outcome, OutboxOutcome.succeeded);
       expect(remote.calls, ['create']);
+    });
+  });
+
+  group('halls & tables handlers', () {
+    late OutboxExecutors executors;
+    late _FakeMainRepository remote;
+
+    OutboxOperation op({
+      String entity = 'cafe_tables',
+      String action = 'update',
+      String? entityId = 't-1',
+      Map<String, dynamic> payload = const {'pos_x': 300},
+    }) =>
+        OutboxOperation(
+          id: 'op-1',
+          entity: entity,
+          action: action,
+          entityId: entityId,
+          payload: payload,
+          createdAt: DateTime.utc(2026, 8, 12),
+          nextAttemptAt: DateTime.fromMillisecondsSinceEpoch(0),
+        );
+
+    setUp(() {
+      executors = OutboxExecutors();
+      remote = _FakeMainRepository();
+      registerHallsTablesOutboxHandlers(executors, remote);
+    });
+
+    test('registers create/update/delete for both entities', () {
+      for (final entity in ['halls', 'cafe_tables']) {
+        for (final action in ['create', 'update', 'delete']) {
+          expect(
+            executors.resolve(op(entity: entity, action: action)),
+            isNotNull,
+            reason: '$entity/$action',
+          );
+        }
+      }
+    });
+
+    test('each handler reaches the endpoint that matches its entity', () async {
+      final table = op();
+      await executors.resolve(table)!.send(table);
+      final hall = op(entity: 'halls', entityId: 'h-1', payload: const {});
+      await executors.resolve(hall)!.send(hall);
+
+      expect(remote.calls, ['updateTable:t-1', 'updateHall:h-1']);
+    });
+
+    test('a table operation chains to its hall, not to itself', () {
+      // So that if the hall's own create is still failing, its tables wait
+      // rather than racing ahead to a server that has never heard of the hall.
+      final table = op(payload: const {'hall_id': 'h-9', 'pos_x': 1});
+
+      expect(executors.resolve(table)!.chainKey!(table), 'h-9');
+    });
+
+    test('a table with no hall in its payload chains to itself', () {
+      final table = op(payload: const {'pos_x': 1});
+
+      expect(executors.resolve(table)!.chainKey!(table), 't-1');
+    });
+
+    test('a hall operation takes the default chain', () {
+      final hall = op(entity: 'halls', entityId: 'h-1', payload: const {});
+
+      expect(executors.resolve(hall)!.chainKey, isNull);
+    });
+
+    test('deleting an already-deleted table is a success', () async {
+      remote.deleteResult = const Left(NotFoundFailure());
+      final table = op(action: 'delete');
+
+      final result = await executors.resolve(table)!.send(table);
+
+      expect(result.outcome, OutboxOutcome.succeeded);
+    });
+
+    test('an update with no id never reaches the server', () async {
+      final table = op(entityId: null);
+
+      final result = await executors.resolve(table)!.send(table);
+
+      expect(result.outcome, OutboxOutcome.permanent);
+      expect(remote.calls, isEmpty);
     });
   });
 }

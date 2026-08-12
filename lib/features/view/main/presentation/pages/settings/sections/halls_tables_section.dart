@@ -10,9 +10,7 @@ import 'package:mary_ai_pos/di.dart';
 import 'package:mary_ai_pos/features/view/auth/presentation/cubit/bloc/user_bloc.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/cafe_tables/cafe_tables_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/hall/hall_model.dart';
-import 'package:mary_ai_pos/features/view/main/domain/repository/main_repository.dart';
-import 'package:mary_ai_pos/features/view/main/domain/repository/tables_repository.dart';
-import 'package:mary_ai_pos/features/view/main/presentation/cubit/main/main_cubit.dart';
+import 'package:mary_ai_pos/features/view/main/presentation/cubit/halls_tables/halls_tables_cubit.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/main/widgets/admin_floor_plan_canvas.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/settings/widgets/section_shell.dart';
 import 'package:mary_ai_pos/generated/l10n.dart';
@@ -25,71 +23,34 @@ class HallsTablesSection extends StatefulWidget {
 }
 
 class _HallsTablesSectionState extends State<HallsTablesSection> {
-  final MainRepository _repository = inject<MainRepository>();
-  final TablesRepository _tablesRepository = inject<TablesRepository>();
-
-  bool _loading = true;
-  String? _error;
-  List<HallModel> _halls = const [];
-  HallModel? _selectedHall;
-  StreamSubscription<List<HallModel>>? _hallsSub;
-
-  @override
-  void initState() {
-    super.initState();
-    // offline-first-target-architecture.md §8 Phase 5: reactive read over
-    // TablesRepository/LocalDatabase (already hydrated by SyncEngine, §8
-    // Phase 1) instead of a fetch-on-init. Writes below still call
-    // MainRepository directly and stay online-required (design doc open
-    // question 1) — see EXECUTION_CONCERNS.md — but their existing
-    // `MainCubit.getHalls()` post-write refresh call now also forces the
-    // sync pass this subscription reacts to, so the list here still updates
-    // promptly after a create/update/delete.
-    _hallsSub = _tablesRepository.watchHalls().listen((halls) {
-      if (!mounted) return;
-      setState(() {
-        _halls = halls;
-        _loading = false;
-        _error = null;
-        // Keep _selectedHall in sync if it was updated/removed.
-        if (_selectedHall != null) {
-          final match =
-              _halls.where((h) => h.id == _selectedHall!.id).cast<HallModel?>();
-          _selectedHall = match.isNotEmpty ? match.first : null;
-        }
-      });
-    });
-  }
+  /// One cubit for the halls list and the selected hall's floor plan, so
+  /// neither this section nor the detail view resolves a repository itself.
+  ///
+  /// It replaces two different data paths at once: reads came from the Hive
+  /// `LocalDatabase` (hydrated by a full re-fetch), writes went straight to the
+  /// network and then asked for a re-hydration to see their own result. Both
+  /// now go through the replica — which they must, together: a write landing in
+  /// the replica would be invisible to a screen still reading the Hive copy.
+  final HallsTablesCubit _cubit = inject<HallsTablesCubit>();
 
   @override
   void dispose() {
-    _hallsSub?.cancel();
+    _cubit.close();
     super.dispose();
   }
-
-  /// `_error` is never actually set by the stream path above (a
-  /// `LocalDatabase` read doesn't fail the way a network fetch did) — kept
-  /// only so the pre-existing retry-button UI still compiles/has a target;
-  /// pressing it just asks for a fresh sync pass.
-  Future<void> _load() => context.read<MainCubit>().getHalls(force: true);
 
   Future<void> _openHallEditor({HallModel? existing}) async {
     final branchId =
         context.read<UserBloc>().state.userMOdel?.branchId ?? '';
-    final saved = await showDialog<bool>(
+    await showDialog<bool>(
       context: context,
       barrierDismissible: false,
       builder: (_) => _HallEditDialog(
         existing: existing,
         branchId: branchId,
-        repository: _repository,
+        cubit: _cubit,
       ),
     );
-    if (saved == true && mounted) {
-      try {
-        await context.read<MainCubit>().getHalls(force: true);
-      } catch (_) {}
-    }
   }
 
   Future<void> _confirmDeleteHall(HallModel hall) async {
@@ -102,108 +63,76 @@ class _HallsTablesSectionState extends State<HallsTablesSection> {
       ),
     );
     if (ok != true || !mounted) return;
-    final result = await _repository.deleteHall(hall.id);
-    if (!mounted) return;
-    final failure = result.fold((f) => f, (_) => null);
-    if (failure == null) {
-      try {
-        // ignore: use_build_context_synchronously
-        await context.read<MainCubit>().getHalls(force: true);
-      } catch (_) {}
-    } else {
-      showErrorMessage(context, failure.getLocalizedMessage(context));
+    if (!_cubit.deleteHall(hall.id) && mounted) {
+      showErrorMessage(context, _cubit.state.error ?? S.current.strError);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedSwitcher(
-      duration: const Duration(milliseconds: 220),
-      switchInCurve: Curves.easeOutCubic,
-      switchOutCurve: Curves.easeInCubic,
-      transitionBuilder: (child, animation) {
-        return FadeTransition(
-          opacity: animation,
-          child: SlideTransition(
-            position: Tween<Offset>(
-              begin: const Offset(0.015, 0),
-              end: Offset.zero,
-            ).animate(animation),
-            child: child,
-          ),
-        );
-      },
-      child: _selectedHall == null
-          ? _buildHallsList()
-          : _TablesDetailView(
-              key: ValueKey('tables-${_selectedHall!.id}'),
-              hall: _selectedHall!,
-              repository: _repository,
-              onBack: () => setState(() => _selectedHall = null),
-            ),
+    return BlocProvider<HallsTablesCubit>.value(
+      value: _cubit,
+      child: BlocConsumer<HallsTablesCubit, HallsTablesState>(
+        listenWhen: (a, b) => a.notice != b.notice && b.notice != null,
+        listener: (context, state) {
+          final notice = state.notice;
+          if (notice == null) return;
+          // Informational, not a failure: the write was accepted, it is just
+          // not on screen yet.
+          showInfoMessage(context, notice);
+          _cubit.acknowledge();
+        },
+        builder: (context, state) => AnimatedSwitcher(
+          duration: const Duration(milliseconds: 220),
+          switchInCurve: Curves.easeOutCubic,
+          switchOutCurve: Curves.easeInCubic,
+          transitionBuilder: (child, animation) {
+            return FadeTransition(
+              opacity: animation,
+              child: SlideTransition(
+                position: Tween<Offset>(
+                  begin: const Offset(0.015, 0),
+                  end: Offset.zero,
+                ).animate(animation),
+                child: child,
+              ),
+            );
+          },
+          child: state.selectedHall == null
+              ? _buildHallsList(state)
+              : _TablesDetailView(
+                  key: ValueKey('tables-${state.selectedHall!.id}'),
+                  hall: state.selectedHall!,
+                  tables: state.tables,
+                  cubit: _cubit,
+                  onBack: () => _cubit.selectHall(null),
+                ),
+        ),
+      ),
     );
   }
 
-  Widget _buildHallsList() {
+  Widget _buildHallsList(HallsTablesState state) {
     return SectionShell(
       key: const ValueKey('halls-list'),
       title: S.current.strHalls,
-      subtitle: _halls.isEmpty
+      subtitle: state.halls.isEmpty
           ? S.current.strNoHallsYet
-          : '${_halls.length} ta zal — har bir zalning ichida stollar sozlanadi',
+          : '${state.halls.length} ta zal — har bir zalning ichida stollar sozlanadi',
       trailing: SectionPrimaryButton(
         icon: Icons.add_rounded,
         label: S.current.strAddNewHall,
         onPressed: () => _openHallEditor(),
       ),
-      child: _buildListBody(),
+      child: _buildListBody(state),
     );
   }
 
-  Widget _buildListBody() {
-    final colors = context.colors;
-    if (_loading) {
-      return const Center(child: CircularProgressIndicator.adaptive());
-    }
-    if (_error != null) {
-      return Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 64,
-              height: 64,
-              decoration: BoxDecoration(
-                color: colors.systemError.withOpacity(0.10),
-                borderRadius: BorderRadius.circular(18),
-              ),
-              child: Icon(Icons.error_outline,
-                  size: 28, color: colors.systemError),
-            ),
-            const SizedBox(height: 14),
-            SizedBox(
-              width: 320,
-              child: Text(
-                _error!,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: colors.systemError,
-                  fontFamily: 'Inter',
-                  fontSize: 13,
-                ),
-              ),
-            ),
-            const SizedBox(height: 12),
-            SectionPrimaryButton(
-              icon: Icons.refresh_rounded,
-              label: S.current.strRetry,
-              onPressed: _load,
-            ),
-          ],
-        ),
-      );
-    }
-    if (_halls.isEmpty) {
+  /// No loading branch and no retry button. Both covered a network round trip;
+  /// the read is a synchronous query against the replica, so there is no state
+  /// between asking and having the halls, and nothing to retry.
+  Widget _buildListBody(HallsTablesState state) {
+    if (state.halls.isEmpty) {
       return SectionEmptyState(
         icon: Icons.table_restaurant_outlined,
         title: S.current.strNoHallsYet,
@@ -218,13 +147,13 @@ class _HallsTablesSectionState extends State<HallsTablesSection> {
     }
     return ListView.separated(
       padding: EdgeInsets.zero,
-      itemCount: _halls.length,
+      itemCount: state.halls.length,
       separatorBuilder: (_, _) => const SizedBox(height: 12),
       itemBuilder: (context, i) => _HallCard(
-        hall: _halls[i],
-        onOpen: () => setState(() => _selectedHall = _halls[i]),
-        onEdit: () => _openHallEditor(existing: _halls[i]),
-        onDelete: () => _confirmDeleteHall(_halls[i]),
+        hall: state.halls[i],
+        onOpen: () => _cubit.selectHall(state.halls[i]),
+        onEdit: () => _openHallEditor(existing: state.halls[i]),
+        onDelete: () => _confirmDeleteHall(state.halls[i]),
       ),
     );
   }
@@ -359,13 +288,15 @@ class _HallCardState extends State<_HallCard> {
 
 class _TablesDetailView extends StatefulWidget {
   final HallModel hall;
-  final MainRepository repository;
+  final List<CafeTableModel> tables;
+  final HallsTablesCubit cubit;
   final VoidCallback onBack;
 
   const _TablesDetailView({
     super.key,
     required this.hall,
-    required this.repository,
+    required this.tables,
+    required this.cubit,
     required this.onBack,
   });
 
@@ -374,44 +305,37 @@ class _TablesDetailView extends StatefulWidget {
 }
 
 class _TablesDetailViewState extends State<_TablesDetailView> {
-  bool _loading = true;
-  String? _error;
-  List<CafeTableModel> _tables = const [];
   String? _selectedTableId;
 
-  /// Pending drag moves — tableId → new (posX, posY). PUT qilinmagan.
+  /// Pending drag moves — tableId → new (posX, posY). Not yet written.
+  ///
+  /// Staging survives the move to local writes, for a reason that has nothing
+  /// to do with the network: dragging emits a position continuously, and
+  /// writing every intermediate pixel would fill the outbox with hundreds of
+  /// superseded PUTs for one gesture. The operator commits the arrangement.
   final Map<String, Offset> _pendingMoves = {};
-  bool _savingMoves = false;
+
+  /// Tables as the cubit reports them, with any un-committed drag applied on
+  /// top. One list, derived — not a second copy kept in sync by hand.
+  List<CafeTableModel> get _tables {
+    if (_pendingMoves.isEmpty) return widget.tables;
+    return [
+      for (final t in widget.tables)
+        if (_pendingMoves[t.id] case final Offset p)
+          t.copyWith(posX: p.dx, posY: p.dy)
+        else
+          t,
+    ];
+  }
 
   @override
   void initState() {
     super.initState();
-    _load();
-  }
-
-  Future<void> _load() async {
-    setState(() {
-      _loading = true;
-      _error = null;
+    // The list arrives with the first frame, so the only startup work left is
+    // the layout repair pass.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _autoLayoutInvalid(widget.tables);
     });
-    final result = await widget.repository.getTablesByHallId(widget.hall.id);
-    if (!mounted) return;
-    final failure = result.fold((f) => f, (_) => null);
-    if (failure != null) {
-      setState(() {
-        _loading = false;
-        _error = failure.getLocalizedMessage(context);
-      });
-      return;
-    }
-    final tables = result.fold((_) => null, (r) => r)!;
-    final parsed = List<CafeTableModel>.from(tables)
-      ..sort((a, b) => a.number.compareTo(b.number));
-    setState(() {
-      _tables = parsed;
-      _loading = false;
-    });
-    await _autoLayoutInvalid(parsed);
   }
 
   Future<void> _autoLayoutInvalid(List<CafeTableModel> all) async {
@@ -464,7 +388,7 @@ class _TablesDetailViewState extends State<_TablesDetailView> {
         x = pad;
         y = pad;
       }
-      await _moveTable(t, x.round(), y.round());
+      _moveTable(t, x.round(), y.round());
     }
   }
 
@@ -478,13 +402,15 @@ class _TablesDetailViewState extends State<_TablesDetailView> {
     int? prefillPosX,
     int? prefillPosY,
   }) async {
-    final saved = await showDialog<bool>(
+    // Nothing to do with the result: the table list is a subscription, so a
+    // write that lands locally is already on screen by the time this returns.
+    await showDialog<bool>(
       context: context,
       barrierDismissible: false,
       builder: (_) => _TableEditDialog(
         existing: existing,
         hall: widget.hall,
-        repository: widget.repository,
+        cubit: widget.cubit,
         suggestedNumber: _nextNumber(),
         prefillPosX: prefillPosX,
         prefillPosY: prefillPosY,
@@ -492,39 +418,19 @@ class _TablesDetailViewState extends State<_TablesDetailView> {
         onRequestDelete: _confirmDeleteTable,
       ),
     );
-    if (saved == true && mounted) {
-      _load();
-      try {
-        await context.read<MainCubit>().refreshTables();
-      } catch (_) {}
-    }
   }
 
-  Future<void> _moveTable(
-      CafeTableModel t, int newPosX, int newPosY) async {
-    // Optimistic update + PUT (auto-layout va drop-to-add oqimlari uchun).
-    setState(() {
-      _tables = _tables
-          .map((x) => x.id == t.id
-              ? x.copyWith(
-                  posX: newPosX.toDouble(), posY: newPosY.toDouble())
-              : x)
-          .toList();
-    });
-    final result = await widget.repository.updateTable(
-      t.id,
-      _tablePutPayload(t, newPosX, newPosY),
-    );
-    if (!mounted) return;
-    final failure = result.fold((f) => f, (_) => null);
-    if (failure == null) {
-      try {
-        // ignore: use_build_context_synchronously
-        await context.read<MainCubit>().refreshTables();
-      } catch (_) {}
-    } else {
-      showErrorMessage(context, failure.getLocalizedMessage(context));
-      _load();
+  /// One table moved, committed immediately.
+  ///
+  /// The optimistic-update-then-PUT-then-roll-back sequence is gone. The local
+  /// write *is* the move the operator sees; it is durable before this returns,
+  /// so a rearranged floor plan survives a restart and an uplink outage alike.
+  void _moveTable(CafeTableModel t, int newPosX, int newPosY) {
+    if (!widget.cubit.updateTable(t.id, _tablePutPayload(t, newPosX, newPosY))) {
+      showErrorMessage(
+        context,
+        widget.cubit.state.error ?? S.current.strError,
+      );
     }
   }
 
@@ -546,70 +452,56 @@ class _TablesDetailViewState extends State<_TablesDetailView> {
     };
   }
 
-  /// Drag natijasini faqat lokal state va pending ro'yxatga yozadi.
+  /// Records a drag locally without writing it. See [_pendingMoves].
   void _stageMove(CafeTableModel t, int newPosX, int newPosY) {
     setState(() {
-      _tables = _tables
-          .map((x) => x.id == t.id
-              ? x.copyWith(
-                  posX: newPosX.toDouble(), posY: newPosY.toDouble())
-              : x)
-          .toList();
-      _pendingMoves[t.id] =
-          Offset(newPosX.toDouble(), newPosY.toDouble());
+      _pendingMoves[t.id] = Offset(newPosX.toDouble(), newPosY.toDouble());
     });
   }
 
-  Future<void> _saveStagedMoves() async {
-    if (_pendingMoves.isEmpty || _savingMoves) return;
-    setState(() => _savingMoves = true);
+  /// Commits every staged move.
+  ///
+  /// No longer async, and no longer partially-failing: each write commits to
+  /// the replica and queues its send, so either all of them are accepted or a
+  /// local fault stops the batch. The old per-table failure count existed
+  /// because each move was a separate PUT that could fail on its own; now
+  /// delivery is the outbox's problem and retries are per-operation.
+  void _saveStagedMoves() {
+    if (_pendingMoves.isEmpty) return;
 
-    final entries = _pendingMoves.entries.toList();
-    int failCount = 0;
+    final staged = _pendingMoves.entries.toList();
+    final byId = {for (final t in widget.tables) t.id: t};
+    var failed = 0;
 
-    for (final entry in entries) {
-      final t = _tables.firstWhere(
-        (x) => x.id == entry.key,
-        orElse: () => _tables.first,
-      );
-      if (t.id != entry.key) {
-        failCount++;
+    for (final entry in staged) {
+      final t = byId[entry.key];
+      if (t == null) {
+        // Deleted from under us, most likely on another terminal. Dropping it
+        // is right — there is nothing left to move.
         continue;
       }
-      final result = await widget.repository.updateTable(
+      final ok = widget.cubit.updateTable(
         t.id,
         _tablePutPayload(t, entry.value.dx.round(), entry.value.dy.round()),
       );
-      if (result.isLeft()) failCount++;
+      if (!ok) failed++;
     }
 
     if (!mounted) return;
-    if (failCount > 0) {
-      showErrorMessage(context, S.current.strTablesNotSavedCount(failCount));
+    if (failed > 0) {
+      showErrorMessage(context, S.current.strTablesNotSavedCount(failed));
     } else {
       showSuccessMessage(context, S.current.strPositionsSaved, duration: 2);
     }
 
-    setState(() {
-      _savingMoves = false;
-      _pendingMoves.clear();
-    });
-
-    try {
-      if (!mounted) return;
-      // ignore: use_build_context_synchronously
-      await context.read<MainCubit>().refreshTables();
-    } catch (_) {}
-
-    if (failCount > 0 && mounted) _load();
+    setState(() => _pendingMoves.clear());
   }
 
   void _discardStagedMoves() {
     if (_pendingMoves.isEmpty) return;
-    setState(() {
-      _pendingMoves.clear();
-    });
-    _load();
+    // Dropping the staged offsets is the whole undo: `_tables` derives from the
+    // cubit's list, so it reverts to the stored positions on the next build.
+    setState(() => _pendingMoves.clear());
   }
 
   String _shapeToApi(TableShape s) {
@@ -644,17 +536,8 @@ class _TablesDetailViewState extends State<_TablesDetailView> {
       ),
     );
     if (ok != true || !mounted) return;
-    final result = await widget.repository.deleteTable(t.id);
-    if (!mounted) return;
-    final failure = result.fold((f) => f, (_) => null);
-    if (failure == null) {
-      _load();
-      try {
-        // ignore: use_build_context_synchronously
-        await context.read<MainCubit>().refreshTables();
-      } catch (_) {}
-    } else {
-      showErrorMessage(context, failure.getLocalizedMessage(context));
+    if (!widget.cubit.deleteTable(t.id)) {
+      showErrorMessage(context, widget.cubit.state.error ?? S.current.strError);
     }
   }
 
@@ -696,38 +579,10 @@ class _TablesDetailViewState extends State<_TablesDetailView> {
     );
   }
 
+  /// Same deletion as the halls list: the floor plan is read synchronously
+  /// from the replica, so there is no loading state and nothing to retry.
   Widget _buildBody() {
     final colors = context.colors;
-    if (_loading) {
-      return const Center(child: CircularProgressIndicator.adaptive());
-    }
-    if (_error != null) {
-      return Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.error_outline,
-                size: 36, color: colors.systemError),
-            const SizedBox(height: 10),
-            Text(
-              _error!,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: colors.systemError,
-                fontFamily: 'Inter',
-                fontSize: 13,
-              ),
-            ),
-            const SizedBox(height: 12),
-            SectionPrimaryButton(
-              icon: Icons.refresh_rounded,
-              label: S.current.strRetry,
-              onPressed: _load,
-            ),
-          ],
-        ),
-      );
-    }
     if (_tables.isEmpty) {
       return SectionEmptyState(
         icon: Icons.deck_outlined,
@@ -778,7 +633,7 @@ class _TablesDetailViewState extends State<_TablesDetailView> {
         if (_pendingMoves.isNotEmpty) ...[
           _PendingMovesBar(
             count: _pendingMoves.length,
-            saving: _savingMoves,
+            saving: false,
             onSave: _saveStagedMoves,
             onCancel: _discardStagedMoves,
           ),
@@ -1154,7 +1009,7 @@ class _StatCard extends StatelessWidget {
 class _TableEditDialog extends StatefulWidget {
   final CafeTableModel? existing;
   final HallModel hall;
-  final MainRepository repository;
+  final HallsTablesCubit cubit;
   final int suggestedNumber;
   final int? prefillPosX;
   final int? prefillPosY;
@@ -1164,7 +1019,7 @@ class _TableEditDialog extends StatefulWidget {
   const _TableEditDialog({
     required this.existing,
     required this.hall,
-    required this.repository,
+    required this.cubit,
     required this.suggestedNumber,
     this.prefillPosX,
     this.prefillPosY,
@@ -1342,17 +1197,18 @@ class _TableEditDialogState extends State<_TableEditDialog> {
       if (pricePerHour != null) 'price_per_hour': pricePerHour,
     };
 
-    final result = existing == null
-        ? await widget.repository.createTable(body)
-        : await widget.repository.updateTable(existing.id, body);
+    final ok = existing == null
+        ? widget.cubit.createTable(body)
+        : widget.cubit.updateTable(existing.id, body);
     if (!mounted) return;
-    result.fold(
-      (failure) => setState(() {
+    if (ok) {
+      Navigator.pop(context, true);
+    } else {
+      setState(() {
         _saving = false;
-        _saveError = failure.getLocalizedMessage(context);
-      }),
-      (_) => Navigator.pop(context, true),
-    );
+        _saveError = widget.cubit.state.error;
+      });
+    }
   }
 
   @override
@@ -2353,12 +2209,12 @@ class _DangerButton extends StatelessWidget {
 class _HallEditDialog extends StatefulWidget {
   final HallModel? existing;
   final String branchId;
-  final MainRepository repository;
+  final HallsTablesCubit cubit;
 
   const _HallEditDialog({
     required this.existing,
     required this.branchId,
-    required this.repository,
+    required this.cubit,
   });
 
   @override
@@ -2425,26 +2281,27 @@ class _HallEditDialogState extends State<_HallEditDialog> {
     final name = _nameCtrl.text.trim();
     final existing = widget.existing;
 
-    final result = existing == null
-        ? await widget.repository.createHall({
+    final ok = existing == null
+        ? widget.cubit.createHall({
             'name': name,
             'branch_id': widget.branchId,
             'width': width,
             'height': height,
           })
-        : await widget.repository.updateHall(existing.id, {
+        : widget.cubit.updateHall(existing.id, {
             'name': name,
             'width': width,
             'height': height,
           });
     if (!mounted) return;
-    result.fold(
-      (failure) => setState(() {
+    if (ok) {
+      Navigator.pop(context, true);
+    } else {
+      setState(() {
         _saving = false;
-        _saveError = failure.getLocalizedMessage(context);
-      }),
-      (_) => Navigator.pop(context, true),
-    );
+        _saveError = widget.cubit.state.error;
+      });
+    }
   }
 
   @override

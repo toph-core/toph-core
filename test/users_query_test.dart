@@ -16,6 +16,7 @@ import 'package:mary_ai_pos/core/db/users_query.dart';
 import 'package:mary_ai_pos/core/outbox/local_writer.dart';
 import 'package:mary_ai_pos/core/outbox/outbox_store.dart';
 import 'package:mary_ai_pos/features/view/main/data/repository/users_local_repository_impl.dart';
+import 'package:mary_ai_pos/features/view/main/domain/repository/local_write_result.dart';
 import 'package:mary_ai_pos/features/view/main/domain/repository/users_local_repository.dart';
 
 void main() {
@@ -205,8 +206,8 @@ void main() {
 
       // Queued, and honest about it: the register endpoint assigns the id, so
       // a locally-invented row would become a second identity for one person.
-      expect(result.getOrElse(() => UserWriteResult.applied),
-          UserWriteResult.queued);
+      expect(result.getOrElse(() => LocalWriteResult.applied),
+          LocalWriteResult.queued);
       expect(query.page(limit: 20, offset: 0).total, 0);
 
       final op = outbox.pending().single;

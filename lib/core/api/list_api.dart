@@ -15,7 +15,6 @@ class ListAPI {
 
   //! general
   static const String cafeTables = "api/v1/cafe-tables";
-  static const String cafeTablesByHallId = "api/v1/cafe-tables/hall";
   static String cafeTableById(String id) => "api/v1/cafe-tables/$id";
   static const String halls = "api/v1/halls";
   static const String categories = "api/v1/categories";

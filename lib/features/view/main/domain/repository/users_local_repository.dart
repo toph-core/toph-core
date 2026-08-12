@@ -1,5 +1,6 @@
 import 'package:dartz/dartz.dart';
 import 'package:mary_ai_pos/core/error/failure.dart';
+import 'package:mary_ai_pos/features/view/main/domain/repository/local_write_result.dart';
 
 /// One page of the admin staff list, already filtered, sorted and counted.
 typedef UsersPage = ({List<Map<String, dynamic>> items, int total});
@@ -45,11 +46,11 @@ abstract class UsersLocalRepository {
   /// because no server row matches it.
   ///
   /// The cost is that a staff account created offline is not visible until the
-  /// operation drains. That is why this returns [UserWriteResult.queued] rather
+  /// operation drains. That is why this returns [LocalWriteResult.queued] rather
   /// than success — the screen says so instead of appearing to have done
   /// nothing. When §5.4's client-supplied ids land for `users`, this becomes an
   /// ordinary local write and the distinction disappears.
-  Either<Failure, UserWriteResult> createUser(Map<String, dynamic> body);
+  Either<Failure, LocalWriteResult> createUser(Map<String, dynamic> body);
 
   /// Applies [changes] to the local row and queues the `PUT`.
   ///
@@ -59,7 +60,7 @@ abstract class UsersLocalRepository {
   /// sent but never stored — `PayloadNormalizer` drops the registry's
   /// `redactKeys` on the way to disk, which is exactly the split
   /// `LocalWriter`'s separate `row` and `request` exist for.
-  Either<Failure, UserWriteResult> updateUser(
+  Either<Failure, LocalWriteResult> updateUser(
     String id,
     Map<String, dynamic> changes,
   );
@@ -67,15 +68,5 @@ abstract class UsersLocalRepository {
   /// Removes the row locally and queues the `DELETE`. The row goes immediately;
   /// if the server refuses, quarantine releases the guard and replication
   /// brings it back — visibly, with the reason in the quarantine list.
-  Either<Failure, UserWriteResult> deleteUser(String id);
-}
-
-/// What a write did locally, so the screen can be honest about what the
-/// operator will see.
-enum UserWriteResult {
-  /// The replica changed. The list reflects it on the next frame.
-  applied,
-
-  /// Queued for the server, with no local row to show yet.
-  queued,
+  Either<Failure, LocalWriteResult> deleteUser(String id);
 }
