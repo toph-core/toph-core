@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:alice/alice.dart';
 import 'package:alice/model/alice_configuration.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
@@ -20,6 +22,7 @@ import 'package:mary_ai_pos/core/outbox/local_writer.dart';
 import 'package:mary_ai_pos/core/outbox/outbox_drainer.dart';
 import 'package:mary_ai_pos/core/outbox/outbox_executor.dart';
 import 'package:mary_ai_pos/core/outbox/outbox_store.dart';
+import 'package:mary_ai_pos/core/sync/change_feed_relay.dart';
 import 'package:mary_ai_pos/core/sync/replication_service.dart';
 import 'package:mary_ai_pos/core/sync/sync_api_client.dart';
 import 'package:mary_ai_pos/core/services/cache/cache_service.dart';
@@ -215,14 +218,23 @@ Future<void> initDi() async {
   // in the app may call it, and nothing may call `SyncApiClient` directly.
   final syncApiClient = SyncApiClient(dioClient);
   inject.registerSingleton<SyncApiClient>(syncApiClient);
+  inject.registerSingleton<ChangeFeedRelay>(
+    ChangeFeedRelay(db: replicaDb, applier: changeApplier),
+  );
   final replicationService = ReplicationService(
     api: syncApiClient,
     db: replicaDb,
     applier: changeApplier,
+    // Phase 5: whatever this terminal pulls, its followers get. A no-op unless
+    // this terminal is the leader and something is connected to it — resolved
+    // lazily because LanHubService is registered after this.
+    onBatchApplied: (body, fromCursor) => inject<LanHubService>()
+        .broadcastChangeFeed(body: jsonEncode(body), fromCursor: fromCursor),
   );
   inject.registerSingleton<ReplicationService>(replicationService);
 
   final syncEngine = SyncEngine(
+    feed: inject<ChangeFeedRelay>(),
     queue: offlineQueue,
     cache: cacheService,
     connectivity: connectivityCubit,

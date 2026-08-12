@@ -85,12 +85,21 @@ class ReplicationService {
   final LocalDatabase _db;
   final ChangeApplier _applier;
 
+  /// Phase 5 — called with each batch this terminal successfully applied, and
+  /// the cursor it started from, so a leader can hand the same bytes to its
+  /// followers. Null on a terminal that is not distributing the feed.
+  ///
+  /// Fires after the apply, never before: a follower must not be told about
+  /// rows the leader itself failed to commit.
+  final void Function(Map<String, dynamic> body, int fromCursor)? onBatchApplied;
+
   bool _running = false;
 
   ReplicationService({
     required SyncApi api,
     required LocalDatabase db,
     required ChangeApplier applier,
+    this.onBatchApplied,
   })  : _api = api,
         _db = db,
         _applier = applier;
@@ -142,6 +151,7 @@ class ReplicationService {
         // Applying advances the cursor inside the same transaction as the rows,
         // so a crash here can never leave the cursor ahead of the data.
         final stats = _applier.applyPullResponse(page.body);
+        onBatchApplied?.call(page.body, cursor);
         applied += stats.applied + stats.deleted;
         skipped += stats.skippedPending + stats.skippedUnknown + stats.failed;
         batches++;

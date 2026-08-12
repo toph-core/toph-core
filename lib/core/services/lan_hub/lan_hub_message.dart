@@ -15,6 +15,7 @@ enum LanHubMessageType {
   leaseGranted,
   leaseRejected,
   leaseRelease,
+  changeFeed,
 }
 
 class LanHubMessage {
@@ -92,6 +93,19 @@ class LanHubMessage {
   /// every lease message concerns exactly one table.
   final String? leaseTerminalId;
 
+  /// [changeFeed] only: the leader's pull-response body verbatim, JSON —
+  /// `{changes, next_sync_cursor}`, exactly what the cloud returned and
+  /// exactly what `ChangeApplier.applyPullResponse` consumes. Deliberately not
+  /// re-shaped into a LAN-specific format: a follower applying the leader's
+  /// feed runs the same function on the same bytes as a terminal pulling from
+  /// the cloud, so there is no second parser to keep in step.
+  final String? feedBody;
+
+  /// [changeFeed] only: the cursor the leader was at *before* applying this
+  /// batch. A follower whose own cursor is behind this knows it missed
+  /// something — see `ChangeFeedRelay`.
+  final int? feedFromCursor;
+
   /// [leaseRejected] only: which terminal currently holds the table, when
   /// known (offline-first-target-architecture.md §6) — surfaced to the
   /// cashier as "already opened on another terminal", not required for the
@@ -117,6 +131,8 @@ class LanHubMessage {
     this.printPayloadBase64,
     this.leaseTerminalId,
     this.leaseHeldBy,
+    this.feedBody,
+    this.feedFromCursor,
     this.printResult,
     this.printError,
   });
@@ -253,6 +269,17 @@ class LanHubMessage {
         leaseTerminalId: terminalId,
       );
 
+  /// Broadcast by the leader after it applies a pull batch, so every follower
+  /// converges on the same rows without its own cloud connection.
+  factory LanHubMessage.changeFeed({
+    required String body,
+    required int fromCursor,
+  }) => LanHubMessage(
+        type: LanHubMessageType.changeFeed,
+        feedBody: body,
+        feedFromCursor: fromCursor,
+      );
+
   String toJson() => jsonEncode({
         'type': type.name,
         'table_id': tableId,
@@ -274,6 +301,8 @@ class LanHubMessage {
         if (printError != null) 'print_error': printError,
         if (leaseTerminalId != null) 'lease_terminal_id': leaseTerminalId,
         if (leaseHeldBy != null) 'lease_held_by': leaseHeldBy,
+        if (feedBody != null) 'feed_body': feedBody,
+        if (feedFromCursor != null) 'feed_from_cursor': feedFromCursor,
       });
 
   static LanHubMessage? tryParse(String raw) {
@@ -304,6 +333,8 @@ class LanHubMessage {
         printError: map['print_error'] as String?,
         leaseTerminalId: map['lease_terminal_id'] as String?,
         leaseHeldBy: map['lease_held_by'] as String?,
+        feedBody: map['feed_body'] as String?,
+        feedFromCursor: (map['feed_from_cursor'] as num?)?.toInt(),
       );
     } catch (_) {
       return null;

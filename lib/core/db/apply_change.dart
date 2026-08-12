@@ -78,7 +78,16 @@ class ChangeApplier {
   /// other. The cursor is advanced **inside** the same transaction: persisting
   /// it separately could skip a batch permanently if the process died between
   /// the two writes.
-  ApplyStats applyPullResponse(Map<String, dynamic> body) {
+  /// Applies a pull batch.
+  ///
+  /// [advanceCursor] is false only for a LAN batch the receiver knows it has a
+  /// gap before — the rows still apply, but the cursor must keep pointing at
+  /// the last position this terminal can vouch for, or the missing rows would
+  /// be skipped forever. See `ChangeFeedRelay`.
+  ApplyStats applyPullResponse(
+    Map<String, dynamic> body, {
+    bool advanceCursor = true,
+  }) {
     final changes = body['changes'];
     final cursor = body['next_sync_cursor'];
 
@@ -99,7 +108,7 @@ class ChangeApplier {
       // deleted upstream would otherwise leave its status row behind forever.
       // Cheap, and only when tables actually changed.
       if (sawTables) _db.pruneTableStatuses();
-      if (cursor is num) {
+      if (cursor is num && advanceCursor) {
         final next = cursor.toInt();
         // Never move the cursor backwards: a retried or out-of-order batch must
         // not cause changes already applied to be requested again forever.

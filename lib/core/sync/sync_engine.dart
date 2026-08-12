@@ -19,6 +19,7 @@ import '../services/connectivity/connectivity_cubit.dart';
 import '../services/lan_hub/lan_hub_service.dart';
 import '../outbox/outbox_drainer.dart';
 import '../services/offline_queue/offline_queue_service.dart';
+import 'change_feed_relay.dart';
 import 'replication_service.dart';
 
 /// Thin coordination shell around the existing offline services — wraps
@@ -45,6 +46,11 @@ class SyncEngine {
   /// `CacheService`/`LocalDatabase`. Phase 4 moves the screens across and
   /// deletes the hydration half.
   final ReplicationService _replication;
+
+  /// Phase 5 — tracks whether this terminal, as a follower, knows it is behind
+  /// the leader's feed. The only thing that still justifies a follower's own
+  /// cloud pull.
+  final ChangeFeedRelay _feed;
 
   /// Phase 2 — replay of locally-queued writes. Dormant until Phase 4
   /// registers executors; the drain call below is a no-op against an empty
@@ -89,6 +95,7 @@ class SyncEngine {
     required SharedPreferences prefs,
     required LocalDatabase localDb,
     required ReplicationService replication,
+    required ChangeFeedRelay feed,
     required OutboxDrainer outbox,
   })  : _queue = queue,
         _cache = cache,
@@ -98,6 +105,7 @@ class SyncEngine {
         _prefs = prefs,
         _localDb = localDb,
         _replication = replication,
+        _feed = feed,
         _outbox = outbox;
 
   /// The replication loop, for the login flow's one-time bootstrap and the
@@ -175,12 +183,25 @@ class SyncEngine {
           );
         }
         if (_connectivity.isOnline) {
-          // Phase 5 deletes this whole branch's cloud access: a follower's
-          // inbound data will arrive from the leader's LAN relay, not from its
-          // own uplink. Until then a follower replicates the same way a leader
-          // does, matching the behaviour the hydration calls below already had.
+          // Phase 5: a follower no longer pulls the change feed on a timer.
+          // Its inbound rows arrive from the leader's broadcast, which is the
+          // point — N terminals polling the cloud for the same rows was the
+          // cost this phase removes, and a follower with no uplink of its own
+          // now stays current as long as the LAN link is up.
+          //
+          // The one exception is a hole. If this terminal missed broadcasts
+          // while disconnected, `ChangeFeedRelay` has held its cursor back
+          // rather than skipping the rows, and only a cloud pull from that
+          // cursor can fill them — the leader cannot replay its change log,
+          // it keeps current rows, not history. So the uplink survives as
+          // recovery, not as a poll.
           await _outbox.drain();
-          await _replication.drain();
+          if (_feed.needsBackfill) {
+            final result = await _replication.drain();
+            if (result.outcome == ReplicationOutcome.caughtUp) {
+              _feed.backfillDone();
+            }
+          }
           await _cache.prefetchAllGoods(_client);
           await _mirrorGoodsIntoLocalDb();
           await _hydrateReferenceData();

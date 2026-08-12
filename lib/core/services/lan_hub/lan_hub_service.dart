@@ -11,6 +11,7 @@ import 'package:mary_ai_pos/core/services/offline_queue/offline_queue_service.da
 import 'package:mary_ai_pos/core/services/offline_queue/pending_operation.dart';
 import 'package:mary_ai_pos/core/services/print_queue/print_queue_service.dart';
 import 'package:mary_ai_pos/core/utils/jwt_utils.dart';
+import 'package:mary_ai_pos/core/sync/change_feed_relay.dart';
 import 'package:mary_ai_pos/di.dart';
 import 'package:mary_ai_pos/features/view/auth/presentation/cubit/bloc/user_bloc.dart';
 import 'package:rxdart/rxdart.dart';
@@ -293,6 +294,16 @@ class LanHubService {
           _tableUpdateController.add((tableId: msg.tableId!, status: msg.status!));
         }
         break;
+      case LanHubMessageType.changeFeed:
+        // Followers only. A leader hearing this would be a second leader
+        // announcing, which epoch fencing handles — not something to apply.
+        if (mode == LanMode.client &&
+            msg.feedBody != null &&
+            msg.feedFromCursor != null) {
+          inject<ChangeFeedRelay>()
+              .apply(body: msg.feedBody!, fromCursor: msg.feedFromCursor!);
+        }
+        break;
       case LanHubMessageType.printJobAnnounce:
         if (msg.printJobId != null &&
             msg.printJobType != null &&
@@ -349,6 +360,23 @@ class LanHubService {
       case LanMode.disabled:
         break;
     }
+  }
+
+  /// Hands one applied pull batch to every follower (Phase 5).
+  ///
+  /// Server mode only, and deliberately not routed through [_sendOrBroadcast]:
+  /// that helper falls back to sending upstream when this terminal is a
+  /// client, which for a change feed would mean a follower telling its leader
+  /// what the world looks like. The feed flows one way.
+  void broadcastChangeFeed({
+    required String body,
+    required int fromCursor,
+  }) {
+    if (mode != LanMode.server) return;
+    if (_server.clientCount == 0) return;
+    _server.broadcast(
+      LanHubMessage.changeFeed(body: body, fromCursor: fromCursor),
+    );
   }
 
   /// Whether a print job could currently be relayed to another terminal at
