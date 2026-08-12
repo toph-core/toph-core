@@ -116,7 +116,22 @@ class LeaderElectionService {
 
   Timer? _watchdog;
   Timer? _electionTimer;
-  DateTime? _lastHeartbeatHeardAt;
+
+  /// Consecutive watchdog ticks with no heartbeat from the branch.
+  ///
+  /// Counted rather than measured against the wall clock, which is what this
+  /// used to do (`DateTime.now().difference(lastHeard)`). Two reasons. The
+  /// watchdog already fires on [heartbeatInterval], so the tick *is* the unit
+  /// — comparing timestamps re-derived it from a second, unrelated source. And
+  /// that source moves on its own: an NTP correction stepping the clock
+  /// backwards leaves the difference permanently under the deadline, so a
+  /// terminal would never notice a dead leader, while a forward step elects
+  /// instantly over a leader that is fine. POS terminals do get corrected.
+  ///
+  /// A counter driven by the timer cannot do either. It also made this class
+  /// testable under `fakeAsync`, which advances timers but not `DateTime.now()`
+  /// — the reason the election tests could not observe a leader-death at all.
+  int _missedBeats = 0;
   StreamSubscription<HubAnnouncement>? _sub;
 
   bool get _isRunning => _sub != null;
@@ -132,7 +147,7 @@ class LeaderElectionService {
     // considering an election — never claim just because nothing's been
     // heard yet at t=0. Local UI/reads/writes are unaffected either way,
     // this class only ever runs on background timers.
-    _lastHeartbeatHeardAt = DateTime.now();
+    _missedBeats = 0;
     _setRole(ElectionRole.follower);
     _watchdog = Timer.periodic(heartbeatInterval, (_) => _checkLeaderAlive());
   }
@@ -152,7 +167,7 @@ class LeaderElectionService {
     if (a.branchId != myBranchId) return;
     final heardEpoch = a.epoch ?? 0;
     if (heardEpoch < _epoch) return; // stale — a leader from a past epoch
-    _lastHeartbeatHeardAt = DateTime.now();
+    _missedBeats = 0;
 
     if (heardEpoch > _epoch) {
       // Higher epoch always wins immediately, on both sides (§7).
@@ -224,9 +239,8 @@ class LeaderElectionService {
     if (_role == ElectionRole.leader || _role == ElectionRole.candidate) {
       return; // we ARE the heartbeat source, or already electing
     }
-    final last = _lastHeartbeatHeardAt;
-    final deadline = heartbeatInterval * missedBeatsBeforeDead;
-    if (last != null && DateTime.now().difference(last) < deadline) return;
+    _missedBeats++;
+    if (_missedBeats < missedBeatsBeforeDead) return;
     _startElection();
   }
 

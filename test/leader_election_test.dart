@@ -201,9 +201,42 @@ void main() {
       expect(svc.role, ElectionRole.follower);
       expect(svc.currentLeaderIp, '10.0.0.9');
 
-      // The cancelled claim never fires later either.
-      async.elapse(const Duration(seconds: 2));
+      // The cancelled claim does not fire later. Asserted against a leader
+      // that keeps beating, because that is what "the miss was transient"
+      // means — this used to elapse two silent seconds and expect no
+      // election, which only held while the watchdog was measuring a clock
+      // `fakeAsync` never moved. Real silence *should* elect; see below.
+      for (var i = 0; i < 20; i++) {
+        async.elapse(const Duration(milliseconds: 100));
+        discovery.controller
+            .add(announcement(terminalId: 'terminal-x', epoch: 4));
+        async.flushMicrotasks();
+      }
       expect(svc.role, ElectionRole.follower);
+    });
+  });
+
+  test('a terminal that stood down elects again if the silence resumes',
+      () async {
+    // The other half of the transient-miss case: standing down is a deferral,
+    // not a permanent forfeit. A terminal that yielded to a heartbeat and then
+    // hears nothing further must still take over — otherwise a leader dying
+    // moments after one beat leaves the venue with no leader at all.
+    final svc = await build(startingEpoch: 4);
+    fakeAsync((async) {
+      svc.start();
+      async.flushMicrotasks();
+      async.elapse(const Duration(milliseconds: 320));
+      discovery.controller.add(announcement(terminalId: 'terminal-x', epoch: 4));
+      async.flushMicrotasks();
+      expect(svc.role, ElectionRole.follower);
+
+      // Now the leader really is gone.
+      async.elapse(const Duration(seconds: 2));
+      async.flushMicrotasks();
+
+      expect(svc.role, ElectionRole.leader);
+      expect(prefs.getInt('lan_election_epoch'), 5);
     });
   });
 
