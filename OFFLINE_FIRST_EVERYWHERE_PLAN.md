@@ -163,10 +163,24 @@ Rewrite `SyncEngine` around the feed:
   and it is the initialization the spec permits. Show progress; it is a one-time cost.
 - **Steady state**: same pull loop on the existing 60s tick, on reconnect, and after
   every outbox drain. Never triggered by a screen.
-- **Delete** `_hydrateReferenceData`, `_hydrateGoodsByCategory`, `_hydrateArchives`,
+- **Retire** `_hydrateReferenceData`, `_hydrateGoodsByCategory`, `_hydrateArchives`,
   `_hydrateTransactionGroups`, `_hydrateCashRegisters`, `_hydratePrinterSettings`,
   `_hydrateServiceCharge`, `_hydrateOpenOrderDetails`, `_hydrateTableTimers`,
   `prefetchAllGoods` — ~300 lines of per-entity fetching replaced by one loop.
+
+  > **Revised during Phase 1: the deletion happens in Phase 4, not here.** Those
+  > methods feed `CacheService` and the Hive `LocalDatabase`, which every screen still
+  > reads until Phase 4 rewires them. Deleting them in Phase 1 would empty the stores
+  > the running app depends on. Phase 1 therefore runs replication *alongside* the old
+  > hydration — the replica fills in the background while nothing reads it yet — and
+  > Phase 4 deletes both the hydration and the stores in the same change that moves the
+  > screens across. `SyncEngine.tick()` calls `drain()` immediately before the legacy
+  > block for exactly this reason: in Phase 4, deleting everything below that call is
+  > the whole edit.
+  >
+  > Same reasoning for bootstrap: it runs in the background at first login for now.
+  > Phase 4 promotes it to a foreground step with a progress screen, once the replica
+  > is what the screens actually read.
 - Keep `_hydrateMenuImages` (Minio is a blob store, not in the change log), but move it
   to a lazy background pass keyed off replicated `goods.picture_url` values.
 

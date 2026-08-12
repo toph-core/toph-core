@@ -105,6 +105,13 @@ class LoginDataScopeService {
       cashRegisterId: cashRegisterId,
     );
 
+    if (brandChanged) {
+      // OFFLINE_FIRST_EVERYWHERE_PLAN.md Phase 1 — the replica mirrors exactly
+      // one tenant, so a login to a different brand must drop it entirely
+      // rather than merge two tenants' rows under one cursor.
+      unawaited(_syncEngine.replication.resetAndBootstrap());
+    }
+
     if (brandChanged || firstTime) {
       unawaited(_runFirstTimeSetup());
     } else if (branchChanged) {
@@ -116,6 +123,19 @@ class LoginDataScopeService {
   }
 
   Future<void> _runFirstTimeSetup() async {
+    // OFFLINE_FIRST_EVERYWHERE_PLAN.md Phase 1 — the one-time replica fill.
+    // Deliberately still in the background here, alongside the legacy prep
+    // fetch: until Phase 4 moves the screens onto the replica, nothing reads
+    // what this produces, so blocking login on it would add a wait for data
+    // no one is looking at. Phase 4 promotes it to a foreground step with a
+    // progress screen — the single request in the product a person waits on.
+    //
+    // Safe to call on every first-time login: `bootstrap` resumes from the
+    // stored cursor and only marks completion on a clean catch-up.
+    if (_syncEngine.replication.needsBootstrap) {
+      unawaited(_syncEngine.replication.bootstrap());
+    }
+
     await _syncEngine.hydrateNow(includeGoods: true);
     // Only mark setup done when the fetch actually landed data — a fully
     // offline "first-time" login must stay un-initialized so the next

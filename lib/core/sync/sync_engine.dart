@@ -21,6 +21,7 @@ import '../services/cache/cache_service.dart';
 import '../services/connectivity/connectivity_cubit.dart';
 import '../services/lan_hub/lan_hub_service.dart';
 import '../services/offline_queue/offline_queue_service.dart';
+import 'replication_service.dart';
 
 /// Thin coordination shell around the existing offline services — wraps
 /// `OfflineQueueService`/`CacheService` rather than replacing them, so later
@@ -39,6 +40,13 @@ class SyncEngine {
   final LanHubService _lanHub;
   final SharedPreferences _prefs;
   final LocalDatabase _localDb;
+
+  /// OFFLINE_FIRST_EVERYWHERE_PLAN.md Phase 1 — the cursor-driven change-log
+  /// replication that is replacing every `_hydrateX` method below. Both run for
+  /// now: replication fills the SQLite replica while the screens still read
+  /// `CacheService`/`LocalDatabase`. Phase 4 moves the screens across and
+  /// deletes the hydration half.
+  final ReplicationService _replication;
 
   Timer? _ticker;
   bool _tickRunning = false;
@@ -76,13 +84,20 @@ class SyncEngine {
     required LanHubService lanHub,
     required SharedPreferences prefs,
     required LocalDatabase localDb,
+    required ReplicationService replication,
   })  : _queue = queue,
         _cache = cache,
         _connectivity = connectivity,
         _client = client,
         _lanHub = lanHub,
         _prefs = prefs,
-        _localDb = localDb;
+        _localDb = localDb,
+        _replication = replication;
+
+  /// The replication loop, for the login flow's one-time bootstrap and the
+  /// sync-status screen. Exposed here rather than injected directly anywhere
+  /// else so `SyncEngine` stays the single entry point to networking.
+  ReplicationService get replication => _replication;
 
   /// BACKEND_SYNC_PLAN.md §5: every sync trigger now lives here, in one
   /// place, instead of being scattered across widget lifecycles:
@@ -154,6 +169,11 @@ class SyncEngine {
           );
         }
         if (_connectivity.isOnline) {
+          // Phase 5 deletes this whole branch's cloud access: a follower's
+          // inbound data will arrive from the leader's LAN relay, not from its
+          // own uplink. Until then a follower replicates the same way a leader
+          // does, matching the behaviour the hydration calls below already had.
+          await _replication.drain();
           await _cache.prefetchAllGoods(_client);
           await _mirrorGoodsIntoLocalDb();
           await _hydrateReferenceData();
@@ -166,6 +186,11 @@ class SyncEngine {
       if (_queue.hasItems) {
         await _queue.syncAll(_client, force: force);
       }
+      // Replication runs before the legacy hydration so that, once the screens
+      // move in Phase 4, deleting everything below this line is the whole
+      // change. A failure here returns a result rather than throwing, so it
+      // cannot stop the outbox drain above or the hydration below.
+      await _replication.drain();
       await _cache.prefetchAllGoods(_client);
       await _mirrorGoodsIntoLocalDb();
       await _hydrateReferenceData();
