@@ -51,7 +51,7 @@ class CustomCachedNetworkImage extends StatelessWidget {
       // exist offline. The repository serves them from disk and fetches once on
       // a miss — same pixels, one request, and they survive a restart.
       return StreamBuilder<LocalImage>(
-        stream: inject<MenuRepository>().imageStream(minioObjectName!),
+        stream: inject<LocalImageCache>().stream(minioObjectName!),
         builder: (context, snapshot) {
           final image = snapshot.data;
           if (image == null || image.status == ImageStatus.loading) {

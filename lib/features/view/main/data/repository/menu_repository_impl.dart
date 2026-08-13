@@ -1,6 +1,5 @@
 import 'package:mary_ai_pos/core/database/local_database.dart';
 import 'package:mary_ai_pos/core/media/local_image_cache.dart';
-import 'package:mary_ai_pos/core/service/minio/minio_service.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/category/category_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/department/department_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/goods/goods_model.dart';
@@ -9,16 +8,16 @@ import 'package:mary_ai_pos/features/view/main/domain/repository/menu_repository
 class MenuRepositoryImpl implements MenuRepository {
   final LocalDatabase _localDb;
 
-  MenuRepositoryImpl({required LocalDatabase localDb}) : _localDb = localDb;
+  /// Injected rather than constructed: two owners of this would mean two
+  /// dedupe sets and two fetches for the same bytes, which is the problem it
+  /// exists to solve.
+  final LocalImageCache _images;
 
-  /// The image state machine, wired to the Hive store and the Minio fetcher.
-  /// Lives in `core/media` so it can be tested without either.
-  late final LocalImageCache _images = LocalImageCache(
-    watch: _localDb.watchImage,
-    read: _localDb.getImage,
-    write: _localDb.saveImage,
-    fetch: MinioService.instance.getImageByObjectName,
-  );
+  MenuRepositoryImpl({
+    required LocalDatabase localDb,
+    required LocalImageCache images,
+  })  : _localDb = localDb,
+        _images = images;
 
   @override
   Stream<LocalImage> imageStream(String objectName) =>

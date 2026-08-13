@@ -183,3 +183,46 @@ keeps serving everything else from Hive until its own screens follow.
 land in the replica must read the replica, or it cannot see its own edits. It
 also removes the last repository injection from the screen, which is what the
 §7 ratchet is actually measuring.
+
+---
+
+## D11 — A new translation blocks the save; an existing one does not
+
+**Fork.** `good.name_i18n` is a *reference* to a translation row's id, and
+`/translations` assigns that id server-side.
+
+**Chosen.** Editing an existing meal's translations applies locally and works
+offline. Creating the first ones refuses with a message.
+
+**Why.** Queueing the translation would leave the good referencing nothing, so
+the meal would save with its translations silently dropped — data loss dressed
+as success. This is D1 again, in a harder form: the id is load-bearing for a
+*second* row, so the usual "queue it and wait" does not degrade gracefully.
+
+**Cost.** A brand-new meal with translations needs a connection. It needed one
+before too, so this is not a regression — only a clearer failure.
+
+**What changes it.** Same as D1, plus: the outbox would need to rewrite a queued
+payload once a dependency's real id arrived. That is a genuine feature, not a
+tweak.
+
+---
+
+## D12 — Queued writes carry their request scope in the payload
+
+**Fork.** `saveGoodWithCalculations` was called with `X-Brand-Id` /
+`X-Branch-ID` headers built from the logged-in user. Sending happens later now.
+
+**Chosen.** Capture the headers at enqueue time under a reserved payload key,
+stripped by the handler before the body is sent.
+
+**Why.** The drain can happen after a shift change. A write belongs to the scope
+of whoever made it, not whoever is logged in when the network returns. Resolving
+the headers at send time would silently reassign authorship.
+
+**Alternative rejected.** A metadata column on `OutboxOperation` — a schema
+change for one caller, where a reserved key does the job. Revisit if a second
+write needs different context.
+
+**Nearly missed.** `_scopeHeaders` showed up as an unused-element warning after
+the rewire. Treating that as dead code would have dropped the headers silently.

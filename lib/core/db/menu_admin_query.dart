@@ -11,7 +11,14 @@ class MenuAdminQuery {
 
   const MenuAdminQuery(this._db);
 
-  static const watchedTables = {'goods', 'categories'};
+  /// The manage screen's picker lists live here too, so an ingredient added on
+  /// another terminal appears without a reload.
+  static const watchedTables = {
+    'goods',
+    'categories',
+    'ingredients',
+    'compounds',
+  };
 
   /// One page of the admin goods list.
   ///
@@ -74,6 +81,16 @@ class MenuAdminQuery {
 
   List<Map<String, dynamic>> categories() => _db.selectData(
         'SELECT data FROM categories WHERE deleted_at IS NULL '
+        'ORDER BY name COLLATE NOCASE, id',
+      );
+
+  List<Map<String, dynamic>> ingredients() => _db.selectData(
+        'SELECT data FROM ingredients WHERE deleted_at IS NULL '
+        'ORDER BY name COLLATE NOCASE, id',
+      );
+
+  List<Map<String, dynamic>> compounds() => _db.selectData(
+        'SELECT data FROM compounds WHERE deleted_at IS NULL '
         'ORDER BY name COLLATE NOCASE, id',
       );
 

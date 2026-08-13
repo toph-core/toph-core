@@ -3,6 +3,7 @@ import 'package:mary_ai_pos/core/db/local_database.dart';
 import 'package:mary_ai_pos/core/db/menu_admin_query.dart';
 import 'package:mary_ai_pos/core/error/failure.dart';
 import 'package:mary_ai_pos/core/outbox/local_writer.dart';
+import 'package:mary_ai_pos/features/view/main/data/outbox/menu_admin_outbox.dart' show kOutboxHeadersKey;
 import 'package:mary_ai_pos/features/view/main/data/models/category/category_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/goods/goods_model.dart';
 import 'package:mary_ai_pos/features/view/main/domain/repository/local_write_result.dart';
@@ -83,6 +84,20 @@ class MenuAdminLocalRepositoryImpl implements MenuAdminLocalRepository {
   }
 
   @override
+  Stream<List<Map<String, dynamic>>> watchIngredients() =>
+      _query.watch(getIngredients);
+
+  @override
+  List<Map<String, dynamic>> getIngredients() => _query.ingredients();
+
+  @override
+  Stream<List<Map<String, dynamic>>> watchCompounds() =>
+      _query.watch(getCompounds);
+
+  @override
+  List<Map<String, dynamic>> getCompounds() => _query.compounds();
+
+  @override
   Map<String, dynamic>? goodWithCalculations(String id) {
     final good = _query.goodById(id);
     if (good == null) return null;
@@ -117,13 +132,17 @@ class MenuAdminLocalRepositoryImpl implements MenuAdminLocalRepository {
   Either<Failure, LocalWriteResult> saveGood({
     String? mealId,
     required Map<String, dynamic> body,
+    Map<String, String> headers = const {},
   }) =>
       _guard(() {
+        final request = headers.isEmpty
+            ? body
+            : {...body, kOutboxHeadersKey: headers};
         if (mealId == null) {
           _writer.enqueueOnly(
             entity: 'goods',
             action: 'create',
-            request: body,
+            request: request,
           );
           return LocalWriteResult.queued;
         }
@@ -138,7 +157,7 @@ class MenuAdminLocalRepositoryImpl implements MenuAdminLocalRepository {
           entity: 'goods',
           id: mealId,
           row: row,
-          request: body,
+          request: request,
         );
         return LocalWriteResult.applied;
       });

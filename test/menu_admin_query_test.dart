@@ -284,5 +284,107 @@ void main() {
       expect(result.total, 2);
     });
   });
+
+  group('request scope travels with the queued write', () {
+    test('headers are captured at enqueue time, not at send time', () {
+      // The drain happens later, possibly after a shift change. A write belongs
+      // to the scope of whoever made it, not whoever is logged in when the
+      // network comes back.
+      good('g-1');
+
+      repo.saveGood(
+        mealId: 'g-1',
+        body: {'name': 'Osh'},
+        headers: {'X-Brand-Id': 'brand-7', 'X-Branch-ID': 'branch-3'},
+      );
+
+      final payload = outbox.pending().single.payload;
+      expect(payload['__headers'], {
+        'X-Brand-Id': 'brand-7',
+        'X-Branch-ID': 'branch-3',
+      });
+    });
+
+    test('the scope never reaches the local row', () {
+      good('g-1');
+
+      repo.saveGood(
+        mealId: 'g-1',
+        body: {'name': 'Osh'},
+        headers: {'X-Brand-Id': 'brand-7'},
+      );
+
+      expect(db.byId('goods', 'g-1')!.containsKey('__headers'), isFalse);
+    });
+
+    test('no headers means no reserved key at all', () {
+      good('g-1');
+
+      repo.saveGood(mealId: 'g-1', body: {'name': 'Osh'});
+
+      expect(outbox.pending().single.payload.containsKey('__headers'), isFalse);
+    });
+  });
+
+  group('translations', () {
+    test('editing an existing translation applies locally', () {
+      put('translations', {'id': 't-1', 'en': 'Pilaf', 'ru': 'Плов', 'uz': 'Osh'});
+
+      final result =
+          repo.updateTranslation('t-1', {'en': 'Plov', 'ru': 'Плов', 'uz': 'Osh'});
+
+      expect(result.getOrElse(() => LocalWriteResult.queued),
+          LocalWriteResult.applied);
+      expect(db.byId('translations', 't-1')!['en'], 'Plov');
+    });
+
+    test('an update does not erase the fields it omits', () {
+      put('translations', {'id': 't-1', 'en': 'Pilaf', 'ru': 'Плов', 'uz': 'Osh'});
+
+      repo.updateTranslation('t-1', {'en': 'Plov'});
+
+      final row = db.byId('translations', 't-1')!;
+      expect(row['en'], 'Plov');
+      expect(row['ru'], 'Плов');
+      expect(row['uz'], 'Osh');
+    });
+
+    test('a new translation queues, so its id cannot be referenced yet', () {
+      // Why the editor refuses to save a meal that needs a brand-new
+      // translation offline: `good.name_i18n` is a reference to this row's id,
+      // and there is no id until the server answers. Saving anyway would drop
+      // the translations silently.
+      final result = repo.createTranslation({'en': 'New', 'ru': 'Новый', 'uz': 'Yangi'});
+
+      expect(result.getOrElse(() => LocalWriteResult.applied),
+          LocalWriteResult.queued);
+      expect(outbox.pending().single.entityId, isNull);
+    });
+  });
+
+  group('the picker lists', () {
+    test('ingredients and compounds come from the replica, ordered by name', () {
+      put('ingredients', {'id': 'i-2', 'name': 'Guruch'});
+      put('ingredients', {'id': 'i-1', 'name': 'Bodring'});
+      put('compounds', {'id': 'c-1', 'name': 'Sous', 'branch_id': 'b-1'});
+
+      expect(repo.getIngredients().map((e) => e['id']), ['i-1', 'i-2']);
+      expect(repo.getCompounds().map((e) => e['id']), ['c-1']);
+    });
+
+    test('an ingredient added elsewhere appears without reopening the panel',
+        () async {
+      final seen = <List<Map<String, dynamic>>>[];
+      final sub = repo.watchIngredients().listen(seen.add);
+      await Future<void>.delayed(Duration.zero);
+      expect(seen.single, isEmpty);
+
+      put('ingredients', {'id': 'i-1', 'name': 'Bodring'});
+      await Future<void>.delayed(Duration.zero);
+
+      expect(seen.last, hasLength(1));
+      await sub.cancel();
+    });
+  });
 }
 

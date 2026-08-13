@@ -42,6 +42,12 @@ abstract class MenuAdminLocalRepository {
     String? search,
   });
 
+  /// The manage screen's two picker lists.
+  Stream<List<Map<String, dynamic>>> watchIngredients();
+  List<Map<String, dynamic>> getIngredients();
+  Stream<List<Map<String, dynamic>>> watchCompounds();
+  List<Map<String, dynamic>> getCompounds();
+
   /// The good, its calculation rows and its ingredient rows, assembled locally.
   ///
   /// Replaces `GET /goods/{id}?include=calculations`, which the editor called
@@ -58,9 +64,17 @@ abstract class MenuAdminLocalRepository {
   ///
   /// [mealId] null means create, which queues rather than applying — see
   /// `LocalWriteResult`. An edit applies locally and immediately.
+  /// [headers] is the caller's brand/branch scope.
+  ///
+  /// Carried in the queued operation rather than resolved when it is sent: the
+  /// drain happens later, possibly after a shift change, and the write belongs
+  /// to the scope of whoever made it — not whoever happens to be logged in when
+  /// the network comes back. Any queued write with request context has this
+  /// problem; this is the first one that has any.
   Either<Failure, LocalWriteResult> saveGood({
     String? mealId,
     required Map<String, dynamic> body,
+    Map<String, String> headers = const {},
   });
 
   Either<Failure, LocalWriteResult> deleteGood(String id);

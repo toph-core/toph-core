@@ -13,6 +13,28 @@ import 'package:mary_ai_pos/features/view/main/domain/repository/main_repository
 /// the whole nested body for both create and update, categories create from a
 /// bare name, and translations split create/update across two verbs. Forcing
 /// them into one shape would cost more than it saves.
+/// Reserved payload key carrying the request scope captured at enqueue time.
+///
+/// Inside the payload rather than beside it because `OutboxOperation` has no
+/// metadata column, and adding one for a single caller is a schema change for
+/// a problem a reserved key solves. Stripped before the body is sent.
+const kOutboxHeadersKey = '__headers';
+
+/// Splits a queued payload into the body to send and the headers to send it
+/// with.
+({Map<String, dynamic> body, Map<String, String> headers}) _split(
+  Map<String, dynamic> payload,
+) {
+  final raw = payload[kOutboxHeadersKey];
+  if (raw is! Map) return (body: payload, headers: const {});
+  return (
+    body: {...payload}..remove(kOutboxHeadersKey),
+    headers: {
+      for (final e in raw.entries) e.key.toString(): e.value.toString(),
+    },
+  );
+}
+
 void registerMenuAdminOutboxHandlers(
   OutboxExecutors executors,
   MainRepository remote,
@@ -21,9 +43,13 @@ void registerMenuAdminOutboxHandlers(
     'goods',
     'create',
     OutboxHandler(
-      send: (op) async => _resultOf(
-        await remote.saveGoodWithCalculations(body: op.payload),
-      ),
+      send: (op) async {
+        final parts = _split(op.payload);
+        return _resultOf(await remote.saveGoodWithCalculations(
+          body: parts.body,
+          headers: parts.headers,
+        ));
+      },
     ),
   );
 
@@ -31,12 +57,14 @@ void registerMenuAdminOutboxHandlers(
     'goods',
     'update',
     OutboxHandler(
-      send: (op) => _withId(
-        op,
-        (id) async => _resultOf(
-          await remote.saveGoodWithCalculations(mealId: id, body: op.payload),
-        ),
-      ),
+      send: (op) => _withId(op, (id) async {
+        final parts = _split(op.payload);
+        return _resultOf(await remote.saveGoodWithCalculations(
+          mealId: id,
+          body: parts.body,
+          headers: parts.headers,
+        ));
+      }),
     ),
   );
 

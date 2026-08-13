@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:io' show File;
 
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:dartz/dartz.dart' show Either;
 import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -15,7 +14,6 @@ import 'package:mary_ai_pos/core/extension/list_extension.dart';
 import 'package:mary_ai_pos/core/theme/tokens/theme_colors.dart';
 import 'package:mary_ai_pos/core/routes/app_routes.dart';
 import 'package:mary_ai_pos/core/service/minio/minio_service.dart';
-import 'package:mary_ai_pos/core/sync/sync_engine.dart';
 import 'package:mary_ai_pos/core/utils/app_formatter.dart';
 import 'package:mary_ai_pos/core/utils/user_role_permissions.dart';
 import 'package:mary_ai_pos/core/utils/helper/helper_widget.dart';
@@ -24,8 +22,7 @@ import 'package:mary_ai_pos/di.dart';
 import 'package:mary_ai_pos/features/view/auth/data/models/user/user_model.dart';
 import 'package:mary_ai_pos/features/view/auth/presentation/cubit/bloc/user_bloc.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/category/category_model.dart';
-import 'package:mary_ai_pos/features/view/main/domain/repository/main_repository.dart';
-import 'package:mary_ai_pos/features/view/main/domain/repository/menu_repository.dart';
+import 'package:mary_ai_pos/features/view/main/presentation/cubit/menu_admin/menu_manage_cubit.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/main/widgets/main_header.dart';
 import 'package:mary_ai_pos/generated/l10n.dart';
 
@@ -39,12 +36,8 @@ class MenuManageScreen extends StatefulWidget {
 enum _AvailableItemsTab { ingredients, semiFinished }
 
 class _MenuManageScreenState extends State<MenuManageScreen> {
-  final MainRepository _repository = inject<MainRepository>();
-  final MenuRepository _menuRepository = inject<MenuRepository>();
-  StreamSubscription<List<CategoryModel>>? _categoriesSub;
+  final MenuManageCubit _cubit = inject<MenuManageCubit>();
   bool _categoriesLoadedOnce = false;
-  StreamSubscription<List<Map<String, dynamic>>>? _ingredientsSub;
-  StreamSubscription<List<Map<String, dynamic>>>? _compoundsSub;
   final _nameCtrl = TextEditingController();
   final _nameEnCtrl = TextEditingController();
   final _nameRuCtrl = TextEditingController();
@@ -55,10 +48,7 @@ class _MenuManageScreenState extends State<MenuManageScreen> {
 
   List<CategoryModel> _categories = const [];
   CategoryModel? _selectedCategory;
-  bool _isLoadingCategories = true;
-  bool _isLoadingMeal = false;
   bool _isSubmitting = false;
-  String? _categoriesError;
   String? _editMealId;
   String? _nameTranslationId;
   String? _descriptionTranslationId;
@@ -66,11 +56,8 @@ class _MenuManageScreenState extends State<MenuManageScreen> {
   List<Map<String, dynamic>> _compoundCalculations = const [];
   bool _argsHandled = false;
 
-  /// `goodWithCalculations` muvaffaqiyatli bo‘lsa true; faqat `goodById` bo‘lsa expandda qayta yuklash.
-  bool _itemsLoadedWithMeal = false;
-  bool _loadingItems = false;
-  bool _loadingAvailableItems = false;
-  String? _availableItemsError;
+  /// The picker lists, mirrored from the cubit. Not fetched on panel expand
+  /// any more — they were lazy because they were network calls.
   List<Map<String, dynamic>> _availableIngredients = const [];
   List<Map<String, dynamic>> _availableCompounds = const [];
   _AvailableItemsTab _activeTab = _AvailableItemsTab.ingredients;
@@ -78,7 +65,6 @@ class _MenuManageScreenState extends State<MenuManageScreen> {
   String _availableSearchQuery = '';
   final Map<String, TextEditingController> _qtyCtrls = {};
   final Map<String, Map<String, dynamic>> _translationsById = {};
-  bool _translationsLoading = false;
   bool _uploadingImage = false;
 
   bool get _isEditMode => _editMealId != null && _editMealId!.isNotEmpty;
@@ -170,15 +156,7 @@ class _MenuManageScreenState extends State<MenuManageScreen> {
   }
 
   /// Web `MaryAiFront`: `GET /goods/{id}` + `GET /translations?limit=1000` parallel.
-  Future<Map<String, dynamic>?> _safeCall(
-    Future<Either<Failure, Map<String, dynamic>>> request,
-  ) async {
-    final result = await request;
-    return result.fold((_) => null, (r) => r);
-  }
-
-  void _fillTranslationsCacheFromResponse(dynamic raw) {
-    final list = _extractDataList(raw);
+  void _fillTranslationsCache(List<Map<String, dynamic>> list) {
     for (final row in list) {
       final id = (row['id'] ?? '').toString();
       if (id.isEmpty) continue;
@@ -249,17 +227,26 @@ class _MenuManageScreenState extends State<MenuManageScreen> {
     // this form stays open for a while during editing, and a background
     // sync landing mid-edit must not silently clobber a category the user
     // already picked.
-    _categoriesSub = _menuRepository.watchCategories().listen(_onCategoriesUpdated);
+    _cubit.stream.listen(_onCubitState);
+    _onCubitState(_cubit.state);
+  }
+
+  void _onCubitState(MenuManageState state) {
+    if (!mounted) return;
+    setState(() {
+      _availableIngredients = state.ingredients;
+      _availableCompounds = state.compounds;
+    });
+    _onCategoriesUpdated(state.categories);
   }
 
   void _onCategoriesUpdated(List<CategoryModel> list) {
     if (!mounted) return;
+    if (list.isEmpty) return;
     final firstLoad = !_categoriesLoadedOnce;
     _categoriesLoadedOnce = true;
     setState(() {
       _categories = list;
-      _isLoadingCategories = false;
-      _categoriesError = null;
       if (_selectedCategory == null ||
           !list.any((c) => c.id == _selectedCategory!.id)) {
         _selectedCategory = list.isNotEmpty ? list.first : null;
@@ -267,9 +254,7 @@ class _MenuManageScreenState extends State<MenuManageScreen> {
     });
     if (firstLoad) {
       final editId = _editMealId;
-      if (editId != null && editId.isNotEmpty && !_isLoadingMeal) {
-        _loadMealForEdit(editId);
-      }
+      if (editId != null && editId.isNotEmpty) _loadMealForEdit(editId);
     }
   }
 
@@ -293,190 +278,50 @@ class _MenuManageScreenState extends State<MenuManageScreen> {
     }
   }
 
-  /// `_categoriesError` is never actually set by the stream path in
-  /// `_onCategoriesUpdated` above (a `LocalDatabase` read doesn't fail the
-  /// way a network fetch did) — kept only so the pre-existing retry-button
-  /// UI still compiles/has a target; pressing it just asks for a fresh sync
-  /// pass.
-  Future<void> _loadCategories() async {
-    setState(() => _isLoadingCategories = true);
-    await inject<SyncEngine>().tick(force: true);
-    if (!mounted) return;
-    final editId = _editMealId;
-    if (editId != null && editId.isNotEmpty && !_isLoadingMeal) {
-      await _loadMealForEdit(editId);
-    }
+  /// One local read, one shape.
+  ///
+  /// Was three parallel network calls — `goods/{id}`, `translations`, and
+  /// `with-calculations` — with two fallback paths between them, because any
+  /// could fail and each returned a different envelope, so the screen decided
+  /// at runtime which response it had actually got. There is one shape here.
+  void _loadMealForEdit(String mealId) {
+    final data = _cubit.mealForEdit(mealId);
+    if (data == null) return;
+    _fillTranslationsCache(_cubit.translations());
+    _applyGoodForForm(data);
+    _applyCalculationsOnly(data);
   }
 
-  Future<void> _loadMealForEdit(String mealId) async {
-    if (_isLoadingMeal) return;
-    setState(() => _isLoadingMeal = true);
-    try {
-      // Web MaryAiFront: parallel `GET /goods/{id}` + `GET /translations?limit=1000` + `with-calculations`.
-      final futures = await Future.wait([
-        _safeCall(_repository.getGoodById(mealId)),
-        _safeCall(_repository.getTranslationsList()),
-        _safeCall(_repository.getGoodWithCalculationsById(mealId)),
-      ]);
-      final goodRes = futures[0];
-      final transRes = futures[1];
-      final calcRes = futures[2];
+  /// Thrown when a save needs a translation id that cannot exist yet.
+  ///
+  /// `good.name_i18n` is a *reference* to a translation row, and `/translations`
+  /// assigns its id server-side. Editing an existing meal's translations is a
+  /// local update and works offline. Creating the first ones does not: queueing
+  /// the translation would leave the good referencing nothing, so the meal would
+  /// save with its translations silently dropped. Refusing is the honest
+  /// outcome — this is the same server-assigned-id problem as everywhere else
+  /// (DECISIONS.md D1), just one where the id is load-bearing for a second row.
+  static const _needsConnectionForNewTranslation = 'new-translation';
 
-      if (transRes != null) {
-        _fillTranslationsCacheFromResponse(transRes);
-      }
-
-      final calcData = calcRes != null
-          ? (calcRes['data'] ?? const {}) as Map<String, dynamic>
-          : null;
-
-      if (goodRes != null) {
-        final good = (goodRes['data'] ?? const {}) as Map<String, dynamic>;
-        _applyGoodForForm(good);
-        if (calcData != null) {
-          _applyCalculationsOnly(calcData);
-          _itemsLoadedWithMeal = true;
-        } else {
-          _ingredientCalculations = const [];
-          _compoundCalculations = const [];
-          _itemsLoadedWithMeal = false;
-        }
-      } else if (calcData != null) {
-        // Faqat with-calculations — bitta response bilan forma + calculations (eski uslub).
-        _applyMealData(calcData);
-        await _hydrateNameTranslationFromList();
-        _itemsLoadedWithMeal = true;
-      } else {
-        await _loadMealForEditFallback(mealId);
-      }
-    } finally {
-      if (mounted) setState(() => _isLoadingMeal = false);
-    }
-  }
-
-  Future<void> _loadMealForEditFallback(String mealId) async {
-    final result = await _repository.getGoodWithCalculationsById(
-      mealId,
-      includeTranslations: true,
-    );
-    final res = result.fold((_) => null, (r) => r);
-    if (res == null) return;
-    final data = (res['data'] ?? const {}) as Map<String, dynamic>;
-    _applyMealData(data);
-    await _hydrateNameTranslationFromList();
-    _itemsLoadedWithMeal = true;
-  }
-
-  void _applyMealData(Map<String, dynamic> data) {
-    final good = ((data['good'] is Map<String, dynamic>)
-        ? data['good'] as Map<String, dynamic>
-        : data);
-    final parsed = _parseCalculationBuckets(data);
-    _ingredientCalculations = parsed.ingredients;
-    _compoundCalculations = parsed.compounds;
-
-    _nameCtrl.text = (good['name'] ?? '').toString();
-    _descriptionCtrl.text = (good['description'] ?? '').toString();
-    _priceCtrl.text = AppFormatter.formatPriceIntegerSpaces(
-      (good['price'] ?? '').toString(),
-    );
-    _cookTimeCtrl.text = (good['cook_time'] ?? '0').toString();
-    _pictureUrlCtrl.text = (good['picture_url'] ?? '').toString();
-
-    final ni = (good['name_i18n'] ?? '').toString();
-    final di = (good['description_i18n'] ?? '').toString();
-    _nameTranslationId = ni.isNotEmpty ? ni : null;
-    _descriptionTranslationId = di.isNotEmpty ? di : null;
-
-    final tName = data['name_translation'];
-    if (tName is Map<String, dynamic>) {
-      _nameEnCtrl.text = (tName['en'] ?? '').toString();
-      _nameRuCtrl.text = (tName['ru'] ?? '').toString();
-    } else {
-      _nameEnCtrl.clear();
-      _nameRuCtrl.clear();
-    }
-    // Web `enrichMeal`: `include=translations` bo‘lmasa `name_translation` kelmaydi —
-    // shunda ham `name_i18n` + translations list yoki kamida `name` bilan to‘ldiramiz.
-    final needEnRuFallback =
-        tName is! Map<String, dynamic> ||
-        (_nameEnCtrl.text.trim().isEmpty && _nameRuCtrl.text.trim().isEmpty);
-    if (needEnRuFallback) {
-      _applyNameEnRuFromTranslationCache(good);
-    }
-
-    if (_categories.isNotEmpty) {
-      final cid = (good['category_id'] ?? '').toString();
-      final matched = _categories.firstWhereOrNull((c) => c.id == cid);
-      if (matched != null) _selectedCategory = matched;
-    }
-    if (mounted) setState(() {});
-  }
-
-  Future<void> _hydrateNameTranslationFromList() async {
-    final translationId = _nameTranslationId;
-    if (translationId == null || translationId.isEmpty) return;
-
-    final fallbackName = _nameCtrl.text;
-    final cached = _translationsById[translationId];
-    if (cached != null) {
-      _nameEnCtrl.text = (cached['en'] ?? fallbackName).toString();
-      _nameRuCtrl.text = (cached['ru'] ?? fallbackName).toString();
-      return;
-    }
-
-    if (_translationsLoading) return;
-    _translationsLoading = true;
-    try {
-      final result = await _repository.getTranslationsList();
-      final res = result.fold((_) => null, (r) => r);
-      // optional source for edit form; silently skip if backend blocks this call.
-      if (res == null) return;
-      final list = _extractDataList(res);
-      for (final row in list) {
-        final id = (row['id'] ?? '').toString();
-        if (id.isEmpty) continue;
-        _translationsById[id] = row;
-      }
-
-      final row = _translationsById[translationId];
-      if (row != null) {
-        _nameEnCtrl.text = (row['en'] ?? fallbackName).toString();
-        _nameRuCtrl.text = (row['ru'] ?? fallbackName).toString();
-      } else {
-        _nameEnCtrl.text = fallbackName;
-        _nameRuCtrl.text = fallbackName;
-      }
-    } finally {
-      _translationsLoading = false;
-    }
-  }
-
-  Future<String?> _upsertTranslation(
+  /// Returns the translation id to reference, or null when none is needed.
+  String? _upsertTranslation(
     String? existingId, {
     required String en,
     required String ru,
     required String uz,
-  }) async {
+  }) {
     if (en.trim().isEmpty && ru.trim().isEmpty && uz.trim().isEmpty) {
       return existingId;
     }
     final body = {'en': en, 'ru': ru, 'uz': uz};
     if (existingId != null && existingId.isNotEmpty) {
-      final result = await _repository.updateTranslation(existingId, body);
-      final failure = result.fold((f) => f, (_) => null);
-      if (failure != null) throw failure;
+      if (!_cubit.updateTranslation(existingId, body)) {
+        throw MessageFailure(_cubit.state.error ?? 'Tarjima saqlanmadi');
+      }
       return existingId;
     }
-    final result = await _repository.createTranslation(body);
-    final failure = result.fold((f) => f, (_) => null);
-    if (failure != null) throw failure;
-    final res = result.fold((_) => null, (r) => r)!;
-    final data = res['data'];
-    if (data is Map<String, dynamic>) {
-      return (data['id'] ?? '').toString();
-    }
-    return existingId;
+    _cubit.createTranslation(body);
+    throw const MessageFailure(_needsConnectionForNewTranslation);
   }
 
   Map<String, String> _scopeHeaders(UserModel? u) {
@@ -507,13 +352,13 @@ class _MenuManageScreenState extends State<MenuManageScreen> {
 
     setState(() => _isSubmitting = true);
     try {
-      final nameTransId = await _upsertTranslation(
+      final nameTransId = _upsertTranslation(
         _nameTranslationId,
         en: nameEn,
         ru: nameRu,
         uz: name,
       );
-      final descTransId = await _upsertTranslation(
+      final descTransId = _upsertTranslation(
         _descriptionTranslationId,
         en: description,
         ru: description,
@@ -540,14 +385,13 @@ class _MenuManageScreenState extends State<MenuManageScreen> {
         'compound_calculations': _compoundCalculations,
       };
 
-      final headers = _scopeHeaders(user);
-      final saveResult = await _repository.saveGoodWithCalculations(
+      if (!_cubit.saveGood(
         mealId: _isEditMode ? _editMealId : null,
         body: payload,
-        headers: headers,
-      );
-      final saveFailure = saveResult.fold((f) => f, (_) => null);
-      if (saveFailure != null) throw saveFailure;
+        headers: _scopeHeaders(user),
+      )) {
+        throw MessageFailure(_cubit.state.error ?? S.current.strError);
+      }
 
       if (!mounted) return;
       _nameTranslationId = nameTransId;
@@ -581,18 +425,17 @@ class _MenuManageScreenState extends State<MenuManageScreen> {
   Future<void> _confirmDelete() async {
     final id = _editMealId;
     if (id == null || id.isEmpty) return;
-    final ok = await showDialog<bool>(
+    final confirmed = await showDialog<bool>(
       context: context,
       barrierColor: Colors.black.withOpacity(0.55),
       builder: (_) => _DeleteMealDialog(mealName: _nameCtrl.text.trim()),
     );
-    if (ok != true) return;
+    if (confirmed != true) return;
     if (!mounted) return;
     setState(() => _isSubmitting = true);
-    final result = await _repository.deleteGood(id);
+    final deleted = _cubit.deleteGood(id);
     if (!mounted) return;
-    final failure = result.fold((f) => f, (_) => null);
-    if (failure == null) {
+    if (deleted) {
       showSuccessMessage(context, "O'chirildi");
       await Future<void>.delayed(const Duration(milliseconds: 350));
       if (!mounted) return;
@@ -602,10 +445,7 @@ class _MenuManageScreenState extends State<MenuManageScreen> {
         navigatorKey.currentState?.pop(true);
       }
     } else {
-      showErrorMessage(
-        context,
-        failure is MessageFailure ? failure.message : "O'chirilmadi",
-      );
+      showErrorMessage(context, _cubit.state.error ?? "O'chirilmadi");
     }
     if (mounted) setState(() => _isSubmitting = false);
   }
@@ -622,73 +462,7 @@ class _MenuManageScreenState extends State<MenuManageScreen> {
     _descriptionTranslationId = null;
     _ingredientCalculations = const [];
     _compoundCalculations = const [];
-    _itemsLoadedWithMeal = false;
     setState(() {});
-  }
-
-  Future<void> _fetchItemsFromApi() async {
-    final id = _editMealId;
-    if (id == null || id.isEmpty) return;
-    if (_loadingItems) return;
-    setState(() => _loadingItems = true);
-    final result = await _repository.getGoodWithCalculationsById(
-      id,
-      includeTranslations: true,
-    );
-    if (!mounted) return;
-    final res = result.fold((_) => null, (r) => r);
-    if (res == null) {
-      showErrorMessage(context, S.current.strLoadCompositionError);
-    } else {
-      final data = (res['data'] ?? const {}) as Map<String, dynamic>;
-      final parsed = _parseCalculationBuckets(data);
-      setState(() {
-        _ingredientCalculations = parsed.ingredients;
-        _compoundCalculations = parsed.compounds;
-        _itemsLoadedWithMeal = true;
-      });
-    }
-    if (mounted) setState(() => _loadingItems = false);
-  }
-
-  Future<void> _onItemsExpansionChanged(bool expanded) async {
-    if (!expanded) return;
-    await _loadItemsPanelData();
-  }
-
-  Future<void> _loadItemsPanelData() async {
-    if (!_loadingAvailableItems &&
-        _availableIngredients.isEmpty &&
-        _availableCompounds.isEmpty) {
-      await _fetchAvailableItemsFromApi();
-    }
-    if (!_isEditMode || _editMealId == null || _itemsLoadedWithMeal) return;
-    await _fetchItemsFromApi();
-  }
-
-  Future<void> _fetchAvailableItemsFromApi() async {
-    if (_loadingAvailableItems) return;
-    setState(() {
-      _loadingAvailableItems = true;
-      _availableItemsError = null;
-    });
-    // offline-first-target-architecture.md §8 Phase 5: instant, local reads
-    // — MenuRepository/LocalDatabase, already hydrated by SyncEngine (§8
-    // Phase 1) — no network round trip needed for this picker list. Kept as
-    // a subscription (not a one-shot get) so a background sync landing
-    // while the meal editor is open (a colleague adding an ingredient
-    // elsewhere) updates the picker without needing to reopen the panel.
-    await _ingredientsSub?.cancel();
-    _ingredientsSub = _menuRepository.watchIngredients().listen((items) {
-      if (!mounted) return;
-      setState(() => _availableIngredients = items);
-    });
-    await _compoundsSub?.cancel();
-    _compoundsSub = _menuRepository.watchCompounds().listen((items) {
-      if (!mounted) return;
-      setState(() => _availableCompounds = items);
-    });
-    if (mounted) setState(() => _loadingAvailableItems = false);
   }
 
   _CalculationBuckets _parseCalculationBuckets(Map<String, dynamic> data) {
@@ -728,24 +502,6 @@ class _MenuManageScreenState extends State<MenuManageScreen> {
       }
     }
     return _CalculationBuckets(ingredients: ingredients, compounds: compounds);
-  }
-
-  List<Map<String, dynamic>> _extractDataList(dynamic raw) {
-    dynamic source = raw;
-    if (raw is Map<String, dynamic>) {
-      source = raw['data'] ?? raw['items'] ?? raw['results'] ?? const [];
-    }
-    if (source is Map<String, dynamic>) {
-      source =
-          source['items'] ?? source['results'] ?? source['data'] ?? const [];
-    }
-    if (source is List) {
-      return source
-          .whereType<Map>()
-          .map((e) => Map<String, dynamic>.from(e))
-          .toList();
-    }
-    return const <Map<String, dynamic>>[];
   }
 
   List<Map<String, dynamic>> get _filteredAvailableItems {
@@ -984,9 +740,7 @@ class _MenuManageScreenState extends State<MenuManageScreen> {
 
   @override
   void dispose() {
-    _categoriesSub?.cancel();
-    _ingredientsSub?.cancel();
-    _compoundsSub?.cancel();
+    _cubit.close();
     _nameCtrl.dispose();
     _nameEnCtrl.dispose();
     _nameRuCtrl.dispose();
@@ -1036,12 +790,10 @@ class _MenuManageScreenState extends State<MenuManageScreen> {
               color: colors.bgSecondary,
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(28, 24, 28, 24),
+                // No spinner: the meal is read synchronously from the replica,
+                // so the form is filled by the time this builds.
                 child: allowed
-                    ? (_isLoadingMeal
-                          ? const Center(
-                              child: CircularProgressIndicator.adaptive(),
-                            )
-                          : _formBody())
+                    ? _formBody()
                     : Center(
                         child: Container(
                           width: 520,
@@ -1266,22 +1018,11 @@ class _MenuManageScreenState extends State<MenuManageScreen> {
                 tilePadding: EdgeInsets.zero,
                 iconColor: colors.textSecondary,
                 collapsedIconColor: colors.textSecondary,
-                onExpansionChanged: _onItemsExpansionChanged,
                 title: Padding(
                   padding: const EdgeInsets.symmetric(vertical: 8),
                   child: Row(
                     children: [
                       const _SectionTitle('ITEMS'),
-                      const SizedBox(width: 10),
-                      if (_loadingItems)
-                        SizedBox(
-                          width: 14,
-                          height: 14,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: colors.textTertiary,
-                          ),
-                        ),
                     ],
                   ),
                 ),
@@ -1337,26 +1078,8 @@ class _MenuManageScreenState extends State<MenuManageScreen> {
   }
 
   Widget _buildItemsSectionContent(ThemeColors colors) {
-    final editId = _editMealId;
-    final waitingEditItems =
-        _isEditMode &&
-        editId != null &&
-        editId.isNotEmpty &&
-        !_itemsLoadedWithMeal &&
-        _loadingItems &&
-        _ingredientCalculations.isEmpty &&
-        _compoundCalculations.isEmpty;
-
-    if (waitingEditItems) {
-      return SizedBox(
-        height: 80,
-        child: Center(
-          child: CircularProgressIndicator.adaptive(
-            valueColor: AlwaysStoppedAnimation<Color>(colors.textTertiary),
-          ),
-        ),
-      );
-    }
+    // The "still fetching the composition" branch is gone with the fetch. An
+    // empty composition now means empty, not "not yet".
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1421,41 +1144,6 @@ class _MenuManageScreenState extends State<MenuManageScreen> {
             ),
           ),
           const SizedBox(height: 14),
-          if (_availableItemsError != null)
-            Container(
-              width: double.infinity,
-              margin: const EdgeInsets.only(bottom: 10),
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: colors.bgDefault,
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(
-                  color: colors.systemError.withOpacity(0.5),
-                ),
-              ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      _availableItemsError!,
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: colors.systemError,
-                      ),
-                    ),
-                  ),
-                  TextButton(
-                    onPressed: _loadingAvailableItems
-                        ? null
-                        : _fetchAvailableItemsFromApi,
-                    child: Text(
-                      'Reload',
-                      style: TextStyle(fontSize: 13, color: colors.textBrand),
-                    ),
-                  ),
-                ],
-              ),
-            ),
           Row(
             children: [
               _selectAllCheckbox(colors),
@@ -1473,7 +1161,7 @@ class _MenuManageScreenState extends State<MenuManageScreen> {
   Widget _addedItemsCard(ThemeColors colors) {
     final hasIngredients = _ingredientCalculations.isNotEmpty;
     final hasCompounds = _compoundCalculations.isNotEmpty;
-    final empty = !hasIngredients && !hasCompounds && !_loadingItems;
+    final empty = !hasIngredients && !hasCompounds;
     final totalItems =
         _ingredientCalculations.length + _compoundCalculations.length;
     final totalCost = _computeTotalCost();
@@ -1502,9 +1190,7 @@ class _MenuManageScreenState extends State<MenuManageScreen> {
               ),
               const Spacer(),
               TextButton.icon(
-                onPressed: _loadingItems
-                    ? null
-                    : () => _promptAddRow(
+                onPressed: () => _promptAddRow(
                         isIngredient:
                             _activeTab == _AvailableItemsTab.ingredients,
                       ),
@@ -1744,17 +1430,6 @@ class _MenuManageScreenState extends State<MenuManageScreen> {
   }
 
   Widget _availableItemsList(ThemeColors colors) {
-    if (_loadingAvailableItems && _filteredAvailableItems.isEmpty) {
-      return Container(
-        height: 240,
-        decoration: BoxDecoration(
-          color: colors.bgDefault,
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: colors.border),
-        ),
-        child: const Center(child: CircularProgressIndicator.adaptive()),
-      );
-    }
     final items = _filteredAvailableItems;
     if (items.isEmpty) {
       return Container(
@@ -2200,27 +1875,6 @@ class _MenuManageScreenState extends State<MenuManageScreen> {
 
   Widget _buildCategoryField() {
     final colors = context.colors;
-    if (_isLoadingCategories) {
-      return Container(
-        height: 40,
-        decoration: BoxDecoration(
-          color: colors.bgDefault,
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: colors.border),
-        ),
-        child: Center(
-          child: SizedBox(
-            width: 16,
-            height: 16,
-            child: CircularProgressIndicator(
-              strokeWidth: 2,
-              color: colors.textTertiary,
-            ),
-          ),
-        ),
-      );
-    }
-
     if (_categories.isEmpty) {
       return Container(
         height: 40,
@@ -2230,19 +1884,14 @@ class _MenuManageScreenState extends State<MenuManageScreen> {
           borderRadius: BorderRadius.circular(8),
           border: Border.all(color: colors.border),
         ),
+        // No reload button: categories are a local subscription, so "none"
+        // means none rather than "the fetch failed".
         child: Row(
           children: [
             Expanded(
               child: Text(
-                _categoriesError ?? 'Категории не найдены',
+                'Категории не найдены',
                 style: TextStyle(fontSize: 11, color: colors.systemError),
-              ),
-            ),
-            GestureDetector(
-              onTap: _loadCategories,
-              child: Text(
-                'Reload',
-                style: TextStyle(fontSize: 11, color: colors.textBrand),
               ),
             ),
           ],
@@ -2459,7 +2108,7 @@ class _MealImagePreview extends StatelessWidget {
     // live at the call site, so an image uploaded this session took a different
     // code path from every other image.
     return StreamBuilder<LocalImage>(
-      stream: inject<MenuRepository>().imageStream(ref),
+      stream: inject<LocalImageCache>().stream(ref),
       builder: (context, snap) {
         final image = snap.data;
         if (image == null || image.status == ImageStatus.loading) {

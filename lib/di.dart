@@ -18,6 +18,7 @@ import 'package:mary_ai_pos/core/database/local_database.dart';
 import 'package:mary_ai_pos/core/db/apply_change.dart' as replica;
 import 'package:mary_ai_pos/core/db/local_database.dart' as replica;
 import 'package:mary_ai_pos/core/db/local_database_factory.dart' as replica;
+import 'package:mary_ai_pos/core/media/local_image_cache.dart';
 import 'package:mary_ai_pos/core/outbox/local_writer.dart';
 import 'package:mary_ai_pos/core/outbox/outbox_drainer.dart';
 import 'package:mary_ai_pos/core/outbox/outbox_executor.dart';
@@ -54,6 +55,7 @@ import 'package:mary_ai_pos/features/view/main/domain/repository/menu_admin_loca
 import 'package:mary_ai_pos/features/view/main/domain/repository/users_local_repository.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/halls_tables/halls_tables_cubit.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/menu_admin/menu_goods_cubit.dart';
+import 'package:mary_ai_pos/features/view/main/presentation/cubit/menu_admin/menu_manage_cubit.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/users/users_cubit.dart';
 import 'package:mary_ai_pos/features/view/main/data/repository/menu_local_repository_impl.dart';
 import 'package:mary_ai_pos/features/view/main/data/repository/table_timer_local_repository_impl.dart';
@@ -360,6 +362,17 @@ void _repositories() {
   // Same shape for halls & tables. Note this deliberately does *not* replace
   // `TablesRepository`, which still serves the floor plan and waiter screens
   // from the Hive store — those move in their own commits, per screen.
+  // One image cache for the whole app: the widget that displays images and the
+  // repository that serves them must share a dedupe set, or the same bytes get
+  // fetched twice.
+  inject.registerLazySingleton<LocalImageCache>(
+    () => LocalImageCache(
+      watch: inject<LocalDatabase>().watchImage,
+      read: inject<LocalDatabase>().getImage,
+      write: inject<LocalDatabase>().saveImage,
+      fetch: MinioService.instance.getImageByObjectName,
+    ),
+  );
   inject.registerLazySingleton<MenuAdminLocalRepository>(
     () => MenuAdminLocalRepositoryImpl(
       inject<replica.LocalDatabase>(),
@@ -417,7 +430,7 @@ void _repositories() {
     () => TablesRepositoryImpl(localDb: inject<replica.LocalDatabase>()),
   );
   inject.registerLazySingleton<MenuRepository>(
-    () => MenuRepositoryImpl(localDb: inject()),
+    () => MenuRepositoryImpl(localDb: inject(), images: inject()),
   );
   // §8 Phase 5 (back-office tier) — read-only, see TransactionsRepository's
   // own class doc for what's deliberately not covered.
@@ -469,6 +482,7 @@ void _cubit() {
   inject.registerFactory(() => UsersCubit(inject()));
   inject.registerFactory(() => HallsTablesCubit(inject()));
   inject.registerFactory(() => MenuGoodsCubit(inject()));
+  inject.registerFactory(() => MenuManageCubit(inject()));
   inject.registerLazySingleton(
     () => ShiftBloc(
       prefs: inject(),
