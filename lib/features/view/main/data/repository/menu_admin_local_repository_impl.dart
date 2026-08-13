@@ -6,7 +6,6 @@ import 'package:mary_ai_pos/core/outbox/local_writer.dart';
 import 'package:mary_ai_pos/features/view/main/data/outbox/menu_admin_outbox.dart' show kOutboxHeadersKey;
 import 'package:mary_ai_pos/features/view/main/data/models/category/category_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/goods/goods_model.dart';
-import 'package:mary_ai_pos/features/view/main/domain/repository/local_write_result.dart';
 import 'package:mary_ai_pos/features/view/main/domain/repository/menu_admin_local_repository.dart';
 
 class MenuAdminLocalRepositoryImpl implements MenuAdminLocalRepository {
@@ -118,18 +117,18 @@ class MenuAdminLocalRepositoryImpl implements MenuAdminLocalRepository {
   // ── Writes ───────────────────────────────────────────────────────────
 
   @override
-  Either<Failure, LocalWriteResult> createCategory(String name) =>
+  Either<Failure, Unit> createCategory(String name) =>
       _guard(() {
-        _writer.enqueueOnly(
+        _writer.create(
           entity: 'categories',
-          action: 'create',
+          row: {'name': name},
           request: {'name': name},
         );
-        return LocalWriteResult.queued;
+        return unit;
       });
 
   @override
-  Either<Failure, LocalWriteResult> saveGood({
+  Either<Failure, Unit> saveGood({
     String? mealId,
     required Map<String, dynamic> body,
     Map<String, String> headers = const {},
@@ -139,12 +138,15 @@ class MenuAdminLocalRepositoryImpl implements MenuAdminLocalRepository {
             ? body
             : {...body, kOutboxHeadersKey: headers};
         if (mealId == null) {
-          _writer.enqueueOnly(
+          // The good's own columns land locally; `calculations` stays out of
+          // the row for the same reason an edit does — those are the server's
+          // rows, in their own table.
+          _writer.create(
             entity: 'goods',
-            action: 'create',
+            row: {...body}..remove('calculations'),
             request: request,
           );
-          return LocalWriteResult.queued;
+          return unit;
         }
         // Only the good's own columns go into the local row. `calculations` is
         // a nested list the endpoint unpacks into its own table; mirroring that
@@ -159,30 +161,29 @@ class MenuAdminLocalRepositoryImpl implements MenuAdminLocalRepository {
           row: row,
           request: request,
         );
-        return LocalWriteResult.applied;
+        return unit;
       });
 
   @override
-  Either<Failure, LocalWriteResult> deleteGood(String id) => _guard(() {
+  Either<Failure, Unit> deleteGood(String id) => _guard(() {
         _writer.delete(entity: 'goods', id: id);
-        return LocalWriteResult.applied;
+        return unit;
       });
 
   @override
-  Either<Failure, LocalWriteResult> createTranslation(
+  Either<Failure, Unit> createTranslation(
     Map<String, dynamic> body,
   ) =>
       _guard(() {
-        _writer.enqueueOnly(
-          entity: 'translations',
-          action: 'create',
-          request: body,
-        );
-        return LocalWriteResult.queued;
+        // Written locally under a provisional id, which a good referencing it
+        // can now carry: the drainer repoints that reference when the real id
+        // arrives. This is what unblocks D11.
+        _writer.create(entity: 'translations', row: body, request: body);
+        return unit;
       });
 
   @override
-  Either<Failure, LocalWriteResult> updateTranslation(
+  Either<Failure, Unit> updateTranslation(
     String id,
     Map<String, dynamic> body,
   ) =>
@@ -195,10 +196,10 @@ class MenuAdminLocalRepositoryImpl implements MenuAdminLocalRepository {
           row: {...existing, ...body, 'id': id},
           request: body,
         );
-        return LocalWriteResult.applied;
+        return unit;
       });
 
-  Either<Failure, LocalWriteResult> _guard(LocalWriteResult Function() body) {
+  Either<Failure, Unit> _guard(Unit Function() body) {
     try {
       return Right(body());
     } catch (e) {

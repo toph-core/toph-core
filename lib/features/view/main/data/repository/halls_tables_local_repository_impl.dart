@@ -6,7 +6,6 @@ import 'package:mary_ai_pos/core/outbox/local_writer.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/cafe_tables/cafe_tables_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/hall/hall_model.dart';
 import 'package:mary_ai_pos/features/view/main/domain/repository/halls_tables_local_repository.dart';
-import 'package:mary_ai_pos/features/view/main/domain/repository/local_write_result.dart';
 
 /// OFFLINE_FIRST_EVERYWHERE_PLAN.md Phase 4 — halls & tables settings, off the
 /// network on both sides.
@@ -42,45 +41,47 @@ class HallsTablesLocalRepositoryImpl implements HallsTablesLocalRepository {
   // ── Writes ───────────────────────────────────────────────────────────
 
   @override
-  Either<Failure, LocalWriteResult> createHall(Map<String, dynamic> body) =>
+  Either<Failure, Unit> createHall(Map<String, dynamic> body) =>
       _queueCreate(_halls, body);
 
   @override
-  Either<Failure, LocalWriteResult> updateHall(
+  Either<Failure, Unit> updateHall(
     String id,
     Map<String, dynamic> changes,
   ) =>
       _applyUpdate(_halls, id, changes);
 
   @override
-  Either<Failure, LocalWriteResult> deleteHall(String id) =>
+  Either<Failure, Unit> deleteHall(String id) =>
       _applyDelete(_halls, id);
 
   @override
-  Either<Failure, LocalWriteResult> createTable(Map<String, dynamic> body) =>
+  Either<Failure, Unit> createTable(Map<String, dynamic> body) =>
       _queueCreate(_tables, body);
 
   @override
-  Either<Failure, LocalWriteResult> updateTable(
+  Either<Failure, Unit> updateTable(
     String id,
     Map<String, dynamic> changes,
   ) =>
       _applyUpdate(_tables, id, changes);
 
   @override
-  Either<Failure, LocalWriteResult> deleteTable(String id) =>
+  Either<Failure, Unit> deleteTable(String id) =>
       _applyDelete(_tables, id);
 
-  Either<Failure, LocalWriteResult> _queueCreate(
+  Either<Failure, Unit> _queueCreate(
     String entity,
     Map<String, dynamic> body,
   ) =>
       _guard(() {
-        _writer.enqueueOnly(entity: entity, action: 'create', request: body);
-        return LocalWriteResult.queued;
+        // Appears immediately under a provisional id, which the drainer swaps
+        // for the server's once the create lands. See DECISIONS.md D1.
+        _writer.create(entity: entity, row: body, request: body);
+        return unit;
       });
 
-  Either<Failure, LocalWriteResult> _applyUpdate(
+  Either<Failure, Unit> _applyUpdate(
     String entity,
     String id,
     Map<String, dynamic> changes,
@@ -96,16 +97,16 @@ class HallsTablesLocalRepositoryImpl implements HallsTablesLocalRepository {
           row: {...existing, ...changes, 'id': id},
           request: changes,
         );
-        return LocalWriteResult.applied;
+        return unit;
       });
 
-  Either<Failure, LocalWriteResult> _applyDelete(String entity, String id) =>
+  Either<Failure, Unit> _applyDelete(String entity, String id) =>
       _guard(() {
         _writer.delete(entity: entity, id: id);
-        return LocalWriteResult.applied;
+        return unit;
       });
 
-  Either<Failure, LocalWriteResult> _guard(LocalWriteResult Function() body) {
+  Either<Failure, Unit> _guard(Unit Function() body) {
     try {
       return Right(body());
     } catch (e) {

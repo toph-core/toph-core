@@ -16,7 +16,6 @@ import 'package:mary_ai_pos/core/db/users_query.dart';
 import 'package:mary_ai_pos/core/outbox/local_writer.dart';
 import 'package:mary_ai_pos/core/outbox/outbox_store.dart';
 import 'package:mary_ai_pos/features/view/main/data/repository/users_local_repository_impl.dart';
-import 'package:mary_ai_pos/features/view/main/domain/repository/local_write_result.dart';
 import 'package:mary_ai_pos/features/view/main/domain/repository/users_local_repository.dart';
 
 void main() {
@@ -196,24 +195,30 @@ void main() {
       expect(outbox.pending().single.action, 'delete');
     });
 
-    test('create queues without inventing a local id', () {
+    test('a created user appears at once, with credentials left off disk', () {
+      // Was queued with no local row. Now the row lands under a provisional id
+      // — which made `password` a new problem: the create body is both the
+      // request and the row, and a plaintext credential must not end up in a
+      // table every staff screen can query. The registry redacts it.
       final result = repo.createUser({
-        'fullName': 'Yangi Xodim',
+        'full_name': 'Yangi Xodim',
         'username': 'yangi',
-        'password': 'secret',
         'role': 'waiter',
+        'branch_id': 'b-1',
+        'password': 'hunter2',
+        'pincode': '1234',
       });
 
-      // Queued, and honest about it: the register endpoint assigns the id, so
-      // a locally-invented row would become a second identity for one person.
-      expect(result.getOrElse(() => LocalWriteResult.applied),
-          LocalWriteResult.queued);
-      expect(query.page(limit: 20, offset: 0).total, 0);
+      expect(result.isRight(), isTrue);
 
       final op = outbox.pending().single;
-      expect(op.action, 'create');
-      expect(op.entityId, isNull);
-      expect(op.payload['username'], 'yangi');
+      final row = db.byId('users', op.entityId!)!;
+      expect(row['full_name'], 'Yangi Xodim');
+      expect(row.containsKey('password'), isFalse);
+      expect(row.containsKey('pincode'), isFalse);
+      // The credential still has to reach the server, so it is in the queued
+      // payload — a narrower exposure than a column, but not nothing.
+      expect(op.payload['password'], 'hunter2');
     });
   });
 

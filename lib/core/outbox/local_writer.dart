@@ -63,6 +63,48 @@ class LocalWriter {
     });
   }
 
+  /// Creates a row under a client-invented id that the server will replace.
+  ///
+  /// Every create endpoint except `CreateOrder` assigns its own id. Until this
+  /// existed, that left one bad choice and one worse one: invent an id anyway
+  /// and end up with two rows for one thing when replication delivers the
+  /// server's, or queue the create with no local row and have the operator
+  /// watch nothing happen.
+  ///
+  /// So the row is written under a provisional id and *marked* as provisional.
+  /// When the create's response comes back, the drainer swaps it for the real
+  /// row and rewrites anything still queued that referenced the old id. The
+  /// operator sees their row immediately; the id underneath it changes once,
+  /// invisibly, and only ever before the row has been sent anywhere else.
+  ///
+  /// Returns the provisional id.
+  String create({
+    required String entity,
+    required Map<String, dynamic> row,
+    Map<String, dynamic>? request,
+    String? id,
+    String? operationId,
+  }) {
+    final localId = id ?? generateUuidV4();
+    final opId = operationId ?? generateUuidV4();
+    _db.transaction(() {
+      _applier.applyLocalWrite(
+        entity: entity,
+        id: localId,
+        payload: {...row, 'id': localId},
+      );
+      _db.markProvisional(entity, localId);
+      _outbox.enqueue(
+        id: opId,
+        entity: entity,
+        action: 'create',
+        entityId: localId,
+        payload: request ?? row,
+      );
+    });
+    return localId;
+  }
+
   /// Removes a row locally and queues the delete.
   ///
   /// The row goes immediately — the operator asked for it gone, so it is gone

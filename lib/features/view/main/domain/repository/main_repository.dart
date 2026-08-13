@@ -120,7 +120,7 @@ abstract class MainRepository {
 
   Future<Either<Failure, bool>> deleteTransaction(String id);
 
-  Future<Either<Failure, bool>> createUser(Map<String, dynamic> body);
+  Future<Either<Failure, Map<String, dynamic>>> createUser(Map<String, dynamic> body);
 
   Future<Either<Failure, bool>> updateUser(String id, Map<String, dynamic> body);
 
@@ -128,17 +128,17 @@ abstract class MainRepository {
 
   Future<Either<Failure, bool>> deleteHall(String id);
 
-  Future<Either<Failure, bool>> createHall(Map<String, dynamic> body);
+  Future<Either<Failure, Map<String, dynamic>>> createHall(Map<String, dynamic> body);
 
   Future<Either<Failure, bool>> updateHall(String id, Map<String, dynamic> body);
 
-  Future<Either<Failure, bool>> createTable(Map<String, dynamic> body);
+  Future<Either<Failure, Map<String, dynamic>>> createTable(Map<String, dynamic> body);
 
   Future<Either<Failure, bool>> updateTable(String id, Map<String, dynamic> body);
 
   Future<Either<Failure, bool>> deleteTable(String id);
 
-  Future<Either<Failure, bool>> createCategory(String name);
+  Future<Either<Failure, Map<String, dynamic>>> createCategory(String name);
 
   Future<Either<Failure, Map<String, dynamic>>> searchGoodsAdmin({
     required int limit,
@@ -165,7 +165,7 @@ abstract class MainRepository {
     Map<String, dynamic> body,
   );
 
-  Future<Either<Failure, bool>> saveGoodWithCalculations({
+  Future<Either<Failure, Map<String, dynamic>>> saveGoodWithCalculations({
     String? mealId,
     required Map<String, dynamic> body,
     Map<String, String>? headers,

@@ -45,10 +45,14 @@ void registerMenuAdminOutboxHandlers(
     OutboxHandler(
       send: (op) async {
         final parts = _split(op.payload);
-        return _resultOf(await remote.saveGoodWithCalculations(
+        final result = await remote.saveGoodWithCalculations(
           body: parts.body,
           headers: parts.headers,
-        ));
+        );
+        return result.fold(
+          _outcome,
+          (row) => OutboxExecutionResult.succeeded(serverRow: row),
+        );
       },
     ),
   );
@@ -59,11 +63,15 @@ void registerMenuAdminOutboxHandlers(
     OutboxHandler(
       send: (op) => _withId(op, (id) async {
         final parts = _split(op.payload);
-        return _resultOf(await remote.saveGoodWithCalculations(
+        final result = await remote.saveGoodWithCalculations(
           mealId: id,
           body: parts.body,
           headers: parts.headers,
-        ));
+        );
+        return result.fold(
+          _outcome,
+          (_) => const OutboxExecutionResult.succeeded(),
+        );
       }),
     ),
   );
@@ -95,7 +103,10 @@ void registerMenuAdminOutboxHandlers(
             'category create without a name',
           );
         }
-        return _resultOf(await remote.createCategory(name));
+        return (await remote.createCategory(name)).fold(
+          _outcome,
+          (row) => OutboxExecutionResult.succeeded(serverRow: row),
+        );
       },
     ),
   );

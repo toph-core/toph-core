@@ -22,9 +22,14 @@ void registerUsersOutboxHandlers(
   executors.register(
     'users',
     'create',
+    // The response carries the id the server assigned; the drainer swaps it
+    // for the provisional one the row was written under.
     OutboxHandler(send: (op) async {
       final result = await remote.createUser(op.payload);
-      return _resultOf(result);
+      return result.fold(
+        _outcome,
+        (row) => OutboxExecutionResult.succeeded(serverRow: row),
+      );
     }),
   );
 

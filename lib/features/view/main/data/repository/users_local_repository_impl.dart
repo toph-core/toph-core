@@ -3,7 +3,6 @@ import 'package:mary_ai_pos/core/db/local_database.dart';
 import 'package:mary_ai_pos/core/db/users_query.dart';
 import 'package:mary_ai_pos/core/error/failure.dart';
 import 'package:mary_ai_pos/core/outbox/local_writer.dart';
-import 'package:mary_ai_pos/features/view/main/domain/repository/local_write_result.dart';
 import 'package:mary_ai_pos/features/view/main/domain/repository/users_local_repository.dart';
 
 /// OFFLINE_FIRST_EVERYWHERE_PLAN.md Phase 4 — the staff screen, read and write,
@@ -43,21 +42,19 @@ class UsersLocalRepositoryImpl implements UsersLocalRepository {
       _users.page(limit: limit, offset: offset, search: search, role: role);
 
   @override
-  Either<Failure, LocalWriteResult> createUser(Map<String, dynamic> body) {
+  Either<Failure, Unit> createUser(Map<String, dynamic> body) {
     return _guard(() {
-      // No local row: the register endpoint assigns the id. See the interface
-      // for why inventing one here would be worse than the delay.
-      _writer.enqueueOnly(
-        entity: _entity,
-        action: 'create',
-        request: body,
-      );
-      return LocalWriteResult.queued;
+      // The register endpoint assigns the id, so the row goes in under a
+      // provisional one and the drainer swaps it when the response arrives.
+      // Credentials are in `body` for the server but never reach the local
+      // row — the registry redacts them on the way in.
+      _writer.create(entity: _entity, row: body, request: body);
+      return unit;
     });
   }
 
   @override
-  Either<Failure, LocalWriteResult> updateUser(
+  Either<Failure, Unit> updateUser(
     String id,
     Map<String, dynamic> changes,
   ) {
@@ -77,22 +74,22 @@ class UsersLocalRepositoryImpl implements UsersLocalRepository {
         row: row,
         request: changes,
       );
-      return LocalWriteResult.applied;
+      return unit;
     });
   }
 
   @override
-  Either<Failure, LocalWriteResult> deleteUser(String id) {
+  Either<Failure, Unit> deleteUser(String id) {
     return _guard(() {
       _writer.delete(entity: _entity, id: id);
-      return LocalWriteResult.applied;
+      return unit;
     });
   }
 
   /// A local write can still fail — a malformed row, a disk error. What it can
   /// no longer be is a connection failure, so the message says what happened
   /// rather than telling the operator to check the network.
-  Either<Failure, LocalWriteResult> _guard(LocalWriteResult Function() body) {
+  Either<Failure, Unit> _guard(Unit Function() body) {
     try {
       return Right(body());
     } catch (e) {

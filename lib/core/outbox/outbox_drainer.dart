@@ -145,6 +145,12 @@ class OutboxDrainer {
         // replication may correct it from here on.
         _db.clearPending(op.entity, entityId);
       }
+      if (entityId != null &&
+          entityId.isNotEmpty &&
+          _db.isProvisional(op.entity, entityId)) {
+        _reconcile(op, entityId, serverRow);
+        return;
+      }
       if (serverRow != null) {
         _applier.applyOne(
           entity: op.entity,
@@ -154,6 +160,57 @@ class OutboxDrainer {
         );
       }
     });
+  }
+
+  /// Replaces a provisional row with the server's, and repoints anything still
+  /// queued that referred to it.
+  ///
+  /// Runs inside `_succeed`'s transaction: the old row's removal, the new row's
+  /// arrival and the reference rewrite are one atomic step, so there is no
+  /// instant where a queued operation points at a row that no longer exists.
+  void _reconcile(
+    OutboxOperation op,
+    String provisionalId,
+    Map<String, dynamic>? serverRow,
+  ) {
+    // Unwrap before anything else: the id and the row have to come from the
+    // same place, or the envelope gets stored as the row.
+    final row = _rowOf(serverRow);
+    final serverId = row?['id'] as String?;
+
+    if (serverId == null || serverId.isEmpty) {
+      // The endpoint did not tell us the id it assigned. The local row is a
+      // fabrication we can no longer justify keeping: replication will deliver
+      // the server's version under its own id, and leaving this one would put
+      // two rows on screen for one thing. Dropping it costs the operator a
+      // brief disappearance and costs the data nothing — the write succeeded.
+      _db.deleteRow(op.entity, provisionalId);
+      _db.clearProvisional(op.entity, provisionalId);
+      return;
+    }
+
+    if (serverId != provisionalId) {
+      _db.deleteRow(op.entity, provisionalId);
+      _store.rewriteReferences(oldId: provisionalId, newId: serverId);
+    }
+    _db.clearProvisional(op.entity, provisionalId);
+    _applier.applyOne(
+      entity: op.entity,
+      action: 'update',
+      entityId: serverId,
+      payload: row!,
+    );
+  }
+
+  /// The created row out of a create response, which is either the row itself
+  /// or the row under a `data` envelope.
+  static Map<String, dynamic>? _rowOf(Map<String, dynamic>? response) {
+    if (response == null) return null;
+    final direct = response['id'];
+    if (direct is String && direct.isNotEmpty) return response;
+    final data = response['data'];
+    if (data is Map) return Map<String, dynamic>.from(data);
+    return null;
   }
 
   void _fail(OutboxOperation op, String error, {required bool permanent}) {

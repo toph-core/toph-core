@@ -6,7 +6,6 @@ import 'package:mary_ai_pos/core/error/failure.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/cafe_tables/cafe_tables_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/hall/hall_model.dart';
 import 'package:mary_ai_pos/features/view/main/domain/repository/halls_tables_local_repository.dart';
-import 'package:mary_ai_pos/features/view/main/domain/repository/local_write_result.dart';
 
 /// OFFLINE_FIRST_EVERYWHERE_PLAN.md §7 — one cubit for the halls list and the
 /// selected hall's floor plan, so neither the section nor the detail view
@@ -117,19 +116,14 @@ class HallsTablesCubit extends Cubit<HallsTablesState> {
 
   /// Runs a write and reports whether it was accepted locally. Synchronous
   /// throughout — a floor-plan drag never waits on anything.
-  bool _apply(Either<Failure, LocalWriteResult> Function() write) {
+  bool _apply(Either<Failure, Unit> Function() write) {
     return write().fold(
       (failure) {
         emit(state.copyWith(error: failure.toString(), notice: null));
         return false;
       },
-      (outcome) {
-        emit(state.copyWith(
-          error: null,
-          notice: outcome == LocalWriteResult.queued
-              ? 'Navbatga qo\'yildi — sinxronlashtirilgach ro\'yxatda ko\'rinadi.'
-              : null,
-        ));
+      (_) {
+        emit(state.copyWith(error: null));
         return true;
       },
     );

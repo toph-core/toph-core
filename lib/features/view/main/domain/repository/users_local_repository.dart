@@ -1,6 +1,5 @@
 import 'package:dartz/dartz.dart';
 import 'package:mary_ai_pos/core/error/failure.dart';
-import 'package:mary_ai_pos/features/view/main/domain/repository/local_write_result.dart';
 
 /// One page of the admin staff list, already filtered, sorted and counted.
 typedef UsersPage = ({List<Map<String, dynamic>> items, int total});
@@ -50,7 +49,7 @@ abstract class UsersLocalRepository {
   /// than success — the screen says so instead of appearing to have done
   /// nothing. When §5.4's client-supplied ids land for `users`, this becomes an
   /// ordinary local write and the distinction disappears.
-  Either<Failure, LocalWriteResult> createUser(Map<String, dynamic> body);
+  Either<Failure, Unit> createUser(Map<String, dynamic> body);
 
   /// Applies [changes] to the local row and queues the `PUT`.
   ///
@@ -60,7 +59,7 @@ abstract class UsersLocalRepository {
   /// sent but never stored — `PayloadNormalizer` drops the registry's
   /// `redactKeys` on the way to disk, which is exactly the split
   /// `LocalWriter`'s separate `row` and `request` exist for.
-  Either<Failure, LocalWriteResult> updateUser(
+  Either<Failure, Unit> updateUser(
     String id,
     Map<String, dynamic> changes,
   );
@@ -68,5 +67,5 @@ abstract class UsersLocalRepository {
   /// Removes the row locally and queues the `DELETE`. The row goes immediately;
   /// if the server refuses, quarantine releases the guard and replication
   /// brings it back — visibly, with the reason in the quarantine list.
-  Either<Failure, LocalWriteResult> deleteUser(String id);
+  Either<Failure, Unit> deleteUser(String id);
 }

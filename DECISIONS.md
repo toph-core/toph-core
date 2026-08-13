@@ -30,7 +30,19 @@ against the one the create response returns. The first is preferable; the second
 is entirely client-side if the first is refused. Screen code is unaffected either
 way — the choice lives in the repository and drainer, so revisiting is cheap.
 
-**Status.** Open. `LocalWriteResult.queued` is reachable only because of this.
+**Status.** **Closed** — by the client route, after checking the first. The
+swagger spec confirms none of the create endpoints accept an `id`:
+`RegisterRequest`, `CreateHallRequest`, `CreateCafeTableRequest`,
+`CreateCategoryRequest`, `CreateGoodRequest` and `CreateTranslationRequest` all
+omit it. So the backend option did not exist to take.
+
+Creates now write a row under a provisional id, marked as such, and the drainer
+swaps it for the server's when the response arrives — deleting the stand-in,
+applying the real row, and rewriting every *pending* outbox reference to the old
+id. `LocalWriteResult` is gone with the asymmetry it described.
+
+A backend that accepted client ids would still be better: it would delete this
+machinery rather than justify it. But it is no longer blocking anything.
 
 ---
 
@@ -202,9 +214,10 @@ as success. This is D1 again, in a harder form: the id is load-bearing for a
 **Cost.** A brand-new meal with translations needs a connection. It needed one
 before too, so this is not a regression — only a clearer failure.
 
-**What changes it.** Same as D1, plus: the outbox would need to rewrite a queued
-payload once a dependency's real id arrived. That is a genuine feature, not a
-tweak.
+**What changes it.** ~~The outbox would need to rewrite a queued payload once a
+dependency's real id arrived.~~ **Done** — that is exactly what
+`OutboxStore.rewriteReferences` does, so a meal can reference a translation that
+has not been created yet. The editor's refusal is removed.
 
 ---
 
@@ -226,3 +239,37 @@ write needs different context.
 
 **Nearly missed.** `_scopeHeaders` showed up as an unused-element warning after
 the rewire. Treating that as dead code would have dropped the headers silently.
+
+---
+
+## D13 — References are rewritten by whole-value match, pending ops only
+
+**Fork.** When a provisional id becomes real, anything queued that referenced it
+has to be repointed. How much to touch?
+
+**Chosen.** Whole string values, recursively, in `pending` operations only.
+
+**Why.** A substring replace would corrupt a description that merely quoted an
+id — ids are UUIDs and appear in free text. And an operation already sent cannot
+be amended, while a quarantined one is waiting on a human who needs to see what
+was actually attempted, not a tidied version of it.
+
+**Cost.** An operation that referenced a provisional id and was quarantined
+before the create landed keeps a stale reference. It is visible in quarantine,
+which is the right place for it.
+
+---
+
+## D14 — `password` joins the users redaction list
+
+**Found by.** Switching staff creates to write a local row. The create body is
+both the request and the row, and `redactKeys` covered `hash_password` and
+`pincode` but not `password` — so the plaintext credential from the create form
+would have landed in a table every staff screen can query.
+
+**Chosen.** Redact it. The row keeps everything else.
+
+**Still open.** The credential travels in the outbox payload, because a create
+queued offline has to carry it to send later. That is narrower than a column in
+`users` — one row, drained and deleted — but it is not nothing, and offline
+staff creation deserves a second look before it reaches a venue.

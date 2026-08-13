@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/category/category_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/goods/goods_model.dart';
-import 'package:mary_ai_pos/features/view/main/domain/repository/local_write_result.dart';
 import 'package:mary_ai_pos/features/view/main/domain/repository/menu_admin_local_repository.dart';
 
 /// OFFLINE_FIRST_EVERYWHERE_PLAN.md §7 — the menu list screen's data.
@@ -18,7 +17,6 @@ class MenuGoodsState {
   final int page;
   final String? categoryId;
   final String search;
-  final String? notice;
 
   const MenuGoodsState({
     this.categories = const [],
@@ -27,7 +25,6 @@ class MenuGoodsState {
     this.page = 1,
     this.categoryId,
     this.search = '',
-    this.notice,
   });
 
   MenuGoodsState copyWith({
@@ -37,7 +34,6 @@ class MenuGoodsState {
     int? page,
     Object? categoryId = _sentinel,
     String? search,
-    Object? notice = _sentinel,
   }) =>
       MenuGoodsState(
         categories: categories ?? this.categories,
@@ -48,7 +44,6 @@ class MenuGoodsState {
             ? this.categoryId
             : categoryId as String?,
         search: search ?? this.search,
-        notice: identical(notice, _sentinel) ? this.notice : notice as String?,
       );
 
   static const _sentinel = Object();
@@ -123,18 +118,7 @@ class MenuGoodsCubit extends Cubit<MenuGoodsState> {
   int get total => state.total;
 
   bool createCategory(String name) =>
-      _repository.createCategory(name).fold((_) => false, (outcome) {
-        emit(state.copyWith(
-          notice: outcome == LocalWriteResult.queued
-              ? 'Navbatga qo\'yildi — sinxronlashtirilgach ro\'yxatda ko\'rinadi.'
-              : null,
-        ));
-        return true;
-      });
-
-  void acknowledge() {
-    if (state.notice != null) emit(state.copyWith(notice: null));
-  }
+      _repository.createCategory(name).fold((_) => false, (_) => true);
 
   @override
   Future<void> close() {

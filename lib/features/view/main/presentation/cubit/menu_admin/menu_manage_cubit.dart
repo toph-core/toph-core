@@ -4,7 +4,6 @@ import 'package:dartz/dartz.dart';
 import 'package:mary_ai_pos/core/error/failure.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/category/category_model.dart';
-import 'package:mary_ai_pos/features/view/main/domain/repository/local_write_result.dart';
 import 'package:mary_ai_pos/features/view/main/domain/repository/menu_admin_local_repository.dart';
 
 /// OFFLINE_FIRST_EVERYWHERE_PLAN.md §7 — the meal editor's data.
@@ -94,19 +93,14 @@ class MenuManageCubit extends Cubit<MenuManageState> {
   bool updateTranslation(String id, Map<String, dynamic> body) =>
       _apply(() => _repository.updateTranslation(id, body));
 
-  bool _apply(Either<Failure, LocalWriteResult> Function() write) {
+  bool _apply(Either<Failure, Unit> Function() write) {
     return write().fold(
       (failure) {
         emit(state.copyWith(error: failure.toString(), notice: null));
         return false;
       },
-      (outcome) {
-        emit(state.copyWith(
-          error: null,
-          notice: outcome == LocalWriteResult.queued
-              ? 'Navbatga qo\'yildi — sinxronlashtirilgach ro\'yxatda ko\'rinadi.'
-              : null,
-        ));
+      (_) {
+        emit(state.copyWith(error: null));
         return true;
       },
     );

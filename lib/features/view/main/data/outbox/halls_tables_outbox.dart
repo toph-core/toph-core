@@ -33,7 +33,7 @@ void registerHallsTablesOutboxHandlers(
   );
 }
 
-typedef _Create = Future<Either<Failure, bool>> Function(
+typedef _Create = Future<Either<Failure, Map<String, dynamic>>> Function(
     Map<String, dynamic> body);
 typedef _Update = Future<Either<Failure, bool>> Function(
     String id, Map<String, dynamic> body);
@@ -49,7 +49,9 @@ void _registerCrud(
   executors.register(
     entity,
     'create',
-    OutboxHandler(send: (op) async => _resultOf(await create(op.payload))),
+    // The response carries the id the server assigned, which the drainer swaps
+    // for the provisional one the row was written under.
+    OutboxHandler(send: (op) async => _created(await create(op.payload))),
   );
 
   executors.register(
@@ -110,6 +112,14 @@ Future<OutboxExecutionResult> _withId(
   }
   return send(id);
 }
+
+/// A create's result, keeping the response so the row's real id can be
+/// recovered from it.
+OutboxExecutionResult _created(Either<Failure, Map<String, dynamic>> result) =>
+    result.fold(
+      _outcome,
+      (row) => OutboxExecutionResult.succeeded(serverRow: row),
+    );
 
 OutboxExecutionResult _resultOf(Either<Failure, bool> result) =>
     result.fold(_outcome, (_) => const OutboxExecutionResult.succeeded());

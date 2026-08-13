@@ -20,6 +20,13 @@ import 'package:mary_ai_pos/features/view/main/data/models/shift/shift_response_
 import 'package:mary_ai_pos/features/view/main/domain/entities/archive_detail_entity.dart';
 
 
+/// Normalizes a response body to a map. Endpoints return the created row
+/// either bare or under a `data` envelope, and some return nothing at all —
+/// callers that need the assigned id handle an empty map, they do not crash on
+/// one.
+Map<String, dynamic> _asMap(dynamic raw) =>
+    raw is Map ? Map<String, dynamic>.from(raw) : const {};
+
 abstract class MainDataSources {
   /// All tables across every hall. The per-hall read that used to sit beside
   /// this is gone — the halls & tables screen reads `cafe_tables` from the
@@ -160,7 +167,7 @@ abstract class MainDataSources {
   Future<Either<Failure, bool>> deleteTransaction(String id);
 
   /// `POST /api/v1/auth/register` — creates a new staff account.
-  Future<Either<Failure, bool>> createUser(Map<String, dynamic> body);
+  Future<Either<Failure, Map<String, dynamic>>> createUser(Map<String, dynamic> body);
 
   /// `PUT /api/v1/users/{id}`.
   Future<Either<Failure, bool>> updateUser(String id, Map<String, dynamic> body);
@@ -172,13 +179,13 @@ abstract class MainDataSources {
   Future<Either<Failure, bool>> deleteHall(String id);
 
   /// `POST /api/v1/halls`.
-  Future<Either<Failure, bool>> createHall(Map<String, dynamic> body);
+  Future<Either<Failure, Map<String, dynamic>>> createHall(Map<String, dynamic> body);
 
   /// `PUT /api/v1/halls/{id}`.
   Future<Either<Failure, bool>> updateHall(String id, Map<String, dynamic> body);
 
   /// `POST /api/v1/cafe-tables`.
-  Future<Either<Failure, bool>> createTable(Map<String, dynamic> body);
+  Future<Either<Failure, Map<String, dynamic>>> createTable(Map<String, dynamic> body);
 
   /// `PUT /api/v1/cafe-tables/{id}` — used both for a full edit and for a
   /// position-only move (caller builds the full payload either way; the
@@ -189,7 +196,7 @@ abstract class MainDataSources {
   Future<Either<Failure, bool>> deleteTable(String id);
 
   /// `POST /api/v1/categories`.
-  Future<Either<Failure, bool>> createCategory(String name);
+  Future<Either<Failure, Map<String, dynamic>>> createCategory(String name);
 
   /// `GET /api/v1/goods` with admin-facing pagination/search/category
   /// filters — kept as a raw decoded response (not a parsed `List<GoodsModel>`)
@@ -239,7 +246,7 @@ abstract class MainDataSources {
 
   /// `POST`/`PUT /api/v1/goods/with-calculations[/{id}]` — [mealId] null
   /// means create, non-null means update.
-  Future<Either<Failure, bool>> saveGoodWithCalculations({
+  Future<Either<Failure, Map<String, dynamic>>> saveGoodWithCalculations({
     String? mealId,
     required Map<String, dynamic> body,
     Map<String, String>? headers,
@@ -1159,10 +1166,10 @@ class MainDataSourcesImpl implements MainDataSources {
   }
 
   @override
-  Future<Either<Failure, bool>> createUser(Map<String, dynamic> body) async {
+  Future<Either<Failure, Map<String, dynamic>>> createUser(Map<String, dynamic> body) async {
     try {
-      await _client.post(ListAPI.authRegister, data: body);
-      return const Right(true);
+      final response = await _client.post(ListAPI.authRegister, data: body);
+      return Right(_asMap(response.data));
     } on DioException catch (exception) {
       return Left(handleDioException(exception));
     } catch (e, st) {
@@ -1214,10 +1221,10 @@ class MainDataSourcesImpl implements MainDataSources {
   }
 
   @override
-  Future<Either<Failure, bool>> createHall(Map<String, dynamic> body) async {
+  Future<Either<Failure, Map<String, dynamic>>> createHall(Map<String, dynamic> body) async {
     try {
-      await _client.post(ListAPI.halls, data: body);
-      return const Right(true);
+      final response = await _client.post(ListAPI.halls, data: body);
+      return Right(_asMap(response.data));
     } on DioException catch (exception) {
       return Left(handleDioException(exception));
     } catch (e, st) {
@@ -1243,10 +1250,10 @@ class MainDataSourcesImpl implements MainDataSources {
   }
 
   @override
-  Future<Either<Failure, bool>> createTable(Map<String, dynamic> body) async {
+  Future<Either<Failure, Map<String, dynamic>>> createTable(Map<String, dynamic> body) async {
     try {
-      await _client.post(ListAPI.cafeTables, data: body);
-      return const Right(true);
+      final response = await _client.post(ListAPI.cafeTables, data: body);
+      return Right(_asMap(response.data));
     } on DioException catch (exception) {
       return Left(handleDioException(exception));
     } catch (e, st) {
@@ -1285,10 +1292,11 @@ class MainDataSourcesImpl implements MainDataSources {
   }
 
   @override
-  Future<Either<Failure, bool>> createCategory(String name) async {
+  Future<Either<Failure, Map<String, dynamic>>> createCategory(String name) async {
     try {
-      await _client.post(ListAPI.categories, data: {'name': name});
-      return const Right(true);
+      final response =
+          await _client.post(ListAPI.categories, data: {'name': name});
+      return Right(_asMap(response.data));
     } on DioException catch (exception) {
       return Left(handleDioException(exception));
     } catch (e, st) {
@@ -1423,26 +1431,24 @@ class MainDataSourcesImpl implements MainDataSources {
   }
 
   @override
-  Future<Either<Failure, bool>> saveGoodWithCalculations({
+  Future<Either<Failure, Map<String, dynamic>>> saveGoodWithCalculations({
     String? mealId,
     required Map<String, dynamic> body,
     Map<String, String>? headers,
   }) async {
     try {
-      if (mealId != null) {
-        await _client.put(
-          ListAPI.goodWithCalculationsById(mealId),
-          data: body,
-          headers: headers,
-        );
-      } else {
-        await _client.post(
-          ListAPI.goodsWithCalculations,
-          data: body,
-          headers: headers,
-        );
-      }
-      return const Right(true);
+      final response = mealId != null
+          ? await _client.put(
+              ListAPI.goodWithCalculationsById(mealId),
+              data: body,
+              headers: headers,
+            )
+          : await _client.post(
+              ListAPI.goodsWithCalculations,
+              data: body,
+              headers: headers,
+            );
+      return Right(_asMap(response.data));
     } on DioException catch (exception) {
       return Left(handleDioException(exception));
     } catch (e, st) {

@@ -21,14 +21,17 @@ import 'package:mary_ai_pos/features/view/main/domain/repository/main_repository
 /// this large interface is a `noSuchMethod` forwarder that would throw if the
 /// handlers ever reached for it — which is itself part of what is asserted.
 class _FakeMainRepository implements MainRepository {
-  Either<Failure, bool> createResult = const Right(true);
+  Either<Failure, Map<String, dynamic>> createResult =
+      const Right({'id': 'server-1'});
   Either<Failure, bool> updateResult = const Right(true);
   Either<Failure, bool> deleteResult = const Right(true);
 
   final calls = <String>[];
 
   @override
-  Future<Either<Failure, bool>> createUser(Map<String, dynamic> body) async {
+  Future<Either<Failure, Map<String, dynamic>>> createUser(
+    Map<String, dynamic> body,
+  ) async {
     calls.add('create');
     return createResult;
   }
@@ -49,7 +52,7 @@ class _FakeMainRepository implements MainRepository {
   }
 
   @override
-  Future<Either<Failure, bool>> createHall(Map<String, dynamic> body) async {
+  Future<Either<Failure, Map<String, dynamic>>> createHall(Map<String, dynamic> body) async {
     calls.add('createHall');
     return createResult;
   }
@@ -70,7 +73,7 @@ class _FakeMainRepository implements MainRepository {
   }
 
   @override
-  Future<Either<Failure, bool>> createTable(Map<String, dynamic> body) async {
+  Future<Either<Failure, Map<String, dynamic>>> createTable(Map<String, dynamic> body) async {
     calls.add('createTable');
     return createResult;
   }

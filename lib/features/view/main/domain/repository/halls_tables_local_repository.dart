@@ -2,7 +2,6 @@ import 'package:dartz/dartz.dart';
 import 'package:mary_ai_pos/core/error/failure.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/cafe_tables/cafe_tables_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/hall/hall_model.dart';
-import 'package:mary_ai_pos/features/view/main/domain/repository/local_write_result.dart';
 
 /// OFFLINE_FIRST_EVERYWHERE_PLAN.md Phase 4 — the halls & tables settings
 /// screen's whole data surface, with no network call on either side.
@@ -22,17 +21,17 @@ abstract class HallsTablesLocalRepository {
   /// inventing one locally would leave a ghost beside the server's row when
   /// replication delivered it. Same trade, and same follow-up, as
   /// `UsersLocalRepository.createUser`.
-  Either<Failure, LocalWriteResult> createHall(Map<String, dynamic> body);
+  Either<Failure, Unit> createHall(Map<String, dynamic> body);
 
-  Either<Failure, LocalWriteResult> updateHall(
+  Either<Failure, Unit> updateHall(
     String id,
     Map<String, dynamic> changes,
   );
 
-  Either<Failure, LocalWriteResult> deleteHall(String id);
+  Either<Failure, Unit> deleteHall(String id);
 
   /// Queues a new table. Same server-assigned-id caveat as [createHall].
-  Either<Failure, LocalWriteResult> createTable(Map<String, dynamic> body);
+  Either<Failure, Unit> createTable(Map<String, dynamic> body);
 
   /// Applies [changes] to the table locally and queues the `PUT`.
   ///
@@ -41,10 +40,10 @@ abstract class HallsTablesLocalRepository {
   /// durable queued send, which is the whole point: a moved table stays moved
   /// across a restart, and a floor plan rearranged with the venue's uplink down
   /// is not lost work.
-  Either<Failure, LocalWriteResult> updateTable(
+  Either<Failure, Unit> updateTable(
     String id,
     Map<String, dynamic> changes,
   );
 
-  Either<Failure, LocalWriteResult> deleteTable(String id);
+  Either<Failure, Unit> deleteTable(String id);
 }

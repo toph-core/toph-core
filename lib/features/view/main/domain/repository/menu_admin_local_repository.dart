@@ -2,7 +2,6 @@ import 'package:dartz/dartz.dart';
 import 'package:mary_ai_pos/core/error/failure.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/category/category_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/goods/goods_model.dart';
-import 'package:mary_ai_pos/features/view/main/domain/repository/local_write_result.dart';
 
 /// One page of the admin goods list, with the count the paginator needs.
 typedef GoodsPage = ({List<GoodsModel> items, int total});
@@ -58,7 +57,7 @@ abstract class MenuAdminLocalRepository {
   /// Every translation row, keyed as the editor wants them.
   List<Map<String, dynamic>> translations();
 
-  Either<Failure, LocalWriteResult> createCategory(String name);
+  Either<Failure, Unit> createCategory(String name);
 
   /// Saves a good and its calculation rows as one operation.
   ///
@@ -71,17 +70,17 @@ abstract class MenuAdminLocalRepository {
   /// to the scope of whoever made it — not whoever happens to be logged in when
   /// the network comes back. Any queued write with request context has this
   /// problem; this is the first one that has any.
-  Either<Failure, LocalWriteResult> saveGood({
+  Either<Failure, Unit> saveGood({
     String? mealId,
     required Map<String, dynamic> body,
     Map<String, String> headers = const {},
   });
 
-  Either<Failure, LocalWriteResult> deleteGood(String id);
+  Either<Failure, Unit> deleteGood(String id);
 
-  Either<Failure, LocalWriteResult> createTranslation(Map<String, dynamic> body);
+  Either<Failure, Unit> createTranslation(Map<String, dynamic> body);
 
-  Either<Failure, LocalWriteResult> updateTranslation(
+  Either<Failure, Unit> updateTranslation(
     String id,
     Map<String, dynamic> body,
   );

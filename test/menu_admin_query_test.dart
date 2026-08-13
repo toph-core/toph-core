@@ -15,7 +15,6 @@ import 'package:mary_ai_pos/core/db/payload_normalizer.dart';
 import 'package:mary_ai_pos/core/outbox/local_writer.dart';
 import 'package:mary_ai_pos/core/outbox/outbox_store.dart';
 import 'package:mary_ai_pos/features/view/main/data/repository/menu_admin_local_repository_impl.dart';
-import 'package:mary_ai_pos/features/view/main/domain/repository/local_write_result.dart';
 import 'package:mary_ai_pos/features/view/main/domain/repository/menu_admin_local_repository.dart';
 
 void main() {
@@ -164,8 +163,7 @@ void main() {
 
       final result = repo.saveGood(mealId: 'g-1', body: {'name': 'Osh (yangi)'});
 
-      expect(result.getOrElse(() => LocalWriteResult.queued),
-          LocalWriteResult.applied);
+      expect(result.isRight(), isTrue);
       expect(repo.searchGoods(limit: 20, offset: 0).items.single.name,
           'Osh (yangi)');
       expect(outbox.pending().single.action, 'update');
@@ -188,13 +186,24 @@ void main() {
       expect(outbox.pending().single.payload['calculations'], hasLength(1));
     });
 
-    test('creating a good queues without inventing an id', () {
-      final result = repo.saveGood(body: {'name': 'Yangi taom'});
+    test('a created good appears at once, under a provisional id', () {
+      final result = repo.saveGood(body: {
+        'name': 'Yangi taom',
+        'category_id': 'c-1',
+        'branch_id': 'b-1',
+        'cook_time': 10,
+        'description': '',
+        'price': 1000,
+        'cost_price': 500,
+        'profit': 500,
+        'profit_margin': 50,
+      });
 
-      expect(result.getOrElse(() => LocalWriteResult.applied),
-          LocalWriteResult.queued);
-      expect(repo.searchGoods(limit: 20, offset: 0).items, isEmpty);
-      expect(outbox.pending().single.entityId, isNull);
+      expect(result.isRight(), isTrue);
+      expect(repo.searchGoods(limit: 20, offset: 0).items.single.name,
+          'Yangi taom');
+      expect(db.isProvisional('goods', outbox.pending().single.entityId!),
+          isTrue);
     });
 
     test('deleting a good removes it and guards it against a pull', () {
@@ -333,8 +342,7 @@ void main() {
       final result =
           repo.updateTranslation('t-1', {'en': 'Plov', 'ru': 'Плов', 'uz': 'Osh'});
 
-      expect(result.getOrElse(() => LocalWriteResult.queued),
-          LocalWriteResult.applied);
+      expect(result.isRight(), isTrue);
       expect(db.byId('translations', 't-1')!['en'], 'Plov');
     });
 
@@ -349,16 +357,17 @@ void main() {
       expect(row['uz'], 'Osh');
     });
 
-    test('a new translation queues, so its id cannot be referenced yet', () {
-      // Why the editor refuses to save a meal that needs a brand-new
-      // translation offline: `good.name_i18n` is a reference to this row's id,
-      // and there is no id until the server answers. Saving anyway would drop
-      // the translations silently.
-      final result = repo.createTranslation({'en': 'New', 'ru': 'Новый', 'uz': 'Yangi'});
+    test('a new translation gets a provisional id a good can reference', () {
+      // This is what unblocks D11. The translation has a local id immediately,
+      // so a meal saved in the same breath can point `name_i18n` at it; the
+      // drainer repoints that reference when the real id arrives.
+      final result =
+          repo.createTranslation({'en': 'New', 'ru': 'Новый', 'uz': 'Yangi'});
 
-      expect(result.getOrElse(() => LocalWriteResult.applied),
-          LocalWriteResult.queued);
-      expect(outbox.pending().single.entityId, isNull);
+      expect(result.isRight(), isTrue);
+      final localId = outbox.pending().single.entityId!;
+      expect(db.byId('translations', localId)!['en'], 'New');
+      expect(db.isProvisional('translations', localId), isTrue);
     });
   });
 

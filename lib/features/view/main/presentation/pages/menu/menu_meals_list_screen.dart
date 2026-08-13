@@ -134,13 +134,9 @@ class _MenuMealsListScreenState extends State<MenuMealsListScreen> {
                 }
                 return BlocProvider<MenuGoodsCubit>.value(
                   value: _cubit,
-                  child: BlocConsumer<MenuGoodsCubit, MenuGoodsState>(
-                    listenWhen: (a, b) =>
-                        a.notice != b.notice && b.notice != null,
-                    listener: (context, state) {
-                      showInfoMessage(context, state.notice!);
-                      _cubit.acknowledge();
-                    },
+                  // No "queued" notice any more: a created category appears
+                  // in the list immediately, under a provisional id.
+                  child: BlocBuilder<MenuGoodsCubit, MenuGoodsState>(
                     builder: (context, goodsState) => Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [

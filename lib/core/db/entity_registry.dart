@@ -117,7 +117,18 @@ class LocalTables {
   /// — the two kinds of truth stay separable instead of fighting over one row.
   static const tableStatus = '_table_status';
 
-  static const all = {meta, outbox, pending, tableStatus};
+  /// Rows created locally under a client-invented id that the server has not
+  /// yet replaced with its own.
+  ///
+  /// Only some creates need this. An order carries the id its terminal invents,
+  /// because the backend accepts a client-supplied order id and returns the
+  /// existing order when it already knows one. Every other create endpoint
+  /// assigns the id itself, so the local row is a stand-in until the response
+  /// arrives — and the two cases are indistinguishable from the operation
+  /// alone, which is why it is recorded rather than inferred.
+  static const provisional = '_provisional';
+
+  static const all = {meta, outbox, pending, tableStatus, provisional};
 
   const LocalTables._();
 }
@@ -377,7 +388,17 @@ const List<EntitySpec> kReplicatedEntities = [
       PromotedColumn('branch_id', SqlType.text, indexed: true),
       PromotedColumn('is_active', SqlType.integer),
     ],
-    redactKeys: {'hash_password', 'pincode'},
+    // `password` joins the list now that a staff create writes a local row.
+    // The feed never carries it — this guards the *write* side: the create
+    // form's body is the request and the row, and a plaintext credential must
+    // not end up in a table every staff screen can query.
+    //
+    // It still travels in the outbox payload, because a create queued offline
+    // has to carry the credential to send later. That is a narrower exposure
+    // (one row, drained and deleted) than a column in `users`, but it is not
+    // nothing, and it is the reason offline staff creation is worth a second
+    // look before it ships to a venue.
+    redactKeys: {'hash_password', 'pincode', 'password'},
   ),
 ];
 

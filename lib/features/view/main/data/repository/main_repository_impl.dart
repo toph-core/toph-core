@@ -277,7 +277,7 @@ class MainRepositoryImpl implements MainRepository {
       _dataSources.deleteTransaction(id);
 
   @override
-  Future<Either<Failure, bool>> createUser(Map<String, dynamic> body) =>
+  Future<Either<Failure, Map<String, dynamic>>> createUser(Map<String, dynamic> body) =>
       _dataSources.createUser(body);
 
   @override
@@ -293,7 +293,7 @@ class MainRepositoryImpl implements MainRepository {
       _dataSources.deleteHall(id);
 
   @override
-  Future<Either<Failure, bool>> createHall(Map<String, dynamic> body) =>
+  Future<Either<Failure, Map<String, dynamic>>> createHall(Map<String, dynamic> body) =>
       _dataSources.createHall(body);
 
   @override
@@ -301,7 +301,7 @@ class MainRepositoryImpl implements MainRepository {
       _dataSources.updateHall(id, body);
 
   @override
-  Future<Either<Failure, bool>> createTable(Map<String, dynamic> body) =>
+  Future<Either<Failure, Map<String, dynamic>>> createTable(Map<String, dynamic> body) =>
       _dataSources.createTable(body);
 
   @override
@@ -313,7 +313,7 @@ class MainRepositoryImpl implements MainRepository {
       _dataSources.deleteTable(id);
 
   @override
-  Future<Either<Failure, bool>> createCategory(String name) =>
+  Future<Either<Failure, Map<String, dynamic>>> createCategory(String name) =>
       _dataSources.createCategory(name);
 
   @override
@@ -358,7 +358,7 @@ class MainRepositoryImpl implements MainRepository {
   ) => _dataSources.updateTranslation(id, body);
 
   @override
-  Future<Either<Failure, bool>> saveGoodWithCalculations({
+  Future<Either<Failure, Map<String, dynamic>>> saveGoodWithCalculations({
     String? mealId,
     required Map<String, dynamic> body,
     Map<String, String>? headers,

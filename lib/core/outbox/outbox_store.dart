@@ -90,6 +90,89 @@ class OutboxStore {
   }
 
   /// Every pending operation, ready or backing off — for queue-depth display.
+  /// Replaces every reference to [oldId] with [newId] across operations that
+  /// have not been sent.
+  ///
+  /// This is what makes a provisional id safe to reference before the server
+  /// has spoken. A meal queued with `name_i18n` pointing at a locally-invented
+  /// translation id is rewritten the moment that translation's real id arrives,
+  /// so the server receives a body that points at a row it knows about.
+  ///
+  /// The match is on whole string values rather than a substring replace: ids
+  /// are UUIDs, and a substring pass would happily corrupt a description that
+  /// merely quoted one.
+  ///
+  /// Only `pending` rows are touched. An operation already sent cannot be
+  /// amended, and a quarantined one is waiting on a human who should see what
+  /// was actually attempted.
+  int rewriteReferences({required String oldId, required String newId}) {
+    if (oldId == newId || oldId.isEmpty) return 0;
+    final rows = _db.select(
+      'SELECT id, entity_id, payload FROM ${LocalTables.outbox} '
+      'WHERE status = ?',
+      [OutboxStatus.pending.name],
+    );
+    var changed = 0;
+    for (final row in rows) {
+      final id = row['id'] as String;
+      final entityId = row['entity_id'] as String?;
+      final decoded = _decodePayload(row['payload'] as String?);
+      final rewritten = _replaceIds(decoded, oldId, newId);
+      final newEntityId = entityId == oldId ? newId : entityId;
+
+      final payloadChanged = !identical(rewritten, decoded);
+      if (!payloadChanged && newEntityId == entityId) continue;
+
+      _db.executeOn(
+        LocalTables.outbox,
+        'UPDATE ${LocalTables.outbox} SET entity_id = ?, payload = ? '
+        'WHERE id = ?',
+        [newEntityId, jsonEncode(rewritten), id],
+      );
+      changed++;
+    }
+    return changed;
+  }
+
+  Map<String, dynamic> _decodePayload(String? raw) {
+    if (raw == null || raw.isEmpty) return const {};
+    try {
+      final decoded = jsonDecode(raw);
+      return decoded is Map<String, dynamic> ? decoded : const {};
+    } catch (_) {
+      return const {};
+    }
+  }
+
+  /// Returns the same instance when nothing matched, so callers can skip a
+  /// write with `identical`.
+  static Object? _replaceIds(Object? node, String oldId, String newId) {
+    if (node is String) return node == oldId ? newId : node;
+    if (node is List) {
+      List<Object?>? copy;
+      for (var i = 0; i < node.length; i++) {
+        final replaced = _replaceIds(node[i], oldId, newId);
+        if (!identical(replaced, node[i])) {
+          copy ??= List<Object?>.from(node);
+          copy[i] = replaced;
+        }
+      }
+      return copy ?? node;
+    }
+    if (node is Map) {
+      Map<String, dynamic>? copy;
+      for (final entry in node.entries) {
+        final replaced = _replaceIds(entry.value, oldId, newId);
+        if (!identical(replaced, entry.value)) {
+          copy ??= Map<String, dynamic>.from(node);
+          copy[entry.key.toString()] = replaced;
+        }
+      }
+      return copy ?? node;
+    }
+    return node;
+  }
+
   List<OutboxOperation> pending({int limit = 500}) {
     final rows = _db.select(
       'SELECT * FROM ${LocalTables.outbox} WHERE status = ? '

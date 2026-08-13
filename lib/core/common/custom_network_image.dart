@@ -9,7 +9,6 @@ import 'package:mary_ai_pos/core/extension/for_context.dart';
 import 'package:mary_ai_pos/core/extension/widget_extension.dart';
 import 'package:mary_ai_pos/core/values/app_assets.dart';
 import 'package:mary_ai_pos/di.dart';
-import 'package:mary_ai_pos/features/view/main/domain/repository/menu_repository.dart';
 
 class CustomCachedNetworkImage extends StatelessWidget {
   final String? imageUrl;

@@ -17,7 +17,6 @@ import 'package:mary_ai_pos/core/outbox/outbox_store.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/cafe_tables/cafe_tables_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/repository/halls_tables_local_repository_impl.dart';
 import 'package:mary_ai_pos/features/view/main/domain/repository/halls_tables_local_repository.dart';
-import 'package:mary_ai_pos/features/view/main/domain/repository/local_write_result.dart';
 
 void main() {
   late LocalDatabase db;
@@ -162,15 +161,29 @@ void main() {
       expect(outbox.pending().single.action, 'delete');
     });
 
-    test('creates queue without inventing an id', () {
-      expect(
-        repo.createTable({'hall_id': 'h-1', 'number': 7}).getOrElse(
-          () => LocalWriteResult.applied,
-        ),
-        LocalWriteResult.queued,
-      );
-      expect(repo.getTablesForHall('h-1'), isEmpty);
-      expect(outbox.pending().single.entityId, isNull);
+    test('a created table appears at once, under a provisional id', () {
+      // Was: queued with no local row, because the endpoint assigns the id.
+      // Now the row goes in under a stand-in that the drainer swaps for the
+      // server's — see DECISIONS.md D1.
+      final result = repo.createTable({
+        'hall_id': 'h-1',
+        'number': 7,
+        'capacity': 4,
+        'pos_x': 0,
+        'pos_y': 0,
+        'width': 80,
+        'height': 80,
+        'rotation': 0,
+      });
+
+      expect(result.isRight(), isTrue);
+      expect(repo.getTablesForHall('h-1').single.number, 7);
+
+      final op = outbox.pending().single;
+      expect(op.action, 'create');
+      expect(db.isProvisional('cafe_tables', op.entityId!), isTrue);
+      expect(op.payload.containsKey('id'), isFalse,
+          reason: 'the server assigns it; ours would be noise');
     });
   });
 

@@ -62,7 +62,7 @@ class LocalDatabase {
   LocalDatabase._(this._db);
 
   /// Current schema version. Bump when [_migrate] gains a step.
-  static const schemaVersion = 2;
+  static const schemaVersion = 3;
 
   /// Opens the database at [path], creating and migrating the schema.
   /// Pass `:memory:` for tests.
@@ -127,6 +127,16 @@ class LocalDatabase {
         entity_id TEXT NOT NULL,
         since     INTEGER NOT NULL,
         PRIMARY KEY (entity, entity_id)
+      )
+    ''');
+
+    // Rows waiting for the server to tell us their real id.
+    _db.execute('''
+      CREATE TABLE IF NOT EXISTS ${LocalTables.provisional} (
+        entity   TEXT NOT NULL,
+        local_id TEXT NOT NULL,
+        since    INTEGER NOT NULL,
+        PRIMARY KEY (entity, local_id)
       )
     ''');
 
@@ -408,6 +418,33 @@ class LocalDatabase {
     );
   }
 
+  // ── Provisional ids ────────────────────────────────────────────────────
+
+  /// Marks [localId] as a client-invented stand-in for a server-assigned id.
+  void markProvisional(String entity, String localId) {
+    _db.execute(
+      'INSERT OR REPLACE INTO ${LocalTables.provisional} '
+      '(entity, local_id, since) VALUES (?, ?, ?)',
+      [entity, localId, DateTime.now().millisecondsSinceEpoch],
+    );
+  }
+
+  bool isProvisional(String entity, String localId) => _db
+      .select(
+        'SELECT 1 FROM ${LocalTables.provisional} '
+        'WHERE entity = ? AND local_id = ? LIMIT 1',
+        [entity, localId],
+      )
+      .isNotEmpty;
+
+  void clearProvisional(String entity, String localId) {
+    _db.execute(
+      'DELETE FROM ${LocalTables.provisional} '
+      'WHERE entity = ? AND local_id = ?',
+      [entity, localId],
+    );
+  }
+
   // ── Local-write guard ──────────────────────────────────────────────────
 
   /// Marks a row as locally modified and not yet confirmed by the server.
@@ -479,7 +516,17 @@ class LocalDatabase {
   /// belonging to a different tenant must never be replayed into this one.
   void clearAll() {
     transaction(() {
-      // Local-authority table occupancy. Never written by replication, never
+      // Rows waiting for the server to tell us their real id.
+    _db.execute('''
+      CREATE TABLE IF NOT EXISTS ${LocalTables.provisional} (
+        entity   TEXT NOT NULL,
+        local_id TEXT NOT NULL,
+        since    INTEGER NOT NULL,
+        PRIMARY KEY (entity, local_id)
+      )
+    ''');
+
+    // Local-authority table occupancy. Never written by replication, never
     // read from the feed — see [LocalTables.tableStatus].
     _db.execute('''
       CREATE TABLE IF NOT EXISTS ${LocalTables.tableStatus} (
@@ -503,6 +550,16 @@ class LocalDatabase {
   /// Row counts per replicated table — for the sync-status screen and tests.
   Map<String, int> tableCounts() {
     final out = <String, int>{};
+    // Rows waiting for the server to tell us their real id.
+    _db.execute('''
+      CREATE TABLE IF NOT EXISTS ${LocalTables.provisional} (
+        entity   TEXT NOT NULL,
+        local_id TEXT NOT NULL,
+        since    INTEGER NOT NULL,
+        PRIMARY KEY (entity, local_id)
+      )
+    ''');
+
     // Local-authority table occupancy. Never written by replication, never
     // read from the feed — see [LocalTables.tableStatus].
     _db.execute('''
