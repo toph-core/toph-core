@@ -25,6 +25,10 @@ they arise: production `change_log` volume (open question 6), and whether one
 tenant schema is expected to hold more than one branch (P0-4, which sets that
 item's priority). Everything else here is read, not inferred.
 
+**P0-1 has since been implemented and tested** — see its STATUS line. Building it
+corrected one more claim (`printer_settings`) and answered the question that was
+blocking its backfill; section 7 lists what moved.
+
 ---
 
 ## 1. The contract the client now depends on
@@ -131,18 +135,21 @@ work offline and still call REST directly.
 | `goods_modifiers` | Which modifiers a good offers | `id UUID`, `deleted_at BIGINT`. Same screen. |
 | `transactions` | Cash ledger screen | `id UUID`, `deleted_at BIGINT`. |
 | `group_transactions` | Grouped / cross-branch transfers | `id UUID`, `deleted_at BIGINT`. Takes the slot `transaction_category` wrongly occupied. |
-| `printer_settings` | Printer configuration screen | **Singleton.** `id SMALLINT PRIMARY KEY DEFAULT 1 CHECK (id = 1)`, and **no `deleted_at`**. Its `entity_id` will be the string `"1"`, not a UUID. |
+| `printer_settings` | Printer configuration screen | `id UUID`, `deleted_at BIGINT`. **Correction, second pass:** an earlier draft called this a `SMALLINT` singleton with no `deleted_at`. That was migration 36. Migration 38 (`38_recreate_printer_settings.up.sql`) drops the table and recreates it as an ordinary multi-row UUID table — one row per printer, with `ip`, `port`, `type` and `connected_entity_ids`. Nothing special. |
 | `cash_registers` | Register picker, shift assignment | `id UUID`, `deleted_at BIGINT`. |
 | `cash_register_shifts` | Shift reconciliation | `id UUID`, `deleted_at BIGINT`. |
 
 **VERIFY — all three answered.**
 
-- **Primary key.** Seven of the eight are `id UUID`. `printer_settings` is a
-  `SMALLINT` singleton, but `log_change` takes the PK column name as `TG_ARGV[0]`
-  and reads it out of the JSON payload, so `log_change('id')` works there too and
-  yields `entity_id = "1"`. A non-`id` PK is already precedented:
-  `bill_daily_counters` uses `log_change('day')`. **The client must not assume
-  `entity_id` parses as a UUID** — this is the one place that breaks it.
+- **Primary key.** All eight are `id UUID`, so `log_change('id')` applies
+  uniformly and every `entity_id` these triggers produce is a UUID string. The
+  earlier claim that `printer_settings` was the exception came from reading
+  migration 36 without noticing that 38 supersedes it. **The client still must
+  not assume `entity_id` parses as a UUID**, but the reason is elsewhere in the
+  feed, not here: `log_change` takes the PK column name as `TG_ARGV[0]`, and
+  `bill_daily_counters` already uses `log_change('day')` — its `entity_id` is a
+  date string. That table is in the feed today, so the constraint is live
+  regardless of this migration.
 - **Hard deletes.** All eight except `printer_settings` carry
   `deleted_at BIGINT DEFAULT 0`, so ordinary deletion is soft and arrives as an
   update, which the client already handles. But four of them sit behind
@@ -192,18 +199,61 @@ CREATE TRIGGER trg_change_log_cash_register_shifts  AFTER INSERT OR UPDATE OR DE
 The `.down.sql` is the eight `DROP TRIGGER IF EXISTS` lines alone.
 
 **Note on existing rows.** A trigger only logs changes from the moment it exists.
-The eight tables' current contents will never appear in the feed until each row
+The eight tables' current contents would never appear in the feed until each row
 is next touched, so a client bootstrapping from cursor 0 gets nothing for them.
-Either seed the log once after the migration — `INSERT INTO change_log(brand_id,
-entity, action, entity_id, payload) SELECT brand_id-or-NULL, 'modifiers',
-'create', id::text, to_jsonb(t) FROM modifiers t` per table — or make P2-1's
-snapshot endpoint the answer and accept that the tables are empty on the client
-until first edit. **The seed is the cheap one and should ship in the same
-migration.** I did not include it above because the `brand_id` value to use
-depends on the answer to open question 1.
+The fix is to seed one `create` per live row in the same migration, and the
+`brand_id` question that blocked it in the last revision is now answered.
 
-**Acceptance.** For each table: make a change, then confirm a `/sync/pull` from a
-cursor before it returns the row, and that a fresh client bootstrap includes it.
+`log_change` reads the session GUC `app.brand_id`, which is set per request in
+`withTenantRead`/`withTenantWrite` (`internal/service/tenant_read.go:33`,
+`tenant_mutation.go:82`) to the brand **slug**, not a UUID. Migrations run with
+no such GUC — but they do run with `search_path` bound to the tenant schema, and
+that schema is always `tenant_<brand_id>` (`migrate.go`'s `validTenantSchema`,
+`^tenant_[a-z0-9_]+$`). So the slug is recoverable from `current_schema()`
+without knowing anything about how pull filters:
+
+```sql
+CASE WHEN left(current_schema(), 7) = 'tenant_'
+     THEN substring(current_schema() FROM 8) END
+```
+
+which yields NULL for any schema not of that shape — the same value `log_change`
+already writes outside a request context. This makes the seed independent of
+open question 1 rather than blocked on it.
+
+Two details the seed has to get right, both verified by running it:
+
+- **Order parents before children** — `modifiers` before `goods_modifiers`,
+  `cash_registers` before `cash_register_shifts`, `group_transactions` before
+  `transactions` — so a client applying the feed in cursor order never sees a
+  child row ahead of its parent.
+- **Skip soft-deleted rows** (`WHERE deleted_at = 0`). A bootstrapping client
+  never knew about them, and later deletions still arrive as ordinary trigger
+  updates.
+
+**STATUS: written and tested.** `70_change_log_missing_triggers.{up,down}.sql`,
+on `claude/change-log-missing-triggers` in `mary-ai-backend`. Not merged.
+
+**Acceptance — run, not just specified.** Migrations 1–69 were replayed into a
+scratch Postgres 16 schema `tenant_testbrand`, rows were inserted into all eight
+tables *before* migration 70, and then 70 was applied. Results:
+
+- The backfill produced exactly one `create` per live row across all eight
+  entities, with `brand_id = 'testbrand'` — correctly derived from the schema
+  name — and parent-first cursor ordering.
+- A soft-deleted `modifiers` row was correctly skipped.
+- Post-migration: `INSERT` → `create`, `UPDATE` → `update`, soft delete
+  (`UPDATE deleted_at`) → `update`, hard `DELETE` → `delete`.
+- **The cascade claim above is confirmed, not assumed.** Deleting a
+  `cash_registers` row logged its own `delete` *and* a `delete` for the
+  `cash_register_shifts` row that cascaded from it.
+- With no `app.brand_id` set (the cron path), the insert succeeds and lands
+  `brand_id` NULL rather than erroring — the caveat above, reproduced.
+- The `.down.sql` drops exactly the eight new triggers, leaves the 34
+  pre-existing ones untouched, and preserves every `change_log` row.
+
+Still unverified because it needs a real deployment: that a client `/sync/pull`
+from a cursor below the backfill actually renders these entities.
 
 **Client payoff.** Four screens migrate; `main_datasources.dart` — the last file
 in the client that speaks HTTP — can then be deleted, along with the Hive store
@@ -346,8 +396,20 @@ the branch is a property of the payload rather than of the log row. Two ways:
 
 - **Add `branch_id` to `change_log`** and have `log_change` populate it from
   `current_setting('app.branch_id', true)` the same way it does brand. Cleanest,
-  needs the GUC to be set wherever `app.brand_id` already is, and needs a
-  backfill decision for historical rows.
+  and **the GUC plumbing already exists** — checked while implementing P0-1:
+  `withTenantRead` and `withTenantWrite` already issue
+  `SET LOCAL app.branch_id = $1` immediately after `app.brand_id`
+  (`tenant_read.go:38`, `tenant_read.go:80`, `tenant_mutation.go:88`), and
+  several generated queries already read it back as
+  `NULLIF(current_setting('app.branch_id', true), '')::uuid` (`shipments.sql.go`,
+  `reports.sql.go`). So `log_change` can populate a `branch_id` column today with
+  no middleware change at all. Two caveats: the GUC is set only when the token
+  carries a branch (`if strings.TrimSpace(branchID) != ""`), so brand-scoped
+  admin calls still land NULL; and `cron.go:71` sets `search_path` only, so
+  background jobs land NULL too. Historical rows also need a backfill decision.
+  Note that NULL is *also* the correct value for genuinely branch-less reference
+  data, so the pull predicate has to keep an `IS NULL` escape hatch either way —
+  the column does not remove that, it just makes it indexable.
 - **Filter on the payload** — `WHERE payload->>'branch_id' = $2 OR payload->>'branch_id' IS NULL`.
   No schema change, but unindexed, and the `IS NULL` escape hatch has to stay
   because branch-less entities (goods, categories, translations, modifiers) must
@@ -596,14 +658,34 @@ All but one, from `mary-ai-backend@3533b8b`.
 
 ---
 
-## 7. What changed in this revision
+## 7. What changed, by revision
 
-For anyone who read the first version:
+**Third pass — implementing P0-1.** Written while actually building the
+migration and running it against a scratch Postgres, which is why these are
+corrections to the *second* pass rather than to the original:
+
+- **`printer_settings` is an ordinary UUID table, not a `SMALLINT` singleton.**
+  The second pass read migration 36 and did not notice that migration 38 drops
+  that table and recreates it — multi-row, UUID PK, with `deleted_at`. So all
+  eight tables are uniform, `entity_id` is a UUID for all eight, and the special
+  case the plan warned about does not exist. The client-side rule survives for a
+  different reason: `bill_daily_counters` logs under `log_change('day')`.
+- **The seed's `brand_id` is no longer blocked on open question 1.** The tenant
+  schema is always `tenant_<brand_id>`, so the slug comes out of
+  `current_schema()`. The seed shipped in the same migration, as the second pass
+  recommended it should.
+- **The cascade behaviour is now demonstrated rather than argued.** Deleting a
+  `cash_registers` row logs both its own delete and the cascaded
+  `cash_register_shifts` delete.
+- **P0-4's cheaper half is cheaper than stated.** The `app.branch_id` GUC is
+  already set on every tenant transaction and already read by other queries, so
+  adding `branch_id` to `change_log` needs no middleware work.
+
+**Second pass — verification against `mary-ai-backend@3533b8b`:**
 
 - **P0-3 went from "verify" to "confirmed live."** Bare `BIGSERIAL`, no lag.
 - **P0-1's table was wrong in one row.** `transaction_category` is an enum, not a
-  table; `group_transactions` takes its place. `printer_settings` is a smallint
-  singleton whose `entity_id` is `"1"` — the client must not assume UUIDs.
+  table; `group_transactions` takes its place.
 - **P0-1 gained a step I had missed**: triggers do not backfill, so the eight
   tables stay empty on a bootstrapping client until each row is next touched
   unless the migration seeds `change_log`.
