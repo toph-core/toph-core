@@ -25,9 +25,10 @@ they arise: production `change_log` volume (open question 6), and whether one
 tenant schema is expected to hold more than one branch (P0-4, which sets that
 item's priority). Everything else here is read, not inferred.
 
-**P0-1 has since been implemented and tested** — see its STATUS line. Building it
-corrected one more claim (`printer_settings`) and answered the question that was
-blocking its backfill; section 7 lists what moved.
+**P0-1 and P0-0 have since been implemented and tested** — see their STATUS
+lines. Building them corrected three more claims and turned up the largest
+finding in this document: **the sync endpoints returned 500 to every caller**, so
+the feed this entire plan is about was not running. Section 7 lists what moved.
 
 ---
 
@@ -81,10 +82,14 @@ recommendation I originally gave turns out to be backwards.
 
 ## 2. Findings
 
-### The change feed exists and is used
-`/sync/pull` and `/sync/change-logs` are implemented and the client replicates 36
-entities through them today. This plan is not about building a sync engine; it is
-about closing specific gaps in one that works.
+### The change feed exists — but it does not run
+**CORRECTED, third pass.** `/sync/pull` and `/sync/change-logs` are implemented,
+and the client is built to replicate 36 entities through them. But all three sync
+endpoints returned 500 to every caller: see **P0-0**. The original sentence here
+— "the client replicates 36 entities through them today" — was inferred from the
+client calling pull, never from the server answering it. This plan is still not
+about building a sync engine; it is about closing gaps in one that was written
+but never actually served a request.
 
 ### `/sync/push` exists, is implemented, and the client never calls it
 It is not a generic upsert and not a stub. It takes a batch, accepts a
@@ -110,6 +115,61 @@ consumer of this feed.
 ## 3. Work
 
 Ordered by what unblocks the most, with correctness ahead of features.
+
+### P0-0 — The sync endpoints had no transaction and returned 500 to everyone
+
+**Found while implementing P0-3. It outranks everything else in this document,
+and it invalidates the premise of §2's first finding.** `/sync/pull`,
+`/sync/push` and `/sync/change-logs` all returned
+`tenant transaction not found in context`. Not for some callers or some tenants
+— for every call, deterministically.
+
+**Cause.** A half-finished refactor. `TenantMiddleware` used to open the tenant
+transaction and set `search_path`; it no longer does, and says so itself:
+
+> Note: DB transaction and search_path are NOT set here. They should be managed
+> at service/repository layer where actual queries execute.
+
+Since then every handler needing a transaction has had to call `BeginTenantTx`
+itself — `handler/order.go` does, in three places. The three sync handlers were
+never migrated. They kept forwarding `c.Request().Context()` straight to the
+service, while `SyncS` kept reading its transaction out of that context and
+refusing to run without one (`service/sync.go:52`, `:138`, `:214`).
+
+Nothing caught it because nothing exercised these endpoints: the `handler`
+package had no tests at all.
+
+**This corrects §2.** "The change feed exists and is used… the client
+replicates 36 entities through them today" was inferred from the client calling
+`/sync/pull`, never from the server answering. The endpoint was there, the query
+was there, and the response never came.
+
+**Change.** Wire all three handlers the way `order.go` does: `BeginTenantTx`,
+deferred `Rollback`, explicit `Commit`. The commit matters most on push, where
+it is what makes the client's writes durable — without it the deferred rollback
+discards the whole batch.
+
+**STATUS: fixed and tested.** `internal/handler/sync.go` plus
+`internal/handler/sync_tx_test.go`, on `claude/change-log-missing-triggers` in
+`mary-ai-backend`. Not merged.
+
+**Acceptance — run.** Against a real Postgres with migrations 1–70 applied and
+five seeded entities: the old path errors, the new path returns
+`next_sync_cursor=5` with all five entities, `modifiers`, `cash_registers` and
+`printer_settings` among them — so P0-1 and P0-0 are verified together. The new
+handler tests need no database: they stub `service.I`, and assert each handler
+opens a transaction, passes the service a context carrying it, commits it, and
+does not call the service at all when the transaction cannot be opened.
+Reverting the fix fails them.
+
+**What this means for everything below.** P0-3 is a silent-data-loss bug in a
+feed that was not running. It is still real and still has to be fixed, but it
+was never losing production data, because there was no production feed. The same
+goes for P0-4's volume argument and for P0-2's exposure: **credentials were not
+actually reaching terminals through pull**, because nothing reached terminals
+through pull. P0-2 stays P0 — the payload is still unfiltered and
+`/sync/change-logs` still returns it verbatim — but it becomes a live exposure
+the moment P0-0 ships, rather than one that has already happened.
 
 ### P0-1 — Change-log triggers for eight tables
 
@@ -337,20 +397,63 @@ transaction holds its `change_log` rows invisible for as long as it runs while
 faster transactions commit past it. Orders and payments are the longest
 transactions in this system.
 
-**Change.** Options, cheapest first:
+**Change. CORRECTED — both options the previous revision proposed are wrong,
+and I worked that out before writing either of them.**
 
-- **Safety lag.** Add `committed_at timestamptz default clock_timestamp()` and
-  return only rows with `committed_at < now() - interval '2 seconds'`. Trivial,
-  probabilistic, and adds a fixed latency to every change. Adequate if
-  transactions are short.
-- **Snapshot horizon.** Record `pg_snapshot_xmin(pg_current_snapshot())` and
-  return only rows whose `xmin` is below the oldest transaction that was in
-  flight. Correct rather than probabilistic; needs care but is the standard fix.
-- **Logical replication.** Correct by construction and a much larger change. Only
-  if the feed becomes load-bearing beyond this app.
+**The safety lag does not do what its name says.**
+`committed_at timestamptz DEFAULT clock_timestamp()` records the moment of
+*insert*, not of *commit*. A transaction that inserts at T and commits at T+10s
+carries `committed_at = T`. At T+2 the row passes the two-second test while
+still being uncommitted and therefore invisible; a client pulling at T+3 sees
+nothing and advances past it. The lag only helps when transactions are shorter
+than the lag — and this document already says the longest transactions in the
+system are orders and payments, which are exactly the ones at risk. It fails
+precisely where it is needed. Getting a true commit timestamp needs
+`track_commit_timestamp` and `pg_xact_commit_timestamp(xmin)`, which is a
+different and much less trivial change.
 
-I would take the safety lag now and the snapshot horizon when write volume
-justifies it. Two seconds of latency is invisible next to a 60-second poll.
+**The snapshot horizon is right in spirit but does not work with an `id`
+cursor.** Filtering `xmin < pg_snapshot_xmin(pg_current_snapshot())` while still
+ordering and cursoring by `id` still skips rows:
+
+1. Txn D (xid 100) inserts `change_log` id 4. Still open.
+2. Txn C (xid 99) inserts id 5 afterwards, and commits.
+3. A client pulls. Horizon is 100, because D is the oldest in flight. Row 5 has
+   xid 99 < 100, so it is eligible — delivered, cursor becomes 5.
+4. D commits. Row 4 is now visible, below a cursor that has already passed it.
+
+Note what breaks it: **id order and xid order can disagree**, and the row that
+gets skipped is *invisible* at pull time. So you cannot repair this by
+truncating the batch at the first row with `xid >= horizon` — the row causing
+the problem is not in the result set to be found. Any fix has to make
+eligibility depend on something knowable about rows you cannot yet see.
+
+Two that actually hold:
+
+- **Order by xid; cursor becomes an `xid8`.** Correct by construction: once
+  `xid < horizon`, every row from that transaction is visible-or-never, and no
+  future row can ever carry a lower xid. The cost is that `next_sync_cursor`
+  changes meaning, so every deployed terminal needs its stored cursor translated
+  or a full re-bootstrap.
+- **Watermark table, server-only.** Periodically record the pair
+  `(pg_sequence_last_value('change_log_id_seq'), pg_snapshot_xmax(pg_current_snapshot()))`.
+  A recorded pair `(S, M)` becomes safe once the live `pg_snapshot_xmin` reaches
+  M: every transaction that was in flight when S was observed has finished by
+  then, so every id ≤ S is now visible-or-never. Deliver
+  `WHERE id > cursor AND id <= W`, where W is the largest such S. The `id` cursor
+  keeps its exact current meaning.
+- **Logical replication.** Still correct by construction, still a much larger
+  change. Only if the feed becomes load-bearing beyond this app.
+
+**I would take the watermark**, on deployment grounds rather than elegance: it
+needs no client change. Terminals in venues update on their own schedule, so a
+fix that requires a client release does not protect the installs that already
+exist. It costs a small table, a background tick, and roughly one poll cycle of
+extra latency on freshly-committed rows.
+
+**Not implemented.** This is a design decision with a real cost either way, and
+P0-0 landing first changes the urgency: until the feed actually runs, this loses
+nothing.
 
 **Acceptance.** A test that opens a transaction, inserts a change, opens and
 commits a second transaction, pulls, then commits the first — and asserts the
@@ -577,7 +680,8 @@ all.
 
 | Order | Item | Why here |
 |---|---|---|
-| 1 | **P0-3 cursor skew** | **Confirmed live**, not a verification task any more. Silent data loss, no client-side recovery. Everything else assumes the feed is complete. |
+| 0 | **P0-0 sync had no transaction** | **Fixed.** Every sync endpoint returned 500. Nothing below matters until the feed answers at all, and every item's severity is measured against a feed that was not running. |
+| 1 | **P0-3 cursor skew** | Confirmed live in the code, but see the revised entry: both proposed fixes were wrong, and the replacement is a design decision. Silent data loss with no client-side recovery — though it has lost nothing yet, because of P0-0. |
 | 2 | **P0-4 branch scoping on pull** (new) | Every terminal receives every branch's rows. Correctness and volume, and it gets harder to add the longer `brand_id` stays unpopulated on some rows. |
 | 3 | P0-1 eight triggers | Unblocks four screens and the deletion of the client's last HTTP file. Small, and the migration is written out in full above. |
 | 4 | P0-2 credentials | Small, and it is a live exposure in every venue running today. |
@@ -597,6 +701,9 @@ So the payoff is concrete:
 - **After P0-1**: four screens migrate to the replica; `main_datasources.dart`
   and the Hive `LocalDatabase` are deleted; the architecture ratchet reaches
   zero and "exactly one database" becomes true.
+- **After P0-0**: the feed answers at all. Every payoff below this line was
+  previously gated on an endpoint that returned 500, including the 36 entities
+  the client already believes it replicates.
 - **After P0-2**: the client's redaction stays as defence in depth, but stops
   being the only thing standing between a venue's terminals and its password
   hashes.
@@ -660,9 +767,24 @@ All but one, from `mary-ai-backend@3533b8b`.
 
 ## 7. What changed, by revision
 
-**Third pass — implementing P0-1.** Written while actually building the
-migration and running it against a scratch Postgres, which is why these are
-corrections to the *second* pass rather than to the original:
+**Third pass — implementing P0-1 and P0-3.** Written while actually building
+against a scratch Postgres, which is why these are corrections to the *second*
+pass rather than to the original:
+
+- **New P0-0, and it is the biggest thing here: the sync endpoints did not
+  work.** All three returned `tenant transaction not found in context` to every
+  caller, because a refactor moved transaction management out of
+  `TenantMiddleware` and the sync handlers were never updated. Fixed and tested.
+  This retires §2's claim that the client "replicates 36 entities through them
+  today", and it rescales every other item — P0-3 was losing no data and P0-2
+  was exposing no credentials, because nothing was being served.
+- **Both of P0-3's proposed fixes were wrong.** The safety lag timestamps the
+  insert rather than the commit, so it fails for exactly the long transactions it
+  was meant to protect. The snapshot horizon is sound but not with an `id`
+  cursor — id order and xid order can disagree, and the skipped row is invisible
+  at pull time, so it cannot be detected by filtering what you can see. Replaced
+  with two options that hold, and a recommendation that turns on deployment
+  rather than elegance.
 
 - **`printer_settings` is an ordinary UUID table, not a `SMALLINT` singleton.**
   The second pass read migration 36 and did not notice that migration 38 drops
