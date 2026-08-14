@@ -983,6 +983,90 @@ parser, not a new format.
 enough that someone reaches for the power button. That threshold arrives on its
 own as history accumulates.
 
+**STATUS: implemented and tested.** `GET /api/v1/sync/snapshot`, backend commit
+`77270a6`.
+
+**Built from `change_log`, not from the base tables.** This section did not say
+which, and the difference matters: derived from the log, the snapshot is
+*exactly equivalent* to the replay it replaces, carrying the same payloads with
+migration 71's redaction and 73/74's branch resolution already applied. Rebuilt
+from the tables it would be a second source of truth for the same wire format,
+free to disagree with the feed in ways no test would routinely catch.
+
+**Two things that would have been silently wrong the other way round.**
+
+*Deletes are dropped only after `DISTINCT ON` picks each entity's latest row.*
+Filtering `action <> 'delete'` inside the pick exposes the row immediately
+before the delete and resurrects every entity ever removed — a snapshot that
+looks plausible and quietly restores deleted stock items.
+
+*The cursor is the watermark, not the highest id returned.* Entities whose only
+surviving row is a delete contribute nothing to the result, so the highest
+returned id can sit below them; using it would replay those deletes on every
+subsequent pull, forever.
+
+**Shared assembly.** The row-to-wire conversion is now one function used by both
+`Pull` and `Snapshot`. They select different rows but must agree exactly on how
+a row becomes a change, and a create landing in `Updated` on one endpoint but
+not the other is not something a client could report intelligibly.
+
+**Acceptance — run.** Against a real database with create/update/delete churn:
+
+```
+replay from cursor 0 : 16 rows
+snapshot             :  6 rows      -> same client state, verified equal
+deleted entities     : absent
+entity updated twice : appears once
+snapshot cursor      : equals the replay's cursor
+resume from it       : delivers exactly the rows written afterwards
+```
+
+**Bootstrap semantics, stated because P2-2 depends on them.** The snapshot is a
+*replacement*, not a merge: it carries no tombstones, so a client applying it
+over existing local data keeps rows deleted server-side. That is correct for
+first login, which is the only caller today, and it is precisely the contract
+P2-2's forced re-bootstrap has to honour — a terminal sent back to bootstrap
+must clear local state first.
+
+**Not paginated.** The plan did not ask for it and a correct snapshot page
+needs a stable order plus its own cursor. Worth revisiting if a single tenant's
+live-row count ever makes one response uncomfortable; the compaction ratio above
+(16 → 6 on trivial churn, and it widens with history) buys a lot of room first.
+
+---
+
+### P2-3 — Rows written before migration 8 were never logged (new)
+
+**Found while designing P2-1**, which needed to know whether `change_log` is a
+complete record of the tenant's state.
+
+`8_movements.up.sql` creates `change_log` and the first batch of `log_change`
+triggers, and its only `INSERT INTO change_log` is the one inside the function
+body. **It seeds nothing.** So any row that already existed in a table created by
+migrations 1–7 — `translations`, `invoices`, `suppliers`, `shifts`, `compounds`,
+`inventories`, `attendances`, `branches`, `user_payments` and others — has no
+`create` row in the log, and a client bootstrapping from cursor 0 never receives
+it unless that row has been written to since.
+
+Migration 70 does not have this problem: it seeds all eight of its tables, which
+is the step P0-1 gained on its second pass.
+
+**How much this matters depends on something I cannot check from here.** A tenant
+provisioned after migration 8 already existed runs migrations 1–74 in order
+against an empty schema, so there is nothing to miss. The gap only exists for a
+tenant that was carrying data while migration 8 was applied — an early one. The
+question is simply whether any such tenant is still live.
+
+**Cheap to check and cheap to fix.** Per tenant schema, for each affected table,
+compare `count(*) WHERE deleted_at = 0` against
+`count(DISTINCT entity_id) FROM change_log WHERE entity = '<table>'`. If they
+disagree, a seed identical in shape to migration 70's closes it.
+
+**Deliberately not fixed blind.** Seeding `change_log` for every tenant would
+write one row per existing entity across ~19 tables, and doing that to tenants
+that do not need it is a large write for no benefit — and it would land at the
+end of the feed, making every terminal re-receive rows it already has.
+
 ---
 
 ### P2-2 — `change_log` retention
