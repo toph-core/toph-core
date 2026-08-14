@@ -490,13 +490,87 @@ fix that requires a client release does not protect the installs that already
 exist. It costs a small table, a background tick, and roughly one poll cycle of
 extra latency on freshly-committed rows.
 
-**Not implemented.** This is a design decision with a real cost either way, and
-P0-0 landing first changes the urgency: until the feed actually runs, this loses
-nothing.
+**STATUS: implemented and tested — as the watermark.** Migration
+`72_change_log_watermark.{up,down}.sql`, `SyncS.ObserveWatermark` and the bounded
+query in `service/sync.go`, the two-transaction sequence in
+`handler/sync.go:SyncPull`, and `TestSyncPullObservesWatermarkInAnEarlierCommittedTx`.
+Committed on the backend branch as `45bb4b3`.
 
-**Acceptance.** A test that opens a transaction, inserts a change, opens and
-commits a second transaction, pulls, then commits the first — and asserts the
-client eventually receives both rows.
+**Reproduced before it was fixed.** Two concurrent sessions against a real
+database, migrations 1–71: session D inserted `change_log` id 2 and stayed open,
+session C inserted id 3 and committed. The pull returned **id 3 alone**, the
+cursor a client would store advanced to 3, and id 2 appeared only after D
+committed — permanently beneath the cursor. This is no longer a scenario
+argued from the schema; it is a run.
+
+**Two things the recommendation above got wrong, both found in the building.**
+
+**It does not need a background tick.** The plan proposed observing periodically.
+Observing at the *start of each pull*, in its own transaction, is strictly
+better: it costs no new infrastructure, it self-scales (more terminals means more
+observations), and it makes the freshness of the watermark a property of the
+thing that consumes it.
+
+**Therefore it does not cost "roughly one poll cycle of extra latency."** That
+estimate assumed the observation and the pull are independent. Ordered
+observation-then-pull inside one request, the cost in the common case is
+approximately zero: the observing transaction commits, and with no other writer
+in flight the next snapshot's `xmin` has already passed the `xmax` it recorded,
+so the watermark is current and the pull delivers everything. Latency appears
+only while a long write is genuinely in flight, and is bounded by *that
+transaction*, not by a fixed lag or a tick interval. This is the property the
+rejected safety-lag option could not have: it holds back exactly the rows that
+are at risk, for exactly as long as they are at risk.
+
+**The ordering is load-bearing, and silently so.** The observation must be
+committed *before* the pull's transaction opens. A transaction's own xid always
+sits below the boundary it records, so an observation read back inside the
+transaction that wrote it is never yet safe — it excludes itself. Folding the
+two into one transaction still returns correct data, but pins the feed a full
+poll cycle (60s, `sync_engine.dart:66`) behind, forever. No correctness test
+would catch that, which is why the handler test asserts the event order
+(`begin/observe/commit`, then `begin/pull/commit`) rather than just the outcome.
+
+**A dependency the plan did not state: the sequence must have `CACHE 1`.** The
+whole argument rests on ids being handed out in the order rows are inserted. A
+cache above 1 lets a session hold a block of low ids and use one long after
+another session used a higher one, and then "every id ≤ S is settled" is simply
+false. Verified on the live schema (`cache 1, increment 1` — the `BIGSERIAL`
+default) rather than assumed, and recorded in the migration at the point of use
+so a future tuning pass cannot quietly invalidate it.
+
+**Acceptance — run.** The test this section specified, executed against a real
+database through the actual service layer:
+
+```
+baseline drained, cursor = 1
+txn D inserted its change_log row and is still open
+txn C inserted and COMMITTED, above D's id
+
+pull while D is open   -> cursor 1 -> 1, delivered {}          <- cursor HELD
+txn D committed
+pull after D commits   -> cursor 1 -> 3, delivered {modifiers:2}
+```
+
+Both rows delivered, in id order, nothing skipped — against the pre-fix run on
+the same scenario, which advanced the cursor to 3 and stranded row 2.
+
+**The stall is benign, and this was checked rather than assumed.** While a long
+write is in flight the pull returns an empty page and echoes the incoming cursor
+rather than zero (`nextCursor := lastCursor`, advanced only per delivered row).
+The client treats a short page as "caught up" and retries on its next tick
+(`replication_service.dart:169`), and independently guards a missing cursor as
+"no advance" rather than zero (`sync_api_client.dart:92`). So a watermark stall
+is indistinguishable from being up to date, and nothing rewinds. `SyncPullPage.empty`
+carries `nextCursor: 0`, which would rewind — it is dead code, referenced
+nowhere, and was checked for exactly that reason.
+
+**Followers inherit this for free.** The LAN relay forwards batches the leader
+pulled, so a watermark-bounded leader feed makes the follower feed
+watermark-bounded too. No change to `change_feed_relay.dart`.
+
+**Not changed: `/sync/change-logs`.** It is a filtered admin/debug endpoint, not
+the cursor-based replication path, and no client replicates from it.
 
 ---
 
@@ -720,7 +794,7 @@ all.
 | Order | Item | Why here |
 |---|---|---|
 | 0 | **P0-0 sync had no transaction** | **Fixed.** Every sync endpoint returned 500. Nothing below matters until the feed answers at all, and every item's severity is measured against a feed that was not running. |
-| 1 | **P0-3 cursor skew** | Confirmed live in the code, but see the revised entry: both proposed fixes were wrong, and the replacement is a design decision. Silent data loss with no client-side recovery — though it has lost nothing yet, because of P0-0. |
+| ~~1~~ | **P0-3 cursor skew** | **Done.** Reproduced against a real database first — the pull skipped a row permanently — then fixed with the watermark, and the same scenario re-run green. Cost less than predicted: no background tick, and no per-row latency. |
 | 2 | **P0-4 branch scoping on pull** (new) | Every terminal receives every branch's rows. Correctness and volume, and it gets harder to add the longer `brand_id` stays unpopulated on some rows. |
 | 3 | P0-1 eight triggers | Unblocks four screens and the deletion of the client's last HTTP file. Small, and the migration is written out in full above. |
 | ~~4~~ | **P0-2 credentials** | **Done.** Moved ahead of P0-3 and P0-4 because P0-0 is what makes it live: the fix that got the feed working is the fix that would have started the leak. |
@@ -807,7 +881,31 @@ All but one, from `mary-ai-backend@3533b8b`.
 
 ## 7. What changed, by revision
 
-**Third pass — implementing P0-1 and P0-3.** Written while actually building
+**Fourth pass — implementing P0-3.**
+
+- **The bug was reproduced before it was fixed.** Two concurrent sessions against
+  a real database made the pull skip a row permanently. Everything this document
+  said about P0-3 was inference from the schema until that run; a fix for a
+  silent bug is worth very little without a test that fails first.
+- **The watermark cost less than I estimated.** No background tick — observing
+  once per pull, in its own committed transaction, is simpler and self-scaling.
+  And near-zero added latency in the common case, not the "roughly one poll
+  cycle" this document predicted, because the observation now happens inside the
+  request that consumes it.
+- **The observation's transaction boundary is load-bearing and invisible.**
+  Committing it separately from the pull is what makes the watermark current; the
+  natural-looking simplification of folding it into the pull's transaction leaves
+  the feed permanently 60s stale while every correctness test still passes. The
+  handler test asserts the ordering for that reason.
+- **The design rests on `CACHE 1`, which this document never mentioned.** Verified
+  on the live sequence rather than assumed, and written into the migration so a
+  later tuning change cannot silently invalidate the whole argument.
+- **The client's behaviour under a watermark stall was checked, not assumed.**
+  Empty page, cursor echoed, read as "caught up", retried next tick — plus one
+  piece of dead code (`SyncPullPage.empty`) that would have rewound the cursor to
+  zero had anything referenced it.
+
+**Third pass — implementing P0-1, and starting P0-3.** Written while actually building
 against a scratch Postgres, which is why these are corrections to the *second*
 pass rather than to the original:
 
