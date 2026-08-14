@@ -95,6 +95,7 @@ void main() {
         'ingredients',
         'inventories', 'inventory_items', 'invoice_detailed', 'invoices',
         'modifier_calculation', 'order_item_modifiers', 'order_items', 'orders',
+        'transactions',
         'storages', 'suppliers', 'translations', 'user_payments',
         'users',
       };

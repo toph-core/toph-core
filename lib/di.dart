@@ -435,7 +435,10 @@ void _repositories() {
   // §8 Phase 5 (back-office tier) — read-only, see TransactionsRepository's
   // own class doc for what's deliberately not covered.
   inject.registerLazySingleton<TransactionsRepository>(
-    () => TransactionsRepositoryImpl(localDb: inject()),
+    () => TransactionsRepositoryImpl(
+      localDb: inject<LocalDatabase>(),
+      replicaDb: inject<replica.LocalDatabase>(),
+    ),
   );
 }
 

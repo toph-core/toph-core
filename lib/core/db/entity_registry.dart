@@ -388,6 +388,22 @@ const List<EntitySpec> kReplicatedEntities = [
     promoted: [PromotedColumn('name', SqlType.text, indexed: true)],
   ),
   EntitySpec(name: 'translations'),
+  // The transactions ledger. Promotes exactly what its list screen filters,
+  // sorts and paginates on, so those become SQL over the local replica instead
+  // of a paginated REST call. `type` is the enum's string label (the payload
+  // carries the label, not the ordinal); `date` is the ISO timestamp, sortable
+  // lexically. amount/customer_paid_amount/change_amount are canonicalised to
+  // strings on the way in, like every other numeric.
+  EntitySpec(
+    name: 'transactions',
+    promoted: [
+      PromotedColumn('cash_register_id', SqlType.text, indexed: true),
+      PromotedColumn('type', SqlType.text, indexed: true),
+      PromotedColumn('date', SqlType.text, indexed: true),
+      PromotedColumn('branch_id', SqlType.text),
+    ],
+    numericKeys: {'amount', 'customer_paid_amount', 'change_amount'},
+  ),
   EntitySpec(
     name: 'user_payments',
     promoted: [
