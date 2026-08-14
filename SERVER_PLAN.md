@@ -1084,6 +1084,69 @@ minimum — "a terminal offline longer than N days re-bootstraps" — and a serv
 response the client can recognise. **Do P2-1 before this**, or the recovery path
 does not exist.
 
+**STATUS: implemented and tested.** Migration
+`75_change_log_compaction.{up,down}.sql` and `StartChangeLogCompactionCron`.
+Backend commit `0a12efa`.
+
+**That constraint belongs to the other option, and dissolves for this one.** This
+section offered two: compact to one row per `(entity, entity_id)`, *or* partition
+by month and drop old partitions — and attached the re-bootstrap requirement to
+both. It only applies to the second. The two remove different rows.
+
+Dropping a partition removes rows whether or not anything replaced them, so a
+client can miss a change permanently. Compaction removes a row **only when a
+newer row for the same entity survives**. For a client at cursor C, a removed row
+X, and its survivor Y > X:
+
+| | |
+|---|---|
+| `C ≥ Y` | already applied both; nothing changes |
+| `X ≤ C < Y` | applied X, will next receive Y |
+| `C < X` | never sees X, receives Y instead |
+
+The third row is the load-bearing one, and it holds because payloads are
+**whole-row snapshots** (`to_jsonb(NEW)`), never deltas — applying Y alone leaves
+the entity exactly where applying X then Y would. If Y is a delete, the entity is
+removed either way.
+
+So the invariant is only *"never delete the newest row for an entity"*, and it is
+safe at every cursor. **No minimum offline window to document, no new response
+for the client to recognise, and no client change at all** — which also means
+P2-1 was not actually a prerequisite, though having it first is no loss.
+
+**Tombstones fall out for free.** A deleted entity's newest row *is* its delete,
+so compaction always keeps it, and a terminal returning after a long absence
+still learns the row is gone. That is exactly what a time-based purge would have
+broken: dropping a create/delete pair leaves a client that saw the create — and
+nothing since — holding the row forever. Worth stating because "delete old rows"
+is the obvious reading of retention and it is the unsafe one.
+
+**Residual size** is one row per entity that has ever existed, plus the retention
+window: proportional to the size of the business rather than to how long it has
+been running.
+
+**Retention is 30 days, and it is not a correctness boundary.** Since compaction
+is safe at any age, the window only decides how much verbatim history stays for
+debugging and for `/sync/change-logs`. Shortening it compacts harder and breaks
+nothing.
+
+**Batched, one transaction per batch, capped per night.** A single long
+transaction over `change_log` is precisely what stalls the P0-3 watermark — the
+feed would hold its cursor for as long as compaction ran. Batching keeps each
+transaction short; a backlog is worked off over several nights instead.
+
+**Acceptance — run.**
+
+```
+28 rows -> 11 after compaction
+clients resuming from cursor 0, mid-churn, and near-head:
+    identical state before and after, all three
+both tombstones survive; a client from 0 still ends without the deleted rows
+age filter: deletes 0 while rows are inside the window,
+            exactly the 7 superseded rows once backdated outside it
+returned count is accurate, so the caller's loop-until-zero terminates
+```
+
 ---
 
 ## 4. Sequencing
