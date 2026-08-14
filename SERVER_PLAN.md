@@ -708,6 +708,60 @@ enough, because its errors land on the breaking side. Each of the 22 needs a
 per-table answer, and several are genuinely product questions rather than schema
 ones. Left as follow-up rather than guessed.
 
+---
+
+**FOLLOW-UP DONE — migration 74, five of the 22.** Confirmed with the team that
+brands with multiple branches exist in production, which makes the unfixed half
+live rather than latent, so this was finished rather than deferred to P2.
+
+**The test that works, where the FK closure did not.** An entity is treated as
+branch-scoped only where **the application's own read path already scopes it**.
+That is evidence about intent rather than schema shape, it cannot be produced by
+querying `pg_constraint`, and every case is citable:
+
+| Entity | Evidence | Resolved via |
+|---|---|---|
+| `order_items` | `GetOrderItemsByOrderID` filters `EXISTS (orders o … o.branch_id = current_setting)` | `order_id → orders.branch_id` |
+| `cafe_tables` | `GetCafeTablesByCapacity` filters `EXISTS (halls h … h.branch_id = …)` | `hall_id → halls.branch_id` |
+| `table_time_sessions` | its reads join `orders` and filter `o.branch_id` | `order_id`, falling back to `table_id → halls` |
+| `goods_details` | its reads filter `EXISTS (goods g … g.branch_id = …)` | `good_id → goods.branch_id` |
+| `categories` | `CreateCategory`, `GetCategoriesByDepartmentID`, `GetStorageByGoodID` | `department_id → departments → storages.branch_id` |
+
+**`categories` was the counterexample this section used to reject the closure,
+and it was the wrong one.** Three query paths treat categories as branch-scoped.
+The closure's *answer* on that table was right; its *method* is still not
+trustworthy, which is why the other 17 are still untouched.
+
+**Still deliberately global**, for want of evidence rather than for want of
+effort: `order_item_modifiers`, `goods_modifiers`, `modifier_calculation`,
+`inventories`. Being unable to prove an entity is branch-scoped is not a reason
+to guess.
+
+**Fails safe by construction.** A missing parent — null FK, or a cascade that
+removed the parent before the trigger ran on the child — leaves `branch_id` NULL,
+and NULL already means "deliver to everyone". The migration can only ever narrow
+delivery for rows whose parent it can find, so its worst case is the behaviour
+that existed before it.
+
+**Cost.** One primary-key lookup per write on five tables. `order_items` is the
+hot one: a single index hit on `orders`, inside a transaction already writing.
+
+**Acceptance — run.** Two branches in one schema, full parent chain seeded for
+each. Each terminal receives its own order lines, floor-plan tables, time
+sessions, recipe rows and menu categories, and none of the other branch's;
+translations and modifiers still reach both; a brand-scoped admin still sees
+everything. **The floor-plan symptom this section opens with is now fixed.**
+
+**Backfill verified separately**, since the acceptance rows were written by the
+new trigger and would not have exercised it: seeding under migration 73 and then
+applying 74 moved `order_items`, `cafe_tables` and `categories` from NULL to the
+correct branch.
+
+**The down migration does not unset what it wrote.** Reverting restores 73's
+resolution, but clearing the recovered branch ids would re-widen delivery for
+history that is already correctly narrowed — a rollback should not put rows back
+in front of terminals that should not see them.
+
 **Acceptance — run.** Two branches in one tenant schema, exercised through the
 service layer:
 
@@ -962,7 +1016,7 @@ all.
 | 2 | **P0-4 branch scoping on pull** (new) | Every terminal receives every branch's rows. Correctness and volume, and it gets harder to add the longer `brand_id` stays unpopulated on some rows. |
 | 3 | P0-1 eight triggers | Unblocks four screens and the deletion of the client's last HTTP file. Small, and the migration is written out in full above. |
 | ~~4~~ | **P0-2 credentials** | **Done.** Moved ahead of P0-3 and P0-4 because P0-0 is what makes it live: the fix that got the feed working is the fix that would have started the leak. |
-| ~~5~~ | **P0-4 branch scope** | **Done, partially and on purpose.** The blocking question turned out to be answerable from the schema. Rows that state a branch are now filtered; rows scoped only through a parent are not, because the inference that would catch them fails on the side that breaks screens. |
+| ~~5~~ | **P0-4 branch scope** | **Done.** Rows stating their own branch (73), then the five parent-scoped entities the app's own read paths prove are branch-scoped (74) — including the floor plan. 17 entities with no such evidence stay global on purpose. |
 | 5 | P1-2 / P1-3 client ids | Deletes client machinery; fixes lost-response duplicates. Confirmed necessary — push does not cover these entities. |
 | 6 | P2-1 snapshot | Before retention, because it is the recovery path. |
 | 7 | P2-2 retention | Operational; the pressure is gradual. |
