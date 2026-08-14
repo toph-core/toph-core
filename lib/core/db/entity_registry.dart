@@ -380,10 +380,6 @@ const List<EntitySpec> kReplicatedEntities = [
     },
   ),
   EntitySpec(
-    name: 'shifts',
-    promoted: [PromotedColumn('branch_id', SqlType.text, indexed: true)],
-  ),
-  EntitySpec(
     name: 'storages',
     promoted: [PromotedColumn('name', SqlType.text)],
   ),
