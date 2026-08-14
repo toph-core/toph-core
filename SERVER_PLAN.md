@@ -634,17 +634,83 @@ the branch is a property of the payload rather than of the log row. Two ways:
 I would take the column. The payload filter turns the hottest query in the system
 into a JSONB scan.
 
-**VERIFY before implementing.** Whether a tenant schema is ever expected to hold
-more than one branch in production. If the deployment model is one branch per
-tenant schema, this is latent rather than live and drops to P2. The schema
-plainly supports many: `branches` is a table, and `branch_id` is a column on 24
-others including `orders`, `users`, `halls`, `shifts`, `transactions` and
-`cash_registers`. But the deployment may not use it. **This is the one item here whose
-priority I cannot set from the source alone.**
+**VERIFY — answered from the schema after all.** This section called the
+one-branch-per-tenant question the one thing it could not settle from the source.
+It can be settled. `branches` lives *in* the tenant schema, and `transfers`
+(`9_extras.up.sql:7-19`) carries `from_branch_id` and `to_branch_id` as
+`NOT NULL REFERENCES branches(id)` under
+`CHECK (from_branch_id != to_branch_id)`. A foreign key cannot leave the schema,
+so both branches of every transfer are rows in the *same* tenant schema, and the
+transfers feature is unusable unless a tenant holds at least two. Multi-branch
+tenants are a designed, first-class case. That sets the priority without needing
+to know how any particular customer is deployed.
 
-**Acceptance.** Two branches in one tenant; a terminal authenticated to branch A
-pulls from cursor 0 and receives no row whose payload carries branch B's id,
-while still receiving all branch-less reference data.
+**STATUS: implemented and tested — partially, on purpose.** Migration
+`73_change_log_branch_id.{up,down}.sql` and the predicate in `service/sync.go`.
+Backend commit `ff5e05e`.
+
+**The branch comes from the row, not from the session GUC.** This section
+recommended `current_setting('app.branch_id', true)`, noting only that it lands
+NULL for admin and cron writes. The real problem is worse and points the other
+way: brand-wide reference data — `categories`, `translations`, `modifiers`,
+`ingredients` — carries no branch of its own, so the GUC would stamp it with
+whichever branch happened to write it, and **every other branch would then never
+receive it**. That blanks their menu. Reading `branch_id` off the row being
+logged cannot make that mistake: a row either states a branch or has none, and
+none means everyone, which is exactly the pre-existing behaviour. The `IS NULL`
+escape hatch this section already anticipated turns out to be the whole
+mechanism rather than a special case.
+
+**What is deliberately still unfiltered, and why I stopped there.** 22 logged
+entities are branch-scoped only through a parent — `order_items` via `orders`,
+`cafe_tables` via `halls`, `order_item_modifiers` via `order_items` — and carry
+no `branch_id` to filter on. They still reach every terminal. **So the "floor
+plan can show another venue's tables" symptom named at the top of this section is
+not fixed**; the staff-list half is.
+
+Filtering them means inferring scope from foreign keys, and I built that
+inference before rejecting it. A transitive closure over FKs across the logged
+tables returns a clean-looking set of 22 — and includes `categories`, which
+reaches `storages` through a **nullable** `department_id`/`storage_id` and is
+otherwise brand-wide catalog data. One nullable optional FK is enough to drag a
+global table into the scoped set.
+
+The two failure modes are not symmetric, which is what decides it:
+
+| Misclassification | Consequence |
+|---|---|
+| branch-scoped table treated as global | leaks rows — **the status quo**, no regression |
+| global table treated as branch-scoped | withholds rows a terminal needs — **a screen breaks** |
+
+An automated inference that is right 90% of the time is therefore not good
+enough, because its errors land on the breaking side. Each of the 22 needs a
+per-table answer, and several are genuinely product questions rather than schema
+ones. Left as follow-up rather than guessed.
+
+**Acceptance — run.** Two branches in one tenant schema, exercised through the
+service layer:
+
+```
+terminal in BRANCH A   halls=[Hall of A] users=[Waiter of A]
+                       categories=[Shared Category] modifiers=[Shared Modifier]
+   ok  receives its own hall and staff
+   ok  does NOT receive branch B's hall or staff
+   ok  still receives brand-wide categories and modifiers
+
+terminal in BRANCH B   mirror image, same result
+
+brand-scoped admin     halls=[Hall of A, Hall of B]  -- unchanged, sees both
+```
+
+**The same run re-checks P0-2.** Migration 73 does `CREATE OR REPLACE` on
+`log_change`, which rewrites the whole body including migration 71's credential
+strip. The test asserts `hash_password`, `pincode`, `fcm_token` and `password`
+are still absent from every delivered payload, so a future rewrite of this
+function cannot quietly reintroduce the leak.
+
+**Historical rows are backfilled** from the payload already logged, so a client
+bootstrapping from cursor 0 gets the same filtering as a live one rather than
+replaying every branch's history.
 
 ---
 
@@ -798,6 +864,7 @@ all.
 | 2 | **P0-4 branch scoping on pull** (new) | Every terminal receives every branch's rows. Correctness and volume, and it gets harder to add the longer `brand_id` stays unpopulated on some rows. |
 | 3 | P0-1 eight triggers | Unblocks four screens and the deletion of the client's last HTTP file. Small, and the migration is written out in full above. |
 | ~~4~~ | **P0-2 credentials** | **Done.** Moved ahead of P0-3 and P0-4 because P0-0 is what makes it live: the fix that got the feed working is the fix that would have started the leak. |
+| ~~5~~ | **P0-4 branch scope** | **Done, partially and on purpose.** The blocking question turned out to be answerable from the schema. Rows that state a branch are now filtered; rows scoped only through a parent are not, because the inference that would catch them fails on the side that breaks screens. |
 | 5 | P1-2 / P1-3 client ids | Deletes client machinery; fixes lost-response duplicates. Confirmed necessary — push does not cover these entities. |
 | 6 | P2-1 snapshot | Before retention, because it is the recovery path. |
 | 7 | P2-2 retention | Operational; the pressure is gradual. |
@@ -880,6 +947,27 @@ All but one, from `mary-ai-backend@3533b8b`.
 ---
 
 ## 7. What changed, by revision
+
+**Fifth pass — implementing P0-4.**
+
+- **The question this document said it could not answer was answerable.** Not
+  from the deployment, from the schema: `transfers` has two NOT NULL foreign keys
+  into `branches` and a CHECK that they differ, and foreign keys do not cross
+  schemas. Cross-branch transfers require two branches in one tenant. I had
+  recorded this as needing an outside answer for two revisions before actually
+  looking for one in the constraints.
+- **The recommended source for the branch was wrong.** The session GUC would have
+  stamped brand-wide reference data with whichever branch wrote it and stopped
+  every other branch from receiving it. The document listed the GUC's NULL holes
+  as the caveat; the breaking case was the opposite one and went unlisted.
+- **I built the FK inference and then rejected it.** The transitive closure looks
+  authoritative and quietly captures `categories` through a nullable optional FK.
+  Shipping it would have blanked the menu on every branch but one. The fix filters
+  only what rows state outright, which leaves 22 entities unfiltered and the floor
+  plan symptom unfixed — stated plainly rather than rounded up to "done".
+- **Rewriting a trigger function re-tests everything that function does.**
+  Migration 73 replaces `log_change` wholesale, so the acceptance run re-asserts
+  P0-2's credential strip rather than trusting that a rewrite preserved it.
 
 **Fourth pass — implementing P0-3.**
 
