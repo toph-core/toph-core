@@ -737,6 +737,34 @@ effort: `order_item_modifiers`, `goods_modifiers`, `modifier_calculation`,
 `inventories`. Being unable to prove an entity is branch-scoped is not a reason
 to guess.
 
+**FOLLOW-UP 2 — migration 76, five more.** Backend commit `a53aa03`.
+`departments`, `compounds_details`, `invoice_detailed`, `inventories` and
+`inventory_items`, each through its own parent, each scoped in effectively every
+direct read it has. (`inventories` appears in the "still global" line above —
+migration 76 supersedes that.)
+
+**The audit method needed sharpening first, and the sharpening is the point.**
+Counting queries that mention a table *and* `app.branch_id` is misleading,
+because a query can join one entity while scoping another. `translations` look
+scoped in 22 of the 31 queries that mention them — and in **0 of the 4 that
+actually select `FROM` them**. Parsing the generated SQL per named query, and
+counting only predicates that constrain the entity itself, is what separated
+signal from noise.
+
+**`ingredients` — the best argument yet against the FK closure.** They are
+brand-wide rows with **per-branch visibility**, through
+`ingredient_visibility (ingredient_id, branch_id, is_visible)`. One ingredient is
+legitimately visible in several branches at once. The closure would have marked
+`ingredients` branch-scoped, and stamping each with a single branch would have
+emptied the ingredient list on every branch but one. This is precisely the
+failure the closure was rejected for, found concretely rather than hypothesised.
+
+**`separation_act_items`** stays out with a stated reason rather than silence:
+its own two direct reads (`GetSeparationActItemByID`,
+`GetSeparationActItemsByActID`) carry no branch predicate, and `ListSeparationActs`
+— the query that looked like evidence — is about the parent act and merely sums
+items in a subquery.
+
 **Fails safe by construction.** A missing parent — null FK, or a cascade that
 removed the parent before the trigger ran on the child — leaves `branch_id` NULL,
 and NULL already means "deliver to everyone". The migration can only ever narrow
@@ -1066,6 +1094,37 @@ disagree, a seed identical in shape to migration 70's closes it.
 write one row per existing entity across ~19 tables, and doing that to tenants
 that do not need it is a large write for no benefit — and it would land at the
 end of the feed, making every terminal re-receive rows it already has.
+
+---
+
+### P0-5 — `ingredient_visibility` has no trigger, so per-branch visibility never reaches a terminal (new)
+
+**Found during the migration-76 audit**, while working out why `ingredients`
+must stay unfiltered.
+
+`ingredient_visibility (id, ingredient_id, branch_id, is_visible)` is how a
+brand-wide ingredient catalogue is narrowed per branch — and it carries **no
+`log_change` trigger**. It is not in the feed at all, so an offline terminal has
+no way to know which ingredients its branch can actually see. Every terminal
+either shows the full brand catalogue or falls back on whatever the last online
+response left behind.
+
+**This is a P0-1 finding arriving late**, and the same shape: a table the client
+needs that simply is not replicated. It did not surface in P0-1 because that pass
+enumerated tables the *client screens* named, and visibility is invisible in that
+sense — it changes what a screen shows without being a thing the screen fetches.
+
+**Change.** A trigger on the same pattern as migration 70, plus the seed that
+section learned it needed. The table already has `branch_id`, so migration 73's
+own-row filter scopes it correctly with no extra work — this is genuinely just
+the trigger.
+
+**Worth doing before the remaining P2 work**, since it is a correctness gap in
+what a terminal displays rather than a scaling concern. Not done here because
+this session's audit was scoped to branch *filtering* of entities already in the
+feed, and adding an entity to the feed is a different change with its own
+acceptance (the seeded rows land at the end of the log and every terminal
+receives them once).
 
 ---
 
