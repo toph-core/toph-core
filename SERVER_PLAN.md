@@ -671,9 +671,30 @@ not fixed**; the staff-list half is.
 Filtering them means inferring scope from foreign keys, and I built that
 inference before rejecting it. A transitive closure over FKs across the logged
 tables returns a clean-looking set of 22 — and includes `categories`, which
-reaches `storages` through a **nullable** `department_id`/`storage_id` and is
-otherwise brand-wide catalog data. One nullable optional FK is enough to drag a
-global table into the scoped set.
+reaches `storages` through a **nullable** `department_id`/`storage_id`. One
+nullable optional FK is enough to drag a table into the scoped set on schema
+evidence alone, which is why I would not ship the closure.
+
+**CORRECTION — my example was badly chosen, and the closure was right about it.**
+I justified rejecting the closure by calling `categories` brand-wide catalog
+data. It is not. `CreateCategory` refuses to insert unless `department_id` is
+non-null *and* that department's storage belongs to the caller's branch
+(`categories.sql.go:197-208`), and `GetCategoriesByDepartmentID` applies the same
+`s.branch_id = current_setting('app.branch_id')` test on the way out
+(`categories.sql.go:561-570`). The REST API has been treating categories as
+branch-scoped all along. Found by accident, while a category create in an
+unrelated test failed with "no rows in result set" because it passed no
+department.
+
+This does not change what shipped — filtering only rows that state their own
+branch leaves categories flowing to every terminal, which is the pre-existing
+feed behaviour and breaks nothing — but it does change the argument. The point
+that survives is narrower and still decisive: a schema-only inference cannot
+distinguish "nullable FK that happens to exist" from "nullable FK the write path
+actually requires", and only the second is evidence of scope. Resolving the 22
+means reading each entity's write and read paths, as here, not running a query
+over `pg_constraint`. The one worked example so far says the closure's answer was
+correct, which is a reason to do that reading rather than to trust the closure.
 
 The two failure modes are not symmetric, which is what decides it:
 
@@ -800,6 +821,35 @@ an annoyance; a duplicated staff record with working credentials is not.
 unnecessary. It does not: push's allowlist is `orders`, `order_items`,
 `attendances` only, so every entity named above stays on REST permanently. This
 item is needed in full.
+
+**STATUS: implemented and tested.** `service/create_id.go` plus the six create
+paths — halls, cafe tables, categories, goods, translations, and **both** user
+creates. Backend commit `619d2a9`.
+
+**Two user paths, not one.** This section named `RegisterRequest`. The admin
+path `CreateStaffUser`/`CreateStaffRequest` (`auth.go:388`) is the second, and it
+is the one this section's own "duplicated staff record with working credentials"
+warning is really about — public `Register` does not mint staff. Both now carry
+the id.
+
+**No sqlc regeneration was needed**, which was the main risk to this item's
+effort estimate. Every generated `Create*Params` already had an `ID` field; the
+services were passing `uuid.New()` into it. The change is entirely
+model/service/handler.
+
+**The parameter goes after `ctx`, not at the end.** Several of these signatures
+end in runs of `*string`, so an appended `*string` id would sit adjacent to
+unrelated ones of the same type and a misplacement could compile while writing
+the id into the wrong column. In position two it is followed by a required
+`string`, so the compiler catches it — which it did, at every call site,
+including one nested create inside `CreateGoodWithCalculations` that a
+signature-only search would have missed.
+
+**Acceptance — run.** Against a real database: a replayed hall create returns the
+same row and leaves exactly one; an omitted id still gets a server-allocated one;
+a blank id is treated as absent rather than as an error; a malformed id is
+rejected rather than silently replaced; and the same contract holds for
+translations.
 
 ---
 
