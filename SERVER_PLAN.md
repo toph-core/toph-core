@@ -1119,12 +1119,72 @@ section learned it needed. The table already has `branch_id`, so migration 73's
 own-row filter scopes it correctly with no extra work — this is genuinely just
 the trigger.
 
-**Worth doing before the remaining P2 work**, since it is a correctness gap in
-what a terminal displays rather than a scaling concern. Not done here because
-this session's audit was scoped to branch *filtering* of entities already in the
-feed, and adding an entity to the feed is a different change with its own
-acceptance (the seeded rows land at the end of the log and every terminal
-receives them once).
+**STATUS: implemented and tested, both halves.** Backend
+`77_change_log_ingredient_visibility.{up,down}.sql` (commit `f1d73c7`); client
+registry entry, filtered ingredient read and tests (commit `a508092`).
+
+**The client had no such table at all**, so the server trigger alone would have
+replicated rows into a void. Scope was bigger than this section first said:
+registry entry, local table, and the filter applied where ingredients are listed.
+
+**`EXISTS`, not the backend's `JOIN`.** The backend joins safely because its
+session pins one branch, so at most one visibility row can match. A local
+database holds whatever the feed delivered, and a token that is not branch-scoped
+delivers one row per branch — a join then lists the same ingredient once per row.
+Checked against sqlite rather than reasoned about: the join form returns the
+ingredient twice, `EXISTS` once.
+
+**The existing client tests encoded the bug.** They put ingredients with no
+visibility row and asserted they were listed. Fixtures now build both rows
+through one helper so a later test cannot quietly reintroduce it.
+
+**Seed is `NOT EXISTS`-guarded** and re-running the migration leaves the row
+count unchanged, so it is safe to apply to a schema that already has it.
+
+---
+
+### P0-6 — The client replicates 36 of the 52 entities the backend logs (new)
+
+**Found while adding P0-5's registry entry**, from the guard test in
+`local_database_test.dart`.
+
+That test reads as the protection against exactly this, and it is not: it asserts
+the registry against a **hand-written list**, never against the backend. Nothing
+compares the two, so they drift without failing — and they have.
+
+**Backend logs 52 entities. The client replicates 36.** Missing:
+
+```
+cash_register_shifts  cash_registers    goods_modifiers   group_transactions
+modifiers             outgoing_invoices outgoing_invoice_items  pos_auth_settings
+printer_settings      qr_sessions       separation_acts   separation_act_items
+shipments             shipment_items    stop_list         table_time_sessions
+transactions
+```
+
+**All eight tables migration 70 added are in that list.** P0-1's server half
+shipped and its client half never did, so the payoff that section describes —
+"four screens migrate, `main_datasources.dart` is the last file" — has not been
+collected. The triggers fire, the rows reach `change_log`, and the client
+discards them because an entity absent from the registry is silently skipped.
+
+**`stop_list` is the one to look at first.** The order flow checks it server-side
+(`IsGoodInStopList`, enforced in `CreateOrderItems` and `AddOrderItems`), so an
+offline terminal cannot know a good is stop-listed and will happily take the
+order.
+
+**And one in the other direction:** `shifts` sits in the client registry with no
+backend trigger at all. The client waits for data that is never sent.
+
+**Change.** A registry entry per entity, promoted columns chosen per screen that
+reads it, and the screens migrated off REST. Then make the guard test verify
+against something real — the backend migration files are in the same monorepo,
+so the trigger list can be parsed rather than retyped.
+
+**Not done here** because seventeen entities is seventeen judgements about
+promoted columns plus the screen migrations behind them, which is its own change
+with its own acceptance. The guard test's comment now states plainly what it does
+and does not check, so it stops reading as assurance it never provided.
 
 ---
 
