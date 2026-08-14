@@ -300,13 +300,30 @@ class LocalDatabase {
     _touch(table);
   }
 
+  /// The local soft-delete marker: NULL for a live row, epoch seconds for a
+  /// deleted one.
+  ///
+  /// **Zero means live, and must be stored as NULL.** `deleted_at` is
+  /// `BIGINT DEFAULT 0` across the tenant schema, so `to_jsonb(NEW)` puts
+  /// `"deleted_at": 0` in the payload of every live row — while every local
+  /// read filters `WHERE deleted_at IS NULL`. Passing the 0 through stored it
+  /// verbatim, and `0 IS NULL` is false, so every replicated live row was
+  /// written to the database and then invisible to all 16 of those reads.
+  ///
+  /// It went unnoticed because no test fixture ever had the shape the server
+  /// actually sends: fixtures omit `deleted_at` entirely, which stores NULL and
+  /// reads back fine. `deletedAtOf` in [PayloadNormalizer] carries the same
+  /// mapping for the same reason.
   int? _deletedAt(Map<String, dynamic> data) {
     final raw = data['deleted_at'];
     if (raw == null) return null;
-    if (raw is int) return raw;
-    if (raw is num) return raw.toInt();
-    if (raw is String) return int.tryParse(raw);
-    return null;
+    final value = switch (raw) {
+      int i => i,
+      num n => n.toInt(),
+      String s => int.tryParse(s),
+      _ => null,
+    };
+    return (value == null || value == 0) ? null : value;
   }
 
   /// Maps a JSON value onto a promoted column's storage class.

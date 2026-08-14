@@ -76,17 +76,24 @@ class PayloadNormalizer {
     return d.toString();
   }
 
-  /// Reads the soft-delete marker from a raw row.
+  /// Reads the soft-delete marker from a raw row: null for a live row, epoch
+  /// seconds for a deleted one.
   ///
-  /// `deleted_at` is `*int64` (epoch seconds) across this schema, not a
-  /// timestamp — a non-null value means the row is soft-deleted server-side.
+  /// `deleted_at` is `BIGINT DEFAULT 0` across this schema, not a timestamp and
+  /// not nullable, so a live row arrives as **0**, not as null — and this
+  /// returns null for it, because "not deleted" is what the rest of the code
+  /// means by null. Treating 0 as a delete marker is what made every live
+  /// replicated row invisible to reads filtering `deleted_at IS NULL`.
   /// Tolerates a string encoding in case a future column changes type.
   static int? deletedAtOf(Map<String, dynamic> row) {
     final raw = row['deleted_at'];
     if (raw == null) return null;
-    if (raw is int) return raw;
-    if (raw is num) return raw.toInt();
-    if (raw is String) return int.tryParse(raw);
-    return null;
+    final value = switch (raw) {
+      int i => i,
+      num n => n.toInt(),
+      String s => int.tryParse(s),
+      _ => null,
+    };
+    return (value == null || value == 0) ? null : value;
   }
 }

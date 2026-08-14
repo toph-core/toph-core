@@ -101,6 +101,28 @@ void main() {
       expect(kEntitiesByName.keys.toSet(), loggedByBackend);
     });
 
+    test('a live row arrives with deleted_at 0 and stays visible', () {
+      // The shape the server actually sends. `deleted_at` is BIGINT DEFAULT 0
+      // in the tenant schema, so to_jsonb puts 0 -- not null -- in every live
+      // row's payload, while every local read filters `deleted_at IS NULL`.
+      // Storing the 0 verbatim wrote each row and then hid it from all 16 of
+      // those reads.
+      //
+      // No fixture in this suite had ever had that shape: they omit deleted_at,
+      // which stores null and reads back fine. So the tests passed on data the
+      // client never receives. Hence asserting the wire shape here specifically.
+      final spec = kEntitiesByName['ingredients']!;
+      db.upsert(spec, 'i-live',
+          PayloadNormalizer.normalize(spec, {'id': 'i-live', 'name': 'Bodring', 'deleted_at': 0}));
+      db.upsert(spec, 'i-gone',
+          PayloadNormalizer.normalize(spec, {'id': 'i-gone', 'name': 'Eski', 'deleted_at': 1750000000}));
+
+      expect(db.allOf('ingredients').map((e) => e['id']), ['i-live']);
+      expect(db.byId('ingredients', 'i-live'), isNotNull);
+      expect(db.byId('ingredients', 'i-gone'), isNull,
+          reason: 'a genuine soft-delete must still be filtered out');
+    });
+
     test('local table names cannot collide with replicated entities', () {
       for (final spec in kReplicatedEntities) {
         expect(LocalTables.all.contains(spec.name), isFalse);
