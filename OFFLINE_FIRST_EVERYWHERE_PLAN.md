@@ -351,6 +351,36 @@ None of these block Phases 0-4; they raise the ceiling.
 
 ---
 
+## 6b. Status finding — two storage engines run in parallel
+
+Discovered while wiring the first Phase 4 read (transactions). The client has
+**two** `LocalDatabase` classes, and the migration between them is half done:
+
+- **SQLite `core/db/`** — the offline-first target. The change feed lands here;
+  `halls_tables`, `menu_admin`, `users`, `archives`, `tables` and now the
+  transactions read sit on it.
+- **Hive `core/database/`** — the old `CacheService`, evolved. **`orders`,
+  `waiter`, the order-detail read path, `menu` and `table_timer` still read from
+  it.**
+
+So the entire backend sync effort fills the SQLite replica, while the most
+important screens in the POS — the order flow — read the Hive store the feed
+never touches. The `deleted_at` fix, the branch scoping, the snapshot, the
+compaction: none of it reaches those screens yet, because those screens are on
+the wrong engine.
+
+This reframes Phase 4. It is not "rewire screens onto the replica" from a clean
+base; it is "finish moving off two engines onto one", and the order flow — the
+highest-value, highest-traffic path — is the biggest piece still on Hive. The
+`Hive present -> 86 files` line in the definition of done below is this, not
+stragglers.
+
+Recommended order when this resumes: the order/waiter read path first (it is
+what the sync work exists to serve), then the remaining back-office lists, which
+are smaller and lower-traffic.
+
+---
+
 ## 7. Definition of done
 
 The spec's own review questions, as CI-checkable assertions:
