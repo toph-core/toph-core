@@ -862,6 +862,54 @@ provisional until the order's next pull.
 **Change.** Same as P1-2, one endpoint. Small, and it makes items behave exactly
 like the order that contains them.
 
+**STATUS: implemented and tested.** Backend commit `91eaa94`.
+
+**Three REST paths, not one.** `CreateOrderItems` was the endpoint named here.
+`AddOrderItems` and the nested `items` inside `CreateOrder` create line items the
+same way, and all three share `CreateOrderItemInline`/`CreateOrderItemEntry`, so
+one field reaches every path. Leaving two of the three would have meant an item
+whose id depends on which endpoint the client happened to use.
+
+**Sync push already did this.** `createOrderItemFromPayload` takes the id from
+the payload and opens with a `GetOrderItemByID` early return, so the offline
+replay path has been idempotent all along. This section's framing — "local item
+ids are provisional until the order's next pull" — was only ever true of the REST
+paths. Worth knowing, because it means the risk this closes is a flaky-network
+retry rather than the offline queue.
+
+**Not the same shape as P1-2, because each line has side effects.** A replayed
+line now skips the entire body rather than just the insert. Re-running it would:
+
+1. duplicate the line's modifier rows,
+2. add the modifier price on top of a price that already includes it, and
+3. **deduct stock a second time.**
+
+The third is the one worth naming. A retried batch quietly draining inventory is
+not a symptom anyone traces back to a lost HTTP response, and this section's
+"small, one endpoint" framing did not anticipate it.
+
+**Ordering detail.** The existence check sits *ahead* of the stop-list check. A
+good can be stop-listed between the original call and the retry, and rejecting
+the replay of a line that was already committed would leave the client retrying a
+batch that can never succeed.
+
+**Acceptance — run.** Against a real database with the full stock chain wired up
+(`good → category → department → storage`, branch-matched, which is what
+`GetStorageByGoodID` requires):
+
+```
+first create        stock 1000.000000 -> -200.000000   line gets the client's id
+same batch replayed same line returned, 1 row total
+                    stock -200.000000 -> -200.000000   (no second deduction)
+                    price 50000.00 -> 50000.00         (not inflated)
+```
+
+**Incidentally, more evidence for the P0-4 correction.** `GetStorageByGoodID`
+joins `goods → categories → departments → storages` and filters on
+`s.branch_id = current_setting('app.branch_id')`. That is a third place, after
+`CreateCategory` and `GetCategoriesByDepartmentID`, where the system treats a
+category as belonging to a branch.
+
 ---
 
 ### P2-1 — Bootstrap snapshot endpoint
