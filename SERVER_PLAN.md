@@ -335,20 +335,36 @@ that still shadows the replica.
 `/sync/change-logs` returns the payload verbatim (`service/sync.go:271-278`).
 
 **Change.** Strip them at the source. Postgres has no per-column trigger payload
-filter, so the exclusion has to live inside `log_change` — the cheapest correct
-form is one line before the insert:
+filter, so the exclusion has to live inside `log_change`, as a
+`CREATE OR REPLACE FUNCTION` with no trigger changes:
 
 ```sql
 IF TG_TABLE_NAME = 'users' THEN
-  v_payload := v_payload - 'hash_password' - 'pincode';
+  v_payload := v_payload - 'hash_password' - 'pincode' - 'fcm_token' - 'password';
 END IF;
 ```
 
-That is a `CREATE OR REPLACE FUNCTION` on `log_change`, no trigger changes, and
-it covers every current and future consumer. Historical rows need a companion
-`UPDATE change_log SET payload = payload - 'hash_password' - 'pincode' WHERE
-entity = 'users'` in the same migration — see the acceptance criterion below,
-which will otherwise pass on new rows and fail on a bootstrap.
+**Four keys, not the two this section originally listed.** A scan of every
+credential-shaped column in the tenant schema turned up one more that is in the
+feed:
+
+- `fcm_token` — the push notification token. Not a password, but a capability:
+  whoever holds it can push notifications to that user's device. It matters more
+  than its severity suggests, because the client's redaction list
+  (`lib/core/db/entity_registry.dart:401`) is `{hash_password, pincode,
+  password}` — `fcm_token` is not in it. **It is the only one of the three that
+  currently reaches terminal disk in the clear**, precisely because the
+  defence-in-depth layer does not know about it.
+- `password` is stripped defensively. `users` has no such column, the strip is a
+  no-op when the key is absent, and it means a plaintext column added later
+  cannot start replicating silently.
+
+`pos_auth_settings.pos_password_hash` is deliberately untouched: that table has
+no `change_log` trigger, so it never enters the feed. It must not gain one
+without extending this filter.
+
+Historical rows need a companion `UPDATE` in the same migration, or the
+acceptance criterion below passes on new rows and fails on a bootstrap.
 
 **Also.** `POST /users` and `POST /auth/register` take a plaintext `password`. The
 client's outbox has to store that payload on disk to send a staff create queued
@@ -356,9 +372,32 @@ offline. That is a narrower exposure than a replicated column, and it is inheren
 to offline creation — but it is worth a decision rather than an accident: either
 accept it, or rule that staff creation requires connectivity.
 
-**Acceptance.** `GET /sync/change-logs?entity=users` returns payloads with neither
-field, for both historical and new rows. Historical rows matter — a client
-bootstrapping from cursor 0 replays all of them.
+**STATUS: written and tested.** `71_change_log_redact_credentials.{up,down}.sql`,
+on `claude/change-log-missing-triggers` in `mary-ai-backend`. Not merged.
+
+**Urgency changed with P0-0.** Until the sync endpoints were fixed this was
+latent — the feed returned 500, so nothing leaked. Shipping P0-0 without this
+would convert it into a live exposure, which is why it went next.
+
+**Acceptance — run, not just specified.** Credentials were seeded into
+`change_log` *before* applying the migration, so the historical path was really
+exercised:
+
+- All three pre-existing `users` rows — including one written by the migrations'
+  own seed — came out with `hash_password`, `pincode` and `fcm_token` absent.
+- After the migration, `create`, `update` and `delete` all write clean payloads.
+  Delete matters on its own: it takes the `to_jsonb(OLD)` branch, so a filter
+  placed inside the `IF` block would have missed it.
+- The 14 user fields the client actually needs are untouched (`id`, `full_name`,
+  `username`, `role`, `branch_id`, `shift_id`, `cash_register_id`, `is_active`,
+  `email`, `phone_number`, …), and non-`users` entities are unaffected.
+- The down migration restores the unfiltered function but leaves the history
+  scrubbed. That asymmetry is deliberate: a rollback should not be able to
+  republish credentials.
+
+**Still open:** `email` and `phone_number` stay in the feed. They are PII rather
+than credentials and are plausibly needed by staff screens, so removing them is a
+product call, not a security fix.
 
 ---
 
@@ -684,7 +723,7 @@ all.
 | 1 | **P0-3 cursor skew** | Confirmed live in the code, but see the revised entry: both proposed fixes were wrong, and the replacement is a design decision. Silent data loss with no client-side recovery — though it has lost nothing yet, because of P0-0. |
 | 2 | **P0-4 branch scoping on pull** (new) | Every terminal receives every branch's rows. Correctness and volume, and it gets harder to add the longer `brand_id` stays unpopulated on some rows. |
 | 3 | P0-1 eight triggers | Unblocks four screens and the deletion of the client's last HTTP file. Small, and the migration is written out in full above. |
-| 4 | P0-2 credentials | Small, and it is a live exposure in every venue running today. |
+| ~~4~~ | **P0-2 credentials** | **Done.** Moved ahead of P0-3 and P0-4 because P0-0 is what makes it live: the fix that got the feed working is the fix that would have started the leak. |
 | 5 | P1-2 / P1-3 client ids | Deletes client machinery; fixes lost-response duplicates. Confirmed necessary — push does not cover these entities. |
 | 6 | P2-1 snapshot | Before retention, because it is the recovery path. |
 | 7 | P2-2 retention | Operational; the pressure is gradual. |
@@ -706,7 +745,8 @@ So the payoff is concrete:
   the client already believes it replicates.
 - **After P0-2**: the client's redaction stays as defence in depth, but stops
   being the only thing standing between a venue's terminals and its password
-  hashes.
+  hashes — and `fcm_token`, which that redaction never covered, stops being
+  replicated at all.
 - **After P0-4**: the client's replica shrinks to its own branch, and bootstrap
   stops replaying other venues' history. No client code changes — it already
   trusts the feed; the feed just gets smaller and correct.
@@ -771,6 +811,11 @@ All but one, from `mary-ai-backend@3533b8b`.
 against a scratch Postgres, which is why these are corrections to the *second*
 pass rather than to the original:
 
+- **P0-2 shipped, and it grew a third key.** A scan for credential-shaped
+  columns found `fcm_token` in the feed alongside `hash_password` and `pincode`.
+  It is the one the client's own redaction list misses, so it was the only one
+  of the three actually reaching terminal disk in the clear. Ordered ahead of
+  P0-3 and P0-4 because P0-0 is what makes the exposure live.
 - **New P0-0, and it is the biggest thing here: the sync endpoints did not
   work.** All three returned `tenant transaction not found in context` to every
   caller, because a refactor moved transaction management out of
