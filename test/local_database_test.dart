@@ -71,17 +71,28 @@ void main() {
 
     test('replicates every entity the backend logs a trigger for', () {
       // Mirrors the `trg_change_log_*` triggers in the backend's tenant
-      // migrations (8_movements.up.sql, 41_modifier_calculation.up.sql). If the
-      // backend adds a trigger, this list and the registry both need the entry
-      // — an unreplicated entity is silently skipped at runtime, so the gap
-      // would otherwise only show up as missing data on a screen.
+      // migrations (8_movements.up.sql, 41_modifier_calculation.up.sql,
+      // 70_change_log_missing_triggers.up.sql,
+      // 77_change_log_ingredient_visibility.up.sql). If the backend adds a
+      // trigger, this list and the registry both need the entry — an
+      // unreplicated entity is silently skipped at runtime, so the gap would
+      // otherwise only show up as missing data on a screen.
+      //
+      // Read what this actually checks, though: the registry against a list
+      // written by hand. Nothing here reads the backend, so the two drift
+      // without failing. They HAVE drifted — the backend logs 52 entities and
+      // the 17 named in SERVER_PLAN.md P0-6 are replicated by neither this list
+      // nor the registry, including all eight that migration 70 added. This
+      // test passing means the registry matches the list, not that the client
+      // replicates what the server sends.
       const loggedByBackend = {
         'attendances', 'bill_daily_counters', 'branches', 'cafe_tables',
         'calculation', 'categories', 'compound_stock', 'compounds',
         'compounds_details', 'deduction_act_groups',
         'deduction_item_ingredients', 'deduction_items', 'deductions',
         'departments', 'goods', 'goods_details', 'halls', 'ingredient_groups',
-        'ingredient_stock', 'ingredient_stock_movements', 'ingredients',
+        'ingredient_stock', 'ingredient_stock_movements', 'ingredient_visibility',
+        'ingredients',
         'inventories', 'inventory_items', 'invoice_detailed', 'invoices',
         'modifier_calculation', 'order_item_modifiers', 'order_items', 'orders',
         'shifts', 'storages', 'suppliers', 'translations', 'user_payments',

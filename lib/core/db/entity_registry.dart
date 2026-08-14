@@ -292,6 +292,26 @@ const List<EntitySpec> kReplicatedEntities = [
     promoted: [PromotedColumn('name', SqlType.text, indexed: true)],
     numericKeys: {'price_per_unit'},
   ),
+  // Which ingredients this branch may see. The catalogue in `ingredients` is
+  // brand-wide, so one row there is legitimately visible in several branches at
+  // once and cannot itself carry a branch — this table is how the backend
+  // narrows it, and without it a terminal shows every brand's ingredient.
+  //
+  // The rule is the strict one, matching all six of the backend's reads: an
+  // ingredient is visible only where a row here says so with `is_visible`.
+  // Absence is not permission.
+  //
+  // `is_visible` promotes to INTEGER because SQLite has no boolean; the applier
+  // coerces true/false to 1/0 on the way in. `ingredient_id` is indexed because
+  // it is the join key for every ingredient read.
+  EntitySpec(
+    name: 'ingredient_visibility',
+    promoted: [
+      PromotedColumn('ingredient_id', SqlType.text, indexed: true),
+      PromotedColumn('branch_id', SqlType.text),
+      PromotedColumn('is_visible', SqlType.integer),
+    ],
+  ),
   EntitySpec(
     name: 'inventories',
     numericKeys: {'surplus_amount', 'shortage_amount', 'remaining_amount'},

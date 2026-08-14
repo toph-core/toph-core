@@ -32,6 +32,22 @@ void main() {
   /// non-nullable, and the repository skips rows it cannot decode — so a thin
   /// fixture silently produces an empty list with a correct-looking total,
   /// which is exactly what a real replica row missing a column would do.
+  /// An ingredient plus the visibility row that makes it visible here.
+  ///
+  /// Both are required now: the backend joins `ingredient_visibility` on
+  /// `is_visible = true` in every ingredient read, so an ingredient with no
+  /// visibility row is hidden rather than shown. Writing the fixture as one
+  /// helper keeps that from being forgotten in a later test.
+  void visibleIngredient(String id, {required String name, String branch = 'b-1'}) {
+    put('ingredients', {'id': id, 'name': name});
+    put('ingredient_visibility', {
+      'id': 'v-$id',
+      'ingredient_id': id,
+      'branch_id': branch,
+      'is_visible': true,
+    });
+  }
+
   void good(String id, {String name = 'Osh', String category = 'c-1', int? deletedAt}) =>
       put('goods', {
         'id': id,
@@ -373,12 +389,50 @@ void main() {
 
   group('the picker lists', () {
     test('ingredients and compounds come from the replica, ordered by name', () {
-      put('ingredients', {'id': 'i-2', 'name': 'Guruch'});
-      put('ingredients', {'id': 'i-1', 'name': 'Bodring'});
+      visibleIngredient('i-2', name: 'Guruch');
+      visibleIngredient('i-1', name: 'Bodring');
       put('compounds', {'id': 'c-1', 'name': 'Sous', 'branch_id': 'b-1'});
 
       expect(repo.getIngredients().map((e) => e['id']), ['i-1', 'i-2']);
       expect(repo.getCompounds().map((e) => e['id']), ['c-1']);
+    });
+
+    test('an ingredient this branch cannot see is not listed', () {
+      // The catalogue in `ingredients` is brand-wide, so replicating it is not
+      // permission to show it. Before ingredient_visibility reached the client
+      // at all, every terminal listed the whole brand's ingredients offline.
+      visibleIngredient('i-1', name: 'Bodring');
+
+      // explicitly hidden here
+      put('ingredients', {'id': 'i-2', 'name': 'Guruch'});
+      put('ingredient_visibility', {
+        'id': 'v-i-2',
+        'ingredient_id': 'i-2',
+        'branch_id': 'b-1',
+        'is_visible': false,
+      });
+
+      // and one with no visibility row at all -- absence is not permission,
+      // matching the backend's INNER join
+      put('ingredients', {'id': 'i-3', 'name': 'Tuz'});
+
+      expect(repo.getIngredients().map((e) => e['id']), ['i-1']);
+    });
+
+    test('an ingredient visible in two branches is listed once', () {
+      // A terminal normally holds only its own branch's visibility rows, since
+      // change_log.branch_id scopes the feed. A token that is not branch-scoped
+      // holds one per branch, and the obvious JOIN would then list the same
+      // ingredient once per row.
+      visibleIngredient('i-1', name: 'Bodring', branch: 'b-1');
+      put('ingredient_visibility', {
+        'id': 'v-i-1-other',
+        'ingredient_id': 'i-1',
+        'branch_id': 'b-2',
+        'is_visible': true,
+      });
+
+      expect(repo.getIngredients().map((e) => e['id']), ['i-1']);
     });
 
     test('an ingredient added elsewhere appears without reopening the panel',
@@ -388,7 +442,7 @@ void main() {
       await Future<void>.delayed(Duration.zero);
       expect(seen.single, isEmpty);
 
-      put('ingredients', {'id': 'i-1', 'name': 'Bodring'});
+      visibleIngredient('i-1', name: 'Bodring');
       await Future<void>.delayed(Duration.zero);
 
       expect(seen.last, hasLength(1));

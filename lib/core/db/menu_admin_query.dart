@@ -17,6 +17,7 @@ class MenuAdminQuery {
     'goods',
     'categories',
     'ingredients',
+    'ingredient_visibility',
     'compounds',
   };
 
@@ -84,9 +85,32 @@ class MenuAdminQuery {
         'ORDER BY name COLLATE NOCASE, id',
       );
 
+  /// Only the ingredients this branch may see.
+  ///
+  /// Mirrors the backend exactly, which joins `ingredient_visibility` on
+  /// `is_visible = true` as an INNER join in all six of its ingredient reads —
+  /// so an ingredient with no visibility row is hidden here too. Absence is not
+  /// permission, and getting that backwards would show a branch the whole
+  /// brand's catalogue, which is the bug this replaced.
+  ///
+  /// The branch is not filtered here because it is already filtered upstream:
+  /// `change_log.branch_id` scopes the feed, so a terminal only ever receives
+  /// its own branch's visibility rows.
+  ///
+  /// EXISTS rather than the backend's INNER JOIN. The backend can join safely
+  /// because its session pins one branch, so at most one visibility row can
+  /// match an ingredient. A local database holds whatever the feed delivered,
+  /// and a token that is not branch-scoped delivers a row per branch — a join
+  /// would then list the same ingredient several times. EXISTS gives the same
+  /// answer for a terminal and cannot duplicate for anyone else.
   List<Map<String, dynamic>> ingredients() => _db.selectData(
-        'SELECT data FROM ingredients WHERE deleted_at IS NULL '
-        'ORDER BY name COLLATE NOCASE, id',
+        'SELECT i.data FROM ingredients i '
+        'WHERE i.deleted_at IS NULL '
+        '  AND EXISTS ('
+        '    SELECT 1 FROM ingredient_visibility v '
+        '    WHERE v.ingredient_id = i.id AND v.is_visible = 1'
+        '  ) '
+        'ORDER BY i.name COLLATE NOCASE, i.id',
       );
 
   List<Map<String, dynamic>> compounds() => _db.selectData(
