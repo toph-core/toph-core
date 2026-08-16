@@ -66,6 +66,13 @@ class OrderDetailQuery {
   /// Live (non-cancelled, non-deleted) items of an order, each carrying its
   /// good's name from the joined `goods` row. Ordered oldest first, the order
   /// they were rung in.
+  ///
+  /// `order_items` promotes only `order_id`/`good_id`/`status` to real columns,
+  /// so `created_at` is not one — it lives inside the stored `data` blob and is
+  /// read back with `json_extract` (the same access the registry prescribes for
+  /// any non-promoted field). Ordering by the bare `oi.created_at` column, as an
+  /// earlier revision did, raises `no such column` against the real schema. A
+  /// row whose payload carries no `created_at` sorts first, then by `id`.
   List<Map<String, dynamic>> _itemsForOrder(String orderId) {
     final rows = _db.select(
       '''
@@ -73,7 +80,7 @@ class OrderDetailQuery {
         FROM order_items oi
         LEFT JOIN goods g ON g.id = oi.good_id AND g.deleted_at IS NULL
        WHERE oi.order_id = ? AND oi.deleted_at IS NULL
-       ORDER BY oi.created_at ASC, oi.id ASC
+       ORDER BY json_extract(oi.data, '\$.created_at') ASC, oi.id ASC
       ''',
       [orderId],
     );

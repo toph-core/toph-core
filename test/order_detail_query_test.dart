@@ -60,6 +60,21 @@ void main() {
       expect(items.map((e) => e['good_name']), ['Osh', 'Lagmon']);
     });
 
+    test('items are ordered by created_at, not by id or insertion order', () {
+      order('o1', 'tb1', 'open', '2026-08-12T10:00:00Z');
+      // `created_at` is not a promoted column on order_items; it is read from
+      // the stored `data` blob with json_extract. This case makes the id order
+      // the OPPOSITE of the chronological order — 'aa' sorts first by id but was
+      // rung in last — so ordering by the (non-existent) `oi.created_at` column,
+      // or falling back to id/rowid order, both give the wrong answer here.
+      item('aa', 'o1', 'g1', '2026-08-12T10:05:00Z');
+      item('zz', 'o1', 'g2', '2026-08-12T10:01:00Z');
+
+      final items = (query.liveOrderForTable('tb1')!['items'] as List)
+          .cast<Map<String, dynamic>>();
+      expect(items.map((e) => e['id']), ['zz', 'aa']);
+    });
+
     test('a cancelled (soft-deleted) item is excluded', () {
       order('o1', 'tb1', 'open', '2026-08-12T10:00:00Z');
       item('i1', 'o1', 'g1', '2026-08-12T10:01:00Z');

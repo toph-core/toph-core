@@ -379,6 +379,45 @@ Recommended order when this resumes: the order/waiter read path first (it is
 what the sync work exists to serve), then the remaining back-office lists, which
 are smaller and lower-traffic.
 
+### Order-flow read — verified against the replica, and a crash fixed
+
+Resuming the order-detail read produced two concrete results, both provable
+without a running app:
+
+1. **The shape contract holds.** `OrderDetailQuery`'s output, decoded through
+   `ArchiveDetailModel.fromJson`, maps 1:1 onto what the order screen's bloc
+   (`detail_bloc._applyDetailToState`) already reads. The item name comes from
+   the joined `good_name` — exactly the key `OrderFoodModel` reads — and
+   `table_number` / `hall_name` / `bill_status` / `guest_count`, plus each
+   item's `id` / `price` / `status` / `quantity` / `comment` / `created_at` /
+   `good_id`, all line up. So the read swap's *data* is correct; nothing in the
+   model layer changes to consume the replica.
+
+2. **A crash the earlier "verified in sqlite" missed.** The read ordered its
+   items by the bare column `oi.created_at`, but `order_items` promotes only
+   `order_id` / `good_id` / `status` — there is no such column, so the query
+   raised `no such column: oi.created_at` against the real generated schema for
+   any order that has items. (The verification that shipped it must have run
+   against a schema that didn't match the registry; the committed Dart test
+   would have caught it the first time it ran.) Fixed to
+   `json_extract(oi.data, '$.created_at')` — the access the registry prescribes
+   for non-promoted fields — verified end-to-end in sqlite against a schema
+   built faithfully from `kReplicatedEntities`, and pinned by a test case whose
+   id order contradicts its time order so an id-only fallback fails it. A sweep
+   of the sibling queries (`archives`, `halls_tables`, `menu_admin`,
+   `transactions`, `users`) found no other reference to a non-existent column.
+
+What remains app-gated is unchanged and now sharply bounded: only the
+**optimistic-write overlay** for a brand-new order not yet reflected by the
+feed. Today that order reaches the screen solely through the Hive snapshot
+(`create_order_bloc` → `saveOrderDetailSnapshot` → `watchOrderDetail(tableId)`);
+nothing writes it into the SQLite `orders` / `order_items` tables. Swapping
+`OrdersRepositoryImpl.watchOrderDetail` / `getOrderDetail` onto
+`OrderDetailQuery` is safe for already-synced orders but must not lose that
+optimistic display — so it pairs with writing the local order and items into the
+replica (guarded by `_pending`) on `createOrder` / `addItems`. That write pair
+is the piece that needs the app to confirm the overlay still behaves.
+
 ---
 
 ## 7. Definition of done
