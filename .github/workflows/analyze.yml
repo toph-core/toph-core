@@ -2,7 +2,7 @@ name: Analyze
 
 on:
   push:
-    branches: [main, test]
+    branches: [main, test, 'claude/**']
   pull_request:
 
 jobs:
@@ -29,3 +29,11 @@ jobs:
 
       - name: Flutter analyze
         run: flutter analyze
+
+      # Runs the whole suite, including test/architecture_guard_test.dart — the
+      # ratchet that enforces the §9 guardrails (no networking outside the
+      # transport layer, no repository injection in presentation/pages, no
+      # FutureBuilder). Those rules were only ever checked by a test that never
+      # ran in CI; this step is what gives them teeth on every push and PR.
+      - name: Flutter test
+        run: flutter test
