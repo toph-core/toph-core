@@ -436,7 +436,6 @@ void _repositories() {
   // own class doc for what's deliberately not covered.
   inject.registerLazySingleton<TransactionsRepository>(
     () => TransactionsRepositoryImpl(
-      localDb: inject<LocalDatabase>(),
       replicaDb: inject<replica.LocalDatabase>(),
     ),
   );

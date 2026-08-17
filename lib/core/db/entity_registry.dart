@@ -388,6 +388,21 @@ const List<EntitySpec> kReplicatedEntities = [
     promoted: [PromotedColumn('name', SqlType.text, indexed: true)],
   ),
   EntitySpec(name: 'translations'),
+  // The transactions screen's two back-office pickers: transaction (expense/
+  // income) groups and cash registers. Both are small id+name catalogues the
+  // change feed now carries — tenants migration 70 (change_log_missing_triggers)
+  // added their triggers and backfilled a create per live row. The feed is
+  // branch-scoped on the backend (change_log_branch_id*), so the local reads
+  // need no branch filter, exactly like the transactions ledger below. `name`
+  // is promoted because that is what the pickers order on.
+  EntitySpec(
+    name: 'group_transactions',
+    promoted: [PromotedColumn('name', SqlType.text)],
+  ),
+  EntitySpec(
+    name: 'cash_registers',
+    promoted: [PromotedColumn('name', SqlType.text)],
+  ),
   // The transactions ledger. Promotes exactly what its list screen filters,
   // sorts and paginates on, so those become SQL over the local replica instead
   // of a paginated REST call. `type` is the enum's string label (the payload

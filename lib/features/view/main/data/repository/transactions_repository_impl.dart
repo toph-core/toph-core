@@ -1,38 +1,36 @@
-import 'package:mary_ai_pos/core/database/local_database.dart';
 import 'package:mary_ai_pos/core/db/local_database.dart' as replica;
+import 'package:mary_ai_pos/core/db/transaction_pickers_query.dart';
 import 'package:mary_ai_pos/core/db/transactions_query.dart';
 import 'package:mary_ai_pos/features/view/main/domain/repository/transactions_repository.dart';
 
 class TransactionsRepositoryImpl implements TransactionsRepository {
-  final LocalDatabase _localDb;
   final TransactionsQuery _query;
+  final TransactionPickersQuery _pickers;
 
-  // Two stores on purpose, for now. The transaction-group and cash-register
-  // picker lists still live in the Hive `LocalDatabase`; the paginated ledger
-  // reads the SQLite replica the change feed fills, through [TransactionsQuery].
-  // Collapsing these onto one engine is the larger migration tracked in
-  // OFFLINE_FIRST_EVERYWHERE_PLAN.md's definition of done ("exactly one
-  // database class").
-  TransactionsRepositoryImpl({
-    required LocalDatabase localDb,
-    required replica.LocalDatabase replicaDb,
-  })  : _localDb = localDb,
-        _query = TransactionsQuery(replicaDb);
+  // One engine now. The paginated ledger, the transaction-group picker and the
+  // cash-register picker all read the SQLite replica the change feed fills. The
+  // group and register catalogues moved here once tenants migration 70
+  // (change_log_missing_triggers) started replicating `group_transactions` and
+  // `cash_registers`; serving them from the Hive `LocalDatabase` was the last
+  // thing tying this repository to a second database.
+  TransactionsRepositoryImpl({required replica.LocalDatabase replicaDb})
+      : _query = TransactionsQuery(replicaDb),
+        _pickers = TransactionPickersQuery(replicaDb);
 
   @override
   Stream<List<Map<String, dynamic>>> watchTransactionGroups() =>
-      _localDb.watchTransactionGroups();
+      _pickers.watchTransactionGroups();
 
   @override
   List<Map<String, dynamic>> getTransactionGroups() =>
-      _localDb.getTransactionGroups();
+      _pickers.transactionGroups();
 
   @override
   Stream<List<Map<String, dynamic>>> watchCashRegisters() =>
-      _localDb.watchCashRegisters();
+      _pickers.watchCashRegisters();
 
   @override
-  List<Map<String, dynamic>> getCashRegisters() => _localDb.getCashRegisters();
+  List<Map<String, dynamic>> getCashRegisters() => _pickers.cashRegisters();
 
   @override
   TransactionsPage getTransactions({
