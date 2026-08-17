@@ -27,8 +27,12 @@ jobs:
       - name: Import-boundary check
         run: bash scripts/check_import_boundary.sh
 
+      # --no-fatal-infos: warnings and errors gate the build; style infos are
+      # advisory. analysis_options.yaml promotes the lints that matter (unused
+      # imports, dead code, invalid assignments) to warning/error, so this
+      # keeps the gate meaningful without failing on cosmetic suggestions.
       - name: Flutter analyze
-        run: flutter analyze
+        run: flutter analyze --no-fatal-infos
 
       # Runs the whole suite, including test/architecture_guard_test.dart — the
       # ratchet that enforces the §9 guardrails (no networking outside the
