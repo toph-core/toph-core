@@ -191,6 +191,55 @@ void main() {
     });
   });
 
+  group('§7 — one database: the Hive store is walled off, shrinking to zero', () {
+    // Definition of done #4: "Exactly one database class; CacheService and the
+    // Hive LocalDatabase deleted." Two engines still run in parallel (§6b): the
+    // SQLite replica at lib/core/db/ — where the change feed lands and every
+    // migrated screen reads — and the retiring Hive store at
+    // lib/core/database/. Each entry below is a file still bound to the old
+    // store: the order / waiter / menu / timer / transactions repositories the
+    // sync work exists to serve, plus the two services and the injector that
+    // wire them. It is the remaining two-engine consolidation as a number that
+    // only goes down. When this set is empty nothing imports lib/core/database/
+    // and the directory can be deleted — which is what actually closes DoD #4.
+    const stillOnHive = {
+      'lib/core/services/auth/login_data_scope_service.dart',
+      'lib/core/services/lease/lease_manager.dart',
+      'lib/di.dart',
+      'lib/features/view/main/data/repository/menu_repository_impl.dart',
+      'lib/features/view/main/data/repository/orders_repository_impl.dart',
+      'lib/features/view/main/data/repository/table_timer_local_repository_impl.dart',
+      'lib/features/view/main/data/repository/transactions_repository_impl.dart',
+      'lib/features/view/main/data/repository/waiter_local_repository_impl.dart',
+    };
+
+    // Any import of the Hive store, package-form or relative. The `^\s*import`
+    // anchor is what keeps prose and commented-out lines from matching — a
+    // `// import '.../core/database/...'` line starts with `//`, not `import`.
+    final hiveStoreImport = RegExp(
+      r"^\s*import\s+'[^']*core/database/",
+      multiLine: true,
+    );
+
+    test('no new file binds to the retiring Hive store', () {
+      _ratchet(
+        rule: 'lib/core/database/ (Hive) is being retired in favour of the '
+            'single SQLite replica at lib/core/db/. Reads go through a '
+            'repository over a core/db query; writes go through LocalWriter. '
+            'Nothing new may import the Hive store.',
+        roots: const ['lib'],
+        known: stillOnHive,
+        violates: (path, source) =>
+            !path.startsWith('lib/core/database/') &&
+            hiveStoreImport.hasMatch(source),
+        remedy: 'Move this file onto the SQLite replica — core/db queries for '
+            'reads, LocalWriter for writes — and drop the core/database '
+            'import. This is the Phase 4 / §6b consolidation; when the last '
+            'entry goes, delete lib/core/database/ and close DoD #4.',
+      );
+    });
+  });
+
   group('the guard itself', () {
     test('strips comments before matching, so prose never trips a rule', () {
       const source = '''
