@@ -82,9 +82,11 @@ void main() {
       // written by hand. Nothing here reads the backend, so the two drift
       // without failing. They HAVE drifted — the backend logs 52 entities and
       // the 17 named in SERVER_PLAN.md P0-6 are replicated by neither this list
-      // nor the registry, including all eight that migration 70 added. This
-      // test passing means the registry matches the list, not that the client
-      // replicates what the server sends.
+      // nor the registry. Three of migration 70's eight are now registered
+      // (transactions, group_transactions, cash_registers); the other five
+      // (table_time_sessions, modifiers, goods_modifiers, printer_settings,
+      // cash_register_shifts) are not yet. This test passing means the registry
+      // matches the list, not that the client replicates what the server sends.
       const loggedByBackend = {
         'attendances', 'bill_daily_counters', 'branches', 'cafe_tables',
         'calculation', 'categories', 'compound_stock', 'compounds',
@@ -95,7 +97,8 @@ void main() {
         'ingredients',
         'inventories', 'inventory_items', 'invoice_detailed', 'invoices',
         'modifier_calculation', 'order_item_modifiers', 'order_items', 'orders',
-        'transactions',
+        // The migration-70 entities the client now consumes (see note above):
+        'transactions', 'group_transactions', 'cash_registers',
         'storages', 'suppliers', 'translations', 'user_payments',
         'users',
       };
