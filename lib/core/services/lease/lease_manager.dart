@@ -1,5 +1,5 @@
 import 'package:clock/clock.dart';
-import 'package:mary_ai_pos/core/database/local_database.dart';
+import 'package:mary_ai_pos/core/db/local_database.dart';
 import 'package:mary_ai_pos/core/services/lan_hub/lan_hub_message.dart';
 import 'package:mary_ai_pos/core/services/lan_hub/lan_hub_service.dart';
 import 'package:mary_ai_pos/core/services/print_queue/print_queue_service.dart';
@@ -161,16 +161,15 @@ class LeaseManager {
     }
   }
 
-  /// §6's two-mechanism split: a durable check (`LocalDatabase`'s replica of
-  /// table status — ordinary business data, already durable, naturally
-  /// correct across restart with no lease-specific recovery step needed) and
-  /// an ephemeral check (only for tables free in durable state but being
-  /// raced on *right now*, safe to lose on failover — see §6 Lease
-  /// Recovery).
+  /// §6's two-mechanism split: a durable check (the replica's local-authority
+  /// occupancy — the same `tableStatuses()` overlay the floor plan reads, so
+  /// arbitration and what the operator sees can never disagree; it is durable
+  /// across restart and, unlike the old replicated `cafe_tables.status`, never
+  /// clobbered by a pull) and an ephemeral check (only for tables free in
+  /// durable state but being raced on *right now*, safe to lose on failover —
+  /// see §6 Lease Recovery).
   LeaseResult _arbitrate(String tableId, {required String claimant}) {
-    final busy = _localDb
-        .getTables()
-        .any((t) => t.id == tableId && t.status == TableStatus.busy);
+    final busy = _localDb.tableStatuses()[tableId] == TableStatus.busy.name;
     if (busy) return const LeaseResult.rejected();
 
     // package:clock (not raw DateTime.now()) so lease_manager_test.dart can

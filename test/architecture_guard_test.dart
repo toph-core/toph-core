@@ -204,7 +204,6 @@ void main() {
     // and the directory can be deleted — which is what actually closes DoD #4.
     const stillOnHive = {
       'lib/core/services/auth/login_data_scope_service.dart',
-      'lib/core/services/lease/lease_manager.dart',
       'lib/di.dart',
       'lib/features/view/main/data/repository/menu_repository_impl.dart',
       'lib/features/view/main/data/repository/orders_repository_impl.dart',

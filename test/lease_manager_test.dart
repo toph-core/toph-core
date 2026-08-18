@@ -1,5 +1,5 @@
 // BACKEND_SYNC_PLAN.md §6 — first-ever test coverage for LeaseManager:
-// solo-mode arbitration, the durable check against LocalDatabase, ephemeral
+// solo-mode arbitration, the durable check against the replica occupancy, ephemeral
 // claim racing + TTL expiry, release (same-process and leader-side), and the
 // client-mode round trip / unreachable branches against a fake LanHub.
 //
@@ -9,32 +9,20 @@
 import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get_it/get_it.dart';
-import 'package:mary_ai_pos/core/database/local_database.dart';
+import 'package:mary_ai_pos/core/db/local_database.dart';
 import 'package:mary_ai_pos/core/services/lan_hub/lan_hub_message.dart';
 import 'package:mary_ai_pos/core/services/lan_hub/lan_hub_service.dart';
 import 'package:mary_ai_pos/core/services/lease/lease_manager.dart';
 import 'package:mary_ai_pos/core/services/print_queue/print_queue_service.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/cafe_tables/cafe_tables_model.dart';
 
-CafeTableModel table(String id, {TableStatus status = TableStatus.free}) =>
-    CafeTableModel(
-      id: id,
-      hallId: 'hall-1',
-      number: 1,
-      posX: 0,
-      posY: 0,
-      width: 1,
-      height: 1,
-      rotation: 0,
-      capacity: 4,
-      status: status,
-    );
-
 class FakeLocalDatabase implements LocalDatabase {
-  List<CafeTableModel> tables = [];
+  /// tableId -> status name ('busy'/'free'/…) — the replica's local-authority
+  /// occupancy overlay LeaseManager arbitrates against (tableStatuses()).
+  Map<String, String> statuses = {};
 
   @override
-  List<CafeTableModel> getTables() => tables;
+  Map<String, String> tableStatuses() => statuses;
 
   @override
   dynamic noSuchMethod(Invocation invocation) =>
@@ -106,13 +94,13 @@ void main() {
 
   group('solo / leader arbitration (durable check)', () {
     test('free table in disabled (solo) mode is granted', () async {
-      db.tables = [table('t1')];
+      db.statuses = {'t1': TableStatus.free.name};
       final result = await lease.acquireTableLease('t1');
       expect(result.isGranted, isTrue);
     });
 
     test('durably busy table is rejected', () async {
-      db.tables = [table('t1', status: TableStatus.busy)];
+      db.statuses = {'t1': TableStatus.busy.name};
       final result = await lease.acquireTableLease('t1');
       expect(result.isGranted, isFalse);
       expect(result.isUnreachable, isFalse);
@@ -120,16 +108,16 @@ void main() {
 
     test('unknown table id falls through the durable check and is granted',
         () async {
-      db.tables = [table('other')];
+      db.statuses = {'other': TableStatus.free.name};
       final result = await lease.acquireTableLease('t1');
       expect(result.isGranted, isTrue);
     });
 
     test('server mode arbitrates locally, same as solo', () async {
       lanHub.fakeMode = LanMode.server;
-      db.tables = [table('t1')];
+      db.statuses = {'t1': TableStatus.free.name};
       expect((await lease.acquireTableLease('t1')).isGranted, isTrue);
-      db.tables = [table('t1', status: TableStatus.busy)];
+      db.statuses = {'t1': TableStatus.busy.name};
       expect((await lease.acquireTableLease('t1')).isGranted, isFalse);
     });
   });
@@ -137,7 +125,7 @@ void main() {
   group('ephemeral claims (leader side)', () {
     test('a second terminal racing within the TTL is rejected with heldBy',
         () async {
-      db.tables = [table('t1')];
+      db.statuses = {'t1': TableStatus.free.name};
       final first = await lease.handleLeaseRequestAsLeader(
         LanHubMessage.leaseRequest(tableId: 't1', terminalId: 'terminal-a'),
       );
@@ -152,7 +140,7 @@ void main() {
 
     test('the same claimant re-requesting its own live claim is granted',
         () async {
-      db.tables = [table('t1')];
+      db.statuses = {'t1': TableStatus.free.name};
       final first = await lease.handleLeaseRequestAsLeader(
         LanHubMessage.leaseRequest(tableId: 't1', terminalId: 'terminal-a'),
       );
@@ -165,7 +153,7 @@ void main() {
 
     test('an expired ephemeral claim no longer blocks a new claimant',
         () async {
-      db.tables = [table('t1')];
+      db.statuses = {'t1': TableStatus.free.name};
       final t0 = DateTime(2026, 1, 1, 12, 0, 0);
 
       await withClock(Clock.fixed(t0), () async {
@@ -187,7 +175,7 @@ void main() {
 
     test('releaseTableLease evicts the claim immediately (no TTL wait)',
         () async {
-      db.tables = [table('t1')];
+      db.statuses = {'t1': TableStatus.free.name};
       expect((await lease.acquireTableLease('t1')).isGranted, isTrue);
       lease.releaseTableLease('t1');
       final next = await lease.handleLeaseRequestAsLeader(
@@ -197,7 +185,7 @@ void main() {
     });
 
     test("leader-side release from the wrong terminal doesn't evict", () async {
-      db.tables = [table('t1')];
+      db.statuses = {'t1': TableStatus.free.name};
       final granted = await lease.handleLeaseRequestAsLeader(
         LanHubMessage.leaseRequest(tableId: 't1', terminalId: 'terminal-a'),
       );

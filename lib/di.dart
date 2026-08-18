@@ -209,7 +209,10 @@ Future<void> initDi() async {
   // LAN_HUB_AND_LEASING_PLAN.md — active again on all three table-open
   // paths (CreateOrderBloc, waiter create, timed-order create); see
   // LeaseManager's class doc for the rejection/unreachable policy.
-  final leaseManager = LeaseManager(lanHub: lanHubService, localDb: localDatabase);
+  // Occupancy comes from the replica's local-authority overlay (the same
+  // source the floor plan reads), not the retiring Hive store — see
+  // LeaseManager._arbitrate.
+  final leaseManager = LeaseManager(lanHub: lanHubService, localDb: replicaDb);
   inject.registerSingleton<LeaseManager>(leaseManager);
 
   // offline-first-target-architecture.md §8 Phase 4 — additive, disabled by
