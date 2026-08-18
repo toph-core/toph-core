@@ -1,0 +1,87 @@
+import 'package:mary_ai_pos/core/db/local_database.dart';
+import 'package:mary_ai_pos/features/view/main/data/models/category/category_model.dart';
+import 'package:mary_ai_pos/features/view/main/data/models/department/department_model.dart';
+import 'package:mary_ai_pos/features/view/main/data/models/goods/goods_model.dart';
+
+/// OFFLINE_FIRST_EVERYWHERE_PLAN.md Phase 4 — the customer-facing menu's reads,
+/// moved off the Hive `LocalDatabase` onto the SQLite replica.
+///
+/// categories, departments, goods, ingredients and compounds all replicate, so
+/// each read is a live-rows query (soft-deleted excluded) ordered the way the
+/// admin menu already orders them — `name COLLATE NOCASE, id` — and decoded
+/// through the model the screen consumes. goods-per-category filters on the
+/// promoted `category_id` column: on the replica that is exact and flash-free,
+/// so the Hive path's separate per-category cache (kept only to avoid a stale
+/// flash on category switch) is gone.
+///
+/// Decoding skips a row it cannot parse rather than throwing, matching
+/// MenuAdminQuery: one server row missing a column GoodsModel needs drops that
+/// item, never the whole menu.
+class MenuQuery {
+  final LocalDatabase _db;
+
+  const MenuQuery(this._db);
+
+  List<CategoryModel> categories() =>
+      _decode(_live('categories'), CategoryModel.fromJson);
+
+  Stream<List<CategoryModel>> watchCategories() =>
+      _db.watch({'categories'}, categories);
+
+  List<DepartmentModel> departments() =>
+      _decode(_live('departments'), DepartmentModel.fromJson);
+
+  Stream<List<DepartmentModel>> watchDepartments() =>
+      _db.watch({'departments'}, departments);
+
+  List<GoodsModel> goods() => _decode(_live('goods'), GoodsModel.fromJson);
+
+  Stream<List<GoodsModel>> watchGoods() => _db.watch({'goods'}, goods);
+
+  List<GoodsModel> goodsForCategory(String categoryId) {
+    if (categoryId == 'all') return goods();
+    return _decode(
+      _db.selectData(
+        'SELECT data FROM goods WHERE deleted_at IS NULL '
+        'AND category_id = ? ORDER BY name COLLATE NOCASE, id',
+        [categoryId],
+      ),
+      GoodsModel.fromJson,
+    );
+  }
+
+  Stream<List<GoodsModel>> watchGoodsForCategory(String categoryId) =>
+      _db.watch({'goods'}, () => goodsForCategory(categoryId));
+
+  List<Map<String, dynamic>> ingredients() => _live('ingredients');
+
+  Stream<List<Map<String, dynamic>>> watchIngredients() =>
+      _db.watch({'ingredients'}, ingredients);
+
+  List<Map<String, dynamic>> compounds() => _live('compounds');
+
+  Stream<List<Map<String, dynamic>>> watchCompounds() =>
+      _db.watch({'compounds'}, compounds);
+
+  List<Map<String, dynamic>> _live(String table) => _db.selectData(
+        'SELECT data FROM $table WHERE deleted_at IS NULL '
+        'ORDER BY name COLLATE NOCASE, id',
+      );
+
+  static List<T> _decode<T>(
+    List<Map<String, dynamic>> rows,
+    T Function(Map<String, dynamic>) fromJson,
+  ) {
+    final out = <T>[];
+    for (final row in rows) {
+      try {
+        out.add(fromJson(row));
+      } catch (_) {
+        // A row the model can't parse (a server column it needs is absent)
+        // drops out, exactly as MenuAdminQuery does — one bad item, not a
+        // blank menu.
+      }
+    }
+    return out;
+  }
+}

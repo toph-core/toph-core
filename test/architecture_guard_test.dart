@@ -205,7 +205,6 @@ void main() {
     const stillOnHive = {
       'lib/core/services/auth/login_data_scope_service.dart',
       'lib/di.dart',
-      'lib/features/view/main/data/repository/menu_repository_impl.dart',
       'lib/features/view/main/data/repository/orders_repository_impl.dart',
       'lib/features/view/main/data/repository/table_timer_local_repository_impl.dart',
       'lib/features/view/main/data/repository/waiter_local_repository_impl.dart',

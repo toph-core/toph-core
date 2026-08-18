@@ -1,4 +1,5 @@
-import 'package:mary_ai_pos/core/database/local_database.dart';
+import 'package:mary_ai_pos/core/db/local_database.dart' as replica;
+import 'package:mary_ai_pos/core/db/menu_query.dart';
 import 'package:mary_ai_pos/core/media/local_image_cache.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/category/category_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/department/department_model.dart';
@@ -6,7 +7,7 @@ import 'package:mary_ai_pos/features/view/main/data/models/goods/goods_model.dar
 import 'package:mary_ai_pos/features/view/main/domain/repository/menu_repository.dart';
 
 class MenuRepositoryImpl implements MenuRepository {
-  final LocalDatabase _localDb;
+  final MenuQuery _query;
 
   /// Injected rather than constructed: two owners of this would mean two
   /// dedupe sets and two fetches for the same bytes, which is the problem it
@@ -14,9 +15,9 @@ class MenuRepositoryImpl implements MenuRepository {
   final LocalImageCache _images;
 
   MenuRepositoryImpl({
-    required LocalDatabase localDb,
+    required replica.LocalDatabase replicaDb,
     required LocalImageCache images,
-  })  : _localDb = localDb,
+  })  : _query = MenuQuery(replicaDb),
         _images = images;
 
   @override
@@ -24,31 +25,31 @@ class MenuRepositoryImpl implements MenuRepository {
       _images.stream(objectName);
 
   @override
-  Stream<List<CategoryModel>> watchCategories() => _localDb.watchCategories();
+  Stream<List<CategoryModel>> watchCategories() => _query.watchCategories();
 
   @override
-  List<CategoryModel> getCategories() => _localDb.getCategories();
+  List<CategoryModel> getCategories() => _query.categories();
 
   @override
-  Stream<List<DepartmentModel>> watchDepartments() => _localDb.watchDepartments();
+  Stream<List<DepartmentModel>> watchDepartments() => _query.watchDepartments();
 
   @override
-  List<DepartmentModel> getDepartments() => _localDb.getDepartments();
+  List<DepartmentModel> getDepartments() => _query.departments();
 
   @override
   Stream<List<GoodsModel>> watchGoodsForCategory(String categoryId) =>
-      _localDb.watchGoodsForCategory(categoryId);
+      _query.watchGoodsForCategory(categoryId);
 
   @override
   List<GoodsModel> getGoodsForCategory(String categoryId) =>
-      _localDb.getGoodsForCategory(categoryId);
+      _query.goodsForCategory(categoryId);
 
   @override
   List<GoodsModel> searchGoodsByName(String query) {
     final q = query.trim().toLowerCase();
     if (q.isEmpty) return const [];
-    return _localDb
-        .getGoods()
+    return _query
+        .goods()
         .where(
           (g) =>
               g.name.toLowerCase().contains(q) ||
@@ -58,24 +59,15 @@ class MenuRepositoryImpl implements MenuRepository {
   }
 
   @override
-  Stream<List<Map<String, dynamic>>> watchIngredients() => _localDb.watchIngredients();
+  Stream<List<Map<String, dynamic>>> watchIngredients() =>
+      _query.watchIngredients();
 
   @override
-  List<Map<String, dynamic>> getIngredients() => _localDb.getIngredients();
+  List<Map<String, dynamic>> getIngredients() => _query.ingredients();
 
   @override
-  Stream<List<Map<String, dynamic>>> watchCompounds() => _localDb.watchCompounds();
+  Stream<List<Map<String, dynamic>>> watchCompounds() => _query.watchCompounds();
 
   @override
-  List<Map<String, dynamic>> getCompounds() => _localDb.getCompounds();
-
-  @override
-  Stream<List<int>?> watchImage(String objectName) => _localDb.watchImage(objectName);
-
-  @override
-  List<int>? getImage(String objectName) => _localDb.getImage(objectName);
-
-  @override
-  Future<void> saveImage(String objectName, List<int> bytes) =>
-      _localDb.saveImage(objectName, bytes);
+  List<Map<String, dynamic>> getCompounds() => _query.compounds();
 }

@@ -52,12 +52,4 @@ abstract class MenuRepository {
   /// nothing survived a restart. Those images did not exist offline. Now every
   /// image a terminal has ever displayed is on disk.
   Stream<LocalImage> imageStream(String objectName);
-
-  /// V9: menu images, hydrated by `SyncEngine` (§8 Phase 1).
-  Stream<List<int>?> watchImage(String objectName);
-  List<int>? getImage(String objectName);
-
-  /// Write-through for an image just uploaded this session, before the next
-  /// hydration cycle would otherwise pick it up.
-  Future<void> saveImage(String objectName, List<int> bytes);
 }

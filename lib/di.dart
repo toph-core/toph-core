@@ -433,7 +433,10 @@ void _repositories() {
     () => TablesRepositoryImpl(localDb: inject<replica.LocalDatabase>()),
   );
   inject.registerLazySingleton<MenuRepository>(
-    () => MenuRepositoryImpl(localDb: inject(), images: inject()),
+    () => MenuRepositoryImpl(
+      replicaDb: inject<replica.LocalDatabase>(),
+      images: inject(),
+    ),
   );
   // §8 Phase 5 (back-office tier) — read-only, see TransactionsRepository's
   // own class doc for what's deliberately not covered.
