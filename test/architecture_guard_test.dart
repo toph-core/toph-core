@@ -150,7 +150,6 @@ void main() {
     // goes down.
     const pending = {
       'lib/features/view/main/presentation/pages/main/widgets/time_based_table_badge.dart',
-      'lib/features/view/main/presentation/pages/settings/sections/printers_section.dart',
       'lib/features/view/main/presentation/pages/transactions/sections/transaction_categories_section.dart',
       'lib/features/view/main/presentation/pages/transactions/sections/transactions_list_section.dart',
     };

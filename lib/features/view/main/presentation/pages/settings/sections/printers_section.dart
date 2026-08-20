@@ -11,7 +11,7 @@ import 'package:mary_ai_pos/core/service/printer/printer_setting_entry.dart';
 import 'package:mary_ai_pos/core/services/cache/cache_service.dart';
 import 'package:mary_ai_pos/di.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/category/category_model.dart';
-import 'package:mary_ai_pos/features/view/main/domain/repository/main_repository.dart';
+import 'package:mary_ai_pos/features/view/main/presentation/cubit/printers/printers_controller.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/settings/widgets/section_shell.dart';
 import 'package:mary_ai_pos/generated/l10n.dart';
 
@@ -23,7 +23,7 @@ class PrintersSection extends StatefulWidget {
 }
 
 class _PrintersSectionState extends State<PrintersSection> {
-  final MainRepository _repository = inject<MainRepository>();
+  final PrintersController _printers = inject<PrintersController>();
   final PrinterConfigStorage _storage = inject<PrinterConfigStorage>();
 
   bool _loading = true;
@@ -36,33 +36,15 @@ class _PrintersSectionState extends State<PrintersSection> {
     _loadAll();
   }
 
-  /// Printer ro'yxati — **shu qurilmadagi** lokal saqlashdan, hech qanday
-  /// tarmoq so'rovisiz (hech qachon xato bermaydi). Kategoriya nomlari esa
-  /// faqat ko'rsatish uchun — avval keshdan, so'ng eng yaxshi urinish sifatida
-  /// backenddan yangilanadi; muvaffaqiyatsiz bo'lsa jim qoladi.
-  Future<void> _loadAll() async {
+  /// Printer ro'yxati **shu qurilmadagi** lokal saqlashdan; kategoriya nomlari
+  /// esa replikadan (o'zgarish tasmasi to'ldiradi) — sinxron, oflayn, tarmoq
+  /// so'rovisiz va "avval bo'sh, keyin to'ladi" miltillashisiz.
+  void _loadAll() {
     setState(() {
-      _loading = true;
       _items = _storage.listEntries();
+      _categories = _printers.categories();
+      _loading = false;
     });
-    final cachedCats = inject<CacheService>().getCategories();
-    if (cachedCats.isNotEmpty && mounted) {
-      setState(() {
-        _categories =
-            cachedCats.map((e) => CategoryModel.fromJson(e)).toList();
-      });
-    }
-    setState(() => _loading = false);
-    final result = await _repository.getCategories();
-    final categories = result.fold((_) => null, (r) => r);
-    if (categories == null) {
-      // Kategoriya nomlarini yangilab bo'lmadi — jim o'tamiz, printer
-      // ro'yxati baribir lokal holatdan to'liq ko'rsatiladi.
-      debugPrint('[PrintersSection] Kategoriyalarni yuklab bo\'lmadi');
-      return;
-    }
-    if (!mounted) return;
-    setState(() => _categories = categories);
   }
 
   Future<void> _openEditor({PrinterSettingEntry? existing}) async {
@@ -72,7 +54,7 @@ class _PrintersSectionState extends State<PrintersSection> {
       builder: (_) => _PrinterEditDialog(
         existing: existing,
         categories: _categories,
-        repository: _repository,
+        controller: _printers,
         storage: _storage,
       ),
     );
@@ -95,7 +77,7 @@ class _PrintersSectionState extends State<PrintersSection> {
     // bo'lsa ham lokal o'chirish kuchda qoladi (faqat sinov uchun jim log).
     await _storage.deleteEntry(item.id);
     unawaited(
-      _repository.deletePrinterSetting(item.id).then((result) {
+      _printers.deletePrinterSetting(item.id).then((result) {
         result.fold(
           (f) => debugPrint('[PrintersSection] Backend delete xatosi (e\'tiborsiz): $f'),
           (_) {},
@@ -615,13 +597,13 @@ enum _ButtonKind { ghost, danger }
 class _PrinterEditDialog extends StatefulWidget {
   final PrinterSettingEntry? existing;
   final List<CategoryModel> categories;
-  final MainRepository repository;
+  final PrintersController controller;
   final PrinterConfigStorage storage;
 
   const _PrinterEditDialog({
     required this.existing,
     required this.categories,
-    required this.repository,
+    required this.controller,
     required this.storage,
   });
 
@@ -776,7 +758,7 @@ class _PrinterEditDialogState extends State<_PrinterEditDialog> {
       'connection_type': entry.connectionType,
       'connected_entity_ids': entry.connectedEntityIds,
     };
-    final result = await widget.repository.pushPrinterSetting(
+    final result = await widget.controller.pushPrinterSetting(
       body,
       existingId: widget.existing?.id,
     );

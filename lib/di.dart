@@ -18,6 +18,7 @@ import 'package:mary_ai_pos/core/database/local_database.dart';
 import 'package:mary_ai_pos/core/db/apply_change.dart' as replica;
 import 'package:mary_ai_pos/core/db/local_database.dart' as replica;
 import 'package:mary_ai_pos/core/db/local_database_factory.dart' as replica;
+import 'package:mary_ai_pos/features/view/main/presentation/cubit/printers/printers_controller.dart';
 import 'package:mary_ai_pos/core/media/local_image_cache.dart';
 import 'package:mary_ai_pos/core/outbox/local_writer.dart';
 import 'package:mary_ai_pos/core/outbox/outbox_drainer.dart';
@@ -437,6 +438,11 @@ void _repositories() {
       replicaDb: inject<replica.LocalDatabase>(),
       images: inject(),
     ),
+  );
+  // Presentation-layer seam so PrintersSection reads categories from the replica
+  // and syncs printers best-effort without resolving repositories itself (§9.2).
+  inject.registerLazySingleton<PrintersController>(
+    () => PrintersController(menu: inject(), remote: inject()),
   );
   // §8 Phase 5 (back-office tier) — read-only, see TransactionsRepository's
   // own class doc for what's deliberately not covered.
