@@ -7,8 +7,7 @@ import 'package:mary_ai_pos/core/widgets/app_scaffold.dart';
 import 'package:mary_ai_pos/core/widgets/styled_virtual_keyboard.dart';
 import 'package:mary_ai_pos/core/sync/sync_engine.dart';
 import 'package:mary_ai_pos/di.dart';
-import 'package:mary_ai_pos/features/view/main/domain/repository/main_repository.dart';
-import 'package:mary_ai_pos/features/view/main/domain/repository/transactions_repository.dart';
+import 'package:mary_ai_pos/features/view/main/presentation/cubit/transactions/transaction_categories_controller.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/settings/widgets/section_shell.dart';
 import 'package:mary_ai_pos/generated/l10n.dart';
 
@@ -22,9 +21,8 @@ class TransactionCategoriesSection extends StatefulWidget {
 
 class _TransactionCategoriesSectionState
     extends State<TransactionCategoriesSection> {
-  final MainRepository _repository = inject<MainRepository>();
-  final TransactionsRepository _transactionsRepository =
-      inject<TransactionsRepository>();
+  final TransactionCategoriesController _controller =
+      inject<TransactionCategoriesController>();
   final TextEditingController _searchCtrl = TextEditingController();
 
   bool _loading = true;
@@ -57,7 +55,7 @@ class _TransactionCategoriesSectionState
   /// matches `MainRepositoryImpl.getTransactionGroups`'s own existing cache
   /// fallback, which was already scoped to the unfiltered list only.
   void _subscribeToGroups() {
-    _groupsSub = _transactionsRepository.watchTransactionGroups().listen((groups) {
+    _groupsSub = _controller.watchGroups().listen((groups) {
       if (!mounted) return;
       setState(() {
         _categories = groups.map(_Category.fromJson).toList();
@@ -73,7 +71,7 @@ class _TransactionCategoriesSectionState
       _loading = true;
       _error = null;
     });
-    final result = await _repository.getTransactionGroups(search: _searchQuery);
+    final result = await _controller.searchGroups(_searchQuery);
     if (!mounted) return;
     result.fold(
       (failure) => setState(() {
@@ -123,7 +121,7 @@ class _TransactionCategoriesSectionState
     final saved = await showDialog<bool>(
       context: context,
       barrierDismissible: false,
-      builder: (_) => _CategoryEditDialog(repository: _repository, existing: existing),
+      builder: (_) => _CategoryEditDialog(controller: _controller, existing: existing),
     );
     if (saved == true && mounted) await _refreshAfterWrite();
   }
@@ -150,7 +148,7 @@ class _TransactionCategoriesSectionState
       ),
     );
     if (ok != true || !mounted) return;
-    final result = await _repository.deleteTransactionGroup(c.id);
+    final result = await _controller.deleteGroup(c.id);
     if (!mounted) return;
     result.fold(
       (failure) => showErrorMessage(context, failure.getLocalizedMessage(context)),
@@ -360,10 +358,10 @@ class _CategoryCardState extends State<_CategoryCard> {
 }
 
 class _CategoryEditDialog extends StatefulWidget {
-  final MainRepository repository;
+  final TransactionCategoriesController controller;
   final _Category? existing;
 
-  const _CategoryEditDialog({required this.repository, this.existing});
+  const _CategoryEditDialog({required this.controller, this.existing});
 
   @override
   State<_CategoryEditDialog> createState() => _CategoryEditDialogState();
@@ -399,8 +397,8 @@ class _CategoryEditDialogState extends State<_CategoryEditDialog> {
     });
     final name = _nameCtrl.text.trim();
     final result = _isCreate
-        ? await widget.repository.createTransactionGroup(name)
-        : await widget.repository.updateTransactionGroup(widget.existing!.id, name);
+        ? await widget.controller.createGroup(name)
+        : await widget.controller.updateGroup(widget.existing!.id, name);
     if (!mounted) return;
     result.fold(
       (failure) => setState(() {
