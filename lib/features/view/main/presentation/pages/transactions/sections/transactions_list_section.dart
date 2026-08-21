@@ -11,8 +11,7 @@ import 'package:mary_ai_pos/core/utils/app_formatter.dart';
 import 'package:mary_ai_pos/core/widgets/app_scaffold.dart';
 import 'package:mary_ai_pos/core/widgets/styled_virtual_keyboard.dart';
 import 'package:mary_ai_pos/di.dart';
-import 'package:mary_ai_pos/features/view/main/domain/repository/main_repository.dart';
-import 'package:mary_ai_pos/features/view/main/domain/repository/transactions_repository.dart';
+import 'package:mary_ai_pos/features/view/main/presentation/cubit/transactions/transactions_list_controller.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/settings/widgets/section_shell.dart';
 import 'package:mary_ai_pos/generated/l10n.dart';
 import 'package:number_paginator/number_paginator.dart';
@@ -70,9 +69,8 @@ class TransactionsListSection extends StatefulWidget {
 class _TransactionsListSectionState extends State<TransactionsListSection> {
   static const List<int> _pageSizeOptions = [20, 50, 100];
 
-  final MainRepository _repository = inject<MainRepository>();
-  final TransactionsRepository _transactionsRepository =
-      inject<TransactionsRepository>();
+  final TransactionsListController _controller =
+      inject<TransactionsListController>();
   final NumberPaginatorController _paginatorController =
       NumberPaginatorController();
   final TextEditingController _searchCtrl = TextEditingController();
@@ -125,11 +123,11 @@ class _TransactionsListSectionState extends State<TransactionsListSection> {
   /// bounded local mirror to page through instead, same reasoning already
   /// used elsewhere in this codebase for live search).
   void _loadOptions() {
-    _cashRegistersSub = _transactionsRepository.watchCashRegisters().listen((registers) {
+    _cashRegistersSub = _controller.watchCashRegisters().listen((registers) {
       if (!mounted) return;
       setState(() => _cashRegisters = registers.map(_Option.fromJson).toList());
     });
-    _groupsSub = _transactionsRepository.watchTransactionGroups().listen((groups) {
+    _groupsSub = _controller.watchGroups().listen((groups) {
       if (!mounted) return;
       setState(() => _categories = groups.map(_Option.fromJson).toList());
     });
@@ -140,7 +138,7 @@ class _TransactionsListSectionState extends State<TransactionsListSection> {
       _loading = true;
       _error = null;
     });
-    final result = await _repository.getTransactions(
+    final result = await _controller.getTransactions(
       limit: _pageSize,
       offset: (page - 1) * _pageSize,
       search: _searchQuery.isEmpty ? null : _searchQuery,
@@ -177,7 +175,7 @@ class _TransactionsListSectionState extends State<TransactionsListSection> {
       context: context,
       barrierDismissible: false,
       builder: (_) => _TransactionEditDialog(
-        repository: _repository,
+        controller: _controller,
         cashRegisters: _cashRegisters,
         categories: _categories,
       ),
@@ -190,7 +188,7 @@ class _TransactionsListSectionState extends State<TransactionsListSection> {
       context: context,
       barrierDismissible: false,
       builder: (_) => _TransactionEditDialog(
-        repository: _repository,
+        controller: _controller,
         cashRegisters: _cashRegisters,
         categories: _categories,
         existing: tx,
@@ -221,7 +219,7 @@ class _TransactionsListSectionState extends State<TransactionsListSection> {
       ),
     );
     if (ok != true || !mounted) return;
-    final result = await _repository.deleteTransaction(tx.id);
+    final result = await _controller.deleteTransaction(tx.id);
     if (!mounted) return;
     result.fold(
       (failure) => showErrorMessage(context, failure.getLocalizedMessage(context)),
@@ -691,13 +689,13 @@ class _TransactionCardState extends State<_TransactionCard> {
 }
 
 class _TransactionEditDialog extends StatefulWidget {
-  final MainRepository repository;
+  final TransactionsListController controller;
   final List<_Option> cashRegisters;
   final List<_Option> categories;
   final _Transaction? existing;
 
   const _TransactionEditDialog({
-    required this.repository,
+    required this.controller,
     required this.cashRegisters,
     required this.categories,
     this.existing,
@@ -787,7 +785,7 @@ class _TransactionEditDialogState extends State<_TransactionEditDialog> {
     final Either<Failure, bool> result;
     if (_isCreate) {
       if (_isTransfer) {
-        result = await widget.repository.createTransferTransaction({
+        result = await widget.controller.createTransferTransaction({
           'from_cash_register_id': _fromCashRegisterId,
           'to_cash_register_id': _toCashRegisterId,
           if (_categoryId != null) 'group_transaction_id': _categoryId,
@@ -797,7 +795,7 @@ class _TransactionEditDialogState extends State<_TransactionEditDialog> {
           'date': _toApiDateTime(_date),
         });
       } else {
-        result = await widget.repository.createIncomeExpenseTransaction({
+        result = await widget.controller.createIncomeExpenseTransaction({
           'type': _createType.apiValue,
           'cash_register_id': _cashRegisterId,
           if (_categoryId != null) 'group_transaction_id': _categoryId,
@@ -808,7 +806,7 @@ class _TransactionEditDialogState extends State<_TransactionEditDialog> {
         });
       }
     } else {
-      result = await widget.repository.updateTransaction(
+      result = await widget.controller.updateTransaction(
         widget.existing!.id,
         {
           'amount': _rawAmount,
