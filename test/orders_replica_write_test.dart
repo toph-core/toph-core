@@ -10,7 +10,6 @@
 library;
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mary_ai_pos/core/database/local_database.dart' as hive;
 import 'package:mary_ai_pos/core/db/apply_change.dart';
 import 'package:mary_ai_pos/core/db/entity_registry.dart';
 import 'package:mary_ai_pos/core/db/local_database.dart';
@@ -28,14 +27,6 @@ import 'package:mary_ai_pos/features/view/main/domain/repository/tables_reposito
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/detail/detail_bloc.dart';
 
 class _FakeLanHub implements LanHubService {
-  @override
-  dynamic noSuchMethod(Invocation invocation) => null;
-}
-
-/// The write-only Hive snapshot mirror is never exercised by these replica
-/// round trips (createOrder/addItems/cancel/transfer/getOrderDetail never touch
-/// it), so a stub that would throw if it ever were is exactly right.
-class _FakeHive implements hive.LocalDatabase {
   @override
   dynamic noSuchMethod(Invocation invocation) => null;
 }
@@ -90,7 +81,6 @@ void main() {
       applier: applier,
       writer: LocalWriter(db: db, applier: applier, outbox: outbox),
       detail: OrderDetailQuery(db),
-      hiveStore: _FakeHive(),
       lanHub: _FakeLanHub(),
       tables: tables,
     );
