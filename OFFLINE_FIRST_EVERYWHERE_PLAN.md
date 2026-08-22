@@ -422,21 +422,37 @@ is the piece that needs the app to confirm the overlay still behaves.
 
 ## 7. Definition of done
 
-The spec's own review questions, as CI-checkable assertions:
+The spec's own review questions, as CI-checkable assertions. Status below is
+kept live by `test/architecture_guard_test.dart` (the ratchets) plus the named
+tests; `[~]` is partial with the remainder pinned to a ratchet allowlist.
 
-- [ ] `grep -rn "Dio\|http\|MinioService" lib/ --exclude-dir=core/sync` returns nothing.
-- [ ] `grep -rn "inject<.*Repository>" lib/**/presentation/pages/` returns nothing.
-- [ ] No `FutureBuilder` anywhere in `lib/`.
-- [ ] Exactly one database class; `CacheService` and Hive `LocalDatabase` deleted.
-- [ ] Every screen renders fully with the network cable pulled and the app cold-started.
-- [ ] Every user action completes without awaiting a network call — measured, not assumed:
-      a test harness that fails any action whose handler awaits a Dio future.
-- [ ] Local `grandTotal` equals the server's for a fixture set covering
-      `order-total-calculation.md` §10 examples A, B and C.
-- [ ] Kill the leader mid-service: another terminal takes over with no UI change and no
-      manual step.
-- [ ] A follower with its LAN link up and its own internet **off** receives menu changes
-      made on the leader within one tick.
+- [x] No `inject<...Repository>()` under `lib/**/presentation/pages/` — every
+      screen resolves its data through a bloc / cubit / controller. The §7
+      repo-injection ratchet is empty and therefore absolute.
+- [x] No `FutureBuilder` anywhere in `lib/` — the §7 ratchet is empty; image
+      loading is a `StreamBuilder` over the local image store.
+- [x] Local `grandTotal` equals the server's for `order-total-calculation.md`
+      §10 examples A/B/C — `test/order_totals_test.dart`.
+- [x] Kill the leader mid-service: another terminal takes over with no manual
+      step — `test/leader_takeover_test.dart`.
+- [x] A follower with its own internet off receives menu changes within a tick —
+      `test/change_feed_relay_test.dart`.
+- [~] Networking confined to the transport layer — enforced by the §9.1 ratchet
+      and `scripts/check_import_boundary.sh`. One feature-layer file remains,
+      `main_datasources.dart`, which goes once the order / waiter / timer
+      consumers move off `MainRepository`.
+- [~] Exactly one database class; `CacheService` and Hive `LocalDatabase`
+      deleted — the §7 Hive-store ratchet is the live countdown. Done so far:
+      transactions, lease occupancy, and the customer menu. Remaining (5): the
+      orders, waiter, table_timer and login_data_scope repositories, then
+      `di.dart` — after which `lib/core/database/` and the ~22 `CacheService`
+      references are deleted. All five are write-path / app-gated; the order
+      flow is specified end-to-end in `ORDER_FLOW_MIGRATION_PLAN.md`.
+- [ ] Every screen renders with the cable pulled, cold-started — needs the §9.3
+      offline integration suite (Dio replaced by a throwing client). Not built;
+      it is the one guard that must drive the whole app, so it wants a running
+      app to author against.
+- [ ] Every user action completes without awaiting a network call — same suite.
 
 ---
 
