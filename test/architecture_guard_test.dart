@@ -108,6 +108,13 @@ void main() {
       'lib/core/services/connectivity/connectivity_cubit.dart',
       'lib/core/services/lan_hub/lan_hub_service.dart',
       'lib/core/services/offline_queue/offline_queue_service.dart',
+      // The order aggregate's write transport (§B1). It carries the 409
+      // table-open merge and the 404-tolerant per-line cancel — order logic
+      // with no home in a CRUD repository — so it speaks Dio directly, the
+      // way `main_datasources.dart` does for reads. This does not *grow* the
+      // allowlist: it takes over the order replay from
+      // `offline_queue_service.dart`, which Phase C deletes.
+      'lib/core/outbox/orders_outbox.dart',
       'lib/di.dart',
       // The last feature-layer file that speaks HTTP. Phase 4 deletes it;
       // when it goes, this entry goes and the rule becomes absolute.

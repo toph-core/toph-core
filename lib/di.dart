@@ -24,6 +24,7 @@ import 'package:mary_ai_pos/features/view/main/presentation/cubit/transactions/t
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/table_timer/time_based_table_badge_controller.dart';
 import 'package:mary_ai_pos/core/media/local_image_cache.dart';
 import 'package:mary_ai_pos/core/outbox/local_writer.dart';
+import 'package:mary_ai_pos/core/outbox/orders_outbox.dart';
 import 'package:mary_ai_pos/core/outbox/outbox_drainer.dart';
 import 'package:mary_ai_pos/core/outbox/outbox_executor.dart';
 import 'package:mary_ai_pos/core/outbox/outbox_store.dart';
@@ -326,6 +327,11 @@ Future<void> initDi() async {
   registerUsersOutboxHandlers(outboxExecutors, inject<MainRepository>());
   registerHallsTablesOutboxHandlers(outboxExecutors, inject<MainRepository>());
   registerMenuAdminOutboxHandlers(outboxExecutors, inject<MainRepository>());
+  // The order aggregate speaks HTTP directly (the 409 merge / 404-tolerant
+  // cancel have no home in a CRUD repository), so it takes the DioClient, not
+  // MainRepository. Handlers only — the order writes move onto this outbox in
+  // §B2; until then these register and stay idle.
+  registerOrdersOutboxHandlers(outboxExecutors, inject<DioClient>());
 
   // BACKEND_SYNC_PLAN.md §5: every registration the startup tick's
   // hydration pass resolves lazily (MainRepository, UserBloc, ...) exists
