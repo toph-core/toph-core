@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -11,9 +10,6 @@ import 'package:mary_ai_pos/core/constants/constants.dart';
 
 import 'package:mary_ai_pos/core/service/printer/printer_service.dart';
 import 'package:mary_ai_pos/core/services/cache/cache_service.dart';
-import 'package:mary_ai_pos/core/services/offline_queue/offline_queue_service.dart';
-import 'package:mary_ai_pos/core/services/offline_queue/pending_operation.dart';
-import 'package:mary_ai_pos/di.dart' show inject;
 import 'package:mary_ai_pos/core/error/failure.dart';
 import 'package:mary_ai_pos/core/utils/uuid.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/cafe_tables/cafe_tables_model.dart';
@@ -343,55 +339,38 @@ class DetailBloc extends Bloc<DetailEvent, DetailState> {
       }
     }
 
-    // 2. Offline queue dan ushbu stol uchun kutayotgan itemlar
-    final queue = inject<OfflineQueueService>();
-    final cachedGoods = _cache.getGoods();
-    final pending = queue.pending.where(
-      (op) => op.tableId == tableId && op.type == PendingOperationType.addItems,
-    );
-    for (final op in pending) {
-      try {
-        final payload = jsonDecode(op.payload) as Map<String, dynamic>;
-        final items = payload['items'] as List<dynamic>;
-        for (final item in items) {
-          final goodId = item['good_id'] as String;
-          final qty = (item['quantity'] as num).toInt();
-          final goodJson = cachedGoods.firstWhere(
-            (g) => g['id'] == goodId,
-            orElse: () => <String, dynamic>{},
-          );
-          if (goodJson.isEmpty) continue;
-          final name = goodJson['name'] as String? ?? goodId;
-          final price = goodJson['price']?.toString() ?? '0';
-          final key = '⏳$name'; // prefix — offline itemlar boshqa key
-          if (grouped.containsKey(key)) {
-            final existing = grouped[key]!;
-            grouped[key] = existing.copyWith(
-              quantity: existing.quantity + qty,
-              createdAt: _earlier(existing.createdAt, op.createdAt),
-            );
-          } else {
-            grouped[key] = OrderItem(
-              uniqueId: '${op.id}_$goodId',
-              goods: GoodsModel(
-                id: goodId,
-                name: '⏳ $name',
-                price: price,
-                categoryId: '',
-                cookTime: 0,
-                costPrice: '0',
-                description: '',
-                profit: '0',
-                profitMargin: '0',
-              ),
-              quantity: qty,
-              commet: 'pending_offline',
-              createdAt: op.createdAt,
-            );
-          }
-        }
-      } catch (_) {}
+    // 2. Existing-line index for the +/-/delete controls, built from the same
+    // replica rows the screen just grouped (§B4/§B6). Each line now carries its
+    // own id and good_id, so this is the local, always-available source the
+    // network `getOrderItemsRaw` fetch used to be — which returned nothing
+    // offline and left +/- unable to resolve a line.
+    //
+    // The old pending-add overlay that merged unsynced items off the Hive queue
+    // is gone with the queue: an offline add is a real `order_items` row in the
+    // replica now, so it is already in `detail.goods` above, not merged in here.
+    final infoByName = <String, _ExistingLineInfo>{};
+    for (final g in detail.goods) {
+      if (g.status == 'cancelled') continue;
+      final name = g.name;
+      if (name.isEmpty || g.id.isEmpty || g.goodId.isEmpty) continue;
+      final existing = infoByName[name];
+      if (existing == null) {
+        infoByName[name] = _ExistingLineInfo(
+          goodId: g.goodId,
+          comment: g.comment,
+          lineIds: [g.id],
+          totalQuantity: g.quantity,
+        );
+      } else {
+        existing.lineIds.add(g.id);
+        infoByName[name] = existing.copyWith(
+          totalQuantity: existing.totalQuantity + g.quantity,
+        );
+      }
     }
+    _existingLineInfo
+      ..clear()
+      ..addAll(infoByName);
 
     if (!isClosed) {
       emit(state.copyWith(
