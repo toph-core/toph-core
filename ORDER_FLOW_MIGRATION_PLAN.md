@@ -67,8 +67,7 @@ chosen over an overlay.
 5. **Hive order-detail store retired for this flow.** The waiter reads moved to
    the replica, the `saveOrderDetailSnapshot` Hive mirror is gone, and
    `orders_repository_impl.dart` no longer imports `core/database` — it is off
-   the §7 Hive-store ratchet. (`waiter` remains on the ratchet only for
-   `getUsers`, which is §9.)
+   the §7 Hive-store ratchet.
 
 6. **Table-timer store on the replica (§8).** The billing state machine's
    stored record (elapsed time, amount due, pause intervals) moved from the Hive
@@ -77,6 +76,24 @@ chosen over an overlay.
    *engine* is untouched — this is a storage swap only, so the money math is
    byte-identical; only where the record is persisted changed.
    `table_timer_local_repository_impl.dart` is off the §7 Hive-store ratchet.
+
+7. **Waiter repo fully off the Hive store (§9 tail).** Two stragglers moved:
+   the staff list (`getStaffWaiters`) now reads the replica's `users` rows via
+   `UsersQuery.all()` instead of the Hive user box; and the waiter table-open
+   (`createOrder`) now delegates to `OrdersRepository.createOrder` — the same
+   outbox + replica path the cashier uses, carrying an optional `waiter_id` in
+   the create body and row — instead of the legacy `OfflineQueueService` +
+   `saveOrderDetailSnapshot`. `waiter_local_repository_impl.dart` is off the §7
+   ratchet, and payment is now the only remaining `OfflineQueueService`
+   consumer.
+
+8. **Payment reads a single source for offline items.** The payment total and
+   the payment screen's item list both had a supplement that summed pending
+   `addItems` from the legacy `OfflineQueueService`. Since added items are real
+   replica rows now (item 2), that queue no longer carries them, so both
+   supplements were dead (contributing 0) and, in the total's case, a latent
+   double-count. Removed; `OrderTotals.forPayment` keeps its `offlineExtra`
+   param (default 0, test-covered) with no caller.
 
 ## On-device QA checklist (the part CI cannot cover)
 
@@ -99,6 +116,12 @@ Run these on a device, dine-in **and** waiter **and** takeaway where noted:
   the one path the tests can't exercise).
 - Waiter open-order list shows the same open bills the floor does, and a
   just-paid dine-in table drops off it when it goes free.
+- **Waiter opens a table** (with a waiter assigned) **offline** → it shows
+  instantly on the floor and in the waiter list (this used to land only in Hive
+  and was invisible until sync); reconnect → exactly one order, the assigned
+  waiter preserved, no duplicate.
+- Waiter staff picker lists the current waiters (now read from the replica, not
+  the Hive user cache); a removed staff member is not offered.
 
 ## Still on Hive (not this flow)
 
@@ -107,10 +130,11 @@ Run these on a device, dine-in **and** waiter **and** takeaway where noted:
   Deferred to a session where the app runs, because the failure mode (a tenant
   switch that leaves stale data, or a setup-check that mis-reports) is not
   CI-observable and lands on the login path.
-- **`waiter_local_repository_impl.dart` — `getUsers` only.** Its order reads are
-  on the replica; the one remaining Hive call reads the cached user list, which
-  has no replica equivalent until the user catalog's read path moves (part of
-  the §10 catalog consolidation).
+- **`SyncEngine`** still hydrates the Hive catalog (goods/categories/users/…)
+  and `CacheService` (≈20 files still read it — the menu goods lookups for
+  receipts, the PIN-login user cache, `main_repository` REST fallbacks). Those
+  readers must move before the Hive `LocalDatabase`/`CacheService` can be
+  deleted (§10).
 - **`di.dart`** is the composition root, retired last with the Hive
   `LocalDatabase`/`CacheService` (§10).
 
