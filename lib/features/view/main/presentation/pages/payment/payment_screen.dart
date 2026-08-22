@@ -1,14 +1,9 @@
-import 'dart:convert';
-
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mary_ai_pos/core/api/api.dart';
 import 'package:mary_ai_pos/core/design_system/pos_design_system.dart';
 import 'package:mary_ai_pos/core/extension/for_context.dart';
 import 'package:mary_ai_pos/core/extension/number_formatter.dart';
 import 'package:mary_ai_pos/core/pricing/order_totals.dart';
-import 'package:mary_ai_pos/core/services/cache/cache_service.dart';
-import 'package:mary_ai_pos/core/services/offline_queue/offline_queue_service.dart';
-import 'package:mary_ai_pos/core/services/offline_queue/pending_operation.dart';
 import 'package:mary_ai_pos/di.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/table_timer/table_timer_response_model.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/hour_price/hour_price_bloc.dart';
@@ -158,7 +153,6 @@ class _PaymentScreenState extends State<PaymentScreen> {
                           width: sidePanelW,
                           child: _OrderSummaryColumn(
                             detail: state.detail!,
-                            tableId: tableId,
                             servicePercentFallback: _servicePercent,
                             includeService: state.applyService,
                             onToggleService: (v) {
@@ -224,14 +218,12 @@ class _PaymentScreenState extends State<PaymentScreen> {
 
 class _OrderSummaryColumn extends StatelessWidget {
   final dynamic detail;
-  final String? tableId;
   final double servicePercentFallback;
   final bool includeService;
   final ValueChanged<bool> onToggleService;
 
   const _OrderSummaryColumn({
     required this.detail,
-    required this.tableId,
     this.servicePercentFallback = 0,
     this.includeService = true,
     required this.onToggleService,
@@ -267,7 +259,7 @@ class _OrderSummaryColumn extends StatelessWidget {
           ),
           // Items list
           Expanded(
-            child: _ItemsList(detail: detail, tableId: tableId),
+            child: _ItemsList(detail: detail),
           ),
           // Totals footer: Oraliq jami + Xizmat haqi (simplified per spec)
           _SummaryFooter(
@@ -284,9 +276,8 @@ class _OrderSummaryColumn extends StatelessWidget {
 
 class _ItemsList extends StatelessWidget {
   final dynamic detail;
-  final String? tableId;
 
-  const _ItemsList({required this.detail, required this.tableId});
+  const _ItemsList({required this.detail});
 
   @override
   Widget build(BuildContext context) {
@@ -329,46 +320,10 @@ class _ItemsList extends StatelessWidget {
         );
       }
     }
-    // Offline pending items (same behavior as before)
-    if (tableId != null) {
-      final cachedGoods = inject<CacheService>().getGoods();
-      for (final op in inject<OfflineQueueService>().pending.where(
-        (o) => o.tableId == tableId && o.type == PendingOperationType.addItems,
-      )) {
-        try {
-          final payload = jsonDecode(op.payload) as Map<String, dynamic>;
-          final items = payload['items'] as List<dynamic>;
-          for (final item in items) {
-            final goodId = item['good_id'] as String;
-            final qty = (item['quantity'] as num).toInt();
-            final goodJson = cachedGoods.firstWhere(
-              (g) => g['id'] == goodId,
-              orElse: () => <String, dynamic>{},
-            );
-            if (goodJson.isEmpty) continue;
-            final name = goodJson['name'] as String? ?? goodId;
-            final price =
-                double.tryParse(goodJson['price']?.toString() ?? '0') ?? 0.0;
-            final key = '⏳$name';
-            if (grouped.containsKey(key)) {
-              grouped[key] = grouped[key]!.withQty(
-                grouped[key]!.qty + qty,
-                earliestAt: op.createdAt,
-              );
-            } else {
-              grouped[key] = _PayItem(
-                name: '⏳ $name',
-                price: price,
-                qty: qty,
-                isPending: true,
-                isCancelled: false,
-                createdAt: op.createdAt,
-              );
-            }
-          }
-        } catch (_) {}
-      }
-    }
+    // Offline-added items are real replica rows now (order flow §6/§7), so they
+    // arrive in `detail.goods` above and are grouped like any other line. The
+    // old supplement here read the legacy OfflineQueueService, which no longer
+    // carries addItems — it added nothing and is gone.
 
     final allItems = [...grouped.values, ...cancelled];
 
