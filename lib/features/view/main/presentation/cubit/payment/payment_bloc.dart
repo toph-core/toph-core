@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -10,8 +9,6 @@ import 'package:mary_ai_pos/core/constants/constants.dart';
 import 'package:mary_ai_pos/core/error/failure.dart';
 import 'package:mary_ai_pos/core/routes/app_routes.dart';
 import 'package:mary_ai_pos/core/services/cache/cache_service.dart';
-import 'package:mary_ai_pos/core/services/offline_queue/offline_queue_service.dart';
-import 'package:mary_ai_pos/core/services/offline_queue/pending_operation.dart';
 import 'package:mary_ai_pos/core/utils/helper/helper_widget.dart';
 import 'package:mary_ai_pos/core/pricing/order_totals.dart';
 import 'package:mary_ai_pos/di.dart' show inject;
@@ -282,37 +279,6 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
     mainCubit.refreshTables(force: true);
   }
 
-  /// Sums the cost of any not-yet-synced `addItems` ops queued for
-  /// [tableId] — the due total must include items already committed locally
-  /// (§4) even though the backend doesn't know about them yet.
-  static int pendingOfflineExtra(String? tableId) {
-    if (tableId == null) return 0;
-    final queue = inject<OfflineQueueService>();
-    final cachedGoods = inject<CacheService>().getGoods();
-    int extra = 0;
-    for (final op in queue.pending.where(
-      (o) => o.tableId == tableId && o.type == PendingOperationType.addItems,
-    )) {
-      try {
-        final payload = jsonDecode(op.payload) as Map<String, dynamic>;
-        final items = payload['items'] as List<dynamic>;
-        for (final item in items) {
-          final goodId = item['good_id'] as String;
-          final qty = (item['quantity'] as num).toInt();
-          final goodJson = cachedGoods.firstWhere(
-            (g) => g['id'] == goodId,
-            orElse: () => <String, dynamic>{},
-          );
-          if (goodJson.isEmpty) continue;
-          final price =
-              double.tryParse(goodJson['price']?.toString() ?? '0') ?? 0.0;
-          extra += (price * qty).toInt();
-        }
-      } catch (_) {}
-    }
-    return extra;
-  }
-
   /// The authoritative payment total, assembled in exactly one place.
   ///
   /// The payment screen renders this and [_payment] charges it. They used to
@@ -332,7 +298,6 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
     return OrderTotals.forPayment(
       detail: target,
       tableCharge: tableCharge ?? state.hourPrice,
-      offlineExtra: pendingOfflineExtra(state.tableId).toDouble(),
       servicePercent: _servicePercent,
       discountType: state.discountType,
       discountRaw: state.discountAmount,
