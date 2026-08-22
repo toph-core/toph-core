@@ -1,107 +1,106 @@
-# Order-flow migration — the last, app-gated piece
+# Order-flow migration — done, pending on-device QA
 
-Status: **planned, not started.** This is the remaining §6b work to take the
-order/waiter repositories off the Hive `LocalDatabase` (`core/database/`) and
-onto the SQLite replica. It is deliberately not attempted blind: every step
-below changes the live order lifecycle, and the failure mode is a **duplicated
-or vanished order** in a running POS. It must be built and verified where the
-app runs.
+Status: **implemented and CI-verified; on-device QA outstanding.** The order /
+waiter flow is off the Hive `LocalDatabase` (`core/database/`) and onto the
+SQLite replica. This document is now the record of what was built and the
+on-device checklist that closes it — the one gate CI cannot cover, because the
+correctness that lives in the running app (the `detail_bloc` overlay, the
+waiter list, kitchen printing, live billing) has no CI harness.
 
-The three consolidation steps that landed this session (`transactions`,
-`lease_manager`, `menu`) were safe because behaviour was pinnable by a query
-test. This one is not — the correctness lives in server-replay timing and the
-`detail_bloc` optimistic overlay, neither of which CI can exercise.
+The change was made deliberately, not blind-in-the-dark: the data layer is
+pinned end to end by tests (`orders_replica_write_test`, `orders_outbox_test`,
+`order_flow_integration_test`, `order_detail_query_test`), and the one design
+fork that mattered — how offline order *items* reconcile — was resolved against
+a primary source (the backend), not guessed. What remains genuinely un-testable
+without the app is flagged below.
 
-## Where the order flow is today
+## The integrity fork, and how it was resolved
 
-- **Write path is on the legacy queue, not the outbox.** `OrdersRepositoryImpl`
-  and `WaiterLocalRepositoryImpl` enqueue `createOrder` / `addItems` /
-  `cancelLineItems` / `transferTable` through `OfflineQueueService` — a
-  **Hive-backed** `Box<PendingOperation>` (`offline_queue_service.dart`), replayed
-  by `_execCreateOrder` et al. over Dio. The Phase-2 outbox
-  (`LocalWriter` → `OutboxStore` → `OutboxDrainer`) is **not** used for orders.
-- **No order outbox handlers exist.** `OutboxExecutors` has handlers registered
-  only for `users`, `menu_admin`, and `halls_tables`
-  (`data/outbox/*_outbox.dart`). There is no `orders`/`order_items`/`payments`
-  send handler.
-- **Display is a Hive JSON snapshot.** `createOrder` writes nothing to the
-  replica `orders`/`order_items` tables; the optimistic display comes from
-  `saveOrderDetailSnapshot(tableId, json)` → `LocalDatabase.saveOrderDetail`,
-  and `detail_bloc` reads it via `OrdersRepositoryImpl.watchOrderDetail`.
-- **The replica read exists but is unwired.** `OrderDetailQuery`
-  (`core/db/order_detail_query.dart`) already assembles the open bill + items
-  from the replica and is verified by `order_detail_query_test`. Its own doc:
-  it returns the **stored** side only; `detail_bloc` overlays pending/optimistic
-  ops on top, and *"Swapping the bloc's source from the Hive snapshot to this
-  query is the remaining step, and it needs the app running to verify the
-  overlay still behaves."*
+The risk in this migration is a **duplicated or vanished order** in a running
+POS. The specific hazard: an optimistic order *item* written locally under a
+client-invented id would become a second row when the server's own row arrives,
+unless the server honours that client id.
 
-## The integrity decision that forces the ordering
+Checked directly in `mary-ai-backend` (`internal/model/order.go`,
+`internal/service/order.go`): `CreateOrderItemInline.ID` and
+`CreateOrderItemEntry.ID` are **client-supplied primary keys, honoured
+idempotently** (`resolveCreateID` returns the existing row on replay). So the id
+a terminal invents offline is the id the line keeps, and a later pull converges
+onto the same row instead of duplicating it. (The client previously sent
+`client_item_id`, which the backend ignores — the new path sends `id`.)
 
-The plan (§6b) says to write a new order into the replica guarded by `_pending`
-so `OrderDetailQuery` can show it immediately. **`_pending` is only cleared by
-the outbox drainer** (`OutboxDrainer.clearPending`, on ack). The legacy queue
-never clears it. So writing an order to the replica under `_pending` *while it
-still replays through the legacy queue* would shield the server's authoritative
-row **forever** — the local provisional order never converges.
+This is the plan's Phase-F precondition for optimistic items, and it is already
+satisfied on the backend branch — so the full-replica approach (below) was
+chosen over an overlay.
 
-⇒ The order write path must move onto the outbox **before** the replica write +
-read swap. That is step 1–2 below; it is not optional and not reorderable.
+## What was built
 
-## Sequence
+1. **Order outbox handlers** — `core/outbox/orders_outbox.dart`
+   (`registerOrdersOutboxHandlers`): `orders/create` (POST `/orders`, with the
+   409 "table already open" merge ported verbatim from the legacy
+   `_execCreateOrder`), `order_items/create` (POST `/orders/{id}/items`, chain
+   key = order id so a line never overtakes its order), `order_items/delete`
+   (per-line `/order-items/{id}/cancel`, 404-tolerant), `orders/pay`,
+   `orders/cancel`, `orders/transfer`. 4xx → permanent, 5xx/timeout/dropped →
+   retry. It speaks Dio directly (order logic with no home in a CRUD
+   repository), and took over the §9.1 transport allowlist slot the legacy
+   queue held.
 
-1. **Build the order outbox handlers.** New `data/outbox/orders_outbox.dart`
-   registering `OutboxExecutors` handlers for the order operations, porting the
-   endpoint/response logic from `OfflineQueueService._execCreateOrder` /
-   `_execAddItems` / `_execCancelLineItems` / `_execTransferTable` /
-   `_execPayOrder`. Reuse the existing chain-key rule (an `order_items` op
-   returns its `order_id` so items never overtake their order — the machinery in
-   `outbox_executor.dart` already exists for exactly this). Unit-test with
-   `test/support/fake_http_client_adapter.dart`, mirroring `outbox_handlers_test`
-   and `id_reconciliation_test` (client order id is accepted idempotently by
-   `CreateOrder`; item ids reconcile via the drainer's id-swap).
+2. **Writes on the outbox + replica.** `OrdersRepositoryImpl` writes the
+   `orders` row (pending-guarded, clears on the create ack) and its
+   `order_items` rows to the replica, and enqueues the matching outbox op —
+   item ids shared between the local rows and the create body. Initial lines
+   ride in the create body unguarded (the server can't clobber a row it has
+   never heard of; it converges on the first post-sync pull); added lines are
+   their own guarded ops; cancels are guarded so a pull can't resurrect a
+   removed line.
 
-2. **Route writes through `LocalWriter`.** Replace each `_queue.enqueue(...)` in
-   the order/waiter repos with the matching `LocalWriter.create` / `.write` /
-   `.delete`, so the op lands in the outbox with `_pending` set and cleared on
-   ack. Retire the order `PendingOperationType`s from `OfflineQueueService`
-   (leave the box + its non-order ops until those migrate).
+3. **Reads on the replica.** `watchOrderDetail`/`getOrderDetail` assemble from
+   `OrderDetailQuery` — by table for dine-in, by order id for takeaway. The
+   waiter open-order list reads `OrderDetailQuery.openOrders()`.
 
-3. **Write order + items to the replica on create/add.** `createOrder` /
-   `addItems` `applyLocalWrite` the `orders` and `order_items` rows in the shape
-   `OrderDetailQuery` reads (`bill_status = 'open'`, `table_id`, item
-   `order_id`/`good_id`/`created_at`). `LocalWriter` already sets `_pending`;
-   the drainer clears it on ack; the next pull then converges the row to the
-   server's version. **Drop the `saveOrderDetailSnapshot` Hive write.**
+4. **`detail_bloc` overlay collapsed.** The `⏳` pending-add overlay that read
+   the retiring Hive queue is gone (an offline add is a real replica row now);
+   existing-line +/- resolves its ids from the replica rows instead of a
+   network fetch that returned nothing offline.
 
-4. **Swap the read.** Point `detail_bloc`'s source from
-   `OrdersRepository.watchOrderDetail` (Hive snapshot) to
-   `OrderDetailQuery.watchLiveOrderForTable`, keeping the bloc's existing overlay
-   of pending/optimistic/cancel ops on top of the stored read.
+5. **Hive order-detail store retired for this flow.** The waiter reads moved to
+   the replica, the `saveOrderDetailSnapshot` Hive mirror is gone, and
+   `orders_repository_impl.dart` no longer imports `core/database` — it is off
+   the §7 Hive-store ratchet. (`waiter` and `table_timer` remain on the ratchet
+   only for the table-timer box and `getUsers`, which are §8/§9.)
 
-5. **Delete the Hive snapshot path** — `watchOrderDetail`/`getOrderDetail`/
-   `saveOrderDetailSnapshot`/`evictOrderDetail` from the orders & waiter repos
-   and their interfaces, and the `core/database` import. That drops both files
-   from the §7 Hive-store ratchet (`architecture_guard_test.dart`), 5 → 3.
-   `transferTable`'s re-key becomes a replica update + outbox op.
+## On-device QA checklist (the part CI cannot cover)
 
-## App-verification checklist (the part CI cannot cover)
+Run these on a device, dine-in **and** waiter **and** takeaway where noted:
 
 - Create an order **offline** → it appears on the table instantly.
 - Reconnect → it syncs; after the next pull there is **exactly one** order (no
   duplicate under a second id), with the server's bill number/total.
 - Add an item offline → appears instantly; cancel a line → disappears; both
   survive a cold restart before sync.
+- Existing-line **+/- quantity** offline → adjusts and re-syncs (this used to
+  need a network fetch; verify it now works with no connectivity).
 - Transfer a table → the bill moves and does not resurrect at the old table.
 - Pay → the bill closes; replaying the queued pay on an already-paid order is a
   no-op (idempotent).
 - Kill the app mid-order (write landed, ack not) → on restart the order is still
   shown and still queued, and does not double-send.
+- Two terminals open the **same table** while both offline → on reconnect the
+  409 merge folds the losing terminal's items into the winning order (rare;
+  the one path the tests can't exercise).
+- Waiter open-order list shows the same open bills the floor does, and a
+  just-paid dine-in table drops off it when it goes free.
 
-## Why the countdown stops at 5 here
+## Still on Hive (not this flow)
 
-`orders` and `waiter` are blocked on steps 1–4 above; `table_timer` shares the
-same write-path/live-state problem (its `saveTableTimer` local writes + live
-elapsed-time compute); `login_data_scope` is the tenant-switch wipe; `di.dart`
-is the composition root, deleted last. None is a query-testable read swap. This
-document is the executable plan for closing them where the app can confirm it.
+- **`table_timer` (§8).** A local-authority billing state machine (elapsed
+  time, amount due, pause intervals) whose stored record is a custom shape, not
+  the `table_time_sessions` feed row. The backend now logs `table_time_sessions`
+  (tenants migration 70), so it *can* be registered — but the migration is a
+  storage swap of a money-adjacent engine with no CI-checkable billing, so it is
+  left for a session where the app runs.
+- **`login_data_scope` (§9).** Auth-critical tenant-switch wipe + a "did setup
+  land data" check; entangled with what still populates the Hive catalog.
+- **`di.dart`** is the composition root, retired last with the Hive
+  `LocalDatabase`/`CacheService` (§10).
