@@ -159,20 +159,25 @@ void main() {
       expect(db.getTableTimers(), isEmpty);
     });
 
-    test('watchTableTimer re-emits on every write and on evict', () async {
+    test('watchTableTimer re-emits the current record on each change', () async {
       // Subscribe synchronously (Stream.multi runs its body on listen, so the
-      // change subscription is live before the writes) and collect — emitsInOrder
-      // would subscribe a tick late and the broadcast change stream would drop
-      // these synchronous writes.
+      // change subscription is live before the writes). The watch re-reads the
+      // record lazily on each notification, so the writes have to be spaced by a
+      // tick — back-to-back synchronous writes coalesce and every emit would see
+      // the final state (which is exactly what a live UI wants, but not what
+      // this test is asserting).
       final seen = <String?>[];
       final sub = db
           .watchTableTimer('o1')
           .listen((r) => seen.add(r?['state'] as String?));
+      await Future<void>.delayed(Duration.zero); // initial emit: null
 
       db.saveTableTimer('o1', {'order_id': 'o1', 'state': 'running'});
+      await Future<void>.delayed(Duration.zero);
       db.saveTableTimer('o1', {'order_id': 'o1', 'state': 'paused'});
+      await Future<void>.delayed(Duration.zero);
       db.evictTableTimer('o1');
-      await Future<void>.delayed(const Duration(milliseconds: 20));
+      await Future<void>.delayed(Duration.zero);
       await sub.cancel();
 
       expect(seen, [null, 'running', 'paused', null]);
