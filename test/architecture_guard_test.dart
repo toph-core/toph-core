@@ -145,12 +145,11 @@ void main() {
   });
 
   group('§7 — screens do not reach into the data layer', () {
-    // The definition of done wants this empty. Each entry is one screen still
-    // waiting on Phase 4; the count is the remaining work, and it only ever
-    // goes down.
-    const pending = {
-      'lib/features/view/main/presentation/pages/main/widgets/time_based_table_badge.dart',
-    };
+    // The definition of done wanted this empty, and now it is: every screen
+    // resolves its data through a bloc / cubit / controller, never a repository
+    // pulled from the widget. The rule is absolute from here — any new
+    // inject<...Repository>() under presentation/pages/ fails the build.
+    const pending = <String>{};
 
     final repoInject = RegExp(r'inject<[A-Za-z_]*Repository>\(\)');
 

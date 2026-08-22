@@ -5,7 +5,7 @@ import 'package:mary_ai_pos/core/services/table_timer/table_timer_sync_service.d
 import 'package:mary_ai_pos/di.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/cafe_tables/cafe_tables_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/table_timer/table_timer_response_model.dart';
-import 'package:mary_ai_pos/features/view/main/domain/repository/table_timer_local_repository.dart';
+import 'package:mary_ai_pos/features/view/main/presentation/cubit/table_timer/time_based_table_badge_controller.dart';
 
 const _indigo = Color(0xFFFB6633);
 const _kGreen = Color(0xFF16A34A);
@@ -57,6 +57,8 @@ class _TimeBasedTableBadgeState extends State<TimeBasedTableBadge> {
   Timer? _tickTimer;
   StreamSubscription<String>? _syncSub;
   StreamSubscription<TableTimerResponse?>? _localSub;
+  final TimeBasedTableBadgeController _controller =
+      inject<TimeBasedTableBadgeController>();
 
   bool get _isBusy => widget.table.status == TableStatus.busy;
 
@@ -82,7 +84,7 @@ class _TimeBasedTableBadgeState extends State<TimeBasedTableBadge> {
     _syncSub = inject<TableTimerSyncService>().updates.listen(
       _onExternalTimerUpdate,
     );
-    _localSub = inject<TableTimerLocalRepository>()
+    _localSub = _controller
         .watchTimerForTable(widget.table.id)
         .listen((t) {
       if (!mounted || t == null) return;
@@ -181,7 +183,7 @@ class _TimeBasedTableBadgeState extends State<TimeBasedTableBadge> {
 
     setState(() => _actionLoading = true);
     try {
-      final repo = inject<TableTimerLocalRepository>();
+      final repo = _controller;
       TableTimerResponse? t;
       if (_timerState == 'running') {
         t = (await repo.pauseTimer(_orderId)).fold((_) => null, (r) => r);

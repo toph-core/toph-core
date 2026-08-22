@@ -21,6 +21,7 @@ import 'package:mary_ai_pos/core/db/local_database_factory.dart' as replica;
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/printers/printers_controller.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/transactions/transaction_categories_controller.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/transactions/transactions_list_controller.dart';
+import 'package:mary_ai_pos/features/view/main/presentation/cubit/table_timer/time_based_table_badge_controller.dart';
 import 'package:mary_ai_pos/core/media/local_image_cache.dart';
 import 'package:mary_ai_pos/core/outbox/local_writer.dart';
 import 'package:mary_ai_pos/core/outbox/outbox_drainer.dart';
@@ -451,6 +452,9 @@ void _repositories() {
   );
   inject.registerLazySingleton<TransactionsListController>(
     () => TransactionsListController(local: inject(), remote: inject()),
+  );
+  inject.registerLazySingleton<TimeBasedTableBadgeController>(
+    () => TimeBasedTableBadgeController(inject()),
   );
   // §8 Phase 5 (back-office tier) — read-only, see TransactionsRepository's
   // own class doc for what's deliberately not covered.
