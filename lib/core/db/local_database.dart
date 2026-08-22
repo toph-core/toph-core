@@ -150,6 +150,16 @@ class LocalDatabase {
       )
     ''');
 
+    // Local-authority per-order table-timer records — the billing engine's
+    // store (see [LocalTables.tableTimers]). One JSON record per order,
+    // watched reactively like any other table via [executeOn]'s notify.
+    _db.execute('''
+      CREATE TABLE IF NOT EXISTS ${LocalTables.tableTimers} (
+        order_id TEXT PRIMARY KEY NOT NULL,
+        data     TEXT NOT NULL
+      )
+    ''');
+
     for (final spec in kReplicatedEntities) {
       final columns = <String>[
         'id TEXT PRIMARY KEY NOT NULL',
@@ -435,6 +445,62 @@ class LocalDatabase {
     );
   }
 
+  // ── Table-timer records (local authority) ──────────────────────────────
+
+  /// Writes the per-order timer record and wakes its watchers. [record] is the
+  /// billing engine's normalized shape, kept verbatim as JSON exactly as the
+  /// retiring Hive box did — the storage moves, the engine does not.
+  void saveTableTimer(String orderId, Map<String, dynamic> record) {
+    executeOn(
+      LocalTables.tableTimers,
+      'INSERT OR REPLACE INTO ${LocalTables.tableTimers} (order_id, data) '
+      'VALUES (?, ?)',
+      [orderId, jsonEncode(record)],
+    );
+  }
+
+  /// The timer record for [orderId], or null.
+  Map<String, dynamic>? getTableTimer(String orderId) {
+    final rows = _db.select(
+      'SELECT data FROM ${LocalTables.tableTimers} WHERE order_id = ? LIMIT 1',
+      [orderId],
+    );
+    if (rows.isEmpty) return null;
+    final raw = rows.first['data'];
+    return raw is String ? _tryDecode(raw) : null;
+  }
+
+  /// Every live timer record.
+  List<Map<String, dynamic>> getTableTimers() {
+    final rows = _db.select('SELECT data FROM ${LocalTables.tableTimers}');
+    final out = <Map<String, dynamic>>[];
+    for (final row in rows) {
+      final raw = row['data'];
+      if (raw is String) {
+        final decoded = _tryDecode(raw);
+        if (decoded != null) out.add(decoded);
+      }
+    }
+    return out;
+  }
+
+  /// Removes the timer record for [orderId] (e.g. once its bill is paid).
+  void evictTableTimer(String orderId) {
+    executeOn(
+      LocalTables.tableTimers,
+      'DELETE FROM ${LocalTables.tableTimers} WHERE order_id = ?',
+      [orderId],
+    );
+  }
+
+  /// The live timer record for [orderId], re-emitting on every timer write.
+  Stream<Map<String, dynamic>?> watchTableTimer(String orderId) =>
+      watch({LocalTables.tableTimers}, () => getTableTimer(orderId));
+
+  /// Every live timer record, re-emitting on every timer write.
+  Stream<List<Map<String, dynamic>>> watchTableTimers() =>
+      watch({LocalTables.tableTimers}, getTableTimers);
+
   // ── Provisional ids ────────────────────────────────────────────────────
 
   /// Marks [localId] as a client-invented stand-in for a server-assigned id.
@@ -560,6 +626,11 @@ class LocalDatabase {
       _db.execute('DELETE FROM ${LocalTables.outbox}');
       _db.execute('DELETE FROM ${LocalTables.pending}');
       _db.execute('DELETE FROM ${LocalTables.meta}');
+      // Timer records are per-tenant local authority; a brand switch must not
+      // carry the previous tenant's live timers. Guarded because an install
+      // from before this table existed has nothing to delete.
+      _db.execute('DELETE FROM ${LocalTables.tableTimers}');
+      _touch(LocalTables.tableTimers);
       setMeta('schema_version', '$schemaVersion');
     });
   }

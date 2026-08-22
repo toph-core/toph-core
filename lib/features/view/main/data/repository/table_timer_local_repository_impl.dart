@@ -2,7 +2,7 @@ import 'dart:convert';
 
 import 'package:dartz/dartz.dart';
 import 'package:mary_ai_pos/core/constants/constants.dart';
-import 'package:mary_ai_pos/core/database/local_database.dart';
+import 'package:mary_ai_pos/core/db/local_database.dart';
 import 'package:mary_ai_pos/core/error/failure.dart';
 import 'package:mary_ai_pos/core/services/lease/lease_manager.dart';
 import 'package:mary_ai_pos/core/services/offline_queue/offline_queue_service.dart';
@@ -160,10 +160,8 @@ class TableTimerLocalRepositoryImpl implements TableTimerLocalRepository {
 
   String _tablePriceFor(String tableId) {
     if (tableId.isEmpty) return '';
-    for (final t in _localDb.getTables()) {
-      if (t.id == tableId) return t.pricePerHour ?? '';
-    }
-    return '';
+    return _localDb.byId('cafe_tables', tableId)?['price_per_hour']?.toString() ??
+        '';
   }
 
   Future<void> _enqueueTimerAction(

@@ -124,6 +124,11 @@ class ReplicationService {
   /// Whether this terminal still needs its one-time initialization.
   bool get needsBootstrap => !_db.isBootstrapped;
 
+  /// The replica this service fills. Exposed so the SyncEngine's own hydration
+  /// passes (e.g. the table-timer snapshot) can land on the same replica
+  /// without a second injection of it.
+  LocalDatabase get db => _db;
+
   /// Pulls pages until the replica is current.
   ///
   /// Re-entrant calls return [ReplicationOutcome.alreadyRunning] rather than

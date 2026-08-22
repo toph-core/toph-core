@@ -128,7 +128,18 @@ class LocalTables {
   /// alone, which is why it is recorded rather than inferred.
   static const provisional = '_provisional';
 
-  static const all = {meta, outbox, pending, tableStatus, provisional};
+  /// Live per-order table-timer records — the local-authority billing engine's
+  /// store, moved off the retiring Hive box onto the replica DB.
+  ///
+  /// Like [tableStatus], this is decided *here*, not delivered by the feed: a
+  /// cashier's start/pause/resume writes the record and prices the interval
+  /// locally, and the server's snapshot only re-enters through SyncEngine's
+  /// hydration. So it is a local table, not a replicated entity — the raw
+  /// `table_time_sessions` feed row is a different shape, and this keeps the
+  /// proven compute engine unchanged across the storage swap.
+  static const tableTimers = '_table_timers';
+
+  static const all = {meta, outbox, pending, tableStatus, provisional, tableTimers};
 
   const LocalTables._();
 }

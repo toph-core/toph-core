@@ -143,6 +143,39 @@ void main() {
     });
   });
 
+  group('table-timer store (§8)', () {
+    test('round-trips a record, replaces in place, and evicts', () {
+      db.saveTableTimer('o1', {'order_id': 'o1', 'state': 'running', 'sec': 60});
+      expect(db.getTableTimer('o1')?['state'], 'running');
+      expect(db.getTableTimers().map((r) => r['order_id']), ['o1']);
+
+      // Same key replaces rather than appends — the engine settles one record.
+      db.saveTableTimer('o1', {'order_id': 'o1', 'state': 'paused'});
+      expect(db.getTableTimer('o1')?['state'], 'paused');
+      expect(db.getTableTimers(), hasLength(1));
+
+      db.evictTableTimer('o1');
+      expect(db.getTableTimer('o1'), isNull);
+      expect(db.getTableTimers(), isEmpty);
+    });
+
+    test('watchTableTimer re-emits on every write and on evict', () {
+      expect(
+        db.watchTableTimer('o1').map((r) => r?['state']),
+        emitsInOrder([null, 'running', 'paused', null]),
+      );
+      db.saveTableTimer('o1', {'order_id': 'o1', 'state': 'running'});
+      db.saveTableTimer('o1', {'order_id': 'o1', 'state': 'paused'});
+      db.evictTableTimer('o1');
+    });
+
+    test('a brand switch (clearAll) drops timer records', () {
+      db.saveTableTimer('o1', {'order_id': 'o1', 'state': 'running'});
+      db.clearAll();
+      expect(db.getTableTimer('o1'), isNull);
+    });
+  });
+
   group('normalization', () {
     test('numeric columns become strings the Flutter models can parse', () {
       final spec = kEntitiesByName['goods']!;

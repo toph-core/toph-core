@@ -17,6 +17,7 @@ import 'package:mary_ai_pos/features/view/main/data/models/hall/hall_model.dart'
 import 'package:mary_ai_pos/features/view/main/data/models/open_order/open_order_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/order_line_item/order_line_item_model.dart';
 import 'package:mary_ai_pos/features/view/main/domain/repository/orders_repository.dart';
+import 'package:mary_ai_pos/features/view/main/domain/repository/table_timer_local_repository.dart';
 import 'package:mary_ai_pos/features/view/main/domain/repository/tables_repository.dart';
 import 'package:mary_ai_pos/features/view/main/domain/repository/payment_repository.dart';
 import 'package:mary_ai_pos/features/view/main/domain/repository/waiter_local_repository.dart';
@@ -43,6 +44,7 @@ class WaiterLocalRepositoryImpl implements WaiterLocalRepository {
   final OfflineQueueService _queue;
   final OrdersRepository _orders;
   final OrderDetailQuery _detail;
+  final TableTimerLocalRepository _timers;
   final PaymentRepository _payment;
   final LanHubService _lanHub;
   final LeaseManager _lease;
@@ -55,6 +57,7 @@ class WaiterLocalRepositoryImpl implements WaiterLocalRepository {
     this._queue,
     this._orders,
     this._detail,
+    this._timers,
     this._payment,
     this._lanHub,
     this._lease,
@@ -252,7 +255,7 @@ class WaiterLocalRepositoryImpl implements WaiterLocalRepository {
     // timer record still goes: SyncEngine only reconciles timers for *busy*
     // tables, so one left behind would never age out and the next timed order
     // on this table would reuse the paid order via createTimedOrder's guard.
-    await _localDb.evictTableTimer(orderId);
+    await _timers.evictTimer(orderId);
     if (tableId.isNotEmpty) {
       await _tables.updateTableStatus(tableId, TableStatus.free);
       _lanHub.tableStatusChanged(tableId, TableStatus.free.name);

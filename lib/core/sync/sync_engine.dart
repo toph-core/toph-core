@@ -531,7 +531,9 @@ class SyncEngine {
         final raw = (await repo.getOrderTableTimer(orderId))
             .fold((_) => null, (r) => r);
         if (raw == null) continue;
-        await _localDb.saveTableTimer(
+        // The timer store moved to the replica (§8); its hydration lands there
+        // now, which is the store `TableTimerLocalRepositoryImpl` reads.
+        _replication.db.saveTableTimer(
           orderId,
           TableTimerLocalRepositoryImpl.normalizeServerSnapshot(raw),
         );

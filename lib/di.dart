@@ -412,7 +412,12 @@ void _repositories() {
   // outbox + OrdersRepository (for the timed-order create), no DioClient.
   // The timed-order create is lease-gated (LAN_HUB_AND_LEASING_PLAN.md §8).
   inject.registerLazySingleton<TableTimerLocalRepository>(
-    () => TableTimerLocalRepositoryImpl(inject(), inject(), inject(), inject()),
+    () => TableTimerLocalRepositoryImpl(
+      inject<replica.LocalDatabase>(),
+      inject(),
+      inject(),
+      inject(),
+    ),
   );
   // CLIENT_FACING_OFFLINE_PLAN.md §5 — rebuilt local-first on LocalDatabase
   // + the already-correct Orders/Payment repositories; no DioClient. The
@@ -423,6 +428,7 @@ void _repositories() {
       inject(),
       inject(),
       inject<replica.OrderDetailQuery>(),
+      inject(),
       inject(),
       inject(),
       inject(),
