@@ -10,7 +10,6 @@
 library;
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mary_ai_pos/core/constants/constants.dart';
 import 'package:mary_ai_pos/core/database/local_database.dart' as hive;
 import 'package:mary_ai_pos/core/db/apply_change.dart';
 import 'package:mary_ai_pos/core/db/entity_registry.dart';
