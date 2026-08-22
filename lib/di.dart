@@ -166,6 +166,12 @@ Future<void> initDi() async {
   final changeApplier = replica.ChangeApplier(replicaDb);
   inject.registerSingleton<replica.LocalDatabase>(replicaDb);
   inject.registerSingleton<replica.ChangeApplier>(changeApplier);
+  // The order-detail read, shared by the order detail screen (via
+  // OrdersRepository) and the waiter open-order list — one instance over the
+  // one replica.
+  inject.registerSingleton<replica.OrderDetailQuery>(
+    replica.OrderDetailQuery(replicaDb),
+  );
 
   // OFFLINE_FIRST_EVERYWHERE_PLAN.md Phase 2 — the outbox, in the same SQLite
   // file as the replica so a local row and its queued send commit together.
@@ -416,6 +422,7 @@ void _repositories() {
       inject(),
       inject(),
       inject(),
+      inject<replica.OrderDetailQuery>(),
       inject(),
       inject(),
       inject(),
@@ -431,8 +438,7 @@ void _repositories() {
       db: inject<replica.LocalDatabase>(),
       applier: inject<replica.ChangeApplier>(),
       writer: inject<LocalWriter>(),
-      detail: replica.OrderDetailQuery(inject<replica.LocalDatabase>()),
-      hiveStore: inject<LocalDatabase>(),
+      detail: inject<replica.OrderDetailQuery>(),
       lanHub: inject(),
       tables: inject(),
     ),

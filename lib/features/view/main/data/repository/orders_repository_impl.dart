@@ -1,5 +1,4 @@
 import 'package:mary_ai_pos/core/constants/constants.dart';
-import 'package:mary_ai_pos/core/database/local_database.dart' as hive;
 import 'package:mary_ai_pos/core/db/apply_change.dart';
 import 'package:mary_ai_pos/core/db/local_database.dart';
 import 'package:mary_ai_pos/core/db/order_detail_query.dart';
@@ -50,14 +49,6 @@ class OrdersRepositoryImpl implements OrdersRepository {
   final OrderDetailQuery _detail;
   final LanHubService _lanHub;
 
-  /// The retiring Hive order-detail store. The detail screen now reads the
-  /// replica, but the waiter subsystem (`WaiterLocalRepositoryImpl`) still
-  /// synthesises its open-order list from this box, so a snapshot is mirrored
-  /// here until §B's waiter reads move across too (§7). Nothing in this class
-  /// *reads* it — the mirror is write-only, and this dependency goes with the
-  /// waiter migration.
-  final hive.LocalDatabase _hive;
-
   /// Occupancy is the replica's local-authority overlay, set through the
   /// repository that owns it rather than by rewriting a cached row here.
   final TablesRepository _tables;
@@ -67,14 +58,12 @@ class OrdersRepositoryImpl implements OrdersRepository {
     required ChangeApplier applier,
     required LocalWriter writer,
     required OrderDetailQuery detail,
-    required hive.LocalDatabase hiveStore,
     required LanHubService lanHub,
     required TablesRepository tables,
   })  : _db = db,
         _applier = applier,
         _writer = writer,
         _detail = detail,
-        _hive = hiveStore,
         _lanHub = lanHub,
         _tables = tables;
 
@@ -105,25 +94,19 @@ class OrdersRepositoryImpl implements OrdersRepository {
 
   @override
   Future<void> evictOrderDetail(String key) async {
-    // The replica needs no eviction — a bill leaves the open-order read the
+    // Nothing to do on the replica — a bill leaves the open-order read the
     // moment its `bill_status` stops being 'open' (pay/cancel write that), which
-    // is exactly what [OrderDetailQuery] filters on. Only the Hive mirror the
-    // waiter list still reads has to be cleared explicitly.
-    await _hive.evictOrderDetail(key);
+    // is exactly what [OrderDetailQuery] filters on. Kept to satisfy the
+    // interface; the Hive box it used to clear is no longer read.
   }
 
   @override
   Future<void> saveOrderDetailSnapshot(String key, Map<String, dynamic> json) async {
-    // Mirror to the retiring Hive box first, so the waiter open-order list keeps
-    // resolving until its reads move to the replica (§7).
-    await _hive.saveOrderDetail(key, json);
-
-    // Then the replica. Belt-and-suspenders for the callers that hand a
-    // pre-built bill in (the takeaway preview, the waiter open-table snapshot):
-    // the create paths below already wrote the authoritative rows, so this is an
-    // idempotent upsert — and [ChangeApplier] skips a row whose pending guard is
-    // still held, so it can never overwrite a just-written create with the
-    // snapshot's thinner shape.
+    // For the callers that hand a pre-built bill in (the takeaway preview, the
+    // waiter open-table snapshot): the create paths below already wrote the
+    // authoritative rows, so this is an idempotent upsert — and [ChangeApplier]
+    // skips a row whose pending guard is still held, so it can never overwrite a
+    // just-written create with the snapshot's thinner shape.
     final orderId = json['id']?.toString() ?? '';
     if (orderId.isEmpty) return;
     // key != id ⇒ key is a table id (dine-in); key == id ⇒ takeaway, no table.

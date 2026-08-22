@@ -208,11 +208,10 @@ void main() {
     const stillOnHive = {
       'lib/core/services/auth/login_data_scope_service.dart',
       'lib/di.dart',
-      // Reads and writes are on the replica now; the one remaining Hive touch is
-      // a write-only snapshot mirror kept alive for the waiter open-order list
-      // until its reads move across too (§7). When the waiter migration lands,
-      // the mirror and this entry go together.
-      'lib/features/view/main/data/repository/orders_repository_impl.dart',
+      // Order detail (reads + writes) is fully on the replica now. These three
+      // remain only for the table-timer box (§8) and the login data scope (§9):
+      // the waiter repo keeps the Hive store for `evictTableTimer`/`getUsers`,
+      // and the timer repo is the timer box itself.
       'lib/features/view/main/data/repository/table_timer_local_repository_impl.dart',
       'lib/features/view/main/data/repository/waiter_local_repository_impl.dart',
     };

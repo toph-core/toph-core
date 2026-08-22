@@ -72,6 +72,25 @@ class OrderDetailQuery {
     return _assemble(rows);
   }
 
+  /// Every open bill, each assembled exactly like [liveOrderById] (header +
+  /// joined table/hall + items), newest first. The waiter open-order list's
+  /// source, off the replica instead of iterating the retiring Hive box.
+  List<Map<String, dynamic>> openOrders() {
+    final ids = _db.select(
+      "SELECT id FROM orders "
+      "WHERE deleted_at IS NULL AND bill_status = 'open' "
+      "ORDER BY created_at DESC",
+    );
+    final out = <Map<String, dynamic>>[];
+    for (final row in ids) {
+      final id = row['id'] as String?;
+      if (id == null || id.isEmpty) continue;
+      final order = liveOrderById(id);
+      if (order != null) out.add(order);
+    }
+    return out;
+  }
+
   Map<String, dynamic>? _assemble(List<Map<String, Object?>> rows) {
     if (rows.isEmpty) return null;
 

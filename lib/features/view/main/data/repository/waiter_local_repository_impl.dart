@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:dartz/dartz.dart';
 import 'package:mary_ai_pos/core/constants/constants.dart';
 import 'package:mary_ai_pos/core/database/local_database.dart';
+import 'package:mary_ai_pos/core/db/order_detail_query.dart';
 import 'package:mary_ai_pos/core/error/failure.dart';
 import 'package:mary_ai_pos/core/services/lan_hub/lan_hub_service.dart';
 import 'package:mary_ai_pos/core/services/lease/lease_manager.dart';
@@ -36,9 +37,12 @@ import 'package:mary_ai_pos/features/view/main/presentation/cubit/detail/detail_
 ///   `PaymentRepository.pay` — one pay path, not the parallel `/pay` POST
 ///   this class used to carry.
 class WaiterLocalRepositoryImpl implements WaiterLocalRepository {
+  /// Still here only for the local table-timer box the shift/timer flows use
+  /// (§8); the order-detail reads have moved to [_detail] on the replica.
   final LocalDatabase _localDb;
   final OfflineQueueService _queue;
   final OrdersRepository _orders;
+  final OrderDetailQuery _detail;
   final PaymentRepository _payment;
   final LanHubService _lanHub;
   final LeaseManager _lease;
@@ -50,6 +54,7 @@ class WaiterLocalRepositoryImpl implements WaiterLocalRepository {
     this._localDb,
     this._queue,
     this._orders,
+    this._detail,
     this._payment,
     this._lanHub,
     this._lease,
@@ -75,17 +80,20 @@ class WaiterLocalRepositoryImpl implements WaiterLocalRepository {
     final tablesById = {for (final t in _tables.getAllTables()) t.id: t};
     final result =
         <({String key, ArchiveDetailModel detail, CafeTableModel? table})>[];
-    for (final entry in _localDb.getOrderDetailEntries().entries) {
-      final detail = _decodeDetail(entry.value);
+    for (final raw in _detail.openOrders()) {
+      final detail = _decodeDetail(raw);
       if (detail == null || detail.id.isEmpty) continue;
-      final table = tablesById[entry.key];
+      final tableId = (raw['table_id'] as String?) ?? '';
+      final table = tableId.isNotEmpty ? tablesById[tableId] : null;
+      // Dine-in bills are keyed by their table, takeaway by the order id —
+      // matching the keys the write paths and payment screen resolve by.
+      final key = tableId.isNotEmpty ? tableId : detail.id;
       if (table != null) {
+        // Gate on live occupancy so a table paid offline (bill still 'open' in
+        // the replica until the pay syncs) ages out the instant it goes free.
         if (table.status != TableStatus.busy) continue;
-      } else {
-        // Takeaway (key == order id) or an unknown table — status-gated.
-        if (detail.status != OrderStatus.open) continue;
       }
-      result.add((key: entry.key, detail: detail, table: table));
+      result.add((key: key, detail: detail, table: table));
     }
     return result;
   }
@@ -195,33 +203,14 @@ class WaiterLocalRepositoryImpl implements WaiterLocalRepository {
 
   // ── Writes ──────────────────────────────────────────────────────────────
 
-  /// Patches the raw stored bill JSON for the entry containing [orderItemId]
-  /// so every local watcher sees the cancel immediately.
-  Future<void> _markLineCancelledLocally(String orderItemId) async {
-    for (final entry in _localDb.getOrderDetailEntries().entries) {
-      final items = entry.value['items'];
-      if (items is! List) continue;
-      var touched = false;
-      for (final item in items) {
-        if (item is Map && item['id'] == orderItemId) {
-          item['status'] = 'cancelled';
-          touched = true;
-        }
-      }
-      if (touched) {
-        await _localDb.saveOrderDetail(entry.key, entry.value);
-        return;
-      }
-    }
-  }
-
   @override
   Future<Either<Failure, bool>> cancelOrderItem({
     required String orderItemId,
     String? comment,
   }) async {
+    // The replica soft-deletes the line, so every open-order read drops it on
+    // the next tick — no separate Hive bill patch needed.
     await _orders.cancelLineItems(lineIds: [orderItemId], comment: comment);
-    await _markLineCancelledLocally(orderItemId);
     return const Right(true);
   }
 
@@ -231,33 +220,9 @@ class WaiterLocalRepositoryImpl implements WaiterLocalRepository {
     required String tableId,
     required List<OrderItem> items,
   }) async {
+    // `addItems` wrote the lines to the replica (with their client ids), which
+    // is what every read here now assembles from — no separate Hive bill patch.
     await _orders.addItems(tableId: tableId, orderId: orderId, items: items);
-    // Durable local bill patch — the same wire item shape the box already
-    // stores, so the reads above pick the new lines up on the next decode.
-    final bill = _findByOrderId(orderId);
-    if (bill != null) {
-      final raw = _localDb.getOrderDetail(bill.key);
-      if (raw != null) {
-        final list = raw['items'] is List
-            ? List<dynamic>.from(raw['items'] as List)
-            : <dynamic>[];
-        final now = DateTime.now().toIso8601String();
-        for (final item in items) {
-          list.add({
-            'id': generateUuidV4(),
-            'good_id': item.goods.id,
-            'good_name': item.goods.name,
-            'quantity': item.quantity,
-            'price': item.goods.price,
-            'comment': item.comment,
-            'status': 'pending',
-            'created_at': now,
-          });
-        }
-        raw['items'] = list;
-        await _localDb.saveOrderDetail(bill.key, raw);
-      }
-    }
     return const Right(true);
   }
 
@@ -281,14 +246,12 @@ class WaiterLocalRepositoryImpl implements WaiterLocalRepository {
       discountPercent: discountPercent > 0 ? discountPercent.round() : null,
       tableCharge: tableCharge,
     );
-    // Finish locally: the bill row is closed, the table is free — same side
-    // effects the cashier pay flow performs, kept here so the waiter screen
-    // doesn't need its own second copy. The local timer record goes too:
-    // SyncEngine only reconciles timers for *busy* tables, so a record left
-    // behind here would never age out and the next timed order on this
-    // table would reuse the paid order via createTimedOrder's guard.
-    final bill = _findByOrderId(orderId);
-    if (bill != null) await _localDb.evictOrderDetail(bill.key);
+    // Finish locally: the table goes free. The bill needs no explicit eviction
+    // now — it drops out of the open-order read the moment the table is no
+    // longer busy (and its `bill_status` flips once the pay syncs). The local
+    // timer record still goes: SyncEngine only reconciles timers for *busy*
+    // tables, so one left behind would never age out and the next timed order
+    // on this table would reuse the paid order via createTimedOrder's guard.
     await _localDb.evictTableTimer(orderId);
     if (tableId.isNotEmpty) {
       await _tables.updateTableStatus(tableId, TableStatus.free);
@@ -307,14 +270,11 @@ class WaiterLocalRepositoryImpl implements WaiterLocalRepository {
     // open local bill already on this table is reused instead of enqueueing
     // a duplicate create. A genuine cross-terminal race still merges at
     // replay time via OfflineQueueService's 409 branch.
-    final existingRaw = _localDb.getOrderDetail(tableId);
-    if (existingRaw != null) {
-      final existing = _decodeDetail(existingRaw);
-      if (existing != null &&
-          existing.id.isNotEmpty &&
-          existing.status == OrderStatus.open) {
-        return Right(WaiterCreateOrderResult(existing.id, wasExisting: true));
-      }
+    final existing = _orders.getOrderDetail(tableId);
+    if (existing != null &&
+        existing.id.isNotEmpty &&
+        existing.status == OrderStatus.open) {
+      return Right(WaiterCreateOrderResult(existing.id, wasExisting: true));
     }
 
     // LAN_HUB_AND_LEASING_PLAN.md §5/§8: this second table-open path goes
