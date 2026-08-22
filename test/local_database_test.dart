@@ -159,14 +159,23 @@ void main() {
       expect(db.getTableTimers(), isEmpty);
     });
 
-    test('watchTableTimer re-emits on every write and on evict', () {
-      expect(
-        db.watchTableTimer('o1').map((r) => r?['state']),
-        emitsInOrder([null, 'running', 'paused', null]),
-      );
+    test('watchTableTimer re-emits on every write and on evict', () async {
+      // Subscribe synchronously (Stream.multi runs its body on listen, so the
+      // change subscription is live before the writes) and collect — emitsInOrder
+      // would subscribe a tick late and the broadcast change stream would drop
+      // these synchronous writes.
+      final seen = <String?>[];
+      final sub = db
+          .watchTableTimer('o1')
+          .listen((r) => seen.add(r?['state'] as String?));
+
       db.saveTableTimer('o1', {'order_id': 'o1', 'state': 'running'});
       db.saveTableTimer('o1', {'order_id': 'o1', 'state': 'paused'});
       db.evictTableTimer('o1');
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      await sub.cancel();
+
+      expect(seen, [null, 'running', 'paused', null]);
     });
 
     test('a brand switch (clearAll) drops timer records', () {
