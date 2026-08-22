@@ -195,7 +195,7 @@ class OrdersRepositoryImpl implements OrdersRepository {
     required int guestCount,
     required List<OrderItem> items,
   }) {
-    final createdAt = _nowIso();
+    final base = DateTime.now().toUtc();
     final itemIds = [for (var i = 0; i < items.length; i++) generateUuidV4()];
 
     final orderRow = <String, dynamic>{
@@ -206,7 +206,7 @@ class OrdersRepositoryImpl implements OrdersRepository {
       'order_type': orderType,
       'guest_count': guestCount,
       'comment': 'Very good',
-      'created_at': createdAt,
+      'created_at': base.toIso8601String(),
     };
 
     final body = <String, dynamic>{
@@ -238,7 +238,9 @@ class OrdersRepositoryImpl implements OrdersRepository {
           id: itemIds[i],
           orderId: orderId,
           item: items[i],
-          createdAt: createdAt,
+          // A per-line offset so the lines sort in the order they were rung in;
+          // identical timestamps would fall back to random-uuid id order.
+          createdAt: _seq(base, i),
         ),
       );
     }
@@ -252,7 +254,7 @@ class OrdersRepositoryImpl implements OrdersRepository {
     List<String>? itemClientIds,
   }) async {
     final ids = itemClientIds ?? [for (var i = 0; i < items.length; i++) generateUuidV4()];
-    final createdAt = _nowIso();
+    final base = DateTime.now().toUtc();
     for (var i = 0; i < items.length; i++) {
       // One op per line: its entityId is the line id, so its pending clears on
       // ack; the handler chains it on `order_id` so it never overtakes the
@@ -265,7 +267,7 @@ class OrdersRepositoryImpl implements OrdersRepository {
           id: ids[i],
           orderId: orderId,
           item: items[i],
-          createdAt: createdAt,
+          createdAt: _seq(base, i),
         ),
         request: {
           'order_id': orderId,
@@ -366,5 +368,8 @@ class OrdersRepositoryImpl implements OrdersRepository {
         'comment': item.comment,
       };
 
-  static String _nowIso() => DateTime.now().toUtc().toIso8601String();
+  /// [base] shifted by [i] milliseconds, ISO-8601 — a monotonic per-line
+  /// timestamp so a batch of lines keeps its ring-in order on read.
+  static String _seq(DateTime base, int i) =>
+      base.add(Duration(milliseconds: i)).toIso8601String();
 }
