@@ -206,12 +206,14 @@ void main() {
     // only goes down. When this set is empty nothing imports lib/core/database/
     // and the directory can be deleted — which is what actually closes DoD #4.
     const stillOnHive = {
+      // The waiter repo's staff list moved to the replica's `users` query (§9
+      // tail), so it no longer binds the Hive store. What remains is the login
+      // data scope (§9, the tenant-switch wipe + setup check) and `di.dart`,
+      // which is retired last with the Hive `LocalDatabase`/`CacheService`
+      // (§10). The order/waiter/timer flows this sync effort exists to serve are
+      // all off the Hive store now.
       'lib/core/services/auth/login_data_scope_service.dart',
       'lib/di.dart',
-      // The table-timer store moved to the replica (§8); what remains here is
-      // the login data scope (§9, the tenant-switch wipe) and the waiter repo's
-      // Hive use for `evictTableTimer`/`getUsers`.
-      'lib/features/view/main/data/repository/waiter_local_repository_impl.dart',
     };
 
     // Any import of the Hive store, package-form or relative. The `^\s*import`

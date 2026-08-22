@@ -2,8 +2,9 @@ import 'dart:convert';
 
 import 'package:dartz/dartz.dart';
 import 'package:mary_ai_pos/core/constants/constants.dart';
-import 'package:mary_ai_pos/core/database/local_database.dart';
+import 'package:mary_ai_pos/core/db/local_database.dart';
 import 'package:mary_ai_pos/core/db/order_detail_query.dart';
+import 'package:mary_ai_pos/core/db/users_query.dart';
 import 'package:mary_ai_pos/core/error/failure.dart';
 import 'package:mary_ai_pos/core/services/lan_hub/lan_hub_service.dart';
 import 'package:mary_ai_pos/core/services/lease/lease_manager.dart';
@@ -29,18 +30,19 @@ import 'package:mary_ai_pos/features/view/main/presentation/cubit/detail/detail_
 /// POST, outbox only as the Cubit's failure fallback. This one is the
 /// inverse and adds no second plumbing of its own:
 ///
-/// - Reads are synthesized from `LocalDatabase` — the order-detail box
-///   (SyncEngine-hydrated + written by every local create), joined with the
-///   tables/halls boxes for numbers/names, and the users box for staff.
+/// - Reads are synthesized from the SQLite replica — open orders and bill
+///   detail via [OrderDetailQuery], table numbers/status via [TablesRepository],
+///   and the staff list via [UsersQuery]. Nothing here reads the Hive store.
 /// - Writes delegate to the repositories that were already correct:
 ///   `OrdersRepository.addItems`/`cancelLineItems` (same ops, same
 ///   idempotency keys, same LAN broadcasts the cashier flow uses) and
 ///   `PaymentRepository.pay` — one pay path, not the parallel `/pay` POST
 ///   this class used to carry.
 class WaiterLocalRepositoryImpl implements WaiterLocalRepository {
-  /// Still here only for the local table-timer box the shift/timer flows use
-  /// (§8); the order-detail reads have moved to [_detail] on the replica.
-  final LocalDatabase _localDb;
+  /// The staff list, read from the replica's `users` rows — the same rows the
+  /// admin users screen reads, so the projection parses key-for-key. This was
+  /// the waiter repo's last binding to the retiring Hive store; it is now gone.
+  final UsersQuery _users;
   final OfflineQueueService _queue;
   final OrdersRepository _orders;
   final OrderDetailQuery _detail;
@@ -53,7 +55,7 @@ class WaiterLocalRepositoryImpl implements WaiterLocalRepository {
   final TablesRepository _tables;
 
   WaiterLocalRepositoryImpl(
-    this._localDb,
+    LocalDatabase db,
     this._queue,
     this._orders,
     this._detail,
@@ -62,7 +64,7 @@ class WaiterLocalRepositoryImpl implements WaiterLocalRepository {
     this._lanHub,
     this._lease,
     this._tables,
-  );
+  ) : _users = UsersQuery(db);
 
   // ── Local synthesis helpers ─────────────────────────────────────────────
 
@@ -197,8 +199,13 @@ class WaiterLocalRepositoryImpl implements WaiterLocalRepository {
 
   @override
   Future<Either<Failure, List<UserModel>>> getStaffWaiters() async {
-    final waiters = _localDb
-        .getUsers()
+    // The replica's `users` rows carry the same server projection the Hive box
+    // used to hold — `role` is the enum's own name ('waiter'), so the parse is
+    // unchanged. Soft-deleted staff are already dropped by `all()`, which is a
+    // shade *more* correct here: a removed waiter should not be assignable.
+    final waiters = _users
+        .all()
+        .map(UserModel.fromJson)
         .where((u) => u.role == UserRole.waiter)
         .toList();
     return Right(waiters);

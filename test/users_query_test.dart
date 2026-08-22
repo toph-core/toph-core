@@ -8,6 +8,7 @@
 library;
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mary_ai_pos/core/constants/constants.dart';
 import 'package:mary_ai_pos/core/db/apply_change.dart';
 import 'package:mary_ai_pos/core/db/entity_registry.dart';
 import 'package:mary_ai_pos/core/db/local_database.dart';
@@ -15,6 +16,7 @@ import 'package:mary_ai_pos/core/db/payload_normalizer.dart';
 import 'package:mary_ai_pos/core/db/users_query.dart';
 import 'package:mary_ai_pos/core/outbox/local_writer.dart';
 import 'package:mary_ai_pos/core/outbox/outbox_store.dart';
+import 'package:mary_ai_pos/features/view/auth/data/models/user/user_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/repository/users_local_repository_impl.dart';
 import 'package:mary_ai_pos/features/view/main/domain/repository/users_local_repository.dart';
 
@@ -142,6 +144,43 @@ void main() {
       final page = query.page(limit: 2, offset: 99);
       expect(page.items, isEmpty);
       expect(page.total, 5);
+    });
+  });
+
+  group('UsersQuery — all (the waiter picker read)', () {
+    test('returns every non-deleted user, soft-deleted ones excluded', () {
+      put(user(id: 'u-1', fullName: 'Aziz', role: 'waiter'));
+      put(user(id: 'u-2', fullName: 'Bobur', role: 'cashier'));
+      put(user(
+        id: 'u-3',
+        fullName: 'Davron',
+        role: 'waiter',
+        deletedAt: 1735689600,
+      ));
+
+      expect(query.all().map((r) => r['id']), ['u-1', 'u-2']);
+    });
+
+    test('rows parse via UserModel.fromJson — the shape getStaffWaiters needs',
+        () {
+      // getStaffWaiters maps these rows through UserModel.fromJson and keeps
+      // role == UserRole.waiter. The replica stores `role` as the enum's own
+      // name, so this parse must land. If the backend ever changed that column
+      // to an int or a different casing, this is the test that catches it —
+      // before a waiter picker silently goes empty on a device.
+      put(user(id: 'u-1', fullName: 'Aziz', role: 'waiter'));
+      put(user(id: 'u-2', fullName: 'Bobur', role: 'cashier'));
+
+      final waiters = query
+          .all()
+          .map(UserModel.fromJson)
+          .where((u) => u.role == UserRole.waiter)
+          .toList();
+
+      expect(waiters, hasLength(1));
+      expect(waiters.single.id, 'u-1');
+      expect(waiters.single.fullName, 'Aziz');
+      expect(waiters.single.role, UserRole.waiter);
     });
   });
 

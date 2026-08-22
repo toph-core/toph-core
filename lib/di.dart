@@ -424,7 +424,7 @@ void _repositories() {
   // create path is lease-gated (LAN_HUB_AND_LEASING_PLAN.md §8).
   inject.registerLazySingleton<WaiterLocalRepository>(
     () => WaiterLocalRepositoryImpl(
-      inject(),
+      inject<replica.LocalDatabase>(),
       inject(),
       inject(),
       inject<replica.OrderDetailQuery>(),

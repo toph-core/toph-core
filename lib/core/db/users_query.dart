@@ -76,6 +76,17 @@ class UsersQuery {
     return (items: page, total: matched.length);
   }
 
+  /// Every non-deleted staff row, sorted the way [page] sorts but unpaginated —
+  /// for callers that need the whole list at once. The waiter picker asks "who
+  /// are the waiters?", not "page 1 of waiters", so it reads this and filters in
+  /// Dart; [page] is this same list, searched and windowed for a screen.
+  List<Map<String, dynamic>> all() {
+    final rows =
+        _db.selectData('SELECT data FROM users WHERE deleted_at IS NULL');
+    rows.sort((a, b) => _sortKey(a).compareTo(_sortKey(b)));
+    return rows;
+  }
+
   static String _sortKey(Map<String, dynamic> row) {
     final name = (row['full_name'] ?? '').toString().trim();
     if (name.isNotEmpty) return name.toLowerCase();
