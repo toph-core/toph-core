@@ -72,15 +72,17 @@ void registerOrdersOutboxHandlers(OutboxExecutors executors, DioClient dio) {
 
   // order_items/create — POST /orders/{order_id}/items.
   //
-  // chainKey is the order id, so items wait behind the order's own create
-  // instead of racing to a server that has never heard of the order.
+  // The op's entityId is the *item* id (its own row's key, so its pending
+  // clears on ack); the order it belongs to is in the payload. chainKey is that
+  // order id, so an item waits behind the order's own create instead of racing
+  // to a server that has never heard of the order.
   executors.register(
     'order_items',
     'create',
     OutboxHandler(
       chainKey: (op) => op.payload['order_id'] as String?,
       send: (op) async {
-        final orderId = _orderIdOf(op);
+        final orderId = op.payload['order_id'] as String? ?? '';
         if (orderId.isEmpty) {
           return const OutboxExecutionResult.permanent(
             'add items without an order id',
@@ -95,34 +97,37 @@ void registerOrdersOutboxHandlers(OutboxExecutors executors, DioClient dio) {
     ),
   );
 
-  // order_items/cancel — one POST per line, tolerating a 404 (the line is
-  // already gone, which is what a cancel wants). Chained to the order so a
-  // cancel never replays before the add that created the line — without the
-  // chain it would 404 on a not-yet-added line and the cancel would be lost.
+  // order_items/delete — cancel one line (POST /order-items/{id}/cancel),
+  // tolerating a 404 (the line is already gone, which is what a cancel wants).
+  // The op is one-per-line (LocalWriter.delete), so entityId is the line id.
+  // Chained to the order so a cancel never replays before the add that created
+  // the line — without the chain it would 404 on a not-yet-added line and the
+  // cancel would be silently lost.
   executors.register(
     'order_items',
-    'cancel',
+    'delete',
     OutboxHandler(
       chainKey: (op) => op.payload['order_id'] as String?,
       send: (op) async {
-        final lineIds =
-            (op.payload['line_ids'] as List?)?.cast<String>() ?? const [];
+        final lineId = op.entityId ?? '';
+        if (lineId.isEmpty) {
+          return const OutboxExecutionResult.permanent(
+            'cancel without a line id',
+          );
+        }
         final comment = op.payload['comment'] as String?;
         try {
-          for (final id in lineIds) {
-            try {
-              await dio.post(
-                ListAPI.orderItemCancel(id),
-                data: <String, dynamic>{
-                  if (comment != null && comment.isNotEmpty) 'comment': comment,
-                },
-              );
-            } on DioException catch (e) {
-              if (e.response?.statusCode != 404) rethrow;
-            }
-          }
+          await dio.post(
+            ListAPI.orderItemCancel(lineId),
+            data: <String, dynamic>{
+              if (comment != null && comment.isNotEmpty) 'comment': comment,
+            },
+          );
           return const OutboxExecutionResult.succeeded();
         } on DioException catch (e) {
+          if (e.response?.statusCode == 404) {
+            return const OutboxExecutionResult.succeeded();
+          }
           return _mapDioError(e);
         } catch (e) {
           return OutboxExecutionResult.retry(e.toString());
@@ -194,9 +199,10 @@ void registerOrdersOutboxHandlers(OutboxExecutors executors, DioClient dio) {
   );
 }
 
-/// The order id an operation addresses — its `entityId` (set for
-/// orders-entity writes) or, for `order_items` ops, the `order_id` in the
-/// payload.
+/// The order id an `orders`-entity op addresses — its `entityId` (the order's
+/// own key for pay / cancel / transfer), falling back to `order_id` in the
+/// payload. `order_items` ops do not use this: their entityId is the line id,
+/// and the order they belong to is read straight from the payload.
 String _orderIdOf(OutboxOperation op) {
   final id = op.entityId;
   if (id != null && id.isNotEmpty) return id;

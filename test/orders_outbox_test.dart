@@ -189,13 +189,16 @@ void main() {
   });
 
   group('order_items/create', () {
+    // entityId is the item's own id (so its pending clears on ack); the order
+    // it belongs to is in the payload.
     final addOp = op(
       entity: 'order_items',
       action: 'create',
+      entityId: 'ci-1',
       payload: {
         'order_id': 'order-1',
         'items': [
-          {'good_id': 'g2', 'quantity': 1, 'client_item_id': 'ci-1'},
+          {'id': 'ci-1', 'good_id': 'g2', 'quantity': 1},
         ],
       },
     );
@@ -214,46 +217,42 @@ void main() {
 
     test('chains behind its order so an item never overtakes the create', () {
       final createOp = op(entity: 'orders', action: 'create', entityId: 'order-1');
-      // Same chain key → the drainer keeps them in order.
+      // The item chains on its order_id, the create on its own id — the same
+      // key, so the drainer keeps the item behind the create.
       expect(executors.chainKeyOf(addOp), 'order-1');
       expect(executors.chainKeyOf(createOp), 'order-1');
     });
   });
 
-  group('order_items/cancel', () {
-    final cancelOp = op(
-      entity: 'order_items',
-      action: 'cancel',
-      payload: {
-        'order_id': 'order-1',
-        'line_ids': ['l1', 'l2'],
-        'comment': 'wrong table',
-      },
-    );
+  group('order_items/delete (line cancel)', () {
+    OutboxOperation cancelOp(String lineId) => op(
+          entity: 'order_items',
+          action: 'delete',
+          entityId: lineId,
+          payload: {'order_id': 'order-1', 'comment': 'wrong table'},
+        );
 
-    test('cancels each line, tolerating a 404 on an already-gone line',
-        () async {
-      respond = (options) async {
-        if (options.uri.path.endsWith('/l1/cancel')) {
-          return jsonResponse(404, {'error': 'gone'});
-        }
-        return okResponse();
-      };
-
-      final result = await run(cancelOp);
-
+    test('cancels the line via /order-items/{id}/cancel', () async {
+      final result = await run(cancelOp('l1'));
       expect(result.outcome, OutboxOutcome.succeeded);
-      expect(requests, hasLength(2));
+      expect(requests.single.uri.path, '/api/v1/order-items/l1/cancel');
+      expect(bodyOf(requests.single)['comment'], 'wrong table');
     });
 
-    test('a non-404 error on a line is retryable', () async {
+    test('a 404 on an already-gone line is a success', () async {
+      respond = (options) async => jsonResponse(404, {'error': 'gone'});
+      final result = await run(cancelOp('l1'));
+      expect(result.outcome, OutboxOutcome.succeeded);
+    });
+
+    test('a non-404 error is retryable', () async {
       respond = (options) async => jsonResponse(500, {'error': 'boom'});
-      final result = await run(cancelOp);
+      final result = await run(cancelOp('l1'));
       expect(result.outcome, OutboxOutcome.retry);
     });
 
     test('chains behind its order', () {
-      expect(executors.chainKeyOf(cancelOp), 'order-1');
+      expect(executors.chainKeyOf(cancelOp('l1')), 'order-1');
     });
   });
 

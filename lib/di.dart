@@ -18,6 +18,7 @@ import 'package:mary_ai_pos/core/database/local_database.dart';
 import 'package:mary_ai_pos/core/db/apply_change.dart' as replica;
 import 'package:mary_ai_pos/core/db/local_database.dart' as replica;
 import 'package:mary_ai_pos/core/db/local_database_factory.dart' as replica;
+import 'package:mary_ai_pos/core/db/order_detail_query.dart' as replica;
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/printers/printers_controller.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/transactions/transaction_categories_controller.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/transactions/transactions_list_controller.dart';
@@ -427,10 +428,12 @@ void _repositories() {
   // commit locally (outbox enqueue) and return without awaiting the network.
   inject.registerLazySingleton<OrdersRepository>(
     () => OrdersRepositoryImpl(
-      localDb: inject(),
-      queue: inject(),
+      db: inject<replica.LocalDatabase>(),
+      applier: inject<replica.ChangeApplier>(),
+      writer: inject<LocalWriter>(),
+      detail: replica.OrderDetailQuery(inject<replica.LocalDatabase>()),
+      hiveStore: inject<LocalDatabase>(),
       lanHub: inject(),
-      cache: inject(),
       tables: inject(),
     ),
   );

@@ -46,6 +46,33 @@ class OrderDetailQuery {
       ''',
       [tableId],
     );
+    return _assemble(rows);
+  }
+
+  /// The bill with primary key [orderId], regardless of `bill_status`, or null.
+  ///
+  /// The keyed-by-id sibling of [liveOrderForTable], for the paths that hold an
+  /// order id rather than a table: takeaway (which has no table and pays through
+  /// the same detail read) and the payment screen (which must keep showing the
+  /// bill after `bill_status` has flipped to paid). The table/hall join stays a
+  /// LEFT JOIN, so a takeaway order with no `table_id` still assembles.
+  Map<String, dynamic>? liveOrderById(String orderId) {
+    final rows = _db.select(
+      '''
+      SELECT o.id AS id, o.data AS data,
+             t.number AS table_number, h.name AS hall_name
+        FROM orders o
+        LEFT JOIN cafe_tables t ON t.id = o.table_id AND t.deleted_at IS NULL
+        LEFT JOIN halls       h ON h.id = t.hall_id   AND h.deleted_at IS NULL
+       WHERE o.id = ? AND o.deleted_at IS NULL
+       LIMIT 1
+      ''',
+      [orderId],
+    );
+    return _assemble(rows);
+  }
+
+  Map<String, dynamic>? _assemble(List<Map<String, Object?>> rows) {
     if (rows.isEmpty) return null;
 
     final row = rows.first;
@@ -59,7 +86,7 @@ class OrderDetailQuery {
       // Joined, not stored — the server synthesised these onto the projection.
       'table_number': row['table_number'],
       'hall_name': row['hall_name'],
-      'items': _itemsForOrder(id),
+      'items': itemsForOrder(id),
     };
   }
 
@@ -73,6 +100,13 @@ class OrderDetailQuery {
   /// any non-promoted field). Ordering by the bare `oi.created_at` column, as an
   /// earlier revision did, raises `no such column` against the real schema. A
   /// row whose payload carries no `created_at` sorts first, then by `id`.
+  /// The live line items of [orderId] — the ungrouped list the detail screen's
+  /// overlay works from. Public because `detail_bloc` resolves an existing
+  /// item's line id and `good_id` from here now, off the replica, instead of
+  /// the network `getOrderItemsRaw` fetch that broke offline.
+  List<Map<String, dynamic>> itemsForOrder(String orderId) =>
+      _itemsForOrder(orderId);
+
   List<Map<String, dynamic>> _itemsForOrder(String orderId) {
     final rows = _db.select(
       '''
