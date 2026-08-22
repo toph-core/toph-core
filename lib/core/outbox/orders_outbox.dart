@@ -80,7 +80,7 @@ void registerOrdersOutboxHandlers(OutboxExecutors executors, DioClient dio) {
     'order_items',
     'create',
     OutboxHandler(
-      chainKey: (op) => op.payload['order_id'] as String?,
+      chainKey: (op) => (op.payload['order_id'] as String?) ?? '',
       send: (op) async {
         final orderId = op.payload['order_id'] as String? ?? '';
         if (orderId.isEmpty) {
@@ -107,7 +107,7 @@ void registerOrdersOutboxHandlers(OutboxExecutors executors, DioClient dio) {
     'order_items',
     'delete',
     OutboxHandler(
-      chainKey: (op) => op.payload['order_id'] as String?,
+      chainKey: (op) => (op.payload['order_id'] as String?) ?? '',
       send: (op) async {
         final lineId = op.entityId ?? '';
         if (lineId.isEmpty) {
