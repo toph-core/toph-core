@@ -67,8 +67,16 @@ chosen over an overlay.
 5. **Hive order-detail store retired for this flow.** The waiter reads moved to
    the replica, the `saveOrderDetailSnapshot` Hive mirror is gone, and
    `orders_repository_impl.dart` no longer imports `core/database` — it is off
-   the §7 Hive-store ratchet. (`waiter` and `table_timer` remain on the ratchet
-   only for the table-timer box and `getUsers`, which are §8/§9.)
+   the §7 Hive-store ratchet. (`waiter` remains on the ratchet only for
+   `getUsers`, which is §9.)
+
+6. **Table-timer store on the replica (§8).** The billing state machine's
+   stored record (elapsed time, amount due, pause intervals) moved from the Hive
+   `LocalDatabase` box to a `_table_timers` local-only table on the SQLite
+   replica, with reactive `watchTableTimer`/`watchTableTimers` reads. The billing
+   *engine* is untouched — this is a storage swap only, so the money math is
+   byte-identical; only where the record is persisted changed.
+   `table_timer_local_repository_impl.dart` is off the §7 Hive-store ratchet.
 
 ## On-device QA checklist (the part CI cannot cover)
 
@@ -94,13 +102,17 @@ Run these on a device, dine-in **and** waiter **and** takeaway where noted:
 
 ## Still on Hive (not this flow)
 
-- **`table_timer` (§8).** A local-authority billing state machine (elapsed
-  time, amount due, pause intervals) whose stored record is a custom shape, not
-  the `table_time_sessions` feed row. The backend now logs `table_time_sessions`
-  (tenants migration 70), so it *can* be registered — but the migration is a
-  storage swap of a money-adjacent engine with no CI-checkable billing, so it is
-  left for a session where the app runs.
 - **`login_data_scope` (§9).** Auth-critical tenant-switch wipe + a "did setup
   land data" check; entangled with what still populates the Hive catalog.
+  Deferred to a session where the app runs, because the failure mode (a tenant
+  switch that leaves stale data, or a setup-check that mis-reports) is not
+  CI-observable and lands on the login path.
+- **`waiter_local_repository_impl.dart` — `getUsers` only.** Its order reads are
+  on the replica; the one remaining Hive call reads the cached user list, which
+  has no replica equivalent until the user catalog's read path moves (part of
+  the §10 catalog consolidation).
 - **`di.dart`** is the composition root, retired last with the Hive
   `LocalDatabase`/`CacheService` (§10).
+
+The table-timer store (§8) previously listed here is **done** — see item 6 in
+"What was built."
