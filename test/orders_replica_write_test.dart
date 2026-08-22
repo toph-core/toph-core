@@ -103,7 +103,7 @@ void main() {
 
   tearDown(() => db.dispose());
 
-  List<OutboxOperation> get ready => outbox.ready(limit: 100);
+  List<OutboxOperation> readyOps() => outbox.ready(limit: 100);
 
   group('createOrder', () {
     test('shows the order and its items on the replica read immediately', () async {
@@ -134,7 +134,7 @@ void main() {
         tableStatus: TableStatus.busy,
       );
 
-      final ops = ready;
+      final ops = readyOps();
       expect(ops, hasLength(1));
       final op = ops.single;
       expect(op.entity, 'orders');
@@ -205,7 +205,7 @@ void main() {
 
       expect(repo.getOrderDetail('tb1')!.goods.map((g) => g.name), ['Osh', 'Lagmon']);
 
-      final addOps = ready.where((o) => o.entity == 'order_items' && o.action == 'create');
+      final addOps = readyOps().where((o) => o.entity == 'order_items' && o.action == 'create');
       expect(addOps, hasLength(1));
       expect(addOps.single.payload['order_id'], 'o1');
     });
@@ -250,7 +250,7 @@ void main() {
       });
       expect(repo.getOrderDetail('tb1')!.goods.map((g) => g.name), ['Lagmon']);
 
-      final cancelOps = ready.where((o) => o.action == 'delete');
+      final cancelOps = readyOps().where((o) => o.action == 'delete');
       expect(cancelOps.single.entityId, oshId);
       expect(cancelOps.single.payload['order_id'], 'o1');
     });
@@ -274,7 +274,7 @@ void main() {
         (id: 'tb1', status: TableStatus.free),
         (id: 'tb2', status: TableStatus.busy),
       ]);
-      expect(ready.any((o) => o.action == 'transfer'), isTrue);
+      expect(readyOps().any((o) => o.action == 'transfer'), isTrue);
     });
   });
 
