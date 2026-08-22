@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 import 'package:dartz/dartz.dart';
 import 'package:mary_ai_pos/core/constants/constants.dart';
 import 'package:mary_ai_pos/core/db/local_database.dart';
@@ -8,8 +6,6 @@ import 'package:mary_ai_pos/core/db/users_query.dart';
 import 'package:mary_ai_pos/core/error/failure.dart';
 import 'package:mary_ai_pos/core/services/lan_hub/lan_hub_service.dart';
 import 'package:mary_ai_pos/core/services/lease/lease_manager.dart';
-import 'package:mary_ai_pos/core/services/offline_queue/offline_queue_service.dart';
-import 'package:mary_ai_pos/core/services/offline_queue/pending_operation.dart';
 import 'package:mary_ai_pos/core/utils/uuid.dart';
 import 'package:mary_ai_pos/features/view/auth/data/models/user/user_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/archive_detail/archive_detail_model.dart';
@@ -43,7 +39,6 @@ class WaiterLocalRepositoryImpl implements WaiterLocalRepository {
   /// admin users screen reads, so the projection parses key-for-key. This was
   /// the waiter repo's last binding to the retiring Hive store; it is now gone.
   final UsersQuery _users;
-  final OfflineQueueService _queue;
   final OrdersRepository _orders;
   final OrderDetailQuery _detail;
   final TableTimerLocalRepository _timers;
@@ -56,7 +51,6 @@ class WaiterLocalRepositoryImpl implements WaiterLocalRepository {
 
   WaiterLocalRepositoryImpl(
     LocalDatabase db,
-    this._queue,
     this._orders,
     this._detail,
     this._timers,
@@ -279,7 +273,7 @@ class WaiterLocalRepositoryImpl implements WaiterLocalRepository {
     // Local double-open guard, replacing the old server-409 recovery: an
     // open local bill already on this table is reused instead of enqueueing
     // a duplicate create. A genuine cross-terminal race still merges at
-    // replay time via OfflineQueueService's 409 branch.
+    // replay time via the orders/create outbox handler's 409 branch.
     final existing = _orders.getOrderDetail(tableId);
     if (existing != null &&
         existing.id.isNotEmpty &&
@@ -298,38 +292,25 @@ class WaiterLocalRepositoryImpl implements WaiterLocalRepository {
       );
     }
 
+    // One create path, shared with the cashier flow: the order row lands in the
+    // replica (pending-guarded, clears on ack) and one orders/create op carries
+    // it to the server — so a waiter-opened table shows in the same replica read
+    // the floor and this repo now serve, instead of a Hive snapshot the reads no
+    // longer look at. `waiterId` rides in the create body; the plain
+    // `OrdersRepository.createOrder` models it now, so no hand-built payload.
     final clientOrderId = generateUuidV4();
-    await _queue.enqueue(PendingOperation(
-      id: OfflineQueueService.newId(),
-      type: PendingOperationType.createOrder,
-      // Same body the old direct POST sent — including the waiter binding,
-      // which CreateOrderRequestModel doesn't model, hence the hand-built
-      // payload instead of OrdersRepository.createOrder here.
-      payload: jsonEncode({
-        'id': clientOrderId,
-        'table_id': tableId,
-        'guest_count': guestCount,
-        'status': 'open',
-        'order_type': 'dine_in',
-        'comment': '',
-        'items': <dynamic>[],
-        if (waiterId != null && waiterId.isNotEmpty) 'waiter_id': waiterId,
-      }),
+    await _orders.createOrder(
       tableId: tableId,
-      createdAt: DateTime.now(),
-    ));
-    await _orders.saveOrderDetailSnapshot(
-      tableId,
-      ArchiveDetailModel(
-        id: clientOrderId,
-        status: OrderStatus.open,
-        opened: DateTime.now(),
-        tableId: tableId,
-        guestCount: guestCount.toDouble(),
-      ).toJson(),
+      clientOrderId: clientOrderId,
+      guestCount: guestCount,
+      items: const [],
+      tableStatus: TableStatus.busy,
+      waiterId: waiterId,
     );
+    // Occupancy is a local-authority record, not derived from the order row, so
+    // it is still written explicitly here (closeOrder writes `free` to match).
+    // `createOrder` already broadcast the busy status to the LAN.
     await _tables.updateTableStatus(tableId, TableStatus.busy);
-    _lanHub.tableStatusChanged(tableId, TableStatus.busy.name);
     // Local commit done — clear the ephemeral claim (only a grant held one).
     if (lease.isGranted) {
       _lease.releaseTableLease(tableId);

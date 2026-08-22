@@ -35,12 +35,17 @@ abstract class OrdersRepository {
   /// saw it (kept as a parameter, not re-derived here, matching the existing
   /// `CreateOrderRequestModel.tableStatus` field the backend already
   /// expects).
+  ///
+  /// [waiterId] binds the opening waiter, for the waiter-app table-open path.
+  /// It rides in the create body (the server accepts it) and the local order
+  /// row; the cashier path leaves it null.
   Future<void> createOrder({
     required String tableId,
     required String clientOrderId,
     required int guestCount,
     required List<OrderItem> items,
     required TableStatus tableStatus,
+    String? waiterId,
   });
 
   Future<void> createTakeawayOrder({

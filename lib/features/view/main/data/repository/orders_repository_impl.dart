@@ -140,6 +140,7 @@ class OrdersRepositoryImpl implements OrdersRepository {
     required int guestCount,
     required List<OrderItem> items,
     required TableStatus tableStatus,
+    String? waiterId,
   }) async {
     _writeOrderWithItems(
       orderId: clientOrderId,
@@ -147,6 +148,7 @@ class OrdersRepositoryImpl implements OrdersRepository {
       orderType: 'dine_in',
       guestCount: guestCount,
       items: items,
+      waiterId: waiterId,
     );
     // Optimistic: mark the table busy for every terminal on the LAN — the same
     // side effect the old path performed, now unconditional (the local commit
@@ -179,13 +181,16 @@ class OrdersRepositoryImpl implements OrdersRepository {
     required String orderType,
     required int guestCount,
     required List<OrderItem> items,
+    String? waiterId,
   }) {
     final base = DateTime.now().toUtc();
     final itemIds = [for (var i = 0; i < items.length; i++) generateUuidV4()];
+    final hasWaiter = waiterId != null && waiterId.isNotEmpty;
 
     final orderRow = <String, dynamic>{
       'id': orderId,
       if (tableId.isNotEmpty) 'table_id': tableId,
+      if (hasWaiter) 'waiter_id': waiterId,
       'bill_status': 'open',
       'status': OrderStatus.open.name,
       'order_type': orderType,
@@ -197,6 +202,7 @@ class OrdersRepositoryImpl implements OrdersRepository {
     final body = <String, dynamic>{
       'id': orderId,
       if (tableId.isNotEmpty) 'table_id': tableId,
+      if (hasWaiter) 'waiter_id': waiterId,
       'comment': 'Very good',
       'guest_count': guestCount,
       'status': 'open',

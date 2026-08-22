@@ -426,7 +426,6 @@ void _repositories() {
     () => WaiterLocalRepositoryImpl(
       inject<replica.LocalDatabase>(),
       inject(),
-      inject(),
       inject<replica.OrderDetailQuery>(),
       inject(),
       inject(),

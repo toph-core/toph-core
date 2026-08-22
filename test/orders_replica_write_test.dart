@@ -141,6 +141,40 @@ void main() {
       expect(sentId, storedId);
     });
 
+    test('binds waiterId into both the create body and the stored order row',
+        () async {
+      // The waiter-app table-open path (WaiterLocalRepositoryImpl) delegates
+      // here now instead of hand-rolling the legacy queue, so the waiter binding
+      // has to survive both hops: the body the server receives and the local row
+      // a replica read sees before sync.
+      await repo.createOrder(
+        tableId: 'tb1',
+        clientOrderId: 'o1',
+        guestCount: 2,
+        items: const [],
+        tableStatus: TableStatus.busy,
+        waiterId: 'w-7',
+      );
+
+      final op = readyOps().single;
+      expect(op.entity, 'orders');
+      expect(op.payload['waiter_id'], 'w-7');
+      expect(db.byId('orders', 'o1')!['waiter_id'], 'w-7');
+    });
+
+    test('omits waiter_id when no waiter is bound (the cashier path)', () async {
+      await repo.createOrder(
+        tableId: 'tb1',
+        clientOrderId: 'o1',
+        guestCount: 1,
+        items: const [],
+        tableStatus: TableStatus.busy,
+      );
+
+      expect(readyOps().single.payload.containsKey('waiter_id'), isFalse);
+      expect(db.byId('orders', 'o1')!.containsKey('waiter_id'), isFalse);
+    });
+
     test('a pull re-delivering the same-id server rows converges, no duplicate', () async {
       await repo.createOrder(
         tableId: 'tb1',
