@@ -275,7 +275,7 @@ class TableTimerLocalRepositoryImpl implements TableTimerLocalRepository {
       ).toJson(),
     );
     final now = DateTime.now().toIso8601String();
-    await _localDb.saveTableTimer(clientOrderId, {
+    _localDb.saveTableTimer(clientOrderId, {
       'order_id': clientOrderId,
       'table_id': tableId,
       'table_type': 'time_based',
@@ -324,7 +324,7 @@ class TableTimerLocalRepositoryImpl implements TableTimerLocalRepository {
         'active_started_at': now.toIso8601String(),
         'paused_at': null,
       };
-      await _localDb.saveTableTimer(orderId, rec);
+      _localDb.saveTableTimer(orderId, rec);
       await _enqueueTimerAction(orderId, 'start', rec['table_id'] as String? ?? '');
     }
     return Right(_compute(rec));
@@ -351,7 +351,7 @@ class TableTimerLocalRepositoryImpl implements TableTimerLocalRepository {
       'active_started_at': null,
       'pauses': pauses,
     };
-    await _localDb.saveTableTimer(orderId, updated);
+    _localDb.saveTableTimer(orderId, updated);
     await _enqueueTimerAction(orderId, 'pause', updated['table_id'] as String? ?? '');
     return Right(_compute(updated));
   }
@@ -383,13 +383,15 @@ class TableTimerLocalRepositoryImpl implements TableTimerLocalRepository {
       'paused_at': null,
       'pauses': pauses,
     };
-    await _localDb.saveTableTimer(orderId, updated);
+    _localDb.saveTableTimer(orderId, updated);
     await _enqueueTimerAction(orderId, 'resume', updated['table_id'] as String? ?? '');
     return Right(_compute(updated));
   }
 
   @override
-  Future<void> evictTimer(String orderId) => _localDb.evictTableTimer(orderId);
+  Future<void> evictTimer(String orderId) async {
+    _localDb.evictTableTimer(orderId);
+  }
 
   // ── Server-snapshot normalization (used by SyncEngine's hydration) ──────
 
