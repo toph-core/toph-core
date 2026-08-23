@@ -10,6 +10,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mary_ai_pos/core/db/apply_change.dart';
 import 'package:mary_ai_pos/core/db/entity_registry.dart';
 import 'package:mary_ai_pos/core/db/local_database.dart';
+import 'package:mary_ai_pos/core/outbox/outbox_store.dart';
 import 'package:mary_ai_pos/core/db/payload_normalizer.dart';
 
 /// A `goods` row shaped exactly as `to_jsonb(NEW)` renders it: numerics as JSON
@@ -586,6 +587,35 @@ void main() {
       expect(db.syncCursor, 0);
       expect(db.isBootstrapped, isFalse);
       expect(db.isPending('goods', 'g-1'), isFalse);
+    });
+
+    test('clearAll leaves no local-only table behind', () {
+      // The wipe used to name only some of them: `_table_status` and
+      // `_provisional` were missing, so a brand switch carried the previous
+      // restaurant's busy tables and invented ids into the next one. It now
+      // iterates LocalTables.all, which also means a local table added later
+      // cannot be forgotten here.
+      db.setTableStatus('t-1', 'busy');
+      db.markProvisional('halls', 'local-1');
+      db.saveTableTimer('o-1', const {'elapsed': 42});
+      OutboxStore(db).enqueue(
+        id: 'op-1',
+        entity: 'orders',
+        action: 'create',
+        entityId: 'o-1',
+        payload: const {'id': 'o-1'},
+      );
+      db.markPending('goods', 'g-1');
+      db.markBootstrapped();
+
+      db.clearAll();
+
+      expect(db.tableStatuses(), isEmpty);
+      expect(db.isProvisional('halls', 'local-1'), isFalse);
+      expect(db.getTableTimers(), isEmpty);
+      expect(OutboxStore(db).pending(), isEmpty);
+      expect(db.isPending('goods', 'g-1'), isFalse);
+      expect(db.isBootstrapped, isFalse);
     });
 
     test('a fresh database needs bootstrap', () {

@@ -599,38 +599,21 @@ class LocalDatabase {
   /// belonging to a different tenant must never be replayed into this one.
   void clearAll() {
     transaction(() {
-      // Rows waiting for the server to tell us their real id.
-    _db.execute('''
-      CREATE TABLE IF NOT EXISTS ${LocalTables.provisional} (
-        entity   TEXT NOT NULL,
-        local_id TEXT NOT NULL,
-        since    INTEGER NOT NULL,
-        PRIMARY KEY (entity, local_id)
-      )
-    ''');
-
-    // Local-authority table occupancy. Never written by replication, never
-    // read from the feed — see [LocalTables.tableStatus].
-    _db.execute('''
-      CREATE TABLE IF NOT EXISTS ${LocalTables.tableStatus} (
-        table_id   TEXT PRIMARY KEY NOT NULL,
-        status     TEXT NOT NULL,
-        updated_at INTEGER NOT NULL
-      )
-    ''');
-
-    for (final spec in kReplicatedEntities) {
+      for (final spec in kReplicatedEntities) {
         _db.execute('DELETE FROM ${spec.name}');
         _touch(spec.name);
       }
-      _db.execute('DELETE FROM ${LocalTables.outbox}');
-      _db.execute('DELETE FROM ${LocalTables.pending}');
-      _db.execute('DELETE FROM ${LocalTables.meta}');
-      // Timer records are per-tenant local authority; a brand switch must not
-      // carry the previous tenant's live timers. Guarded because an install
-      // from before this table existed has nothing to delete.
-      _db.execute('DELETE FROM ${LocalTables.tableTimers}');
-      _touch(LocalTables.tableTimers);
+      // Every local-only table goes too. These are per-tenant local authority
+      // — occupancy decided by this venue's cashiers, timers running on this
+      // venue's tables, ids invented for this tenant's rows — so carrying any
+      // of them into a different restaurant is exactly the stale-state bug the
+      // wipe exists to prevent. `_table_status` and `_provisional` were missing
+      // from this list, which left the previous tenant's occupancy and
+      // provisional ids behind after a brand switch.
+      for (final table in LocalTables.all) {
+        _db.execute('DELETE FROM $table');
+        _touch(table);
+      }
       setMeta('schema_version', '$schemaVersion');
     });
   }
@@ -638,26 +621,6 @@ class LocalDatabase {
   /// Row counts per replicated table — for the sync-status screen and tests.
   Map<String, int> tableCounts() {
     final out = <String, int>{};
-    // Rows waiting for the server to tell us their real id.
-    _db.execute('''
-      CREATE TABLE IF NOT EXISTS ${LocalTables.provisional} (
-        entity   TEXT NOT NULL,
-        local_id TEXT NOT NULL,
-        since    INTEGER NOT NULL,
-        PRIMARY KEY (entity, local_id)
-      )
-    ''');
-
-    // Local-authority table occupancy. Never written by replication, never
-    // read from the feed — see [LocalTables.tableStatus].
-    _db.execute('''
-      CREATE TABLE IF NOT EXISTS ${LocalTables.tableStatus} (
-        table_id   TEXT PRIMARY KEY NOT NULL,
-        status     TEXT NOT NULL,
-        updated_at INTEGER NOT NULL
-      )
-    ''');
-
     for (final spec in kReplicatedEntities) {
       final rows = _db.select('SELECT COUNT(*) AS n FROM ${spec.name}');
       out[spec.name] = (rows.first['n'] as num).toInt();
