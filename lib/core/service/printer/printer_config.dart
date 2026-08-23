@@ -15,7 +15,7 @@ class PrinterConfig {
   final String? entryId;
 
   /// Exact Windows-installed printer name to target when [usesWindowsPrinter]
-  /// — set locally per-device (`CacheService.getUsbPrinterName`), not part of
+  /// — set locally per-device (`PrinterConfigStorage.getUsbPrinterName`), not part of
   /// the synced backend record. `null` falls back to the legacy heuristic
   /// (first local printer whose port name starts with "USB").
   final String? windowsPrinterName;

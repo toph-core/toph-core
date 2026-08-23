@@ -287,6 +287,9 @@ Future<void> initDi() async {
   inject.registerLazySingleton(() => minioService);
 
   final printerConfigStorage = PrinterConfigStorage(prefs);
+  await printerConfigStorage.adoptLegacyUsbPrinterNames(
+    cacheService.exportUsbPrinterNames(),
+  );
   inject.registerSingleton<PrinterConfigStorage>(printerConfigStorage);
   final printerService = PrinterService(printerConfigStorage);
   inject.registerSingleton<PrinterService>(printerService);
@@ -299,7 +302,7 @@ Future<void> initDi() async {
   // new `broadcastPrintJob*`/`canRelayPrintJobs` members.
   final printQueueService = await PrintQueueService.init(
     printerService,
-    cacheService,
+    printerConfigStorage,
     prefs,
     isLanRelayPossible: () => lanHubService.canRelayPrintJobs,
     broadcastAnnounce: ({

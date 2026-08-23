@@ -141,6 +141,12 @@ class CacheService {
   String? getUsbPrinterName(String entryId) =>
       _decodeMap(_box.get(_usbPrinterNames))[entryId];
 
+  /// The whole entry.id -> Windows printer name map, for the one-shot move
+  /// into `PrinterConfigStorage` (device-scoped prefs, where
+  /// OFFLINE_FIRST_EVERYWHERE_PLAN.md §2 puts it). Deleted with this class.
+  Map<String, String> exportUsbPrinterNames() =>
+      _decodeMap(_box.get(_usbPrinterNames));
+
   Future<void> removeUsbPrinterName(String entryId) async {
     final map = _decodeMap(_box.get(_usbPrinterNames));
     if (map.remove(entryId) != null) {

@@ -5,7 +5,6 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:mary_ai_pos/core/service/printer/printer_config.dart';
 import 'package:mary_ai_pos/core/service/printer/printer_config_storage.dart';
 import 'package:mary_ai_pos/core/service/printer/printer_service.dart';
-import 'package:mary_ai_pos/core/services/cache/cache_service.dart';
 import 'package:mary_ai_pos/core/services/print_queue/print_job.dart';
 import 'package:mary_ai_pos/core/services/print_queue/print_queue_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -40,7 +39,7 @@ void main() {
   Future<PrintQueueService> newQueueService({
     required Box<PrintJob> box,
     required PrinterService printerService,
-    required CacheService cacheService,
+    required PrinterConfigStorage printerConfigStorage,
     bool Function() isLanRelayPossible = _alwaysTrue,
     PrintAnnounceBroadcaster broadcastAnnounce = _noopAnnounce,
     PrintClaimBroadcaster broadcastClaim = _noopClaim,
@@ -51,7 +50,7 @@ void main() {
     return PrintQueueService(
       box,
       printerService,
-      cacheService,
+      printerConfigStorage,
       prefs,
       isLanRelayPossible: isLanRelayPossible,
       broadcastAnnounce: broadcastAnnounce,
@@ -69,9 +68,14 @@ void main() {
     return Hive.openBox<PrintJob>('print_queue_test_$boxCounter');
   }
 
-  Future<CacheService> freshCache() async {
-    boxCounter++;
-    return CacheService(await Hive.openBox('cache_test_$boxCounter'));
+  /// One terminal's device-scoped printer store. `setMockInitialValues`
+  /// swaps in a brand-new in-memory backing store and clears the cached
+  /// instance, and reads are answered from each instance's own snapshot —
+  /// so two of these are as independent as two PCs, which is what the
+  /// USB-ownership tests below need.
+  Future<PrinterConfigStorage> freshPrinterStorage() async {
+    SharedPreferences.setMockInitialValues({});
+    return PrinterConfigStorage(await SharedPreferences.getInstance());
   }
 
   group('PrintQueueService', () {
@@ -82,11 +86,11 @@ void main() {
       serverSocket.listen((s) => s.listen((_) {}));
 
       final printer = await newPrinterService();
-      final cache = await freshCache();
+      final cache = await freshPrinterStorage();
       final queue = await newQueueService(
         box: await freshBox(),
         printerService: printer,
-        cacheService: cache,
+        printerConfigStorage: cache,
       );
 
       final r = await queue.submitJob(
@@ -105,14 +109,14 @@ void main() {
 
     test('a USB job this terminal owns prints locally, no broadcast at all', () async {
       final printer = await newPrinterService();
-      final cache = await freshCache();
+      final cache = await freshPrinterStorage();
       await cache.saveUsbPrinterName('entry-1', 'My Local USB Printer');
 
       var broadcastCalled = false;
       final queue = await newQueueService(
         box: await freshBox(),
         printerService: printer,
-        cacheService: cache,
+        printerConfigStorage: cache,
         broadcastAnnounce: ({
           required jobId,
           required jobType,
@@ -138,8 +142,8 @@ void main() {
     test('a USB job this terminal does not own is announced, claimed, and resolved by the owner', () async {
       final printerA = await newPrinterService();
       final printerB = await newPrinterService();
-      final cacheA = await freshCache(); // does NOT own entry-2
-      final cacheB = await freshCache();
+      final cacheA = await freshPrinterStorage(); // does NOT own entry-2
+      final cacheB = await freshPrinterStorage();
       await cacheB.saveUsbPrinterName('entry-2', 'Bs USB Printer');
 
       late PrintQueueService queueA;
@@ -148,7 +152,7 @@ void main() {
       queueA = await newQueueService(
         box: await freshBox(),
         printerService: printerA,
-        cacheService: cacheA,
+        printerConfigStorage: cacheA,
         broadcastAnnounce: ({
           required jobId,
           required jobType,
@@ -166,7 +170,7 @@ void main() {
       queueB = await newQueueService(
         box: await freshBox(),
         printerService: printerB,
-        cacheService: cacheB,
+        printerConfigStorage: cacheB,
         broadcastClaim: queueA.onRemoteClaim,
         broadcastResult: queueA.onRemoteResult,
       );
@@ -188,12 +192,12 @@ void main() {
 
     test('nobody claims within the wait window — one retry, then a clear unclaimed failure', () async {
       final printer = await newPrinterService();
-      final cache = await freshCache(); // nobody owns entry-3 anywhere
+      final cache = await freshPrinterStorage(); // nobody owns entry-3 anywhere
       var announceCount = 0;
       final queue = await newQueueService(
         box: await freshBox(),
         printerService: printer,
-        cacheService: cache,
+        printerConfigStorage: cache,
         broadcastAnnounce: ({
           required jobId,
           required jobType,
@@ -217,13 +221,13 @@ void main() {
 
     test('claimed but no result within the lease — one retry, then fails', () async {
       final printer = await newPrinterService();
-      final cache = await freshCache();
+      final cache = await freshPrinterStorage();
       var announceCount = 0;
       late PrintQueueService queue;
       queue = await newQueueService(
         box: await freshBox(),
         printerService: printer,
-        cacheService: cache,
+        printerConfigStorage: cache,
         broadcastAnnounce: ({
           required jobId,
           required jobType,
@@ -265,8 +269,8 @@ void main() {
       await box.put(staleJob.id, staleJob);
 
       final printer = await newPrinterService();
-      final cache = await freshCache();
-      await newQueueService(box: box, printerService: printer, cacheService: cache);
+      final cache = await freshPrinterStorage();
+      await newQueueService(box: box, printerService: printer, printerConfigStorage: cache);
 
       final recovered = box.get('stale-1')!;
       expect(recovered.stateEnum, PrintJobState.failed);
@@ -275,11 +279,11 @@ void main() {
 
     test('LAN mode disabled — a USB job this terminal does not own fails fast with a clear reason, never hangs', () async {
       final printer = await newPrinterService();
-      final cache = await freshCache();
+      final cache = await freshPrinterStorage();
       final queue = await newQueueService(
         box: await freshBox(),
         printerService: printer,
-        cacheService: cache,
+        printerConfigStorage: cache,
         isLanRelayPossible: () => false,
       );
 
@@ -304,7 +308,7 @@ void main() {
     // printer's urgent kitchen ticket behind that would be a regression.
     // Exercised directly at the `PrintQueueService` level (bypassing
     // `PrinterService.printKitchenReceiptFor` itself, which reaches for
-    // `CacheService`/`UserBloc` via ad-hoc `inject()` calls that would need
+    // `PrinterConfigStorage`/`UserBloc` via ad-hoc `inject()` calls that would need
     // the full DI graph to stand up here) — this is where the actual
     // concurrency risk lives; `printKitchenReceiptFor`'s own change is a
     // thin `Future.wait` over calls into exactly this method.
@@ -315,11 +319,11 @@ void main() {
       serverSocket.listen((s) => s.listen((_) {}));
 
       final printer = await newPrinterService();
-      final cache = await freshCache();
+      final cache = await freshPrinterStorage();
       final queue = await newQueueService(
         box: await freshBox(),
         printerService: printer,
-        cacheService: cache,
+        printerConfigStorage: cache,
       );
 
       // Nobody owns 'entry-slow' anywhere — announces, waits, retries once,
@@ -367,12 +371,12 @@ void main() {
   group('Sync-status UI support (Phase 6)', () {
     test('queuedCount/claimedCount/failedCount reflect the box regardless of how jobs got there', () async {
       final printer = await newPrinterService();
-      final cache = await freshCache();
+      final cache = await freshPrinterStorage();
       final box = await freshBox();
       final queue = await newQueueService(
         box: box,
         printerService: printer,
-        cacheService: cache,
+        printerConfigStorage: cache,
       );
 
       // Seeded directly — these getters are plain filters over the box, not
@@ -429,12 +433,12 @@ void main() {
 
     test('retryFailedJob resubmits a failed job under a fresh id, leaving the original row as history', () async {
       final printer = await newPrinterService();
-      final cache = await freshCache();
+      final cache = await freshPrinterStorage();
       await cache.saveUsbPrinterName('entry-retry', 'My Local USB Printer');
       final queue = await newQueueService(
         box: await freshBox(),
         printerService: printer,
-        cacheService: cache,
+        printerConfigStorage: cache,
       );
 
       // Deterministic failure on this non-Windows test machine (same as the
@@ -467,12 +471,12 @@ void main() {
 
     test('retryFailedJob is a no-op for a job that is not failed', () async {
       final printer = await newPrinterService();
-      final cache = await freshCache();
+      final cache = await freshPrinterStorage();
       final box = await freshBox();
       final queue = await newQueueService(
         box: box,
         printerService: printer,
-        cacheService: cache,
+        printerConfigStorage: cache,
       );
       await box.put('queued-1', PrintJob(
         id: 'queued-1',
@@ -494,12 +498,12 @@ void main() {
 
     test('dismissFailedJob removes a failed job without resubmitting', () async {
       final printer = await newPrinterService();
-      final cache = await freshCache();
+      final cache = await freshPrinterStorage();
       await cache.saveUsbPrinterName('entry-dismiss', 'My Local USB Printer');
       final queue = await newQueueService(
         box: await freshBox(),
         printerService: printer,
-        cacheService: cache,
+        printerConfigStorage: cache,
       );
 
       await queue.submitJob(
@@ -516,12 +520,12 @@ void main() {
 
     test('listenable notifies on submit', () async {
       final printer = await newPrinterService();
-      final cache = await freshCache();
+      final cache = await freshPrinterStorage();
       await cache.saveUsbPrinterName('entry-listen', 'My Local USB Printer');
       final queue = await newQueueService(
         box: await freshBox(),
         printerService: printer,
-        cacheService: cache,
+        printerConfigStorage: cache,
       );
 
       var notified = false;
@@ -547,11 +551,11 @@ void main() {
     // tests prove that guard actually holds under a genuine duplicate.
     test('a second onRemoteClaim for an already-claimed job is ignored — first claimant keeps it', () async {
       final printerA = await newPrinterService();
-      final cacheA = await freshCache(); // does NOT own entry-dup
+      final cacheA = await freshPrinterStorage(); // does NOT own entry-dup
       final queueA = await newQueueService(
         box: await freshBox(),
         printerService: printerA,
-        cacheService: cacheA,
+        printerConfigStorage: cacheA,
       );
 
       // Deliberately not awaited yet — `submitJob` only resolves once the
@@ -591,11 +595,11 @@ void main() {
 
     test('a second onRemoteResult for an already-resolved job is ignored — first result stands', () async {
       final printerA = await newPrinterService();
-      final cacheA = await freshCache();
+      final cacheA = await freshPrinterStorage();
       final queueA = await newQueueService(
         box: await freshBox(),
         printerService: printerA,
-        cacheService: cacheA,
+        printerConfigStorage: cacheA,
       );
 
       final future = queueA.submitJob(
@@ -635,9 +639,9 @@ void main() {
       final printerA = await newPrinterService();
       final printerB = await newPrinterService();
       final printerC = await newPrinterService();
-      final cacheA = await freshCache(); // does NOT own entry-race
-      final cacheB = await freshCache();
-      final cacheC = await freshCache();
+      final cacheA = await freshPrinterStorage(); // does NOT own entry-race
+      final cacheB = await freshPrinterStorage();
+      final cacheC = await freshPrinterStorage();
       await cacheB.saveUsbPrinterName('entry-race', "B's USB Printer");
       await cacheC.saveUsbPrinterName('entry-race', "C's USB Printer");
 
@@ -660,7 +664,7 @@ void main() {
       queueA = await newQueueService(
         box: await freshBox(),
         printerService: printerA,
-        cacheService: cacheA,
+        printerConfigStorage: cacheA,
         broadcastAnnounce: ({
           required jobId,
           required jobType,
@@ -686,14 +690,14 @@ void main() {
       queueB = await newQueueService(
         box: await freshBox(),
         printerService: printerB,
-        cacheService: cacheB,
+        printerConfigStorage: cacheB,
         broadcastClaim: deliverClaimToA,
         broadcastResult: queueA.onRemoteResult,
       );
       queueC = await newQueueService(
         box: await freshBox(),
         printerService: printerC,
-        cacheService: cacheC,
+        printerConfigStorage: cacheC,
         broadcastClaim: deliverClaimToA,
         broadcastResult: queueA.onRemoteResult,
       );

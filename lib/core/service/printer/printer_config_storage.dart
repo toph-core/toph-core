@@ -65,6 +65,52 @@ class PrinterConfigStorage {
     await applyPrinterSettingsList(list);
   }
 
+  // ─── USB printer names (per-device, never synced to the backend) ─────
+  //
+  // A `connection_type: usb` entry is shared across the team like any other
+  // printer setting, but the Windows-installed printer name it should target
+  // only means anything on the one PC its cable is plugged into. So the
+  // entry.id -> Windows printer name mapping is device-scoped, exactly like
+  // the entries above — OFFLINE_FIRST_EVERYWHERE_PLAN.md §2's one deliberate
+  // exception to "one database", not replica state.
+
+  static const _usbNamesKey = 'printer_usb_names_json';
+
+  Map<String, String> _usbNames() {
+    final raw = _prefs.getString(_usbNamesKey);
+    if (raw == null || raw.isEmpty) return {};
+    try {
+      final map = jsonDecode(raw) as Map;
+      return map.map((k, v) => MapEntry(k.toString(), v.toString()));
+    } catch (_) {
+      return {};
+    }
+  }
+
+  String? getUsbPrinterName(String entryId) => _usbNames()[entryId];
+
+  Future<void> saveUsbPrinterName(String entryId, String printerName) async {
+    final map = _usbNames()..[entryId] = printerName;
+    await _prefs.setString(_usbNamesKey, jsonEncode(map));
+  }
+
+  /// One-shot move of the map out of the retiring Hive `pos_cache` box.
+  /// No-op once this device has a prefs entry, so it costs one absent-key
+  /// lookup per launch and never overwrites a name picked since. Goes when
+  /// `CacheService`, its only caller's source, is deleted.
+  Future<void> adoptLegacyUsbPrinterNames(Map<String, String> legacy) async {
+    if (legacy.isEmpty) return;
+    if (_prefs.containsKey(_usbNamesKey)) return;
+    await _prefs.setString(_usbNamesKey, jsonEncode(legacy));
+  }
+
+  Future<void> removeUsbPrinterName(String entryId) async {
+    final map = _usbNames();
+    if (map.remove(entryId) != null) {
+      await _prefs.setString(_usbNamesKey, jsonEncode(map));
+    }
+  }
+
   /// Backend hali ko'rmagan yangi yozuv uchun — vaqt tamg'asi asosida,
   /// shu qurilmada takrorlanmaydigan id.
   String generateLocalId() =>

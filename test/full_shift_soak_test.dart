@@ -14,7 +14,6 @@ import 'package:mary_ai_pos/core/auth/storage/token_storage_impl.dart';
 import 'package:mary_ai_pos/core/service/printer/printer_config.dart';
 import 'package:mary_ai_pos/core/service/printer/printer_config_storage.dart';
 import 'package:mary_ai_pos/core/service/printer/printer_service.dart';
-import 'package:mary_ai_pos/core/services/cache/cache_service.dart';
 import 'package:mary_ai_pos/core/services/connectivity/connectivity_cubit.dart';
 import 'package:mary_ai_pos/core/services/offline_queue/offline_queue_service.dart';
 import 'package:mary_ai_pos/core/services/offline_queue/pending_operation.dart';
@@ -293,8 +292,8 @@ void main() {
         final box = await Hive.openBox<PrintJob>('soak_print_queue', bytes: Uint8List(0));
         SharedPreferences.setMockInitialValues({});
         final prefs = await SharedPreferences.getInstance();
-        final printerService = PrinterService(PrinterConfigStorage(prefs));
-        final cacheService = CacheService(await Hive.openBox('soak_print_cache', bytes: Uint8List(0)));
+        final printerConfigStorage = PrinterConfigStorage(prefs);
+        final printerService = PrinterService(printerConfigStorage);
 
         fakeAsync((async) {
           late PrintQueueService service;
@@ -344,7 +343,7 @@ void main() {
           service = PrintQueueService(
             box,
             printerService,
-            cacheService,
+            printerConfigStorage,
             prefs,
             isLanRelayPossible: () => true,
             broadcastAnnounce: onAnnounce,

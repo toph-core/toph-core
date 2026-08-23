@@ -5,8 +5,8 @@ import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:mary_ai_pos/core/service/printer/printer_config.dart';
+import 'package:mary_ai_pos/core/service/printer/printer_config_storage.dart';
 import 'package:mary_ai_pos/core/service/printer/printer_service.dart';
-import 'package:mary_ai_pos/core/services/cache/cache_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'print_job.dart';
@@ -54,7 +54,7 @@ class PrintQueueService {
 
   final Box<PrintJob> _box;
   final PrinterService _printerService;
-  final CacheService _cacheService;
+  final PrinterConfigStorage _printerConfigStorage;
   final SharedPreferences _prefs;
   final bool Function() _isLanRelayPossible;
   final PrintAnnounceBroadcaster _broadcastAnnounce;
@@ -68,7 +68,7 @@ class PrintQueueService {
   PrintQueueService(
     this._box,
     this._printerService,
-    this._cacheService,
+    this._printerConfigStorage,
     this._prefs, {
     required bool Function() isLanRelayPossible,
     required PrintAnnounceBroadcaster broadcastAnnounce,
@@ -85,7 +85,7 @@ class PrintQueueService {
 
   static Future<PrintQueueService> init(
     PrinterService printerService,
-    CacheService cacheService,
+    PrinterConfigStorage printerConfigStorage,
     SharedPreferences prefs, {
     required bool Function() isLanRelayPossible,
     required PrintAnnounceBroadcaster broadcastAnnounce,
@@ -96,7 +96,7 @@ class PrintQueueService {
     return PrintQueueService(
       box,
       printerService,
-      cacheService,
+      printerConfigStorage,
       prefs,
       isLanRelayPossible: isLanRelayPossible,
       broadcastAnnounce: broadcastAnnounce,
@@ -158,7 +158,7 @@ class PrintQueueService {
 
   String? _usbPrinterNameFor(PrintJob job) =>
       job.connectionType.toLowerCase() == 'usb'
-          ? _cacheService.getUsbPrinterName(job.entryId)
+          ? _printerConfigStorage.getUsbPrinterName(job.entryId)
           : null;
 
   /// Removes a `failed` job from the visible queue without retrying — for
@@ -222,7 +222,8 @@ class PrintQueueService {
     }
 
     final ownWindowsName =
-        config.windowsPrinterName ?? _cacheService.getUsbPrinterName(job.entryId);
+        config.windowsPrinterName ??
+        _printerConfigStorage.getUsbPrinterName(job.entryId);
     if (ownWindowsName != null && ownWindowsName.isNotEmpty) {
       return _printLocallyAndFinish(
         job,
@@ -359,7 +360,7 @@ class PrintQueueService {
   /// `LanHubService` calls this when a `printJobAnnounce` arrives from
   /// another terminal — claims and prints it iff (and only if) this
   /// terminal has a locally-saved Windows printer name for the announced
-  /// `entryId` (`CacheService.getUsbPrinterName` is the closest thing to a
+  /// `entryId` (`PrinterConfigStorage.getUsbPrinterName` is the closest thing to a
   /// "who owns this USB printer" registry that exists anywhere in this
   /// codebase — see the Phase 5 research this was based on).
   Future<void> onRemoteAnnounce({
@@ -368,7 +369,7 @@ class PrintQueueService {
     required String entryId,
     required String payloadBase64,
   }) async {
-    final windowsName = _cacheService.getUsbPrinterName(entryId);
+    final windowsName = _printerConfigStorage.getUsbPrinterName(entryId);
     if (windowsName == null || windowsName.isEmpty) return; // not mine
     _broadcastClaim(jobId);
     try {

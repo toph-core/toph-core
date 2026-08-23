@@ -8,7 +8,6 @@ import 'package:mary_ai_pos/core/extension/for_context.dart';
 import 'package:mary_ai_pos/core/service/printer/printer_config_storage.dart';
 import 'package:mary_ai_pos/core/service/printer/printer_service.dart';
 import 'package:mary_ai_pos/core/service/printer/printer_setting_entry.dart';
-import 'package:mary_ai_pos/core/services/cache/cache_service.dart';
 import 'package:mary_ai_pos/di.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/category/category_model.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/printers/printers_controller.dart';
@@ -85,7 +84,7 @@ class _PrintersSectionState extends State<PrintersSection> {
       }),
     );
     if (!mounted) return;
-    inject<CacheService>().removeUsbPrinterName(item.id);
+    inject<PrinterConfigStorage>().removeUsbPrinterName(item.id);
     _loadAll();
   }
 
@@ -170,7 +169,8 @@ class _PrinterCardState extends State<_PrinterCard> {
     final isUsb = entry.connectionType == 'usb';
     String? windowsPrinterName;
     if (isUsb) {
-      windowsPrinterName = inject<CacheService>().getUsbPrinterName(entry.id);
+      windowsPrinterName =
+          inject<PrinterConfigStorage>().getUsbPrinterName(entry.id);
       if (windowsPrinterName == null || windowsPrinterName.isEmpty) {
         showErrorMessage(
           context,
@@ -625,7 +625,8 @@ class _PrinterEditDialogState extends State<_PrinterEditDialog> {
   String? _testMessage;
 
   // USB (Windows spooler) — bu qurilmada o'rnatilgan printerlar ro'yxati va
-  // tanlangan nom. Backend bilan sinxronlanmaydi (CacheService, faqat lokal).
+  // tanlangan nom. Backend bilan sinxronlanmaydi (PrinterConfigStorage,
+  // faqat shu qurilmada).
   String? _windowsPrinterName;
   List<String> _localPrinters = const [];
   bool _loadingLocalPrinters = false;
@@ -641,7 +642,8 @@ class _PrinterEditDialogState extends State<_PrinterEditDialog> {
       _connection = e.connectionType.isNotEmpty ? e.connectionType : 'cable';
       _selectedCategoryIds.addAll(e.connectedEntityIds);
       if (_connection == 'usb') {
-        _windowsPrinterName = inject<CacheService>().getUsbPrinterName(e.id);
+        _windowsPrinterName =
+            inject<PrinterConfigStorage>().getUsbPrinterName(e.id);
       }
     }
     if (Platform.isWindows) _loadLocalPrinters();
@@ -730,7 +732,7 @@ class _PrinterEditDialogState extends State<_PrinterEditDialog> {
 
     await widget.storage.upsertEntry(entry);
 
-    final cache = inject<CacheService>();
+    final cache = inject<PrinterConfigStorage>();
     if (_connection == 'usb' && _windowsPrinterName != null) {
       await cache.saveUsbPrinterName(entryId, _windowsPrinterName!);
     } else {
