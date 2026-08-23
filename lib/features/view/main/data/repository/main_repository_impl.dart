@@ -1,17 +1,13 @@
 import 'package:dartz/dartz.dart';
+import 'package:mary_ai_pos/core/db/branch_query.dart';
+import 'package:mary_ai_pos/core/db/local_database.dart' as replica;
 import 'package:mary_ai_pos/core/error/failure.dart';
 import 'package:mary_ai_pos/core/service/printer/printer_setting_entry.dart';
-import 'package:mary_ai_pos/core/services/cache/cache_service.dart';
-import 'package:mary_ai_pos/core/services/connectivity/connectivity_cubit.dart';
 import 'package:mary_ai_pos/features/view/auth/data/models/user/user_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/data_source/main_datasources.dart';
-import 'package:mary_ai_pos/features/view/main/data/models/cafe_tables/cafe_tables_model.dart';
-import 'package:mary_ai_pos/features/view/main/data/models/category/category_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/close_shift/close_shift_request_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/create_order/create_order_request_model.dart';
-import 'package:mary_ai_pos/features/view/main/data/models/department/department_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/goods/goods_model.dart';
-import 'package:mary_ai_pos/features/view/main/data/models/hall/hall_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/open_shift/open_shift_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/shift/shift_response_model.dart';
 import 'package:mary_ai_pos/features/view/main/domain/entities/archive_detail_entity.dart';
@@ -20,10 +16,10 @@ import 'package:mary_ai_pos/features/view/main/domain/repository/main_repository
 
 class MainRepositoryImpl implements MainRepository {
   final MainDataSources _dataSources;
-  final CacheService _cache;
-  final ConnectivityCubit _connectivity;
+  final BranchQuery _branches;
 
-  MainRepositoryImpl(this._dataSources, this._cache, this._connectivity);
+  MainRepositoryImpl(this._dataSources, replica.LocalDatabase replicaDb)
+      : _branches = BranchQuery(replicaDb);
 
   @override
   Future<Either<Failure, bool>> closeShift({
@@ -49,36 +45,6 @@ class MainRepositoryImpl implements MainRepository {
       await _dataSources.getUser();
 
   @override
-  Future<Either<Failure, List<UserModel>>> getUsers() async {
-    // Cache-first — same pattern as `MenuLocalRepositoryImpl` for
-    // categories/departments: try the network when online and write
-    // through on success, otherwise (or on failure) fall back to whatever
-    // was last cached rather than surfacing an empty/error state.
-    if (_connectivity.isOnline) {
-      final result = await _dataSources.getUsers();
-      final ok = result.fold((_) => null, (r) => r);
-      if (ok != null) {
-        if (ok.isNotEmpty) {
-          await _cache.saveUsers(ok.map((u) => u.toJson()).toList());
-        }
-        return result;
-      }
-    }
-    final cached = _cache.getUsers();
-    if (cached.isEmpty) return const Left(ConnectionFailure());
-    try {
-      return Right(cached.map(UserModel.fromJson).toList());
-    } catch (_) {
-      return const Left(ConnectionFailure());
-    }
-  }
-
-  @override
-  Future<Either<Failure, List<CafeTableModel>>> getAllTables() {
-    return _dataSources.getAllTables();
-  }
-
-  @override
   Future<Either<Failure, String>> createTakewayOrder({
     required CreateOrderRequestModel request,
   }) async => await _dataSources.createTakewayOrder(request: request);
@@ -87,28 +53,6 @@ class MainRepositoryImpl implements MainRepository {
   Future<Either<Failure, bool>> createOrder({
     required CreateOrderRequestModel request,
   }) async => await _dataSources.createOrder(request: request);
-
-  @override
-  Future<Either<Failure, List<HallModel>>> getHalls() {
-    return _dataSources.getHalls();
-  }
-
-  @override
-  Future<Either<Failure, List<CategoryModel>>> getCategories() {
-    return _dataSources.getCategories();
-  }
-
-  @override
-  Future<Either<Failure, List<DepartmentModel>>> getDepartments() {
-    return _dataSources.getDepartments();
-  }
-
-  @override
-  Future<Either<Failure, List<GoodsModel>>> getGoodsByCategoryId(
-    String categoryId,
-  ) {
-    return _dataSources.getGoodsByCategoryId(categoryId);
-  }
 
   @override
   Future<Either<Failure, List<GoodsModel>>> getGoodsWithName(String name) {
@@ -130,11 +74,6 @@ class MainRepositoryImpl implements MainRepository {
   @override
   Future<Either<Failure, List<PrinterSettingEntry>>> getPrinterSettings() =>
       _dataSources.getPrinterSettings();
-
-  @override
-  Future<Either<Failure, Map<String, dynamic>>> getOrderItemsRaw(
-    String orderId,
-  ) => _dataSources.getOrderItemsRaw(orderId);
 
   @override
   Future<Either<Failure, bool>> cancelOrderItem(String itemId, {String? comment}) =>
@@ -166,31 +105,23 @@ class MainRepositoryImpl implements MainRepository {
   Future<String> getOrderIdWithTableId(String tableId) =>
       _dataSources.getOrderIdWithTableId(tableId: tableId);
 
+  /// A local read: `branches` replicates, so the settings screen shows the
+  /// configured percent offline instead of an error. Replaces an online-first
+  /// fetch with a last-known-value cache behind it, which only had a value
+  /// because the deleted hydration pass put one there.
   @override
   Future<Either<Failure, double>> getServiceCharge(String branchId) async {
-    if (_connectivity.isOnline) {
-      final result = await _dataSources.getServiceCharge(branchId);
-      final ok = result.fold((_) => null, (r) => r);
-      if (ok != null) {
-        await _cache.saveServiceCharge(branchId, {'default_service_percent': ok});
-        return result;
-      }
-    }
-    final cached = _cache.getServiceCharge(branchId);
-    if (cached == null) return const Left(ConnectionFailure());
-    final raw = cached['default_service_percent'];
-    final value = raw is num ? raw.toDouble() : double.tryParse('$raw') ?? 0;
+    final value = _branches.defaultServicePercent(branchId);
+    if (value == null) return const Left(ConnectionFailure());
     return Right(value);
   }
 
+  /// Still a direct write. One low-volume config value with no reason to carry
+  /// offline-write machinery; the cubit already refuses the edit when offline.
+  /// The next pull brings the server's row back and the read above sees it.
   @override
-  Future<Either<Failure, bool>> saveServiceCharge(String branchId, double value) async {
-    final result = await _dataSources.saveServiceCharge(branchId, value);
-    if (result.isRight()) {
-      await _cache.saveServiceCharge(branchId, {'default_service_percent': value});
-    }
-    return result;
-  }
+  Future<Either<Failure, bool>> saveServiceCharge(String branchId, double value) =>
+      _dataSources.saveServiceCharge(branchId, value);
 
   @override
   Future<Either<Failure, bool>> pushPrinterSetting(
@@ -203,28 +134,6 @@ class MainRepositoryImpl implements MainRepository {
       _dataSources.deletePrinterSetting(id);
 
   @override
-  Future<Either<Failure, List<Map<String, dynamic>>>> getTransactionGroups({
-    String? search,
-  }) async {
-    // Cache-first only for the unfiltered default list — a search query has
-    // no bounded local mirror to fall back to, same reasoning
-    // `MenuLocalRepositoryImpl.searchGoodsByName` already uses.
-    final isDefaultList = search == null || search.isEmpty;
-    if (_connectivity.isOnline) {
-      final result = await _dataSources.getTransactionGroups(search: search);
-      final ok = result.fold((_) => null, (r) => r);
-      if (ok != null) {
-        if (isDefaultList) await _cache.saveTransactionGroups(ok);
-        return result;
-      }
-    }
-    if (!isDefaultList) return const Left(ConnectionFailure());
-    final cached = _cache.getTransactionGroups();
-    if (cached.isEmpty) return const Left(ConnectionFailure());
-    return Right(cached);
-  }
-
-  @override
   Future<Either<Failure, bool>> createTransactionGroup(String name) =>
       _dataSources.createTransactionGroup(name);
 
@@ -235,10 +144,6 @@ class MainRepositoryImpl implements MainRepository {
   @override
   Future<Either<Failure, bool>> deleteTransactionGroup(String id) =>
       _dataSources.deleteTransactionGroup(id);
-
-  @override
-  Future<Either<Failure, List<Map<String, dynamic>>>> getCashRegisters() =>
-      _dataSources.getCashRegisters();
 
   @override
   Future<Either<Failure, ({List<Map<String, dynamic>> items, int? total})>>
@@ -372,33 +277,4 @@ class MainRepositoryImpl implements MainRepository {
   Future<Either<Failure, bool>> deleteGood(String id) =>
       _dataSources.deleteGood(id);
 
-  @override
-  Future<Either<Failure, List<Map<String, dynamic>>>> getIngredients() async {
-    if (_connectivity.isOnline) {
-      final result = await _dataSources.getIngredients();
-      final ok = result.fold((_) => null, (r) => r);
-      if (ok != null) {
-        if (ok.isNotEmpty) await _cache.saveIngredients(ok);
-        return result;
-      }
-    }
-    final cached = _cache.getIngredients();
-    if (cached.isEmpty) return const Left(ConnectionFailure());
-    return Right(cached);
-  }
-
-  @override
-  Future<Either<Failure, List<Map<String, dynamic>>>> getCompounds() async {
-    if (_connectivity.isOnline) {
-      final result = await _dataSources.getCompounds();
-      final ok = result.fold((_) => null, (r) => r);
-      if (ok != null) {
-        if (ok.isNotEmpty) await _cache.saveCompounds(ok);
-        return result;
-      }
-    }
-    final cached = _cache.getCompounds();
-    if (cached.isEmpty) return const Left(ConnectionFailure());
-    return Right(cached);
-  }
 }

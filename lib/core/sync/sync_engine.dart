@@ -3,18 +3,14 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:mary_ai_pos/di.dart';
 import 'package:mary_ai_pos/features/view/auth/presentation/cubit/bloc/user_bloc.dart';
-import 'package:mary_ai_pos/features/view/main/data/models/archive_detail/archive_detail_model.dart';
-import 'package:mary_ai_pos/features/view/main/data/models/cafe_tables/cafe_tables_model.dart';
-import 'package:mary_ai_pos/features/view/main/data/models/category/category_model.dart';
-import 'package:mary_ai_pos/features/view/main/data/models/goods/goods_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/repository/table_timer_local_repository_impl.dart';
 import 'package:mary_ai_pos/features/view/main/domain/repository/main_repository.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../api/dio_client.dart';
-import '../database/local_database.dart';
+import '../db/halls_tables_query.dart';
+import '../db/order_detail_query.dart';
 import '../service/minio/minio_service.dart';
-import '../services/cache/cache_service.dart';
 import '../services/connectivity/connectivity_cubit.dart';
 import '../services/lan_hub/lan_hub_service.dart';
 import '../outbox/outbox_drainer.dart';
@@ -22,29 +18,36 @@ import '../services/offline_queue/offline_queue_service.dart';
 import 'change_feed_relay.dart';
 import 'replication_service.dart';
 
-/// Thin coordination shell around the existing offline services — wraps
-/// `OfflineQueueService`/`CacheService` rather than replacing them, so later
-/// phases (see offline-first-architecture-plan.md, §11) can swap what's
-/// inside without every call site needing to change.
+/// The only component that touches the network (OFFLINE_FIRST_EVERYWHERE_PLAN
+/// .md §3).
 ///
-/// The one capability this adds that didn't exist before: a periodic tick,
-/// so the outbox drains even without a connectivity false→true edge (e.g.
-/// the app launched already offline, or the OS link never flagged a backend
-/// outage as a disconnect — see `ConnectivityCubit`'s reachability probe).
+/// A pass is: send, then receive, then fill the two gaps the change feed
+/// cannot. The ~300 lines of per-entity `_hydrateX` fetching that used to sit
+/// below the receive step are gone — that was Phase 4's whole promise, and it
+/// held: one `POST /sync/pull` loop replaced every one of them, because every
+/// screen now reads the replica the loop fills.
+///
+/// What survives is exactly what the feed does not carry:
+///
+/// * **Table timers.** `table_time_sessions` has no change-log trigger
+///   (§5 item 1, the highest-value backend ask), so a server timer snapshot
+///   can only arrive by asking for it.
+/// * **Menu images.** Minio is a blob store, not a logged table.
+/// * **The user profile re-check**, which is session revalidation rather
+///   than data.
+///
+/// The periodic tick also drains the outbox without waiting on a connectivity
+/// false→true edge — the app may have launched already offline, or the OS link
+/// may never have flagged a backend outage as a disconnect.
 class SyncEngine {
   final OfflineQueueService _queue;
-  final CacheService _cache;
   final ConnectivityCubit _connectivity;
   final DioClient _client;
   final LanHubService _lanHub;
   final SharedPreferences _prefs;
-  final LocalDatabase _localDb;
 
-  /// OFFLINE_FIRST_EVERYWHERE_PLAN.md Phase 1 — the cursor-driven change-log
-  /// replication that is replacing every `_hydrateX` method below. Both run for
-  /// now: replication fills the SQLite replica while the screens still read
-  /// `CacheService`/`LocalDatabase`. Phase 4 moves the screens across and
-  /// deletes the hydration half.
+  /// The cursor-driven change-log replication — the single inbound data path
+  /// now that Phase 4 has deleted the per-entity hydration it replaced.
   final ReplicationService _replication;
 
   /// Phase 5 — tracks whether this terminal, as a follower, knows it is behind
@@ -52,10 +55,7 @@ class SyncEngine {
   /// cloud pull.
   final ChangeFeedRelay _feed;
 
-  /// Phase 2 — replay of locally-queued writes. Dormant until Phase 4
-  /// registers executors; the drain call below is a no-op against an empty
-  /// registry, so wiring it now costs nothing and means no trigger has to be
-  /// added later.
+  /// Phase 2 — replay of locally-queued writes.
   final OutboxDrainer _outbox;
 
   Timer? _ticker;
@@ -88,22 +88,18 @@ class SyncEngine {
 
   SyncEngine({
     required OfflineQueueService queue,
-    required CacheService cache,
     required ConnectivityCubit connectivity,
     required DioClient client,
     required LanHubService lanHub,
     required SharedPreferences prefs,
-    required LocalDatabase localDb,
     required ReplicationService replication,
     required ChangeFeedRelay feed,
     required OutboxDrainer outbox,
   })  : _queue = queue,
-        _cache = cache,
         _connectivity = connectivity,
         _client = client,
         _lanHub = lanHub,
         _prefs = prefs,
-        _localDb = localDb,
         _replication = replication,
         _feed = feed,
         _outbox = outbox;
@@ -202,9 +198,7 @@ class SyncEngine {
               _feed.backfillDone();
             }
           }
-          await _cache.prefetchAllGoods(_client);
-          await _mirrorGoodsIntoLocalDb();
-          await _hydrateReferenceData();
+          await _fillFeedGaps();
           _refreshUserProfile();
         }
         _recordSync();
@@ -216,17 +210,11 @@ class SyncEngine {
       }
       // Send before receiving: draining the outbox first means the pull in the
       // same pass already reflects what this terminal just wrote, rather than
-      // returning a version `_pending` then has to shield.
-      //
-      // Both sit above the legacy hydration so that, once the screens move in
-      // Phase 4, deleting everything below this line is the whole change.
-      // Neither throws — each returns a result — so a sync failure cannot stop
-      // the hydration below it.
+      // returning a version `_pending` then has to shield. Neither throws —
+      // each returns a result — so one failing cannot stop what follows.
       await _outbox.drain();
       await _replication.drain();
-      await _cache.prefetchAllGoods(_client);
-      await _mirrorGoodsIntoLocalDb();
-      await _hydrateReferenceData();
+      await _fillFeedGaps();
       _refreshUserProfile();
       _recordSync();
     } catch (e) {
@@ -236,21 +224,20 @@ class SyncEngine {
     }
   }
 
-  /// CLIENT_FACING_OFFLINE_PLAN.md §1 — login-triggered hydration, called by
-  /// `LoginDataScopeService` for first-time setup (with [includeGoods], the
-  /// full catalog prep fetch) and for a same-brand branch switch (without —
-  /// additive branch-data refetch, the catalog isn't redownloaded). Bypasses
-  /// the reference-data freshness TTL: a login that changed brand/branch
-  /// must not be told "fetched 3 minutes ago, still fresh" about the
-  /// previous context's data.
+  /// The login path's "make sure this terminal is current" call, from
+  /// `LoginDataScopeService` — a branch switch, or the tail of first-time
+  /// setup.
+  ///
+  /// It used to be a forced re-run of the reference-data fetch, bypassing that
+  /// pass's freshness TTL so a login that changed brand or branch was not told
+  /// "fetched 3 minutes ago, still fresh". There is no such pass and no such
+  /// TTL any more: the replica is filled by the cursor, which has no notion of
+  /// staleness, so this is simply one immediate pull plus the two gap-fillers.
   Future<void> hydrateNow({bool includeGoods = false}) async {
     if (!_connectivity.isOnline) return;
     try {
-      if (includeGoods) {
-        await _cache.prefetchAllGoods(_client, force: true);
-        await _mirrorGoodsIntoLocalDb();
-      }
-      await _hydrateReferenceData(force: true);
+      await _replication.drain();
+      await _fillFeedGaps();
       _recordSync();
     } catch (e) {
       if (kDebugMode) debugPrint('[SyncEngine] hydrateNow error: $e');
@@ -280,247 +267,50 @@ class SyncEngine {
     }
   }
 
-  /// Bulk-hydrates categories, departments, halls, tables, and staff into
-  /// `CacheService` — the entities that previously had no login-time/
-  /// periodic prefetch at all (only `goods` did) and were left to whatever a
-  /// screen happened to fetch lazily on open. Uses `MainRepository`
-  /// (resolved lazily via `inject`, not a constructor dependency — `di.dart`
-  /// constructs `SyncEngine` before `_repositories()` registers
-  /// `MainRepository`, mirroring the same lazy-resolution pattern
-  /// `LanHubService` already uses for `UserBloc` for the same DI-ordering
-  /// reason) so it reuses the exact same network calls those screens already
-  /// make, rather than a second, parallel fetch path.
-  Future<void> _hydrateReferenceData({bool force = false}) async {
-    if (!force && _cache.isReferenceDataFresh()) return;
+  /// The two things the change feed cannot deliver, fetched after every pull.
+  ///
+  /// Deliberately a short, closed list rather than the open-ended hydration
+  /// this replaced: an entity belongs here only if the backend logs no
+  /// change-log trigger for it. Everything else arrives on the feed, and
+  /// adding a fetch here for something that replicates would reintroduce
+  /// exactly the second data path Phase 4 removed.
+  Future<void> _fillFeedGaps() async {
+    await _hydrateTableTimers();
+    await _hydrateMenuImages();
+  }
+
+  /// Reconciles the server's timer snapshot into the replica's timer store for
+  /// every busy time-based table.
+  ///
+  /// This is the one *entity* fetch left in the engine, and it is here because
+  /// `table_time_sessions` carries no change-log trigger — plan §5 item 1, the
+  /// highest-value backend ask. Until it does, asking per open order is the
+  /// only way server timer truth reaches the terminal at all, and a time-based
+  /// table's charge is usually the largest line on its bill.
+  ///
+  /// Both inputs now come from the replica rather than the retiring Hive
+  /// store: the busy time-based tables from `HallsTablesQuery` (whose rows
+  /// already carry the venue's live occupancy, not the server's stale
+  /// `status`), and each one's open order from `OrderDetailQuery`. Orders with
+  /// queued, not-yet-replayed local timer ops are skipped so a fetch never
+  /// stomps an unsynced start/pause the cashier just made.
+  Future<void> _hydrateTableTimers() async {
+    final db = _replication.db;
+    final tables = HallsTablesQuery(db).tables().where((t) {
+      final status = t['status']?.toString().toLowerCase();
+      final type = t['table_type']?.toString().toLowerCase();
+      return status == 'busy' && type == 'time_based';
+    }).toList();
+    if (tables.isEmpty) return;
+
+    final orders = OrderDetailQuery(db);
     final repo = inject<MainRepository>();
-    try {
-      // Kicked off together (each call starts running immediately, before
-      // the first `await` below) rather than via `Future.wait` — the five
-      // results have different generic types (`Either<Failure,
-      // List<CategoryModel>>` vs. `List<DepartmentModel>>` etc.), so a
-      // single heterogeneous `Future.wait` list would lose static typing.
-      final categoriesF = repo.getCategories();
-      final departmentsF = repo.getDepartments();
-      final hallsF = repo.getHalls();
-      final tablesF = repo.getAllTables();
-      final usersF = repo.getUsers();
-      final categories = (await categoriesF).fold((_) => null, (r) => r);
-      final departments = (await departmentsF).fold((_) => null, (r) => r);
-      final halls = (await hallsF).fold((_) => null, (r) => r);
-      final tables = (await tablesF).fold((_) => null, (r) => r);
-      final users = (await usersF).fold((_) => null, (r) => r);
-      if (categories != null) {
-        await _cache.saveCategories(categories.map((c) => c.toJson()).toList());
-        await _localDb.saveCategories(categories);
-      }
-      if (departments != null) {
-        await _cache.saveDepartments(departments.map((d) => d.toJson()).toList());
-        await _localDb.saveDepartments(departments);
-      }
-      if (halls != null) {
-        await _cache.saveHalls(halls.map((h) => h.toJson()).toList());
-        await _localDb.saveHalls(halls);
-      }
-      if (tables != null) {
-        await _cache.saveTables(tables.map((t) => t.toJson()).toList());
-        await _localDb.saveTables(tables);
-      }
-      if (users != null && users.isNotEmpty) {
-        await _cache.saveUsers(users.map((u) => u.toJson()).toList());
-        await _localDb.saveUsers(users);
-      }
-      // Only mark fresh if at least reference-data reads didn't all fail —
-      // an all-null pass (e.g. a mid-request disconnect) shouldn't suppress
-      // the next tick's retry for the full TTL window.
-      if (categories != null || departments != null || halls != null || tables != null) {
-        await _cache.markReferenceDataFetched();
-      }
-
-      // ── §8 Phase 1: entities that previously had NO hydration path at
-      // all (§0's SyncEngine row) — each independently best-effort so one
-      // entity's failure doesn't block the others or the five above.
-      await _hydrateIngredientsAndCompounds(repo);
-      await _hydrateTransactionGroups(repo);
-      await _hydrateCashRegisters(repo);
-      await _hydratePrinterSettings(repo);
-      await _hydrateServiceCharge(repo);
-      if (categories != null) await _hydrateGoodsByCategory(repo, categories);
-      await _hydrateOpenOrderDetails(repo, tables ?? _localDb.getTables());
-      await _hydrateTableTimers(repo, tables ?? _localDb.getTables());
-      await _hydrateMenuImages();
-    } catch (e) {
-      if (kDebugMode) debugPrint('[SyncEngine] hydrateReferenceData error: $e');
-    }
-  }
-
-  /// `CacheService.prefetchAllGoods` (unchanged, still the only place that
-  /// actually does the paginated network fetch) only ever wrote into
-  /// `CacheService`'s flat blob box. Mirrors its result into `LocalDatabase`
-  /// too — no extra network call, just decoding what's already in memory —
-  /// so `LocalDatabase` becomes a real second source for "goods (all)"
-  /// alongside the per-category entries `_hydrateGoodsByCategory` below
-  /// writes. Best-effort: a decode failure here must not undo the cache
-  /// write that already succeeded.
-  Future<void> _mirrorGoodsIntoLocalDb() async {
-    try {
-      final raw = _cache.getGoods();
-      if (raw.isEmpty) return;
-      await _localDb.saveGoods(raw.map(GoodsModel.fromJson).toList());
-    } catch (e) {
-      if (kDebugMode) debugPrint('[SyncEngine] mirrorGoodsIntoLocalDb error: $e');
-    }
-  }
-
-  Future<void> _hydrateIngredientsAndCompounds(MainRepository repo) async {
-    try {
-      final ingredients = (await repo.getIngredients()).fold((_) => null, (r) => r);
-      if (ingredients != null) {
-        await _cache.saveIngredients(ingredients);
-        await _localDb.saveIngredients(ingredients);
-      }
-    } catch (e) {
-      if (kDebugMode) debugPrint('[SyncEngine] hydrateIngredients error: $e');
-    }
-    try {
-      final compounds = (await repo.getCompounds()).fold((_) => null, (r) => r);
-      if (compounds != null) {
-        await _cache.saveCompounds(compounds);
-        await _localDb.saveCompounds(compounds);
-      }
-    } catch (e) {
-      if (kDebugMode) debugPrint('[SyncEngine] hydrateCompounds error: $e');
-    }
-  }
-
-  Future<void> _hydrateTransactionGroups(MainRepository repo) async {
-    try {
-      final groups = (await repo.getTransactionGroups()).fold((_) => null, (r) => r);
-      if (groups != null) {
-        await _cache.saveTransactionGroups(groups);
-        await _localDb.saveTransactionGroups(groups);
-      }
-    } catch (e) {
-      if (kDebugMode) debugPrint('[SyncEngine] hydrateTransactionGroups error: $e');
-    }
-  }
-
-  /// §8 Phase 5 (back-office tier) — `transactions_list_section.dart`'s cash
-  /// register picker, same "unfiltered default list" scope as transaction
-  /// groups above.
-  Future<void> _hydrateCashRegisters(MainRepository repo) async {
-    try {
-      final registers = (await repo.getCashRegisters()).fold((_) => null, (r) => r);
-      if (registers != null) await _localDb.saveCashRegisters(registers);
-    } catch (e) {
-      if (kDebugMode) debugPrint('[SyncEngine] hydrateCashRegisters error: $e');
-    }
-  }
-
-  Future<void> _hydratePrinterSettings(MainRepository repo) async {
-    try {
-      final entries = (await repo.getPrinterSettings()).fold((_) => null, (r) => r);
-      if (entries != null) await _localDb.savePrinterSettings(entries);
-    } catch (e) {
-      if (kDebugMode) debugPrint('[SyncEngine] hydratePrinterSettings error: $e');
-    }
-  }
-
-  /// Same DI-ordering reason the class doc above already explains for
-  /// `MainRepository`: resolved lazily via `inject`, mirroring the exact
-  /// `inject<UserBloc>().state.userMOdel?.branchId` pattern
-  /// `LanHubService` already uses for the same terminal's own branch.
-  Future<void> _hydrateServiceCharge(MainRepository repo) async {
-    try {
-      final branchId = inject<UserBloc>().state.userMOdel?.branchId ?? '';
-      if (branchId.isEmpty) return;
-      final value = (await repo.getServiceCharge(branchId)).fold((_) => null, (r) => r);
-      if (value != null) {
-        await _cache.saveServiceCharge(branchId, {'default_service_percent': value});
-        await _localDb.saveServiceCharge(branchId, value);
-      }
-    } catch (e) {
-      if (kDebugMode) debugPrint('[SyncEngine] hydrateServiceCharge error: $e');
-    }
-  }
-
-  /// `CacheService`'s own doc note on why "all goods" filtered client-side
-  /// isn't a real per-category cache applies here too — this is the genuine
-  /// per-category fetch that note says was previously missing entirely.
-  Future<void> _hydrateGoodsByCategory(
-    MainRepository repo,
-    List<CategoryModel> categories,
-  ) async {
-    for (final category in categories) {
-      try {
-        final goods =
-            (await repo.getGoodsByCategoryId(category.id)).fold((_) => null, (r) => r);
-        if (goods != null) {
-          await _cache.saveGoodsForCategory(
-            category.id,
-            goods.map((g) => g.toJson()).toList(),
-          );
-          await _localDb.saveGoodsForCategory(category.id, goods);
-        }
-      } catch (e) {
-        if (kDebugMode) {
-          debugPrint('[SyncEngine] hydrateGoodsByCategory(${category.id}) error: $e');
-        }
-      }
-    }
-  }
-
-  /// §1.2: order/bill state becomes a first-class `LocalDatabase` table kept
-  /// current by this hydration pass and by Phase 2's local-write path.
-  /// Deliberately `getPaymentDetailWithTableId` (the `archiveWithId`-backed
-  /// bill/totals shape `ArchiveDetailModel` parses — the same one
-  /// `DetailBloc`/`PaymentBloc` already cache under this exact key via
-  /// `CacheService.saveOrderDetail`), **not** `getOrderItemsRaw` (a
-  /// differently-shaped `order-items` list endpoint used only by
-  /// `OfflineQueueService`'s executors internally) — an earlier draft of
-  /// this method used the latter, which would have handed `DetailBloc`/
-  /// `PaymentBloc` JSON their `ArchiveDetailModel.fromJson` can't parse.
-  /// Bounded to currently-busy tables, not every table, since a free table
-  /// has no order to fetch.
-  Future<void> _hydrateOpenOrderDetails(
-    MainRepository repo,
-    List<CafeTableModel> tables,
-  ) async {
-    for (final table in tables.where((t) => t.status == TableStatus.busy)) {
-      try {
-        final detail = (await repo.getPaymentDetailWithTableId(table.id))
-            .fold((_) => null, (r) => r);
-        if (detail is ArchiveDetailModel) {
-          final json = detail.toJson();
-          await _cache.saveOrderDetail(table.id, json);
-          await _localDb.saveOrderDetail(table.id, json);
-        }
-      } catch (e) {
-        if (kDebugMode) {
-          debugPrint('[SyncEngine] hydrateOpenOrderDetails(${table.id}) error: $e');
-        }
-      }
-    }
-  }
-
-  /// CLIENT_FACING_OFFLINE_PLAN.md §2: table-timer state lives locally now
-  /// (`local_db_table_timers`, the sole runtime source for the timer UI) —
-  /// this pass reconciles the server's snapshot into that box for busy
-  /// time-based tables, replacing the two deleted 60s UI polls as the only
-  /// place server timer truth enters the terminal. Orders with queued,
-  /// not-yet-replayed local timer ops are skipped so hydration never stomps
-  /// unsynced local changes.
-  Future<void> _hydrateTableTimers(
-    MainRepository repo,
-    List<CafeTableModel> tables,
-  ) async {
-    for (final table in tables.where(
-      (t) =>
-          t.status == TableStatus.busy &&
-          (t.tableType?.toLowerCase() == 'time_based'),
-    )) {
+    for (final table in tables) {
+      final tableId = table['id']?.toString() ?? '';
+      if (tableId.isEmpty) continue;
       try {
         final orderId =
-            _localDb.getOrderDetail(table.id)?['id'] as String? ?? '';
+            orders.liveOrderForTable(tableId)?['id']?.toString() ?? '';
         if (orderId.isEmpty) continue;
         if (TableTimerLocalRepositoryImpl.hasPendingLocalTimerOps(
           _queue,
@@ -531,15 +321,13 @@ class SyncEngine {
         final raw = (await repo.getOrderTableTimer(orderId))
             .fold((_) => null, (r) => r);
         if (raw == null) continue;
-        // The timer store moved to the replica (§8); its hydration lands there
-        // now, which is the store `TableTimerLocalRepositoryImpl` reads.
-        _replication.db.saveTableTimer(
+        db.saveTableTimer(
           orderId,
           TableTimerLocalRepositoryImpl.normalizeServerSnapshot(raw),
         );
       } catch (e) {
         if (kDebugMode) {
-          debugPrint('[SyncEngine] hydrateTableTimers(${table.id}) error: $e');
+          debugPrint('[SyncEngine] hydrateTableTimers($tableId) error: $e');
         }
       }
     }

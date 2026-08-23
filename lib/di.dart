@@ -254,12 +254,10 @@ Future<void> initDi() async {
   final syncEngine = SyncEngine(
     feed: inject<ChangeFeedRelay>(),
     queue: offlineQueue,
-    cache: cacheService,
     connectivity: connectivityCubit,
     client: dioClient,
     lanHub: lanHubService,
     prefs: prefs,
-    localDb: localDatabase,
     replication: replicationService,
     outbox: outboxDrainer,
   );
@@ -368,7 +366,7 @@ void _repositories() {
     () => AuthRepositoryImpl(inject(), inject()),
   );
   inject.registerLazySingleton<MainRepository>(
-    () => MainRepositoryImpl(inject(), inject(), inject()),
+    () => MainRepositoryImpl(inject(), inject<replica.LocalDatabase>()),
   );
   inject.registerLazySingleton<ArchivesLocalRepository>(
     () => ArchivesLocalRepositoryImpl(inject<replica.LocalDatabase>()),

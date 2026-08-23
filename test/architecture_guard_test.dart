@@ -250,14 +250,13 @@ void main() {
     // only goes down. When this set is empty nothing imports lib/core/database/
     // and the directory can be deleted — which is what actually closes DoD #4.
     const stillOnHive = {
-      // The order/waiter/timer flows this sync effort exists to serve are all
-      // off the Hive store now. What remains is the login data scope (§9, the
-      // tenant-switch wipe + setup check), `SyncEngine`'s legacy hydration
-      // (§10 — the block Phase 4 deletes, plus the menu-image store it writes
-      // into), and `di.dart`, which is retired last with the Hive
-      // `LocalDatabase`/`CacheService`.
+      // Two left. `SyncEngine` came off when Phase 4 deleted the legacy
+      // hydration — it was the store's only remaining writer, so nothing puts
+      // anything into `lib/core/database/` any more. What remains is the login
+      // data scope (§9: the tenant-switch wipe and the "did setup land data"
+      // check) and `di.dart`, which is retired last with the Hive
+      // `LocalDatabase`/`CacheService` themselves.
       'lib/core/services/auth/login_data_scope_service.dart',
-      'lib/core/sync/sync_engine.dart',
       'lib/di.dart',
     };
 

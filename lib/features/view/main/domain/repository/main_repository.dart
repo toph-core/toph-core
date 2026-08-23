@@ -2,23 +2,15 @@ import 'package:dartz/dartz.dart';
 import 'package:mary_ai_pos/core/error/failure.dart';
 import 'package:mary_ai_pos/core/service/printer/printer_setting_entry.dart';
 import 'package:mary_ai_pos/features/view/auth/data/models/user/user_model.dart';
-import 'package:mary_ai_pos/features/view/main/data/models/cafe_tables/cafe_tables_model.dart';
-import 'package:mary_ai_pos/features/view/main/data/models/category/category_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/close_shift/close_shift_request_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/create_order/create_order_request_model.dart';
-import 'package:mary_ai_pos/features/view/main/data/models/department/department_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/goods/goods_model.dart';
-import 'package:mary_ai_pos/features/view/main/data/models/hall/hall_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/open_shift/open_shift_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/shift/shift_response_model.dart';
 import 'package:mary_ai_pos/features/view/main/domain/entities/archive_detail_entity.dart';
 
 
 abstract class MainRepository {
-  /// All tables across every hall — hydration-only, see
-  /// `MainDataSources.getAllTables`'s doc comment.
-  Future<Either<Failure, List<CafeTableModel>>> getAllTables();
-
   Future<Either<Failure, ShiftResponseModel>> openShift({
     required OpenShiftModel request,
   });
@@ -29,32 +21,22 @@ abstract class MainRepository {
 
   Future<Either<Failure, ShiftResponseModel?>> checkShift({required String id});
 
-  Future<Either<Failure, List<HallModel>>> getHalls();
   Future<Either<Failure, bool>> createOrder({
     required CreateOrderRequestModel request,
   });
 
   Future<Either<Failure, UserModel>> getUser();
 
-  Future<Either<Failure, List<UserModel>>> getUsers();
-
   Future<Either<Failure, String>> createTakewayOrder({
     required CreateOrderRequestModel request,
   });
 
-  Future<Either<Failure, List<CategoryModel>>> getCategories();
-  Future<Either<Failure, List<DepartmentModel>>> getDepartments();
-  Future<Either<Failure, List<GoodsModel>>> getGoodsByCategoryId(
-    String categoryId,
-  );
   Future<Either<Failure, List<GoodsModel>>> getGoodsWithName(String name);
   Future<Either<Failure, ArchiveDetailEntity>> getArchiveWithId(String id);
   Future<Either<Failure, ArchiveDetailEntity>> getPaymentDetailWithTableId(
     String id,
   );
   Future<Either<Failure, List<PrinterSettingEntry>>> getPrinterSettings();
-
-  Future<Either<Failure, Map<String, dynamic>>> getOrderItemsRaw(String orderId);
 
   Future<Either<Failure, bool>> cancelOrderItem(String itemId, {String? comment});
 
@@ -84,17 +66,11 @@ abstract class MainRepository {
 
   Future<Either<Failure, bool>> deletePrinterSetting(String id);
 
-  Future<Either<Failure, List<Map<String, dynamic>>>> getTransactionGroups({
-    String? search,
-  });
-
   Future<Either<Failure, bool>> createTransactionGroup(String name);
 
   Future<Either<Failure, bool>> updateTransactionGroup(String id, String name);
 
   Future<Either<Failure, bool>> deleteTransactionGroup(String id);
-
-  Future<Either<Failure, List<Map<String, dynamic>>>> getCashRegisters();
 
   Future<Either<Failure, ({List<Map<String, dynamic>> items, int? total})>>
       getTransactions({
@@ -173,7 +149,4 @@ abstract class MainRepository {
 
   Future<Either<Failure, bool>> deleteGood(String id);
 
-  Future<Either<Failure, List<Map<String, dynamic>>>> getIngredients();
-
-  Future<Either<Failure, List<Map<String, dynamic>>>> getCompounds();
 }
