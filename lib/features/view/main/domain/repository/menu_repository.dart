@@ -21,6 +21,11 @@ abstract class MenuRepository {
   Stream<List<GoodsModel>> watchGoodsForCategory(String categoryId);
   List<GoodsModel> getGoodsForCategory(String categoryId);
 
+  /// The whole catalog, unfiltered — for callers that need to resolve a good by
+  /// id (a receipt line, a kitchen ticket) rather than list a category. Reads
+  /// the replica's `goods` rows, the same catalog every menu screen renders.
+  List<GoodsModel> getAllGoods();
+
   /// CLIENT_FACING_OFFLINE_PLAN.md §3: goods search is a local filter over
   /// the already-synced goods box — the full catalog is pulled into
   /// `LocalDatabase` at first-time setup / by `SyncEngine`'s hydration pass,

@@ -728,10 +728,13 @@ class DetailBloc extends Bloc<DetailEvent, DetailState> {
     required String comment,
   }) {
     if (goodId.isEmpty || quantity <= 0) return;
-    final goodJson = _cache.getGoods().firstWhere(
-          (g) => g['id'] == goodId,
-          orElse: () => <String, dynamic>{},
-        );
+    GoodsModel? good;
+    for (final g in _menuRepository.getAllGoods()) {
+      if (g.id == goodId) {
+        good = g;
+        break;
+      }
+    }
     final detail = lastDetail;
     final tableNumber = detail?.tableNumber.toInt() ?? 0;
     unawaited(_printerService.printKitchenReceiptFor(
@@ -746,9 +749,9 @@ class DetailBloc extends Bloc<DetailEvent, DetailState> {
         OrderItem(
           goods: GoodsModel(
             id: goodId,
-            name: (goodJson['name'] as String?) ?? fallbackName,
-            price: goodJson['price']?.toString() ?? '0',
-            categoryId: goodJson['category_id']?.toString() ?? '',
+            name: good?.name ?? fallbackName,
+            price: good?.price ?? '0',
+            categoryId: good?.categoryId ?? '',
             cookTime: 0,
             costPrice: '0',
             description: '',

@@ -45,6 +45,9 @@ class MenuRepositoryImpl implements MenuRepository {
       _query.goodsForCategory(categoryId);
 
   @override
+  List<GoodsModel> getAllGoods() => _query.goods();
+
+  @override
   List<GoodsModel> searchGoodsByName(String query) {
     final q = query.trim().toLowerCase();
     if (q.isEmpty) return const [];

@@ -7,7 +7,7 @@ import 'package:mary_ai_pos/core/error/failure.dart';
 import 'package:mary_ai_pos/core/pricing/order_totals.dart';
 import 'package:mary_ai_pos/core/utils/helper/helper_widget.dart';
 import 'package:mary_ai_pos/core/service/printer/printer_service.dart';
-import 'package:mary_ai_pos/core/services/cache/cache_service.dart';
+import 'package:mary_ai_pos/features/view/main/domain/repository/menu_repository.dart';
 import 'package:mary_ai_pos/core/utils/uuid.dart';
 import 'package:mary_ai_pos/di.dart';
 import 'package:mary_ai_pos/features/view/auth/data/models/user/user_model.dart';
@@ -384,20 +384,19 @@ class WaiterCubit extends Cubit<WaiterState> {
     required double discountPercent,
     required double discountAmount,
   }) {
-    // Cheklarda departament bo'yicha guruhlash uchun cache'dagi goods
+    // Cheklarda departament bo'yicha guruhlash uchun replikadagi goods
     // ro'yxatidan real category/department id larini olamiz.
-    final goodsById = <String, Map<String, dynamic>>{
-      for (final g in inject<CacheService>().getGoods())
-        if (g['id'] != null) g['id'].toString(): g,
+    final goodsById = <String, GoodsModel>{
+      for (final g in inject<MenuRepository>().getAllGoods()) g.id: g,
     };
     final receiptItems = lineItems.where((l) => !l.isCancelled).map((l) {
       final cached = goodsById[l.goodId];
       return OrderItem(
         goods: GoodsModel(
-          categoryId: cached?['category_id']?.toString() ?? '',
+          categoryId: cached?.categoryId ?? '',
           cookTime: 0,
           costPrice: l.price,
-          departmentId: cached?['department_id']?.toString() ?? '',
+          departmentId: cached?.departmentId ?? '',
           description: '',
           id: l.goodId,
           name: l.displayName,
