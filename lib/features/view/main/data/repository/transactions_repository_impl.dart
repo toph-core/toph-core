@@ -8,11 +8,29 @@ class TransactionsRepositoryImpl implements TransactionsRepository {
   final TransactionPickersQuery _pickers;
 
   // One engine now. The paginated ledger, the transaction-group picker and the
-  // cash-register picker all read the SQLite replica the change feed fills. The
-  // group and register catalogues moved here once tenants migration 70
+  // cash-register picker all read the SQLite replica — no second database, no
+  // REST call from this class.
+  //
+  // What the replica does not yet contain is the rows. The comment this
+  // replaces said the catalogues "moved here once tenants migration 70
   // (change_log_missing_triggers) started replicating `group_transactions` and
-  // `cash_registers`; serving them from the Hive `LocalDatabase` was the last
-  // thing tying this repository to a second database.
+  // `cash_registers`". That migration was never merged — the backend's tenant
+  // 70 is `70_order_items_client_id`, and no migration adds a change-log
+  // trigger for `transactions`, `group_transactions` or `cash_registers`
+  // (SERVER_PLAN.md P0-1 has the unmerged branch). So every method here is a
+  // correct query over a table nothing fills.
+  //
+  // The registry records that as [ReplicationStatus.pendingBackendTrigger] and
+  // `TransactionPickersQuery.awaitingBackendReplication` exposes it, so the
+  // pickers can distinguish "no groups exist" from "the server is not sending
+  // them"; `test/registry_backend_pin_test.dart` fails the moment the trigger
+  // lands, which is the signal to delete this note.
+  //
+  // Two of the three are user-visible now: the group picker/list and the
+  // cash-register filter render empty. `getTransactions`/`watchTransactions`
+  // below are not — TransactionsListController still pages the ledger over
+  // REST through MainRepository, so this side is a finished read path parked
+  // until the feed carries it.
   TransactionsRepositoryImpl({required replica.LocalDatabase replicaDb})
       : _query = TransactionsQuery(replicaDb),
         _pickers = TransactionPickersQuery(replicaDb);

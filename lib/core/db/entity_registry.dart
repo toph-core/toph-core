@@ -1,10 +1,24 @@
 /// OFFLINE_FIRST_EVERYWHERE_PLAN.md Phase 0 — the replicated-entity registry.
 ///
-/// Every entity here is one table in the backend's tenant database that carries
-/// an `AFTER INSERT OR UPDATE OR DELETE` trigger writing into `change_log`
-/// (`app/migrations/tenants/8_movements.up.sql`, `41_modifier_calculation.up.sql`).
-/// `POST /api/v1/sync/pull` keys its `changes` map by exactly these names —
-/// they are Postgres table names (`TG_TABLE_NAME`), not API resource names.
+/// Every entity here is one table in the backend's tenant database that the
+/// client keeps a local mirror of. `POST /api/v1/sync/pull` keys its `changes`
+/// map by exactly these names — they are Postgres table names
+/// (`TG_TABLE_NAME`), not API resource names.
+///
+/// Each one carries an `AFTER INSERT OR UPDATE OR DELETE` trigger writing into
+/// `change_log` (`app/migrations/tenants/8_movements.up.sql`,
+/// `41_modifier_calculation.up.sql`, `71_change_log_triggers_batch2.up.sql`).
+///
+/// That is a claim about a different repository, and it is checked rather than
+/// asserted: `test/registry_backend_pin_test.dart` replays the backend's
+/// tenant migrations and fails if this list and that SQL disagree — in either
+/// direction, so a backend trigger the client ignores fails too. It exists
+/// because comments here once claimed a migration that was never written,
+/// which left four entities listed as replicated with nothing feeding them and
+/// three screens rendering a permanently empty list as though it were data.
+///
+/// [ReplicationStatus] is the vocabulary for saying "the client is ready, the
+/// server is not" honestly when that happens again. Nothing needs it today.
 ///
 /// ## Why a registry instead of 35 hand-written table classes
 ///
@@ -32,6 +46,40 @@ library;
 
 /// SQLite storage class for a promoted column.
 enum SqlType { text, integer, real }
+
+/// Whether the backend actually feeds an entity today, or the client is
+/// merely ready for it.
+///
+/// The registry used to carry only one kind of entry, which made it a claim
+/// it could not keep: four entities were listed as replicated while no
+/// `trg_change_log_*` trigger existed on the backend table, so their local
+/// tables were created, indexed, queried — and stayed empty forever. The screens
+/// reading them rendered a blank list that is indistinguishable from "this
+/// venue has no transaction groups", online or offline.
+///
+/// Deleting those entries was the other obvious move and it is worse: the
+/// local table disappears, the queries that read it stop compiling, and the
+/// screens lose their read path for a gap that is one backend migration wide
+/// and already being closed. So the distinction is recorded instead. A
+/// [pendingBackendTrigger] entity is a complete, working local table with a
+/// working query behind it; the only thing missing is the server-side trigger
+/// that would put rows in it. That fact is now in the type system, a screen
+/// can ask for it ([isFedByChangeLog]), and `registry_backend_pin_test.dart`
+/// asserts it against the backend's own migration SQL — so the moment a
+/// trigger lands, the test fails and tells you to flip the flag.
+enum ReplicationStatus {
+  /// A `trg_change_log_*` trigger exists on the backend table, so `/sync/pull`
+  /// delivers this entity and the local table fills on its own.
+  live,
+
+  /// The client models, stores and reads this entity, but the backend has no
+  /// change-log trigger on the table yet — nothing will ever arrive, and
+  /// nothing writes it locally either, so the table stays empty.
+  ///
+  /// This is a temporary state by construction. It is never the right answer
+  /// for a new entity: add the trigger first, then the registry entry.
+  pendingBackendTrigger,
+}
 
 /// A column lifted out of the JSON payload into a real SQLite column.
 ///
@@ -86,13 +134,40 @@ class EntitySpec {
   /// (`OfflineAuthCache`), never this table.
   final Set<String> redactKeys;
 
+  /// Whether the backend logs this entity into `change_log` today.
+  ///
+  /// Defaults to [ReplicationStatus.live], because that is what a registry
+  /// entry is supposed to mean and anything else should have to say so. See
+  /// [ReplicationStatus] for why the exception is recorded rather than
+  /// deleted.
+  ///
+  /// Note what this deliberately does **not** do: it is not consulted by
+  /// [ChangeApplier] or by the schema builder. The local table is created and
+  /// an arriving row is applied either way. So when the backend's trigger
+  /// lands, data starts flowing on the terminals already in the field —
+  /// before anyone flips this flag — and the flag's only job is to keep the
+  /// UI honest in the meantime.
+  final ReplicationStatus status;
+
+  /// Why this entity is not yet fed, and what closes the gap.
+  ///
+  /// Required in spirit for a [ReplicationStatus.pendingBackendTrigger] entry
+  /// (`validateRegistry` enforces it) so the entry cannot decay into an
+  /// unexplained flag that nobody dares remove.
+  final String? pendingReason;
+
   const EntitySpec({
     required this.name,
     this.pk = 'id',
     this.promoted = const [],
     this.numericKeys = const {},
     this.redactKeys = const {},
+    this.status = ReplicationStatus.live,
+    this.pendingReason,
   });
+
+  /// True when `/sync/pull` actually delivers rows for this entity.
+  bool get isFed => status == ReplicationStatus.live;
 }
 
 /// Local-only table names. Prefixed with `_` so they can never collide with a
@@ -334,6 +409,17 @@ const List<EntitySpec> kReplicatedEntities = [
   // `is_visible` promotes to INTEGER because SQLite has no boolean; the applier
   // coerces true/false to 1/0 on the way in. `ingredient_id` is indexed because
   // it is the join key for every ingredient read.
+  //
+  // This entry was the most dangerous of the four that claimed a trigger they
+  // did not have, precisely because the rule above is strict:
+  // `MenuAdminQuery.ingredients()` requires a visibility row, so an unfed
+  // table hid the ENTIRE ingredient catalogue rather than showing too much of
+  // it — the tech-card editor's ingredient picker was empty on every terminal
+  // and nothing said why. `71_change_log_triggers_batch2.up.sql` supplies the
+  // trigger and the backfill. Fail-closed stays: the correction belongs on the
+  // server, not in a client-side "if the table is empty, show everything"
+  // fallback that would leak another branch's catalogue the moment one row
+  // arrived late.
   EntitySpec(
     name: 'ingredient_visibility',
     promoted: [
@@ -420,11 +506,28 @@ const List<EntitySpec> kReplicatedEntities = [
   EntitySpec(name: 'translations'),
   // The transactions screen's two back-office pickers: transaction (expense/
   // income) groups and cash registers. Both are small id+name catalogues the
-  // change feed now carries — tenants migration 70 (change_log_missing_triggers)
-  // added their triggers and backfilled a create per live row. The feed is
-  // branch-scoped on the backend (change_log_branch_id*), so the local reads
-  // need no branch filter, exactly like the transactions ledger below. `name`
-  // is promoted because that is what the pickers order on.
+  // feed carries.
+  //
+  // These two — and `transactions` below, and `ingredient_visibility` above —
+  // carried a comment claiming "tenants migration 70
+  // (change_log_missing_triggers) added their triggers and backfilled a create
+  // per live row". No such migration was ever written: tenant 70 is
+  // `70_order_items_client_id`, and for a long stretch these entries were
+  // listed here while nothing on the server logged them, so the pickers
+  // rendered a permanently empty list that reads as "this venue has none".
+  // The trigger that actually feeds them is
+  // `71_change_log_triggers_batch2.up.sql`, which also backfills one `create`
+  // per live row so a terminal bootstrapping from cursor 0 sees them.
+  //
+  // The lesson is in the test, not the comment: nothing here asserts the
+  // backend any more. `test/registry_backend_pin_test.dart` replays the tenant
+  // migrations and fails if this line and that SQL disagree, in either
+  // direction.
+  //
+  // The rest of the original comment was always true and still is: the feed is
+  // branch-scoped on the backend (`change_log.branch_id`), so the local reads
+  // need no branch filter, and `name` is promoted because that is what the
+  // pickers order on.
   EntitySpec(
     name: 'group_transactions',
     promoted: [PromotedColumn('name', SqlType.text)],
@@ -439,6 +542,13 @@ const List<EntitySpec> kReplicatedEntities = [
   // carries the label, not the ordinal); `date` is the ISO timestamp, sortable
   // lexically. amount/customer_paid_amount/change_amount are canonicalised to
   // strings on the way in, like every other numeric.
+  //
+  // Note that the ledger screen does not read this table yet:
+  // `TransactionsListController.getTransactions` still pages over REST through
+  // `MainRepository`, so `TransactionsQuery` and
+  // `TransactionsRepositoryImpl.getTransactions` are a finished read path with
+  // no caller. Flipping that caller is a separate change; this entry is what
+  // makes it possible.
   EntitySpec(
     name: 'transactions',
     promoted: [
@@ -492,6 +602,30 @@ final Map<String, EntitySpec> kEntitiesByName = {
 /// backend deployment.
 bool isReplicatedEntity(String entity) => kEntitiesByName.containsKey(entity);
 
+/// Entities the client is ready for and the backend does not log yet.
+///
+/// Derived, never hand-maintained: flipping one [EntitySpec.status] back to
+/// [ReplicationStatus.live] is the whole of "this gap closed", and this set
+/// shrinks with it. `registry_backend_pin_test.dart` fails while the two
+/// disagree in either direction, so it cannot quietly grow.
+final Set<String> kEntitiesAwaitingBackendTrigger = {
+  for (final e in kReplicatedEntities)
+    if (e.status == ReplicationStatus.pendingBackendTrigger) e.name,
+};
+
+/// Whether rows for [entity] can actually arrive from `/sync/pull` today.
+///
+/// The question a screen should ask before it renders an empty list. An empty
+/// list from a fed entity means the venue has none of that thing; an empty
+/// list from an unfed one means the client is waiting on the server and the
+/// operator deserves to be told that instead of shown a blank panel.
+///
+/// Unknown entities answer `false`: the client neither stores nor receives
+/// them, which for a caller's purposes is the same "do not present this as
+/// data".
+bool isFedByChangeLog(String entity) =>
+    kEntitiesByName[entity]?.isFed ?? false;
+
 /// Column names every replicated table defines for itself. A promoted column
 /// may not reuse one — the generated `CREATE TABLE` would declare it twice.
 ///
@@ -518,6 +652,18 @@ List<String> validateRegistry() {
     }
     if (spec.pk.isEmpty) {
       problems.add('${spec.name}: empty primary key');
+    }
+
+    // A pending entry that does not say why it is pending is indistinguishable
+    // from an oversight, and nobody deletes a flag they cannot explain.
+    if (spec.status == ReplicationStatus.pendingBackendTrigger &&
+        (spec.pendingReason ?? '').trim().isEmpty) {
+      problems.add('${spec.name}: pendingBackendTrigger without a '
+          'pendingReason — say which trigger is missing and what lands it');
+    }
+    if (spec.status == ReplicationStatus.live && spec.pendingReason != null) {
+      problems.add('${spec.name}: has a pendingReason but is marked live — '
+          'delete the reason with the flag');
     }
 
     final columns = <String>{};
