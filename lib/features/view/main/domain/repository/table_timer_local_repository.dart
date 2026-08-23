@@ -20,7 +20,7 @@ class TimedOrderCreateResult {
   /// `true` when this order wasn't newly created — a previous local record
   /// for the same table already existed and [orderId] was recovered from it
   /// instead. (The old network path recovered it from a server 409; a
-  /// replay-time 409 is now merged by `OfflineQueueService`'s existing
+  /// replay-time 409 is now merged by the `orders/create` outbox handler's
   /// conflict branch.)
   final bool wasExisting;
 
@@ -43,7 +43,8 @@ class TimedOrderCreateResult {
 /// network passthrough ("cloud is the metering source of truth" — see the
 /// impl's previous doc comment). That guarantee has been consciously traded
 /// away, with product sign-off: every method is now a local
-/// `LocalDatabase` read/write plus an outbox enqueue, and the elapsed
+/// `LocalDatabase` read/write plus an outbox enqueue
+/// (`table_time_sessions/start|pause|resume`), and the elapsed
 /// time/amount a terminal shows can disagree with the server (and other
 /// terminals) until sync catches up. The local elapsed-time math
 /// (`computeAnchoredLiveAmount` and the record engine in the impl) is the

@@ -1,12 +1,11 @@
-import 'dart:convert';
-
 import 'package:dartz/dartz.dart';
 import 'package:mary_ai_pos/core/constants/constants.dart';
 import 'package:mary_ai_pos/core/db/local_database.dart';
 import 'package:mary_ai_pos/core/error/failure.dart';
+import 'package:mary_ai_pos/core/outbox/local_writer.dart';
+import 'package:mary_ai_pos/core/outbox/outbox_store.dart';
+import 'package:mary_ai_pos/core/outbox/timer_shift_outbox.dart';
 import 'package:mary_ai_pos/core/services/lease/lease_manager.dart';
-import 'package:mary_ai_pos/core/services/offline_queue/offline_queue_service.dart';
-import 'package:mary_ai_pos/core/services/offline_queue/pending_operation.dart';
 import 'package:mary_ai_pos/core/utils/uuid.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/archive_detail/archive_detail_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/cafe_tables/cafe_tables_model.dart';
@@ -19,7 +18,8 @@ import 'package:mary_ai_pos/features/view/main/domain/repository/table_timer_loc
 /// passthrough ("cloud is the metering source of truth"); that guarantee has
 /// been consciously traded away with product sign-off. Every method is now a
 /// `LocalDatabase` read/write over a normalized per-order timer record plus
-/// an outbox `timerAction` enqueue. The record engine below is the sole
+/// an outbox enqueue (`table_time_sessions/start|pause|resume`, replayed by
+/// `timer_shift_outbox.dart`). The record engine below is the sole
 /// runtime source of elapsed time / amount due on this terminal; the server
 /// snapshot only re-enters through `SyncEngine`'s hydration pass (via
 /// [absorbServerSnapshot]-shaped normalization there), and until it does the
@@ -47,13 +47,13 @@ import 'package:mary_ai_pos/features/view/main/domain/repository/table_timer_loc
 /// followed between server syncs.
 class TableTimerLocalRepositoryImpl implements TableTimerLocalRepository {
   final LocalDatabase _localDb;
-  final OfflineQueueService _queue;
+  final LocalWriter _writer;
   final OrdersRepository _orders;
   final LeaseManager _lease;
 
   TableTimerLocalRepositoryImpl(
     this._localDb,
-    this._queue,
+    this._writer,
     this._orders,
     this._lease,
   );
@@ -164,18 +164,47 @@ class TableTimerLocalRepositoryImpl implements TableTimerLocalRepository {
         '';
   }
 
-  Future<void> _enqueueTimerAction(
+  /// Commits one timer transition: the record the UI renders and the operation
+  /// that will carry it to the server, in a single transaction.
+  ///
+  /// The record itself stays a direct `LocalDatabase` write rather than going
+  /// through [LocalWriter.write], because `LocalTables.tableTimers` is a
+  /// local-authority table with its own shape, not a replicated entity — the
+  /// change applier has nothing to apply it to. So this is
+  /// [LocalWriter.enqueueOnly]'s documented case: an action whose local effect
+  /// is already covered by another write. The transaction wrapper is what keeps
+  /// the pair atomic, which is the property `write` would otherwise have given
+  /// for free.
+  ///
+  /// **No coalescing, deliberately.** The Hive queue had a `coalesceKey` that
+  /// would have collapsed a burst on one order to the newest operation; no call
+  /// site ever set one, and setting one here would be wrong. These are state
+  /// *transitions*, not a last-writer-wins value: collapsing start→pause→resume
+  /// to "resume" asks the server to resume a session it was never told to
+  /// start. `OutboxStore.ready` replays FIFO by `(created_at, rowid)`, which
+  /// preserves the exact sequence the cashier performed — and its own doc names
+  /// this timer sequence as the thing the legacy queue's type-grouping broke.
+  /// Duplicate presses are already absorbed upstream: the callers below no-op a
+  /// start on a running timer, a pause on a non-running one and a resume on a
+  /// non-paused one, so a double-tap never reaches the queue at all.
+  void _commitTimerAction(
     String orderId,
+    Map<String, dynamic> record,
     String action,
-    String tableId,
-  ) =>
-      _queue.enqueue(PendingOperation(
-        id: OfflineQueueService.newId(),
-        type: PendingOperationType.timerAction,
-        payload: jsonEncode({'order_id': orderId, 'action': action}),
-        tableId: tableId,
-        createdAt: DateTime.now(),
-      ));
+  ) {
+    _localDb.transaction(() {
+      _localDb.saveTableTimer(orderId, record);
+      _writer.enqueueOnly(
+        entity: kTimerSessionEntity,
+        action: action,
+        // The order id, not a session id: the server assigns the
+        // `table_time_sessions` row its own key and a terminal never learns it.
+        // It is also the chain key, so this waits behind the order's create.
+        entityId: orderId,
+        request: {'order_id': orderId, 'action': action},
+      );
+    });
+  }
 
   // ── Reads ───────────────────────────────────────────────────────────────
 
@@ -226,8 +255,8 @@ class TableTimerLocalRepositoryImpl implements TableTimerLocalRepository {
     // Local double-tap guard, replacing the old server-409 recovery: if a
     // non-closed timer record already exists for this table, reuse its
     // order instead of enqueueing a duplicate empty create. A genuine
-    // cross-terminal conflict is merged at replay time by
-    // `OfflineQueueService._mergeCreateOrderConflict`.
+    // cross-terminal conflict is merged at replay time by the orders/create
+    // handler's 409 branch (`orders_outbox.dart`).
     for (final rec in _localDb.getTableTimers()) {
       final tid = (rec['current_table_id'] as String?)?.isNotEmpty ?? false
           ? rec['current_table_id'] as String
@@ -274,6 +303,14 @@ class TableTimerLocalRepositoryImpl implements TableTimerLocalRepository {
         guestCount: guestCount.toDouble(),
       ).toJson(),
     );
+    // No outbox operation of its own, and that is not an omission. The record
+    // starts in state `none` — the cashier has not pressed start — so there is
+    // no transition to send, and the server starts its own session as a side
+    // effect of the create this method already delegated
+    // (`StartTableTimerIfNeeded`, called from the backend's CreateOrder
+    // handler for a dine-in order on a time_based table). The first thing this
+    // terminal actually has to tell the server is the start, and `startTimer`
+    // enqueues that.
     final now = DateTime.now().toIso8601String();
     _localDb.saveTableTimer(clientOrderId, {
       'order_id': clientOrderId,
@@ -324,8 +361,7 @@ class TableTimerLocalRepositoryImpl implements TableTimerLocalRepository {
         'active_started_at': now.toIso8601String(),
         'paused_at': null,
       };
-      _localDb.saveTableTimer(orderId, rec);
-      await _enqueueTimerAction(orderId, 'start', rec['table_id'] as String? ?? '');
+      _commitTimerAction(orderId, rec, kTimerStart);
     }
     return Right(_compute(rec));
   }
@@ -351,8 +387,7 @@ class TableTimerLocalRepositoryImpl implements TableTimerLocalRepository {
       'active_started_at': null,
       'pauses': pauses,
     };
-    _localDb.saveTableTimer(orderId, updated);
-    await _enqueueTimerAction(orderId, 'pause', updated['table_id'] as String? ?? '');
+    _commitTimerAction(orderId, updated, kTimerPause);
     return Right(_compute(updated));
   }
 
@@ -383,8 +418,7 @@ class TableTimerLocalRepositoryImpl implements TableTimerLocalRepository {
       'paused_at': null,
       'pauses': pauses,
     };
-    _localDb.saveTableTimer(orderId, updated);
-    await _enqueueTimerAction(orderId, 'resume', updated['table_id'] as String? ?? '');
+    _commitTimerAction(orderId, updated, kTimerResume);
     return Right(_compute(updated));
   }
 
@@ -429,20 +463,55 @@ class TableTimerLocalRepositoryImpl implements TableTimerLocalRepository {
     };
   }
 
-  /// Whether [orderId] has locally-queued timer/create ops that a server
-  /// hydration pass must not overwrite yet.
-  static bool hasPendingLocalTimerOps(OfflineQueueService queue, String orderId) {
-    for (final op in queue.pending) {
-      if (op.type != PendingOperationType.timerAction &&
-          op.type != PendingOperationType.createOrder) {
-        continue;
-      }
-      try {
-        final payload = jsonDecode(op.payload) as Map<String, dynamic>;
-        final id = payload['order_id'] ?? payload['id'];
-        if (id == orderId) return true;
-      } catch (_) {}
+  /// The orders whose timer a server hydration pass must not overwrite yet.
+  ///
+  /// **Load-bearing.** A table charge is usually the largest line on a
+  /// billiard/PS bill, and `SyncEngine._hydrateTableTimers` overwrites the
+  /// local record wholesale with the server's snapshot. If an order with an
+  /// unsent local start/pause/resume were not skipped, that snapshot would
+  /// silently undo a transition the cashier just made and re-price the session.
+  ///
+  /// Two kinds of operation hold the guard, matching what the Hive queue's
+  /// version looked for:
+  ///
+  ///  * a queued timer action ([kTimerSessionEntity]) — the local record is
+  ///    ahead of the server by exactly that transition;
+  ///  * a queued `orders/create` — the server has never heard of this order, so
+  ///    a fetch for it can only 404 or, worse, answer about someone else's.
+  ///
+  /// Only `pending` operations count, not quarantined ones. That mirrors the
+  /// Hive queue (whose quarantine was a separate box) and it is right for the
+  /// same reason `OutboxDrainer._fail` releases the `_pending` guard on
+  /// quarantine: an operation the server refused should stop shielding the
+  /// local row from the server's version. A visible correction beats a private
+  /// truth no other terminal can see.
+  ///
+  /// Returned as a set, computed once, because the hydration pass asks about
+  /// every busy time-based table in the venue and the alternative is a full
+  /// queue scan per table.
+  static Set<String> pendingLocalTimerOrderIds(OutboxStore outbox) {
+    final ids = <String>{};
+    // Deliberately not the default page size. `OutboxStore.pending` caps at 500
+    // rows, and a terminal that has been offline through a busy service can
+    // hold more than that — a timer operation past the cap would be invisible
+    // here and its order would be hydrated over.
+    for (final op in outbox.pending(limit: _pendingScanLimit)) {
+      final isTimer = op.entity == kTimerSessionEntity;
+      final isOrderCreate = op.entity == 'orders' && op.action == 'create';
+      if (!isTimer && !isOrderCreate) continue;
+      final id = op.entityId?.isNotEmpty ?? false
+          ? op.entityId!
+          : (op.payload['order_id'] ?? op.payload['id'])?.toString() ?? '';
+      if (id.isNotEmpty) ids.add(id);
     }
-    return false;
+    return ids;
   }
+
+  /// Single-order form of [pendingLocalTimerOrderIds].
+  static bool hasPendingLocalTimerOps(OutboxStore outbox, String orderId) =>
+      pendingLocalTimerOrderIds(outbox).contains(orderId);
+
+  /// High enough that no realistic offline backlog is truncated, low enough to
+  /// stay a bounded query.
+  static const int _pendingScanLimit = 100000;
 }

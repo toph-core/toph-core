@@ -7,8 +7,8 @@ import 'package:mary_ai_pos/core/auth/storage/token_storage_impl.dart';
 import 'package:mary_ai_pos/core/components/flush_bars.dart';
 import 'package:mary_ai_pos/core/error/failure.dart';
 import 'package:mary_ai_pos/core/routes/app_routes.dart';
-import 'package:mary_ai_pos/core/services/offline_queue/offline_queue_service.dart';
-import 'package:mary_ai_pos/core/services/offline_queue/pending_operation.dart';
+import 'package:mary_ai_pos/core/outbox/local_writer.dart';
+import 'package:mary_ai_pos/core/outbox/timer_shift_outbox.dart';
 import 'package:mary_ai_pos/core/utils/helper/helper_widget.dart';
 import 'package:mary_ai_pos/di.dart' show inject;
 import 'package:mary_ai_pos/features/view/auth/presentation/cubit/bloc/user_bloc.dart';
@@ -28,9 +28,9 @@ part 'shift_bloc.freezed.dart';
 /// call first and only fell back to the queue on a connectivity-classified
 /// failure; a genuine validation rejection (e.g. "already has an open
 /// shift") was therefore visible synchronously. That synchronous rejection
-/// is gone now — a real conflict surfaces later via `OfflineQueueService`'s
-/// quarantine box (§12 rule 5's "deliberate fallback for genuinely
-/// ambiguous cases"), not as an immediate on-screen error. Flagged in
+/// is gone now — a real conflict surfaces later via the outbox's quarantine
+/// list (§12 rule 5's "deliberate fallback for genuinely ambiguous cases"),
+/// not as an immediate on-screen error. Flagged in
 /// EXECUTION_CONCERNS.md as a real, visible behavior change worth a second
 /// look, not something decided silently.
 ///
@@ -141,30 +141,38 @@ class ShiftBloc extends Bloc<ShiftEvent, ShiftState> {
     await _printShiftCloseFromState(state);
   }
 
-  /// Cash-register id is the lookup key used at sync time (see
-  /// `OfflineQueueService.syncAll`) — the shift's own id isn't known/valid
-  /// yet for an offline-opened (`local_...`) shift, and even for a real shift
-  /// we don't want the replay depending on an id that might be stale by the
-  /// time connectivity returns.
-  Future<void> _enqueueCloseShift(String cashRegisterId) async {
-    await inject<OfflineQueueService>().enqueue(
-      PendingOperation(
-        id: OfflineQueueService.newId(),
-        type: PendingOperationType.closeShift,
-        payload: jsonEncode({
-          'cash_register_id': cashRegisterId,
-          'closing_cash': '0',
-          'closing_card': '0',
-        }),
-        tableId: '',
-        createdAt: DateTime.now(),
-      ),
+  /// Cash-register id is both the operation's `entityId` and, through it, its
+  /// chain key — the shift's own id isn't known/valid yet for an
+  /// offline-opened (`local_...`) shift, and even for a real shift we don't
+  /// want the replay depending on an id that might be stale by the time
+  /// connectivity returns. The close handler resolves the register's currently
+  /// active shift instead (`timer_shift_outbox.dart`).
+  ///
+  /// Sharing that key with the open is what keeps a close from overtaking the
+  /// open it belongs to: `OutboxDrainer` holds a whole chain back for the pass
+  /// once one of its operations fails, and within a pass the queue replays in
+  /// enqueue order.
+  ///
+  /// `enqueueOnly` rather than `write`: the active shift lives in
+  /// `SharedPreferences`, not the replica (the plan's one deliberate
+  /// non-database exception), so there is no local row for the writer to
+  /// commit alongside the operation.
+  void _enqueueCloseShift(String cashRegisterId) {
+    inject<LocalWriter>().enqueueOnly(
+      entity: kShiftEntity,
+      action: kShiftClose,
+      entityId: cashRegisterId,
+      request: {
+        'cash_register_id': cashRegisterId,
+        'closing_cash': '0',
+        'closing_card': '0',
+      },
     );
   }
 
   /// §4/§9: local-first, always. `local_...` id stands in until sync
-  /// replaces it — `OfflineQueueService.syncAll` resolves the real shift by
-  /// `cash_register_id` at replay time (`_execCloseShift`), not by this id.
+  /// replaces it — the close handler resolves the real shift by
+  /// `cash_register_id` at replay time, not by this id.
   /// No `AuthCubit.logout()` call here, unlike the old synchronous-success
   /// path — that immediate-logout behavior only ever fired when the online
   /// call had already been confirmed by the server; since every close is
@@ -177,7 +185,7 @@ class ShiftBloc extends Bloc<ShiftEvent, ShiftState> {
 
     emit(state.copyWith(status: Status.LOADING));
     await _printShiftCloseFromState(state);
-    await _enqueueCloseShift(shift.cashRegisterId);
+    _enqueueCloseShift(shift.cashRegisterId);
     await _clearLocalShift();
     if (emit.isDone) return;
     showSuccessMessage(
@@ -217,18 +225,18 @@ class ShiftBloc extends Bloc<ShiftEvent, ShiftState> {
       updatedAt: now,
     );
     await _writeLocalShift(local);
-    await inject<OfflineQueueService>().enqueue(
-      PendingOperation(
-        id: OfflineQueueService.newId(),
-        type: PendingOperationType.openShift,
-        payload: jsonEncode({
-          'cash_register_id': cashRegisterId,
-          'opening_cash': openCash.toString(),
-          'opening_card': openCard.toString(),
-        }),
-        tableId: '',
-        createdAt: now,
-      ),
+    // Same entityId/chain key as the close — see `_enqueueCloseShift`.
+    // `cashier_id` is deliberately absent: the backend takes it from the JWT,
+    // so it is resolved by whoever's session drains the queue.
+    inject<LocalWriter>().enqueueOnly(
+      entity: kShiftEntity,
+      action: kShiftOpen,
+      entityId: cashRegisterId,
+      request: {
+        'cash_register_id': cashRegisterId,
+        'opening_cash': openCash.toString(),
+        'opening_card': openCard.toString(),
+      },
     );
     if (emit.isDone) return;
     Navigator.pushNamedAndRemoveUntil(

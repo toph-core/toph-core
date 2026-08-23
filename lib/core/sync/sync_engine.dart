@@ -7,14 +7,13 @@ import 'package:mary_ai_pos/features/view/main/data/repository/table_timer_local
 import 'package:mary_ai_pos/features/view/main/domain/repository/main_repository.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../api/dio_client.dart';
 import '../db/halls_tables_query.dart';
 import '../db/order_detail_query.dart';
 import '../service/minio/minio_service.dart';
 import '../services/connectivity/connectivity_cubit.dart';
 import '../services/lan_hub/lan_hub_service.dart';
 import '../outbox/outbox_drainer.dart';
-import '../services/offline_queue/offline_queue_service.dart';
+import '../outbox/outbox_store.dart';
 import 'change_feed_relay.dart';
 import 'replication_service.dart';
 
@@ -40,9 +39,7 @@ import 'replication_service.dart';
 /// false→true edge — the app may have launched already offline, or the OS link
 /// may never have flagged a backend outage as a disconnect.
 class SyncEngine {
-  final OfflineQueueService _queue;
   final ConnectivityCubit _connectivity;
-  final DioClient _client;
   final LanHubService _lanHub;
   final SharedPreferences _prefs;
 
@@ -58,7 +55,17 @@ class SyncEngine {
   /// Phase 2 — replay of locally-queued writes.
   final OutboxDrainer _outbox;
 
+  /// The queue behind [_outbox], for the two things this engine needs that a
+  /// drain does not expose: clearing backoff on a manual retry, and knowing
+  /// which orders still hold unsent timer operations.
+  ///
+  /// Resolved lazily rather than injected, like `MainRepository` in
+  /// [_hydrateTableTimers]: this engine is constructed in `di.dart` and adding
+  /// a constructor parameter would ripple into every caller for no gain.
+  late final OutboxStore _outboxStore = inject<OutboxStore>();
+
   Timer? _ticker;
+  Timer? _nudge;
   bool _tickRunning = false;
   StreamSubscription<bool>? _connectivitySub;
   StreamSubscription<bool>? _lanClientSub;
@@ -87,17 +94,13 @@ class SyncEngine {
   }
 
   SyncEngine({
-    required OfflineQueueService queue,
     required ConnectivityCubit connectivity,
-    required DioClient client,
     required LanHubService lanHub,
     required SharedPreferences prefs,
     required ReplicationService replication,
     required ChangeFeedRelay feed,
     required OutboxDrainer outbox,
-  })  : _queue = queue,
-        _connectivity = connectivity,
-        _client = client,
+  })  : _connectivity = connectivity,
         _lanHub = lanHub,
         _prefs = prefs,
         _replication = replication,
@@ -117,13 +120,18 @@ class SyncEngine {
   ///  - internet reconnect-edge (the connectivity subscription — previously
   ///    AppScaffold's own listener);
   ///  - LAN reconnect-edge (§5 gap 2 — a follower whose link to the leader
-  ///    comes back relays its outbox immediately instead of waiting for the
-  ///    next periodic tick; `tick()` already routes through `relayViaLan`
-  ///    in client mode);
-  ///  - local-write (§5 gap 1 — `OfflineQueueService.enqueue` nudges
-  ///    `tick()` on every enqueue, see its doc);
+  ///    comes back drains immediately instead of waiting for the next
+  ///    periodic tick);
   ///  - manual retry (`tick(force: true)` from the sync-status screen,
   ///    unchanged).
+  ///
+  /// One trigger the legacy queue had is **gone with it**: its `enqueue`
+  /// nudged `tick()` on every local write, and `OutboxStore.enqueue` does not.
+  /// Nothing this engine can do about it from here — the nudge belongs at the
+  /// enqueue — so a write now waits for the next tick (≤60s) instead of
+  /// syncing at once. Noted rather than hidden; it is the same gap every
+  /// already-migrated write path (orders, users, halls, menu) has had since
+  /// it moved across.
   void start() {
     _ticker ??= Timer.periodic(tickInterval, (_) => tick());
     _connectivitySub ??= _connectivity.stream.listen((isOnline) {
@@ -139,6 +147,39 @@ class SyncEngine {
     if (_connectivity.isOnline) unawaited(tick());
   }
 
+  /// Ask for a sync pass soon, because something was just written locally.
+  ///
+  /// BACKEND_SYNC_PLAN.md §5 lists "local-write" as one of the sync triggers,
+  /// and it used to be honoured by `OfflineQueueService.enqueue` calling
+  /// [tick] directly. When the last writer moved off that queue the trigger
+  /// went with it, and nothing replaced it — so a payment could sit in the
+  /// outbox for up to [tickInterval] before the terminal so much as tried to
+  /// send it, with perfect connectivity. Not a lost write, but a minute in
+  /// which no other terminal sees the table free up and no report shows the
+  /// sale.
+  ///
+  /// Debounced rather than immediate, which is the part the old hook got
+  /// wrong. A pass is not just an outbox drain — it pulls the change feed and
+  /// fills the feed's gaps too — so firing one per write meant a cashier
+  /// ringing in ten items caused ten pulls. Concurrent calls already collapse
+  /// on [_tickRunning]; this collapses the sequential burst as well, and the
+  /// delay is short enough that it still reads as immediate.
+  ///
+  /// Fire-and-forget by construction: nothing awaits the returned pass, so no
+  /// user action ever waits on the network — the property §7 exists to keep.
+  void nudge() {
+    _nudge?.cancel();
+    _nudge = Timer(nudgeDelay, () {
+      _nudge = null;
+      unawaited(tick());
+    });
+  }
+
+  /// How long a burst of local writes is allowed to coalesce before the pass
+  /// runs. Long enough that ringing in an order is one pass, short enough that
+  /// a cashier never perceives the delay.
+  static const nudgeDelay = Duration(milliseconds: 750);
+
   void stop() {
     _ticker?.cancel();
     _ticker = null;
@@ -146,13 +187,15 @@ class SyncEngine {
     _connectivitySub = null;
     _lanClientSub?.cancel();
     _lanClientSub = null;
+    _nudge?.cancel();
+    _nudge = null;
   }
 
   /// Runs one sync pass: drain the outbox, then opportunistically refresh
   /// reference-data caches that have gone stale. Safe to call more often than
   /// [tickInterval] (e.g. from a reconnect-edge listener) — concurrent calls
-  /// collapse into one no-op via [_tickRunning], and `OfflineQueueService`
-  /// applies its own backoff so a failed pass doesn't retry immediately.
+  /// collapse into one no-op via [_tickRunning], and the outbox applies its
+  /// own per-operation backoff so a failed send doesn't retry immediately.
   ///
   /// In LAN `client` mode (Phase 4 sole-uplink), the outbox drains through
   /// the leader instead of this terminal's own cloud connectivity — a
@@ -162,22 +205,27 @@ class SyncEngine {
   /// reads through the leader is a separate, bigger feature this phase
   /// doesn't attempt (see offline-first-architecture-plan.md §11 Phase 4),
   /// so it still depends on this terminal's own connectivity either way.
-  /// [force] bypasses `OfflineQueueService`'s own backoff — for a
-  /// user-triggered "sync now" button (sync-status screen, §11 Phase 6),
-  /// where waiting out an exponential backoff from a previous failure would
-  /// defeat the point of a manual retry. The periodic timer and
-  /// reconnect-edge callers never pass this, so their behavior is unchanged.
+  /// [force] is the sync-status screen's "sync now" button (§11 Phase 6). It
+  /// used to bypass the legacy queue's pass-level backoff; the outbox backs
+  /// off per *operation*, so it now clears those instead — waiting out a
+  /// backoff left by an outage that has since ended is exactly what pressing
+  /// the button is meant to skip.
   Future<void> tick({bool force = false}) async {
     if (_tickRunning) return;
     _tickRunning = true;
     try {
       if (_lanHub.mode == LanMode.client) {
-        if (_queue.hasItems) {
-          await _queue.relayViaLan(
-            isLeaderConnected: () => _lanHub.isClientConnected,
-            relayOne: (op) => _lanHub.relayOperation(op),
-          );
-        }
+        // The legacy queue's `relayViaLan` call used to sit here, sending a
+        // follower's writes to the leader when the follower had LAN but no
+        // uplink. It is gone with the queue's last producer: nothing enqueues
+        // a `PendingOperation` any more, so it relayed an empty box.
+        //
+        // The capability it represented is *not* replaced — a follower's
+        // outbox still drains only through this terminal's own connectivity
+        // (see `_outbox.drain()` inside the `isOnline` branch below).
+        // Relaying outbox operations over the hub is unbuilt work
+        // (LAN_HUB_AND_LEASING_PLAN.md §7, `relayOp`); `LanHubService` still
+        // carries the leader half of that wire protocol.
         if (_connectivity.isOnline) {
           // Phase 5: a follower no longer pulls the change feed on a timer.
           // Its inbound rows arrive from the leader's broadcast, which is the
@@ -191,6 +239,7 @@ class SyncEngine {
           // cursor can fill them — the leader cannot replay its change log,
           // it keeps current rows, not history. So the uplink survives as
           // recovery, not as a poll.
+          if (force) _outboxStore.clearBackoff();
           await _outbox.drain();
           if (_feed.needsBackfill) {
             final result = await _replication.drain();
@@ -205,9 +254,7 @@ class SyncEngine {
         return;
       }
       if (!_connectivity.isOnline) return;
-      if (_queue.hasItems) {
-        await _queue.syncAll(_client, force: force);
-      }
+      if (force) _outboxStore.clearBackoff();
       // Send before receiving: draining the outbox first means the pull in the
       // same pass already reflects what this terminal just wrote, rather than
       // returning a version `_pending` then has to shield. Neither throws —
@@ -293,7 +340,9 @@ class SyncEngine {
   /// already carry the venue's live occupancy, not the server's stale
   /// `status`), and each one's open order from `OrderDetailQuery`. Orders with
   /// queued, not-yet-replayed local timer ops are skipped so a fetch never
-  /// stomps an unsynced start/pause the cashier just made.
+  /// stomps an unsynced start/pause the cashier just made — that guard now
+  /// reads the outbox instead of the retired Hive queue, and is computed once
+  /// per pass rather than once per table.
   Future<void> _hydrateTableTimers() async {
     final db = _replication.db;
     final tables = HallsTablesQuery(db).tables().where((t) {
@@ -305,6 +354,8 @@ class SyncEngine {
 
     final orders = OrderDetailQuery(db);
     final repo = inject<MainRepository>();
+    final shielded =
+        TableTimerLocalRepositoryImpl.pendingLocalTimerOrderIds(_outboxStore);
     for (final table in tables) {
       final tableId = table['id']?.toString() ?? '';
       if (tableId.isEmpty) continue;
@@ -312,12 +363,7 @@ class SyncEngine {
         final orderId =
             orders.liveOrderForTable(tableId)?['id']?.toString() ?? '';
         if (orderId.isEmpty) continue;
-        if (TableTimerLocalRepositoryImpl.hasPendingLocalTimerOps(
-          _queue,
-          orderId,
-        )) {
-          continue;
-        }
+        if (shielded.contains(orderId)) continue;
         final raw = (await repo.getOrderTableTimer(orderId))
             .fold((_) => null, (r) => r);
         if (raw == null) continue;
