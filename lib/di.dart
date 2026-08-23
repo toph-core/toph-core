@@ -371,7 +371,7 @@ void _repositories() {
     () => MainRepositoryImpl(inject(), inject(), inject()),
   );
   inject.registerLazySingleton<ArchivesLocalRepository>(
-    () => ArchivesLocalRepositoryImpl(inject(), inject(), inject()),
+    () => ArchivesLocalRepositoryImpl(inject<replica.LocalDatabase>()),
   );
   // OFFLINE_FIRST_EVERYWHERE_PLAN.md Phase 4 — the staff screen reads the
   // replica and writes through the outbox. Takes LocalDatabase + LocalWriter

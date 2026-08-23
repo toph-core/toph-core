@@ -2,8 +2,8 @@ import 'package:dartz/dartz.dart';
 import 'package:mary_ai_pos/core/constants/constants.dart';
 import 'package:mary_ai_pos/core/db/archives_query.dart';
 import 'package:mary_ai_pos/core/db/local_database.dart';
+import 'package:mary_ai_pos/core/db/order_detail_query.dart';
 import 'package:mary_ai_pos/core/error/failure.dart';
-import 'package:mary_ai_pos/core/services/cache/cache_service.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/archive_detail/archive_detail_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/archives_filter_request/archives_filter_request_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/archives_response/archives_response_model.dart';
@@ -12,30 +12,34 @@ import 'package:mary_ai_pos/features/view/main/domain/entities/archive_detail_en
 import 'package:mary_ai_pos/features/view/main/domain/entities/archives_filter_request_entity.dart';
 import 'package:mary_ai_pos/features/view/main/domain/entities/archives_response_entity.dart';
 import 'package:mary_ai_pos/features/view/main/domain/repository/archives_local_repository.dart';
-import 'package:mary_ai_pos/features/view/main/domain/repository/main_repository.dart';
 
-/// OFFLINE_FIRST_EVERYWHERE_PLAN.md Phase 4 — the archives *list* is a local
-/// query now.
+/// OFFLINE_FIRST_EVERYWHERE_PLAN.md Phase 4 — the archives screen, list and
+/// detail, entirely on the replica.
 ///
 /// What this used to be: online-first with a cache fallback, mirroring only the
 /// unfiltered "today, page 1" view. Any date range, bill-number search or page
 /// beyond the first had no local answer and went to the network, so the screen
-/// was offline-capable in exactly one of its states. `getArchives` no longer
-/// reaches for the network in any of them, and there is no `ConnectivityCubit`
-/// fork left to take.
+/// was offline-capable in exactly one of its states. Nothing here reaches for
+/// the network now, and there is no `ConnectivityCubit` fork left to take.
 ///
-/// [getArchiveWithId] is the one method still on the old path. Building a bill
-/// detail locally needs a projection over `orders` + `order_items` + `goods`
-/// that does not exist yet; migrating the list without it is safe because the
-/// list is pure read (archives are closed bills — nothing on this screen
-/// writes), so there is no write path that could land locally and go unseen.
+/// [getArchiveWithId] was the last method on the old path, waiting on "a
+/// projection over `orders` + `order_items` + `goods` that does not exist yet".
+/// It does: [OrderDetailQuery.liveOrderById] assembles exactly that — header,
+/// joined table and hall, items with their goods' names — and does it
+/// regardless of `bill_status`, because the payment screen needed to keep
+/// showing a bill after it was paid. A closed bill is the same read.
+///
+/// A bill absent from the replica now returns a failure instead of a fetch.
+/// That is reachable only in theory: the list this detail is opened from is
+/// itself a query over the same `orders` table, so a row the detail cannot
+/// find is a row the operator could not have tapped.
 class ArchivesLocalRepositoryImpl implements ArchivesLocalRepository {
-  final MainRepository _remote;
-  final CacheService _cache;
   final ArchivesQuery _archives;
+  final OrderDetailQuery _detail;
 
-  ArchivesLocalRepositoryImpl(this._remote, this._cache, LocalDatabase replica)
-      : _archives = ArchivesQuery(replica);
+  ArchivesLocalRepositoryImpl(LocalDatabase replica)
+      : _archives = ArchivesQuery(replica),
+        _detail = OrderDetailQuery(replica);
 
   /// What the screen shows on open, and the only view the old cache mirrored.
   static ArchivesFilterRequestEntity get _defaultView =>
@@ -74,18 +78,15 @@ class ArchivesLocalRepositoryImpl implements ArchivesLocalRepository {
   Future<Either<Failure, ArchiveDetailEntity>> getArchiveWithId(
     String id,
   ) async {
-    final result = await _remote.getArchiveWithId(id);
-    final ok = result.fold((_) => null, (r) => r);
-    if (ok != null) {
-      await _cache.saveArchiveDetail(id, (ok as ArchiveDetailModel).toJson());
-      return result;
+    final json = _detail.liveOrderById(id);
+    if (json == null) {
+      return const Left(MessageFailure('Chek topilmadi'));
     }
-    final cachedJson = _cache.getArchiveDetail(id);
-    if (cachedJson == null) return const Left(ConnectionFailure());
     try {
-      return Right(ArchiveDetailModel.fromJson(cachedJson));
-    } catch (_) {
-      return const Left(ConnectionFailure());
+      return Right(ArchiveDetailModel.fromJson(json));
+    } catch (e) {
+      // A malformed replica row is a local fault, not a connection one.
+      return Left(MessageFailure('$e'));
     }
   }
 }

@@ -109,9 +109,14 @@ class OrderDetailQuery {
     };
   }
 
-  /// Live (non-cancelled, non-deleted) items of an order, each carrying its
-  /// good's name from the joined `goods` row. Ordered oldest first, the order
-  /// they were rung in.
+  /// Every non-deleted item of an order, each carrying its good's name from the
+  /// joined `goods` row. Ordered oldest first, the order they were rung in.
+  ///
+  /// Cancelled lines are included deliberately — the payment and archive
+  /// screens render them as a struck-through section, so filtering them here
+  /// would make a voided line vanish from the bill instead of showing as
+  /// voided. Callers that want only live lines (`detail_bloc`'s grouping)
+  /// filter on `status` themselves.
   ///
   /// `order_items` promotes only `order_id`/`good_id`/`status` to real columns,
   /// so `created_at` is not one — it lives inside the stored `data` blob and is

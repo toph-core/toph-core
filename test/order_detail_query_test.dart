@@ -95,4 +95,49 @@ void main() {
       expect(query.liveOrderForTable('tb2'), isNull);
     });
   });
+
+  group('by id — the payment and archive screens\' read', () {
+    test('a paid bill still assembles, header, items and all', () {
+      // The list read filters closed bills out; this one must not, or the
+      // payment screen would go blank the instant the bill was settled and the
+      // archive detail would have nothing to show at all.
+      order('o1', 'tb1', 'closed', '2026-08-12T10:00:00Z');
+      item('i1', 'o1', 'g1', '2026-08-12T10:01:00Z');
+      item('i2', 'o1', 'g2', '2026-08-12T10:02:00Z');
+
+      final o = query.liveOrderById('o1')!;
+      expect(o['id'], 'o1');
+      expect(o['table_number'], 5);
+      expect(o['hall_name'], 'Main');
+      expect(
+        (o['items'] as List).map((e) => e['good_name']),
+        ['Osh', 'Lagmon'],
+      );
+    });
+
+    test('a takeaway bill with no table assembles on the LEFT JOINs', () {
+      put('orders', {
+        'id': 'o-tw', 'bill_status': 'closed', 'branch_id': 'b1',
+        'order_type': 'takeaway', 'created_at': '2026-08-12T10:00:00Z',
+        'deleted_at': 0,
+      });
+      item('i1', 'o-tw', 'g1', '2026-08-12T10:01:00Z');
+
+      final o = query.liveOrderById('o-tw')!;
+      expect(o['table_number'], isNull);
+      expect(o['hall_name'], isNull);
+      expect((o['items'] as List).single['good_name'], 'Osh');
+    });
+
+    test('an unknown id is null — what the archive detail reports as not found',
+        () {
+      expect(query.liveOrderById('nope'), isNull);
+    });
+
+    test('a soft-deleted bill is null', () {
+      order('o1', 'tb1', 'closed', '2026-08-12T10:00:00Z',
+          deletedAt: 1750000000);
+      expect(query.liveOrderById('o1'), isNull);
+    });
+  });
 }
