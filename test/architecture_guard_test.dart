@@ -57,6 +57,50 @@ List<File> _dartFilesUnder(String dir) => Directory(dir)
 /// Repo-relative, forward-slashed.
 String _rel(File f) => f.path.replaceAll(r'\', '/').replaceFirst('./', '');
 
+/// Every import in [source], resolved to a repo-relative `lib/...` path.
+///
+/// Resolving matters, and this rule learned it the hard way: a regex over the
+/// literal import string sees `package:mary_ai_pos/core/database/...` and
+/// misses `../database/...` from a sibling directory — the *same file*, under
+/// a spelling the rule never matched. `lib/core/sync/sync_engine.dart` sat on
+/// the wrong side of the Hive ratchet for exactly that reason, invisible while
+/// the allowlist claimed two entries and meant three.
+///
+/// [path] is the importing file, so relative imports resolve against its own
+/// directory. Package imports of this package map onto `lib/`; imports of
+/// other packages (`package:flutter/...`, `dart:async`) are not repo files and
+/// drop out.
+Set<String> _resolvedImports(String path, String source) {
+  const selfPackage = 'package:mary_ai_pos/';
+  final dir = path.substring(0, path.lastIndexOf('/'));
+  final out = <String>{};
+  for (final m in RegExp(r"^\s*(?:import|export)\s+'([^']+)'", multiLine: true)
+      .allMatches(_stripComments(source))) {
+    final raw = m.group(1)!;
+    if (raw.startsWith(selfPackage)) {
+      out.add('lib/${raw.substring(selfPackage.length)}');
+    } else if (!raw.contains(':')) {
+      out.add(_normalize('$dir/$raw'));
+    }
+  }
+  return out;
+}
+
+/// Collapses `.`/`..` segments so a relative import lands on the same string
+/// the package form would produce.
+String _normalize(String path) {
+  final parts = <String>[];
+  for (final segment in path.split('/')) {
+    if (segment == '.' || segment.isEmpty) continue;
+    if (segment == '..') {
+      if (parts.isNotEmpty) parts.removeLast();
+      continue;
+    }
+    parts.add(segment);
+  }
+  return parts.join('/');
+}
+
 /// Runs [violates] over every Dart file under [roots] and asserts the set of
 /// offenders is exactly [known].
 void _ratchet({
@@ -206,23 +250,16 @@ void main() {
     // only goes down. When this set is empty nothing imports lib/core/database/
     // and the directory can be deleted — which is what actually closes DoD #4.
     const stillOnHive = {
-      // The waiter repo's staff list moved to the replica's `users` query (§9
-      // tail), so it no longer binds the Hive store. What remains is the login
-      // data scope (§9, the tenant-switch wipe + setup check) and `di.dart`,
-      // which is retired last with the Hive `LocalDatabase`/`CacheService`
-      // (§10). The order/waiter/timer flows this sync effort exists to serve are
-      // all off the Hive store now.
+      // The order/waiter/timer flows this sync effort exists to serve are all
+      // off the Hive store now. What remains is the login data scope (§9, the
+      // tenant-switch wipe + setup check), `SyncEngine`'s legacy hydration
+      // (§10 — the block Phase 4 deletes, plus the menu-image store it writes
+      // into), and `di.dart`, which is retired last with the Hive
+      // `LocalDatabase`/`CacheService`.
       'lib/core/services/auth/login_data_scope_service.dart',
+      'lib/core/sync/sync_engine.dart',
       'lib/di.dart',
     };
-
-    // Any import of the Hive store, package-form or relative. The `^\s*import`
-    // anchor is what keeps prose and commented-out lines from matching — a
-    // `// import '.../core/database/...'` line starts with `//`, not `import`.
-    final hiveStoreImport = RegExp(
-      r"^\s*import\s+'[^']*core/database/",
-      multiLine: true,
-    );
 
     test('no new file binds to the retiring Hive store', () {
       _ratchet(
@@ -234,7 +271,8 @@ void main() {
         known: stillOnHive,
         violates: (path, source) =>
             !path.startsWith('lib/core/database/') &&
-            hiveStoreImport.hasMatch(source),
+            _resolvedImports(path, source)
+                .any((i) => i.startsWith('lib/core/database/')),
         remedy: 'Move this file onto the SQLite replica — core/db queries for '
             'reads, LocalWriter for writes — and drop the core/database '
             'import. This is the Phase 4 / §6b consolidation; when the last '
@@ -256,6 +294,33 @@ final x = 1;
       expect(stripped, isNot(contains('inject<MainRepository>')));
       expect(stripped, isNot(contains('package:dio')));
       expect(stripped, contains('final x = 1;'));
+    });
+
+    test('resolves a relative import to the same path as the package form',
+        () {
+      // The hole this rule shipped with: `sync_engine.dart` reached the Hive
+      // store as `'../database/local_database.dart'`, which no amount of
+      // matching on `core/database/` in the literal string will ever see.
+      const source = '''
+import 'package:mary_ai_pos/core/db/local_database.dart';
+import '../database/local_database.dart';
+import '../../core/services/cache/cache_service.dart';
+import 'replication_service.dart';
+import 'package:flutter/foundation.dart';
+import 'dart:async';
+''';
+      expect(_resolvedImports('lib/core/sync/sync_engine.dart', source), {
+        'lib/core/db/local_database.dart',
+        'lib/core/database/local_database.dart',
+        'lib/core/services/cache/cache_service.dart',
+        'lib/core/sync/replication_service.dart',
+      });
+    });
+
+    test('a commented-out import of the Hive store does not count', () {
+      const source = "// import '../database/local_database.dart';";
+      expect(_resolvedImports('lib/core/sync/sync_engine.dart', source),
+          isEmpty);
     });
 
     test('sees code that follows a comment on the same line', () {
