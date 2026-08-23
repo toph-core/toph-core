@@ -238,45 +238,63 @@ void main() {
     });
   });
 
-  group('§7 — one database: the Hive store is walled off, shrinking to zero', () {
-    // Definition of done #4: "Exactly one database class; CacheService and the
-    // Hive LocalDatabase deleted." Two engines still run in parallel (§6b): the
-    // SQLite replica at lib/core/db/ — where the change feed lands and every
-    // migrated screen reads — and the retiring Hive store at
-    // lib/core/database/. Each entry below is a file still bound to the old
-    // store: the order / waiter / menu / timer / transactions repositories the
-    // sync work exists to serve, plus the two services and the injector that
-    // wire them. It is the remaining two-engine consolidation as a number that
-    // only goes down. When this set is empty nothing imports lib/core/database/
-    // and the directory can be deleted — which is what actually closes DoD #4.
-    const stillOnHive = {
-      // Two left. `SyncEngine` came off when Phase 4 deleted the legacy
-      // hydration — it was the store's only remaining writer, so nothing puts
-      // anything into `lib/core/database/` any more. What remains is the login
-      // data scope (§9: the tenant-switch wipe and the "did setup land data"
-      // check) and `di.dart`, which is retired last with the Hive
-      // `LocalDatabase`/`CacheService` themselves.
-      'lib/core/services/auth/login_data_scope_service.dart',
-      'lib/di.dart',
-    };
+  group('§7 — one database', () {
+    // Definition of done #4, closed. Two engines used to run in parallel (§6b):
+    // the SQLite replica at lib/core/db/, where the change feed lands, and the
+    // Hive store at lib/core/database/ with its CacheService blob box beside
+    // it. The countdown that used to live here — a shrinking allowlist of files
+    // still bound to the old store — reached zero, and both are deleted.
+    //
+    // The rule inverts accordingly. There is nothing left to allow, so instead
+    // of naming who may still import the old store, this asserts it cannot come
+    // back: no such directory, no such class, and no import of either.
+    const pending = <String>{};
 
-    test('no new file binds to the retiring Hive store', () {
-      _ratchet(
-        rule: 'lib/core/database/ (Hive) is being retired in favour of the '
-            'single SQLite replica at lib/core/db/. Reads go through a '
-            'repository over a core/db query; writes go through LocalWriter. '
-            'Nothing new may import the Hive store.',
-        roots: const ['lib'],
-        known: stillOnHive,
-        violates: (path, source) =>
-            !path.startsWith('lib/core/database/') &&
-            _resolvedImports(path, source)
-                .any((i) => i.startsWith('lib/core/database/')),
-        remedy: 'Move this file onto the SQLite replica — core/db queries for '
-            'reads, LocalWriter for writes — and drop the core/database '
-            'import. This is the Phase 4 / §6b consolidation; when the last '
-            'entry goes, delete lib/core/database/ and close DoD #4.',
+    test('the retiring Hive store is gone and nothing resurrects it', () {
+      expect(
+        Directory('lib/core/database').existsSync(),
+        isFalse,
+        reason: 'lib/core/database/ (Hive) was deleted when the last reader '
+            'moved to the replica. Reads go through a repository over a '
+            'core/db query; writes go through LocalWriter.',
       );
+      expect(
+        File('lib/core/services/cache/cache_service.dart').existsSync(),
+        isFalse,
+        reason: 'CacheService was the blob cache beside the Hive store. Its '
+            'one genuinely device-scoped value, the USB printer name, lives '
+            'in PrinterConfigStorage (SharedPreferences) now.',
+      );
+
+      _ratchet(
+        rule: 'lib/core/db/ is the single database. Nothing may import a '
+            'second store.',
+        roots: const ['lib'],
+        known: pending,
+        violates: (path, source) => _resolvedImports(path, source).any(
+          (i) =>
+              i.startsWith('lib/core/database/') ||
+              i == 'lib/core/services/cache/cache_service.dart',
+        ),
+        remedy: 'Both stores are deleted. Use lib/core/db/ — a query for '
+            'reads, LocalWriter for writes — or SharedPreferences if the '
+            'value is genuinely device-scoped and holds no replicated entity '
+            '(§2 names the whole list: USB printer name, terminal id, LAN '
+            'role, locale).',
+      );
+    });
+
+    test('only the one-shot migration still opens the retired Hive box', () {
+      // It reads a single key so an upgrading terminal keeps the Windows
+      // printer its USB entries point at — the one value in that box that
+      // exists nowhere else. Delete it once every terminal has run a build
+      // containing it.
+      final offenders = _dartFilesUnder('lib')
+          .where((f) => f.readAsStringSync().contains("'pos_cache'"))
+          .map(_rel)
+          .toList()
+        ..sort();
+      expect(offenders, ['lib/core/service/printer/legacy_usb_printer_names.dart']);
     });
   });
 

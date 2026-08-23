@@ -5,7 +5,7 @@ import 'package:mary_ai_pos/core/auth/models/brand_id_token_pair/brand_id_token_
 import 'package:mary_ai_pos/core/auth/storage/token_storage_impl.dart';
 import 'package:mary_ai_pos/core/error/failure.dart';
 import 'package:mary_ai_pos/core/services/auth/offline_auth_cache.dart';
-import 'package:mary_ai_pos/core/services/cache/cache_service.dart';
+import 'package:mary_ai_pos/core/db/local_database.dart' as replica;
 import 'package:mary_ai_pos/core/usecase/usecase.dart';
 import 'package:mary_ai_pos/di.dart' show inject;
 import 'package:mary_ai_pos/features/view/auth/domain/usecases/check_user_auth/check_user_auth.dart';
@@ -123,15 +123,17 @@ class AuthCubit extends Cubit<AuthState> {
         emit(state.copyWith(failure: failure, status: Status.ERROR));
       },
       (response) async {
-        // Full re-provision, not just a session clear — this terminal may
-        // get bound to a different brand/branch next. The halls/tables/goods
-        // cache (CacheService) has no per-tenant scoping at all, so it must
-        // be wiped here or stale data from this tenant would silently mix
-        // into (or block) whatever the next one loads. See CacheService
-        // .clearAll's doc comment for the concrete failure mode this avoids.
-        // (No prefetch-gate reset anymore — the next login's re-hydration is
-        // LoginDataScopeService's job, BACKEND_SYNC_PLAN.md §5.)
-        await inject<CacheService>().clearAll();
+        // Full re-provision, not just a session clear — this terminal may get
+        // bound to a different brand/branch next. The replica describes
+        // exactly one tenant, so it must be wiped here or the previous
+        // tenant's halls, tables, catalog and live occupancy would mix into
+        // (or block) whatever the next one loads. Wiping also resets the sync
+        // cursor, so the next login bootstraps from zero.
+        //
+        // Safe to empty the outbox along with it: those queued writes belong
+        // to the tenant being logged out of, and this is an explicit
+        // re-provision rather than a shift change.
+        inject<replica.LocalDatabase>().clearAll();
         emit(state.copyWith(status: Status.SUCCESS));
         onSuccess();
       },

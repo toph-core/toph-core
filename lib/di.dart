@@ -9,12 +9,12 @@ import 'package:mary_ai_pos/core/api/dio_client.dart';
 import 'package:mary_ai_pos/core/services/audit/privileged_action_audit_log_service.dart';
 import 'package:mary_ai_pos/core/services/auth/login_data_scope_service.dart';
 import 'package:mary_ai_pos/core/services/auth/offline_auth_cache.dart';
+import 'package:mary_ai_pos/core/service/printer/legacy_usb_printer_names.dart';
 import 'package:mary_ai_pos/core/service/receipt/receipt_info_storage.dart';
-import 'package:mary_ai_pos/core/database/local_database.dart';
-// OFFLINE_FIRST_EVERYWHERE_PLAN.md Phase 1 — the SQLite replica that replaces
-// both `CacheService` and the Hive `LocalDatabase` above. Imported under a
-// prefix only because the two `LocalDatabase` classes coexist during the
-// migration; the Hive one and this prefix both go away in Phase 4.
+// The one database (OFFLINE_FIRST_EVERYWHERE_PLAN.md §2). Still imported under
+// a prefix: `LocalDatabase` is a common enough name that the alias reads as
+// documentation at every use site, and the churn of dropping it across the
+// file would obscure the change that actually retired the second store.
 import 'package:mary_ai_pos/core/db/apply_change.dart' as replica;
 import 'package:mary_ai_pos/core/db/local_database.dart' as replica;
 import 'package:mary_ai_pos/core/db/local_database_factory.dart' as replica;
@@ -32,7 +32,6 @@ import 'package:mary_ai_pos/core/outbox/outbox_store.dart';
 import 'package:mary_ai_pos/core/sync/change_feed_relay.dart';
 import 'package:mary_ai_pos/core/sync/replication_service.dart';
 import 'package:mary_ai_pos/core/sync/sync_api_client.dart';
-import 'package:mary_ai_pos/core/services/cache/cache_service.dart';
 import 'package:mary_ai_pos/core/services/connectivity/connectivity_cubit.dart';
 import 'package:mary_ai_pos/core/services/lan_hub/lan_hub_service.dart';
 import 'package:mary_ai_pos/core/services/lan_hub/leader_election_service.dart';
@@ -146,19 +145,9 @@ Future<void> initDi() async {
   final connectivityCubit = ConnectivityCubit(connectivity);
   inject.registerSingleton<ConnectivityCubit>(connectivityCubit);
 
-  final cacheService = await CacheService.init();
-  inject.registerSingleton<CacheService>(cacheService);
-
-  // offline-first-target-architecture.md §8 Phase 0 — additive alongside
-  // CacheService, nothing reads from it yet except SyncEngine's hydration
-  // writes (§8 Phase 1).
-  final localDatabase = await LocalDatabase.init();
-  inject.registerSingleton<LocalDatabase>(localDatabase);
-
-  // OFFLINE_FIRST_EVERYWHERE_PLAN.md Phase 1 — the replica of the tenant
-  // database. Additive for now: replication fills it in the background while
-  // screens still read the two stores above. Phase 4 moves the screens across
-  // and deletes both.
+  // OFFLINE_FIRST_EVERYWHERE_PLAN.md §2 — the replica of the tenant database,
+  // and now the only one. `CacheService` and the Hive `LocalDatabase` that
+  // used to be constructed above are deleted; every screen reads this.
   final replicaDb = await replica.LocalDatabaseFactory.openDefault();
   final changeApplier = replica.ChangeApplier(replicaDb);
   inject.registerSingleton<replica.LocalDatabase>(replicaDb);
@@ -272,8 +261,7 @@ Future<void> initDi() async {
   inject.registerLazySingleton<LoginDataScopeService>(
     () => LoginDataScopeService(
       storage: tokenStorage,
-      localDb: localDatabase,
-      cache: cacheService,
+      replica: replicaDb,
       syncEngine: syncEngine,
       prefs: prefs,
     ),
@@ -285,7 +273,7 @@ Future<void> initDi() async {
 
   final printerConfigStorage = PrinterConfigStorage(prefs);
   await printerConfigStorage.adoptLegacyUsbPrinterNames(
-    cacheService.exportUsbPrinterNames(),
+    await LegacyUsbPrinterNames.read(),
   );
   inject.registerSingleton<PrinterConfigStorage>(printerConfigStorage);
   final printerService = PrinterService(printerConfigStorage);

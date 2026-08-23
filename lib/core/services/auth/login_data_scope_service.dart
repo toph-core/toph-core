@@ -2,8 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:mary_ai_pos/core/auth/storage/token_storage_impl.dart';
-import 'package:mary_ai_pos/core/database/local_database.dart';
-import 'package:mary_ai_pos/core/services/cache/cache_service.dart';
+import 'package:mary_ai_pos/core/db/local_database.dart';
 import 'package:mary_ai_pos/core/sync/sync_engine.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/shift/shift_bloc.dart'
     show ShiftBloc;
@@ -26,20 +25,17 @@ import 'package:shared_preferences/shared_preferences.dart';
 /// parallel fetch path.
 class LoginDataScopeService {
   final AppTokenStorage _storage;
-  final LocalDatabase _localDb;
-  final CacheService _cache;
+  final LocalDatabase _replica;
   final SyncEngine _syncEngine;
   final SharedPreferences _prefs;
 
   LoginDataScopeService({
     required AppTokenStorage storage,
-    required LocalDatabase localDb,
-    required CacheService cache,
+    required LocalDatabase replica,
     required SyncEngine syncEngine,
     required SharedPreferences prefs,
   })  : _storage = storage,
-        _localDb = localDb,
-        _cache = cache,
+        _replica = replica,
         _syncEngine = syncEngine,
         _prefs = prefs;
 
@@ -83,21 +79,17 @@ class LoginDataScopeService {
         last.cashRegisterId != cashRegisterId;
 
     if (brandChanged) {
-      // Different brand entirely: clear brand-scoped local data first, then
-      // run first-time setup fresh. CacheService has no per-tenant scoping
-      // at all (see its clearAll doc), so it goes too. printerSettings is
-      // device-scoped and survives inside clearBrandScopedData.
-      await _localDb.clearBrandScopedData();
-      await _cache.clearAll();
-      // The active-shift record lives in SharedPreferences, not in any of
-      // the boxes above — and ShiftBloc._checkShift is local-only now, so a
-      // stale shift from the previous brand would be presented as this
-      // brand's active shift if it survived the wipe.
+      // Different brand entirely. The replica wipe is not done here — it is
+      // `resetAndBootstrap`'s first act below, so the clear and the refill
+      // are one operation and there is no window in which the terminal has
+      // an empty database and no bootstrap running.
+      //
+      // The active-shift record lives in SharedPreferences, outside the
+      // replica — and `ShiftBloc._checkShift` is local-only, so a stale shift
+      // from the previous brand would be presented as this brand's active
+      // shift if it survived the switch.
       await _prefs.remove(ShiftBloc.localShiftPrefsKey);
       await _storage.setPosInitialized(false);
-      // (AppScaffold's first-mount prefetch gate is gone — sync triggers
-      // are centralized in SyncEngine per BACKEND_SYNC_PLAN.md §5, and the
-      // re-hydration below is what replaces the old gate reset.)
     }
 
     await _storage.writeLastAuthContext(
@@ -137,10 +129,12 @@ class LoginDataScopeService {
     }
 
     await _syncEngine.hydrateNow(includeGoods: true);
-    // Only mark setup done when the fetch actually landed data — a fully
-    // offline "first-time" login must stay un-initialized so the next
-    // online chance retries the prep fetch.
-    if (_localDb.getTables().isNotEmpty || _localDb.getCategories().isNotEmpty) {
+    // Only mark setup done when data actually landed — a fully offline
+    // "first-time" login must stay un-initialized so the next online chance
+    // retries. The same two entities as before, asked of the replica: a
+    // terminal with halls' tables or a catalog has been provisioned.
+    final counts = _replica.tableCounts();
+    if ((counts['cafe_tables'] ?? 0) > 0 || (counts['categories'] ?? 0) > 0) {
       await _storage.setPosInitialized(true);
     }
   }
