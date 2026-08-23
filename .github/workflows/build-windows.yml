@@ -145,6 +145,9 @@ jobs:
         with:
           name: ${{ github.ref_type == 'tag' && format('Mary AI POS v{0}', steps.version.outputs.version) || format('Mary AI POS v{0}-dev.{1}', steps.version.outputs.version, github.run_number) }}
           tag_name: ${{ github.ref_type == 'tag' && github.ref_name || format('v{0}-dev.{1}', steps.version.outputs.version, github.run_number) }}
+          # Without this the action tags the default branch, so a branch build
+          # ships a binary under a tag pointing at code it was not built from.
+          target_commitish: ${{ github.sha }}
           generate_release_notes: true
           draft: false
           # A branch dispatch publishes a prerelease under its own -dev.N tag, so
