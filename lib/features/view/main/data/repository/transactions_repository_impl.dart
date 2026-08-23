@@ -26,6 +26,10 @@ class TransactionsRepositoryImpl implements TransactionsRepository {
       _pickers.transactionGroups();
 
   @override
+  List<Map<String, dynamic>> searchTransactionGroups(String query) =>
+      _pickers.searchTransactionGroups(query);
+
+  @override
   Stream<List<Map<String, dynamic>>> watchCashRegisters() =>
       _pickers.watchCashRegisters();
 

@@ -54,6 +54,32 @@ void main() {
       put('group_transactions', 'g1', 'Advances');
       expect(names(await pickers.watchTransactionGroups().first), ['Advances']);
     });
+
+    test('search filters by name, case-insensitively', () {
+      put('group_transactions', 'g1', 'Advances');
+      put('group_transactions', 'g2', 'Utilities');
+      expect(names(pickers.searchTransactionGroups('adv')), ['Advances']);
+      expect(names(pickers.searchTransactionGroups('ITIES')), ['Utilities']);
+    });
+
+    test('a blank query is the full list, as the endpoint behaved', () {
+      put('group_transactions', 'g1', 'Advances');
+      put('group_transactions', 'g2', 'Utilities');
+      expect(names(pickers.searchTransactionGroups('   ')),
+          ['Advances', 'Utilities']);
+    });
+
+    test('search excludes soft-deleted groups', () {
+      put('group_transactions', 'g1', 'Advances', deletedAt: 1735689600000);
+      expect(pickers.searchTransactionGroups('adv'), isEmpty);
+    });
+
+    test('% and _ are matched literally, not as wildcards', () {
+      put('group_transactions', 'g1', 'Advances');
+      put('group_transactions', 'g2', 'VAT 20%');
+      expect(names(pickers.searchTransactionGroups('%')), ['VAT 20%']);
+      expect(pickers.searchTransactionGroups('_'), isEmpty);
+    });
   });
 
   group('cash register picker', () {

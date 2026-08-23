@@ -8,12 +8,13 @@ import 'package:mary_ai_pos/features/view/main/domain/repository/transactions_re
 /// under presentation/pages must not inject repositories).
 ///
 /// Two sources, on purpose:
-/// - **The unfiltered list is a reactive replica read** — [TransactionsRepository]
-///   over the local `LocalDatabase`, live and offline.
-/// - **Search + create/update/delete go to the backend** via [MainRepository].
-///   There is no bounded local mirror to search against (same reasoning as the
-///   live goods search), and the group write path is not yet on the outbox —
-///   both unchanged here, just moved off the widget.
+/// - **Every read is the replica** — [TransactionsRepository] over the local
+///   database, live and offline. Search moved here too: the feed replicates
+///   the whole `group_transactions` catalogue, so the "no bounded local mirror
+///   to search against" that justified a `GET` is no longer true, and the box
+///   now filters a short list of names locally.
+/// - **create/update/delete go to the backend** via [MainRepository]. The
+///   group write path is not yet on the outbox — unchanged here.
 class TransactionCategoriesController {
   final TransactionsRepository _local;
   final MainRepository _remote;
@@ -28,9 +29,10 @@ class TransactionCategoriesController {
   Stream<List<Map<String, dynamic>>> watchGroups() =>
       _local.watchTransactionGroups();
 
-  /// Server-side search for an active query — no local mirror to search.
-  Future<Either<Failure, List<Map<String, dynamic>>>> searchGroups(String query) =>
-      _remote.getTransactionGroups(search: query);
+  /// The group list narrowed by an active query — a local filter over the
+  /// replicated catalogue, so the search box works offline like the list does.
+  List<Map<String, dynamic>> searchGroups(String query) =>
+      _local.searchTransactionGroups(query);
 
   Future<Either<Failure, bool>> createGroup(String name) =>
       _remote.createTransactionGroup(name);

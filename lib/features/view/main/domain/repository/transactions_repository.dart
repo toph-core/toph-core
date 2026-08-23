@@ -20,6 +20,10 @@ abstract class TransactionsRepository {
   Stream<List<Map<String, dynamic>>> watchTransactionGroups();
   List<Map<String, dynamic>> getTransactionGroups();
 
+  /// The group list narrowed by the picker's search box — a local filter over
+  /// the replicated catalogue, not a `GET` with a `search` param.
+  List<Map<String, dynamic>> searchTransactionGroups(String query);
+
   Stream<List<Map<String, dynamic>>> watchCashRegisters();
   List<Map<String, dynamic>> getCashRegisters();
 

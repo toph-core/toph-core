@@ -26,6 +26,31 @@ class TransactionPickersQuery {
   Stream<List<Map<String, dynamic>>> watchTransactionGroups() =>
       _db.watch({_groupsTable}, transactionGroups);
 
+  /// Groups whose name contains [query], case-insensitively — the picker's
+  /// search box, answered locally.
+  ///
+  /// This used to be a `GET` with a `search` param, on the reasoning that
+  /// there was "no bounded local mirror to search against". There is: the feed
+  /// replicates the whole `group_transactions` catalogue, and it is a short
+  /// list of names. An empty or blank query returns the full list, matching
+  /// what the endpoint did.
+  List<Map<String, dynamic>> searchTransactionGroups(String query) {
+    final q = query.trim();
+    if (q.isEmpty) return transactionGroups();
+    return _db.selectData(
+      'SELECT data FROM $_groupsTable WHERE deleted_at IS NULL '
+      "AND name LIKE ? ESCAPE '\\' ORDER BY name",
+      ['%${_escapeLike(q)}%'],
+    );
+  }
+
+  /// `%` and `_` are wildcards in LIKE; a cashier typing them means the
+  /// literal character.
+  static String _escapeLike(String value) => value
+      .replaceAll('\\', '\\\\')
+      .replaceAll('%', '\\%')
+      .replaceAll('_', '\\_');
+
   /// Live cash registers, ordered by name.
   List<Map<String, dynamic>> cashRegisters() => _liveByName(_registersTable);
 

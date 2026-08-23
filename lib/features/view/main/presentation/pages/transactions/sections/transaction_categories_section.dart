@@ -46,14 +46,9 @@ class _TransactionCategoriesSectionState
     super.dispose();
   }
 
-  /// offline-first-target-architecture.md §8 Phase 5: the unfiltered default
-  /// list is a reactive TransactionsRepository/LocalDatabase subscription
-  /// (already hydrated by SyncEngine, §8 Phase 1); an active search query
-  /// still goes straight to the network (`_load` below) — same "no bounded
-  /// local mirror to search against instead" reasoning already used
-  /// elsewhere in this codebase (e.g. DetailBloc's live goods search), and
-  /// matches `MainRepositoryImpl.getTransactionGroups`'s own existing cache
-  /// fallback, which was already scoped to the unfiltered list only.
+  /// The unfiltered list is a reactive replica subscription; an active search
+  /// query is a local filter over the same replicated catalogue (`_load`
+  /// below). Both offline, neither a spinner.
   void _subscribeToGroups() {
     _groupsSub = _controller.watchGroups().listen((groups) {
       if (!mounted) return;
@@ -65,32 +60,23 @@ class _TransactionCategoriesSectionState
     });
   }
 
-  Future<void> _load() async {
+  void _load() {
     if (_searchQuery.isEmpty) return; // reactive subscription already covers this
+    final data = _controller.searchGroups(_searchQuery);
+    if (!mounted) return;
     setState(() {
-      _loading = true;
+      _categories = data.map(_Category.fromJson).toList();
+      _loading = false;
       _error = null;
     });
-    final result = await _controller.searchGroups(_searchQuery);
-    if (!mounted) return;
-    result.fold(
-      (failure) => setState(() {
-        _loading = false;
-        _error = failure.getLocalizedMessage(context);
-      }),
-      (data) => setState(() {
-        _categories = data.map(_Category.fromJson).toList();
-        _loading = false;
-      }),
-    );
   }
 
-  /// Re-syncs after a write. While actively searching, re-runs the search
-  /// (there's no local mirror of search results); otherwise just asks for a
-  /// fresh sync pass — the reactive subscription above picks it up.
+  /// Re-syncs after a write. While actively searching, re-runs the filter;
+  /// otherwise just asks for a fresh sync pass — the reactive subscription
+  /// above picks it up.
   Future<void> _refreshAfterWrite() async {
     if (_searchQuery.isNotEmpty) {
-      await _load();
+      _load();
     } else {
       await inject<SyncEngine>().tick(force: true);
     }
