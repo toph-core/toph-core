@@ -545,28 +545,30 @@ class SyncEngine {
     }
   }
 
-  /// V9 fix (§9): hydrates every distinct menu-image object name referenced
-  /// by `LocalDatabase`'s "goods (all)" list.
+  /// OFFLINE_FIRST_EVERYWHERE_PLAN.md §1 — the ahead-of-time half of menu
+  /// image caching, now keyed off the **replicated** `goods.picture_url`
+  /// values rather than the Hive catalog blob.
   ///
-  /// This is the ahead-of-time half; `MenuRepository.imageStream` is the
-  /// on-demand half, for an image a screen asks for before this pass has
-  /// reached it. Both write to the same store and skip what is already
-  /// cached, so whichever gets there first wins and the other is a no-op.
+  /// Minio is a blob store with no change-log trigger, so images can never
+  /// arrive on the feed; this pass and `MenuRepository.imageStream`'s
+  /// fetch-on-miss are the only two ways bytes reach the terminal. Both write
+  /// to the replica's image table and skip what is already there, so whichever
+  /// gets to an object first wins and the other is a no-op.
   Future<void> _hydrateMenuImages() async {
     try {
-      final refs = _localDb
-          .getGoods()
-          .map((g) => g.pictureUrl)
-          .whereType<String>()
-          .where((r) => r.isNotEmpty)
-          .toSet();
+      final db = _replication.db;
+      final have = db.cachedImageNames();
+      final refs = <String>{};
+      for (final row in db.allOf('goods')) {
+        final ref = row['picture_url'];
+        if (ref is String && ref.isNotEmpty && !have.contains(ref)) {
+          refs.add(ref);
+        }
+      }
       for (final ref in refs) {
-        if (_localDb.getImage(ref) != null) continue;
         try {
           final bytes = await MinioService.instance.getImageByObjectName(ref);
-          if (bytes != null && bytes.isNotEmpty) {
-            await _localDb.saveImage(ref, bytes);
-          }
+          if (bytes != null && bytes.isNotEmpty) db.saveImage(ref, bytes);
         } catch (e) {
           if (kDebugMode) debugPrint('[SyncEngine] hydrateMenuImages($ref) error: $e');
         }

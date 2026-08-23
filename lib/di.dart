@@ -387,9 +387,10 @@ void _repositories() {
   // fetched twice.
   inject.registerLazySingleton<LocalImageCache>(
     () => LocalImageCache(
-      watch: inject<LocalDatabase>().watchImage,
-      read: inject<LocalDatabase>().getImage,
-      write: inject<LocalDatabase>().saveImage,
+      watch: inject<replica.LocalDatabase>().watchImage,
+      read: inject<replica.LocalDatabase>().getImage,
+      write: (name, bytes) async =>
+          inject<replica.LocalDatabase>().saveImage(name, bytes),
       fetch: MinioService.instance.getImageByObjectName,
     ),
   );

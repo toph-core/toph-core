@@ -139,7 +139,26 @@ class LocalTables {
   /// proven compute engine unchanged across the storage swap.
   static const tableTimers = '_table_timers';
 
-  static const all = {meta, outbox, pending, tableStatus, provisional, tableTimers};
+  /// Menu image bytes, keyed by their Minio object name.
+  ///
+  /// Not a replicated entity: Minio is a blob store with no change-log
+  /// trigger, so these arrive by fetch-on-miss and an ahead-of-time pass over
+  /// the replicated `goods.picture_url` values, never from the feed. It lives
+  /// here rather than in a second store because "one database" means the
+  /// bytes a screen renders come from the same file as the row that
+  /// references them — and because a brand switch then drops the previous
+  /// tenant's images with everything else, in one wipe.
+  static const images = '_images';
+
+  static const all = {
+    meta,
+    outbox,
+    pending,
+    tableStatus,
+    provisional,
+    tableTimers,
+    images,
+  };
 
   const LocalTables._();
 }

@@ -570,6 +570,47 @@ void main() {
     });
   });
 
+  group('menu images', () {
+    test('round-trips bytes verbatim, replacing in place', () {
+      db.saveImage('menu/osh.png', const [1, 2, 3]);
+      expect(db.getImage('menu/osh.png'), [1, 2, 3]);
+
+      db.saveImage('menu/osh.png', const [9, 9]);
+      expect(db.getImage('menu/osh.png'), [9, 9]);
+    });
+
+    test('an uncached name is null, and empty input is not stored', () {
+      expect(db.getImage('menu/absent.png'), isNull);
+      db.saveImage('menu/empty.png', const []);
+      db.saveImage('', const [1]);
+      expect(db.getImage('menu/empty.png'), isNull);
+      expect(db.cachedImageNames(), isEmpty);
+    });
+
+    test('cachedImageNames is what the ahead-of-time pass skips on', () {
+      db.saveImage('a.png', const [1]);
+      db.saveImage('b.png', const [2]);
+      expect(db.cachedImageNames(), {'a.png', 'b.png'});
+    });
+
+    test('watchImage re-emits when the bytes land', () async {
+      final seen = <List<int>?>[];
+      final sub = db.watchImage('late.png').listen(seen.add);
+      await Future<void>.delayed(Duration.zero);
+      db.saveImage('late.png', const [7]);
+      await Future<void>.delayed(Duration.zero);
+      await sub.cancel();
+      expect(seen.first, isNull);
+      expect(seen.last, [7]);
+    });
+
+    test('a brand switch drops the previous tenant\'s images', () {
+      db.saveImage('a.png', const [1]);
+      db.clearAll();
+      expect(db.getImage('a.png'), isNull);
+    });
+  });
+
   group('lifecycle', () {
     test('clearAll wipes replicated data, outbox and cursor', () {
       applier.applyPullResponse({

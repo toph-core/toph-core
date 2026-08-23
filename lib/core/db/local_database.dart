@@ -30,6 +30,7 @@ library;
 
 import 'dart:async';
 import 'dart:convert';
+import 'dart:typed_data';
 
 // `sqlite3` exports its own `SqlType` (the C-level column type constants).
 // This layer's `SqlType` is the schema-registry enum that drives column
@@ -62,7 +63,7 @@ class LocalDatabase {
   LocalDatabase._(this._db);
 
   /// Current schema version. Bump when [_migrate] gains a step.
-  static const schemaVersion = 3;
+  static const schemaVersion = 4;
 
   /// Opens the database at [path], creating and migrating the schema.
   /// Pass `:memory:` for tests.
@@ -157,6 +158,17 @@ class LocalDatabase {
       CREATE TABLE IF NOT EXISTS ${LocalTables.tableTimers} (
         order_id TEXT PRIMARY KEY NOT NULL,
         data     TEXT NOT NULL
+      )
+    ''');
+
+    // Menu image bytes. A BLOB, not the retiring Hive box's base64 string:
+    // sqlite stores bytes natively, so this drops an encode on every write and
+    // a decode on every read of data the UI wants as bytes anyway.
+    _db.execute('''
+      CREATE TABLE IF NOT EXISTS ${LocalTables.images} (
+        object_name TEXT PRIMARY KEY NOT NULL,
+        bytes       BLOB NOT NULL,
+        fetched_at  INTEGER NOT NULL
       )
     ''');
 
@@ -500,6 +512,51 @@ class LocalDatabase {
   /// Every live timer record, re-emitting on every timer write.
   Stream<List<Map<String, dynamic>>> watchTableTimers() =>
       watch({LocalTables.tableTimers}, getTableTimers);
+
+  // ── Menu images ────────────────────────────────────────────────────────
+
+  /// The cached bytes for [objectName], or null if this terminal has never
+  /// fetched it.
+  Uint8List? getImage(String objectName) {
+    if (objectName.isEmpty) return null;
+    final rows = _db.select(
+      'SELECT bytes FROM ${LocalTables.images} WHERE object_name = ? LIMIT 1',
+      [objectName],
+    );
+    if (rows.isEmpty) return null;
+    final raw = rows.first['bytes'];
+    return raw is Uint8List ? raw : null;
+  }
+
+  /// Stores [bytes] under [objectName] and wakes anything watching it.
+  void saveImage(String objectName, List<int> bytes) {
+    if (objectName.isEmpty || bytes.isEmpty) return;
+    executeOn(
+      LocalTables.images,
+      'INSERT OR REPLACE INTO ${LocalTables.images} '
+      '(object_name, bytes, fetched_at) VALUES (?, ?, ?)',
+      [
+        objectName,
+        bytes is Uint8List ? bytes : Uint8List.fromList(bytes),
+        DateTime.now().millisecondsSinceEpoch,
+      ],
+    );
+  }
+
+  /// Emits the current bytes for [objectName], then again on every image
+  /// write — so a widget mounted before the fetch lands still gets them.
+  Stream<List<int>?> watchImage(String objectName) =>
+      watch({LocalTables.images}, () => getImage(objectName));
+
+  /// Every distinct object name this terminal has bytes for. Lets the
+  /// ahead-of-time pass skip what it already has without a query per row.
+  Set<String> cachedImageNames() {
+    final rows = _db.select('SELECT object_name FROM ${LocalTables.images}');
+    return {
+      for (final row in rows)
+        if (row['object_name'] is String) row['object_name'] as String,
+    };
+  }
 
   // ── Provisional ids ────────────────────────────────────────────────────
 
