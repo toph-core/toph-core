@@ -461,11 +461,17 @@ tests; `[~]` is partial with the remainder pinned to a ratchet allowlist.
       and the ratchet that counted them down now asserts they cannot return.
       See §6b for the route and for the one deliberate `SharedPreferences`
       exception §2 allows.
-- [ ] Every screen renders with the cable pulled, cold-started — needs the §9.3
-      offline integration suite (Dio replaced by a throwing client). Not built;
-      it is the one guard that must drive the whole app, so it wants a running
-      app to author against.
-- [ ] Every user action completes without awaiting a network call — same suite.
+- [x] Every screen renders with the cable pulled, cold-started — the §9.3 suite
+      (`test/offline_screen_suite_test.dart`) boots the real app through the
+      real `initDi` with a Dio adapter that throws on every request, and renders
+      all 18 screens with nothing excluded. Its screen list is filesystem-driven
+      and fails in both directions, so a new screen must be covered or
+      explicitly excluded.
+- [x] Every user action completes without awaiting a network call — same suite:
+      five actions driven by real taps against real blocs (ring in an order, add
+      a line, take a payment, add a table, open a shift). Exactly one screen
+      still opens a socket, the transactions ledger, pinned as a shrinking
+      ratchet.
 
 ---
 
@@ -493,11 +499,16 @@ gate nothing.
 The previous plans failed on discipline, not knowledge — fixes landed on one path and
 not its duplicate. Three mechanical guards:
 
-1. **Import lint**: a `custom_lint` rule failing any import of `dio`, `http`,
-   `minio`, or `connectivity` outside `lib/core/sync/`. This is what makes "networking is
-   isolated" a build error instead of a review comment.
-2. **No second write path**: repositories are the only writers; a test asserts every
-   mutation method inserts an `_outbox` row.
-3. **Offline integration suite**: the whole app driven with the Dio client replaced by
-   one that throws on any call. Every screen must render and every action must succeed.
-   Any new feature that reaches for the network fails this suite on the first run.
+All three are built.
+
+1. **Import lint** — `test/architecture_guard_test.dart`. A test rather than
+   `custom_lint`: same enforcement, no new dependency, no analyzer-version
+   coupling. It resolves imports against the importing file's directory, which
+   it learned the hard way (§6b).
+2. **No second write path** — `test/write_path_guard_test.dart`. Behavioural
+   drives joined to a static census, because neither alone is a guardrail:
+   a census cannot tell whether a `_writer` field is ever called, and hand-written
+   drives cannot be complete. Part 3 asserts the two agree, so a compliant
+   mutation added without a drive fails naming itself.
+3. **Offline integration suite** — `test/offline_screen_suite_test.dart`. All 18
+   screens, real app, dead network. See §7.
