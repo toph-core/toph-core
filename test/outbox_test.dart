@@ -520,4 +520,30 @@ void main() {
       expect(store.ready().map((op) => op.id), ids);
     });
   });
+
+  group('the local-write sync trigger', () {
+    // The trigger BACKEND_SYNC_PLAN.md §5 calls "local-write". It used to live
+    // in OfflineQueueService.enqueue; when the last writer moved off that
+    // queue it vanished with it, and an outbox write then waited up to a full
+    // tick before the terminal so much as tried to send it.
+    test('enqueuing with no service locator behind it still succeeds', () {
+      // The property that matters: a queued write must never fail because
+      // nothing was listening. Every test in this file constructs OutboxStore
+      // directly, so this is also what keeps them all green.
+      final db = LocalDatabase.open(':memory:');
+      addTearDown(db.dispose);
+      final store = OutboxStore(db);
+
+      expect(
+        () => store.enqueue(
+          id: 'op-1',
+          entity: 'orders',
+          action: 'create',
+          entityId: 'o-1',
+        ),
+        returnsNormally,
+      );
+      expect(store.pending().single.id, 'op-1');
+    });
+  });
 }

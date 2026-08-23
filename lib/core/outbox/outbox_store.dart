@@ -10,6 +10,10 @@ library;
 import 'dart:convert';
 import 'dart:math';
 
+import 'package:flutter/foundation.dart';
+import 'package:mary_ai_pos/core/sync/sync_engine.dart';
+import 'package:mary_ai_pos/di.dart' show inject;
+
 import '../db/entity_registry.dart';
 import '../db/local_database.dart';
 import 'outbox_operation.dart';
@@ -68,8 +72,39 @@ class OutboxStore {
         OutboxStatus.pending.name,
       ],
     );
+    _requestSync();
     return id;
   }
+
+  /// The local-write sync trigger (BACKEND_SYNC_PLAN.md §5), as one hook at
+  /// the single point every queued write passes through.
+  ///
+  /// It lives here rather than in each repository for the reason the plan is
+  /// blunt about — "fixes landed on one path and not its duplicate". A
+  /// repository that forgets to ask for a sync does not fail loudly; its
+  /// writes just take up to a minute longer to leave the terminal, which is
+  /// exactly the kind of thing nobody notices until a shift is closing.
+  ///
+  /// `SyncEngine` is resolved lazily and every failure is swallowed on
+  /// purpose: this class is constructed directly in tests with no service
+  /// locator behind it, and a queued write must never fail because nothing was
+  /// listening. `SyncEngine.nudge` is itself debounced, so a burst of writes
+  /// costs one pass.
+  void _requestSync() {
+    try {
+      inject<SyncEngine>().nudge();
+    } catch (e) {
+      // Once per process, not once per write: in a unit test there is no
+      // locator and every enqueue would otherwise print, burying real output.
+      if (kDebugMode && !_warnedNoSyncEngine) {
+        _warnedNoSyncEngine = true;
+        debugPrint('[OutboxStore] no SyncEngine to nudge; writes will leave on '
+            'the periodic tick instead: $e');
+      }
+    }
+  }
+
+  static bool _warnedNoSyncEngine = false;
 
   /// Operations eligible to send right now, oldest first.
   ///

@@ -32,6 +32,7 @@ import 'package:mary_ai_pos/features/view/main/presentation/cubit/table_timer/ti
 import 'package:mary_ai_pos/core/media/local_image_cache.dart';
 import 'package:mary_ai_pos/core/outbox/local_writer.dart';
 import 'package:mary_ai_pos/core/outbox/orders_outbox.dart';
+import 'package:mary_ai_pos/core/outbox/timer_shift_outbox.dart';
 import 'package:mary_ai_pos/core/outbox/outbox_drainer.dart';
 import 'package:mary_ai_pos/core/outbox/outbox_executor.dart';
 import 'package:mary_ai_pos/core/outbox/outbox_store.dart';
@@ -60,6 +61,7 @@ import 'package:mary_ai_pos/features/view/main/data/repository/menu_admin_local_
 import 'package:mary_ai_pos/features/view/main/data/repository/users_local_repository_impl.dart';
 import 'package:mary_ai_pos/features/view/main/data/outbox/halls_tables_outbox.dart';
 import 'package:mary_ai_pos/features/view/main/data/outbox/menu_admin_outbox.dart';
+import 'package:mary_ai_pos/features/view/main/data/outbox/transactions_outbox.dart';
 import 'package:mary_ai_pos/features/view/main/data/outbox/users_outbox.dart';
 import 'package:mary_ai_pos/features/view/main/domain/repository/halls_tables_local_repository.dart';
 import 'package:mary_ai_pos/features/view/main/domain/repository/menu_admin_local_repository.dart';
@@ -302,9 +304,7 @@ Future<void> initDi({DiOverrides? overrides}) async {
 
   final syncEngine = SyncEngine(
     feed: inject<ChangeFeedRelay>(),
-    queue: offlineQueue,
     connectivity: connectivityCubit,
-    client: dioClient,
     lanHub: lanHubService,
     prefs: prefs,
     replication: replicationService,
@@ -380,11 +380,17 @@ Future<void> initDi({DiOverrides? overrides}) async {
   registerUsersOutboxHandlers(outboxExecutors, inject<MainRepository>());
   registerHallsTablesOutboxHandlers(outboxExecutors, inject<MainRepository>());
   registerMenuAdminOutboxHandlers(outboxExecutors, inject<MainRepository>());
+  registerTransactionsOutboxHandlers(outboxExecutors, inject<MainRepository>());
   // The order aggregate speaks HTTP directly (the 409 merge / 404-tolerant
   // cancel have no home in a CRUD repository), so it takes the DioClient, not
   // MainRepository. Handlers only — the order writes move onto this outbox in
   // §B2; until then these register and stay idle.
   registerOrdersOutboxHandlers(outboxExecutors, inject<DioClient>());
+  registerTimerShiftOutboxHandlers(
+    outboxExecutors,
+    inject<DioClient>(),
+    inject<MainRepository>(),
+  );
 
   // BACKEND_SYNC_PLAN.md §5: every registration the startup tick's
   // hydration pass resolves lazily (MainRepository, UserBloc, ...) exists
@@ -493,7 +499,7 @@ void _repositories() {
     ),
   );
   inject.registerLazySingleton<PaymentRepository>(
-    () => PaymentRepositoryImpl(queue: inject()),
+    () => PaymentRepositoryImpl(writer: inject()),
   );
   // Phase 4: halls/tables reads and occupancy move to the replica. The Hive
   // store still backs menus, bills and timers until their own screens follow.
@@ -512,10 +518,10 @@ void _repositories() {
     () => PrintersController(menu: inject(), remote: inject()),
   );
   inject.registerLazySingleton<TransactionCategoriesController>(
-    () => TransactionCategoriesController(local: inject(), remote: inject()),
+    () => TransactionCategoriesController(local: inject()),
   );
   inject.registerLazySingleton<TransactionsListController>(
-    () => TransactionsListController(local: inject(), remote: inject()),
+    () => TransactionsListController(local: inject()),
   );
   inject.registerLazySingleton<TimeBasedTableBadgeController>(
     () => TimeBasedTableBadgeController(inject()),
@@ -525,6 +531,7 @@ void _repositories() {
   inject.registerLazySingleton<TransactionsRepository>(
     () => TransactionsRepositoryImpl(
       replicaDb: inject<replica.LocalDatabase>(),
+      writer: inject<LocalWriter>(),
     ),
   );
 }

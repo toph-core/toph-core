@@ -21,9 +21,9 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mary_ai_pos/core/db/order_detail_query.dart';
+import 'package:mary_ai_pos/core/outbox/timer_shift_outbox.dart' show kShiftEntity;
 import 'package:mary_ai_pos/core/routes/app_routes.dart';
-import 'package:mary_ai_pos/core/services/offline_queue/offline_queue_service.dart';
-import 'package:mary_ai_pos/core/services/offline_queue/pending_operation.dart';
 import 'package:mary_ai_pos/di.dart';
 import 'package:mary_ai_pos/features/view/auth/presentation/pages/login/login_screen.dart';
 import 'package:mary_ai_pos/features/view/auth/presentation/pages/login_pin/login_pin_screen.dart';
@@ -66,16 +66,7 @@ const Map<String, String> kExcludedScreens = {};
 /// here is therefore a debt with a name on it, and the ratchet in
 /// `expectUsableFrame` fails if one is added *or* if one is paid off and left
 /// behind.
-const Map<Type, Set<String>> kScreenNetworkReach = {
-  // The paginated ledger is the one read Phase 4 did not move. §6b explains
-  // why: there is no bounded local mirror of the whole transaction history to
-  // page over, so `TransactionsListController` still calls
-  // `MainRepository.getTransactions` for the list while its cash-register and
-  // group pickers already come off the replica. The screen renders correctly
-  // offline regardless — this asserts the reach exists and is contained to one
-  // endpoint, not that it is acceptable forever.
-  TransactionsScreen: {'/api/v1/transactions'},
-};
+const Map<Type, Set<String>> kScreenNetworkReach = {};
 
 /// Screens this suite renders. The filesystem guard below cross-checks it.
 const Set<String> kCoveredScreens = {
@@ -530,23 +521,26 @@ void main() {
         'free',
         reason: 'the table is still occupied — the payment did not commit',
       );
-      expect(
-        inject<OfflineQueueService>().pending.map((op) => op.type),
-        contains(PendingOperationType.payOrder),
-      );
+      expect(app.outboxEntities(), contains('orders'));
 
-      // Deliberately *not* asserted: that the bill itself is closed in the
-      // replica. It is not, and that is a real gap rather than an oversight in
-      // this test — `PaymentBloc._onPaymentSuccess` flips the local occupancy
-      // overlay and queues the `payOrder` op, but nothing writes
-      // `bill_status`/`paid_at` onto the local `orders` row, so
-      // `OrderDetailQuery` still reports an open bill on this table until the
-      // queued payment replays and a pull brings the server's version back.
-      // Offline that never happens. Pinning the current behaviour here would
-      // freeze the gap in place; it is reported instead. The payment write is
-      // also still on the legacy Hive queue rather than the outbox, which is
-      // the Phase C migration §6b already tracks.
-      expect(app.orders.getOrderDetail(kBusyTableId), isNotNull);
+      // The bill is closed in the replica, which is the whole point: the paid
+      // row is written in the same commit that queues the send, so every
+      // replica read agrees the table is settled without waiting for a round
+      // trip. Asserted from both sides, because only the pair is meaningful —
+      // the table no longer has a live bill, and the bill itself is still
+      // there, marked paid, so the receipt and the archive can still find it.
+      //
+      // This assertion used to read `isNotNull`, pinning the opposite: the bill
+      // stayed open on a table the cashier had just paid, and offline nothing
+      // ever corrected it. `payment_close_bill_test.dart` pins the row shape.
+      expect(
+        app.orders.getOrderDetail(kBusyTableId),
+        isNull,
+        reason: 'the table still reports a live bill after being paid',
+      );
+      final settled = OrderDetailQuery(app.db).liveOrderById(kOpenOrderId);
+      expect(settled, isNotNull, reason: 'the paid bill vanished entirely');
+      expect(settled!['bill_status'], 'paid');
     });
 
     offlineTest('a manager adds a table to a hall', (tester, app) async {
@@ -594,10 +588,7 @@ void main() {
         isNotNull,
         reason: 'the shift was not recorded locally',
       );
-      expect(
-        inject<OfflineQueueService>().pending.map((op) => op.type).toList(),
-        contains(PendingOperationType.openShift),
-      );
+      expect(app.outboxEntities(), contains(kShiftEntity));
     }, shiftOpen: false);
   });
 }

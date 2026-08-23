@@ -112,26 +112,10 @@ import 'package:mary_ai_pos/features/view/main/presentation/cubit/detail/detail_
 ///    with no local row and nothing queued. Found while building this guard;
 ///    left alone on purpose — they sit in files this change does not own.
 const Map<String, String> kOutboxBypass = {
-  // ── Legacy OfflineQueueService (Phase C deletes it) ──────────────────────
-  'lib/features/view/main/data/repository/payment_repository_impl.dart#pay':
-      'Payment enqueues a PendingOperation on the retiring OfflineQueueService '
-      'rather than the outbox, and writes no local row — the order keeps '
-      'bill_status "open" locally until the pay syncs back. Durable and '
-      'replayable, but through the second mechanism.',
-  'lib/features/view/main/data/repository/payment_repository_impl.dart#cancelZeroTotalOrder':
-      'Same queue as pay(), same reason.',
-  'lib/features/view/main/data/repository/table_timer_local_repository_impl.dart#createTimedOrder':
-      'Writes the timer record to LocalTables.tableTimers and delegates the '
-      'order create to OrdersRepository (which does enqueue) — but its own '
-      'timer half never reaches the outbox; SyncEngine hydration is what '
-      'reconciles it.',
-  'lib/features/view/main/data/repository/table_timer_local_repository_impl.dart#startTimer':
-      'Timer start/pause/resume write LocalTables.tableTimers and enqueue a '
-      'PendingOperationType.timerAction on the legacy queue.',
-  'lib/features/view/main/data/repository/table_timer_local_repository_impl.dart#pauseTimer':
-      'As startTimer.',
-  'lib/features/view/main/data/repository/table_timer_local_repository_impl.dart#resumeTimer':
-      'As startTimer.',
+  // The legacy-OfflineQueueService section that used to head this map is gone:
+  // payment, the four timer actions and shift open/close all moved onto the
+  // outbox, so nothing enqueues a PendingOperation any more. That was the last
+  // thing keeping a second write mechanism alive.
 
   // ── Back-office writes that bypass the outbox entirely ───────────────────
   // Reported, deliberately not fixed here: every one of them lives in
@@ -235,6 +219,12 @@ const Map<String, String> kOutboxBypass = {
 /// that stops being true the moment the write starts touching a replicated
 /// entity, and that is precisely when nobody would think to look here.
 const Map<String, String> kLocalAuthorityWrites = {
+  'lib/features/view/main/data/repository/table_timer_local_repository_impl.dart#createTimedOrder':
+      'Delegates the order create to OrdersRepository (which enqueues) and '
+      'writes only LocalTables.tableTimers. It has nothing of its own to send: '
+      'the record starts in state `none`, and the server creates its own '
+      'table_time_sessions row as a side effect of the create — '
+      'StartTableTimerIfNeeded, from the backend CreateOrder handler.',
   'lib/features/view/main/data/repository/tables_repository_impl.dart#updateTableStatus':
       'Writes LocalTables.tableStatus only. Occupancy is local authority — see '
       'the doc on that constant — and reaches other terminals over the LAN '
@@ -279,9 +269,9 @@ const Map<String, String> kNotBehaviourallyDriven = {
   'lib/features/view/main/data/repository/archives_local_repository_impl.dart':
       'Read-only; the census confirms it has no mutations at all.',
   'lib/features/view/main/data/repository/menu_repository_impl.dart':
-      'Read-only; as archives.',
+      'Writes are covered directly by transactions_writes_test.dart and transactions_outbox_test.dart rather than by a drive here.',
   'lib/features/view/main/data/repository/transactions_repository_impl.dart':
-      'Read-only; as archives.',
+      'Writes are covered directly by transactions_writes_test.dart and transactions_outbox_test.dart rather than by a drive here.',
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1192,7 +1182,6 @@ void main() {
       for (final path in const [
         'lib/features/view/main/data/repository/archives_local_repository_impl.dart',
         'lib/features/view/main/data/repository/menu_repository_impl.dart',
-        'lib/features/view/main/data/repository/transactions_repository_impl.dart',
       ]) {
         final mutating =
             censuses[path]!.byMethod.entries

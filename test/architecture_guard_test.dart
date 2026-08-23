@@ -159,6 +159,12 @@ void main() {
       // allowlist: it takes over the order replay from
       // `offline_queue_service.dart`, which Phase C deletes.
       'lib/core/outbox/orders_outbox.dart',
+      // Timer + shift replay, taken over from `offline_queue_service.dart`
+      // (Phase C deletes that, so this list does not grow). Timers speak Dio
+      // for the same reason orders do: `MainRepository` has pause/resume but
+      // no start, so splitting one aggregate's three verbs across two
+      // mechanisms would have been the worse trade.
+      'lib/core/outbox/timer_shift_outbox.dart',
       'lib/di.dart',
       // The last feature-layer file that speaks HTTP. Phase 4 deletes it;
       // when it goes, this entry goes and the rule becomes absolute.
