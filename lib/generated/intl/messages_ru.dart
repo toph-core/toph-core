@@ -45,9 +45,11 @@ class MessageLookup extends MessageLookupByLibrary {
 
   static String m11(size) => "${size} / стр.";
 
-  static String m12(count) => "${count} столов не сохранено";
+  static String m12(rows) => "${rows} записей";
 
-  static String m13(count) => "Всего: ${count}";
+  static String m13(count) => "${count} столов не сохранено";
+
+  static String m14(count) => "Всего: ${count}";
 
   final messages = _notInlinedMessages(_notInlinedMessages);
   static Map<String, Function> _notInlinedMessages(_) => <String, Function>{
@@ -629,6 +631,17 @@ class MessageLookup extends MessageLookupByLibrary {
         "strSettings": MessageLookupByLibrary.simpleMessage("Настройки"),
         "strSettingsAdminOnly": MessageLookupByLibrary.simpleMessage(
             "Только администратор или менеджер может войти в настройки."),
+        "strSetupContinueAnyway":
+            MessageLookupByLibrary.simpleMessage("Всё равно продолжить"),
+        "strSetupFailedBody": MessageLookupByLibrary.simpleMessage(
+            "Нет связи с сервером или загрузка прервана. Можно повторить или продолжить — остальное догрузится в фоне."),
+        "strSetupFailedTitle":
+            MessageLookupByLibrary.simpleMessage("Настройка не завершена"),
+        "strSetupProgress": m12,
+        "strSetupSubtitle": MessageLookupByLibrary.simpleMessage(
+            "Загружаются меню, залы и столы. Это делается один раз."),
+        "strSetupTitle":
+            MessageLookupByLibrary.simpleMessage("Подготовка терминала"),
         "strShape": MessageLookupByLibrary.simpleMessage("Форма"),
         "strShift": MessageLookupByLibrary.simpleMessage("Смена"),
         "strShiftHash": MessageLookupByLibrary.simpleMessage("Смена"),
@@ -670,7 +683,7 @@ class MessageLookup extends MessageLookupByLibrary {
         "strTableNumber": MessageLookupByLibrary.simpleMessage("Стол"),
         "strTableType": MessageLookupByLibrary.simpleMessage("Тип"),
         "strTables": MessageLookupByLibrary.simpleMessage("Столы"),
-        "strTablesNotSavedCount": m12,
+        "strTablesNotSavedCount": m13,
         "strTablesVisited": MessageLookupByLibrary.simpleMessage("столов"),
         "strTakeaway": MessageLookupByLibrary.simpleMessage("С собой"),
         "strTerminal": MessageLookupByLibrary.simpleMessage("Терминал"),
@@ -686,7 +699,7 @@ class MessageLookup extends MessageLookupByLibrary {
         "strTotalCapacity":
             MessageLookupByLibrary.simpleMessage("Общая вместимость"),
         "strTotalColon": MessageLookupByLibrary.simpleMessage("Итого:"),
-        "strTotalCount": m13,
+        "strTotalCount": m14,
         "strTotalLabel": MessageLookupByLibrary.simpleMessage("Итого:"),
         "strTotalPause": MessageLookupByLibrary.simpleMessage("Всего пауз:"),
         "strTotalPrice": MessageLookupByLibrary.simpleMessage("Итоговая цена"),

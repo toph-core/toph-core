@@ -12,13 +12,11 @@
   "strFailureMessage_unauthenticated": "You are not logged in, please sign in first",
   "strFailureMessage_firebaseAuthFailure": "An error occurred when logging in via Firebase",
   "strFailureMessage_initializingFailure": "An error occurred while initializing the app",
-
   "strServerUnreachable500": "Internal server error. Please try again in a moment.",
   "strServerUnreachable502": "Server is not responding. Please try again in a moment.",
   "strServerUnreachable503": "Service is temporarily unavailable. Please try again in a moment.",
   "strServerUnreachable504": "Server took too long to respond. Check your internet and try again.",
   "strServerUnreachableGeneric": "Could not reach the server. Please try again in a moment.",
-
   "strCheckInternetConnection": "Please check your internet connection",
   "strNoInternetConnection": "No internet connection",
   "strYes": "Yes",
@@ -65,7 +63,6 @@
   "today": "Today",
   "week": "Week",
   "month": "Month",
-
   "strFloorMap": "Floor Map",
   "strTakeaway": "Takeaway",
   "strRefresh": "Refresh",
@@ -83,15 +80,13 @@
   "strPersonsSuffix": "people",
   "strSearchHint": "Search...",
   "strClear": "Clear",
-
   "strOrders": "Orders",
   "strExistingOrders": "Existing orders",
   "strExtras": "Extras",
   "strTotalLabel": "Total:",
   "strPaymentLabel": "Payment:",
   "strPayment": "Payment",
-  "strAddItems": "Add",
-
+  "strAddItems": "Add items",
   "strArchive": "Orders",
   "strOpenBills": "Open bills",
   "strNowActive": "Currently active",
@@ -114,7 +109,6 @@
   "strCashierRole": "Cashier",
   "strHall": "Hall",
   "strTableNumber": "Table",
-
   "strSettings": "Settings",
   "strRestaurantStaff": "Restaurant staff",
   "strStaffRoles": "Staff and roles",
@@ -127,7 +121,6 @@
   "strHubClientSettings": "Hub and client settings",
   "strAccessRestricted": "Access restricted",
   "strSettingsAdminOnly": "Only administrator or manager can access settings.",
-
   "strTransactions": "Transactions",
   "strTransactionsAdminOnly": "Only administrator, manager or cashier can access transactions.",
   "strTxnGroupsTitle": "Groups",
@@ -160,10 +153,11 @@
   "strTotalCount": "Total: {count}",
   "@strTotalCount": {
     "placeholders": {
-      "count": {"type": "int"}
+      "count": {
+        "type": "int"
+      }
     }
   },
-
   "strInterfaceSettings": "Language, interface and menu view",
   "strInterfaceLanguage": "Interface language",
   "strAppliesToAllUsers": "Applied to all users",
@@ -171,12 +165,10 @@
   "strShowProductImages": "Show images in product cards",
   "strServiceCharge": "Service charge",
   "strServiceChargeHint": "Percent added to the order automatically",
-  "strSave": "Save",
   "strServiceChargeSaved": "Service charge saved",
   "strServiceChargeInvalid": "Enter a value between 0 and 100",
   "strUzbek": "O'zbek",
   "strRussian": "Русский",
-
   "strOpenShift": "Open shift",
   "strStartWorkInstruction": "Press the button below to start work.",
   "strCloseShift": "Close shift",
@@ -185,7 +177,6 @@
   "strTerminal": "Terminal",
   "strConnected": "Connected",
   "strDuration": "Duration",
-
   "strJanuary": "January",
   "strFebruary": "February",
   "strMarch": "March",
@@ -205,7 +196,6 @@
   "strFriday": "Friday",
   "strSaturday": "Saturday",
   "strSunday": "Sunday",
-
   "strPrint": "Print",
   "strTables": "Tables",
   "strShift": "Shift",
@@ -217,25 +207,20 @@
   "strRoleWaiter": "Waiter",
   "strRoleChef": "Chef",
   "strRoleUser": "User",
-
   "strDragHint": "Drag",
   "strEnlarge": "Zoom in",
   "strShrink": "Zoom out",
   "strRecenter": "Re-center",
-
   "strNPeopleTable": "{n} tables",
   "strLogoutConfirm": "Are you sure you want to logout?",
-
   "strEnterPinCode": "Enter PIN",
   "strSwitchTo6Digit": "6-digit PIN",
   "strSwitchTo4Digit": "4-digit PIN",
   "strOfflineModeMessage": "Offline mode — data will sync when connection returns",
-
   "strAddOrder": "Add order",
   "strNotifyKitchen": "Notify kitchen",
   "strNeedAttention": "Needs attention",
   "strGoToPayment": "Go to payment",
-  "strAddItems": "Add items",
   "strFrom": "From",
   "strTo": "To",
   "strPeriodDay": "D",
@@ -244,7 +229,6 @@
   "strPeriodYear": "Y",
   "strEnterNotes": "Enter notes...",
   "strOther": "Other",
-
   "strExtraSpicy": "Extra spicy",
   "strExtraSalt": "Extra salt",
   "strMoreKetchup": "More ketchup",
@@ -252,7 +236,6 @@
   "strForNotes": "For notes",
   "strConfirmDelete": "Confirm deletion",
   "strConfirmDeleteItem": "Delete '{item}'?",
-
   "strPaymentInfoNotFound": "Payment info not found",
   "strConfirmCardPayment": "Confirm that customer paid by card",
   "strCash": "Cash",
@@ -264,7 +247,6 @@
   "strEmail": "Email",
   "strCloseAction": "Close",
   "strCustomer": "Customer",
-
   "strSearch": "Search...",
   "strSearchTableOrCheck": "Table, check number...",
   "strOrderNumber": "# Order",
@@ -292,14 +274,11 @@
   "strTotalColon": "Total:",
   "strAllColon": "All:",
   "strUmumiySumma": "Total amount",
-
   "strExport": "Export",
   "strTotalSales": "Total sales",
-  "strServiceCharge": "Service charge",
   "strOpeningBalance": "Opening balance",
   "strShiftRevenue": "Shift revenue",
   "strDiscounts": "Discounts",
-
   "strLoadError": "Load error",
   "strDeleteEmployee": "Delete employee",
   "strDeleteEmployeeConfirm": "Account {name} will be deleted. This action cannot be undone.",
@@ -318,7 +297,6 @@
   "strUsername": "Username",
   "strPhone": "Phone",
   "strPinOptional": "PIN code (optional)",
-
   "strDeleteHall": "Delete hall",
   "strAddNewHall": "New hall",
   "strNoHallsYet": "No halls yet",
@@ -351,7 +329,6 @@
   "strHallName": "Hall name",
   "strWidthShort": "Width (m)",
   "strHeightShort": "Height (m)",
-
   "strDeletePrinter": "Delete printer",
   "strAddPrinter": "New printer",
   "strNoPrintersYet": "No printers yet",
@@ -368,7 +345,6 @@
   "strCable": "Cable",
   "strWiFi": "Wi-Fi",
   "strConnectedCategories": "Connected categories",
-
   "strNetworkLAN": "Network (LAN)",
   "strDeviceSynchronization": "Device synchronization",
   "strMode": "Mode",
@@ -376,11 +352,9 @@
   "strDisabled": "Disabled",
   "strHub": "Hub",
   "strClient": "Client",
-
   "strReceiptInfo": "Receipt info",
   "strOrgName": "Organization name",
   "strAddress": "Address",
-
   "strDeleteCategory": "Delete category",
   "strDeleteMeal": "Delete meal",
   "strAddCategory": "Add category",
@@ -400,7 +374,6 @@
   "strLoadCompositionError": "Failed to load meal composition",
   "strImages": "Images",
   "strSelectFile": "Select file",
-
   "strWaiting": "Waiting",
   "strCooking": "Cooking",
   "strReceived": "Received",
@@ -408,14 +381,12 @@
   "strStart": "Start",
   "strPauseAction": "Pause",
   "strResumeAction": "Resume",
-
   "strNotifications": "Notifications",
   "strError": "Error",
   "strAllRoles": "All",
   "strOK": "OK",
   "strPhoneMask": "+998 (__) ___ __ __",
   "strAllHalls": "All",
-
   "strShiftReport": "Shift report",
   "strCashier": "Cashier",
   "strShiftOpen": "Shift open",
@@ -451,7 +422,6 @@
   "strNoServiceChargeYet": "No service charge yet",
   "strWaitingForOrderStatus": "Waiting for order",
   "strShiftNotOpenError": "Open shift first. Shift must be open to create orders.",
-
   "strOrder": "Order",
   "strAcceptedAmount": "Accepted",
   "strManualInput": "Manual input",
@@ -461,7 +431,6 @@
   "strOrderNotFound": "Order not found",
   "strConfirm": "Confirm",
   "strPiecesSuffix": "pcs",
-
   "strChangeTable": "Change table",
   "strSelectFreeTableForTransfer": "Select a free table to move the order to",
   "strTransfer": "Move",
@@ -482,20 +451,17 @@
   "strTotalActiveTime": "Total:",
   "strNoActivePeriods": "No active periods yet",
   "strTablesVisited": "tables",
-  "strService": "Service",
   "strSpecialNote": "Special note",
   "strClose": "Close",
   "strSidebarEmptyTitle": "Your order is empty",
   "strPrice": "Price",
   "strTotal": "Total",
-
   "strFreezeTimerTitle": "Freeze time charge",
   "strFreezeTimerBody": "The order will be moved to a regular table. The elapsed time and accumulated amount will be preserved, but no further time charges will accrue.",
   "strFreezeAndTransfer": "Freeze & transfer",
   "strFrozenShort": "FROZEN",
   "strElapsedTime": "Elapsed time",
   "strFrozenAmount": "Frozen amount",
-
   "strAvailableItems": "Available items",
   "strAddedItems": "Added items",
   "strName": "Name",
@@ -510,7 +476,6 @@
     }
   },
   "strNoCalculationsHint": "No rows. Add an ingredient or semi-finished item.",
-
   "strCannotCloseShiftTitle": "Shift can't be closed",
   "strCannotCloseShiftMessage": "All tables must be closed before you can close the shift.",
   "strOpenTablesCount": "{count} open tables",
@@ -519,17 +484,25 @@
       "count": {}
     }
   },
-
   "strConfirmWithPincode": "Enter PIN to confirm",
   "strIncorrectPincode": "Incorrect PIN",
-
   "strCancelOrderItemTitle": "Cancel item",
   "strCancelOrderItemReasonHint": "Reason for cancellation (required)",
   "strCancelOrderItemReasonRequired": "Please enter a reason for cancellation",
   "strCancelledByClient": "Cancelled by client",
   "strWaitersMistake": "Waiter's mistake",
-
   "strManagerPincodeTitle": "Manager confirmation",
   "strManagerPincodeSubtitle": "Enter a manager or admin PIN to confirm",
-  "strManagerPincodeDenied": "This action requires a manager or admin PIN"
+  "strManagerPincodeDenied": "This action requires a manager or admin PIN",
+  "strSetupTitle": "Preparing this terminal",
+  "strSetupSubtitle": "Downloading the menu, halls and tables. This happens once.",
+  "strSetupProgress": "{rows} records",
+  "@strSetupProgress": {
+    "placeholders": {
+      "rows": {}
+    }
+  },
+  "strSetupFailedTitle": "Setup did not finish",
+  "strSetupFailedBody": "No connection to the server, or the download was interrupted. You can retry, or continue and let it finish in the background.",
+  "strSetupContinueAnyway": "Continue anyway"
 }

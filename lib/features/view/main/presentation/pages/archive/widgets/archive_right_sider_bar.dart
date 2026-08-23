@@ -687,7 +687,14 @@ class _ItemsList extends StatelessWidget {
                 ),
                 12.wBox,
                 Text(
-                  g.price.formatN,
+                  // Line total, not the unit price. `item.price` is per-unit
+                  // (order-total-calculation.md §3: items_amount =
+                  // Σ quantity × price), so a line rung three times used to
+                  // render the price of one here while the subtitle above
+                  // correctly read "3 x ...". Every multi-quantity line
+                  // under-read, and none of them added up to the accordion
+                  // header's `food_total`.
+                  (g.price * g.quantity).formatN,
                   style: context.textStyles.bold16.copyWith(
                     fontWeight: FontWeight.w500,
                     color: cancelled

@@ -75,6 +75,107 @@ void main() {
       await client.dispose();
     });
 
+    test('a localChange from one follower reaches the leader and every other '
+        'follower, in one hop', () async {
+      // The seam `local_change_relay_test.dart` cannot reach: that suite moves
+      // frames between terminals by hand. This proves the real server actually
+      // carries a `localChange` — fanning it out to the *other* clients while
+      // also handing it to its own app layer, which is what makes a follower's
+      // write visible venue-wide without the cloud.
+      final leaderSaw = <LanHubMessage>[];
+      await server.start(
+        port: port,
+        authValidator: (token, branchId) async => true,
+        onRelayOp: (_) async => 'synced',
+        onBroadcast: leaderSaw.add,
+      );
+
+      final writer = LanHubClient();
+      final other = LanHubClient();
+      await writer.connect(
+        '127.0.0.1',
+        port: port,
+        getCredentials: () async => (token: 't', branchId: 'branch-1'),
+      );
+      await other.connect(
+        '127.0.0.1',
+        port: port,
+        getCredentials: () async => (token: 't', branchId: 'branch-1'),
+      );
+      await _waitUntil(() => server.clientCount == 2);
+
+      final otherSaw = <LanHubMessage>[];
+      final writerSaw = <LanHubMessage>[];
+      other.onMessage.listen(otherSaw.add);
+      writer.onMessage.listen(writerSaw.add);
+
+      writer.send(LanHubMessage.localChange(
+        entity: 'orders',
+        action: 'create',
+        entityId: 'o-1',
+        payloadJson: '{"id":"o-1","bill_status":"open"}',
+        origin: 'till-a',
+      ));
+
+      await _waitUntil(() => leaderSaw.isNotEmpty && otherSaw.isNotEmpty);
+
+      expect(leaderSaw.single.type, LanHubMessageType.localChange);
+      expect(leaderSaw.single.changeEntityId, 'o-1');
+      expect(leaderSaw.single.changeOrigin, 'till-a');
+      expect(otherSaw.single.changeEntityId, 'o-1');
+      expect(
+        otherSaw.single.changePayload,
+        '{"id":"o-1","bill_status":"open"}',
+        reason: 'the payload must survive the wire byte for byte — the '
+            'receiver hands it to the same applier the cloud path uses',
+      );
+      expect(
+        writerSaw,
+        isEmpty,
+        reason: 'the sender must not get its own change back, or it would '
+            'apply what it already wrote',
+      );
+
+      await writer.dispose();
+      await other.dispose();
+    });
+
+    test('a timerAction crosses the wire with its record intact', () async {
+      final leaderSaw = <LanHubMessage>[];
+      await server.start(
+        port: port,
+        authValidator: (token, branchId) async => true,
+        onRelayOp: (_) async => 'synced',
+        onBroadcast: leaderSaw.add,
+      );
+
+      final waiterTill = LanHubClient();
+      await waiterTill.connect(
+        '127.0.0.1',
+        port: port,
+        getCredentials: () async => (token: 't', branchId: 'branch-1'),
+      );
+      await _waitUntil(() => waiterTill.isConnected);
+
+      waiterTill.send(LanHubMessage.timerAction(
+        orderId: 'o-1',
+        action: 'pause',
+        recordJson: '{"state":"paused","accumulated_active_sec":3600}',
+      ));
+      await _waitUntil(() => leaderSaw.isNotEmpty);
+
+      expect(leaderSaw.single.type, LanHubMessageType.timerAction);
+      expect(leaderSaw.single.timerOrderId, 'o-1');
+      expect(leaderSaw.single.timerActionName, 'pause');
+      expect(
+        leaderSaw.single.timerRecord,
+        '{"state":"paused","accumulated_active_sec":3600}',
+        reason: 'the accumulator is money — it must survive the wire exactly',
+      );
+
+      await waiterTill.dispose();
+    });
+
     test('wrong-branch token is rejected with a reason, never joins broadcast set', () async {
       await server.start(
         port: port,

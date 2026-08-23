@@ -47,9 +47,9 @@ class _ArchiveScreenState extends State<ArchiveScreen> {
   @override
   void initState() {
     super.initState();
-    // §8 Phase 6/V8 — no more `Timer.periodic` silent refresh here;
-    // `ArchivesBloc` now subscribes to `SyncEngine`-hydrated archives
-    // reactively (see `archives_bloc.dart`'s constructor).
+    // §8 Phase 6/V8 — no `Timer.periodic` silent refresh here, and no fetch:
+    // `ArchivesBloc` subscribes to the replica and re-queries it whenever
+    // replication changes a row (see `archives_bloc.dart`).
     _bloc = inject<ArchivesBloc>()..add(const ArchivesEvent.started());
   }
 
@@ -87,20 +87,13 @@ class _ArchiveBody extends StatelessWidget {
             builder: (context, state) {
               final archives = state.archives?.archives ?? [];
 
-              final openCount = archives
-                  .where(
-                    (a) =>
-                        a.status == OrderStatus.open ||
-                        a.status == OrderStatus.opened,
-                  )
-                  .length;
-              final revenue = archives.fold<int>(
-                0,
-                (sum, a) => sum + _archiveDisplayTotal(a),
-              );
-              final avgCheck = archives.isNotEmpty
-                  ? revenue ~/ archives.length
-                  : 0;
+              // Straight off `ArchivesQuery.summary`, which aggregates the
+              // whole filtered window in SQL. These used to be folded out of
+              // `archives` — the rows the list happened to be holding — so a
+              // shift with more bills than one page reported the count and
+              // revenue of a page, and the number a cashier reconciles a till
+              // against moved as they scrolled.
+              final summary = state.summary;
 
               final horizontal = PosBreakpoints.pick<double>(
                 context,
@@ -115,10 +108,10 @@ class _ArchiveBody extends StatelessWidget {
                   Padding(
                     padding: EdgeInsets.fromLTRB(horizontal, 4, horizontal, 14),
                     child: _InlineStatsRow(
-                      count: archives.length,
-                      revenue: revenue,
-                      openCount: openCount,
-                      avgCheck: avgCheck,
+                      count: summary.count,
+                      revenue: summary.revenue,
+                      openCount: summary.openCount,
+                      avgCheck: summary.avgCheck,
                     ),
                   ),
                   const Divider(height: 1, color: Color(0xFFE2E8F0)),
@@ -139,9 +132,14 @@ class _ArchiveBody extends StatelessWidget {
                               archives: archives,
                               selectedId: state.selectArchive?.id,
                               isLoading: state.status == Status.LOADING,
+                              hasMore: state.hasMore,
+                              isLoadingMore: state.isLoadingMore,
                               onSelect: (id) => context
                                   .read<ArchivesBloc>()
                                   .add(ArchivesEvent.selectArchive(id: id)),
+                              onLoadMore: () => context
+                                  .read<ArchivesBloc>()
+                                  .add(const ArchivesEvent.loadMore()),
                             ),
                           ),
                           SizedBox(
@@ -293,21 +291,79 @@ class _MetricDivider extends StatelessWidget {
   }
 }
 
-class _ArchiveTable extends StatelessWidget {
+class _ArchiveTable extends StatefulWidget {
   final List<ArchiveEntity> archives;
   final String? selectedId;
   final bool isLoading;
+
+  /// The window holds bills this list has not asked for yet.
+  final bool hasMore;
+
+  /// A load is in flight — the footer shows it, and [onLoadMore] is not
+  /// dispatched again until it lands.
+  final bool isLoadingMore;
   final ValueChanged<String> onSelect;
+  final VoidCallback onLoadMore;
 
   const _ArchiveTable({
     required this.archives,
     required this.selectedId,
     required this.isLoading,
+    required this.hasMore,
+    required this.isLoadingMore,
     required this.onSelect,
+    required this.onLoadMore,
   });
 
   @override
+  State<_ArchiveTable> createState() => _ArchiveTableState();
+}
+
+class _ArchiveTableState extends State<_ArchiveTable> {
+  final _controller = ScrollController();
+
+  /// How close to the end counts as "reached the end". A few rows' worth, so
+  /// the next page is already loading by the time the operator gets there.
+  static const _prefetchExtent = 400.0;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller.addListener(_onScroll);
+  }
+
+  @override
+  void dispose() {
+    _controller.removeListener(_onScroll);
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    if (!widget.hasMore || widget.isLoadingMore) return;
+    if (!_controller.hasClients) return;
+    final position = _controller.position;
+    if (position.pixels >= position.maxScrollExtent - _prefetchExtent) {
+      widget.onLoadMore();
+    }
+  }
+
+  /// A window short enough not to scroll still has to be able to grow —
+  /// otherwise a filter whose first page happens to fit on screen would strand
+  /// the rest of its bills with no gesture to reach them.
+  void _loadMoreIfNotScrollable() {
+    if (!widget.hasMore || widget.isLoadingMore) return;
+    if (!_controller.hasClients) return;
+    if (_controller.position.maxScrollExtent == 0) widget.onLoadMore();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final archives = widget.archives;
+    final isLoading = widget.isLoading;
+    WidgetsBinding.instance.addPostFrameCallback(
+      (_) => _loadMoreIfNotScrollable(),
+    );
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -340,21 +396,47 @@ class _ArchiveTable extends StatelessWidget {
                 : archives.isEmpty
                 ? _EmptyState()
                 : ListView.separated(
-                    itemCount: archives.length,
+                    controller: _controller,
+                    // One extra slot for the footer: the "loading more"
+                    // indicator while the window grows, and nothing once
+                    // every bill in the window is on screen.
+                    itemCount: archives.length + (widget.hasMore ? 1 : 0),
                     separatorBuilder: (_, _) => const Divider(
                       height: 1,
                       thickness: 1,
                       color: Color(0xFFF1F5F9),
                     ),
-                    itemBuilder: (context, i) => _ArchiveRow(
-                      key: ValueKey(archives[i].id),
-                      archive: archives[i],
-                      isSelected: selectedId == archives[i].id,
-                      onTap: () => onSelect(archives[i].id),
-                    ),
+                    itemBuilder: (context, i) {
+                      if (i >= archives.length) return const _LoadingMoreRow();
+                      return _ArchiveRow(
+                        key: ValueKey(archives[i].id),
+                        archive: archives[i],
+                        isSelected: widget.selectedId == archives[i].id,
+                        onTap: () => widget.onSelect(archives[i].id),
+                      );
+                    },
                   ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// The list's footer while the next page of bills is being read.
+class _LoadingMoreRow extends StatelessWidget {
+  const _LoadingMoreRow();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Padding(
+      padding: EdgeInsets.symmetric(vertical: 18),
+      child: Center(
+        child: SizedBox(
+          width: 20,
+          height: 20,
+          child: CircularProgressIndicator.adaptive(strokeWidth: 2),
+        ),
       ),
     );
   }
@@ -480,7 +562,7 @@ class _ArchiveFilterBar extends StatelessWidget {
           _StatusFilterRow(state: state),
           const Spacer(),
           if (role.canViewAllOrders)
-            _ExportCsvButton(archives: state.archives?.archives ?? const []),
+            _ExportCsvButton(count: state.summary.count),
         ],
       ),
     );
@@ -754,10 +836,15 @@ class _DateChunk extends StatelessWidget {
 }
 
 class _ExportCsvButton extends StatelessWidget {
-  final List<ArchiveEntity> archives;
-  const _ExportCsvButton({required this.archives});
+  /// Only used to decide whether the button is live — the rows themselves are
+  /// read from the bloc at press time, so the file holds the whole window and
+  /// not just the part that has been scrolled into the list.
+  final int count;
+  const _ExportCsvButton({required this.count});
 
-  void _export(BuildContext context) {
+  Future<void> _export(BuildContext context) async {
+    final archives = await context.read<ArchivesBloc>().archivesInWindow();
+    if (!context.mounted || archives.isEmpty) return;
     final buffer = StringBuffer()..writeln('#,Stol,Holat,Taomlar,Summa,Vaqt');
     for (final a in archives) {
       final time = a.opened != null
@@ -778,7 +865,7 @@ class _ExportCsvButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final enabled = archives.isNotEmpty;
+    final enabled = count > 0;
     return GestureDetector(
       onTap: enabled ? () => _export(context) : null,
       child: AnimatedContainer(

@@ -6,6 +6,8 @@ import 'package:mary_ai_pos/core/extension/for_context.dart';
 import 'package:mary_ai_pos/core/services/audit/privileged_action_audit_entry.dart';
 import 'package:mary_ai_pos/core/services/audit/privileged_action_audit_log_service.dart';
 import 'package:mary_ai_pos/core/services/lan_hub/lan_hub_service.dart';
+import 'package:mary_ai_pos/core/sync/local_change_relay.dart';
+import 'package:mary_ai_pos/core/theme/tokens/theme_colors.dart';
 import 'package:mary_ai_pos/core/services/offline_queue/offline_queue_service.dart';
 import 'package:mary_ai_pos/core/services/offline_queue/pending_operation.dart';
 import 'package:mary_ai_pos/core/services/offline_queue/quarantined_operation.dart';
@@ -302,7 +304,26 @@ class _ClusterCard extends StatelessWidget {
         final mode = modeSnap.data ?? lanHub.mode;
         return SoftCard(
           padding: const EdgeInsets.all(18),
-          child: switch (mode) {
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _clusterHeader(context, mode, lanHub, colors),
+              // Only meaningful once there is a network to count over.
+              if (mode != LanMode.disabled) const _PeerSyncCounters(),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _clusterHeader(
+    BuildContext context,
+    LanMode mode,
+    LanHubService lanHub,
+    ThemeColors colors,
+  ) {
+    return switch (mode) {
             LanMode.disabled => _CardHeader(
                 icon: Icons.lan_outlined,
                 iconColor: colors.textSecondary,
@@ -339,7 +360,50 @@ class _ClusterCard extends StatelessWidget {
                   );
                 },
               ),
-          },
+    };
+  }
+}
+
+/// How many row/timer changes this terminal has put on the LAN and taken off
+/// it, live.
+///
+/// The venue's peer-to-peer replication is otherwise invisible: a manager
+/// asking "are the tills actually talking to each other?" had no way to tell
+/// short of ringing something in on one and walking to another. Two numbers
+/// answer it, and answer it even when the branch has no internet at all —
+/// which is exactly when this matters and when every other indicator on this
+/// screen reads as a failure.
+class _PeerSyncCounters extends StatelessWidget {
+  const _PeerSyncCounters();
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    return ValueListenableBuilder<({int sent, int received})>(
+      valueListenable: inject<LocalChangeRelay>().countersListenable,
+      builder: (context, counters, _) {
+        final quiet = counters.sent == 0 && counters.received == 0;
+        return Padding(
+          padding: const EdgeInsets.only(top: 12),
+          child: Row(
+            children: [
+              Icon(
+                Icons.sync_alt,
+                size: 16,
+                color: quiet ? colors.textSecondary : colors.systemSuccess,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  quiet
+                      ? "Hali o'zgarish almashilmadi"
+                      : "Yuborilgan ${counters.sent} · "
+                          'Qabul qilingan ${counters.received}',
+                  style: TextStyle(fontSize: 12, color: colors.textSecondary),
+                ),
+              ),
+            ],
+          ),
         );
       },
     );

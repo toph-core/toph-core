@@ -165,10 +165,34 @@ class LeaderElectionService {
 
   bool get _isRunning => _sub != null;
 
+  /// How often [start] re-checks for a branch id when it was called before one
+  /// existed. Cheap — the check is a bloc-state read, not I/O — and it stops
+  /// the moment it succeeds.
+  static const branchWaitInterval = Duration(seconds: 3);
+
+  Timer? _branchWait;
+
   Future<void> start() async {
     if (!isEnabled || _isRunning) return;
     final branchId = _myBranchId();
-    if (branchId.isEmpty) return;
+    if (branchId.isEmpty) {
+      // `di.dart` calls this during `initDi()`, which finishes *before*
+      // `runApp` — and the branch id comes from `UserBloc`, whose cached
+      // profile is not read until `UserEvent.started()` fires from the widget
+      // tree. So on every launch the id is empty here, and this used to be a
+      // bare `return`: election never ran, LAN mode was never set, and Phase
+      // 6's "the venue coordinates itself" was inert on every terminal in the
+      // field. Nothing called `start()` a second time to recover.
+      //
+      // Re-arming here rather than having `di.dart` sequence the call after
+      // login keeps the fix in the class that owns the precondition, and it
+      // covers logout→login too, where the id goes empty and comes back
+      // without any startup running again.
+      _armBranchWait();
+      return;
+    }
+    _branchWait?.cancel();
+    _branchWait = null;
     await _discovery.startListening();
     _sub = _discovery.onAnnouncement.listen((a) => _onAnnouncement(a, branchId));
     // §7 "Reconnection re-discovery is non-blocking": start as a plain
@@ -181,7 +205,27 @@ class LeaderElectionService {
     _watchdog = Timer.periodic(heartbeatInterval, (_) => _checkLeaderAlive());
   }
 
+  /// Polls for the branch id [start] needed and did not have, then starts for
+  /// real. Idempotent: a second [start] while this is armed is a no-op, since
+  /// the timer is only replaced, never stacked.
+  void _armBranchWait() {
+    _branchWait?.cancel();
+    _branchWait = Timer.periodic(branchWaitInterval, (_) {
+      if (!isEnabled) {
+        _branchWait?.cancel();
+        _branchWait = null;
+        return;
+      }
+      if (_isRunning || _myBranchId().isEmpty) return;
+      _branchWait?.cancel();
+      _branchWait = null;
+      unawaited(start());
+    });
+  }
+
   Future<void> stop() async {
+    _branchWait?.cancel();
+    _branchWait = null;
     await _sub?.cancel();
     _sub = null;
     _watchdog?.cancel();

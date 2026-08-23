@@ -88,11 +88,27 @@ void registerOrdersOutboxHandlers(OutboxExecutors executors, DioClient dio) {
             'add items without an order id',
           );
         }
-        return _send(() => dio.post(
-              ListAPI.orderItems(orderId),
-              queryParameters: {'lang': 'uz'},
-              data: {'items': op.payload['items']},
-            ));
+        try {
+          final response = await dio.post(
+            ListAPI.orderItems(orderId),
+            queryParameters: {'lang': 'uz'},
+            data: {'items': op.payload['items']},
+          );
+          // The line is provisional locally (`LocalWriter.create`), because the
+          // backend assigns order items their own primary key. Handing the
+          // created row back lets `OutboxDrainer._reconcile` *swap* the local
+          // id for the server's; without it the drainer takes its other branch
+          // — delete the local row and wait for replication — and the operator
+          // watches a line they just rang disappear off an open check until the
+          // next pull. One op carries one line, so `items[0]` is that line.
+          return OutboxExecutionResult.succeeded(
+            serverRow: _firstCreatedItem(response.data),
+          );
+        } on DioException catch (e) {
+          return _mapDioError(e);
+        } catch (e) {
+          return OutboxExecutionResult.retry(e.toString());
+        }
       },
     ),
   );
@@ -197,6 +213,26 @@ void registerOrdersOutboxHandlers(OutboxExecutors executors, DioClient dio) {
           ));
     }),
   );
+}
+
+/// The created line out of an `AddOrderItemsResponse`, or null if the response
+/// did not carry one.
+///
+/// The endpoint answers `{status, message, data: {order, items}}` — the row is
+/// two levels in and inside a list, which is neither shape
+/// `OutboxDrainer._rowOf` knows how to unwrap. A null here is not an error: it
+/// degrades to the drainer's "the endpoint did not tell us the id it assigned"
+/// branch, which is correct, just less pleasant to watch.
+Map<String, dynamic>? _firstCreatedItem(Object? responseData) {
+  final data = responseData is Map ? responseData['data'] : null;
+  final items = data is Map ? data['items'] : null;
+  if (items is! List || items.isEmpty) return null;
+  final first = items.first;
+  if (first is! Map) return null;
+  final row = Map<String, dynamic>.from(first);
+  final id = row['id'];
+  if (id is! String || id.isEmpty) return null;
+  return row;
 }
 
 /// The order id an `orders`-entity op addresses — its `entityId` (the order's

@@ -83,6 +83,7 @@ import 'package:mary_ai_pos/features/view/main/data/models/goods/goods_model.dar
 import 'package:mary_ai_pos/features/view/main/data/repository/halls_tables_local_repository_impl.dart';
 import 'package:mary_ai_pos/features/view/main/data/repository/menu_admin_local_repository_impl.dart';
 import 'package:mary_ai_pos/features/view/main/data/repository/orders_repository_impl.dart';
+import 'package:mary_ai_pos/features/view/main/data/repository/service_charge_repository_impl.dart';
 import 'package:mary_ai_pos/features/view/main/data/repository/tables_repository_impl.dart';
 import 'package:mary_ai_pos/features/view/main/data/repository/users_local_repository_impl.dart';
 import 'package:mary_ai_pos/features/view/main/domain/repository/tables_repository.dart';
@@ -146,11 +147,6 @@ const Map<String, String> kOutboxBypass = {
       'so neither half of this screen is local yet.',
   'lib/features/view/main/data/repository/main_repository_impl.dart#deletePrinterSetting':
       'As pushPrinterSetting.',
-  'lib/features/view/main/data/repository/main_repository_impl.dart#saveServiceCharge':
-      'Service-charge save, straight to Dio. Documented in the file as "one '
-      'low-volume config value with no reason to carry offline-write '
-      'machinery; the cubit already refuses the edit when offline" — a '
-      'deliberate choice, but still a second write path, so it is counted.',
 
   // ── The remainder of MainRepositoryImpl ──────────────────────────────────
   // Superseded rather than pending: each of these has a local, outbox-backed
@@ -159,6 +155,9 @@ const Map<String, String> kOutboxBypass = {
   // OrdersRepositoryImpl). The methods survive only because MainRepository is
   // one wide interface that di.dart still hands out. They leave this list when
   // the interface is split, not when someone rewrites them.
+  'lib/features/view/main/data/repository/main_repository_impl.dart#saveServiceCharge':
+      'Superseded by ServiceChargeRepositoryImpl.saveServicePercent. Only the '
+      'branches outbox handler calls this now.',
   'lib/features/view/main/data/repository/main_repository_impl.dart#createUser':
       'Superseded by UsersLocalRepositoryImpl.createUser.',
   'lib/features/view/main/data/repository/main_repository_impl.dart#updateUser':
@@ -614,6 +613,52 @@ void main() {
             'LocalWriter.',
       );
     }
+
+    group('ServiceChargeRepositoryImpl', () {
+      const file =
+          'lib/features/view/main/data/repository/service_charge_repository_impl.dart';
+      late ServiceChargeRepositoryImpl repo;
+
+      setUp(() => repo = ServiceChargeRepositoryImpl(db, writer));
+
+      test('saveServicePercent', () async {
+        seed('branches', {
+          'id': 'br1',
+          'name': 'Chilonzor',
+          'default_service_percent': '10',
+          'deleted_at': 0,
+        });
+        await enqueues(
+          file,
+          'saveServicePercent',
+          () => expect(repo.saveServicePercent('br1', 12).isRight(), isTrue),
+        );
+        // Readable immediately, by the same query the settings screen uses.
+        expect(repo.getServicePercent('br1'), 12);
+      });
+
+      test('a save merges rather than replacing the branch row', () {
+        // `branches` is a whole entity and this screen owns one field of it.
+        // A non-merging write would blank the rest until the next pull, which
+        // is the failure mode that makes this worth its own test rather than
+        // an assertion inside the one above.
+        seed('branches', {
+          'id': 'br1',
+          'name': 'Chilonzor',
+          'default_service_percent': '10',
+          'deleted_at': 0,
+        });
+        repo.saveServicePercent('br1', 12);
+        expect(db.byId('branches', 'br1')!['name'], 'Chilonzor');
+      });
+
+      test('a save without a branch id writes nothing', () {
+        // The cubit guards this too, but a repository that queued an
+        // unaddressable operation would leave the drainer to fail it forever.
+        expect(repo.saveServicePercent('', 12).isLeft(), isTrue);
+        expect(db.allOf('branches'), isEmpty);
+      });
+    });
 
     group('UsersLocalRepositoryImpl', () {
       const file =

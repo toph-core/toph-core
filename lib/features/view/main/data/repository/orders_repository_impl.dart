@@ -60,12 +60,12 @@ class OrdersRepositoryImpl implements OrdersRepository {
     required OrderDetailQuery detail,
     required LanHubService lanHub,
     required TablesRepository tables,
-  })  : _db = db,
-        _applier = applier,
-        _writer = writer,
-        _detail = detail,
-        _lanHub = lanHub,
-        _tables = tables;
+  }) : _db = db,
+       _applier = applier,
+       _writer = writer,
+       _detail = detail,
+       _lanHub = lanHub,
+       _tables = tables;
 
   // ── Reads ────────────────────────────────────────────────────────────────
 
@@ -86,8 +86,9 @@ class OrdersRepositoryImpl implements OrdersRepository {
   }
 
   @override
-  Stream<ArchiveDetailModel?> watchOrderDetail(String key) =>
-      _db.watch(OrderDetailQuery.watchedTables, () => _resolve(key)).map(_decode);
+  Stream<ArchiveDetailModel?> watchOrderDetail(String key) => _db
+      .watch(OrderDetailQuery.watchedTables, () => _resolve(key))
+      .map(_decode);
 
   @override
   ArchiveDetailModel? getOrderDetail(String key) => _decode(_resolve(key));
@@ -102,22 +103,79 @@ class OrdersRepositoryImpl implements OrdersRepository {
     // interface; the Hive box it used to clear is no longer read.
   }
 
+  /// Projection field names that are not `orders` columns.
+  ///
+  /// The snapshot callers hand in an `ArchiveDetailModel` — the REST *bill*
+  /// shape, assembled from joins — not a row of the `orders` table. It calls
+  /// the open time `opened_at`, the settle time `closed_at` and the table
+  /// charge `table_amount`, and it carries `table_number`, `hall_name` and
+  /// `cashier_name`, which live on other tables entirely.
+  static const _projectionOnlyKeys = {
+    'items',
+    'opened_at',
+    'closed_at',
+    'table_amount',
+    'table_number',
+    'hall_name',
+    'cashier_name',
+    'pause_periods',
+    'table_sessions',
+  };
+
+  /// A projection timestamp as a UTC instant.
+  ///
+  /// `ArchiveDetailModel` stamps `DateTime.now()` — device-local, and
+  /// serialised with no offset. Stored verbatim, SQLite reads a bare
+  /// `2026-08-23T13:33:20` as UTC, which puts a bill five hours into the
+  /// future in a UTC+5 venue and takes it straight back out of the window it
+  /// was just written into.
+  static String? _utcIso(Object? v) {
+    if (v is! String || v.isEmpty) return null;
+    return DateTime.tryParse(v)?.toUtc().toIso8601String();
+  }
+
   @override
-  Future<void> saveOrderDetailSnapshot(String key, Map<String, dynamic> json) async {
-    // For the callers that hand a pre-built bill in (the takeaway preview, the
-    // waiter open-table snapshot): the create paths below already wrote the
-    // authoritative rows, so this is an idempotent upsert — and [ChangeApplier]
-    // skips a row whose pending guard is still held, so it can never overwrite a
-    // just-written create with the snapshot's thinner shape.
+  Future<void> saveOrderDetailSnapshot(
+    String key,
+    Map<String, dynamic> json,
+  ) async {
+    // Merged onto the stored row, never written over it.
+    //
+    // This used to `applyOne(action: 'create')` with the projection map as the
+    // whole payload, and a replicated row is one JSON blob replaced wholesale
+    // — so every field the projection does not have was erased, `created_at`
+    // and `paid_at` among them. `ArchivesQuery` filters and orders on
+    // `COALESCE(paid_at, created_at)`, so a bill whose timestamps had been
+    // blanked matched *no* date window at all: gone from Today, Week, Month,
+    // Year and any picked range, present only under "All", and still perfectly
+    // intact on the server. That is what made paid checks look deleted.
+    //
+    // The old note here claimed the `_pending` guard prevented this. It does
+    // not: the guard covers the window between a local write and its
+    // acknowledgement, and every snapshot written after that lands unopposed.
     final orderId = json['id']?.toString() ?? '';
     if (orderId.isEmpty) return;
     // key != id ⇒ key is a table id (dine-in); key == id ⇒ takeaway, no table.
     final tableId = key != orderId ? key : (json['table_id']?.toString() ?? '');
-    final row = Map<String, dynamic>.from(json)..remove('items');
-    row['id'] = orderId;
+    final stored = _db.byId('orders', orderId) ?? const <String, dynamic>{};
+
+    final row = <String, dynamic>{
+      ...stored,
+      for (final e in json.entries)
+        if (!_projectionOnlyKeys.contains(e.key) && e.value != null)
+          e.key: e.value,
+      'id': orderId,
+    };
     if (tableId.isNotEmpty) row['table_id'] = tableId;
-    row['bill_status'] = (json['bill_status'] ?? 'open').toString();
-    _applier.applyOne(entity: 'orders', action: 'create', payload: row);
+    row['bill_status'] =
+        (json['bill_status'] ?? stored['bill_status'] ?? 'opened').toString();
+    // The feed's own value always wins; the projection only ever fills a gap.
+    row['created_at'] = stored['created_at'] ?? _utcIso(json['opened_at']);
+    row['paid_at'] = stored['paid_at'] ?? _utcIso(json['closed_at']);
+    final tableCharge = stored['table_charge'] ?? json['table_amount'];
+    if (tableCharge != null) row['table_charge'] = tableCharge;
+
+    _applier.applyOne(entity: 'orders', action: 'update', payload: row);
 
     final items = json['items'];
     if (items is List) {
@@ -128,7 +186,11 @@ class OrdersRepositoryImpl implements OrdersRepository {
         // server assigns its own; skip it. The create path always supplies ids.
         if (id.isEmpty) continue;
         item['order_id'] = orderId;
-        _applier.applyOne(entity: 'order_items', action: 'create', payload: item);
+        _applier.applyOne(
+          entity: 'order_items',
+          action: 'create',
+          payload: item,
+        );
       }
     }
   }
@@ -210,7 +272,8 @@ class OrdersRepositoryImpl implements OrdersRepository {
       'status': 'open',
       'order_type': orderType,
       'items': [
-        for (var i = 0; i < items.length; i++) _createItemBody(itemIds[i], items[i]),
+        for (var i = 0; i < items.length; i++)
+          _createItemBody(itemIds[i], items[i]),
       ],
     };
 
@@ -246,16 +309,28 @@ class OrdersRepositoryImpl implements OrdersRepository {
     required List<OrderItem> items,
     List<String>? itemClientIds,
   }) async {
-    final ids = itemClientIds ?? [for (var i = 0; i < items.length; i++) generateUuidV4()];
+    final ids =
+        itemClientIds ??
+        [for (var i = 0; i < items.length; i++) generateUuidV4()];
     final base = DateTime.now().toUtc();
     for (var i = 0; i < items.length; i++) {
       // One op per line: its entityId is the line id, so its pending clears on
       // ack; the handler chains it on `order_id` so it never overtakes the
       // order's create.
-      _writer.write(
+      //
+      // `create`, not `write`: the backend mints an order item's primary key
+      // itself and ignores the one we send (`AddOrderItems`, service/order.go),
+      // so this id is provisional by definition. `write` would assert the
+      // opposite — that the id survives the round trip — and leave the local
+      // row standing next to the server's when the feed delivered it, which is
+      // exactly how one physical line came to be stored twice. Marking it
+      // provisional hands the swap to `OutboxDrainer._reconcile`, which also
+      // repoints anything still queued against the old id: a cancel of a line
+      // added offline used to post the client uuid, 404, and be swallowed as
+      // success.
+      _writer.create(
         entity: 'order_items',
         id: ids[i],
-        action: 'create',
         row: _itemRow(
           id: ids[i],
           orderId: orderId,
@@ -340,26 +415,50 @@ class OrdersRepositoryImpl implements OrdersRepository {
     required String orderId,
     required OrderItem item,
     required String createdAt,
-  }) =>
-      {
-        'id': id,
-        'order_id': orderId,
-        'good_id': item.goods.id,
-        'quantity': item.quantity,
-        'price': (double.tryParse(item.goods.price) ?? 0).round(),
-        'comment': item.comment,
-        'status': 'pending',
-        'created_at': createdAt,
-      };
+  }) => {
+    'id': id,
+    // The same value the request sends as `client_item_id`, stored so a local
+    // row is self-describing: this is the key the server will echo back, and
+    // the one `ChangeApplier._retireClientTwin` matches the arriving row on.
+    'client_item_id': id,
+    'order_id': orderId,
+    'good_id': item.goods.id,
+    'quantity': item.quantity,
+    'price': (double.tryParse(item.goods.price) ?? 0).round(),
+    'comment': item.comment,
+    'status': 'pending',
+    'created_at': createdAt,
+  };
 
-  /// One line in a create/add-items request body — carrying the client id the
-  /// backend honours as the line's primary key.
+  /// One line in a create/add-items request body.
+  ///
+  /// [id] goes out as `client_item_id`, **not** as `id`. The backend assigns
+  /// an order item its own primary key (`uuid.New()` in both `CreateOrder` and
+  /// `AddOrderItems`) and ignores an `id` in the item body entirely — the
+  /// client-id-as-PK dedup that `orders` enjoys does not extend to its lines.
+  /// `client_item_id` is the key it does honour
+  /// (`migrations/tenants/70_order_items_client_id.up.sql`), and it earns two
+  /// separate things:
+  ///
+  ///  * **Replay idempotency.** A lost response after the insert committed —
+  ///    a dropped LAN relay, a request timeout — used to make the outbox retry
+  ///    create a second, fully real set of lines on the server: double
+  ///    quantity, double stock deduction, double totals. The partial unique
+  ///    index on `(order_id, client_item_id)` is what stops that, and it only
+  ///    constrains rows that supply the key.
+  ///  * **Twin retirement.** The server echoes the key back on the change
+  ///    feed, which is how [ChangeApplier] recognises the local row this line
+  ///    was optimistically written under and removes it instead of leaving one
+  ///    physical line stored twice.
+  ///
+  /// Sending it costs nothing when the write succeeds first time; not sending
+  /// it is what made every locally-rung line count twice in the replica.
   Map<String, dynamic> _createItemBody(String id, OrderItem item) => {
-        'id': id,
-        'good_id': item.goods.id,
-        'quantity': item.quantity,
-        'comment': item.comment,
-      };
+    'client_item_id': id,
+    'good_id': item.goods.id,
+    'quantity': item.quantity,
+    'comment': item.comment,
+  };
 
   /// [base] shifted by [i] milliseconds, ISO-8601 — a monotonic per-line
   /// timestamp so a batch of lines keeps its ring-in order on read.

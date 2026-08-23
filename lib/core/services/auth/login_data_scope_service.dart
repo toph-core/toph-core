@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:mary_ai_pos/core/auth/storage/token_storage_impl.dart';
 import 'package:mary_ai_pos/core/db/local_database.dart';
+import 'package:mary_ai_pos/core/sync/replication_service.dart';
 import 'package:mary_ai_pos/core/sync/sync_engine.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/shift/shift_bloc.dart'
     show ShiftBloc;
@@ -23,6 +24,35 @@ import 'package:shared_preferences/shared_preferences.dart';
 /// network is allowed: it's prep phase, not runtime. The hydration itself is
 /// `SyncEngine`'s existing pass, kicked once here rather than a second,
 /// parallel fetch path.
+/// What a login turned out to need, decided by [LoginDataScopeService
+/// .onSuccessfulLogin] and acted on by its caller.
+enum LoginDataScope {
+  /// Same brand, same register. The replica already describes this terminal.
+  none,
+
+  /// Same brand, different register. Branch-scoped rows are refetched
+  /// additively in the background — nothing is cleared, so the app is usable
+  /// throughout and there is nothing to wait for.
+  branchRefresh,
+
+  /// A terminal with no usable replica: first ever login, an interrupted
+  /// setup, or a brand switch that invalidates everything stored. The caller
+  /// must run [LoginDataScopeService.runInitialSetup] and keep the operator on
+  /// a progress screen until it finishes.
+  initialSetup,
+}
+
+/// How [LoginDataScopeService.runInitialSetup] ended.
+enum InitialSetupOutcome {
+  /// The replica is filled and the terminal is marked initialized.
+  ready,
+
+  /// The pull could not run or could not finish — no connectivity, a server
+  /// error, or a partial feed. The cursor holds whatever was applied, so
+  /// retrying resumes rather than restarting.
+  incomplete,
+}
+
 class LoginDataScopeService {
   final AppTokenStorage _storage;
   final LocalDatabase _replica;
@@ -60,11 +90,20 @@ class LoginDataScopeService {
   /// Called from `LoginPinCubit` after every successful login (online or
   /// offline-cached alike) — compares the new login's brand + cash register
   /// against the stored last pair and applies the retention rule above.
-  /// The data actions (wipe / store) are awaited; the hydration fetch is
-  /// deliberately not, so login navigation isn't blocked on the network.
-  Future<void> onSuccessfulLogin() async {
+  ///
+  /// Decides; it no longer also acts. The first-time pull used to be started
+  /// here with `unawaited(...)`, so login returned immediately and the
+  /// operator walked into an app whose halls, tables and menu were still
+  /// arriving — or, offline, were not coming at all. The plan always called
+  /// for this to be a foreground step ("the single request in the product a
+  /// person waits on"); returning the decision instead of firing it is what
+  /// lets the caller put a screen in front of it.
+  ///
+  /// The background case stays background: a branch refresh is additive over
+  /// a replica that already works, so there is nothing to wait for.
+  Future<LoginDataScope> onSuccessfulLogin() async {
     final brandId = (await _storage.readBrandIdToken())?.brandId ?? '';
-    if (brandId.isEmpty) return;
+    if (brandId.isEmpty) return LoginDataScope.none;
     final token = await _storage.readAccessToken() ?? '';
     final cashRegisterId =
         token.isEmpty ? '' : (_jwtClaim(token, 'cash_register_id') ?? '');
@@ -80,9 +119,9 @@ class LoginDataScopeService {
 
     if (brandChanged) {
       // Different brand entirely. The replica wipe is not done here — it is
-      // `resetAndBootstrap`'s first act below, so the clear and the refill
-      // are one operation and there is no window in which the terminal has
-      // an empty database and no bootstrap running.
+      // `resetAndBootstrap`'s first act in [runInitialSetup], so the clear and
+      // the refill are one operation and there is no window in which the
+      // terminal has an empty database and no bootstrap running.
       //
       // The active-shift record lives in SharedPreferences, outside the
       // replica — and `ShiftBloc._checkShift` is local-only, so a stale shift
@@ -97,45 +136,68 @@ class LoginDataScopeService {
       cashRegisterId: cashRegisterId,
     );
 
-    if (brandChanged) {
-      // OFFLINE_FIRST_EVERYWHERE_PLAN.md Phase 1 — the replica mirrors exactly
-      // one tenant, so a login to a different brand must drop it entirely
-      // rather than merge two tenants' rows under one cursor.
-      unawaited(_syncEngine.replication.resetAndBootstrap());
-    }
-
     if (brandChanged || firstTime) {
-      unawaited(_runFirstTimeSetup());
-    } else if (branchChanged) {
-      // Same brand, different branch: keep existing local data, refetch the
-      // new branch's data additively (halls/tables/open orders/archives) —
-      // no box is cleared, the brand-level catalog is not redownloaded.
-      unawaited(_syncEngine.hydrateNow());
+      // Remembered rather than acted on, because only this method knows the
+      // difference: a brand switch must drop the previous tenant's rows,
+      // while a first login on a fresh terminal has nothing to drop and an
+      // interrupted setup has a cursor worth resuming from.
+      _pendingReset = brandChanged;
+      return LoginDataScope.initialSetup;
     }
+    if (branchChanged) {
+      // Same brand, different branch: keep existing local data, refetch the
+      // new branch's data additively. No box is cleared and the brand-level
+      // catalog is not redownloaded, so this can run behind the app.
+      unawaited(_syncEngine.hydrateNow());
+      return LoginDataScope.branchRefresh;
+    }
+    return LoginDataScope.none;
   }
 
-  Future<void> _runFirstTimeSetup() async {
-    // OFFLINE_FIRST_EVERYWHERE_PLAN.md Phase 1 — the one-time replica fill.
-    // Deliberately still in the background here, alongside the legacy prep
-    // fetch: until Phase 4 moves the screens onto the replica, nothing reads
-    // what this produces, so blocking login on it would add a wait for data
-    // no one is looking at. Phase 4 promotes it to a foreground step with a
-    // progress screen — the single request in the product a person waits on.
-    //
-    // Safe to call on every first-time login: `bootstrap` resumes from the
-    // stored cursor and only marks completion on a clean catch-up.
-    if (_syncEngine.replication.needsBootstrap) {
-      unawaited(_syncEngine.replication.bootstrap());
-    }
+  /// Set by [onSuccessfulLogin] when the pending setup is a brand switch, and
+  /// therefore has to drop the replica before refilling it.
+  bool _pendingReset = false;
 
-    await _syncEngine.hydrateNow(includeGoods: true);
-    // Only mark setup done when data actually landed — a fully offline
-    // "first-time" login must stay un-initialized so the next online chance
-    // retries. The same two entities as before, asked of the replica: a
-    // terminal with halls' tables or a catalog has been provisioned.
-    final counts = _replica.tableCounts();
-    if ((counts['cafe_tables'] ?? 0) > 0 || (counts['categories'] ?? 0) > 0) {
-      await _storage.setPosInitialized(true);
+  /// The one-time replica fill, in the foreground.
+  ///
+  /// Safe to call repeatedly: `bootstrap` resumes from the stored cursor and
+  /// only marks completion on a clean catch-up, so a retry after a failure
+  /// continues rather than starting over.
+  ///
+  /// Reports progress so the screen in front of it can show something real
+  /// instead of an indefinite spinner — `onProgress` has existed on
+  /// [ReplicationService.bootstrap] since it was written and had no caller
+  /// until now.
+  Future<InitialSetupOutcome> runInitialSetup({
+    void Function(ReplicationProgress)? onProgress,
+  }) async {
+    try {
+      final replication = _syncEngine.replication;
+      final result = _pendingReset
+          ? await replication.resetAndBootstrap(onProgress: onProgress)
+          : await replication.bootstrap(onProgress: onProgress);
+      // Cleared only once the reset has actually happened, so an interrupted
+      // brand switch still drops the old tenant's rows on the retry.
+      if (result.ok) _pendingReset = false;
+
+      // The gap-fillers the change feed cannot carry (table timers, menu
+      // images). Failing here does not invalidate the pull above.
+      await _syncEngine.hydrateNow(includeGoods: true);
+
+      // Marked done only when data actually landed — a fully offline "first
+      // time" login must stay un-initialized so the next chance retries. The
+      // same two entities as before, asked of the replica: a terminal with
+      // halls' tables or a catalog has been provisioned.
+      final counts = _replica.tableCounts();
+      final filled =
+          (counts['cafe_tables'] ?? 0) > 0 || (counts['categories'] ?? 0) > 0;
+      if (result.outcome == ReplicationOutcome.caughtUp && filled) {
+        await _storage.setPosInitialized(true);
+        return InitialSetupOutcome.ready;
+      }
+      return InitialSetupOutcome.incomplete;
+    } catch (_) {
+      return InitialSetupOutcome.incomplete;
     }
   }
 }

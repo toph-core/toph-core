@@ -32,6 +32,8 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 
+import 'package:meta/meta.dart';
+
 // `sqlite3` exports its own `SqlType` (the C-level column type constants).
 // This layer's `SqlType` is the schema-registry enum that drives column
 // generation, and it is the one every call site here means, so the package's
@@ -58,12 +60,16 @@ class LocalDatabase {
   /// Tables written during the current transaction, flushed on commit so a
   /// 500-row pull batch produces one notification per table, not 500.
   final Set<String> _pendingNotify = {};
+
+  /// Side effects deferred until the current transaction commits, and dropped
+  /// entirely if it rolls back — see [afterCommit].
+  final List<void Function()> _pendingAfterCommit = [];
   int _txDepth = 0;
 
   LocalDatabase._(this._db);
 
   /// Current schema version. Bump when [_migrate] gains a step.
-  static const schemaVersion = 4;
+  static const schemaVersion = 5;
 
   /// Opens the database at [path], creating and migrating the schema.
   /// Pass `:memory:` for tests.
@@ -197,7 +203,62 @@ class LocalDatabase {
       );
     }
 
+    final priorVersion = int.tryParse(getMeta('schema_version') ?? '') ?? 0;
+    if (priorVersion < 5) repairBlankedOrderTimestamps();
+
     setMeta('schema_version', '$schemaVersion');
+  }
+
+  /// Schema v5 — puts back the `orders` timestamps an order-detail snapshot
+  /// erased.
+  ///
+  /// `OrdersRepositoryImpl.saveOrderDetailSnapshot` used to replace the whole
+  /// row with a bill *projection*, which has no `created_at` or `paid_at`. The
+  /// write is fixed, but a terminal that ran the old build still holds rows
+  /// with NULL timestamps, and `ArchivesQuery` matches those against no date
+  /// window at all — the bills are on screen only under "All". The projection
+  /// left its own `opened_at`/`closed_at` behind in `data`, so the instants are
+  /// recoverable without a re-bootstrap.
+  ///
+  /// Done in Dart, not SQL: those values were stamped device-local with no
+  /// offset, and SQLite would read them as UTC.
+  @visibleForTesting
+  void repairBlankedOrderTimestamps() {
+    final orders = kEntitiesByName['orders'];
+    if (orders == null) return;
+    try {
+      final rows = _db.select(
+        'SELECT id, data FROM orders WHERE created_at IS NULL OR paid_at IS NULL',
+      );
+      if (rows.isEmpty) return;
+      transaction(() {
+        for (final row in rows) {
+          final id = row['id'] as String?;
+          final raw = row['data'];
+          if (id == null || raw is! String) continue;
+          final data = _tryDecode(raw);
+          if (data == null) continue;
+
+          final createdAt = data['created_at'] ?? _asUtcIso(data['opened_at']);
+          final paidAt = data['paid_at'] ?? _asUtcIso(data['closed_at']);
+          if (createdAt == null && paidAt == null) continue;
+
+          upsert(orders, id, {
+            ...data,
+            if (createdAt != null) 'created_at': createdAt,
+            if (paidAt != null) 'paid_at': paidAt,
+          });
+        }
+      });
+    } catch (_) {
+      // A repair is best-effort by definition: it must never stop the database
+      // from opening, and the next pull re-delivers these rows anyway.
+    }
+  }
+
+  static String? _asUtcIso(Object? v) {
+    if (v is! String || v.isEmpty) return null;
+    return DateTime.tryParse(v)?.toUtc().toIso8601String();
   }
 
   // ── Reactive reads ─────────────────────────────────────────────────────
@@ -228,7 +289,10 @@ class LocalDatabase {
 
   /// Runs an arbitrary query. Returns plain maps so callers can feed rows
   /// straight into existing `fromJson` constructors.
-  List<Map<String, Object?>> select(String sql, [List<Object?> params = const []]) {
+  List<Map<String, Object?>> select(
+    String sql, [
+    List<Object?> params = const [],
+  ]) {
     final result = _db.select(sql, params);
     return [for (final row in result) Map<String, Object?>.from(row)];
   }
@@ -255,7 +319,9 @@ class LocalDatabase {
   /// All live (not soft-deleted) rows of [entity].
   List<Map<String, dynamic>> allOf(String entity, {String? orderBy}) {
     final order = orderBy == null ? '' : ' ORDER BY $orderBy';
-    return selectData('SELECT data FROM $entity WHERE deleted_at IS NULL$order');
+    return selectData(
+      'SELECT data FROM $entity WHERE deleted_at IS NULL$order',
+    );
   }
 
   /// One row by primary key, or null. Returns soft-deleted rows as null.
@@ -399,9 +465,49 @@ class LocalDatabase {
           // Swallowed so a failed rollback cannot mask the original error.
         }
         _pendingNotify.clear();
+        _pendingAfterCommit.clear();
       }
       _txDepth--;
-      if (committed) _flushNotify();
+      if (committed) {
+        _flushNotify();
+        _flushAfterCommit();
+      }
+    }
+  }
+
+  /// Drains [afterCommit]'s queue. Each action is isolated: one throwing must
+  /// not strand the rest, and none of them can fail the transaction that has
+  /// already committed by the time this runs.
+  void _flushAfterCommit() {
+    if (_pendingAfterCommit.isEmpty) return;
+    final actions = List.of(_pendingAfterCommit);
+    _pendingAfterCommit.clear();
+    for (final action in actions) {
+      try {
+        action();
+      } catch (_) {
+        // A broadcast that throws is a disconnected peer's problem, not this
+        // terminal's — the write is already durable.
+      }
+    }
+  }
+
+  /// Runs [action] once the current transaction commits — immediately when
+  /// there is no transaction in flight, and never at all if it rolls back.
+  ///
+  /// The same rule [_touch] already applies to change notifications, exposed
+  /// for side effects that leave this process. A LAN broadcast of a local
+  /// write is the motivating case: emitting it inside the transaction would
+  /// let a peer receive a row that then rolled back here, leaving the two
+  /// replicas disagreeing until the next cloud pull happened to correct it.
+  ///
+  /// Deliberately not a general hook — actions run synchronously on the
+  /// committing thread, so anything slow belongs behind its own queue.
+  void afterCommit(void Function() action) {
+    if (_txDepth > 0) {
+      _pendingAfterCommit.add(action);
+    } else {
+      action();
     }
   }
 
@@ -444,7 +550,8 @@ class LocalDatabase {
       'SELECT table_id, status FROM ${LocalTables.tableStatus}',
     );
     return {
-      for (final row in rows) row['table_id'] as String: row['status'] as String,
+      for (final row in rows)
+        row['table_id'] as String: row['status'] as String,
     };
   }
 
@@ -569,13 +676,11 @@ class LocalDatabase {
     );
   }
 
-  bool isProvisional(String entity, String localId) => _db
-      .select(
-        'SELECT 1 FROM ${LocalTables.provisional} '
-        'WHERE entity = ? AND local_id = ? LIMIT 1',
-        [entity, localId],
-      )
-      .isNotEmpty;
+  bool isProvisional(String entity, String localId) => _db.select(
+    'SELECT 1 FROM ${LocalTables.provisional} '
+    'WHERE entity = ? AND local_id = ? LIMIT 1',
+    [entity, localId],
+  ).isNotEmpty;
 
   void clearProvisional(String entity, String localId) {
     _db.execute(

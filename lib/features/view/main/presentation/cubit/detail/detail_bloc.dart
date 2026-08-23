@@ -20,7 +20,6 @@ import 'package:mary_ai_pos/features/view/main/data/models/save_order/save_order
 import 'package:mary_ai_pos/features/view/main/domain/entities/save_order_entity.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/archive_detail/archive_detail_model.dart';
 import 'package:mary_ai_pos/features/view/main/domain/entities/archive_detail_entity.dart';
-import 'package:mary_ai_pos/features/view/main/domain/repository/main_repository.dart';
 import 'package:mary_ai_pos/features/view/main/domain/repository/menu_repository.dart';
 import 'package:mary_ai_pos/features/view/main/domain/repository/orders_repository.dart';
 
@@ -36,13 +35,11 @@ EventTransformer<T> debounce<T>(Duration duration) {
 ///
 /// Reads (categories, goods-by-category, order/bill detail) are
 /// `MenuRepository`/`OrdersRepository` `watchX()` subscriptions — no
-/// throttle fields, no awaited fetch usecase for the common case. Order/bill
-/// detail keeps one narrow live-fetch fallback (`_mainRepository
-/// .getPaymentDetailWithTableId`, only when `LocalDatabase` has nothing yet
-/// for this table) — a brand-new dine-in order has no other source for its
-/// bill row until `SyncEngine`'s next hydration pass lands one, since a
-/// dine-in create doesn't return the full order/bill payload synchronously
-/// (see EXECUTION_CONCERNS.md).
+/// throttle fields, no awaited fetch usecase, and since the
+/// `getPaymentDetailWithTableId` fallback came out of `_onFetchBillOrders`,
+/// no network dependency at all: this bloc holds no transport of any kind.
+/// Order/bill detail is the local snapshot `CreateOrderBloc` writes at create
+/// time, kept current by the `orders`/`order_items` change feed.
 ///
 /// Existing-item add/cancel/qty (`_deleteExistingByKey`/
 /// `_onSyncExistingItem`) are local-first, always — a single
@@ -53,7 +50,6 @@ EventTransformer<T> debounce<T>(Duration duration) {
 /// nothing left to catch, since nothing here awaits the network anymore.
 class DetailBloc extends Bloc<DetailEvent, DetailState> {
   final PrinterService _printerService;
-  final MainRepository _mainRepository;
   final MenuRepository _menuRepository;
   final OrdersRepository _ordersRepository;
 
@@ -83,7 +79,6 @@ class DetailBloc extends Bloc<DetailEvent, DetailState> {
 
   DetailBloc(
     this._printerService,
-    this._mainRepository,
     this._menuRepository,
     this._ordersRepository,
   ) : super(const DetailState()) {
@@ -170,23 +165,23 @@ class DetailBloc extends Bloc<DetailEvent, DetailState> {
       add(DetailEvent.orderDetailUpdated(tableId: event.billId, detail: detail));
     });
 
-    if (cachedDetail != null && !event.force) return;
-
-    // Narrow live-fetch fallback — a brand-new dine-in order has nothing in
-    // LocalDatabase yet (dine-in create doesn't return the full order/bill
-    // payload synchronously, and SyncEngine's own hydration pass may not
-    // have run yet). See class doc.
-    final result = await _mainRepository.getPaymentDetailWithTableId(event.billId);
-    if (isClosed) return;
-    result.fold(
-      (_) {}, // cache (if any) already shown; a fetch failure here is silent
-      (detail) {
-        if (isClosed || detail is! ArchiveDetailModel) return;
-        lastDetail = detail;
-        _ordersRepository.saveOrderDetailSnapshot(event.billId, detail.toJson());
-        _applyDetailToState(detail, event.billId, emit);
-      },
-    );
+    // No fetch tail. This used to end in an awaited
+    // `getPaymentDetailWithTableId`, on the grounds that a brand-new dine-in
+    // order had no local row yet. That stopped being true when
+    // `CreateOrderBloc` started writing `saveOrderDetailSnapshot` at create
+    // time, and `orders`/`order_items` both replicate on the change feed —
+    // so the two sources that fill this screen are the local write and the
+    // feed, and neither is a request this bloc makes.
+    //
+    // What it cost while it lasted: `force: true` is dispatched after every
+    // successful order create, so ringing in an order issued a round-trip
+    // the cashier's screen waited on, to re-read a row it had just written.
+    // Offline it failed silently and the local snapshot was shown anyway,
+    // which is exactly what happens now — minus the wait.
+    //
+    // `event.force` is kept because the call sites pass it; with the fetch
+    // gone the local read above already answers it, so it no longer selects
+    // between two paths.
   }
 
   void _onOrderDetailUpdated(_OrderDetailUpdated event, Emitter<DetailState> emit) {

@@ -4829,6 +4829,66 @@ class S {
       args: [],
     );
   }
+
+  /// `Preparing this terminal`
+  String get strSetupTitle {
+    return Intl.message(
+      'Preparing this terminal',
+      name: 'strSetupTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Downloading the menu, halls and tables. This happens once.`
+  String get strSetupSubtitle {
+    return Intl.message(
+      'Downloading the menu, halls and tables. This happens once.',
+      name: 'strSetupSubtitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `{rows} records`
+  String strSetupProgress(Object rows) {
+    return Intl.message(
+      '$rows records',
+      name: 'strSetupProgress',
+      desc: '',
+      args: [rows],
+    );
+  }
+
+  /// `Setup did not finish`
+  String get strSetupFailedTitle {
+    return Intl.message(
+      'Setup did not finish',
+      name: 'strSetupFailedTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `No connection to the server, or the download was interrupted. You can retry, or continue and let it finish in the background.`
+  String get strSetupFailedBody {
+    return Intl.message(
+      'No connection to the server, or the download was interrupted. You can retry, or continue and let it finish in the background.',
+      name: 'strSetupFailedBody',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Continue anyway`
+  String get strSetupContinueAnyway {
+    return Intl.message(
+      'Continue anyway',
+      name: 'strSetupContinueAnyway',
+      desc: '',
+      args: [],
+    );
+  }
 }
 
 class AppLocalizationDelegate extends LocalizationsDelegate<S> {

@@ -131,6 +131,18 @@ class MainCubit extends Cubit<MainState> {
     _watchTablesForSelection();
   }
 
+  /// Unsets the hall filter — the "Barchasi" pill.
+  ///
+  /// The counterpart to [setSelectedHallId]. Without it the pill row can
+  /// narrow the selection but never widen it again: `loadAllHallsTables()`
+  /// only nudges `SyncEngine`, it does not touch `selectedHallId`, so
+  /// [tables] would stay pinned to whichever hall was tapped last.
+  void clearSelectedHallId() {
+    if (state.selectedHallId == null) return;
+    emit(state.copyWith(selectedHallId: null));
+    _watchTablesForSelection();
+  }
+
   @override
   Future<void> close() {
     _lanSub?.cancel();

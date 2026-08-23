@@ -44,6 +44,7 @@ import 'package:mary_ai_pos/core/outbox/outbox_store.dart';
 import 'package:mary_ai_pos/core/sync/sync_engine.dart';
 import 'package:mary_ai_pos/core/utils/helper/helper_widget.dart'
     show navigatorKey;
+import 'package:mary_ai_pos/core/services/lan_hub/leader_election_service.dart';
 import 'package:mary_ai_pos/di.dart';
 import 'package:mary_ai_pos/features/view/auth/data/models/user/user_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/shift/shift_response_model.dart';
@@ -174,7 +175,18 @@ class OfflineAppHarness {
   static Future<OfflineAppHarness> _boot({
     Map<String, Object> prefs = const {},
   }) async {
-    SharedPreferences.setMockInitialValues(Map.of(prefs));
+    SharedPreferences.setMockInitialValues({
+      // Leader election is on by default in production, and since its startup
+      // re-arm was fixed it genuinely reaches `start()` here too — a widget
+      // test would then bind the real discovery (UDP 8766) and hub (TCP 8765)
+      // sockets, elect itself leader of an empty venue, and collide with any
+      // other suite doing the same in a parallel shard. The kill switch keeps
+      // this harness about what a screen renders. `lan_hub_test.dart` and
+      // `leader_election_test.dart` cover the sockets and the election on
+      // purpose, over ports they own.
+      LeaderElectionService.electionEnabledKey: false,
+      ...prefs,
+    });
     InMemorySecureStoragePlatform.install();
     // "Cable pulled" starts here, one layer below Dio: the OS itself reports
     // no link, so `ConnectivityCubit` settles offline and `SyncEngine.start()`

@@ -11,6 +11,7 @@ import 'package:mary_ai_pos/features/view/main/data/models/pagination_request/pa
 import 'package:mary_ai_pos/features/view/main/domain/entities/archive_detail_entity.dart';
 import 'package:mary_ai_pos/features/view/main/domain/entities/archives_filter_request_entity.dart';
 import 'package:mary_ai_pos/features/view/main/domain/entities/archives_response_entity.dart';
+import 'package:mary_ai_pos/features/view/main/domain/entities/archives_summary_entity.dart';
 import 'package:mary_ai_pos/features/view/main/domain/repository/archives_local_repository.dart';
 
 /// OFFLINE_FIRST_EVERYWHERE_PLAN.md Phase 4 — the archives screen, list and
@@ -38,19 +39,25 @@ class ArchivesLocalRepositoryImpl implements ArchivesLocalRepository {
   final OrderDetailQuery _detail;
 
   ArchivesLocalRepositoryImpl(LocalDatabase replica)
-      : _archives = ArchivesQuery(replica),
-        _detail = OrderDetailQuery(replica);
+    : _archives = ArchivesQuery(replica),
+      _detail = OrderDetailQuery(replica);
 
-  /// What the screen shows on open, and the only view the old cache mirrored.
+  /// What the screen shows on open, before the operator has touched a filter.
   static ArchivesFilterRequestEntity get _defaultView =>
       const ArchivesFilterRequestModel(
         filterType: ArchivesFilterType.Today,
-        pagination: PaginationRequestModel(limit: 20),
+        pagination: PaginationRequestModel(limit: kArchivesPageSize),
       );
 
   @override
-  Stream<ArchivesResponseEntity?> watchArchives() =>
-      _archives.watch(_defaultView).map(ArchivesResponseModel.fromJson);
+  Stream<ArchivesResponseEntity?> watchArchives(
+    ArchivesFilterRequestEntity params,
+  ) => _archives.watch(params).map(ArchivesResponseModel.fromJson);
+
+  @override
+  Stream<ArchivesSummaryEntity> watchSummary(
+    ArchivesFilterRequestEntity params,
+  ) => _archives.watchSummary(params).map(ArchivesSummaryEntity.fromJson);
 
   @override
   ArchivesResponseEntity? getHydratedArchives() {

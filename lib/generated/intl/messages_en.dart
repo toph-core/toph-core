@@ -45,9 +45,11 @@ class MessageLookup extends MessageLookupByLibrary {
 
   static String m11(size) => "${size} / page";
 
-  static String m12(count) => "${count} tables not saved";
+  static String m12(rows) => "${rows} records";
 
-  static String m13(count) => "Total: ${count}";
+  static String m13(count) => "${count} tables not saved";
+
+  static String m14(count) => "Total: ${count}";
 
   final messages = _notInlinedMessages(_notInlinedMessages);
   static Map<String, Function> _notInlinedMessages(_) => <String, Function>{
@@ -608,6 +610,17 @@ class MessageLookup extends MessageLookupByLibrary {
         "strSettings": MessageLookupByLibrary.simpleMessage("Settings"),
         "strSettingsAdminOnly": MessageLookupByLibrary.simpleMessage(
             "Only administrator or manager can access settings."),
+        "strSetupContinueAnyway":
+            MessageLookupByLibrary.simpleMessage("Continue anyway"),
+        "strSetupFailedBody": MessageLookupByLibrary.simpleMessage(
+            "No connection to the server, or the download was interrupted. You can retry, or continue and let it finish in the background."),
+        "strSetupFailedTitle":
+            MessageLookupByLibrary.simpleMessage("Setup did not finish"),
+        "strSetupProgress": m12,
+        "strSetupSubtitle": MessageLookupByLibrary.simpleMessage(
+            "Downloading the menu, halls and tables. This happens once."),
+        "strSetupTitle":
+            MessageLookupByLibrary.simpleMessage("Preparing this terminal"),
         "strShape": MessageLookupByLibrary.simpleMessage("Shape"),
         "strShift": MessageLookupByLibrary.simpleMessage("Shift"),
         "strShiftHash": MessageLookupByLibrary.simpleMessage("Shift"),
@@ -647,7 +660,7 @@ class MessageLookup extends MessageLookupByLibrary {
         "strTableNumber": MessageLookupByLibrary.simpleMessage("Table"),
         "strTableType": MessageLookupByLibrary.simpleMessage("Type"),
         "strTables": MessageLookupByLibrary.simpleMessage("Tables"),
-        "strTablesNotSavedCount": m12,
+        "strTablesNotSavedCount": m13,
         "strTablesVisited": MessageLookupByLibrary.simpleMessage("tables"),
         "strTakeaway": MessageLookupByLibrary.simpleMessage("Takeaway"),
         "strTerminal": MessageLookupByLibrary.simpleMessage("Terminal"),
@@ -664,7 +677,7 @@ class MessageLookup extends MessageLookupByLibrary {
         "strTotalCapacity":
             MessageLookupByLibrary.simpleMessage("Total capacity"),
         "strTotalColon": MessageLookupByLibrary.simpleMessage("Total:"),
-        "strTotalCount": m13,
+        "strTotalCount": m14,
         "strTotalLabel": MessageLookupByLibrary.simpleMessage("Total:"),
         "strTotalPause": MessageLookupByLibrary.simpleMessage("Total pause:"),
         "strTotalPrice": MessageLookupByLibrary.simpleMessage("Total price"),

@@ -12,13 +12,11 @@
   "strFailureMessage_unauthenticated": "Tizimga kirmagansiz, avval kiring",
   "strFailureMessage_firebaseAuthFailure": "Firebase orqali kirishda xatolik",
   "strFailureMessage_initializingFailure": "Ilovani ishga tushirishda xatolik",
-
   "strServerUnreachable500": "Serverda ichki xatolik. Birozdan keyin qayta urinib ko'ring.",
   "strServerUnreachable502": "Server javob bermayapti. Birozdan keyin qayta urinib ko'ring.",
   "strServerUnreachable503": "Xizmat vaqtincha mavjud emas. Birozdan keyin qayta urinib ko'ring.",
   "strServerUnreachable504": "Server javob berishga ulgurmadi. Internetni tekshirib qayta urinib ko'ring.",
   "strServerUnreachableGeneric": "Server bilan ulanib bo'lmadi. Birozdan keyin qayta urinib ko'ring.",
-
   "strCheckInternetConnection": "Internet aloqasini tekshiring",
   "strNoInternetConnection": "Internet aloqasi yo'q",
   "strYes": "Ha",
@@ -65,7 +63,6 @@
   "today": "Bugun",
   "week": "Hafta",
   "month": "Oy",
-
   "strFloorMap": "Stollar xaritasi",
   "strTakeaway": "Olib ketish",
   "strRefresh": "Yangilash",
@@ -83,15 +80,13 @@
   "strPersonsSuffix": "kishi",
   "strSearchHint": "Qidirish...",
   "strClear": "Tozalash",
-
   "strOrders": "Buyurtmalar",
   "strExistingOrders": "Mavjud buyurtmalar",
   "strExtras": "Qo'shimchalar",
   "strTotalLabel": "Jami:",
   "strPaymentLabel": "To'lov:",
   "strPayment": "To'lov",
-  "strAddItems": "Qo'shish",
-
+  "strAddItems": "Taom qo'shish",
   "strArchive": "Zakazlar",
   "strOpenBills": "Ochiq hisoblar",
   "strNowActive": "Hozir aktiv",
@@ -118,7 +113,6 @@
   "strCashierRole": "Kassir",
   "strHall": "Zal",
   "strTableNumber": "Stol",
-
   "strSettings": "Sozlamalar",
   "strRestaurantStaff": "Restoran xodimlari",
   "strStaffRoles": "Xodimlar va rollari",
@@ -131,7 +125,6 @@
   "strHubClientSettings": "Hub va client sozlamalari",
   "strAccessRestricted": "Ruxsat cheklangan",
   "strSettingsAdminOnly": "Sozlamalarga faqat administrator yoki menejer kira oladi.",
-
   "strTransactions": "Tranzaksiyalar",
   "strTransactionsAdminOnly": "Tranzaksiyalarga faqat administrator, menejer yoki kassir kira oladi.",
   "strTxnGroupsTitle": "Guruhlar",
@@ -164,10 +157,11 @@
   "strTotalCount": "Jami: {count}",
   "@strTotalCount": {
     "placeholders": {
-      "count": {"type": "int"}
+      "count": {
+        "type": "int"
+      }
     }
   },
-
   "strInterfaceSettings": "Til, interfeys va menyu ko'rinishi",
   "strInterfaceLanguage": "Interfeys tili",
   "strAppliesToAllUsers": "Barcha foydalanuvchilar uchun qo'llaniladi",
@@ -175,12 +169,10 @@
   "strShowProductImages": "Mahsulot kartochkalarida rasm ko'rsatish",
   "strServiceCharge": "Xizmat haqi",
   "strServiceChargeHint": "Buyurtmaga avtomatik qo'shiladigan foiz",
-  "strSave": "Saqlash",
   "strServiceChargeSaved": "Xizmat haqi saqlandi",
   "strServiceChargeInvalid": "0 dan 100 gacha qiymat kiriting",
   "strUzbek": "O'zbek",
   "strRussian": "Русский",
-
   "strOpenShift": "Smenani ochish",
   "strStartWorkInstruction": "Ish boshlash uchun quyidagi tugmani bosing.",
   "strCloseShift": "Smenani yopish",
@@ -189,7 +181,6 @@
   "strTerminal": "Terminal",
   "strConnected": "Ulangan",
   "strDuration": "Davomiyligi",
-
   "strJanuary": "Yanvar",
   "strFebruary": "Fevral",
   "strMarch": "Mart",
@@ -209,7 +200,6 @@
   "strFriday": "Juma",
   "strSaturday": "Shanba",
   "strSunday": "Yakshanba",
-
   "strRoleAdmin": "Admin",
   "strRoleSuperadmin": "Superadmin",
   "strRoleManager": "Menejer",
@@ -217,25 +207,20 @@
   "strRoleWaiter": "Ofitsiant",
   "strRoleChef": "Oshpaz",
   "strRoleUser": "Foydalanuvchi",
-
   "strDragHint": "Drag qiling",
   "strEnlarge": "Kattalashtirish",
   "strShrink": "Kichraytirish",
   "strRecenter": "Qayta markazga",
-
   "strNPeopleTable": "{n} ta stol",
   "strLogoutConfirm": "Rostdan ham akauntdan chiqmoqchimisiz?",
-
   "strEnterPinCode": "Pinkod kiriting",
   "strSwitchTo6Digit": "6 xonali pinkod",
   "strSwitchTo4Digit": "4 xonali pinkod",
   "strOfflineModeMessage": "Offline rejim — ma'lumotlar internet qaytganda sync bo'ladi",
-
   "strAddOrder": "Buyurtma qo'shish",
   "strNotifyKitchen": "Oshxonaga bildir",
   "strNeedAttention": "Diqqat kerak",
   "strGoToPayment": "To'lovga o'tish",
-  "strAddItems": "Taom qo'shish",
   "strFrom": "Dan",
   "strTo": "Gacha",
   "strPeriodDay": "K",
@@ -244,7 +229,6 @@
   "strPeriodYear": "Y",
   "strEnterNotes": "Izoh yozing...",
   "strOther": "Boshqa",
-
   "strExtraSpicy": "Qo'shimcha achchiq",
   "strExtraSalt": "Qo'shimcha tuz",
   "strMoreKetchup": "Ketchup ko'proq",
@@ -252,7 +236,6 @@
   "strForNotes": "Izoh uchun",
   "strConfirmDelete": "O'chirishni tasdiqlang",
   "strConfirmDeleteItem": "'{item}' ni o'chirmoqchimisiz?",
-
   "strPaymentInfoNotFound": "To'lov ma'lumotlari topilmadi",
   "strConfirmCardPayment": "Mijoz to'lovni karta orqali amalga oshirganini tasdiqlang",
   "strCash": "Naqd",
@@ -264,7 +247,6 @@
   "strEmail": "Email",
   "strCloseAction": "Yakunlash",
   "strCustomer": "Mijoz",
-
   "strSearch": "Qidirish...",
   "strSearchTableOrCheck": "Stol, chek raqami...",
   "strOrderNumber": "№ Zakaz",
@@ -292,14 +274,11 @@
   "strTotalColon": "Jami:",
   "strAllColon": "Hammasi:",
   "strUmumiySumma": "Umumiy summa",
-
   "strExport": "Eksport",
   "strTotalSales": "Umumiy savdo",
-  "strServiceCharge": "Xizmat haqi",
   "strOpeningBalance": "Boshlang'ich qoldiq",
   "strShiftRevenue": "Smena tushumi",
   "strDiscounts": "Chegirmalar",
-
   "strLoadError": "Yuklashda xatolik",
   "strDeleteEmployee": "Xodimni o'chirish",
   "strDeleteEmployeeConfirm": "{name} hisobi o'chiriladi. Bu amalni qaytarib bo'lmaydi.",
@@ -318,7 +297,6 @@
   "strUsername": "Username",
   "strPhone": "Telefon",
   "strPinOptional": "Pinkod (ixtiyoriy)",
-
   "strDeleteHall": "Zalni o'chirish",
   "strAddNewHall": "Yangi zal",
   "strNoHallsYet": "Hali zal qo'shilmagan",
@@ -351,7 +329,6 @@
   "strHallName": "Zal nomi",
   "strWidthShort": "Kenglik (m)",
   "strHeightShort": "Balandlik (m)",
-
   "strDeletePrinter": "Printerni o'chirish",
   "strAddPrinter": "Yangi printer",
   "strNoPrintersYet": "Hali printer qo'shilmagan",
@@ -368,7 +345,6 @@
   "strCable": "Kabel",
   "strWiFi": "Wi-Fi",
   "strConnectedCategories": "Bog'langan kategoriyalar",
-
   "strNetworkLAN": "Tarmoq (LAN)",
   "strDeviceSynchronization": "Qurilmalararo sinxronizatsiya",
   "strMode": "Rejim",
@@ -376,11 +352,9 @@
   "strDisabled": "O'chirilgan",
   "strHub": "Hub",
   "strClient": "Client",
-
   "strReceiptInfo": "Chek ma'lumotlari",
   "strOrgName": "Tashkilot nomi",
   "strAddress": "Manzil",
-
   "strDeleteCategory": "Kategoriyani o'chirish",
   "strDeleteMeal": "Taomni o'chirish",
   "strAddCategory": "Kategoriya qo'shish",
@@ -400,7 +374,6 @@
   "strLoadCompositionError": "Taom tarkibini yuklab bo'lmadi",
   "strImages": "Rasmlar",
   "strSelectFile": "Faylni tanlang",
-
   "strWaiting": "Kutilmoqda",
   "strCooking": "Pishirilmoqda",
   "strReceived": "Qabul qilindi",
@@ -408,14 +381,12 @@
   "strStart": "Boshlash",
   "strPauseAction": "To'xtatish",
   "strResumeAction": "Davom ettirish",
-
   "strNotifications": "Bildirishnomalar",
   "strError": "Xato",
   "strAllRoles": "Hammasi",
   "strOK": "OK",
   "strPhoneMask": "+998 (__) ___ __ __",
   "strAllHalls": "Barchasi",
-
   "strShiftReport": "Smena hisoboti",
   "strCashier": "Kassir",
   "strShiftOpen": "Smena ochiq",
@@ -451,7 +422,6 @@
   "strNoServiceChargeYet": "Hali xizmat haqi yo'q",
   "strWaitingForOrderStatus": "Buyurtma kutilmoqda",
   "strShiftNotOpenError": "Avval smenani oching. Buyurtma urish uchun smena ochilgan bo'lishi kerak.",
-
   "strOrder": "Buyurtma",
   "strAcceptedAmount": "Qabul qilingan",
   "strManualInput": "Qo'lda kiritish",
@@ -461,7 +431,6 @@
   "strOrderNotFound": "Buyurtma topilmadi",
   "strConfirm": "Tasdiqlash",
   "strPiecesSuffix": "dona",
-
   "strChangeTable": "Stolni o'zgartirish",
   "strSelectFreeTableForTransfer": "Buyurtma ko'chiriladigan bo'sh stolni tanlang",
   "strTransfer": "Ko'chirish",
@@ -482,20 +451,17 @@
   "strTotalActiveTime": "Jami:",
   "strNoActivePeriods": "Hali faol davr yo'q",
   "strTablesVisited": "stol",
-  "strService": "Xizmat",
   "strSpecialNote": "Maxsus izoh",
   "strClose": "Yopish",
   "strSidebarEmptyTitle": "Buyurtmangiz bo'sh",
   "strPrice": "Narxi",
   "strTotal": "Jami",
-
   "strFreezeTimerTitle": "Vaqt to'lovini muzlatish",
   "strFreezeTimerBody": "Buyurtma oddiy stolga ko'chiriladi. Hozirgacha yig'ilgan vaqt va summa saqlanadi, lekin keyingi vaqt uchun pul hisoblanmaydi.",
   "strFreezeAndTransfer": "Muzlatib ko'chirish",
   "strFrozenShort": "MUZLATILDI",
   "strElapsedTime": "O'tgan vaqt",
   "strFrozenAmount": "Muzlatilgan summa",
-
   "strAvailableItems": "Mavjud elementlar",
   "strAddedItems": "Qo'shilgan elementlar",
   "strName": "Nomi",
@@ -510,7 +476,6 @@
     }
   },
   "strNoCalculationsHint": "Qatorlar yo'q. Ingredient yoki yarim tayyor mahsulot qo'shing.",
-
   "strCannotCloseShiftTitle": "Smenani yopib bo'lmaydi",
   "strCannotCloseShiftMessage": "Smenani to'liq yopish uchun barcha stollar yopilgan bo'lishi kerak.",
   "strOpenTablesCount": "{count} ta ochiq stol",
@@ -519,17 +484,25 @@
       "count": {}
     }
   },
-
   "strConfirmWithPincode": "Tasdiqlash uchun pinkodni kiriting",
   "strIncorrectPincode": "Pinkod noto'g'ri",
-
   "strCancelOrderItemTitle": "Mahsulotni bekor qilish",
   "strCancelOrderItemReasonHint": "Bekor qilish sababi (majburiy)",
   "strCancelOrderItemReasonRequired": "Iltimos, bekor qilish sababini kiriting",
   "strCancelledByClient": "Mijoz tomonidan bekor qilindi",
   "strWaitersMistake": "Ofitsiant xatosi",
-
   "strManagerPincodeTitle": "Menejer tasdig'i",
   "strManagerPincodeSubtitle": "Tasdiqlash uchun menejer yoki admin PIN kodini kiriting",
-  "strManagerPincodeDenied": "Bu amal uchun menejer yoki admin PIN kodi kerak"
+  "strManagerPincodeDenied": "Bu amal uchun menejer yoki admin PIN kodi kerak",
+  "strSetupTitle": "Terminal tayyorlanmoqda",
+  "strSetupSubtitle": "Menyu, zallar va stollar yuklanmoqda. Bu bir marta bajariladi.",
+  "strSetupProgress": "{rows} ta yozuv",
+  "@strSetupProgress": {
+    "placeholders": {
+      "rows": {}
+    }
+  },
+  "strSetupFailedTitle": "Sozlash yakunlanmadi",
+  "strSetupFailedBody": "Server bilan aloqa yo'q yoki yuklash uzildi. Qayta urinib ko'rishingiz yoki davom etishingiz mumkin — qolgani fonda yuklanadi.",
+  "strSetupContinueAnyway": "Baribir davom etish"
 }

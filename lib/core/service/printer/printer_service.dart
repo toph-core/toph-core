@@ -8,8 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:win32/win32.dart';
 
-import 'package:mary_ai_pos/core/api/dio_client.dart';
-import 'package:mary_ai_pos/core/api/list_api.dart';
+import 'package:mary_ai_pos/core/db/order_detail_query.dart' as replica;
 import 'package:mary_ai_pos/core/components/flush_bars.dart';
 import 'package:mary_ai_pos/core/utils/helper/helper_widget.dart';
 import 'package:mary_ai_pos/di.dart';
@@ -126,22 +125,22 @@ class PrinterService {
   }
 
   /// Archive/bill items don't always carry `good_id` (older backend
-  /// responses). `/api/v1/order-items/order/{id}` does, keyed by line —
-  /// same enrichment pattern as `DetailBloc._enrichExistingGoodsWithTimestamps`.
-  /// Falls back silently (empty map) on any error — department grouping then
-  /// just buckets those lines under "Other".
-  Future<Map<String, String>> _fetchGoodIdsByName(String orderId) async {
+  /// responses), and department grouping needs one per line.
+  ///
+  /// This used to ask `/api/v1/order-items/order/{id}` for it, which put an
+  /// awaited round-trip on the receipt path: offline the cashier waited out
+  /// Dio's timeout before the check printed, and the grouping degraded to
+  /// "Other" anyway. `order_items` replicates — `good_id` is a promoted
+  /// column on it — so the same answer is a local join, which is what
+  /// `DetailBloc` already moved to when it dropped its own `getOrderItemsRaw`
+  /// fetch. Same map, no socket, and it is correct offline rather than merely
+  /// tolerable.
+  Map<String, String> _goodIdsByName(String orderId) {
     try {
-      final res = await inject<DioClient>().get(ListAPI.orderItemsListByOrder(orderId));
-      final raw = res.data['data'];
-      final List<dynamic> list = raw is List
-          ? raw
-          : (raw is Map && raw['items'] is List ? raw['items'] as List : const []);
       final map = <String, String>{};
-      for (final entry in list.whereType<Map>()) {
-        final m = Map<String, dynamic>.from(entry);
-        final name = (m['good_name'] ?? m['name'] ?? '').toString();
-        final goodId = (m['good_id'] ?? '').toString();
+      for (final item in inject<replica.OrderDetailQuery>().itemsForOrder(orderId)) {
+        final name = (item['good_name'] ?? item['name'] ?? '').toString();
+        final goodId = (item['good_id'] ?? '').toString();
         if (name.isNotEmpty && goodId.isNotEmpty) {
           map.putIfAbsent(name, () => goodId);
         }
@@ -234,7 +233,7 @@ class PrinterService {
       // (bo'lim/departament guruhlash uchun kerak).
       Map<String, String> nameToGoodId = const {};
       if (detail.goods.any((g) => g.goodId.isEmpty) && detail.id.isNotEmpty) {
-        nameToGoodId = await _fetchGoodIdsByName(detail.id);
+        nameToGoodId = _goodIdsByName(detail.id);
       }
       final goodDept = _goodDepartmentId;
       final deptInfo = _resolveDepartments();

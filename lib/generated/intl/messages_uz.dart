@@ -45,9 +45,11 @@ class MessageLookup extends MessageLookupByLibrary {
 
   static String m11(size) => "${size} / sahifa";
 
-  static String m12(count) => "${count} ta stol saqlanmadi";
+  static String m12(rows) => "${rows} ta yozuv";
 
-  static String m13(count) => "Jami: ${count}";
+  static String m13(count) => "${count} ta stol saqlanmadi";
+
+  static String m14(count) => "Jami: ${count}";
 
   final messages = _notInlinedMessages(_notInlinedMessages);
   static Map<String, Function> _notInlinedMessages(_) => <String, Function>{
@@ -639,6 +641,17 @@ class MessageLookup extends MessageLookupByLibrary {
         "strSettings": MessageLookupByLibrary.simpleMessage("Sozlamalar"),
         "strSettingsAdminOnly": MessageLookupByLibrary.simpleMessage(
             "Sozlamalarga faqat administrator yoki menejer kira oladi."),
+        "strSetupContinueAnyway":
+            MessageLookupByLibrary.simpleMessage("Baribir davom etish"),
+        "strSetupFailedBody": MessageLookupByLibrary.simpleMessage(
+            "Server bilan aloqa yo\'q yoki yuklash uzildi. Qayta urinib ko\'rishingiz yoki davom etishingiz mumkin — qolgani fonda yuklanadi."),
+        "strSetupFailedTitle":
+            MessageLookupByLibrary.simpleMessage("Sozlash yakunlanmadi"),
+        "strSetupProgress": m12,
+        "strSetupSubtitle": MessageLookupByLibrary.simpleMessage(
+            "Menyu, zallar va stollar yuklanmoqda. Bu bir marta bajariladi."),
+        "strSetupTitle":
+            MessageLookupByLibrary.simpleMessage("Terminal tayyorlanmoqda"),
         "strShape": MessageLookupByLibrary.simpleMessage("Shakli"),
         "strShift": MessageLookupByLibrary.simpleMessage("Smena"),
         "strShiftHash": MessageLookupByLibrary.simpleMessage("Smena"),
@@ -679,7 +692,7 @@ class MessageLookup extends MessageLookupByLibrary {
         "strTableNumber": MessageLookupByLibrary.simpleMessage("Stol"),
         "strTableType": MessageLookupByLibrary.simpleMessage("Turi"),
         "strTables": MessageLookupByLibrary.simpleMessage("Stollar"),
-        "strTablesNotSavedCount": m12,
+        "strTablesNotSavedCount": m13,
         "strTablesVisited": MessageLookupByLibrary.simpleMessage("stol"),
         "strTakeaway": MessageLookupByLibrary.simpleMessage("Olib ketish"),
         "strTerminal": MessageLookupByLibrary.simpleMessage("Terminal"),
@@ -696,7 +709,7 @@ class MessageLookup extends MessageLookupByLibrary {
         "strTotalCapacity":
             MessageLookupByLibrary.simpleMessage("Umumiy sig\'im"),
         "strTotalColon": MessageLookupByLibrary.simpleMessage("Jami:"),
-        "strTotalCount": m13,
+        "strTotalCount": m14,
         "strTotalLabel": MessageLookupByLibrary.simpleMessage("Jami:"),
         "strTotalPause": MessageLookupByLibrary.simpleMessage("Jami pauza:"),
         "strTotalPrice": MessageLookupByLibrary.simpleMessage("Jami narx"),

@@ -37,6 +37,7 @@ import 'package:mary_ai_pos/core/outbox/outbox_drainer.dart';
 import 'package:mary_ai_pos/core/outbox/outbox_executor.dart';
 import 'package:mary_ai_pos/core/outbox/outbox_store.dart';
 import 'package:mary_ai_pos/core/sync/change_feed_relay.dart';
+import 'package:mary_ai_pos/core/sync/local_change_relay.dart';
 import 'package:mary_ai_pos/core/sync/replication_service.dart';
 import 'package:mary_ai_pos/core/sync/sync_api_client.dart';
 import 'package:mary_ai_pos/core/services/connectivity/connectivity_cubit.dart';
@@ -86,6 +87,9 @@ import 'package:mary_ai_pos/features/view/main/domain/repository/archives_local_
 import 'package:mary_ai_pos/features/view/main/domain/repository/table_timer_local_repository.dart';
 import 'package:mary_ai_pos/features/view/main/domain/repository/waiter_local_repository.dart';
 import 'package:mary_ai_pos/features/view/main/domain/usecase/sync_printer_settings_usecase.dart';
+import 'package:mary_ai_pos/features/view/main/data/outbox/branches_outbox.dart';
+import 'package:mary_ai_pos/features/view/main/data/repository/service_charge_repository_impl.dart';
+import 'package:mary_ai_pos/features/view/main/domain/repository/service_charge_repository.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/archive/archive_bloc.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/counter/counter_cubit.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/create_order/create_order_bloc.dart';
@@ -206,7 +210,29 @@ Future<void> initDi({DiOverrides? overrides}) async {
   // used to be constructed above are deleted; every screen reads this.
   final replicaDb =
       overrides?.database ?? await replica.LocalDatabaseFactory.openDefault();
-  final changeApplier = replica.ChangeApplier(replicaDb);
+  // Every row this terminal commits is handed to `LocalChangeRelay`, which
+  // puts it on the LAN so the rest of the venue sees it without a round trip
+  // through the cloud. Resolved lazily for the same reason `onBatchApplied`
+  // below is — the relay needs `LanHubService`, which is registered further
+  // down — and guarded on registration because a write during DI setup itself
+  // would otherwise resolve a service that does not exist yet.
+  final changeApplier = replica.ChangeApplier(
+    replicaDb,
+    onLocalChange: ({
+      required String entity,
+      required String action,
+      required String id,
+      Map<String, dynamic>? payload,
+    }) {
+      if (!inject.isRegistered<LocalChangeRelay>()) return;
+      inject<LocalChangeRelay>().broadcast(
+        entity: entity,
+        action: action,
+        id: id,
+        payload: payload,
+      );
+    },
+  );
   inject.registerSingleton<replica.LocalDatabase>(replicaDb);
   inject.registerSingleton<replica.ChangeApplier>(changeApplier);
   // The order-detail read, shared by the order detail screen (via
@@ -275,10 +301,10 @@ Future<void> initDi({DiOverrides? overrides}) async {
   final leaseManager = LeaseManager(lanHub: lanHubService, localDb: replicaDb);
   inject.registerSingleton<LeaseManager>(leaseManager);
 
-  // offline-first-target-architecture.md §8 Phase 4 — additive, disabled by
-  // default (see LeaderElectionService's class doc / EXECUTION_CONCERNS.md).
-  // start() itself no-ops unless a branch has explicitly opted in via
-  // setEnabled(true), so this call is safe to make unconditionally here.
+  // offline-first-target-architecture.md §8 Phase 4, on by default since
+  // Phase 6 (see LeaderElectionService.enabledByDefault). The comment here
+  // used to say the opposite — "disabled by default, no-op unless opted in" —
+  // which was true when it was written and has been wrong since the flip.
   final leaderElection = LeaderElectionService(lanHub: lanHubService, prefs: prefs);
   inject.registerSingleton<LeaderElectionService>(leaderElection);
 
@@ -289,6 +315,22 @@ Future<void> initDi({DiOverrides? overrides}) async {
   inject.registerSingleton<SyncApiClient>(syncApiClient);
   inject.registerSingleton<ChangeFeedRelay>(
     ChangeFeedRelay(db: replicaDb, applier: changeApplier),
+  );
+  // The peer-to-peer half of replication, beside the cloud half above. This
+  // one carries what *this* terminal writes; `ChangeFeedRelay` carries what
+  // the leader pulled. Only this one keeps working with the uplink down,
+  // which is the gap it was added to close.
+  inject.registerSingleton<LocalChangeRelay>(
+    LocalChangeRelay(
+      applier: changeApplier,
+      // Table timers are local-authority state and never pass through the
+      // applier, so the relay needs the database directly for those.
+      db: replicaDb,
+      send: lanHubService.broadcastLocalChange,
+      // Lazy: PrintQueueService (which owns the one stable per-terminal id
+      // this codebase has) is registered further down.
+      terminalId: () => inject<PrintQueueService>().terminalId,
+    ),
   );
   final replicationService = ReplicationService(
     api: syncApiClient,
@@ -381,6 +423,7 @@ Future<void> initDi({DiOverrides? overrides}) async {
   registerHallsTablesOutboxHandlers(outboxExecutors, inject<MainRepository>());
   registerMenuAdminOutboxHandlers(outboxExecutors, inject<MainRepository>());
   registerTransactionsOutboxHandlers(outboxExecutors, inject<MainRepository>());
+  registerBranchesOutboxHandlers(outboxExecutors, inject<MainRepository>());
   // The order aggregate speaks HTTP directly (the 409 merge / 404-tolerant
   // cancel have no home in a CRUD repository), so it takes the DioClient, not
   // MainRepository. Handlers only — the order writes move onto this outbox in
@@ -401,8 +444,15 @@ Future<void> initDi({DiOverrides? overrides}) async {
   // current user via `inject<UserBloc>()` for its branch id, and `UserBloc`
   // isn't registered until `_cubit()` above runs.
   await lanHubService.init();
-  // Same DI-ordering reason as lanHubService.init() above — start() itself
-  // is a no-op unless a branch opted in via setEnabled(true).
+  // Same DI-ordering reason as lanHubService.init() above.
+  //
+  // Note what this call cannot do from here: `UserBloc` has no branch id yet.
+  // Its cached profile is read on `UserEvent.started()`, dispatched from the
+  // widget tree in `main.dart` — which runs after `initDi()` returns. So the
+  // election always finds an empty branch here and arms its own short retry
+  // rather than giving up; see LeaderElectionService.start(). Sequencing this
+  // call after login instead would fix the cold start and miss the
+  // logout→login case, which is why the wait lives in the service.
   await leaderElection.start();
 }
 
@@ -446,6 +496,12 @@ void _repositories() {
       fetch: MinioService.instance.getImageByObjectName,
     ),
   );
+  inject.registerLazySingleton<ServiceChargeRepository>(
+    () => ServiceChargeRepositoryImpl(
+      inject<replica.LocalDatabase>(),
+      inject(),
+    ),
+  );
   inject.registerLazySingleton<MenuAdminLocalRepository>(
     () => MenuAdminLocalRepositoryImpl(
       inject<replica.LocalDatabase>(),
@@ -467,6 +523,8 @@ void _repositories() {
       inject(),
       inject(),
       inject(),
+      // So a pause on one till stops the clock on every till.
+      relay: inject<LocalChangeRelay>(),
     ),
   );
   // CLIENT_FACING_OFFLINE_PLAN.md §5 — rebuilt local-first on LocalDatabase
@@ -567,7 +625,7 @@ void _cubit() {
   );
   inject.registerLazySingleton(() => SettingsCubit(inject(), inject()));
   inject.registerLazySingleton(() => UiPrefsCubit(inject()));
-  inject.registerLazySingleton(() => ServiceChargeCubit(inject(), inject()));
+  inject.registerLazySingleton(() => ServiceChargeCubit(inject()));
   inject.registerLazySingleton(
     () => MainCubit(inject(), inject(), inject()),
   );
@@ -606,7 +664,6 @@ void _cubit() {
   );
   inject.registerFactory(
     () => DetailBloc(
-      inject(),
       inject(),
       inject(),
       inject(),

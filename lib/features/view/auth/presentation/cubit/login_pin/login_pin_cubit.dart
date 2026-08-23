@@ -35,6 +35,27 @@ class LoginPinCubit extends Cubit<LoginPinState> {
     this._dataScope,
   ) : super(const LoginPinState());
 
+  /// PIN login, local-first.
+  ///
+  /// This used to be online-first: when the terminal had connectivity it
+  /// awaited `POST /login/pincode` on every entry and only consulted the
+  /// offline cache once the request had failed. So a cashier's shift change
+  /// waited on the network even though the terminal already held the answer,
+  /// and a *slow but reachable* server — the case neither the connectivity
+  /// probe nor the failure path treats as offline — delayed every login by
+  /// however long the server took.
+  ///
+  /// The order is inverted now. A PIN this terminal has verified before is
+  /// answered from the cache with no request at all, and the server is asked
+  /// only for a PIN with no local answer: the first use of that PIN on this
+  /// terminal, which is part of the initial setup the pull is for.
+  ///
+  /// **Revocation is now asynchronous, and that is the trade.** A PIN
+  /// deactivated on the server is still accepted once here, and
+  /// [_revalidateInBackground] purges it immediately afterwards so the next
+  /// attempt fails. The previous code caught that on the first attempt, but
+  /// only while online — offline it behaved exactly as this does now, so this
+  /// widens an existing window rather than opening a new one.
   void login({required String pincode, required Function() onSuccess}) async {
     emit(state.copyWith(status: Status.LOADING));
 
@@ -44,38 +65,41 @@ class LoginPinCubit extends Cubit<LoginPinState> {
       emit(state.copyWith(status: Status.UNKNOWN));
       return;
     }
+    final brandId = brandIdTokenPair.brandId;
 
-    // Offline-first: internet yo'q bo'lsa darhol cache dan
-    if (!_connectivity.isOnline) {
-      final cached = await _offlineCache.getForPin(brandIdTokenPair.brandId, pincode);
-      if (cached != null) {
-        await _secureStorage.writeAuthToken(
-          AuthTokenPair(
-            accessToken: cached.accessToken,
-            refreshToken: cached.refreshToken,
-          ),
-        );
-        // Offline login ham "oxirgi pincode" hisoblanadi — UserBloc'ning
-        // lokal profil o'qishi aynan shu pincode bo'yicha to'g'ri
-        // ofitsiantni topishi uchun (CLIENT_FACING_OFFLINE_PLAN.md §1).
-        await _secureStorage.writeLastPincode(pincode);
-        await _dataScope.onSuccessfulLogin();
-        emit(state.copyWith(status: Status.SUCCESS));
-        onSuccess();
-      } else {
-        emit(state.copyWith(
-          failure: const ConnectionFailure(),
-          status: Status.ERROR,
-          pin: '',
-        ));
-      }
+    // The local answer, first and without a connectivity check: whether this
+    // terminal can reach the server has no bearing on whether it already
+    // knows this PIN.
+    final cached = await _offlineCache.getForPin(brandId, pincode);
+    if (cached != null) {
+      await _enterSession(
+        pincode: pincode,
+        accessToken: cached.accessToken,
+        refreshToken: cached.refreshToken,
+        onSuccess: onSuccess,
+      );
+      _revalidateInBackground(
+        brandId: brandId,
+        password: brandIdTokenPair.password,
+        pincode: pincode,
+      );
       return;
     }
 
-    // Online: API ga murojaat
+    // No local answer. Either this PIN has never been used on this terminal,
+    // or it was revoked and purged — both need the server to decide.
+    if (!_connectivity.isOnline) {
+      emit(state.copyWith(
+        failure: const ConnectionFailure(),
+        status: Status.ERROR,
+        pin: '',
+      ));
+      return;
+    }
+
     final result = await _loginUsecase.call(
       LoginRequestModel(
-        brandId: brandIdTokenPair.brandId,
+        brandId: brandId,
         password: brandIdTokenPair.password,
         pincode: pincode,
       ),
@@ -84,45 +108,98 @@ class LoginPinCubit extends Cubit<LoginPinState> {
     result.fold(
       (failure) async {
         if (failure.isDefiniteAuthRejection) {
-          // Server aniq javob berdi: bu pincode endi yaroqsiz (noto'g'ri yoki
-          // foydalanuvchi faol emas). Cache'ga tushmaymiz — aksincha, shu
-          // pincode endi offline holatda ham ishlamasligi uchun uni cache'dan
-          // o'chiramiz. Muddat asosidagi tugash yo'q: bu yagona bekor qilish
-          // yo'li (server bilan keyingi haqiqiy aloqa).
-          await _offlineCache.removeForPin(brandIdTokenPair.brandId, pincode);
-          emit(state.copyWith(failure: failure, status: Status.ERROR, pin: ''));
-          return;
+          // Server aniq javob berdi: bu pincode yaroqsiz. Cache'da nima
+          // bo'lsa ham o'chiramiz — muddat asosidagi tugash yo'q, bu yagona
+          // bekor qilish yo'li.
+          await _offlineCache.removeForPin(brandId, pincode);
         }
-        // Ulanish/timeout/server xatosi — bu pincode haqida hech qanday aniq
-        // javob olinmadi, faqat serverga yetib bo'lmadi. Eski xulq-atvor:
-        // cache'dan urinib ko'ramiz.
-        final cached = await _offlineCache.getForPin(brandIdTokenPair.brandId, pincode);
-        if (cached != null) {
-          await _secureStorage.writeAuthToken(
-            AuthTokenPair(
-              accessToken: cached.accessToken,
-              refreshToken: cached.refreshToken,
-            ),
-          );
-          await _secureStorage.writeLastPincode(pincode);
-          await _dataScope.onSuccessfulLogin();
-          emit(state.copyWith(status: Status.SUCCESS));
-          onSuccess();
-        } else {
-          emit(state.copyWith(failure: failure, status: Status.ERROR, pin: ''));
-        }
+        emit(state.copyWith(failure: failure, status: Status.ERROR, pin: ''));
       },
       (_) async {
-        // Keyingi offline login uchun pincode ni saqla
-        await _secureStorage.writeLastPincode(pincode);
-        // Brand/branch retention rule (CLIENT_FACING_OFFLINE_PLAN.md §1):
-        // shu yerda — token yozilgandan keyin, navigatsiyadan oldin —
-        // oxirgi brand+kassa juftligi bilan solishtiriladi.
-        await _dataScope.onSuccessfulLogin();
-        emit(state.copyWith(status: Status.SUCCESS));
-        onSuccess();
+        // `LoginUsecase` writes the token pair and caches this PIN, so the
+        // next login on this terminal takes the local path above.
+        await _enterSession(pincode: pincode, onSuccess: onSuccess);
       },
     );
+  }
+
+  /// Everything a successful login does once the credentials are settled.
+  ///
+  /// [accessToken]/[refreshToken] are passed only on the cached path, where
+  /// this cubit owns writing them; the online path's usecase has already done
+  /// so by the time it gets here.
+  Future<void> _enterSession({
+    required String pincode,
+    required Function() onSuccess,
+    String? accessToken,
+    String? refreshToken,
+  }) async {
+    if (accessToken != null && refreshToken != null) {
+      await _secureStorage.writeAuthToken(
+        AuthTokenPair(accessToken: accessToken, refreshToken: refreshToken),
+      );
+    }
+    // Offline login ham "oxirgi pincode" hisoblanadi — UserBloc'ning lokal
+    // profil o'qishi aynan shu pincode bo'yicha to'g'ri ofitsiantni topishi
+    // uchun (CLIENT_FACING_OFFLINE_PLAN.md §1).
+    await _secureStorage.writeLastPincode(pincode);
+    // Brand/branch retention rule: shu yerda — token yozilgandan keyin,
+    // navigatsiyadan oldin — oxirgi brand+kassa juftligi bilan solishtiriladi.
+    final scope = await _dataScope.onSuccessfulLogin();
+    emit(state.copyWith(status: Status.SUCCESS));
+
+    if (scope == LoginDataScope.initialSetup) {
+      // A terminal with no usable replica goes to the setup screen instead of
+      // into the app. This used to be `unawaited(...)` inside the call above,
+      // so login landed on the floor plan while the menu, halls and tables
+      // were still downloading — or, offline, were never going to arrive.
+      // `InitialSetupScreen` owns the wait, the progress and the way out of
+      // it, and continues to [onSuccess]'s destination when it is done.
+      Navigator.pushNamedAndRemoveUntil(
+        navigatorKey.currentContext!,
+        AppRoutes.initialSetupScreen,
+        (route) => false,
+      );
+      return;
+    }
+    onSuccess();
+  }
+
+  /// Re-checks a cache-served PIN against the server, after the cashier is
+  /// already in.
+  ///
+  /// Deliberately not awaited and deliberately silent: its only job is to
+  /// purge a PIN the server has since rejected, so the *next* login fails.
+  /// It never touches the running session — a cashier is not thrown out
+  /// mid-order because a background request came back badly, and a transport
+  /// failure means nothing was learned and so nothing is done.
+  void _revalidateInBackground({
+    required String brandId,
+    required String password,
+    required String pincode,
+  }) {
+    if (!_connectivity.isOnline) return;
+    unawaited(() async {
+      try {
+        final result = await _loginUsecase.call(
+          LoginRequestModel(
+            brandId: brandId,
+            password: password,
+            pincode: pincode,
+          ),
+        );
+        await result.fold(
+          (failure) async {
+            if (failure.isDefiniteAuthRejection) {
+              await _offlineCache.removeForPin(brandId, pincode);
+            }
+          },
+          (_) async {},
+        );
+      } catch (_) {
+        // Background hygiene; a throw here must not surface anywhere.
+      }
+    }());
   }
 
   void setPin(String value) {

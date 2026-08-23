@@ -189,6 +189,69 @@ void main() {
       );
     });
 
+    // The rule above matches `package:dio` and friends, which is what a file
+    // writing raw transport imports. It does not match the two ways this
+    // codebase actually reaches the network in practice, and both were live
+    // holes rather than theoretical ones:
+    //
+    //  * **The in-house wrappers.** `inject<DioClient>().get(ListAPI.x)` needs
+    //    no `package:dio` import at all. `printer_service.dart` reached the
+    //    network that way, on the receipt path, for as long as this rule has
+    //    existed — it awaited `/order-items/order/{id}` before printing a
+    //    close check, so offline the cashier waited out Dio's timeout and the
+    //    department grouping degraded anyway. It reads the replica now.
+    //  * **`package:cached_network_image`.** A widget that renders a remote
+    //    URL is a widget making an HTTP request; the name simply doesn't
+    //    contain "http".
+    //
+    // Same ratchet, so a new offender fails and a paid-off one must be
+    // removed from the list rather than left as cover.
+    const transportViaWrapper = {
+      // Outbox replay and sync — the layer whose job this is.
+      'lib/core/outbox/orders_outbox.dart',
+      'lib/core/outbox/timer_shift_outbox.dart',
+      'lib/core/services/connectivity/connectivity_cubit.dart',
+      'lib/core/services/lan_hub/lan_hub_service.dart',
+      'lib/core/services/offline_queue/offline_queue_service.dart',
+      'lib/core/sync/sync_api_client.dart',
+      // Minio has no change-log trigger, so the engine fetches image blobs
+      // itself — the documented exception in `SyncEngine._fillFeedGaps`.
+      'lib/core/sync/sync_engine.dart',
+      'lib/di.dart',
+      'lib/features/view/main/data/data_source/main_datasources.dart',
+      // Debt, named. The menu editor uploads a picked image straight to Minio
+      // and awaits the URL, so adding a photo is the one back-office action
+      // that genuinely requires connectivity: offline it shows an upload
+      // error and the meal cannot be saved with its image. Closing it needs a
+      // blob-carrying outbox operation, which is a design decision, not a
+      // rewire — see the audit note rather than silently widening this list.
+      'lib/features/view/main/presentation/pages/menu/menu_manage_screen.dart',
+      // The shared image widget's `imageUrl` branch renders a remote URL
+      // directly. Every in-app caller passes `minioObjectName` instead, which
+      // is the local-image-cache path, so nothing reaches this today.
+      'lib/core/common/custom_network_image.dart',
+    };
+
+    final wrapperImport = RegExp(
+      r"^\s*import\s+'(?:package:mary_ai_pos/|[./]+)"
+      r"(?:core/)?(?:api/(?:dio_client|list_api)|service/minio/minio_service)\.dart'"
+      r"|^\s*import\s+'package:cached_network_image",
+      multiLine: true,
+    );
+
+    test('no new file reaches the network through an in-house wrapper', () {
+      _ratchet(
+        rule: 'Reaching the network through DioClient, ListAPI, MinioService '
+            'or CachedNetworkImage is still reaching the network.',
+        roots: const ['lib'],
+        known: transportViaWrapper,
+        violates: (_, source) => wrapperImport.hasMatch(_stripComments(source)),
+        remedy: 'Reads belong in a repository over the replica; writes belong '
+            'in the outbox; images belong in LocalImageCache. If this file '
+            'genuinely is transport, add it to the allowlist with a note.',
+      );
+    });
+
     test('no feature-layer file speaks HTTP except the one on its way out', () {
       final offenders = _dartFilesUnder('lib/features')
           .where((f) => networkImport.hasMatch(f.readAsStringSync()))

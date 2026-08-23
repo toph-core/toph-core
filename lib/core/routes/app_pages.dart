@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:mary_ai_pos/core/routes/app_routes.dart';
 import 'package:mary_ai_pos/features/view/auth/presentation/pages/login/login_screen.dart';
 import 'package:mary_ai_pos/features/view/auth/presentation/pages/login_pin/login_pin_screen.dart';
+import 'package:mary_ai_pos/features/view/auth/presentation/pages/initial_setup/initial_setup_screen.dart';
 import 'package:mary_ai_pos/features/view/auth/presentation/pages/splash/splash_screen.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/archive/archive_screen.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/close_shift/close_shift_screen.dart';
@@ -28,6 +29,9 @@ class RouteGenerate {
 
       case AppRoutes.loginPinScreen:
         return simpleRoute(const LoginPinScreen(), name: settings.name);
+
+      case AppRoutes.initialSetupScreen:
+        return simpleRoute(const InitialSetupScreen(), name: settings.name);
 
       case AppRoutes.mainScreen:
         return simpleRoute(const MainScreen(), name: settings.name);

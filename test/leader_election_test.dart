@@ -404,5 +404,87 @@ void main() {
       );
     });
   });
+
+  group('start() before the branch id exists (the startup-ordering bug)', () {
+    // `di.dart` calls `start()` inside `initDi()`, which completes before
+    // `runApp` — and the branch id comes from `UserBloc`, whose cached profile
+    // is not read until `UserEvent.started()` fires from the widget tree. So
+    // the id is always empty at the call site, and `start()` used to answer
+    // that with a bare `return`. Nothing called it again, so election never
+    // ran on any terminal: LAN mode stayed whatever prefs said, which on a
+    // fresh install is `disabled`.
+    Future<LeaderElectionService> buildWithBranch(
+      String Function() branchId,
+    ) async {
+      SharedPreferences.setMockInitialValues({
+        'lan_election_priority': 999,
+      });
+      final prefs = await SharedPreferences.getInstance();
+      discovery = FakeDiscovery();
+      lanHub = FakeLanHub();
+      return LeaderElectionService(
+        lanHub: lanHub,
+        prefs: prefs,
+        discovery: discovery,
+        terminalId: () => 'terminal-m',
+        branchId: branchId,
+        heartbeatInterval: const Duration(milliseconds: 100),
+        baseElectionWait: const Duration(milliseconds: 100),
+      );
+    }
+
+    test('start() with no branch id leaves the service idle, not started',
+        () async {
+      final svc = await buildWithBranch(() => '');
+
+      await svc.start();
+
+      expect(svc.role, ElectionRole.idle,
+          reason: 'there is nothing to elect over until a user has logged in');
+      expect(discovery.listening, isFalse);
+      await svc.stop();
+    });
+
+    test('the re-arm actually starts the service once the id appears',
+        () async {
+      var branch = '';
+      final svc = await buildWithBranch(() => branch);
+      await svc.start();
+      expect(discovery.listening, isFalse);
+
+      branch = 'branch-1';
+      // Real (not fake) time: start() is async, and the re-arm awaits it.
+      await Future<void>.delayed(
+        LeaderElectionService.branchWaitInterval + const Duration(seconds: 1),
+      );
+
+      expect(
+        discovery.listening,
+        isTrue,
+        reason: 'the service should have picked up the branch id and started',
+      );
+      // Which role it settled into is this suite's other business — real time
+      // elapses here, so a terminal alone on the bus will already have gone on
+      // to claim leadership. What matters is that it is no longer stranded.
+      expect(svc.role, isNot(ElectionRole.idle));
+      await svc.stop();
+    }, timeout: const Timeout(Duration(seconds: 20)));
+
+    test('stop() cancels the wait, so a disabled terminal stops polling',
+        () async {
+      var branch = '';
+      final svc = await buildWithBranch(() => branch);
+      await svc.start();
+      await svc.stop();
+
+      branch = 'branch-1';
+      await Future<void>.delayed(
+        LeaderElectionService.branchWaitInterval + const Duration(seconds: 1),
+      );
+
+      expect(discovery.listening, isFalse,
+          reason: 'a stopped service must not resurrect itself on a timer');
+    }, timeout: const Timeout(Duration(seconds: 20)));
+  });
 }
 

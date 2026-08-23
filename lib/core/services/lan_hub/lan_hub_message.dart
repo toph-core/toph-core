@@ -16,6 +16,8 @@ enum LanHubMessageType {
   leaseRejected,
   leaseRelease,
   changeFeed,
+  localChange,
+  timerAction,
 }
 
 class LanHubMessage {
@@ -106,6 +108,53 @@ class LanHubMessage {
   /// something — see `ChangeFeedRelay`.
   final int? feedFromCursor;
 
+  /// [localChange] only: which replicated entity the row belongs to
+  /// (`orders`, `order_items`, `transactions`, …) — an `EntitySpec.name`.
+  final String? changeEntity;
+
+  /// [localChange] only: `'create'`, `'update'` or `'delete'`. Creates and
+  /// updates are both applied as upserts on the way in, so the distinction is
+  /// carried for readability and logging rather than branching.
+  final String? changeAction;
+
+  /// [localChange] only: the row's primary key. Present even for a delete,
+  /// where it is the only thing identifying what to remove.
+  final String? changeEntityId;
+
+  /// [localChange] only: the row as its writer supplied it, JSON-encoded.
+  /// Null for a delete. Carried as a string rather than a nested object for
+  /// the same reason [feedBody] is — the receiver hands it to the identical
+  /// applier the cloud path uses, and a string cannot be half-decoded by an
+  /// intermediate that has no business reading it.
+  final String? changePayload;
+
+  /// [localChange] only: the originating terminal's id, for diagnostics. Never
+  /// used to decide whether to apply — the hub already excludes the sender
+  /// from its fan-out, and `ChangeApplier.applyFromPeer` stops the echo.
+  final String? changeOrigin;
+
+  /// [timerAction] only: the order whose table timer moved.
+  final String? timerOrderId;
+
+  /// [timerAction] only: `start`, `pause`, `resume` (the `kTimer*` constants
+  /// the outbox already uses) or `evict` when the order closed and its record
+  /// should go.
+  final String? timerActionName;
+
+  /// [timerAction] only: the settled timer record the transition produced,
+  /// JSON-encoded, exactly as it was written to `LocalTables.tableTimers`.
+  /// Null for `evict`, which removes rather than writes.
+  ///
+  /// Carrying the *result* rather than only the verb is deliberate. A receiver
+  /// that recomputed the transition itself would need its own copy of the
+  /// billing engine's settle/accumulate arithmetic, and two copies of that is
+  /// precisely the "fixes landed on one path and not its duplicate" failure
+  /// this codebase's guardrails exist to prevent. The message is still an
+  /// event — it fires on a transition, never on a tick — it simply carries the
+  /// state that event produced, so every terminal shows the same seconds and
+  /// the same money without a second implementation deciding what those are.
+  final String? timerRecord;
+
   /// [leaseRejected] only: which terminal currently holds the table, when
   /// known (offline-first-target-architecture.md §6) — surfaced to the
   /// cashier as "already opened on another terminal", not required for the
@@ -135,6 +184,14 @@ class LanHubMessage {
     this.feedFromCursor,
     this.printResult,
     this.printError,
+    this.changeEntity,
+    this.changeAction,
+    this.changeEntityId,
+    this.changePayload,
+    this.changeOrigin,
+    this.timerOrderId,
+    this.timerActionName,
+    this.timerRecord,
   });
 
   factory LanHubMessage.tableStatus({
@@ -280,6 +337,51 @@ class LanHubMessage {
         feedFromCursor: fromCursor,
       );
 
+  /// Broadcast by *any* terminal the moment it commits a write of its own, so
+  /// the rest of the venue sees the row without waiting for a round trip
+  /// through the cloud — the one thing [changeFeed] cannot do, because a
+  /// leader with no internet has no batch to relay.
+  ///
+  /// Peer-to-peer rather than leader-directed, deliberately. A follower's
+  /// write matters to the other followers as much as to the leader, and the
+  /// hub already fans a client's message out to every other client
+  /// (`LanHubServer._broadcastExcept`) while handing it to its own app layer.
+  /// That makes one message enough for a full venue, whoever wrote it.
+  factory LanHubMessage.localChange({
+    required String entity,
+    required String action,
+    required String entityId,
+    String? payloadJson,
+    String? origin,
+  }) => LanHubMessage(
+        type: LanHubMessageType.localChange,
+        changeEntity: entity,
+        changeAction: action,
+        changeEntityId: entityId,
+        changePayload: payloadJson,
+        changeOrigin: origin,
+      );
+
+  /// Broadcast when a table timer starts, pauses, resumes, or is dropped.
+  ///
+  /// Table timers are local-authority state — `table_time_sessions` is not a
+  /// replicated entity (see `kIntentionallyNotReplicated`), so [localChange]
+  /// cannot carry them and a paused table stayed paused on exactly one
+  /// terminal. That is the confusing case this closes: a waiter pausing a
+  /// table on one till, and the till beside it still counting.
+  factory LanHubMessage.timerAction({
+    required String orderId,
+    required String action,
+    String? recordJson,
+    String? origin,
+  }) => LanHubMessage(
+        type: LanHubMessageType.timerAction,
+        timerOrderId: orderId,
+        timerActionName: action,
+        timerRecord: recordJson,
+        changeOrigin: origin,
+      );
+
   String toJson() => jsonEncode({
         'type': type.name,
         'table_id': tableId,
@@ -303,6 +405,14 @@ class LanHubMessage {
         if (leaseHeldBy != null) 'lease_held_by': leaseHeldBy,
         if (feedBody != null) 'feed_body': feedBody,
         if (feedFromCursor != null) 'feed_from_cursor': feedFromCursor,
+        if (changeEntity != null) 'change_entity': changeEntity,
+        if (changeAction != null) 'change_action': changeAction,
+        if (changeEntityId != null) 'change_entity_id': changeEntityId,
+        if (changePayload != null) 'change_payload': changePayload,
+        if (changeOrigin != null) 'change_origin': changeOrigin,
+        if (timerOrderId != null) 'timer_order_id': timerOrderId,
+        if (timerActionName != null) 'timer_action': timerActionName,
+        if (timerRecord != null) 'timer_record': timerRecord,
       });
 
   static LanHubMessage? tryParse(String raw) {
@@ -335,6 +445,14 @@ class LanHubMessage {
         leaseHeldBy: map['lease_held_by'] as String?,
         feedBody: map['feed_body'] as String?,
         feedFromCursor: (map['feed_from_cursor'] as num?)?.toInt(),
+        changeEntity: map['change_entity'] as String?,
+        changeAction: map['change_action'] as String?,
+        changeEntityId: map['change_entity_id'] as String?,
+        changePayload: map['change_payload'] as String?,
+        changeOrigin: map['change_origin'] as String?,
+        timerOrderId: map['timer_order_id'] as String?,
+        timerActionName: map['timer_action'] as String?,
+        timerRecord: map['timer_record'] as String?,
       );
     } catch (_) {
       return null;

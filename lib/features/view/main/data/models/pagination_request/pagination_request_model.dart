@@ -18,13 +18,26 @@ class PaginationRequestModel
   factory PaginationRequestModel.fromJson(Map<String, dynamic> json) =>
       _$PaginationRequestModelFromJson(json);
 
+  /// The request that continues a list already holding [items] rows.
+  ///
+  /// [offset] is a **row** offset — it is spent directly as SQL's
+  /// `OFFSET ?` (`ArchivesQuery.page`) and was spent the same way by the REST
+  /// endpoint this replaced. It used to be computed as `items ~/ limit`, which
+  /// is a *page index*: with a full page of 20 on screen it asked for offset
+  /// 1, so the next fetch returned rows 2..21 and the newest bill silently
+  /// dropped off the top of the list. The same arithmetic broke bill-number
+  /// search outright — a search dispatched over a full page skipped its single
+  /// match and reported "not found" for a check that was sitting in the
+  /// database.
   factory PaginationRequestModel.calculate({
     required int items,
     required int limit,
   }) {
     final safeLimit = limit <= 0 ? 1 : limit;
-    final calculatedOffset = items ~/ safeLimit;
-    return PaginationRequestModel(limit: safeLimit, offset: calculatedOffset);
+    return PaginationRequestModel(
+      limit: safeLimit,
+      offset: items < 0 ? 0 : items,
+    );
   }
 
   @override

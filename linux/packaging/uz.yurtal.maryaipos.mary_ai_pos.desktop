@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=Mary AI POS
+Comment=Mary AI point-of-sale terminal
+Exec=mary_ai_pos
+Icon=uz.yurtal.maryaipos.mary_ai_pos
+Terminal=false
+Categories=Office;Finance;
+# Must match g_set_prgname(APPLICATION_ID) in linux/runner/my_application.cc so
+# the window manager maps a running window back to this entry.
+StartupWMClass=uz.yurtal.maryaipos.mary_ai_pos

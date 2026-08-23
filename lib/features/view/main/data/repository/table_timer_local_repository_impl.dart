@@ -1,6 +1,7 @@
 import 'package:dartz/dartz.dart';
 import 'package:mary_ai_pos/core/constants/constants.dart';
 import 'package:mary_ai_pos/core/db/local_database.dart';
+import 'package:mary_ai_pos/core/sync/local_change_relay.dart';
 import 'package:mary_ai_pos/core/error/failure.dart';
 import 'package:mary_ai_pos/core/outbox/local_writer.dart';
 import 'package:mary_ai_pos/core/outbox/outbox_store.dart';
@@ -51,12 +52,21 @@ class TableTimerLocalRepositoryImpl implements TableTimerLocalRepository {
   final OrdersRepository _orders;
   final LeaseManager _lease;
 
+  /// Announces each transition to the other terminals in the venue.
+  ///
+  /// Optional so every existing test can build this repository unchanged, and
+  /// so a terminal with no LAN wiring behaves exactly as it did before: the
+  /// local record and the outbox row are unaffected either way, this only adds
+  /// a fire-and-forget frame on the wire.
+  final LocalChangeRelay? _relay;
+
   TableTimerLocalRepositoryImpl(
     this._localDb,
     this._writer,
     this._orders,
-    this._lease,
-  );
+    this._lease, {
+    LocalChangeRelay? relay,
+  }) : _relay = relay;
 
   // ── Record engine ───────────────────────────────────────────────────────
 
@@ -202,6 +212,15 @@ class TableTimerLocalRepositoryImpl implements TableTimerLocalRepository {
         // It is also the chain key, so this waits behind the order's create.
         entityId: orderId,
         request: {'order_id': orderId, 'action': action},
+      );
+      // After the commit, never inside it: a peer told about a pause that then
+      // rolled back here would show a stopped table that is still running.
+      _localDb.afterCommit(
+        () => _relay?.broadcastTimer(
+          orderId: orderId,
+          action: action,
+          record: record,
+        ),
       );
     });
   }
@@ -425,6 +444,10 @@ class TableTimerLocalRepositoryImpl implements TableTimerLocalRepository {
   @override
   Future<void> evictTimer(String orderId) async {
     _localDb.evictTableTimer(orderId);
+    // The other terminals are holding this record too now, so the drop has to
+    // reach them — otherwise a paid-off table keeps its timer on every screen
+    // but this one, and the next order on that table inherits a stale one.
+    _relay?.broadcastTimer(orderId: orderId, action: kTimerEvict);
   }
 
   // ── Server-snapshot normalization (used by SyncEngine's hydration) ──────

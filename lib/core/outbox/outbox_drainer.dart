@@ -184,13 +184,28 @@ class OutboxDrainer {
       // the server's version under its own id, and leaving this one would put
       // two rows on screen for one thing. Dropping it costs the operator a
       // brief disappearance and costs the data nothing — the write succeeded.
-      _db.deleteRow(op.entity, provisionalId);
+      //
+      // Through the applier, not `_db.deleteRow`: LAN peers were told about
+      // this provisional row when it was written, so they have to be told it
+      // is gone. `_succeed` has already cleared the pending guard, so the
+      // delete is not skipped as someone else's unsynced edit.
+      _applier.applyOne(
+        entity: op.entity,
+        action: 'delete',
+        entityId: provisionalId,
+      );
       _db.clearProvisional(op.entity, provisionalId);
       return;
     }
 
     if (serverId != provisionalId) {
-      _db.deleteRow(op.entity, provisionalId);
+      // Same reason as above — a peer that kept the provisional row while
+      // receiving the server's would show the same hall, user or table twice.
+      _applier.applyOne(
+        entity: op.entity,
+        action: 'delete',
+        entityId: provisionalId,
+      );
       _store.rewriteReferences(oldId: provisionalId, newId: serverId);
     }
     _db.clearProvisional(op.entity, provisionalId);

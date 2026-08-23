@@ -10,9 +10,10 @@ import 'package:mary_ai_pos/core/db/local_database.dart';
 /// REST-shaped Flutter models parse it) — hence the parse here rather than a
 /// straight cast.
 ///
-/// Reads only. Writing the branch's service charge stays a direct call: it is
-/// one low-volume config value with no reason to carry offline-write
-/// machinery, and the settings screen already refuses the edit when offline.
+/// Reads only, but no longer because the write is somewhere else entirely:
+/// `ServiceChargeRepositoryImpl` writes the same row through `LocalWriter`,
+/// so the service charge is an ordinary local-first write now rather than the
+/// direct call this comment used to describe.
 class BranchQuery {
   final LocalDatabase _db;
 

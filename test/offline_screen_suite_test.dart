@@ -26,6 +26,7 @@ import 'package:mary_ai_pos/core/outbox/timer_shift_outbox.dart' show kShiftEnti
 import 'package:mary_ai_pos/core/routes/app_routes.dart';
 import 'package:mary_ai_pos/di.dart';
 import 'package:mary_ai_pos/features/view/auth/presentation/pages/login/login_screen.dart';
+import 'package:mary_ai_pos/features/view/auth/presentation/pages/initial_setup/initial_setup_screen.dart';
 import 'package:mary_ai_pos/features/view/auth/presentation/pages/login_pin/login_pin_screen.dart';
 import 'package:mary_ai_pos/features/view/auth/presentation/pages/splash/splash_screen.dart';
 import 'package:mary_ai_pos/features/view/cashier/presentation/pages/cashier_screen.dart';
@@ -68,11 +69,27 @@ const Map<String, String> kExcludedScreens = {};
 /// behind.
 const Map<Type, Set<String>> kScreenNetworkReach = {};
 
+/// A note on why [InitialSetupScreen] is not in the map above, since it is the
+/// one screen that genuinely does try to reach the server.
+///
+/// It records no reach here, and not because it declines to ask: `sync/pull`
+/// is a POST, and `DioClient`'s offline interceptor rejects non-GET requests
+/// while the terminal is offline — before the transport, so [DeadNetworkAdapter]
+/// never sees one. Under this harness the attempt is short-circuited a layer
+/// above the thing that counts.
+///
+/// That makes an entry here impossible to keep honest in both directions: the
+/// ratchet would fail on an empty `reached`. So the screen's contract is
+/// pinned by what it *does* instead — it reaches its failure state and offers
+/// a way forward, which is the behaviour that matters to an operator whose
+/// first login happens in a venue with no working uplink.
+
 /// Screens this suite renders. The filesystem guard below cross-checks it.
 const Set<String> kCoveredScreens = {
   'SplashScreen',
   'LoginScreen',
   'LoginPinScreen',
+  'InitialSetupScreen',
   'MainScreen',
   'WaiterFloorPlanScreen',
   'AdminFloorPlanScreen',
@@ -145,6 +162,55 @@ void expectUsableFrame(
     reason:
         '$screen no longer reaches these endpoints — remove them from '
         'kScreenNetworkReach so the ratchet keeps its teeth.',
+  );
+}
+
+/// Endpoints a *user action* is still allowed to reach for, and why.
+///
+/// The sibling of [kScreenNetworkReach], and it was the hole through which two
+/// live violations survived this suite. `expectUsableFrame` pins what a screen
+/// touches while rendering, so "every screen renders offline" was genuinely
+/// proved — but the action tests below asserted only their local effects and
+/// their outbox rows, and never once looked at what went over the wire. A
+/// request made *in response to a tap* was therefore invisible here.
+///
+/// Two were hiding in exactly that gap, both on the cashier's hot path, both
+/// fire-and-forget enough that offline they merely failed silently:
+///
+/// * `DetailBloc._onFetchBillOrders` awaited `getPaymentDetailWithTableId`
+///   after every order create — a round-trip to re-read a row it had just
+///   written locally.
+/// * `PrinterService._fetchGoodIdsByName` awaited `/order-items/order/{id}`
+///   before printing a close check, so the receipt waited out Dio's timeout
+///   and then grouped by department wrongly anyway.
+///
+/// Both are gone, so this map is empty and the ratchet below keeps it that
+/// way in both directions.
+const Map<String, Set<String>> kActionNetworkReach = {};
+
+/// The action-level counterpart of [expectUsableFrame]: this action put
+/// nothing on the wire beyond what [kActionNetworkReach] names.
+///
+/// Call it at the end of a user-action test, after the local assertions. The
+/// offline harness makes every request fail, so a violation is silent by
+/// construction — nothing here would notice it without this check.
+void expectNoNetworkReach(OfflineAppHarness app, String action) {
+  final reached = app.network.paths.toSet();
+  final allowed = kActionNetworkReach[action] ?? const <String>{};
+  expect(
+    reached.difference(allowed).toList()..sort(),
+    isEmpty,
+    reason:
+        "'$action' reached for the network. A user action writes the replica "
+        'and queues the outbox; it never awaits a request. If this really is '
+        'transport, add it to kActionNetworkReach with a note saying why.',
+  );
+  expect(
+    allowed.difference(reached).toList()..sort(),
+    isEmpty,
+    reason:
+        "'$action' no longer reaches these endpoints — remove them from "
+        'kActionNetworkReach so the ratchet keeps its teeth.',
   );
 }
 
@@ -291,6 +357,26 @@ void main() {
       await app.pumpApp(tester);
       await app.open(tester, AppRoutes.loginPinScreen);
       expectUsableFrame(tester, app, screen: LoginPinScreen);
+    });
+
+    offlineTest('the setup screen offers a way out when the pull cannot run', (
+      tester,
+      app,
+    ) async {
+      await app.pumpApp(tester);
+      await app.open(tester, AppRoutes.initialSetupScreen);
+      // The pull is attempted and fails — the cable is pulled — so the screen
+      // must settle on its failure state. A terminal that cannot reach the
+      // server still has to be usable, so the one thing this must never do is
+      // sit on a spinner with no way forward.
+      await app.settle(tester, rounds: 30);
+      expectUsableFrame(tester, app, screen: InitialSetupScreen);
+      expect(
+        find.text(S.current.strSetupContinueAnyway),
+        findsOneWidget,
+        reason: 'an offline terminal is trapped on the setup screen',
+      );
+      expect(find.text(S.current.strRetry), findsOneWidget);
     });
 
     offlineTest('the floor plan renders the seeded hall and tables', (
@@ -455,6 +541,7 @@ void main() {
       expect(detail!.goods.map((g) => g.name), contains('Osh'));
       // ... and it is queued for the server rather than having gone there.
       expect(app.outboxEntities(), contains('orders'));
+      expectNoNetworkReach(app, 'rings in an order');
     });
 
     offlineTest('a waiter adds a line to a bill already open', (
@@ -486,6 +573,7 @@ void main() {
       expect(after.goods, hasLength(before + 1));
       expect(after.goods.map((g) => g.name), contains('Lagmon'));
       expect(app.outboxEntities(), contains('order_items'));
+      expectNoNetworkReach(app, 'adds a line');
     });
 
     offlineTest('a cashier takes a payment on an open bill', (
@@ -541,6 +629,7 @@ void main() {
       final settled = OrderDetailQuery(app.db).liveOrderById(kOpenOrderId);
       expect(settled, isNotNull, reason: 'the paid bill vanished entirely');
       expect(settled!['bill_status'], 'paid');
+      expectNoNetworkReach(app, 'takes a payment');
     });
 
     offlineTest('a manager adds a table to a hall', (tester, app) async {
@@ -569,6 +658,7 @@ void main() {
         reason: 'the new table never reached the replica',
       );
       expect(app.outboxEntities(), contains('cafe_tables'));
+      expectNoNetworkReach(app, 'adds a table');
     });
 
     offlineTest('a manager opens a shift', (tester, app) async {
@@ -589,6 +679,7 @@ void main() {
         reason: 'the shift was not recorded locally',
       );
       expect(app.outboxEntities(), contains(kShiftEntity));
+      expectNoNetworkReach(app, 'opens a shift');
     }, shiftOpen: false);
   });
 }

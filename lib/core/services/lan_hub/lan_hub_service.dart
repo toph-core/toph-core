@@ -12,6 +12,7 @@ import 'package:mary_ai_pos/core/services/offline_queue/pending_operation.dart';
 import 'package:mary_ai_pos/core/services/print_queue/print_queue_service.dart';
 import 'package:mary_ai_pos/core/utils/jwt_utils.dart';
 import 'package:mary_ai_pos/core/sync/change_feed_relay.dart';
+import 'package:mary_ai_pos/core/sync/local_change_relay.dart';
 import 'package:mary_ai_pos/di.dart';
 import 'package:mary_ai_pos/features/view/auth/presentation/cubit/bloc/user_bloc.dart';
 import 'package:rxdart/rxdart.dart';
@@ -309,6 +310,19 @@ class LanHubService {
               .apply(body: msg.feedBody!, fromCursor: msg.feedFromCursor!);
         }
         break;
+      case LanHubMessageType.localChange:
+        // Applied in every role, unlike `changeFeed` above. A leader hearing
+        // this is hearing a follower's own write, which is exactly what it
+        // needs; `LanHubServer` has already passed the same bytes on to the
+        // other followers, and `ChangeApplier.applyFromPeer` makes sure this
+        // terminal does not send them round again.
+        inject<LocalChangeRelay>().apply(msg);
+        break;
+      case LanHubMessageType.timerAction:
+        // Every role, same as localChange: a timer can be paused from any
+        // terminal, and `LanHubServer` has already passed this on to the rest.
+        inject<LocalChangeRelay>().applyTimer(msg);
+        break;
       case LanHubMessageType.printJobAnnounce:
         if (msg.printJobId != null &&
             msg.printJobType != null &&
@@ -383,6 +397,16 @@ class LanHubService {
       LanHubMessage.changeFeed(body: body, fromCursor: fromCursor),
     );
   }
+
+  /// Hands one locally-committed row to every other terminal in the venue.
+  ///
+  /// Unlike [broadcastChangeFeed], this runs in **both** roles and routes
+  /// through [_sendOrBroadcast]: a follower's write has to travel upstream to
+  /// the leader, which then fans it out to the remaining followers
+  /// (`LanHubServer._broadcastExcept`, plus `onBroadcast` for the leader's own
+  /// app layer). The cloud feed flows one way because only the leader has it;
+  /// a local write can originate anywhere, so this one does not.
+  void broadcastLocalChange(LanHubMessage message) => _sendOrBroadcast(message);
 
   /// Whether a print job could currently be relayed to another terminal at
   /// all — `disabled` mode has no hub connection to broadcast over.

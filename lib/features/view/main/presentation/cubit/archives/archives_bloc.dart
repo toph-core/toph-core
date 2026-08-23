@@ -1,21 +1,20 @@
 import 'dart:async';
-import 'dart:math' as math;
 
 import 'package:bloc/bloc.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:mary_ai_pos/core/components/flush_bars.dart';
 import 'package:mary_ai_pos/core/constants/constants.dart';
 import 'package:mary_ai_pos/core/error/failure.dart';
 import 'package:mary_ai_pos/core/sync/sync_engine.dart';
-import 'package:mary_ai_pos/core/utils/helper/helper_widget.dart';
 import 'package:mary_ai_pos/di.dart' show inject;
 import 'package:mary_ai_pos/features/view/main/data/models/archives_filter_request/archives_filter_request_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/pagination_request/pagination_request_model.dart';
 import 'package:mary_ai_pos/features/view/main/domain/entities/archive_detail_entity.dart';
 import 'package:mary_ai_pos/features/view/main/domain/entities/archive_entity.dart';
+import 'package:mary_ai_pos/features/view/main/domain/entities/archives_filter_request_entity.dart';
 import 'package:mary_ai_pos/features/view/main/domain/entities/archives_response_entity.dart';
+import 'package:mary_ai_pos/features/view/main/domain/entities/archives_summary_entity.dart';
 import 'package:mary_ai_pos/features/view/main/domain/repository/archives_local_repository.dart';
 import 'package:rxdart/rxdart.dart';
 
@@ -23,19 +22,55 @@ part 'archives_event.dart';
 part 'archives_state.dart';
 part 'archives_bloc.freezed.dart';
 
+/// The Orders screen, as one live query over the local replica.
+///
+/// **What this used to be, and why it lost checks.** The screen had two ways
+/// to get rows: a subscription to a single hard-coded view (unfiltered,
+/// "today", 20 rows) and a one-shot fetch for everything else. Because the
+/// two could disagree, the subscription had to be suppressed whenever a
+/// filter, a search or a second page was active — the `_isDefaultView` guard.
+/// And because nothing ever asked for a second page, the 20 rows the
+/// subscription carried were the only bills the terminal could show: a venue's
+/// 21st bill of the day was unreachable in every filter while sitting in both
+/// the replica and the backend, which reads from behind the counter as a paid
+/// check having been deleted.
+///
+/// **What it is now.** One subscription, over whatever the operator is
+/// actually looking at. A filter change, a search, or reaching the bottom of
+/// the list rebuilds that subscription; nothing else does anything. The window
+/// grows by [kArchivesPageSize] per load and re-reads from offset 0 rather
+/// than appending, so a bill that arrives from the feed mid-scroll lands in
+/// its right place instead of shifting everything below it.
+///
+/// **Nothing here awaits the network — there is no network here.** Every read
+/// is `LocalDatabase`, and the screen renders whatever the replica holds,
+/// online or off. The one call that touches `SyncEngine` is a fire-and-forget
+/// nudge; no frame, no list and no error state depends on it returning, or on
+/// it existing at all.
 class ArchivesBloc extends Bloc<ArchivesEvent, ArchivesState> {
   final ArchivesLocalRepository _archivesRepository;
   StreamSubscription<ArchivesResponseEntity?>? _archivesSub;
-  //
+  StreamSubscription<ArchivesSummaryEntity>? _summarySub;
+
+  /// Set the instant [close] begins, and checked before every dispatch below.
+  ///
+  /// `isClosed` is not enough on its own: `Bloc.close` shuts the event sink
+  /// first and only flips `isClosed` at the end, so there is a window in which
+  /// the bloc reports itself open and yet throws on `add`. A query result
+  /// landing in that window — the replica is written constantly, and this
+  /// screen is closed by an ordinary back press — would take the throw.
+  bool _closing = false;
+
   ArchivesBloc({required ArchivesLocalRepository archivesRepository})
     : _archivesRepository = archivesRepository,
       super(ArchivesState.initial()) {
     on<_Started>(_onStarted);
     on<_StatusChanged>(_onStatusChanged);
     on<_ArchivesUpdated>(_onArchivesUpdated);
+    on<_SummaryUpdated>(_onSummaryUpdated);
+    on<_LoadMore>(_onLoadMore);
     on<_FailureChanged>(_onFailureChanged);
     on<_SearchChanged>(_onSearchChanged);
-    on<_GetArchived>(_getArchived);
     on<_SelectArchive>(_selectArchive);
     on<_GetArchiveDetail>(_getArchiveDetail);
     on<_UpdateFilterType>(_updateFilterType);
@@ -44,237 +79,319 @@ class ArchivesBloc extends Bloc<ArchivesEvent, ArchivesState> {
     on<_SearchByArchiveNum>(
       _onSearchByArchiveNum,
       transformer: (events, mapper) => events
-          .debounceTime(const Duration(milliseconds: 600))
+          .debounceTime(const Duration(milliseconds: 300))
           .switchMap(mapper),
     );
-    // §8 Phase 6/V8 — replaces `archive_screen.dart`'s old `Timer.periodic`
-    // silent refresh. `SyncEngine` now hydrates the default (unfiltered,
-    // "today", first page) view into `LocalDatabase`; this bloc just
-    // consumes that as a stream instead of polling for it itself.
-    _archivesSub = _archivesRepository.watchArchives().listen((archives) {
-      if (archives != null && !isClosed && _isDefaultView) {
-        add(ArchivesEvent.archivesUpdated(archives));
-      }
-    });
   }
 
-  /// Whether the currently visible query matches exactly what `SyncEngine`
-  /// hydrates (§8 Phase 6/V8) — no search/date/status filter, default
-  /// "Today" filter type, and no "load more" pagination beyond the single
-  /// hydrated page. Guards the stream subscription above from clobbering an
-  /// active search/filter/expanded-pagination view with the unfiltered
-  /// snapshot, the same clobbering risk already handled for other screens in
-  /// Phase 5 (see EXECUTION_CONCERNS.md).
-  bool get _isDefaultView =>
-      state.filterType == ArchivesFilterType.Today &&
-      (state.textController?.text.isEmpty ?? true) &&
-      state.startFilterDate == null &&
-      state.endFilterDate == null &&
-      state.statusFilter == null &&
-      (state.archives?.archives.length ?? 0) <= 20;
+  /// The query behind everything on screen: the operator's filters, plus a
+  /// window sized to how far they have scrolled.
+  ///
+  /// Always `offset: 0` with a growing `limit`. Paging by offset would be one
+  /// fewer row to read, and would also mean each page is a snapshot of a
+  /// different instant — with bills arriving from the feed while the operator
+  /// scrolls, a row can cross a page boundary and be shown twice or skipped.
+  /// Re-reading the window keeps the list one consistent answer.
+  ArchivesFilterRequestEntity get _filter => _filterWith(state.loadedLimit);
 
-  void _updateFilterType(_UpdateFilterType event, emit) {
-    if (state.filterType != event.type) {
-      emit(
-        state.copyWith(
-          filterType: event.type,
-          archives: null,
-          startFilterDate: null,
-          endFilterDate: null,
-        ),
+  ArchivesFilterRequestEntity _filterWith(int limit) =>
+      ArchivesFilterRequestModel(
+        archiveNum: int.tryParse(state.textController?.text.trim() ?? ''),
+        filterType: state.filterType,
+        startDate: state.startFilterDate,
+        endDate: state.endFilterDate,
+        billStatus: state.statusFilter,
+        pagination: PaginationRequestModel(limit: limit),
       );
-      add(const _GetArchived());
+
+  /// Every bill in the current window, however far the list has scrolled.
+  ///
+  /// For the CSV export, which used to serialise `state.archives` — so it
+  /// exported the page rather than the window, and silently produced a
+  /// different file depending on how far the operator had scrolled before
+  /// pressing it. One local query, no network.
+  Future<List<ArchiveEntity>> archivesInWindow() async {
+    final total = state.totalCount;
+    if (total <= 0) return const [];
+    final result = await _archivesRepository.getArchives(_filterWith(total));
+    return result.fold(
+      // A failure here is a malformed replica row, not an empty window: fall
+      // back to what is on screen rather than exporting nothing.
+      (_) => state.archives?.archives ?? const [],
+      (r) => r.archives,
+    );
+  }
+
+  /// Points both subscriptions at the current [_filter].
+  ///
+  /// Called on every change to what is being looked at. The old code path this
+  /// replaces — cancel the stream, fetch once, hope the two agree — is what
+  /// the `_isDefaultView` guard existed to paper over.
+  void _resubscribe() {
+    _archivesSub?.cancel();
+    _summarySub?.cancel();
+    final filter = _filter;
+
+    _archivesSub = _archivesRepository
+        .watchArchives(filter)
+        .listen(
+          (archives) {
+            if (isClosed || archives == null) return;
+            add(ArchivesEvent.archivesUpdated(archives));
+          },
+          // A query that throws is a malformed replica row, not a connection
+          // problem. Surfacing it beats the previous behaviour, where the error
+          // reached the zone unhandled and the list simply stopped updating.
+          onError: (Object e) {
+            if (isClosed) return;
+            add(ArchivesEvent.failureChanged(MessageFailure('$e')));
+          },
+        );
+
+    _summarySub = _archivesRepository.watchSummary(filter).listen((summary) {
+      if (isClosed) return;
+      add(ArchivesEvent.summaryUpdated(summary));
+    }, onError: (Object _) {});
+  }
+
+  void _onStarted(_Started event, Emitter<ArchivesState> emit) {
+    emit(
+      state.copyWith(
+        textController: state.textController ?? TextEditingController(),
+        status: Status.LOADING,
+        failure: null,
+      ),
+    );
+
+    // Synchronous first paint, so opening the screen never shows a spinner
+    // over data the terminal already has. The subscription below re-emits the
+    // same window a microtask later and every time it changes after that.
+    final hydrated = _archivesRepository.getHydratedArchives();
+    if (hydrated != null && !_closing && !isClosed) {
+      add(ArchivesEvent.archivesUpdated(hydrated));
+    }
+    _resubscribe();
+
+    // Fire-and-forget: ask the sync engine to catch up sooner than its next
+    // tick. Deliberately not awaited and deliberately tolerant of a missing
+    // registration — the screen has already rendered from the replica, and
+    // nothing below this line depends on the pass, its result or its timing.
+    try {
+      unawaited(inject<SyncEngine>().tick());
+    } catch (e) {
+      if (kDebugMode) debugPrint('[ArchivesBloc] no SyncEngine to nudge: $e');
     }
   }
 
-  void _updateFilterDateRange(_UpdateFilterDateRange event, emit) {
+  Future<void> _onArchivesUpdated(
+    _ArchivesUpdated event,
+    Emitter<ArchivesState> emit,
+  ) async {
+    final archives = event.archives.archives;
+    emit(
+      state.copyWith(
+        archives: event.archives,
+        status: Status.SUCCESS,
+        isLoadingMore: false,
+        failure: null,
+      ),
+    );
+
+    // Keep a selection on screen: the first row when there is none, and again
+    // when the row that was selected has left the window (a filter changed
+    // under it, or its bill was voided).
+    if (archives.isEmpty) return;
+    final selectedId = state.selectArchive?.id;
+    final stillListed =
+        selectedId != null && archives.any((a) => a.id == selectedId);
+    if (!stillListed) await _select(archives.first, emit);
+  }
+
+  void _onSummaryUpdated(_SummaryUpdated event, Emitter<ArchivesState> emit) {
+    emit(state.copyWith(summary: event.summary));
+  }
+
+  /// Grows the window by one page. Dispatched by the list on reaching its end.
+  void _onLoadMore(_LoadMore event, Emitter<ArchivesState> emit) {
+    if (state.isLoadingMore) return;
+    final loaded = state.archives?.archives.length ?? 0;
+    // Nothing left to ask for: the window is entirely on screen. `total` comes
+    // from the same `WHERE` as the rows, so the two cannot disagree.
+    if (loaded >= (state.archives?.pagination.total ?? 0)) return;
+    // The last read came back short of what was asked for, so a bigger limit
+    // would return the same rows. Guards against a scroll storm at the bottom.
+    if (loaded < state.loadedLimit) return;
+
+    emit(
+      state.copyWith(
+        loadedLimit: state.loadedLimit + kArchivesPageSize,
+        isLoadingMore: true,
+      ),
+    );
+    _resubscribe();
+  }
+
+  void _updateFilterType(_UpdateFilterType event, Emitter<ArchivesState> emit) {
+    if (state.filterType == event.type) return;
+    emit(
+      state.copyWith(
+        filterType: event.type,
+        startFilterDate: null,
+        endFilterDate: null,
+        loadedLimit: kArchivesPageSize,
+        isLoadingMore: false,
+      ),
+    );
+    _resubscribe();
+  }
+
+  void _updateFilterDateRange(
+    _UpdateFilterDateRange event,
+    Emitter<ArchivesState> emit,
+  ) {
     emit(
       state.copyWith(
         filterType: ArchivesFilterType.date,
-        startFilterDate: event.startDate,
-        endFilterDate: event.endDate,
-        archives: null,
+        startFilterDate: _startOfDay(event.startDate),
+        endFilterDate: _endOfDay(event.endDate),
+        loadedLimit: kArchivesPageSize,
+        isLoadingMore: false,
       ),
     );
-    add(const _GetArchived());
+    _resubscribe();
   }
 
-  void _updateStatusFilter(_UpdateStatusFilter event, emit) {
-    if (state.statusFilter != event.status) {
-      emit(state.copyWith(statusFilter: event.status, archives: null));
-      add(const _GetArchived());
-    }
+  /// A picked range is two calendar *days*, and both are inclusive.
+  ///
+  /// `showDateRangePicker` returns midnight for each end, so passing its
+  /// `end` through unchanged asked for "up to 00:00 on the last day" — the
+  /// whole of the day the operator selected was excluded, which reads as the
+  /// range simply not working for anything recent. Widening to the last
+  /// instant of that day is what "to the 23rd" means to the person picking it.
+  static DateTime _startOfDay(DateTime d) => DateTime(d.year, d.month, d.day);
+
+  static DateTime _endOfDay(DateTime d) =>
+      DateTime(d.year, d.month, d.day, 23, 59, 59, 999);
+
+  void _updateStatusFilter(
+    _UpdateStatusFilter event,
+    Emitter<ArchivesState> emit,
+  ) {
+    if (state.statusFilter == event.status) return;
+    emit(
+      state.copyWith(
+        statusFilter: event.status,
+        loadedLimit: kArchivesPageSize,
+        isLoadingMore: false,
+      ),
+    );
+    _resubscribe();
   }
 
   Future<void> _getArchiveDetail(
     _GetArchiveDetail event,
     Emitter<ArchivesState> emit,
   ) async {
-    if (state.selectArchive != null) {
-      emit(
-        state.copyWith(
-          archiveStatus: Status.LOADING,
-          selectArchiveDetail: null,
-        ),
-      );
-      final response = await _archivesRepository.getArchiveWithId(
-        state.selectArchive!.id,
-      );
-      if (isClosed) return;
-      response.fold(
-        (l) {
-          if (isClosed) return;
-          showErrorMessage(
-            navigatorKey.currentContext!,
-            l.getLocalizedMessage(navigatorKey.currentContext!),
-          );
-        },
-        (r) {
-          if (isClosed) return;
-          emit(
-            state.copyWith(
-              archiveStatus: Status.SUCCESS,
-              selectArchiveDetail: r,
-            ),
-          );
-        },
-      );
-    }
+    final selected = state.selectArchive;
+    if (selected != null) await _loadDetail(selected.id, emit);
   }
 
-  void _selectArchive(_SelectArchive event, emit) {
-    if (state.archives != null &&
-        state.archives!.archives.indexWhere((v) => v.id == event.id) != -1) {
-      emit(
-        state.copyWith(
-          selectArchive:
-              state.archives!.archives[state.archives!.archives.indexWhere(
-                (v) => v.id == event.id,
-              )],
-        ),
-      );
-      add(const _GetArchiveDetail());
-    }
-  }
-
-  Future<void> _getArchived(
-    _GetArchived event,
+  Future<void> _selectArchive(
+    _SelectArchive event,
     Emitter<ArchivesState> emit,
   ) async {
-    if (!event.silent) {
-      emit(state.copyWith(status: Status.LOADING));
-    }
-    // Silent refresh re-syncs statuses on the currently visible window from
-    // the top (offset 0) instead of paginating forward from the loaded
-    // count — it isn't a "load more", it's a resync of what's on screen.
-    final pagination = event.silent
-        ? PaginationRequestModel(
-            limit: math.max(state.archives?.archives.length ?? 20, 20),
-          )
-        : PaginationRequestModel.calculate(
-            items: state.archives?.archives.length ?? 0,
-            limit: 20,
-          );
-    final response = await _archivesRepository.getArchives(
-      ArchivesFilterRequestModel(
-        archiveNum: int.tryParse(state.textController?.text ?? ""),
-        filterType: state.filterType,
-        startDate: state.startFilterDate,
-        endDate: state.endFilterDate,
-        billStatus: state.statusFilter,
-        pagination: pagination,
-      ),
-    );
-    if (isClosed) return;
-    response.fold(
-      (l) {
-        if (isClosed) return;
-        showErrorMessage(
-          navigatorKey.currentContext!,
-          l.getLocalizedMessage(navigatorKey.currentContext!),
-        );
-        emit(state.copyWith(status: Status.ERROR, failure: l));
-      },
-      (r) {
-        if (isClosed) return;
-        emit(
-          state.copyWith(archives: r, status: Status.SUCCESS, failure: null),
-        );
-        if (r.archives.isNotEmpty && state.selectArchive == null) {
-          if (!isClosed) {
-            add(_SelectArchive(id: r.archives[0].id));
-          }
-        }
-      },
-    );
+    final archives = state.archives?.archives ?? const <ArchiveEntity>[];
+    final index = archives.indexWhere((v) => v.id == event.id);
+    if (index == -1) return;
+    await _select(archives[index], emit);
   }
 
-  /// CLIENT_FACING_OFFLINE_PLAN.md §4: the default view is local-first on
-  /// open. When the SyncEngine-hydrated snapshot already exists, it's shown
-  /// immediately (and stays live via the `watchArchives` subscription) with
-  /// only a background sync nudge — no UI-initiated fetch. The one
-  /// remaining `_GetArchived` on open is the first-fill fallback for a
-  /// terminal whose archives box has never been hydrated; filtered/
-  /// searched/paginated views still fetch via `_getArchived` because the
-  /// sync side only hydrates "today, page 1" — the cross-side gap the plan
-  /// flags explicitly (see EXECUTION_CONCERNS.md).
-  void _onStarted(_Started event, Emitter<ArchivesState> emit) {
+  /// Selects a bill and loads its detail, both inside the handler that decided
+  /// to.
+  ///
+  /// Deliberately not `add(getArchiveDetail())`. Chaining one event onto
+  /// another means the second is dispatched from inside the first, and a bloc
+  /// closing at that moment — the screen popped while a row lands — has
+  /// already shut its event sink while still reporting itself open, so the
+  /// chained dispatch throws instead of being ignored. Awaiting the work here
+  /// keeps it inside a handler that is provably still running.
+  Future<void> _select(
+    ArchiveEntity archive,
+    Emitter<ArchivesState> emit,
+  ) async {
+    emit(state.copyWith(selectArchive: archive));
+    await _loadDetail(archive.id, emit);
+  }
+
+  Future<void> _loadDetail(String id, Emitter<ArchivesState> emit) async {
     emit(
-      state.copyWith(textController: TextEditingController(), failure: null),
+      state.copyWith(archiveStatus: Status.LOADING, selectArchiveDetail: null),
     );
-    final hydrated = _archivesRepository.getHydratedArchives();
-    if (hydrated != null) {
-      add(ArchivesEvent.archivesUpdated(hydrated));
-      unawaited(inject<SyncEngine>().tick());
-    } else {
-      add(const _GetArchived());
-    }
+    final response = await _archivesRepository.getArchiveWithId(id);
+    if (_closing || isClosed || emit.isDone) return;
+    response.fold(
+      (l) => emit(state.copyWith(archiveStatus: Status.ERROR, failure: l)),
+      (r) => emit(
+        state.copyWith(archiveStatus: Status.SUCCESS, selectArchiveDetail: r),
+      ),
+    );
   }
 
   void _onStatusChanged(_StatusChanged event, Emitter<ArchivesState> emit) {
     emit(state.copyWith(status: event.status));
   }
 
-  void _onArchivesUpdated(_ArchivesUpdated event, Emitter<ArchivesState> emit) {
-    // status SUCCESS here too — on a hydrated-local open (plan §4) this is
-    // the only emit that ever carries data, there's no _getArchived fold
-    // behind it to set the status.
-    emit(state.copyWith(
-      archives: event.archives,
-      status: Status.SUCCESS,
-      failure: null,
-    ));
-    if (event.archives.archives.isNotEmpty && state.selectArchive == null) {
-      add(_SelectArchive(id: event.archives.archives[0].id));
-    }
-  }
-
   void _onFailureChanged(_FailureChanged event, Emitter<ArchivesState> emit) {
-    emit(state.copyWith(failure: event.failure));
+    emit(state.copyWith(failure: event.failure, status: Status.ERROR));
   }
 
   void _onSearchChanged(_SearchChanged event, Emitter<ArchivesState> emit) {
-    final controller = state.textController ?? TextEditingController();
-    if (controller.text != event.value) {
-      controller.value = controller.value.copyWith(
-        text: event.value,
-        selection: TextSelection.collapsed(offset: event.value.length),
-      );
-    }
-    emit(state.copyWith(textController: controller));
+    emit(state.copyWith(textController: _applySearchText(event.value)));
   }
 
+  TextEditingController _applySearchText(String value) {
+    final controller = state.textController ?? TextEditingController();
+    if (controller.text != value) {
+      controller.value = controller.value.copyWith(
+        text: value,
+        selection: TextSelection.collapsed(offset: value.length),
+      );
+    }
+    return controller;
+  }
+
+  /// A bill-number search is just another filter, and resets the window.
+  ///
+  /// It used to re-request the list *without* resetting anything, so the
+  /// pagination arithmetic of the moment was applied to the search: with a
+  /// full page on screen the single matching bill was skipped by the offset
+  /// and the screen reported nothing found for a check that was in the
+  /// database. See `PaginationRequestModel.calculate`.
   void _onSearchByArchiveNum(
     _SearchByArchiveNum event,
     Emitter<ArchivesState> emit,
   ) {
-    add(_SearchChanged(event.value));
-    add(const _GetArchived());
+    // Written straight onto the controller rather than dispatched as a
+    // `searchChanged`. That event would only be handled *after* this one
+    // returns, so the resubscription below would have queried with the
+    // previous text — the search box would consistently be one keystroke
+    // behind, and clearing it would not restore the list.
+    final controller = _applySearchText(event.value);
+    emit(
+      state.copyWith(
+        textController: controller,
+        loadedLimit: kArchivesPageSize,
+        isLoadingMore: false,
+      ),
+    );
+    _resubscribe();
   }
 
   @override
   Future<void> close() {
+    _closing = true;
     _archivesSub?.cancel();
+    _summarySub?.cancel();
     state.textController?.dispose();
     return super.close();
   }

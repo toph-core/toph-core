@@ -3,11 +3,16 @@ part of 'archives_bloc.dart';
 @freezed
 class ArchivesEvent with _$ArchivesEvent {
   const factory ArchivesEvent.started() = _Started;
-  const factory ArchivesEvent.getArchived({@Default(false) bool silent}) =
-      _GetArchived;
   const factory ArchivesEvent.statusChanged(Status status) = _StatusChanged;
   const factory ArchivesEvent.archivesUpdated(ArchivesResponseEntity archives) =
       _ArchivesUpdated;
+  const factory ArchivesEvent.summaryUpdated(ArchivesSummaryEntity summary) =
+      _SummaryUpdated;
+
+  /// The list reached its end and there is more in the window. Grows the
+  /// query by one [kArchivesPageSize]; a no-op once everything is loaded.
+  const factory ArchivesEvent.loadMore() = _LoadMore;
+
   const factory ArchivesEvent.failureChanged(Failure? failure) =
       _FailureChanged;
   const factory ArchivesEvent.searchChanged(String value) = _SearchChanged;

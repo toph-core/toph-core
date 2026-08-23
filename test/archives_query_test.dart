@@ -34,38 +34,36 @@ void main() {
     String grandTotal = '295200',
     String tableCharge = '0',
     int? deletedAt,
-  }) =>
-      {
-        'id': id,
-        'bill_no': billNo,
-        'bill_status': billStatus,
-        'table_id': tableId,
-        'branch_id': 'b-1',
-        'created_at': createdAt,
-        'paid_at': paidAt,
-        'grand_total': grandTotal,
-        'food_total': '246000',
-        'service_amount': '49200',
-        'discount_amount': '0',
-        'customer_paid_amount': '300000',
-        'table_charge': tableCharge,
-        'deleted_at': deletedAt,
-      };
+  }) => {
+    'id': id,
+    'bill_no': billNo,
+    'bill_status': billStatus,
+    'table_id': tableId,
+    'branch_id': 'b-1',
+    'created_at': createdAt,
+    'paid_at': paidAt,
+    'grand_total': grandTotal,
+    'food_total': '246000',
+    'service_amount': '49200',
+    'discount_amount': '0',
+    'customer_paid_amount': '300000',
+    'table_charge': tableCharge,
+    'deleted_at': deletedAt,
+  };
 
   Map<String, dynamic> item({
     required String id,
     String orderId = 'o-1',
     int quantity = 1,
     String status = 'served',
-  }) =>
-      {
-        'id': id,
-        'order_id': orderId,
-        'good_id': 'g-1',
-        'quantity': quantity,
-        'price': '123000',
-        'status': status,
-      };
+  }) => {
+    'id': id,
+    'order_id': orderId,
+    'good_id': 'g-1',
+    'quantity': quantity,
+    'price': '123000',
+    'status': status,
+  };
 
   ArchivesFilterRequestModel filter({
     ArchivesFilterType type = ArchivesFilterType.All,
@@ -75,15 +73,14 @@ void main() {
     DateTime? end,
     int limit = 20,
     int offset = 0,
-  }) =>
-      ArchivesFilterRequestModel(
-        archiveNum: billNo,
-        filterType: type,
-        startDate: start,
-        endDate: end,
-        billStatus: billStatus,
-        pagination: PaginationRequestModel(limit: limit, offset: offset),
-      );
+  }) => ArchivesFilterRequestModel(
+    archiveNum: billNo,
+    filterType: type,
+    startDate: start,
+    endDate: end,
+    billStatus: billStatus,
+    pagination: PaginationRequestModel(limit: limit, offset: offset),
+  );
 
   setUp(() {
     db = LocalDatabase.open(':memory:');
@@ -115,8 +112,8 @@ void main() {
     test('renames order columns to the names the list model reads', () {
       put('orders', order(id: 'o-1', tableCharge: '150000'));
 
-      final row = (query.page(filter())['items'] as List).first
-          as Map<String, dynamic>;
+      final row =
+          (query.page(filter())['items'] as List).first as Map<String, dynamic>;
       expect(row['opened_at'], '2026-08-10T09:00:00+00:00');
       expect(row['closed_at'], '2026-08-10T10:00:00+00:00');
       expect(row['table_amount'], '150000');
@@ -193,11 +190,15 @@ void main() {
       put('orders', order(id: 'mid', paidAt: '2026-08-10T10:00:00+00:00'));
       put('orders', order(id: 'new', paidAt: '2026-08-20T10:00:00+00:00'));
 
-      final items = query.page(filter(
-        type: ArchivesFilterType.date,
-        start: DateTime.utc(2026, 8, 5),
-        end: DateTime.utc(2026, 8, 15),
-      ))['items'] as List;
+      final items =
+          query.page(
+                filter(
+                  type: ArchivesFilterType.date,
+                  start: DateTime.utc(2026, 8, 5),
+                  end: DateTime.utc(2026, 8, 15),
+                ),
+              )['items']
+              as List;
       expect(items.map((e) => e['id']), ['mid']);
     });
 
@@ -214,30 +215,231 @@ void main() {
     });
 
     test('an open bill falls back to its opening time for range and order', () {
-      put('orders', order(
-        id: 'open-bill',
-        billStatus: 'open',
-        paidAt: null,
-        createdAt: '2026-08-10T08:00:00+00:00',
-      ));
+      put(
+        'orders',
+        order(
+          id: 'open-bill',
+          billStatus: 'open',
+          paidAt: null,
+          createdAt: '2026-08-10T08:00:00+00:00',
+        ),
+      );
 
-      final items = query.page(filter(
-        type: ArchivesFilterType.date,
-        start: DateTime.utc(2026, 8, 9),
-        end: DateTime.utc(2026, 8, 11),
-      ))['items'] as List;
+      final items =
+          query.page(
+                filter(
+                  type: ArchivesFilterType.date,
+                  start: DateTime.utc(2026, 8, 9),
+                  end: DateTime.utc(2026, 8, 11),
+                ),
+              )['items']
+              as List;
       expect(items.map((e) => e['id']), ['open-bill']);
+    });
+  });
+
+  group('ArchivesQuery — timestamps are instants, not strings', () {
+    // `to_jsonb` renders a `timestamptz` in the database session's timezone.
+    // A backend not running in UTC therefore feeds the replica offsets like
+    // `+05:00`, and the window has to read those as the instants they are.
+    String atOffset(DateTime utc, int offsetHours) {
+      final shifted = utc.add(Duration(hours: offsetHours));
+      final sign = offsetHours < 0 ? '-' : '+';
+      final hh = offsetHours.abs().toString().padLeft(2, '0');
+      return '${shifted.toIso8601String().split('.').first}$sign$hh:00';
+    }
+
+    test('a bill just paid stays in Today when the server renders +05:00', () {
+      final paidAt = DateTime.now().toUtc().subtract(
+        const Duration(minutes: 5),
+      );
+      put(
+        'orders',
+        order(
+          id: 'o-1',
+          billNo: 1,
+          createdAt: atOffset(paidAt.subtract(const Duration(hours: 1)), 5),
+          paidAt: atOffset(paidAt, 5),
+        ),
+      );
+
+      // The regression: compared as text prefixes, "…T14:15:00" reads as later
+      // than the UTC upper bound "…T09:20:00" and the bill is excluded — five
+      // hours of a venue's own orders gone from the tab that lists them.
+      final items =
+          query.page(filter(type: ArchivesFilterType.Today))['items'] as List;
+      expect(items.map((e) => e['id']), ['o-1']);
+      expect(query.summary(filter(type: ArchivesFilterType.Today))['count'], 1);
+    });
+
+    test('the same bill in Z form and in +05:00 form are one instant', () {
+      final paidAt = DateTime.now().toUtc().subtract(
+        const Duration(minutes: 5),
+      );
+      // What a terminal writes for itself, and what the feed later replaces it
+      // with. Both must survive the window identically — the swap between them
+      // is what a sync performs, and used to be what made the bill disappear.
+      put(
+        'orders',
+        order(
+          id: 'local',
+          billNo: 1,
+          createdAt: paidAt.toIso8601String(),
+          paidAt: paidAt.toIso8601String(),
+        ),
+      );
+      put(
+        'orders',
+        order(
+          id: 'feed',
+          billNo: 2,
+          createdAt: atOffset(paidAt, 5),
+          paidAt: atOffset(paidAt, 5),
+        ),
+      );
+
+      final items =
+          query.page(filter(type: ArchivesFilterType.Today))['items'] as List;
+      expect(items.map((e) => e['id']).toSet(), {'local', 'feed'});
+    });
+
+    test('a bill genuinely outside the window is still excluded', () {
+      final old = DateTime.now().toUtc().subtract(const Duration(days: 3));
+      put(
+        'orders',
+        order(
+          id: 'o-old',
+          billNo: 1,
+          createdAt: atOffset(old, 5),
+          paidAt: atOffset(old, 5),
+        ),
+      );
+
+      expect(
+        (query.page(filter(type: ArchivesFilterType.Today))['items'] as List),
+        isEmpty,
+      );
+      // ...and reachable without a date filter, which is what "All" is for.
+      expect((query.page(filter())['items'] as List).map((e) => e['id']), [
+        'o-old',
+      ]);
+    });
+
+    test('bills from both sources sort chronologically, not lexically', () {
+      final now = DateTime.now().toUtc();
+      final newer = now.subtract(const Duration(minutes: 5));
+      final older = now.subtract(const Duration(minutes: 30));
+      // The older bill carries the offset form, whose text sorts *above* the
+      // newer bill's Z form. Ordered as text the list comes out backwards.
+      put(
+        'orders',
+        order(
+          id: 'older-offset',
+          billNo: 1,
+          createdAt: atOffset(older, 5),
+          paidAt: atOffset(older, 5),
+        ),
+      );
+      put(
+        'orders',
+        order(
+          id: 'newer-utc',
+          billNo: 2,
+          createdAt: newer.toIso8601String(),
+          paidAt: newer.toIso8601String(),
+        ),
+      );
+
+      final items = query.page(filter())['items'] as List;
+      expect(items.map((e) => e['id']), ['newer-utc', 'older-offset']);
+    });
+  });
+
+  group('ArchivesQuery — window summary', () {
+    test('counts and sums the whole window, not one page', () {
+      for (var i = 0; i < 25; i++) {
+        put('orders', order(id: 'o-$i', billNo: 100 + i, grandTotal: '400000'));
+      }
+
+      // The page is capped, deliberately — the summary is not.
+      expect((query.page(filter(limit: 20))['items'] as List), hasLength(20));
+
+      final summary = query.summary(filter(limit: 20));
+      expect(summary['count'], 25);
+      expect(summary['revenue'], 25 * 400000);
+      expect(summary['avg_check'], 400000);
+      expect(summary['open_count'], 0);
+    });
+
+    test('an open bill contributes its running table charge', () {
+      put(
+        'orders',
+        order(
+          id: 'o-open',
+          billNo: 1,
+          billStatus: 'opened',
+          paidAt: null,
+          grandTotal: '100000',
+          tableCharge: '25000',
+        ),
+      );
+      put('orders', order(id: 'o-paid', billNo: 2, grandTotal: '100000'));
+
+      final summary = query.summary(filter());
+      expect(summary['open_count'], 1);
+      // The open bill bills 125 000 on screen, the closed one 100 000 — the
+      // header has to agree with the rows it sits above.
+      expect(summary['revenue'], 225000);
+    });
+
+    test('respects the same filters the page does', () {
+      put('orders', order(id: 'o-1', billNo: 1, grandTotal: '100000'));
+      put('orders', order(id: 'o-2', billNo: 2, grandTotal: '300000'));
+
+      final summary = query.summary(filter(billNo: 2));
+      expect(summary['count'], 1);
+      expect(summary['revenue'], 300000);
+    });
+
+    test('an empty window is zero, not a division by zero', () {
+      final summary = query.summary(filter(billNo: 999));
+      expect(summary['count'], 0);
+      expect(summary['revenue'], 0);
+      expect(summary['avg_check'], 0);
+    });
+  });
+
+  group('ArchivesQuery — bill-number search', () {
+    test('finds a bill by the first digits of its number', () {
+      put('orders', order(id: 'o-1', billNo: 1247));
+      put('orders', order(id: 'o-2', billNo: 990));
+
+      final items = query.page(filter(billNo: 12))['items'] as List;
+      expect(items.map((e) => e['id']), ['o-1']);
+    });
+
+    test('an exact number still matches exactly one bill', () {
+      put('orders', order(id: 'o-1', billNo: 124));
+      put('orders', order(id: 'o-2', billNo: 125));
+
+      final items = query.page(filter(billNo: 124))['items'] as List;
+      expect(items.map((e) => e['id']), ['o-1']);
+    });
+
+    test('a number nothing starts with finds nothing', () {
+      put('orders', order(id: 'o-1', billNo: 124));
+
+      expect((query.page(filter(billNo: 7))['items'] as List), isEmpty);
     });
   });
 
   group('ArchivesQuery — ordering and paging', () {
     setUp(() {
       for (var i = 1; i <= 5; i++) {
-        put('orders', order(
-          id: 'o-$i',
-          billNo: i,
-          paidAt: '2026-08-0${i}T10:00:00+00:00',
-        ));
+        put(
+          'orders',
+          order(id: 'o-$i', billNo: i, paidAt: '2026-08-0${i}T10:00:00+00:00'),
+        );
       }
     });
 
@@ -273,9 +475,9 @@ void main() {
   group('ArchivesQuery — reactivity', () {
     test('re-emits when a replicated order lands', () async {
       final seen = <int>[];
-      final sub = query.watch(filter()).listen(
-            (page) => seen.add((page['items'] as List).length),
-          );
+      final sub = query
+          .watch(filter())
+          .listen((page) => seen.add((page['items'] as List).length));
 
       await Future<void>.delayed(Duration.zero);
       put('orders', order(id: 'o-1'));
@@ -286,20 +488,25 @@ void main() {
       expect(seen.last, 1, reason: 'and again once the row arrives');
     });
 
-    test('re-emits when an item changes the count on a rendered bill', () async {
-      put('orders', order(id: 'o-1'));
-      final seen = <Object?>[];
-      final sub = query.watch(filter()).listen(
-            (page) => seen.add((page['items'] as List).first['quantity']),
-          );
+    test(
+      're-emits when an item changes the count on a rendered bill',
+      () async {
+        put('orders', order(id: 'o-1'));
+        final seen = <Object?>[];
+        final sub = query
+            .watch(filter())
+            .listen(
+              (page) => seen.add((page['items'] as List).first['quantity']),
+            );
 
-      await Future<void>.delayed(Duration.zero);
-      put('order_items', item(id: 'i-1', quantity: 7));
-      await Future<void>.delayed(const Duration(milliseconds: 50));
+        await Future<void>.delayed(Duration.zero);
+        put('order_items', item(id: 'i-1', quantity: 7));
+        await Future<void>.delayed(const Duration(milliseconds: 50));
 
-      await sub.cancel();
-      expect(seen.first, 0);
-      expect(seen.last, 7);
-    });
+        await sub.cancel();
+        expect(seen.first, 0);
+        expect(seen.last, 7);
+      },
+    );
   });
 }

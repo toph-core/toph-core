@@ -7,12 +7,49 @@
 
 #include "flutter/generated_plugin_registrant.h"
 
+// Human-readable product name shown in the title bar, the task switcher and
+// the taskbar. Keep in sync with the label used on the other platforms.
+static constexpr char kWindowTitle[] = "Mary AI POS";
+
+// Brand mark shipped as a Flutter asset; also used as the window icon so the
+// window manager has something to show instead of the generic placeholder.
+static constexpr char kWindowIconAsset[] = "assets/images/mary_logo.png";
+
 struct _MyApplication {
   GtkApplication parent_instance;
   char** dart_entrypoint_arguments;
 };
 
 G_DEFINE_TYPE(MyApplication, my_application, GTK_TYPE_APPLICATION)
+
+// Resolves a path inside the bundled `data/flutter_assets` directory, which
+// sits next to the executable. Returns nullptr if it cannot be determined.
+static gchar* bundled_asset_path(const gchar* asset) {
+  g_autoptr(GError) error = nullptr;
+  g_autofree gchar* executable_path = g_file_read_link("/proc/self/exe", &error);
+  if (executable_path == nullptr) {
+    g_warning("Failed to resolve executable path: %s", error->message);
+    return nullptr;
+  }
+  g_autofree gchar* executable_dir = g_path_get_dirname(executable_path);
+  return g_build_filename(executable_dir, "data", "flutter_assets", asset,
+                          nullptr);
+}
+
+// Loads the brand mark as the icon for every window of this application. GTK
+// only picks up an icon from the .desktop file once the app is installed, so
+// setting it here is what makes `flutter run` and un-installed bundles show it.
+static void apply_default_window_icon() {
+  g_autofree gchar* icon_path = bundled_asset_path(kWindowIconAsset);
+  if (icon_path == nullptr || !g_file_test(icon_path, G_FILE_TEST_EXISTS)) {
+    return;
+  }
+
+  g_autoptr(GError) error = nullptr;
+  if (!gtk_window_set_default_icon_from_file(icon_path, &error)) {
+    g_warning("Failed to load window icon %s: %s", icon_path, error->message);
+  }
+}
 
 // Called when first Flutter frame received.
 static void first_frame_cb(MyApplication* self, FlView* view) {
@@ -22,6 +59,7 @@ static void first_frame_cb(MyApplication* self, FlView* view) {
 // Implements GApplication::activate.
 static void my_application_activate(GApplication* application) {
   MyApplication* self = MY_APPLICATION(application);
+  apply_default_window_icon();
   GtkWindow* window =
       GTK_WINDOW(gtk_application_window_new(GTK_APPLICATION(application)));
 
@@ -45,11 +83,11 @@ static void my_application_activate(GApplication* application) {
   if (use_header_bar) {
     GtkHeaderBar* header_bar = GTK_HEADER_BAR(gtk_header_bar_new());
     gtk_widget_show(GTK_WIDGET(header_bar));
-    gtk_header_bar_set_title(header_bar, "mary_ai_pos");
+    gtk_header_bar_set_title(header_bar, kWindowTitle);
     gtk_header_bar_set_show_close_button(header_bar, TRUE);
     gtk_window_set_titlebar(window, GTK_WIDGET(header_bar));
   } else {
-    gtk_window_set_title(window, "mary_ai_pos");
+    gtk_window_set_title(window, kWindowTitle);
   }
 
   gtk_window_set_default_size(window, 1280, 720);

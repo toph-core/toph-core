@@ -126,3 +126,15 @@ if(NOT CMAKE_BUILD_TYPE MATCHES "Debug")
   install(FILES "${AOT_LIBRARY}" DESTINATION "${INSTALL_BUNDLE_LIB_DIR}"
     COMPONENT Runtime)
 endif()
+
+# Desktop-environment integration: a .desktop entry plus the brand icon, so an
+# installed bundle shows a name and a logo in the launcher and the taskbar
+# instead of the bare binary name. (Un-installed runs, e.g. `flutter run -d
+# linux`, get their icon from apply_default_window_icon() in the runner.)
+install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/packaging/${APPLICATION_ID}.desktop"
+  DESTINATION "${CMAKE_INSTALL_PREFIX}/share/applications"
+  COMPONENT Runtime)
+install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/../assets/images/mary_logo.png"
+  DESTINATION "${CMAKE_INSTALL_PREFIX}/share/pixmaps"
+  RENAME "${APPLICATION_ID}.png"
+  COMPONENT Runtime)

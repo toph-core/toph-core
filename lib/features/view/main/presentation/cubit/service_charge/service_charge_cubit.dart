@@ -1,6 +1,7 @@
+import 'dart:async';
+
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:mary_ai_pos/core/services/connectivity/connectivity_cubit.dart';
-import 'package:mary_ai_pos/features/view/main/domain/repository/main_repository.dart';
+import 'package:mary_ai_pos/features/view/main/domain/repository/service_charge_repository.dart';
 
 class ServiceChargeState {
   final double? value;
@@ -33,41 +34,41 @@ class ServiceChargeState {
 }
 
 class ServiceChargeCubit extends Cubit<ServiceChargeState> {
-  final MainRepository _repository;
-  final ConnectivityCubit _connectivity;
+  final ServiceChargeRepository _repository;
+  StreamSubscription<double?>? _sub;
 
-  ServiceChargeCubit(this._repository, this._connectivity)
-      : super(const ServiceChargeState());
+  ServiceChargeCubit(this._repository) : super(const ServiceChargeState());
 
-  /// Reads cache-first (via `MainRepositoryImpl`) — a branch offline at boot
-  /// can still see its last-known service charge instead of a blank field.
+  /// Local, and then live. The first value is a synchronous replica read, so
+  /// the field is filled on the first frame with no spinner; the subscription
+  /// keeps it current when the branch row is replicated in — an edit made on
+  /// another terminal now lands here without a reload.
   Future<void> load(String branchId) async {
     if (branchId.isEmpty) return;
-    emit(state.copyWith(loading: true, error: null));
-    final result = await _repository.getServiceCharge(branchId);
-    result.fold(
-      (failure) => emit(state.copyWith(loading: false, error: failure.toString())),
-      (value) => emit(state.copyWith(value: value, loading: false)),
-    );
+    emit(state.copyWith(value: _repository.getServicePercent(branchId), error: null));
+    await _sub?.cancel();
+    _sub = _repository.watchServicePercent(branchId).listen((value) {
+      if (isClosed) return;
+      // A save emits its own value below; this is for changes arriving from
+      // elsewhere. Re-emitting an unchanged value would be harmless but noisy.
+      if (value == state.value) return;
+      emit(state.copyWith(value: value));
+    });
   }
 
-  /// Deliberately online-only, not queued — a single low-volume config
-  /// value with no reason to add offline-write complexity (see
-  /// offline-first-remediation-plan.md, Phase 4e). Fails fast with a clear
-  /// reason when offline instead of attempting the write and surfacing a
-  /// raw network error.
+  /// Local write plus an outbox row, exactly like every other write in the app.
+  ///
+  /// This used to open with `if (!_connectivity.isOnline)` and refuse the edit
+  /// — the one place in the product that made an operator find internet before
+  /// they could change a setting. The justification was that a single config
+  /// value did not merit offline-write machinery; the machinery already exists
+  /// and this is one call into it, so the value stayed online-only out of
+  /// habit rather than cost. `branches` replicates, so the edit is visible
+  /// here immediately and reaches the server whenever the terminal next syncs.
   Future<bool> save(String branchId, double value) async {
     if (branchId.isEmpty) return false;
-    if (!_connectivity.isOnline) {
-      emit(state.copyWith(
-        saving: false,
-        error: "Ulanish yo'q — o'zgartirish uchun internet talab qilinadi.",
-      ));
-      return false;
-    }
     emit(state.copyWith(saving: true, error: null));
-    final result = await _repository.saveServiceCharge(branchId, value);
-    return result.fold(
+    return _repository.saveServicePercent(branchId, value).fold(
       (failure) {
         emit(state.copyWith(saving: false, error: failure.toString()));
         return false;
@@ -77,5 +78,11 @@ class ServiceChargeCubit extends Cubit<ServiceChargeState> {
         return true;
       },
     );
+  }
+
+  @override
+  Future<void> close() {
+    _sub?.cancel();
+    return super.close();
   }
 }

@@ -28,7 +28,7 @@ class TabFilter extends StatelessWidget {
   final bool isLoading;
 
   /// Enables the leading "Barchasi" pill that unsets the hall filter
-  /// via [MainCubit.loadAllHallsTables].
+  /// via [MainCubit.clearSelectedHallId].
   final bool showAllOption;
 
   const TabFilter({
@@ -78,7 +78,7 @@ class TabFilter extends StatelessWidget {
               label: S.current.strAllHalls,
               count: allCount,
               isActive: selectedHallId == null,
-              onTap: () => inject<MainCubit>().loadAllHallsTables(),
+              onTap: () => inject<MainCubit>().clearSelectedHallId(),
             ),
             const SizedBox(width: 8),
           ],

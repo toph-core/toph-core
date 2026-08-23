@@ -136,8 +136,10 @@ class LocalWriter {
   }) {
     final opId = operationId ?? generateUuidV4();
     return _db.transaction(() {
-      _db.deleteRow(entity, id);
-      _db.markPending(entity, id);
+      // Through the applier rather than straight at the database, so a delete
+      // reaches LAN peers by the same single emission point every other local
+      // write uses — see [ChangeApplier.applyLocalDelete].
+      _applier.applyLocalDelete(entity: entity, id: id);
       return _outbox.enqueue(
         id: opId,
         entity: entity,

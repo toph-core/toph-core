@@ -12,16 +12,18 @@ part of 'archives_bloc.dart';
 T _$identity<T>(T value) => value;
 
 final _privateConstructorUsedError = UnsupportedError(
-    'It seems like you constructed your class using `MyClass._()`. This constructor is only meant to be used by freezed and you are not supposed to need it nor use it.\nPlease check the documentation here for more information: https://github.com/rrousselGit/freezed#adding-getters-and-methods-to-our-models');
+  'It seems like you constructed your class using `MyClass._()`. This constructor is only meant to be used by freezed and you are not supposed to need it nor use it.\nPlease check the documentation here for more information: https://github.com/rrousselGit/freezed#adding-getters-and-methods-to-our-models',
+);
 
 /// @nodoc
 mixin _$ArchivesEvent {
   @optionalTypeArgs
   TResult when<TResult extends Object?>({
     required TResult Function() started,
-    required TResult Function(bool silent) getArchived,
     required TResult Function(Status status) statusChanged,
     required TResult Function(ArchivesResponseEntity archives) archivesUpdated,
+    required TResult Function(ArchivesSummaryEntity summary) summaryUpdated,
+    required TResult Function() loadMore,
     required TResult Function(Failure? failure) failureChanged,
     required TResult Function(String value) searchChanged,
     required TResult Function(String value) searchByArchiveNum,
@@ -29,16 +31,16 @@ mixin _$ArchivesEvent {
     required TResult Function() getArchiveDetail,
     required TResult Function(ArchivesFilterType type) updateFilterType,
     required TResult Function(DateTime startDate, DateTime endDate)
-        updateFilterDateRange,
+    updateFilterDateRange,
     required TResult Function(String? status) updateStatusFilter,
-  }) =>
-      throw _privateConstructorUsedError;
+  }) => throw _privateConstructorUsedError;
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
     TResult? Function()? started,
-    TResult? Function(bool silent)? getArchived,
     TResult? Function(Status status)? statusChanged,
     TResult? Function(ArchivesResponseEntity archives)? archivesUpdated,
+    TResult? Function(ArchivesSummaryEntity summary)? summaryUpdated,
+    TResult? Function()? loadMore,
     TResult? Function(Failure? failure)? failureChanged,
     TResult? Function(String value)? searchChanged,
     TResult? Function(String value)? searchByArchiveNum,
@@ -46,16 +48,16 @@ mixin _$ArchivesEvent {
     TResult? Function()? getArchiveDetail,
     TResult? Function(ArchivesFilterType type)? updateFilterType,
     TResult? Function(DateTime startDate, DateTime endDate)?
-        updateFilterDateRange,
+    updateFilterDateRange,
     TResult? Function(String? status)? updateStatusFilter,
-  }) =>
-      throw _privateConstructorUsedError;
+  }) => throw _privateConstructorUsedError;
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
     TResult Function()? started,
-    TResult Function(bool silent)? getArchived,
     TResult Function(Status status)? statusChanged,
     TResult Function(ArchivesResponseEntity archives)? archivesUpdated,
+    TResult Function(ArchivesSummaryEntity summary)? summaryUpdated,
+    TResult Function()? loadMore,
     TResult Function(Failure? failure)? failureChanged,
     TResult Function(String value)? searchChanged,
     TResult Function(String value)? searchByArchiveNum,
@@ -63,17 +65,17 @@ mixin _$ArchivesEvent {
     TResult Function()? getArchiveDetail,
     TResult Function(ArchivesFilterType type)? updateFilterType,
     TResult Function(DateTime startDate, DateTime endDate)?
-        updateFilterDateRange,
+    updateFilterDateRange,
     TResult Function(String? status)? updateStatusFilter,
     required TResult orElse(),
-  }) =>
-      throw _privateConstructorUsedError;
+  }) => throw _privateConstructorUsedError;
   @optionalTypeArgs
   TResult map<TResult extends Object?>({
     required TResult Function(_Started value) started,
-    required TResult Function(_GetArchived value) getArchived,
     required TResult Function(_StatusChanged value) statusChanged,
     required TResult Function(_ArchivesUpdated value) archivesUpdated,
+    required TResult Function(_SummaryUpdated value) summaryUpdated,
+    required TResult Function(_LoadMore value) loadMore,
     required TResult Function(_FailureChanged value) failureChanged,
     required TResult Function(_SearchChanged value) searchChanged,
     required TResult Function(_SearchByArchiveNum value) searchByArchiveNum,
@@ -81,16 +83,16 @@ mixin _$ArchivesEvent {
     required TResult Function(_GetArchiveDetail value) getArchiveDetail,
     required TResult Function(_UpdateFilterType value) updateFilterType,
     required TResult Function(_UpdateFilterDateRange value)
-        updateFilterDateRange,
+    updateFilterDateRange,
     required TResult Function(_UpdateStatusFilter value) updateStatusFilter,
-  }) =>
-      throw _privateConstructorUsedError;
+  }) => throw _privateConstructorUsedError;
   @optionalTypeArgs
   TResult? mapOrNull<TResult extends Object?>({
     TResult? Function(_Started value)? started,
-    TResult? Function(_GetArchived value)? getArchived,
     TResult? Function(_StatusChanged value)? statusChanged,
     TResult? Function(_ArchivesUpdated value)? archivesUpdated,
+    TResult? Function(_SummaryUpdated value)? summaryUpdated,
+    TResult? Function(_LoadMore value)? loadMore,
     TResult? Function(_FailureChanged value)? failureChanged,
     TResult? Function(_SearchChanged value)? searchChanged,
     TResult? Function(_SearchByArchiveNum value)? searchByArchiveNum,
@@ -99,14 +101,14 @@ mixin _$ArchivesEvent {
     TResult? Function(_UpdateFilterType value)? updateFilterType,
     TResult? Function(_UpdateFilterDateRange value)? updateFilterDateRange,
     TResult? Function(_UpdateStatusFilter value)? updateStatusFilter,
-  }) =>
-      throw _privateConstructorUsedError;
+  }) => throw _privateConstructorUsedError;
   @optionalTypeArgs
   TResult maybeMap<TResult extends Object?>({
     TResult Function(_Started value)? started,
-    TResult Function(_GetArchived value)? getArchived,
     TResult Function(_StatusChanged value)? statusChanged,
     TResult Function(_ArchivesUpdated value)? archivesUpdated,
+    TResult Function(_SummaryUpdated value)? summaryUpdated,
+    TResult Function(_LoadMore value)? loadMore,
     TResult Function(_FailureChanged value)? failureChanged,
     TResult Function(_SearchChanged value)? searchChanged,
     TResult Function(_SearchByArchiveNum value)? searchByArchiveNum,
@@ -116,15 +118,15 @@ mixin _$ArchivesEvent {
     TResult Function(_UpdateFilterDateRange value)? updateFilterDateRange,
     TResult Function(_UpdateStatusFilter value)? updateStatusFilter,
     required TResult orElse(),
-  }) =>
-      throw _privateConstructorUsedError;
+  }) => throw _privateConstructorUsedError;
 }
 
 /// @nodoc
 abstract class $ArchivesEventCopyWith<$Res> {
   factory $ArchivesEventCopyWith(
-          ArchivesEvent value, $Res Function(ArchivesEvent) then) =
-      _$ArchivesEventCopyWithImpl<$Res, ArchivesEvent>;
+    ArchivesEvent value,
+    $Res Function(ArchivesEvent) then,
+  ) = _$ArchivesEventCopyWithImpl<$Res, ArchivesEvent>;
 }
 
 /// @nodoc
@@ -141,8 +143,9 @@ class _$ArchivesEventCopyWithImpl<$Res, $Val extends ArchivesEvent>
 /// @nodoc
 abstract class _$$StartedImplCopyWith<$Res> {
   factory _$$StartedImplCopyWith(
-          _$StartedImpl value, $Res Function(_$StartedImpl) then) =
-      __$$StartedImplCopyWithImpl<$Res>;
+    _$StartedImpl value,
+    $Res Function(_$StartedImpl) then,
+  ) = __$$StartedImplCopyWithImpl<$Res>;
 }
 
 /// @nodoc
@@ -150,18 +153,25 @@ class __$$StartedImplCopyWithImpl<$Res>
     extends _$ArchivesEventCopyWithImpl<$Res, _$StartedImpl>
     implements _$$StartedImplCopyWith<$Res> {
   __$$StartedImplCopyWithImpl(
-      _$StartedImpl _value, $Res Function(_$StartedImpl) _then)
-      : super(_value, _then);
+    _$StartedImpl _value,
+    $Res Function(_$StartedImpl) _then,
+  ) : super(_value, _then);
 }
 
 /// @nodoc
 
-class _$StartedImpl implements _Started {
+class _$StartedImpl with DiagnosticableTreeMixin implements _Started {
   const _$StartedImpl();
 
   @override
-  String toString() {
+  String toString({DiagnosticLevel minLevel = DiagnosticLevel.info}) {
     return 'ArchivesEvent.started()';
+  }
+
+  @override
+  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+    super.debugFillProperties(properties);
+    properties.add(DiagnosticsProperty('type', 'ArchivesEvent.started'));
   }
 
   @override
@@ -177,9 +187,10 @@ class _$StartedImpl implements _Started {
   @optionalTypeArgs
   TResult when<TResult extends Object?>({
     required TResult Function() started,
-    required TResult Function(bool silent) getArchived,
     required TResult Function(Status status) statusChanged,
     required TResult Function(ArchivesResponseEntity archives) archivesUpdated,
+    required TResult Function(ArchivesSummaryEntity summary) summaryUpdated,
+    required TResult Function() loadMore,
     required TResult Function(Failure? failure) failureChanged,
     required TResult Function(String value) searchChanged,
     required TResult Function(String value) searchByArchiveNum,
@@ -187,7 +198,7 @@ class _$StartedImpl implements _Started {
     required TResult Function() getArchiveDetail,
     required TResult Function(ArchivesFilterType type) updateFilterType,
     required TResult Function(DateTime startDate, DateTime endDate)
-        updateFilterDateRange,
+    updateFilterDateRange,
     required TResult Function(String? status) updateStatusFilter,
   }) {
     return started();
@@ -197,9 +208,10 @@ class _$StartedImpl implements _Started {
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
     TResult? Function()? started,
-    TResult? Function(bool silent)? getArchived,
     TResult? Function(Status status)? statusChanged,
     TResult? Function(ArchivesResponseEntity archives)? archivesUpdated,
+    TResult? Function(ArchivesSummaryEntity summary)? summaryUpdated,
+    TResult? Function()? loadMore,
     TResult? Function(Failure? failure)? failureChanged,
     TResult? Function(String value)? searchChanged,
     TResult? Function(String value)? searchByArchiveNum,
@@ -207,7 +219,7 @@ class _$StartedImpl implements _Started {
     TResult? Function()? getArchiveDetail,
     TResult? Function(ArchivesFilterType type)? updateFilterType,
     TResult? Function(DateTime startDate, DateTime endDate)?
-        updateFilterDateRange,
+    updateFilterDateRange,
     TResult? Function(String? status)? updateStatusFilter,
   }) {
     return started?.call();
@@ -217,9 +229,10 @@ class _$StartedImpl implements _Started {
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
     TResult Function()? started,
-    TResult Function(bool silent)? getArchived,
     TResult Function(Status status)? statusChanged,
     TResult Function(ArchivesResponseEntity archives)? archivesUpdated,
+    TResult Function(ArchivesSummaryEntity summary)? summaryUpdated,
+    TResult Function()? loadMore,
     TResult Function(Failure? failure)? failureChanged,
     TResult Function(String value)? searchChanged,
     TResult Function(String value)? searchByArchiveNum,
@@ -227,7 +240,7 @@ class _$StartedImpl implements _Started {
     TResult Function()? getArchiveDetail,
     TResult Function(ArchivesFilterType type)? updateFilterType,
     TResult Function(DateTime startDate, DateTime endDate)?
-        updateFilterDateRange,
+    updateFilterDateRange,
     TResult Function(String? status)? updateStatusFilter,
     required TResult orElse(),
   }) {
@@ -241,9 +254,10 @@ class _$StartedImpl implements _Started {
   @optionalTypeArgs
   TResult map<TResult extends Object?>({
     required TResult Function(_Started value) started,
-    required TResult Function(_GetArchived value) getArchived,
     required TResult Function(_StatusChanged value) statusChanged,
     required TResult Function(_ArchivesUpdated value) archivesUpdated,
+    required TResult Function(_SummaryUpdated value) summaryUpdated,
+    required TResult Function(_LoadMore value) loadMore,
     required TResult Function(_FailureChanged value) failureChanged,
     required TResult Function(_SearchChanged value) searchChanged,
     required TResult Function(_SearchByArchiveNum value) searchByArchiveNum,
@@ -251,7 +265,7 @@ class _$StartedImpl implements _Started {
     required TResult Function(_GetArchiveDetail value) getArchiveDetail,
     required TResult Function(_UpdateFilterType value) updateFilterType,
     required TResult Function(_UpdateFilterDateRange value)
-        updateFilterDateRange,
+    updateFilterDateRange,
     required TResult Function(_UpdateStatusFilter value) updateStatusFilter,
   }) {
     return started(this);
@@ -261,9 +275,10 @@ class _$StartedImpl implements _Started {
   @optionalTypeArgs
   TResult? mapOrNull<TResult extends Object?>({
     TResult? Function(_Started value)? started,
-    TResult? Function(_GetArchived value)? getArchived,
     TResult? Function(_StatusChanged value)? statusChanged,
     TResult? Function(_ArchivesUpdated value)? archivesUpdated,
+    TResult? Function(_SummaryUpdated value)? summaryUpdated,
+    TResult? Function(_LoadMore value)? loadMore,
     TResult? Function(_FailureChanged value)? failureChanged,
     TResult? Function(_SearchChanged value)? searchChanged,
     TResult? Function(_SearchByArchiveNum value)? searchByArchiveNum,
@@ -280,9 +295,10 @@ class _$StartedImpl implements _Started {
   @optionalTypeArgs
   TResult maybeMap<TResult extends Object?>({
     TResult Function(_Started value)? started,
-    TResult Function(_GetArchived value)? getArchived,
     TResult Function(_StatusChanged value)? statusChanged,
     TResult Function(_ArchivesUpdated value)? archivesUpdated,
+    TResult Function(_SummaryUpdated value)? summaryUpdated,
+    TResult Function(_LoadMore value)? loadMore,
     TResult Function(_FailureChanged value)? failureChanged,
     TResult Function(_SearchChanged value)? searchChanged,
     TResult Function(_SearchByArchiveNum value)? searchByArchiveNum,
@@ -305,208 +321,11 @@ abstract class _Started implements ArchivesEvent {
 }
 
 /// @nodoc
-abstract class _$$GetArchivedImplCopyWith<$Res> {
-  factory _$$GetArchivedImplCopyWith(
-          _$GetArchivedImpl value, $Res Function(_$GetArchivedImpl) then) =
-      __$$GetArchivedImplCopyWithImpl<$Res>;
-  @useResult
-  $Res call({bool silent});
-}
-
-/// @nodoc
-class __$$GetArchivedImplCopyWithImpl<$Res>
-    extends _$ArchivesEventCopyWithImpl<$Res, _$GetArchivedImpl>
-    implements _$$GetArchivedImplCopyWith<$Res> {
-  __$$GetArchivedImplCopyWithImpl(
-      _$GetArchivedImpl _value, $Res Function(_$GetArchivedImpl) _then)
-      : super(_value, _then);
-
-  @pragma('vm:prefer-inline')
-  @override
-  $Res call({
-    Object? silent = null,
-  }) {
-    return _then(_$GetArchivedImpl(
-      silent: null == silent
-          ? _value.silent
-          : silent // ignore: cast_nullable_to_non_nullable
-              as bool,
-    ));
-  }
-}
-
-/// @nodoc
-
-class _$GetArchivedImpl implements _GetArchived {
-  const _$GetArchivedImpl({this.silent = false});
-
-  @override
-  @JsonKey()
-  final bool silent;
-
-  @override
-  String toString() {
-    return 'ArchivesEvent.getArchived(silent: $silent)';
-  }
-
-  @override
-  bool operator ==(Object other) {
-    return identical(this, other) ||
-        (other.runtimeType == runtimeType &&
-            other is _$GetArchivedImpl &&
-            (identical(other.silent, silent) || other.silent == silent));
-  }
-
-  @override
-  int get hashCode => Object.hash(runtimeType, silent);
-
-  @JsonKey(ignore: true)
-  @override
-  @pragma('vm:prefer-inline')
-  _$$GetArchivedImplCopyWith<_$GetArchivedImpl> get copyWith =>
-      __$$GetArchivedImplCopyWithImpl<_$GetArchivedImpl>(this, _$identity);
-
-  @override
-  @optionalTypeArgs
-  TResult when<TResult extends Object?>({
-    required TResult Function() started,
-    required TResult Function(bool silent) getArchived,
-    required TResult Function(Status status) statusChanged,
-    required TResult Function(ArchivesResponseEntity archives) archivesUpdated,
-    required TResult Function(Failure? failure) failureChanged,
-    required TResult Function(String value) searchChanged,
-    required TResult Function(String value) searchByArchiveNum,
-    required TResult Function(String id) selectArchive,
-    required TResult Function() getArchiveDetail,
-    required TResult Function(ArchivesFilterType type) updateFilterType,
-    required TResult Function(DateTime startDate, DateTime endDate)
-        updateFilterDateRange,
-    required TResult Function(String? status) updateStatusFilter,
-  }) {
-    return getArchived(silent);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function()? started,
-    TResult? Function(bool silent)? getArchived,
-    TResult? Function(Status status)? statusChanged,
-    TResult? Function(ArchivesResponseEntity archives)? archivesUpdated,
-    TResult? Function(Failure? failure)? failureChanged,
-    TResult? Function(String value)? searchChanged,
-    TResult? Function(String value)? searchByArchiveNum,
-    TResult? Function(String id)? selectArchive,
-    TResult? Function()? getArchiveDetail,
-    TResult? Function(ArchivesFilterType type)? updateFilterType,
-    TResult? Function(DateTime startDate, DateTime endDate)?
-        updateFilterDateRange,
-    TResult? Function(String? status)? updateStatusFilter,
-  }) {
-    return getArchived?.call(silent);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult maybeWhen<TResult extends Object?>({
-    TResult Function()? started,
-    TResult Function(bool silent)? getArchived,
-    TResult Function(Status status)? statusChanged,
-    TResult Function(ArchivesResponseEntity archives)? archivesUpdated,
-    TResult Function(Failure? failure)? failureChanged,
-    TResult Function(String value)? searchChanged,
-    TResult Function(String value)? searchByArchiveNum,
-    TResult Function(String id)? selectArchive,
-    TResult Function()? getArchiveDetail,
-    TResult Function(ArchivesFilterType type)? updateFilterType,
-    TResult Function(DateTime startDate, DateTime endDate)?
-        updateFilterDateRange,
-    TResult Function(String? status)? updateStatusFilter,
-    required TResult orElse(),
-  }) {
-    if (getArchived != null) {
-      return getArchived(silent);
-    }
-    return orElse();
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult map<TResult extends Object?>({
-    required TResult Function(_Started value) started,
-    required TResult Function(_GetArchived value) getArchived,
-    required TResult Function(_StatusChanged value) statusChanged,
-    required TResult Function(_ArchivesUpdated value) archivesUpdated,
-    required TResult Function(_FailureChanged value) failureChanged,
-    required TResult Function(_SearchChanged value) searchChanged,
-    required TResult Function(_SearchByArchiveNum value) searchByArchiveNum,
-    required TResult Function(_SelectArchive value) selectArchive,
-    required TResult Function(_GetArchiveDetail value) getArchiveDetail,
-    required TResult Function(_UpdateFilterType value) updateFilterType,
-    required TResult Function(_UpdateFilterDateRange value)
-        updateFilterDateRange,
-    required TResult Function(_UpdateStatusFilter value) updateStatusFilter,
-  }) {
-    return getArchived(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult? mapOrNull<TResult extends Object?>({
-    TResult? Function(_Started value)? started,
-    TResult? Function(_GetArchived value)? getArchived,
-    TResult? Function(_StatusChanged value)? statusChanged,
-    TResult? Function(_ArchivesUpdated value)? archivesUpdated,
-    TResult? Function(_FailureChanged value)? failureChanged,
-    TResult? Function(_SearchChanged value)? searchChanged,
-    TResult? Function(_SearchByArchiveNum value)? searchByArchiveNum,
-    TResult? Function(_SelectArchive value)? selectArchive,
-    TResult? Function(_GetArchiveDetail value)? getArchiveDetail,
-    TResult? Function(_UpdateFilterType value)? updateFilterType,
-    TResult? Function(_UpdateFilterDateRange value)? updateFilterDateRange,
-    TResult? Function(_UpdateStatusFilter value)? updateStatusFilter,
-  }) {
-    return getArchived?.call(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult maybeMap<TResult extends Object?>({
-    TResult Function(_Started value)? started,
-    TResult Function(_GetArchived value)? getArchived,
-    TResult Function(_StatusChanged value)? statusChanged,
-    TResult Function(_ArchivesUpdated value)? archivesUpdated,
-    TResult Function(_FailureChanged value)? failureChanged,
-    TResult Function(_SearchChanged value)? searchChanged,
-    TResult Function(_SearchByArchiveNum value)? searchByArchiveNum,
-    TResult Function(_SelectArchive value)? selectArchive,
-    TResult Function(_GetArchiveDetail value)? getArchiveDetail,
-    TResult Function(_UpdateFilterType value)? updateFilterType,
-    TResult Function(_UpdateFilterDateRange value)? updateFilterDateRange,
-    TResult Function(_UpdateStatusFilter value)? updateStatusFilter,
-    required TResult orElse(),
-  }) {
-    if (getArchived != null) {
-      return getArchived(this);
-    }
-    return orElse();
-  }
-}
-
-abstract class _GetArchived implements ArchivesEvent {
-  const factory _GetArchived({final bool silent}) = _$GetArchivedImpl;
-
-  bool get silent;
-  @JsonKey(ignore: true)
-  _$$GetArchivedImplCopyWith<_$GetArchivedImpl> get copyWith =>
-      throw _privateConstructorUsedError;
-}
-
-/// @nodoc
 abstract class _$$StatusChangedImplCopyWith<$Res> {
   factory _$$StatusChangedImplCopyWith(
-          _$StatusChangedImpl value, $Res Function(_$StatusChangedImpl) then) =
-      __$$StatusChangedImplCopyWithImpl<$Res>;
+    _$StatusChangedImpl value,
+    $Res Function(_$StatusChangedImpl) then,
+  ) = __$$StatusChangedImplCopyWithImpl<$Res>;
   @useResult
   $Res call({Status status});
 }
@@ -516,34 +335,45 @@ class __$$StatusChangedImplCopyWithImpl<$Res>
     extends _$ArchivesEventCopyWithImpl<$Res, _$StatusChangedImpl>
     implements _$$StatusChangedImplCopyWith<$Res> {
   __$$StatusChangedImplCopyWithImpl(
-      _$StatusChangedImpl _value, $Res Function(_$StatusChangedImpl) _then)
-      : super(_value, _then);
+    _$StatusChangedImpl _value,
+    $Res Function(_$StatusChangedImpl) _then,
+  ) : super(_value, _then);
 
   @pragma('vm:prefer-inline')
   @override
-  $Res call({
-    Object? status = null,
-  }) {
-    return _then(_$StatusChangedImpl(
-      null == status
-          ? _value.status
-          : status // ignore: cast_nullable_to_non_nullable
-              as Status,
-    ));
+  $Res call({Object? status = null}) {
+    return _then(
+      _$StatusChangedImpl(
+        null == status
+            ? _value.status
+            : status // ignore: cast_nullable_to_non_nullable
+                  as Status,
+      ),
+    );
   }
 }
 
 /// @nodoc
 
-class _$StatusChangedImpl implements _StatusChanged {
+class _$StatusChangedImpl
+    with DiagnosticableTreeMixin
+    implements _StatusChanged {
   const _$StatusChangedImpl(this.status);
 
   @override
   final Status status;
 
   @override
-  String toString() {
+  String toString({DiagnosticLevel minLevel = DiagnosticLevel.info}) {
     return 'ArchivesEvent.statusChanged(status: $status)';
+  }
+
+  @override
+  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+    super.debugFillProperties(properties);
+    properties
+      ..add(DiagnosticsProperty('type', 'ArchivesEvent.statusChanged'))
+      ..add(DiagnosticsProperty('status', status));
   }
 
   @override
@@ -567,9 +397,10 @@ class _$StatusChangedImpl implements _StatusChanged {
   @optionalTypeArgs
   TResult when<TResult extends Object?>({
     required TResult Function() started,
-    required TResult Function(bool silent) getArchived,
     required TResult Function(Status status) statusChanged,
     required TResult Function(ArchivesResponseEntity archives) archivesUpdated,
+    required TResult Function(ArchivesSummaryEntity summary) summaryUpdated,
+    required TResult Function() loadMore,
     required TResult Function(Failure? failure) failureChanged,
     required TResult Function(String value) searchChanged,
     required TResult Function(String value) searchByArchiveNum,
@@ -577,7 +408,7 @@ class _$StatusChangedImpl implements _StatusChanged {
     required TResult Function() getArchiveDetail,
     required TResult Function(ArchivesFilterType type) updateFilterType,
     required TResult Function(DateTime startDate, DateTime endDate)
-        updateFilterDateRange,
+    updateFilterDateRange,
     required TResult Function(String? status) updateStatusFilter,
   }) {
     return statusChanged(status);
@@ -587,9 +418,10 @@ class _$StatusChangedImpl implements _StatusChanged {
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
     TResult? Function()? started,
-    TResult? Function(bool silent)? getArchived,
     TResult? Function(Status status)? statusChanged,
     TResult? Function(ArchivesResponseEntity archives)? archivesUpdated,
+    TResult? Function(ArchivesSummaryEntity summary)? summaryUpdated,
+    TResult? Function()? loadMore,
     TResult? Function(Failure? failure)? failureChanged,
     TResult? Function(String value)? searchChanged,
     TResult? Function(String value)? searchByArchiveNum,
@@ -597,7 +429,7 @@ class _$StatusChangedImpl implements _StatusChanged {
     TResult? Function()? getArchiveDetail,
     TResult? Function(ArchivesFilterType type)? updateFilterType,
     TResult? Function(DateTime startDate, DateTime endDate)?
-        updateFilterDateRange,
+    updateFilterDateRange,
     TResult? Function(String? status)? updateStatusFilter,
   }) {
     return statusChanged?.call(status);
@@ -607,9 +439,10 @@ class _$StatusChangedImpl implements _StatusChanged {
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
     TResult Function()? started,
-    TResult Function(bool silent)? getArchived,
     TResult Function(Status status)? statusChanged,
     TResult Function(ArchivesResponseEntity archives)? archivesUpdated,
+    TResult Function(ArchivesSummaryEntity summary)? summaryUpdated,
+    TResult Function()? loadMore,
     TResult Function(Failure? failure)? failureChanged,
     TResult Function(String value)? searchChanged,
     TResult Function(String value)? searchByArchiveNum,
@@ -617,7 +450,7 @@ class _$StatusChangedImpl implements _StatusChanged {
     TResult Function()? getArchiveDetail,
     TResult Function(ArchivesFilterType type)? updateFilterType,
     TResult Function(DateTime startDate, DateTime endDate)?
-        updateFilterDateRange,
+    updateFilterDateRange,
     TResult Function(String? status)? updateStatusFilter,
     required TResult orElse(),
   }) {
@@ -631,9 +464,10 @@ class _$StatusChangedImpl implements _StatusChanged {
   @optionalTypeArgs
   TResult map<TResult extends Object?>({
     required TResult Function(_Started value) started,
-    required TResult Function(_GetArchived value) getArchived,
     required TResult Function(_StatusChanged value) statusChanged,
     required TResult Function(_ArchivesUpdated value) archivesUpdated,
+    required TResult Function(_SummaryUpdated value) summaryUpdated,
+    required TResult Function(_LoadMore value) loadMore,
     required TResult Function(_FailureChanged value) failureChanged,
     required TResult Function(_SearchChanged value) searchChanged,
     required TResult Function(_SearchByArchiveNum value) searchByArchiveNum,
@@ -641,7 +475,7 @@ class _$StatusChangedImpl implements _StatusChanged {
     required TResult Function(_GetArchiveDetail value) getArchiveDetail,
     required TResult Function(_UpdateFilterType value) updateFilterType,
     required TResult Function(_UpdateFilterDateRange value)
-        updateFilterDateRange,
+    updateFilterDateRange,
     required TResult Function(_UpdateStatusFilter value) updateStatusFilter,
   }) {
     return statusChanged(this);
@@ -651,9 +485,10 @@ class _$StatusChangedImpl implements _StatusChanged {
   @optionalTypeArgs
   TResult? mapOrNull<TResult extends Object?>({
     TResult? Function(_Started value)? started,
-    TResult? Function(_GetArchived value)? getArchived,
     TResult? Function(_StatusChanged value)? statusChanged,
     TResult? Function(_ArchivesUpdated value)? archivesUpdated,
+    TResult? Function(_SummaryUpdated value)? summaryUpdated,
+    TResult? Function(_LoadMore value)? loadMore,
     TResult? Function(_FailureChanged value)? failureChanged,
     TResult? Function(_SearchChanged value)? searchChanged,
     TResult? Function(_SearchByArchiveNum value)? searchByArchiveNum,
@@ -670,9 +505,10 @@ class _$StatusChangedImpl implements _StatusChanged {
   @optionalTypeArgs
   TResult maybeMap<TResult extends Object?>({
     TResult Function(_Started value)? started,
-    TResult Function(_GetArchived value)? getArchived,
     TResult Function(_StatusChanged value)? statusChanged,
     TResult Function(_ArchivesUpdated value)? archivesUpdated,
+    TResult Function(_SummaryUpdated value)? summaryUpdated,
+    TResult Function(_LoadMore value)? loadMore,
     TResult Function(_FailureChanged value)? failureChanged,
     TResult Function(_SearchChanged value)? searchChanged,
     TResult Function(_SearchByArchiveNum value)? searchByArchiveNum,
@@ -701,9 +537,10 @@ abstract class _StatusChanged implements ArchivesEvent {
 
 /// @nodoc
 abstract class _$$ArchivesUpdatedImplCopyWith<$Res> {
-  factory _$$ArchivesUpdatedImplCopyWith(_$ArchivesUpdatedImpl value,
-          $Res Function(_$ArchivesUpdatedImpl) then) =
-      __$$ArchivesUpdatedImplCopyWithImpl<$Res>;
+  factory _$$ArchivesUpdatedImplCopyWith(
+    _$ArchivesUpdatedImpl value,
+    $Res Function(_$ArchivesUpdatedImpl) then,
+  ) = __$$ArchivesUpdatedImplCopyWithImpl<$Res>;
   @useResult
   $Res call({ArchivesResponseEntity archives});
 }
@@ -713,34 +550,45 @@ class __$$ArchivesUpdatedImplCopyWithImpl<$Res>
     extends _$ArchivesEventCopyWithImpl<$Res, _$ArchivesUpdatedImpl>
     implements _$$ArchivesUpdatedImplCopyWith<$Res> {
   __$$ArchivesUpdatedImplCopyWithImpl(
-      _$ArchivesUpdatedImpl _value, $Res Function(_$ArchivesUpdatedImpl) _then)
-      : super(_value, _then);
+    _$ArchivesUpdatedImpl _value,
+    $Res Function(_$ArchivesUpdatedImpl) _then,
+  ) : super(_value, _then);
 
   @pragma('vm:prefer-inline')
   @override
-  $Res call({
-    Object? archives = null,
-  }) {
-    return _then(_$ArchivesUpdatedImpl(
-      null == archives
-          ? _value.archives
-          : archives // ignore: cast_nullable_to_non_nullable
-              as ArchivesResponseEntity,
-    ));
+  $Res call({Object? archives = null}) {
+    return _then(
+      _$ArchivesUpdatedImpl(
+        null == archives
+            ? _value.archives
+            : archives // ignore: cast_nullable_to_non_nullable
+                  as ArchivesResponseEntity,
+      ),
+    );
   }
 }
 
 /// @nodoc
 
-class _$ArchivesUpdatedImpl implements _ArchivesUpdated {
+class _$ArchivesUpdatedImpl
+    with DiagnosticableTreeMixin
+    implements _ArchivesUpdated {
   const _$ArchivesUpdatedImpl(this.archives);
 
   @override
   final ArchivesResponseEntity archives;
 
   @override
-  String toString() {
+  String toString({DiagnosticLevel minLevel = DiagnosticLevel.info}) {
     return 'ArchivesEvent.archivesUpdated(archives: $archives)';
+  }
+
+  @override
+  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+    super.debugFillProperties(properties);
+    properties
+      ..add(DiagnosticsProperty('type', 'ArchivesEvent.archivesUpdated'))
+      ..add(DiagnosticsProperty('archives', archives));
   }
 
   @override
@@ -760,15 +608,18 @@ class _$ArchivesUpdatedImpl implements _ArchivesUpdated {
   @pragma('vm:prefer-inline')
   _$$ArchivesUpdatedImplCopyWith<_$ArchivesUpdatedImpl> get copyWith =>
       __$$ArchivesUpdatedImplCopyWithImpl<_$ArchivesUpdatedImpl>(
-          this, _$identity);
+        this,
+        _$identity,
+      );
 
   @override
   @optionalTypeArgs
   TResult when<TResult extends Object?>({
     required TResult Function() started,
-    required TResult Function(bool silent) getArchived,
     required TResult Function(Status status) statusChanged,
     required TResult Function(ArchivesResponseEntity archives) archivesUpdated,
+    required TResult Function(ArchivesSummaryEntity summary) summaryUpdated,
+    required TResult Function() loadMore,
     required TResult Function(Failure? failure) failureChanged,
     required TResult Function(String value) searchChanged,
     required TResult Function(String value) searchByArchiveNum,
@@ -776,7 +627,7 @@ class _$ArchivesUpdatedImpl implements _ArchivesUpdated {
     required TResult Function() getArchiveDetail,
     required TResult Function(ArchivesFilterType type) updateFilterType,
     required TResult Function(DateTime startDate, DateTime endDate)
-        updateFilterDateRange,
+    updateFilterDateRange,
     required TResult Function(String? status) updateStatusFilter,
   }) {
     return archivesUpdated(archives);
@@ -786,9 +637,10 @@ class _$ArchivesUpdatedImpl implements _ArchivesUpdated {
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
     TResult? Function()? started,
-    TResult? Function(bool silent)? getArchived,
     TResult? Function(Status status)? statusChanged,
     TResult? Function(ArchivesResponseEntity archives)? archivesUpdated,
+    TResult? Function(ArchivesSummaryEntity summary)? summaryUpdated,
+    TResult? Function()? loadMore,
     TResult? Function(Failure? failure)? failureChanged,
     TResult? Function(String value)? searchChanged,
     TResult? Function(String value)? searchByArchiveNum,
@@ -796,7 +648,7 @@ class _$ArchivesUpdatedImpl implements _ArchivesUpdated {
     TResult? Function()? getArchiveDetail,
     TResult? Function(ArchivesFilterType type)? updateFilterType,
     TResult? Function(DateTime startDate, DateTime endDate)?
-        updateFilterDateRange,
+    updateFilterDateRange,
     TResult? Function(String? status)? updateStatusFilter,
   }) {
     return archivesUpdated?.call(archives);
@@ -806,9 +658,10 @@ class _$ArchivesUpdatedImpl implements _ArchivesUpdated {
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
     TResult Function()? started,
-    TResult Function(bool silent)? getArchived,
     TResult Function(Status status)? statusChanged,
     TResult Function(ArchivesResponseEntity archives)? archivesUpdated,
+    TResult Function(ArchivesSummaryEntity summary)? summaryUpdated,
+    TResult Function()? loadMore,
     TResult Function(Failure? failure)? failureChanged,
     TResult Function(String value)? searchChanged,
     TResult Function(String value)? searchByArchiveNum,
@@ -816,7 +669,7 @@ class _$ArchivesUpdatedImpl implements _ArchivesUpdated {
     TResult Function()? getArchiveDetail,
     TResult Function(ArchivesFilterType type)? updateFilterType,
     TResult Function(DateTime startDate, DateTime endDate)?
-        updateFilterDateRange,
+    updateFilterDateRange,
     TResult Function(String? status)? updateStatusFilter,
     required TResult orElse(),
   }) {
@@ -830,9 +683,10 @@ class _$ArchivesUpdatedImpl implements _ArchivesUpdated {
   @optionalTypeArgs
   TResult map<TResult extends Object?>({
     required TResult Function(_Started value) started,
-    required TResult Function(_GetArchived value) getArchived,
     required TResult Function(_StatusChanged value) statusChanged,
     required TResult Function(_ArchivesUpdated value) archivesUpdated,
+    required TResult Function(_SummaryUpdated value) summaryUpdated,
+    required TResult Function(_LoadMore value) loadMore,
     required TResult Function(_FailureChanged value) failureChanged,
     required TResult Function(_SearchChanged value) searchChanged,
     required TResult Function(_SearchByArchiveNum value) searchByArchiveNum,
@@ -840,7 +694,7 @@ class _$ArchivesUpdatedImpl implements _ArchivesUpdated {
     required TResult Function(_GetArchiveDetail value) getArchiveDetail,
     required TResult Function(_UpdateFilterType value) updateFilterType,
     required TResult Function(_UpdateFilterDateRange value)
-        updateFilterDateRange,
+    updateFilterDateRange,
     required TResult Function(_UpdateStatusFilter value) updateStatusFilter,
   }) {
     return archivesUpdated(this);
@@ -850,9 +704,10 @@ class _$ArchivesUpdatedImpl implements _ArchivesUpdated {
   @optionalTypeArgs
   TResult? mapOrNull<TResult extends Object?>({
     TResult? Function(_Started value)? started,
-    TResult? Function(_GetArchived value)? getArchived,
     TResult? Function(_StatusChanged value)? statusChanged,
     TResult? Function(_ArchivesUpdated value)? archivesUpdated,
+    TResult? Function(_SummaryUpdated value)? summaryUpdated,
+    TResult? Function(_LoadMore value)? loadMore,
     TResult? Function(_FailureChanged value)? failureChanged,
     TResult? Function(_SearchChanged value)? searchChanged,
     TResult? Function(_SearchByArchiveNum value)? searchByArchiveNum,
@@ -869,9 +724,10 @@ class _$ArchivesUpdatedImpl implements _ArchivesUpdated {
   @optionalTypeArgs
   TResult maybeMap<TResult extends Object?>({
     TResult Function(_Started value)? started,
-    TResult Function(_GetArchived value)? getArchived,
     TResult Function(_StatusChanged value)? statusChanged,
     TResult Function(_ArchivesUpdated value)? archivesUpdated,
+    TResult Function(_SummaryUpdated value)? summaryUpdated,
+    TResult Function(_LoadMore value)? loadMore,
     TResult Function(_FailureChanged value)? failureChanged,
     TResult Function(_SearchChanged value)? searchChanged,
     TResult Function(_SearchByArchiveNum value)? searchByArchiveNum,
@@ -900,10 +756,410 @@ abstract class _ArchivesUpdated implements ArchivesEvent {
 }
 
 /// @nodoc
+abstract class _$$SummaryUpdatedImplCopyWith<$Res> {
+  factory _$$SummaryUpdatedImplCopyWith(
+    _$SummaryUpdatedImpl value,
+    $Res Function(_$SummaryUpdatedImpl) then,
+  ) = __$$SummaryUpdatedImplCopyWithImpl<$Res>;
+  @useResult
+  $Res call({ArchivesSummaryEntity summary});
+}
+
+/// @nodoc
+class __$$SummaryUpdatedImplCopyWithImpl<$Res>
+    extends _$ArchivesEventCopyWithImpl<$Res, _$SummaryUpdatedImpl>
+    implements _$$SummaryUpdatedImplCopyWith<$Res> {
+  __$$SummaryUpdatedImplCopyWithImpl(
+    _$SummaryUpdatedImpl _value,
+    $Res Function(_$SummaryUpdatedImpl) _then,
+  ) : super(_value, _then);
+
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({Object? summary = null}) {
+    return _then(
+      _$SummaryUpdatedImpl(
+        null == summary
+            ? _value.summary
+            : summary // ignore: cast_nullable_to_non_nullable
+                  as ArchivesSummaryEntity,
+      ),
+    );
+  }
+}
+
+/// @nodoc
+
+class _$SummaryUpdatedImpl
+    with DiagnosticableTreeMixin
+    implements _SummaryUpdated {
+  const _$SummaryUpdatedImpl(this.summary);
+
+  @override
+  final ArchivesSummaryEntity summary;
+
+  @override
+  String toString({DiagnosticLevel minLevel = DiagnosticLevel.info}) {
+    return 'ArchivesEvent.summaryUpdated(summary: $summary)';
+  }
+
+  @override
+  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+    super.debugFillProperties(properties);
+    properties
+      ..add(DiagnosticsProperty('type', 'ArchivesEvent.summaryUpdated'))
+      ..add(DiagnosticsProperty('summary', summary));
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$SummaryUpdatedImpl &&
+            (identical(other.summary, summary) || other.summary == summary));
+  }
+
+  @override
+  int get hashCode => Object.hash(runtimeType, summary);
+
+  @JsonKey(ignore: true)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$SummaryUpdatedImplCopyWith<_$SummaryUpdatedImpl> get copyWith =>
+      __$$SummaryUpdatedImplCopyWithImpl<_$SummaryUpdatedImpl>(
+        this,
+        _$identity,
+      );
+
+  @override
+  @optionalTypeArgs
+  TResult when<TResult extends Object?>({
+    required TResult Function() started,
+    required TResult Function(Status status) statusChanged,
+    required TResult Function(ArchivesResponseEntity archives) archivesUpdated,
+    required TResult Function(ArchivesSummaryEntity summary) summaryUpdated,
+    required TResult Function() loadMore,
+    required TResult Function(Failure? failure) failureChanged,
+    required TResult Function(String value) searchChanged,
+    required TResult Function(String value) searchByArchiveNum,
+    required TResult Function(String id) selectArchive,
+    required TResult Function() getArchiveDetail,
+    required TResult Function(ArchivesFilterType type) updateFilterType,
+    required TResult Function(DateTime startDate, DateTime endDate)
+    updateFilterDateRange,
+    required TResult Function(String? status) updateStatusFilter,
+  }) {
+    return summaryUpdated(summary);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult? whenOrNull<TResult extends Object?>({
+    TResult? Function()? started,
+    TResult? Function(Status status)? statusChanged,
+    TResult? Function(ArchivesResponseEntity archives)? archivesUpdated,
+    TResult? Function(ArchivesSummaryEntity summary)? summaryUpdated,
+    TResult? Function()? loadMore,
+    TResult? Function(Failure? failure)? failureChanged,
+    TResult? Function(String value)? searchChanged,
+    TResult? Function(String value)? searchByArchiveNum,
+    TResult? Function(String id)? selectArchive,
+    TResult? Function()? getArchiveDetail,
+    TResult? Function(ArchivesFilterType type)? updateFilterType,
+    TResult? Function(DateTime startDate, DateTime endDate)?
+    updateFilterDateRange,
+    TResult? Function(String? status)? updateStatusFilter,
+  }) {
+    return summaryUpdated?.call(summary);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult maybeWhen<TResult extends Object?>({
+    TResult Function()? started,
+    TResult Function(Status status)? statusChanged,
+    TResult Function(ArchivesResponseEntity archives)? archivesUpdated,
+    TResult Function(ArchivesSummaryEntity summary)? summaryUpdated,
+    TResult Function()? loadMore,
+    TResult Function(Failure? failure)? failureChanged,
+    TResult Function(String value)? searchChanged,
+    TResult Function(String value)? searchByArchiveNum,
+    TResult Function(String id)? selectArchive,
+    TResult Function()? getArchiveDetail,
+    TResult Function(ArchivesFilterType type)? updateFilterType,
+    TResult Function(DateTime startDate, DateTime endDate)?
+    updateFilterDateRange,
+    TResult Function(String? status)? updateStatusFilter,
+    required TResult orElse(),
+  }) {
+    if (summaryUpdated != null) {
+      return summaryUpdated(summary);
+    }
+    return orElse();
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult map<TResult extends Object?>({
+    required TResult Function(_Started value) started,
+    required TResult Function(_StatusChanged value) statusChanged,
+    required TResult Function(_ArchivesUpdated value) archivesUpdated,
+    required TResult Function(_SummaryUpdated value) summaryUpdated,
+    required TResult Function(_LoadMore value) loadMore,
+    required TResult Function(_FailureChanged value) failureChanged,
+    required TResult Function(_SearchChanged value) searchChanged,
+    required TResult Function(_SearchByArchiveNum value) searchByArchiveNum,
+    required TResult Function(_SelectArchive value) selectArchive,
+    required TResult Function(_GetArchiveDetail value) getArchiveDetail,
+    required TResult Function(_UpdateFilterType value) updateFilterType,
+    required TResult Function(_UpdateFilterDateRange value)
+    updateFilterDateRange,
+    required TResult Function(_UpdateStatusFilter value) updateStatusFilter,
+  }) {
+    return summaryUpdated(this);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult? mapOrNull<TResult extends Object?>({
+    TResult? Function(_Started value)? started,
+    TResult? Function(_StatusChanged value)? statusChanged,
+    TResult? Function(_ArchivesUpdated value)? archivesUpdated,
+    TResult? Function(_SummaryUpdated value)? summaryUpdated,
+    TResult? Function(_LoadMore value)? loadMore,
+    TResult? Function(_FailureChanged value)? failureChanged,
+    TResult? Function(_SearchChanged value)? searchChanged,
+    TResult? Function(_SearchByArchiveNum value)? searchByArchiveNum,
+    TResult? Function(_SelectArchive value)? selectArchive,
+    TResult? Function(_GetArchiveDetail value)? getArchiveDetail,
+    TResult? Function(_UpdateFilterType value)? updateFilterType,
+    TResult? Function(_UpdateFilterDateRange value)? updateFilterDateRange,
+    TResult? Function(_UpdateStatusFilter value)? updateStatusFilter,
+  }) {
+    return summaryUpdated?.call(this);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult maybeMap<TResult extends Object?>({
+    TResult Function(_Started value)? started,
+    TResult Function(_StatusChanged value)? statusChanged,
+    TResult Function(_ArchivesUpdated value)? archivesUpdated,
+    TResult Function(_SummaryUpdated value)? summaryUpdated,
+    TResult Function(_LoadMore value)? loadMore,
+    TResult Function(_FailureChanged value)? failureChanged,
+    TResult Function(_SearchChanged value)? searchChanged,
+    TResult Function(_SearchByArchiveNum value)? searchByArchiveNum,
+    TResult Function(_SelectArchive value)? selectArchive,
+    TResult Function(_GetArchiveDetail value)? getArchiveDetail,
+    TResult Function(_UpdateFilterType value)? updateFilterType,
+    TResult Function(_UpdateFilterDateRange value)? updateFilterDateRange,
+    TResult Function(_UpdateStatusFilter value)? updateStatusFilter,
+    required TResult orElse(),
+  }) {
+    if (summaryUpdated != null) {
+      return summaryUpdated(this);
+    }
+    return orElse();
+  }
+}
+
+abstract class _SummaryUpdated implements ArchivesEvent {
+  const factory _SummaryUpdated(final ArchivesSummaryEntity summary) =
+      _$SummaryUpdatedImpl;
+
+  ArchivesSummaryEntity get summary;
+  @JsonKey(ignore: true)
+  _$$SummaryUpdatedImplCopyWith<_$SummaryUpdatedImpl> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class _$$LoadMoreImplCopyWith<$Res> {
+  factory _$$LoadMoreImplCopyWith(
+    _$LoadMoreImpl value,
+    $Res Function(_$LoadMoreImpl) then,
+  ) = __$$LoadMoreImplCopyWithImpl<$Res>;
+}
+
+/// @nodoc
+class __$$LoadMoreImplCopyWithImpl<$Res>
+    extends _$ArchivesEventCopyWithImpl<$Res, _$LoadMoreImpl>
+    implements _$$LoadMoreImplCopyWith<$Res> {
+  __$$LoadMoreImplCopyWithImpl(
+    _$LoadMoreImpl _value,
+    $Res Function(_$LoadMoreImpl) _then,
+  ) : super(_value, _then);
+}
+
+/// @nodoc
+
+class _$LoadMoreImpl with DiagnosticableTreeMixin implements _LoadMore {
+  const _$LoadMoreImpl();
+
+  @override
+  String toString({DiagnosticLevel minLevel = DiagnosticLevel.info}) {
+    return 'ArchivesEvent.loadMore()';
+  }
+
+  @override
+  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+    super.debugFillProperties(properties);
+    properties.add(DiagnosticsProperty('type', 'ArchivesEvent.loadMore'));
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType && other is _$LoadMoreImpl);
+  }
+
+  @override
+  int get hashCode => runtimeType.hashCode;
+
+  @override
+  @optionalTypeArgs
+  TResult when<TResult extends Object?>({
+    required TResult Function() started,
+    required TResult Function(Status status) statusChanged,
+    required TResult Function(ArchivesResponseEntity archives) archivesUpdated,
+    required TResult Function(ArchivesSummaryEntity summary) summaryUpdated,
+    required TResult Function() loadMore,
+    required TResult Function(Failure? failure) failureChanged,
+    required TResult Function(String value) searchChanged,
+    required TResult Function(String value) searchByArchiveNum,
+    required TResult Function(String id) selectArchive,
+    required TResult Function() getArchiveDetail,
+    required TResult Function(ArchivesFilterType type) updateFilterType,
+    required TResult Function(DateTime startDate, DateTime endDate)
+    updateFilterDateRange,
+    required TResult Function(String? status) updateStatusFilter,
+  }) {
+    return loadMore();
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult? whenOrNull<TResult extends Object?>({
+    TResult? Function()? started,
+    TResult? Function(Status status)? statusChanged,
+    TResult? Function(ArchivesResponseEntity archives)? archivesUpdated,
+    TResult? Function(ArchivesSummaryEntity summary)? summaryUpdated,
+    TResult? Function()? loadMore,
+    TResult? Function(Failure? failure)? failureChanged,
+    TResult? Function(String value)? searchChanged,
+    TResult? Function(String value)? searchByArchiveNum,
+    TResult? Function(String id)? selectArchive,
+    TResult? Function()? getArchiveDetail,
+    TResult? Function(ArchivesFilterType type)? updateFilterType,
+    TResult? Function(DateTime startDate, DateTime endDate)?
+    updateFilterDateRange,
+    TResult? Function(String? status)? updateStatusFilter,
+  }) {
+    return loadMore?.call();
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult maybeWhen<TResult extends Object?>({
+    TResult Function()? started,
+    TResult Function(Status status)? statusChanged,
+    TResult Function(ArchivesResponseEntity archives)? archivesUpdated,
+    TResult Function(ArchivesSummaryEntity summary)? summaryUpdated,
+    TResult Function()? loadMore,
+    TResult Function(Failure? failure)? failureChanged,
+    TResult Function(String value)? searchChanged,
+    TResult Function(String value)? searchByArchiveNum,
+    TResult Function(String id)? selectArchive,
+    TResult Function()? getArchiveDetail,
+    TResult Function(ArchivesFilterType type)? updateFilterType,
+    TResult Function(DateTime startDate, DateTime endDate)?
+    updateFilterDateRange,
+    TResult Function(String? status)? updateStatusFilter,
+    required TResult orElse(),
+  }) {
+    if (loadMore != null) {
+      return loadMore();
+    }
+    return orElse();
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult map<TResult extends Object?>({
+    required TResult Function(_Started value) started,
+    required TResult Function(_StatusChanged value) statusChanged,
+    required TResult Function(_ArchivesUpdated value) archivesUpdated,
+    required TResult Function(_SummaryUpdated value) summaryUpdated,
+    required TResult Function(_LoadMore value) loadMore,
+    required TResult Function(_FailureChanged value) failureChanged,
+    required TResult Function(_SearchChanged value) searchChanged,
+    required TResult Function(_SearchByArchiveNum value) searchByArchiveNum,
+    required TResult Function(_SelectArchive value) selectArchive,
+    required TResult Function(_GetArchiveDetail value) getArchiveDetail,
+    required TResult Function(_UpdateFilterType value) updateFilterType,
+    required TResult Function(_UpdateFilterDateRange value)
+    updateFilterDateRange,
+    required TResult Function(_UpdateStatusFilter value) updateStatusFilter,
+  }) {
+    return loadMore(this);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult? mapOrNull<TResult extends Object?>({
+    TResult? Function(_Started value)? started,
+    TResult? Function(_StatusChanged value)? statusChanged,
+    TResult? Function(_ArchivesUpdated value)? archivesUpdated,
+    TResult? Function(_SummaryUpdated value)? summaryUpdated,
+    TResult? Function(_LoadMore value)? loadMore,
+    TResult? Function(_FailureChanged value)? failureChanged,
+    TResult? Function(_SearchChanged value)? searchChanged,
+    TResult? Function(_SearchByArchiveNum value)? searchByArchiveNum,
+    TResult? Function(_SelectArchive value)? selectArchive,
+    TResult? Function(_GetArchiveDetail value)? getArchiveDetail,
+    TResult? Function(_UpdateFilterType value)? updateFilterType,
+    TResult? Function(_UpdateFilterDateRange value)? updateFilterDateRange,
+    TResult? Function(_UpdateStatusFilter value)? updateStatusFilter,
+  }) {
+    return loadMore?.call(this);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult maybeMap<TResult extends Object?>({
+    TResult Function(_Started value)? started,
+    TResult Function(_StatusChanged value)? statusChanged,
+    TResult Function(_ArchivesUpdated value)? archivesUpdated,
+    TResult Function(_SummaryUpdated value)? summaryUpdated,
+    TResult Function(_LoadMore value)? loadMore,
+    TResult Function(_FailureChanged value)? failureChanged,
+    TResult Function(_SearchChanged value)? searchChanged,
+    TResult Function(_SearchByArchiveNum value)? searchByArchiveNum,
+    TResult Function(_SelectArchive value)? selectArchive,
+    TResult Function(_GetArchiveDetail value)? getArchiveDetail,
+    TResult Function(_UpdateFilterType value)? updateFilterType,
+    TResult Function(_UpdateFilterDateRange value)? updateFilterDateRange,
+    TResult Function(_UpdateStatusFilter value)? updateStatusFilter,
+    required TResult orElse(),
+  }) {
+    if (loadMore != null) {
+      return loadMore(this);
+    }
+    return orElse();
+  }
+}
+
+abstract class _LoadMore implements ArchivesEvent {
+  const factory _LoadMore() = _$LoadMoreImpl;
+}
+
+/// @nodoc
 abstract class _$$FailureChangedImplCopyWith<$Res> {
-  factory _$$FailureChangedImplCopyWith(_$FailureChangedImpl value,
-          $Res Function(_$FailureChangedImpl) then) =
-      __$$FailureChangedImplCopyWithImpl<$Res>;
+  factory _$$FailureChangedImplCopyWith(
+    _$FailureChangedImpl value,
+    $Res Function(_$FailureChangedImpl) then,
+  ) = __$$FailureChangedImplCopyWithImpl<$Res>;
   @useResult
   $Res call({Failure? failure});
 }
@@ -913,34 +1169,45 @@ class __$$FailureChangedImplCopyWithImpl<$Res>
     extends _$ArchivesEventCopyWithImpl<$Res, _$FailureChangedImpl>
     implements _$$FailureChangedImplCopyWith<$Res> {
   __$$FailureChangedImplCopyWithImpl(
-      _$FailureChangedImpl _value, $Res Function(_$FailureChangedImpl) _then)
-      : super(_value, _then);
+    _$FailureChangedImpl _value,
+    $Res Function(_$FailureChangedImpl) _then,
+  ) : super(_value, _then);
 
   @pragma('vm:prefer-inline')
   @override
-  $Res call({
-    Object? failure = freezed,
-  }) {
-    return _then(_$FailureChangedImpl(
-      freezed == failure
-          ? _value.failure
-          : failure // ignore: cast_nullable_to_non_nullable
-              as Failure?,
-    ));
+  $Res call({Object? failure = freezed}) {
+    return _then(
+      _$FailureChangedImpl(
+        freezed == failure
+            ? _value.failure
+            : failure // ignore: cast_nullable_to_non_nullable
+                  as Failure?,
+      ),
+    );
   }
 }
 
 /// @nodoc
 
-class _$FailureChangedImpl implements _FailureChanged {
+class _$FailureChangedImpl
+    with DiagnosticableTreeMixin
+    implements _FailureChanged {
   const _$FailureChangedImpl(this.failure);
 
   @override
   final Failure? failure;
 
   @override
-  String toString() {
+  String toString({DiagnosticLevel minLevel = DiagnosticLevel.info}) {
     return 'ArchivesEvent.failureChanged(failure: $failure)';
+  }
+
+  @override
+  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+    super.debugFillProperties(properties);
+    properties
+      ..add(DiagnosticsProperty('type', 'ArchivesEvent.failureChanged'))
+      ..add(DiagnosticsProperty('failure', failure));
   }
 
   @override
@@ -959,15 +1226,18 @@ class _$FailureChangedImpl implements _FailureChanged {
   @pragma('vm:prefer-inline')
   _$$FailureChangedImplCopyWith<_$FailureChangedImpl> get copyWith =>
       __$$FailureChangedImplCopyWithImpl<_$FailureChangedImpl>(
-          this, _$identity);
+        this,
+        _$identity,
+      );
 
   @override
   @optionalTypeArgs
   TResult when<TResult extends Object?>({
     required TResult Function() started,
-    required TResult Function(bool silent) getArchived,
     required TResult Function(Status status) statusChanged,
     required TResult Function(ArchivesResponseEntity archives) archivesUpdated,
+    required TResult Function(ArchivesSummaryEntity summary) summaryUpdated,
+    required TResult Function() loadMore,
     required TResult Function(Failure? failure) failureChanged,
     required TResult Function(String value) searchChanged,
     required TResult Function(String value) searchByArchiveNum,
@@ -975,7 +1245,7 @@ class _$FailureChangedImpl implements _FailureChanged {
     required TResult Function() getArchiveDetail,
     required TResult Function(ArchivesFilterType type) updateFilterType,
     required TResult Function(DateTime startDate, DateTime endDate)
-        updateFilterDateRange,
+    updateFilterDateRange,
     required TResult Function(String? status) updateStatusFilter,
   }) {
     return failureChanged(failure);
@@ -985,9 +1255,10 @@ class _$FailureChangedImpl implements _FailureChanged {
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
     TResult? Function()? started,
-    TResult? Function(bool silent)? getArchived,
     TResult? Function(Status status)? statusChanged,
     TResult? Function(ArchivesResponseEntity archives)? archivesUpdated,
+    TResult? Function(ArchivesSummaryEntity summary)? summaryUpdated,
+    TResult? Function()? loadMore,
     TResult? Function(Failure? failure)? failureChanged,
     TResult? Function(String value)? searchChanged,
     TResult? Function(String value)? searchByArchiveNum,
@@ -995,7 +1266,7 @@ class _$FailureChangedImpl implements _FailureChanged {
     TResult? Function()? getArchiveDetail,
     TResult? Function(ArchivesFilterType type)? updateFilterType,
     TResult? Function(DateTime startDate, DateTime endDate)?
-        updateFilterDateRange,
+    updateFilterDateRange,
     TResult? Function(String? status)? updateStatusFilter,
   }) {
     return failureChanged?.call(failure);
@@ -1005,9 +1276,10 @@ class _$FailureChangedImpl implements _FailureChanged {
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
     TResult Function()? started,
-    TResult Function(bool silent)? getArchived,
     TResult Function(Status status)? statusChanged,
     TResult Function(ArchivesResponseEntity archives)? archivesUpdated,
+    TResult Function(ArchivesSummaryEntity summary)? summaryUpdated,
+    TResult Function()? loadMore,
     TResult Function(Failure? failure)? failureChanged,
     TResult Function(String value)? searchChanged,
     TResult Function(String value)? searchByArchiveNum,
@@ -1015,7 +1287,7 @@ class _$FailureChangedImpl implements _FailureChanged {
     TResult Function()? getArchiveDetail,
     TResult Function(ArchivesFilterType type)? updateFilterType,
     TResult Function(DateTime startDate, DateTime endDate)?
-        updateFilterDateRange,
+    updateFilterDateRange,
     TResult Function(String? status)? updateStatusFilter,
     required TResult orElse(),
   }) {
@@ -1029,9 +1301,10 @@ class _$FailureChangedImpl implements _FailureChanged {
   @optionalTypeArgs
   TResult map<TResult extends Object?>({
     required TResult Function(_Started value) started,
-    required TResult Function(_GetArchived value) getArchived,
     required TResult Function(_StatusChanged value) statusChanged,
     required TResult Function(_ArchivesUpdated value) archivesUpdated,
+    required TResult Function(_SummaryUpdated value) summaryUpdated,
+    required TResult Function(_LoadMore value) loadMore,
     required TResult Function(_FailureChanged value) failureChanged,
     required TResult Function(_SearchChanged value) searchChanged,
     required TResult Function(_SearchByArchiveNum value) searchByArchiveNum,
@@ -1039,7 +1312,7 @@ class _$FailureChangedImpl implements _FailureChanged {
     required TResult Function(_GetArchiveDetail value) getArchiveDetail,
     required TResult Function(_UpdateFilterType value) updateFilterType,
     required TResult Function(_UpdateFilterDateRange value)
-        updateFilterDateRange,
+    updateFilterDateRange,
     required TResult Function(_UpdateStatusFilter value) updateStatusFilter,
   }) {
     return failureChanged(this);
@@ -1049,9 +1322,10 @@ class _$FailureChangedImpl implements _FailureChanged {
   @optionalTypeArgs
   TResult? mapOrNull<TResult extends Object?>({
     TResult? Function(_Started value)? started,
-    TResult? Function(_GetArchived value)? getArchived,
     TResult? Function(_StatusChanged value)? statusChanged,
     TResult? Function(_ArchivesUpdated value)? archivesUpdated,
+    TResult? Function(_SummaryUpdated value)? summaryUpdated,
+    TResult? Function(_LoadMore value)? loadMore,
     TResult? Function(_FailureChanged value)? failureChanged,
     TResult? Function(_SearchChanged value)? searchChanged,
     TResult? Function(_SearchByArchiveNum value)? searchByArchiveNum,
@@ -1068,9 +1342,10 @@ class _$FailureChangedImpl implements _FailureChanged {
   @optionalTypeArgs
   TResult maybeMap<TResult extends Object?>({
     TResult Function(_Started value)? started,
-    TResult Function(_GetArchived value)? getArchived,
     TResult Function(_StatusChanged value)? statusChanged,
     TResult Function(_ArchivesUpdated value)? archivesUpdated,
+    TResult Function(_SummaryUpdated value)? summaryUpdated,
+    TResult Function(_LoadMore value)? loadMore,
     TResult Function(_FailureChanged value)? failureChanged,
     TResult Function(_SearchChanged value)? searchChanged,
     TResult Function(_SearchByArchiveNum value)? searchByArchiveNum,
@@ -1100,8 +1375,9 @@ abstract class _FailureChanged implements ArchivesEvent {
 /// @nodoc
 abstract class _$$SearchChangedImplCopyWith<$Res> {
   factory _$$SearchChangedImplCopyWith(
-          _$SearchChangedImpl value, $Res Function(_$SearchChangedImpl) then) =
-      __$$SearchChangedImplCopyWithImpl<$Res>;
+    _$SearchChangedImpl value,
+    $Res Function(_$SearchChangedImpl) then,
+  ) = __$$SearchChangedImplCopyWithImpl<$Res>;
   @useResult
   $Res call({String value});
 }
@@ -1111,34 +1387,45 @@ class __$$SearchChangedImplCopyWithImpl<$Res>
     extends _$ArchivesEventCopyWithImpl<$Res, _$SearchChangedImpl>
     implements _$$SearchChangedImplCopyWith<$Res> {
   __$$SearchChangedImplCopyWithImpl(
-      _$SearchChangedImpl _value, $Res Function(_$SearchChangedImpl) _then)
-      : super(_value, _then);
+    _$SearchChangedImpl _value,
+    $Res Function(_$SearchChangedImpl) _then,
+  ) : super(_value, _then);
 
   @pragma('vm:prefer-inline')
   @override
-  $Res call({
-    Object? value = null,
-  }) {
-    return _then(_$SearchChangedImpl(
-      null == value
-          ? _value.value
-          : value // ignore: cast_nullable_to_non_nullable
-              as String,
-    ));
+  $Res call({Object? value = null}) {
+    return _then(
+      _$SearchChangedImpl(
+        null == value
+            ? _value.value
+            : value // ignore: cast_nullable_to_non_nullable
+                  as String,
+      ),
+    );
   }
 }
 
 /// @nodoc
 
-class _$SearchChangedImpl implements _SearchChanged {
+class _$SearchChangedImpl
+    with DiagnosticableTreeMixin
+    implements _SearchChanged {
   const _$SearchChangedImpl(this.value);
 
   @override
   final String value;
 
   @override
-  String toString() {
+  String toString({DiagnosticLevel minLevel = DiagnosticLevel.info}) {
     return 'ArchivesEvent.searchChanged(value: $value)';
+  }
+
+  @override
+  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+    super.debugFillProperties(properties);
+    properties
+      ..add(DiagnosticsProperty('type', 'ArchivesEvent.searchChanged'))
+      ..add(DiagnosticsProperty('value', value));
   }
 
   @override
@@ -1162,9 +1449,10 @@ class _$SearchChangedImpl implements _SearchChanged {
   @optionalTypeArgs
   TResult when<TResult extends Object?>({
     required TResult Function() started,
-    required TResult Function(bool silent) getArchived,
     required TResult Function(Status status) statusChanged,
     required TResult Function(ArchivesResponseEntity archives) archivesUpdated,
+    required TResult Function(ArchivesSummaryEntity summary) summaryUpdated,
+    required TResult Function() loadMore,
     required TResult Function(Failure? failure) failureChanged,
     required TResult Function(String value) searchChanged,
     required TResult Function(String value) searchByArchiveNum,
@@ -1172,7 +1460,7 @@ class _$SearchChangedImpl implements _SearchChanged {
     required TResult Function() getArchiveDetail,
     required TResult Function(ArchivesFilterType type) updateFilterType,
     required TResult Function(DateTime startDate, DateTime endDate)
-        updateFilterDateRange,
+    updateFilterDateRange,
     required TResult Function(String? status) updateStatusFilter,
   }) {
     return searchChanged(value);
@@ -1182,9 +1470,10 @@ class _$SearchChangedImpl implements _SearchChanged {
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
     TResult? Function()? started,
-    TResult? Function(bool silent)? getArchived,
     TResult? Function(Status status)? statusChanged,
     TResult? Function(ArchivesResponseEntity archives)? archivesUpdated,
+    TResult? Function(ArchivesSummaryEntity summary)? summaryUpdated,
+    TResult? Function()? loadMore,
     TResult? Function(Failure? failure)? failureChanged,
     TResult? Function(String value)? searchChanged,
     TResult? Function(String value)? searchByArchiveNum,
@@ -1192,7 +1481,7 @@ class _$SearchChangedImpl implements _SearchChanged {
     TResult? Function()? getArchiveDetail,
     TResult? Function(ArchivesFilterType type)? updateFilterType,
     TResult? Function(DateTime startDate, DateTime endDate)?
-        updateFilterDateRange,
+    updateFilterDateRange,
     TResult? Function(String? status)? updateStatusFilter,
   }) {
     return searchChanged?.call(value);
@@ -1202,9 +1491,10 @@ class _$SearchChangedImpl implements _SearchChanged {
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
     TResult Function()? started,
-    TResult Function(bool silent)? getArchived,
     TResult Function(Status status)? statusChanged,
     TResult Function(ArchivesResponseEntity archives)? archivesUpdated,
+    TResult Function(ArchivesSummaryEntity summary)? summaryUpdated,
+    TResult Function()? loadMore,
     TResult Function(Failure? failure)? failureChanged,
     TResult Function(String value)? searchChanged,
     TResult Function(String value)? searchByArchiveNum,
@@ -1212,7 +1502,7 @@ class _$SearchChangedImpl implements _SearchChanged {
     TResult Function()? getArchiveDetail,
     TResult Function(ArchivesFilterType type)? updateFilterType,
     TResult Function(DateTime startDate, DateTime endDate)?
-        updateFilterDateRange,
+    updateFilterDateRange,
     TResult Function(String? status)? updateStatusFilter,
     required TResult orElse(),
   }) {
@@ -1226,9 +1516,10 @@ class _$SearchChangedImpl implements _SearchChanged {
   @optionalTypeArgs
   TResult map<TResult extends Object?>({
     required TResult Function(_Started value) started,
-    required TResult Function(_GetArchived value) getArchived,
     required TResult Function(_StatusChanged value) statusChanged,
     required TResult Function(_ArchivesUpdated value) archivesUpdated,
+    required TResult Function(_SummaryUpdated value) summaryUpdated,
+    required TResult Function(_LoadMore value) loadMore,
     required TResult Function(_FailureChanged value) failureChanged,
     required TResult Function(_SearchChanged value) searchChanged,
     required TResult Function(_SearchByArchiveNum value) searchByArchiveNum,
@@ -1236,7 +1527,7 @@ class _$SearchChangedImpl implements _SearchChanged {
     required TResult Function(_GetArchiveDetail value) getArchiveDetail,
     required TResult Function(_UpdateFilterType value) updateFilterType,
     required TResult Function(_UpdateFilterDateRange value)
-        updateFilterDateRange,
+    updateFilterDateRange,
     required TResult Function(_UpdateStatusFilter value) updateStatusFilter,
   }) {
     return searchChanged(this);
@@ -1246,9 +1537,10 @@ class _$SearchChangedImpl implements _SearchChanged {
   @optionalTypeArgs
   TResult? mapOrNull<TResult extends Object?>({
     TResult? Function(_Started value)? started,
-    TResult? Function(_GetArchived value)? getArchived,
     TResult? Function(_StatusChanged value)? statusChanged,
     TResult? Function(_ArchivesUpdated value)? archivesUpdated,
+    TResult? Function(_SummaryUpdated value)? summaryUpdated,
+    TResult? Function(_LoadMore value)? loadMore,
     TResult? Function(_FailureChanged value)? failureChanged,
     TResult? Function(_SearchChanged value)? searchChanged,
     TResult? Function(_SearchByArchiveNum value)? searchByArchiveNum,
@@ -1265,9 +1557,10 @@ class _$SearchChangedImpl implements _SearchChanged {
   @optionalTypeArgs
   TResult maybeMap<TResult extends Object?>({
     TResult Function(_Started value)? started,
-    TResult Function(_GetArchived value)? getArchived,
     TResult Function(_StatusChanged value)? statusChanged,
     TResult Function(_ArchivesUpdated value)? archivesUpdated,
+    TResult Function(_SummaryUpdated value)? summaryUpdated,
+    TResult Function(_LoadMore value)? loadMore,
     TResult Function(_FailureChanged value)? failureChanged,
     TResult Function(_SearchChanged value)? searchChanged,
     TResult Function(_SearchByArchiveNum value)? searchByArchiveNum,
@@ -1296,9 +1589,10 @@ abstract class _SearchChanged implements ArchivesEvent {
 
 /// @nodoc
 abstract class _$$SearchByArchiveNumImplCopyWith<$Res> {
-  factory _$$SearchByArchiveNumImplCopyWith(_$SearchByArchiveNumImpl value,
-          $Res Function(_$SearchByArchiveNumImpl) then) =
-      __$$SearchByArchiveNumImplCopyWithImpl<$Res>;
+  factory _$$SearchByArchiveNumImplCopyWith(
+    _$SearchByArchiveNumImpl value,
+    $Res Function(_$SearchByArchiveNumImpl) then,
+  ) = __$$SearchByArchiveNumImplCopyWithImpl<$Res>;
   @useResult
   $Res call({String value});
 }
@@ -1307,35 +1601,46 @@ abstract class _$$SearchByArchiveNumImplCopyWith<$Res> {
 class __$$SearchByArchiveNumImplCopyWithImpl<$Res>
     extends _$ArchivesEventCopyWithImpl<$Res, _$SearchByArchiveNumImpl>
     implements _$$SearchByArchiveNumImplCopyWith<$Res> {
-  __$$SearchByArchiveNumImplCopyWithImpl(_$SearchByArchiveNumImpl _value,
-      $Res Function(_$SearchByArchiveNumImpl) _then)
-      : super(_value, _then);
+  __$$SearchByArchiveNumImplCopyWithImpl(
+    _$SearchByArchiveNumImpl _value,
+    $Res Function(_$SearchByArchiveNumImpl) _then,
+  ) : super(_value, _then);
 
   @pragma('vm:prefer-inline')
   @override
-  $Res call({
-    Object? value = null,
-  }) {
-    return _then(_$SearchByArchiveNumImpl(
-      null == value
-          ? _value.value
-          : value // ignore: cast_nullable_to_non_nullable
-              as String,
-    ));
+  $Res call({Object? value = null}) {
+    return _then(
+      _$SearchByArchiveNumImpl(
+        null == value
+            ? _value.value
+            : value // ignore: cast_nullable_to_non_nullable
+                  as String,
+      ),
+    );
   }
 }
 
 /// @nodoc
 
-class _$SearchByArchiveNumImpl implements _SearchByArchiveNum {
+class _$SearchByArchiveNumImpl
+    with DiagnosticableTreeMixin
+    implements _SearchByArchiveNum {
   const _$SearchByArchiveNumImpl(this.value);
 
   @override
   final String value;
 
   @override
-  String toString() {
+  String toString({DiagnosticLevel minLevel = DiagnosticLevel.info}) {
     return 'ArchivesEvent.searchByArchiveNum(value: $value)';
+  }
+
+  @override
+  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+    super.debugFillProperties(properties);
+    properties
+      ..add(DiagnosticsProperty('type', 'ArchivesEvent.searchByArchiveNum'))
+      ..add(DiagnosticsProperty('value', value));
   }
 
   @override
@@ -1354,15 +1659,18 @@ class _$SearchByArchiveNumImpl implements _SearchByArchiveNum {
   @pragma('vm:prefer-inline')
   _$$SearchByArchiveNumImplCopyWith<_$SearchByArchiveNumImpl> get copyWith =>
       __$$SearchByArchiveNumImplCopyWithImpl<_$SearchByArchiveNumImpl>(
-          this, _$identity);
+        this,
+        _$identity,
+      );
 
   @override
   @optionalTypeArgs
   TResult when<TResult extends Object?>({
     required TResult Function() started,
-    required TResult Function(bool silent) getArchived,
     required TResult Function(Status status) statusChanged,
     required TResult Function(ArchivesResponseEntity archives) archivesUpdated,
+    required TResult Function(ArchivesSummaryEntity summary) summaryUpdated,
+    required TResult Function() loadMore,
     required TResult Function(Failure? failure) failureChanged,
     required TResult Function(String value) searchChanged,
     required TResult Function(String value) searchByArchiveNum,
@@ -1370,7 +1678,7 @@ class _$SearchByArchiveNumImpl implements _SearchByArchiveNum {
     required TResult Function() getArchiveDetail,
     required TResult Function(ArchivesFilterType type) updateFilterType,
     required TResult Function(DateTime startDate, DateTime endDate)
-        updateFilterDateRange,
+    updateFilterDateRange,
     required TResult Function(String? status) updateStatusFilter,
   }) {
     return searchByArchiveNum(value);
@@ -1380,9 +1688,10 @@ class _$SearchByArchiveNumImpl implements _SearchByArchiveNum {
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
     TResult? Function()? started,
-    TResult? Function(bool silent)? getArchived,
     TResult? Function(Status status)? statusChanged,
     TResult? Function(ArchivesResponseEntity archives)? archivesUpdated,
+    TResult? Function(ArchivesSummaryEntity summary)? summaryUpdated,
+    TResult? Function()? loadMore,
     TResult? Function(Failure? failure)? failureChanged,
     TResult? Function(String value)? searchChanged,
     TResult? Function(String value)? searchByArchiveNum,
@@ -1390,7 +1699,7 @@ class _$SearchByArchiveNumImpl implements _SearchByArchiveNum {
     TResult? Function()? getArchiveDetail,
     TResult? Function(ArchivesFilterType type)? updateFilterType,
     TResult? Function(DateTime startDate, DateTime endDate)?
-        updateFilterDateRange,
+    updateFilterDateRange,
     TResult? Function(String? status)? updateStatusFilter,
   }) {
     return searchByArchiveNum?.call(value);
@@ -1400,9 +1709,10 @@ class _$SearchByArchiveNumImpl implements _SearchByArchiveNum {
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
     TResult Function()? started,
-    TResult Function(bool silent)? getArchived,
     TResult Function(Status status)? statusChanged,
     TResult Function(ArchivesResponseEntity archives)? archivesUpdated,
+    TResult Function(ArchivesSummaryEntity summary)? summaryUpdated,
+    TResult Function()? loadMore,
     TResult Function(Failure? failure)? failureChanged,
     TResult Function(String value)? searchChanged,
     TResult Function(String value)? searchByArchiveNum,
@@ -1410,7 +1720,7 @@ class _$SearchByArchiveNumImpl implements _SearchByArchiveNum {
     TResult Function()? getArchiveDetail,
     TResult Function(ArchivesFilterType type)? updateFilterType,
     TResult Function(DateTime startDate, DateTime endDate)?
-        updateFilterDateRange,
+    updateFilterDateRange,
     TResult Function(String? status)? updateStatusFilter,
     required TResult orElse(),
   }) {
@@ -1424,9 +1734,10 @@ class _$SearchByArchiveNumImpl implements _SearchByArchiveNum {
   @optionalTypeArgs
   TResult map<TResult extends Object?>({
     required TResult Function(_Started value) started,
-    required TResult Function(_GetArchived value) getArchived,
     required TResult Function(_StatusChanged value) statusChanged,
     required TResult Function(_ArchivesUpdated value) archivesUpdated,
+    required TResult Function(_SummaryUpdated value) summaryUpdated,
+    required TResult Function(_LoadMore value) loadMore,
     required TResult Function(_FailureChanged value) failureChanged,
     required TResult Function(_SearchChanged value) searchChanged,
     required TResult Function(_SearchByArchiveNum value) searchByArchiveNum,
@@ -1434,7 +1745,7 @@ class _$SearchByArchiveNumImpl implements _SearchByArchiveNum {
     required TResult Function(_GetArchiveDetail value) getArchiveDetail,
     required TResult Function(_UpdateFilterType value) updateFilterType,
     required TResult Function(_UpdateFilterDateRange value)
-        updateFilterDateRange,
+    updateFilterDateRange,
     required TResult Function(_UpdateStatusFilter value) updateStatusFilter,
   }) {
     return searchByArchiveNum(this);
@@ -1444,9 +1755,10 @@ class _$SearchByArchiveNumImpl implements _SearchByArchiveNum {
   @optionalTypeArgs
   TResult? mapOrNull<TResult extends Object?>({
     TResult? Function(_Started value)? started,
-    TResult? Function(_GetArchived value)? getArchived,
     TResult? Function(_StatusChanged value)? statusChanged,
     TResult? Function(_ArchivesUpdated value)? archivesUpdated,
+    TResult? Function(_SummaryUpdated value)? summaryUpdated,
+    TResult? Function(_LoadMore value)? loadMore,
     TResult? Function(_FailureChanged value)? failureChanged,
     TResult? Function(_SearchChanged value)? searchChanged,
     TResult? Function(_SearchByArchiveNum value)? searchByArchiveNum,
@@ -1463,9 +1775,10 @@ class _$SearchByArchiveNumImpl implements _SearchByArchiveNum {
   @optionalTypeArgs
   TResult maybeMap<TResult extends Object?>({
     TResult Function(_Started value)? started,
-    TResult Function(_GetArchived value)? getArchived,
     TResult Function(_StatusChanged value)? statusChanged,
     TResult Function(_ArchivesUpdated value)? archivesUpdated,
+    TResult Function(_SummaryUpdated value)? summaryUpdated,
+    TResult Function(_LoadMore value)? loadMore,
     TResult Function(_FailureChanged value)? failureChanged,
     TResult Function(_SearchChanged value)? searchChanged,
     TResult Function(_SearchByArchiveNum value)? searchByArchiveNum,
@@ -1496,8 +1809,9 @@ abstract class _SearchByArchiveNum implements ArchivesEvent {
 /// @nodoc
 abstract class _$$SelectArchiveImplCopyWith<$Res> {
   factory _$$SelectArchiveImplCopyWith(
-          _$SelectArchiveImpl value, $Res Function(_$SelectArchiveImpl) then) =
-      __$$SelectArchiveImplCopyWithImpl<$Res>;
+    _$SelectArchiveImpl value,
+    $Res Function(_$SelectArchiveImpl) then,
+  ) = __$$SelectArchiveImplCopyWithImpl<$Res>;
   @useResult
   $Res call({String id});
 }
@@ -1507,34 +1821,45 @@ class __$$SelectArchiveImplCopyWithImpl<$Res>
     extends _$ArchivesEventCopyWithImpl<$Res, _$SelectArchiveImpl>
     implements _$$SelectArchiveImplCopyWith<$Res> {
   __$$SelectArchiveImplCopyWithImpl(
-      _$SelectArchiveImpl _value, $Res Function(_$SelectArchiveImpl) _then)
-      : super(_value, _then);
+    _$SelectArchiveImpl _value,
+    $Res Function(_$SelectArchiveImpl) _then,
+  ) : super(_value, _then);
 
   @pragma('vm:prefer-inline')
   @override
-  $Res call({
-    Object? id = null,
-  }) {
-    return _then(_$SelectArchiveImpl(
-      id: null == id
-          ? _value.id
-          : id // ignore: cast_nullable_to_non_nullable
-              as String,
-    ));
+  $Res call({Object? id = null}) {
+    return _then(
+      _$SelectArchiveImpl(
+        id: null == id
+            ? _value.id
+            : id // ignore: cast_nullable_to_non_nullable
+                  as String,
+      ),
+    );
   }
 }
 
 /// @nodoc
 
-class _$SelectArchiveImpl implements _SelectArchive {
+class _$SelectArchiveImpl
+    with DiagnosticableTreeMixin
+    implements _SelectArchive {
   const _$SelectArchiveImpl({required this.id});
 
   @override
   final String id;
 
   @override
-  String toString() {
+  String toString({DiagnosticLevel minLevel = DiagnosticLevel.info}) {
     return 'ArchivesEvent.selectArchive(id: $id)';
+  }
+
+  @override
+  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+    super.debugFillProperties(properties);
+    properties
+      ..add(DiagnosticsProperty('type', 'ArchivesEvent.selectArchive'))
+      ..add(DiagnosticsProperty('id', id));
   }
 
   @override
@@ -1558,9 +1883,10 @@ class _$SelectArchiveImpl implements _SelectArchive {
   @optionalTypeArgs
   TResult when<TResult extends Object?>({
     required TResult Function() started,
-    required TResult Function(bool silent) getArchived,
     required TResult Function(Status status) statusChanged,
     required TResult Function(ArchivesResponseEntity archives) archivesUpdated,
+    required TResult Function(ArchivesSummaryEntity summary) summaryUpdated,
+    required TResult Function() loadMore,
     required TResult Function(Failure? failure) failureChanged,
     required TResult Function(String value) searchChanged,
     required TResult Function(String value) searchByArchiveNum,
@@ -1568,7 +1894,7 @@ class _$SelectArchiveImpl implements _SelectArchive {
     required TResult Function() getArchiveDetail,
     required TResult Function(ArchivesFilterType type) updateFilterType,
     required TResult Function(DateTime startDate, DateTime endDate)
-        updateFilterDateRange,
+    updateFilterDateRange,
     required TResult Function(String? status) updateStatusFilter,
   }) {
     return selectArchive(id);
@@ -1578,9 +1904,10 @@ class _$SelectArchiveImpl implements _SelectArchive {
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
     TResult? Function()? started,
-    TResult? Function(bool silent)? getArchived,
     TResult? Function(Status status)? statusChanged,
     TResult? Function(ArchivesResponseEntity archives)? archivesUpdated,
+    TResult? Function(ArchivesSummaryEntity summary)? summaryUpdated,
+    TResult? Function()? loadMore,
     TResult? Function(Failure? failure)? failureChanged,
     TResult? Function(String value)? searchChanged,
     TResult? Function(String value)? searchByArchiveNum,
@@ -1588,7 +1915,7 @@ class _$SelectArchiveImpl implements _SelectArchive {
     TResult? Function()? getArchiveDetail,
     TResult? Function(ArchivesFilterType type)? updateFilterType,
     TResult? Function(DateTime startDate, DateTime endDate)?
-        updateFilterDateRange,
+    updateFilterDateRange,
     TResult? Function(String? status)? updateStatusFilter,
   }) {
     return selectArchive?.call(id);
@@ -1598,9 +1925,10 @@ class _$SelectArchiveImpl implements _SelectArchive {
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
     TResult Function()? started,
-    TResult Function(bool silent)? getArchived,
     TResult Function(Status status)? statusChanged,
     TResult Function(ArchivesResponseEntity archives)? archivesUpdated,
+    TResult Function(ArchivesSummaryEntity summary)? summaryUpdated,
+    TResult Function()? loadMore,
     TResult Function(Failure? failure)? failureChanged,
     TResult Function(String value)? searchChanged,
     TResult Function(String value)? searchByArchiveNum,
@@ -1608,7 +1936,7 @@ class _$SelectArchiveImpl implements _SelectArchive {
     TResult Function()? getArchiveDetail,
     TResult Function(ArchivesFilterType type)? updateFilterType,
     TResult Function(DateTime startDate, DateTime endDate)?
-        updateFilterDateRange,
+    updateFilterDateRange,
     TResult Function(String? status)? updateStatusFilter,
     required TResult orElse(),
   }) {
@@ -1622,9 +1950,10 @@ class _$SelectArchiveImpl implements _SelectArchive {
   @optionalTypeArgs
   TResult map<TResult extends Object?>({
     required TResult Function(_Started value) started,
-    required TResult Function(_GetArchived value) getArchived,
     required TResult Function(_StatusChanged value) statusChanged,
     required TResult Function(_ArchivesUpdated value) archivesUpdated,
+    required TResult Function(_SummaryUpdated value) summaryUpdated,
+    required TResult Function(_LoadMore value) loadMore,
     required TResult Function(_FailureChanged value) failureChanged,
     required TResult Function(_SearchChanged value) searchChanged,
     required TResult Function(_SearchByArchiveNum value) searchByArchiveNum,
@@ -1632,7 +1961,7 @@ class _$SelectArchiveImpl implements _SelectArchive {
     required TResult Function(_GetArchiveDetail value) getArchiveDetail,
     required TResult Function(_UpdateFilterType value) updateFilterType,
     required TResult Function(_UpdateFilterDateRange value)
-        updateFilterDateRange,
+    updateFilterDateRange,
     required TResult Function(_UpdateStatusFilter value) updateStatusFilter,
   }) {
     return selectArchive(this);
@@ -1642,9 +1971,10 @@ class _$SelectArchiveImpl implements _SelectArchive {
   @optionalTypeArgs
   TResult? mapOrNull<TResult extends Object?>({
     TResult? Function(_Started value)? started,
-    TResult? Function(_GetArchived value)? getArchived,
     TResult? Function(_StatusChanged value)? statusChanged,
     TResult? Function(_ArchivesUpdated value)? archivesUpdated,
+    TResult? Function(_SummaryUpdated value)? summaryUpdated,
+    TResult? Function(_LoadMore value)? loadMore,
     TResult? Function(_FailureChanged value)? failureChanged,
     TResult? Function(_SearchChanged value)? searchChanged,
     TResult? Function(_SearchByArchiveNum value)? searchByArchiveNum,
@@ -1661,9 +1991,10 @@ class _$SelectArchiveImpl implements _SelectArchive {
   @optionalTypeArgs
   TResult maybeMap<TResult extends Object?>({
     TResult Function(_Started value)? started,
-    TResult Function(_GetArchived value)? getArchived,
     TResult Function(_StatusChanged value)? statusChanged,
     TResult Function(_ArchivesUpdated value)? archivesUpdated,
+    TResult Function(_SummaryUpdated value)? summaryUpdated,
+    TResult Function(_LoadMore value)? loadMore,
     TResult Function(_FailureChanged value)? failureChanged,
     TResult Function(_SearchChanged value)? searchChanged,
     TResult Function(_SearchByArchiveNum value)? searchByArchiveNum,
@@ -1693,28 +2024,40 @@ abstract class _SelectArchive implements ArchivesEvent {
 
 /// @nodoc
 abstract class _$$GetArchiveDetailImplCopyWith<$Res> {
-  factory _$$GetArchiveDetailImplCopyWith(_$GetArchiveDetailImpl value,
-          $Res Function(_$GetArchiveDetailImpl) then) =
-      __$$GetArchiveDetailImplCopyWithImpl<$Res>;
+  factory _$$GetArchiveDetailImplCopyWith(
+    _$GetArchiveDetailImpl value,
+    $Res Function(_$GetArchiveDetailImpl) then,
+  ) = __$$GetArchiveDetailImplCopyWithImpl<$Res>;
 }
 
 /// @nodoc
 class __$$GetArchiveDetailImplCopyWithImpl<$Res>
     extends _$ArchivesEventCopyWithImpl<$Res, _$GetArchiveDetailImpl>
     implements _$$GetArchiveDetailImplCopyWith<$Res> {
-  __$$GetArchiveDetailImplCopyWithImpl(_$GetArchiveDetailImpl _value,
-      $Res Function(_$GetArchiveDetailImpl) _then)
-      : super(_value, _then);
+  __$$GetArchiveDetailImplCopyWithImpl(
+    _$GetArchiveDetailImpl _value,
+    $Res Function(_$GetArchiveDetailImpl) _then,
+  ) : super(_value, _then);
 }
 
 /// @nodoc
 
-class _$GetArchiveDetailImpl implements _GetArchiveDetail {
+class _$GetArchiveDetailImpl
+    with DiagnosticableTreeMixin
+    implements _GetArchiveDetail {
   const _$GetArchiveDetailImpl();
 
   @override
-  String toString() {
+  String toString({DiagnosticLevel minLevel = DiagnosticLevel.info}) {
     return 'ArchivesEvent.getArchiveDetail()';
+  }
+
+  @override
+  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+    super.debugFillProperties(properties);
+    properties.add(
+      DiagnosticsProperty('type', 'ArchivesEvent.getArchiveDetail'),
+    );
   }
 
   @override
@@ -1730,9 +2073,10 @@ class _$GetArchiveDetailImpl implements _GetArchiveDetail {
   @optionalTypeArgs
   TResult when<TResult extends Object?>({
     required TResult Function() started,
-    required TResult Function(bool silent) getArchived,
     required TResult Function(Status status) statusChanged,
     required TResult Function(ArchivesResponseEntity archives) archivesUpdated,
+    required TResult Function(ArchivesSummaryEntity summary) summaryUpdated,
+    required TResult Function() loadMore,
     required TResult Function(Failure? failure) failureChanged,
     required TResult Function(String value) searchChanged,
     required TResult Function(String value) searchByArchiveNum,
@@ -1740,7 +2084,7 @@ class _$GetArchiveDetailImpl implements _GetArchiveDetail {
     required TResult Function() getArchiveDetail,
     required TResult Function(ArchivesFilterType type) updateFilterType,
     required TResult Function(DateTime startDate, DateTime endDate)
-        updateFilterDateRange,
+    updateFilterDateRange,
     required TResult Function(String? status) updateStatusFilter,
   }) {
     return getArchiveDetail();
@@ -1750,9 +2094,10 @@ class _$GetArchiveDetailImpl implements _GetArchiveDetail {
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
     TResult? Function()? started,
-    TResult? Function(bool silent)? getArchived,
     TResult? Function(Status status)? statusChanged,
     TResult? Function(ArchivesResponseEntity archives)? archivesUpdated,
+    TResult? Function(ArchivesSummaryEntity summary)? summaryUpdated,
+    TResult? Function()? loadMore,
     TResult? Function(Failure? failure)? failureChanged,
     TResult? Function(String value)? searchChanged,
     TResult? Function(String value)? searchByArchiveNum,
@@ -1760,7 +2105,7 @@ class _$GetArchiveDetailImpl implements _GetArchiveDetail {
     TResult? Function()? getArchiveDetail,
     TResult? Function(ArchivesFilterType type)? updateFilterType,
     TResult? Function(DateTime startDate, DateTime endDate)?
-        updateFilterDateRange,
+    updateFilterDateRange,
     TResult? Function(String? status)? updateStatusFilter,
   }) {
     return getArchiveDetail?.call();
@@ -1770,9 +2115,10 @@ class _$GetArchiveDetailImpl implements _GetArchiveDetail {
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
     TResult Function()? started,
-    TResult Function(bool silent)? getArchived,
     TResult Function(Status status)? statusChanged,
     TResult Function(ArchivesResponseEntity archives)? archivesUpdated,
+    TResult Function(ArchivesSummaryEntity summary)? summaryUpdated,
+    TResult Function()? loadMore,
     TResult Function(Failure? failure)? failureChanged,
     TResult Function(String value)? searchChanged,
     TResult Function(String value)? searchByArchiveNum,
@@ -1780,7 +2126,7 @@ class _$GetArchiveDetailImpl implements _GetArchiveDetail {
     TResult Function()? getArchiveDetail,
     TResult Function(ArchivesFilterType type)? updateFilterType,
     TResult Function(DateTime startDate, DateTime endDate)?
-        updateFilterDateRange,
+    updateFilterDateRange,
     TResult Function(String? status)? updateStatusFilter,
     required TResult orElse(),
   }) {
@@ -1794,9 +2140,10 @@ class _$GetArchiveDetailImpl implements _GetArchiveDetail {
   @optionalTypeArgs
   TResult map<TResult extends Object?>({
     required TResult Function(_Started value) started,
-    required TResult Function(_GetArchived value) getArchived,
     required TResult Function(_StatusChanged value) statusChanged,
     required TResult Function(_ArchivesUpdated value) archivesUpdated,
+    required TResult Function(_SummaryUpdated value) summaryUpdated,
+    required TResult Function(_LoadMore value) loadMore,
     required TResult Function(_FailureChanged value) failureChanged,
     required TResult Function(_SearchChanged value) searchChanged,
     required TResult Function(_SearchByArchiveNum value) searchByArchiveNum,
@@ -1804,7 +2151,7 @@ class _$GetArchiveDetailImpl implements _GetArchiveDetail {
     required TResult Function(_GetArchiveDetail value) getArchiveDetail,
     required TResult Function(_UpdateFilterType value) updateFilterType,
     required TResult Function(_UpdateFilterDateRange value)
-        updateFilterDateRange,
+    updateFilterDateRange,
     required TResult Function(_UpdateStatusFilter value) updateStatusFilter,
   }) {
     return getArchiveDetail(this);
@@ -1814,9 +2161,10 @@ class _$GetArchiveDetailImpl implements _GetArchiveDetail {
   @optionalTypeArgs
   TResult? mapOrNull<TResult extends Object?>({
     TResult? Function(_Started value)? started,
-    TResult? Function(_GetArchived value)? getArchived,
     TResult? Function(_StatusChanged value)? statusChanged,
     TResult? Function(_ArchivesUpdated value)? archivesUpdated,
+    TResult? Function(_SummaryUpdated value)? summaryUpdated,
+    TResult? Function(_LoadMore value)? loadMore,
     TResult? Function(_FailureChanged value)? failureChanged,
     TResult? Function(_SearchChanged value)? searchChanged,
     TResult? Function(_SearchByArchiveNum value)? searchByArchiveNum,
@@ -1833,9 +2181,10 @@ class _$GetArchiveDetailImpl implements _GetArchiveDetail {
   @optionalTypeArgs
   TResult maybeMap<TResult extends Object?>({
     TResult Function(_Started value)? started,
-    TResult Function(_GetArchived value)? getArchived,
     TResult Function(_StatusChanged value)? statusChanged,
     TResult Function(_ArchivesUpdated value)? archivesUpdated,
+    TResult Function(_SummaryUpdated value)? summaryUpdated,
+    TResult Function(_LoadMore value)? loadMore,
     TResult Function(_FailureChanged value)? failureChanged,
     TResult Function(_SearchChanged value)? searchChanged,
     TResult Function(_SearchByArchiveNum value)? searchByArchiveNum,
@@ -1859,9 +2208,10 @@ abstract class _GetArchiveDetail implements ArchivesEvent {
 
 /// @nodoc
 abstract class _$$UpdateFilterTypeImplCopyWith<$Res> {
-  factory _$$UpdateFilterTypeImplCopyWith(_$UpdateFilterTypeImpl value,
-          $Res Function(_$UpdateFilterTypeImpl) then) =
-      __$$UpdateFilterTypeImplCopyWithImpl<$Res>;
+  factory _$$UpdateFilterTypeImplCopyWith(
+    _$UpdateFilterTypeImpl value,
+    $Res Function(_$UpdateFilterTypeImpl) then,
+  ) = __$$UpdateFilterTypeImplCopyWithImpl<$Res>;
   @useResult
   $Res call({ArchivesFilterType type});
 }
@@ -1870,35 +2220,46 @@ abstract class _$$UpdateFilterTypeImplCopyWith<$Res> {
 class __$$UpdateFilterTypeImplCopyWithImpl<$Res>
     extends _$ArchivesEventCopyWithImpl<$Res, _$UpdateFilterTypeImpl>
     implements _$$UpdateFilterTypeImplCopyWith<$Res> {
-  __$$UpdateFilterTypeImplCopyWithImpl(_$UpdateFilterTypeImpl _value,
-      $Res Function(_$UpdateFilterTypeImpl) _then)
-      : super(_value, _then);
+  __$$UpdateFilterTypeImplCopyWithImpl(
+    _$UpdateFilterTypeImpl _value,
+    $Res Function(_$UpdateFilterTypeImpl) _then,
+  ) : super(_value, _then);
 
   @pragma('vm:prefer-inline')
   @override
-  $Res call({
-    Object? type = null,
-  }) {
-    return _then(_$UpdateFilterTypeImpl(
-      type: null == type
-          ? _value.type
-          : type // ignore: cast_nullable_to_non_nullable
-              as ArchivesFilterType,
-    ));
+  $Res call({Object? type = null}) {
+    return _then(
+      _$UpdateFilterTypeImpl(
+        type: null == type
+            ? _value.type
+            : type // ignore: cast_nullable_to_non_nullable
+                  as ArchivesFilterType,
+      ),
+    );
   }
 }
 
 /// @nodoc
 
-class _$UpdateFilterTypeImpl implements _UpdateFilterType {
+class _$UpdateFilterTypeImpl
+    with DiagnosticableTreeMixin
+    implements _UpdateFilterType {
   const _$UpdateFilterTypeImpl({required this.type});
 
   @override
   final ArchivesFilterType type;
 
   @override
-  String toString() {
+  String toString({DiagnosticLevel minLevel = DiagnosticLevel.info}) {
     return 'ArchivesEvent.updateFilterType(type: $type)';
+  }
+
+  @override
+  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+    super.debugFillProperties(properties);
+    properties
+      ..add(DiagnosticsProperty('type', 'ArchivesEvent.updateFilterType'))
+      ..add(DiagnosticsProperty('type', type));
   }
 
   @override
@@ -1917,15 +2278,18 @@ class _$UpdateFilterTypeImpl implements _UpdateFilterType {
   @pragma('vm:prefer-inline')
   _$$UpdateFilterTypeImplCopyWith<_$UpdateFilterTypeImpl> get copyWith =>
       __$$UpdateFilterTypeImplCopyWithImpl<_$UpdateFilterTypeImpl>(
-          this, _$identity);
+        this,
+        _$identity,
+      );
 
   @override
   @optionalTypeArgs
   TResult when<TResult extends Object?>({
     required TResult Function() started,
-    required TResult Function(bool silent) getArchived,
     required TResult Function(Status status) statusChanged,
     required TResult Function(ArchivesResponseEntity archives) archivesUpdated,
+    required TResult Function(ArchivesSummaryEntity summary) summaryUpdated,
+    required TResult Function() loadMore,
     required TResult Function(Failure? failure) failureChanged,
     required TResult Function(String value) searchChanged,
     required TResult Function(String value) searchByArchiveNum,
@@ -1933,7 +2297,7 @@ class _$UpdateFilterTypeImpl implements _UpdateFilterType {
     required TResult Function() getArchiveDetail,
     required TResult Function(ArchivesFilterType type) updateFilterType,
     required TResult Function(DateTime startDate, DateTime endDate)
-        updateFilterDateRange,
+    updateFilterDateRange,
     required TResult Function(String? status) updateStatusFilter,
   }) {
     return updateFilterType(type);
@@ -1943,9 +2307,10 @@ class _$UpdateFilterTypeImpl implements _UpdateFilterType {
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
     TResult? Function()? started,
-    TResult? Function(bool silent)? getArchived,
     TResult? Function(Status status)? statusChanged,
     TResult? Function(ArchivesResponseEntity archives)? archivesUpdated,
+    TResult? Function(ArchivesSummaryEntity summary)? summaryUpdated,
+    TResult? Function()? loadMore,
     TResult? Function(Failure? failure)? failureChanged,
     TResult? Function(String value)? searchChanged,
     TResult? Function(String value)? searchByArchiveNum,
@@ -1953,7 +2318,7 @@ class _$UpdateFilterTypeImpl implements _UpdateFilterType {
     TResult? Function()? getArchiveDetail,
     TResult? Function(ArchivesFilterType type)? updateFilterType,
     TResult? Function(DateTime startDate, DateTime endDate)?
-        updateFilterDateRange,
+    updateFilterDateRange,
     TResult? Function(String? status)? updateStatusFilter,
   }) {
     return updateFilterType?.call(type);
@@ -1963,9 +2328,10 @@ class _$UpdateFilterTypeImpl implements _UpdateFilterType {
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
     TResult Function()? started,
-    TResult Function(bool silent)? getArchived,
     TResult Function(Status status)? statusChanged,
     TResult Function(ArchivesResponseEntity archives)? archivesUpdated,
+    TResult Function(ArchivesSummaryEntity summary)? summaryUpdated,
+    TResult Function()? loadMore,
     TResult Function(Failure? failure)? failureChanged,
     TResult Function(String value)? searchChanged,
     TResult Function(String value)? searchByArchiveNum,
@@ -1973,7 +2339,7 @@ class _$UpdateFilterTypeImpl implements _UpdateFilterType {
     TResult Function()? getArchiveDetail,
     TResult Function(ArchivesFilterType type)? updateFilterType,
     TResult Function(DateTime startDate, DateTime endDate)?
-        updateFilterDateRange,
+    updateFilterDateRange,
     TResult Function(String? status)? updateStatusFilter,
     required TResult orElse(),
   }) {
@@ -1987,9 +2353,10 @@ class _$UpdateFilterTypeImpl implements _UpdateFilterType {
   @optionalTypeArgs
   TResult map<TResult extends Object?>({
     required TResult Function(_Started value) started,
-    required TResult Function(_GetArchived value) getArchived,
     required TResult Function(_StatusChanged value) statusChanged,
     required TResult Function(_ArchivesUpdated value) archivesUpdated,
+    required TResult Function(_SummaryUpdated value) summaryUpdated,
+    required TResult Function(_LoadMore value) loadMore,
     required TResult Function(_FailureChanged value) failureChanged,
     required TResult Function(_SearchChanged value) searchChanged,
     required TResult Function(_SearchByArchiveNum value) searchByArchiveNum,
@@ -1997,7 +2364,7 @@ class _$UpdateFilterTypeImpl implements _UpdateFilterType {
     required TResult Function(_GetArchiveDetail value) getArchiveDetail,
     required TResult Function(_UpdateFilterType value) updateFilterType,
     required TResult Function(_UpdateFilterDateRange value)
-        updateFilterDateRange,
+    updateFilterDateRange,
     required TResult Function(_UpdateStatusFilter value) updateStatusFilter,
   }) {
     return updateFilterType(this);
@@ -2007,9 +2374,10 @@ class _$UpdateFilterTypeImpl implements _UpdateFilterType {
   @optionalTypeArgs
   TResult? mapOrNull<TResult extends Object?>({
     TResult? Function(_Started value)? started,
-    TResult? Function(_GetArchived value)? getArchived,
     TResult? Function(_StatusChanged value)? statusChanged,
     TResult? Function(_ArchivesUpdated value)? archivesUpdated,
+    TResult? Function(_SummaryUpdated value)? summaryUpdated,
+    TResult? Function(_LoadMore value)? loadMore,
     TResult? Function(_FailureChanged value)? failureChanged,
     TResult? Function(_SearchChanged value)? searchChanged,
     TResult? Function(_SearchByArchiveNum value)? searchByArchiveNum,
@@ -2026,9 +2394,10 @@ class _$UpdateFilterTypeImpl implements _UpdateFilterType {
   @optionalTypeArgs
   TResult maybeMap<TResult extends Object?>({
     TResult Function(_Started value)? started,
-    TResult Function(_GetArchived value)? getArchived,
     TResult Function(_StatusChanged value)? statusChanged,
     TResult Function(_ArchivesUpdated value)? archivesUpdated,
+    TResult Function(_SummaryUpdated value)? summaryUpdated,
+    TResult Function(_LoadMore value)? loadMore,
     TResult Function(_FailureChanged value)? failureChanged,
     TResult Function(_SearchChanged value)? searchChanged,
     TResult Function(_SearchByArchiveNum value)? searchByArchiveNum,
@@ -2059,9 +2428,9 @@ abstract class _UpdateFilterType implements ArchivesEvent {
 /// @nodoc
 abstract class _$$UpdateFilterDateRangeImplCopyWith<$Res> {
   factory _$$UpdateFilterDateRangeImplCopyWith(
-          _$UpdateFilterDateRangeImpl value,
-          $Res Function(_$UpdateFilterDateRangeImpl) then) =
-      __$$UpdateFilterDateRangeImplCopyWithImpl<$Res>;
+    _$UpdateFilterDateRangeImpl value,
+    $Res Function(_$UpdateFilterDateRangeImpl) then,
+  ) = __$$UpdateFilterDateRangeImplCopyWithImpl<$Res>;
   @useResult
   $Res call({DateTime startDate, DateTime endDate});
 }
@@ -2070,34 +2439,38 @@ abstract class _$$UpdateFilterDateRangeImplCopyWith<$Res> {
 class __$$UpdateFilterDateRangeImplCopyWithImpl<$Res>
     extends _$ArchivesEventCopyWithImpl<$Res, _$UpdateFilterDateRangeImpl>
     implements _$$UpdateFilterDateRangeImplCopyWith<$Res> {
-  __$$UpdateFilterDateRangeImplCopyWithImpl(_$UpdateFilterDateRangeImpl _value,
-      $Res Function(_$UpdateFilterDateRangeImpl) _then)
-      : super(_value, _then);
+  __$$UpdateFilterDateRangeImplCopyWithImpl(
+    _$UpdateFilterDateRangeImpl _value,
+    $Res Function(_$UpdateFilterDateRangeImpl) _then,
+  ) : super(_value, _then);
 
   @pragma('vm:prefer-inline')
   @override
-  $Res call({
-    Object? startDate = null,
-    Object? endDate = null,
-  }) {
-    return _then(_$UpdateFilterDateRangeImpl(
-      startDate: null == startDate
-          ? _value.startDate
-          : startDate // ignore: cast_nullable_to_non_nullable
-              as DateTime,
-      endDate: null == endDate
-          ? _value.endDate
-          : endDate // ignore: cast_nullable_to_non_nullable
-              as DateTime,
-    ));
+  $Res call({Object? startDate = null, Object? endDate = null}) {
+    return _then(
+      _$UpdateFilterDateRangeImpl(
+        startDate: null == startDate
+            ? _value.startDate
+            : startDate // ignore: cast_nullable_to_non_nullable
+                  as DateTime,
+        endDate: null == endDate
+            ? _value.endDate
+            : endDate // ignore: cast_nullable_to_non_nullable
+                  as DateTime,
+      ),
+    );
   }
 }
 
 /// @nodoc
 
-class _$UpdateFilterDateRangeImpl implements _UpdateFilterDateRange {
-  const _$UpdateFilterDateRangeImpl(
-      {required this.startDate, required this.endDate});
+class _$UpdateFilterDateRangeImpl
+    with DiagnosticableTreeMixin
+    implements _UpdateFilterDateRange {
+  const _$UpdateFilterDateRangeImpl({
+    required this.startDate,
+    required this.endDate,
+  });
 
   @override
   final DateTime startDate;
@@ -2105,8 +2478,17 @@ class _$UpdateFilterDateRangeImpl implements _UpdateFilterDateRange {
   final DateTime endDate;
 
   @override
-  String toString() {
+  String toString({DiagnosticLevel minLevel = DiagnosticLevel.info}) {
     return 'ArchivesEvent.updateFilterDateRange(startDate: $startDate, endDate: $endDate)';
+  }
+
+  @override
+  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+    super.debugFillProperties(properties);
+    properties
+      ..add(DiagnosticsProperty('type', 'ArchivesEvent.updateFilterDateRange'))
+      ..add(DiagnosticsProperty('startDate', startDate))
+      ..add(DiagnosticsProperty('endDate', endDate));
   }
 
   @override
@@ -2126,16 +2508,20 @@ class _$UpdateFilterDateRangeImpl implements _UpdateFilterDateRange {
   @override
   @pragma('vm:prefer-inline')
   _$$UpdateFilterDateRangeImplCopyWith<_$UpdateFilterDateRangeImpl>
-      get copyWith => __$$UpdateFilterDateRangeImplCopyWithImpl<
-          _$UpdateFilterDateRangeImpl>(this, _$identity);
+  get copyWith =>
+      __$$UpdateFilterDateRangeImplCopyWithImpl<_$UpdateFilterDateRangeImpl>(
+        this,
+        _$identity,
+      );
 
   @override
   @optionalTypeArgs
   TResult when<TResult extends Object?>({
     required TResult Function() started,
-    required TResult Function(bool silent) getArchived,
     required TResult Function(Status status) statusChanged,
     required TResult Function(ArchivesResponseEntity archives) archivesUpdated,
+    required TResult Function(ArchivesSummaryEntity summary) summaryUpdated,
+    required TResult Function() loadMore,
     required TResult Function(Failure? failure) failureChanged,
     required TResult Function(String value) searchChanged,
     required TResult Function(String value) searchByArchiveNum,
@@ -2143,7 +2529,7 @@ class _$UpdateFilterDateRangeImpl implements _UpdateFilterDateRange {
     required TResult Function() getArchiveDetail,
     required TResult Function(ArchivesFilterType type) updateFilterType,
     required TResult Function(DateTime startDate, DateTime endDate)
-        updateFilterDateRange,
+    updateFilterDateRange,
     required TResult Function(String? status) updateStatusFilter,
   }) {
     return updateFilterDateRange(startDate, endDate);
@@ -2153,9 +2539,10 @@ class _$UpdateFilterDateRangeImpl implements _UpdateFilterDateRange {
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
     TResult? Function()? started,
-    TResult? Function(bool silent)? getArchived,
     TResult? Function(Status status)? statusChanged,
     TResult? Function(ArchivesResponseEntity archives)? archivesUpdated,
+    TResult? Function(ArchivesSummaryEntity summary)? summaryUpdated,
+    TResult? Function()? loadMore,
     TResult? Function(Failure? failure)? failureChanged,
     TResult? Function(String value)? searchChanged,
     TResult? Function(String value)? searchByArchiveNum,
@@ -2163,7 +2550,7 @@ class _$UpdateFilterDateRangeImpl implements _UpdateFilterDateRange {
     TResult? Function()? getArchiveDetail,
     TResult? Function(ArchivesFilterType type)? updateFilterType,
     TResult? Function(DateTime startDate, DateTime endDate)?
-        updateFilterDateRange,
+    updateFilterDateRange,
     TResult? Function(String? status)? updateStatusFilter,
   }) {
     return updateFilterDateRange?.call(startDate, endDate);
@@ -2173,9 +2560,10 @@ class _$UpdateFilterDateRangeImpl implements _UpdateFilterDateRange {
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
     TResult Function()? started,
-    TResult Function(bool silent)? getArchived,
     TResult Function(Status status)? statusChanged,
     TResult Function(ArchivesResponseEntity archives)? archivesUpdated,
+    TResult Function(ArchivesSummaryEntity summary)? summaryUpdated,
+    TResult Function()? loadMore,
     TResult Function(Failure? failure)? failureChanged,
     TResult Function(String value)? searchChanged,
     TResult Function(String value)? searchByArchiveNum,
@@ -2183,7 +2571,7 @@ class _$UpdateFilterDateRangeImpl implements _UpdateFilterDateRange {
     TResult Function()? getArchiveDetail,
     TResult Function(ArchivesFilterType type)? updateFilterType,
     TResult Function(DateTime startDate, DateTime endDate)?
-        updateFilterDateRange,
+    updateFilterDateRange,
     TResult Function(String? status)? updateStatusFilter,
     required TResult orElse(),
   }) {
@@ -2197,9 +2585,10 @@ class _$UpdateFilterDateRangeImpl implements _UpdateFilterDateRange {
   @optionalTypeArgs
   TResult map<TResult extends Object?>({
     required TResult Function(_Started value) started,
-    required TResult Function(_GetArchived value) getArchived,
     required TResult Function(_StatusChanged value) statusChanged,
     required TResult Function(_ArchivesUpdated value) archivesUpdated,
+    required TResult Function(_SummaryUpdated value) summaryUpdated,
+    required TResult Function(_LoadMore value) loadMore,
     required TResult Function(_FailureChanged value) failureChanged,
     required TResult Function(_SearchChanged value) searchChanged,
     required TResult Function(_SearchByArchiveNum value) searchByArchiveNum,
@@ -2207,7 +2596,7 @@ class _$UpdateFilterDateRangeImpl implements _UpdateFilterDateRange {
     required TResult Function(_GetArchiveDetail value) getArchiveDetail,
     required TResult Function(_UpdateFilterType value) updateFilterType,
     required TResult Function(_UpdateFilterDateRange value)
-        updateFilterDateRange,
+    updateFilterDateRange,
     required TResult Function(_UpdateStatusFilter value) updateStatusFilter,
   }) {
     return updateFilterDateRange(this);
@@ -2217,9 +2606,10 @@ class _$UpdateFilterDateRangeImpl implements _UpdateFilterDateRange {
   @optionalTypeArgs
   TResult? mapOrNull<TResult extends Object?>({
     TResult? Function(_Started value)? started,
-    TResult? Function(_GetArchived value)? getArchived,
     TResult? Function(_StatusChanged value)? statusChanged,
     TResult? Function(_ArchivesUpdated value)? archivesUpdated,
+    TResult? Function(_SummaryUpdated value)? summaryUpdated,
+    TResult? Function(_LoadMore value)? loadMore,
     TResult? Function(_FailureChanged value)? failureChanged,
     TResult? Function(_SearchChanged value)? searchChanged,
     TResult? Function(_SearchByArchiveNum value)? searchByArchiveNum,
@@ -2236,9 +2626,10 @@ class _$UpdateFilterDateRangeImpl implements _UpdateFilterDateRange {
   @optionalTypeArgs
   TResult maybeMap<TResult extends Object?>({
     TResult Function(_Started value)? started,
-    TResult Function(_GetArchived value)? getArchived,
     TResult Function(_StatusChanged value)? statusChanged,
     TResult Function(_ArchivesUpdated value)? archivesUpdated,
+    TResult Function(_SummaryUpdated value)? summaryUpdated,
+    TResult Function(_LoadMore value)? loadMore,
     TResult Function(_FailureChanged value)? failureChanged,
     TResult Function(_SearchChanged value)? searchChanged,
     TResult Function(_SearchByArchiveNum value)? searchByArchiveNum,
@@ -2257,22 +2648,24 @@ class _$UpdateFilterDateRangeImpl implements _UpdateFilterDateRange {
 }
 
 abstract class _UpdateFilterDateRange implements ArchivesEvent {
-  const factory _UpdateFilterDateRange(
-      {required final DateTime startDate,
-      required final DateTime endDate}) = _$UpdateFilterDateRangeImpl;
+  const factory _UpdateFilterDateRange({
+    required final DateTime startDate,
+    required final DateTime endDate,
+  }) = _$UpdateFilterDateRangeImpl;
 
   DateTime get startDate;
   DateTime get endDate;
   @JsonKey(ignore: true)
   _$$UpdateFilterDateRangeImplCopyWith<_$UpdateFilterDateRangeImpl>
-      get copyWith => throw _privateConstructorUsedError;
+  get copyWith => throw _privateConstructorUsedError;
 }
 
 /// @nodoc
 abstract class _$$UpdateStatusFilterImplCopyWith<$Res> {
-  factory _$$UpdateStatusFilterImplCopyWith(_$UpdateStatusFilterImpl value,
-          $Res Function(_$UpdateStatusFilterImpl) then) =
-      __$$UpdateStatusFilterImplCopyWithImpl<$Res>;
+  factory _$$UpdateStatusFilterImplCopyWith(
+    _$UpdateStatusFilterImpl value,
+    $Res Function(_$UpdateStatusFilterImpl) then,
+  ) = __$$UpdateStatusFilterImplCopyWithImpl<$Res>;
   @useResult
   $Res call({String? status});
 }
@@ -2281,35 +2674,46 @@ abstract class _$$UpdateStatusFilterImplCopyWith<$Res> {
 class __$$UpdateStatusFilterImplCopyWithImpl<$Res>
     extends _$ArchivesEventCopyWithImpl<$Res, _$UpdateStatusFilterImpl>
     implements _$$UpdateStatusFilterImplCopyWith<$Res> {
-  __$$UpdateStatusFilterImplCopyWithImpl(_$UpdateStatusFilterImpl _value,
-      $Res Function(_$UpdateStatusFilterImpl) _then)
-      : super(_value, _then);
+  __$$UpdateStatusFilterImplCopyWithImpl(
+    _$UpdateStatusFilterImpl _value,
+    $Res Function(_$UpdateStatusFilterImpl) _then,
+  ) : super(_value, _then);
 
   @pragma('vm:prefer-inline')
   @override
-  $Res call({
-    Object? status = freezed,
-  }) {
-    return _then(_$UpdateStatusFilterImpl(
-      status: freezed == status
-          ? _value.status
-          : status // ignore: cast_nullable_to_non_nullable
-              as String?,
-    ));
+  $Res call({Object? status = freezed}) {
+    return _then(
+      _$UpdateStatusFilterImpl(
+        status: freezed == status
+            ? _value.status
+            : status // ignore: cast_nullable_to_non_nullable
+                  as String?,
+      ),
+    );
   }
 }
 
 /// @nodoc
 
-class _$UpdateStatusFilterImpl implements _UpdateStatusFilter {
+class _$UpdateStatusFilterImpl
+    with DiagnosticableTreeMixin
+    implements _UpdateStatusFilter {
   const _$UpdateStatusFilterImpl({this.status});
 
   @override
   final String? status;
 
   @override
-  String toString() {
+  String toString({DiagnosticLevel minLevel = DiagnosticLevel.info}) {
     return 'ArchivesEvent.updateStatusFilter(status: $status)';
+  }
+
+  @override
+  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+    super.debugFillProperties(properties);
+    properties
+      ..add(DiagnosticsProperty('type', 'ArchivesEvent.updateStatusFilter'))
+      ..add(DiagnosticsProperty('status', status));
   }
 
   @override
@@ -2328,15 +2732,18 @@ class _$UpdateStatusFilterImpl implements _UpdateStatusFilter {
   @pragma('vm:prefer-inline')
   _$$UpdateStatusFilterImplCopyWith<_$UpdateStatusFilterImpl> get copyWith =>
       __$$UpdateStatusFilterImplCopyWithImpl<_$UpdateStatusFilterImpl>(
-          this, _$identity);
+        this,
+        _$identity,
+      );
 
   @override
   @optionalTypeArgs
   TResult when<TResult extends Object?>({
     required TResult Function() started,
-    required TResult Function(bool silent) getArchived,
     required TResult Function(Status status) statusChanged,
     required TResult Function(ArchivesResponseEntity archives) archivesUpdated,
+    required TResult Function(ArchivesSummaryEntity summary) summaryUpdated,
+    required TResult Function() loadMore,
     required TResult Function(Failure? failure) failureChanged,
     required TResult Function(String value) searchChanged,
     required TResult Function(String value) searchByArchiveNum,
@@ -2344,7 +2751,7 @@ class _$UpdateStatusFilterImpl implements _UpdateStatusFilter {
     required TResult Function() getArchiveDetail,
     required TResult Function(ArchivesFilterType type) updateFilterType,
     required TResult Function(DateTime startDate, DateTime endDate)
-        updateFilterDateRange,
+    updateFilterDateRange,
     required TResult Function(String? status) updateStatusFilter,
   }) {
     return updateStatusFilter(status);
@@ -2354,9 +2761,10 @@ class _$UpdateStatusFilterImpl implements _UpdateStatusFilter {
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
     TResult? Function()? started,
-    TResult? Function(bool silent)? getArchived,
     TResult? Function(Status status)? statusChanged,
     TResult? Function(ArchivesResponseEntity archives)? archivesUpdated,
+    TResult? Function(ArchivesSummaryEntity summary)? summaryUpdated,
+    TResult? Function()? loadMore,
     TResult? Function(Failure? failure)? failureChanged,
     TResult? Function(String value)? searchChanged,
     TResult? Function(String value)? searchByArchiveNum,
@@ -2364,7 +2772,7 @@ class _$UpdateStatusFilterImpl implements _UpdateStatusFilter {
     TResult? Function()? getArchiveDetail,
     TResult? Function(ArchivesFilterType type)? updateFilterType,
     TResult? Function(DateTime startDate, DateTime endDate)?
-        updateFilterDateRange,
+    updateFilterDateRange,
     TResult? Function(String? status)? updateStatusFilter,
   }) {
     return updateStatusFilter?.call(status);
@@ -2374,9 +2782,10 @@ class _$UpdateStatusFilterImpl implements _UpdateStatusFilter {
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
     TResult Function()? started,
-    TResult Function(bool silent)? getArchived,
     TResult Function(Status status)? statusChanged,
     TResult Function(ArchivesResponseEntity archives)? archivesUpdated,
+    TResult Function(ArchivesSummaryEntity summary)? summaryUpdated,
+    TResult Function()? loadMore,
     TResult Function(Failure? failure)? failureChanged,
     TResult Function(String value)? searchChanged,
     TResult Function(String value)? searchByArchiveNum,
@@ -2384,7 +2793,7 @@ class _$UpdateStatusFilterImpl implements _UpdateStatusFilter {
     TResult Function()? getArchiveDetail,
     TResult Function(ArchivesFilterType type)? updateFilterType,
     TResult Function(DateTime startDate, DateTime endDate)?
-        updateFilterDateRange,
+    updateFilterDateRange,
     TResult Function(String? status)? updateStatusFilter,
     required TResult orElse(),
   }) {
@@ -2398,9 +2807,10 @@ class _$UpdateStatusFilterImpl implements _UpdateStatusFilter {
   @optionalTypeArgs
   TResult map<TResult extends Object?>({
     required TResult Function(_Started value) started,
-    required TResult Function(_GetArchived value) getArchived,
     required TResult Function(_StatusChanged value) statusChanged,
     required TResult Function(_ArchivesUpdated value) archivesUpdated,
+    required TResult Function(_SummaryUpdated value) summaryUpdated,
+    required TResult Function(_LoadMore value) loadMore,
     required TResult Function(_FailureChanged value) failureChanged,
     required TResult Function(_SearchChanged value) searchChanged,
     required TResult Function(_SearchByArchiveNum value) searchByArchiveNum,
@@ -2408,7 +2818,7 @@ class _$UpdateStatusFilterImpl implements _UpdateStatusFilter {
     required TResult Function(_GetArchiveDetail value) getArchiveDetail,
     required TResult Function(_UpdateFilterType value) updateFilterType,
     required TResult Function(_UpdateFilterDateRange value)
-        updateFilterDateRange,
+    updateFilterDateRange,
     required TResult Function(_UpdateStatusFilter value) updateStatusFilter,
   }) {
     return updateStatusFilter(this);
@@ -2418,9 +2828,10 @@ class _$UpdateStatusFilterImpl implements _UpdateStatusFilter {
   @optionalTypeArgs
   TResult? mapOrNull<TResult extends Object?>({
     TResult? Function(_Started value)? started,
-    TResult? Function(_GetArchived value)? getArchived,
     TResult? Function(_StatusChanged value)? statusChanged,
     TResult? Function(_ArchivesUpdated value)? archivesUpdated,
+    TResult? Function(_SummaryUpdated value)? summaryUpdated,
+    TResult? Function(_LoadMore value)? loadMore,
     TResult? Function(_FailureChanged value)? failureChanged,
     TResult? Function(_SearchChanged value)? searchChanged,
     TResult? Function(_SearchByArchiveNum value)? searchByArchiveNum,
@@ -2437,9 +2848,10 @@ class _$UpdateStatusFilterImpl implements _UpdateStatusFilter {
   @optionalTypeArgs
   TResult maybeMap<TResult extends Object?>({
     TResult Function(_Started value)? started,
-    TResult Function(_GetArchived value)? getArchived,
     TResult Function(_StatusChanged value)? statusChanged,
     TResult Function(_ArchivesUpdated value)? archivesUpdated,
+    TResult Function(_SummaryUpdated value)? summaryUpdated,
+    TResult Function(_LoadMore value)? loadMore,
     TResult Function(_FailureChanged value)? failureChanged,
     TResult Function(_SearchChanged value)? searchChanged,
     TResult Function(_SearchByArchiveNum value)? searchByArchiveNum,
@@ -2479,6 +2891,18 @@ mixin _$ArchivesState {
   TextEditingController? get textController =>
       throw _privateConstructorUsedError;
   ArchivesResponseEntity? get archives => throw _privateConstructorUsedError;
+
+  /// Totals for the whole filtered window — not a fold over [archives],
+  /// which only ever holds what has been scrolled to.
+  ArchivesSummaryEntity get summary => throw _privateConstructorUsedError;
+
+  /// How many rows the current query asks for. Grows by
+  /// [kArchivesPageSize] each time the operator reaches the end of the list.
+  int get loadedLimit => throw _privateConstructorUsedError;
+
+  /// A window growth is in flight — the list shows a footer spinner and
+  /// ignores further load-more requests until it lands.
+  bool get isLoadingMore => throw _privateConstructorUsedError;
   ArchiveDetailEntity? get selectArchiveDetail =>
       throw _privateConstructorUsedError;
   ArchiveEntity? get selectArchive => throw _privateConstructorUsedError;
@@ -2492,22 +2916,27 @@ mixin _$ArchivesState {
 /// @nodoc
 abstract class $ArchivesStateCopyWith<$Res> {
   factory $ArchivesStateCopyWith(
-          ArchivesState value, $Res Function(ArchivesState) then) =
-      _$ArchivesStateCopyWithImpl<$Res, ArchivesState>;
+    ArchivesState value,
+    $Res Function(ArchivesState) then,
+  ) = _$ArchivesStateCopyWithImpl<$Res, ArchivesState>;
   @useResult
-  $Res call(
-      {Status status,
-      Status archiveStatus,
-      ArchivesFilterType filterType,
-      List<ArchivesFilterType> filters,
-      DateTime? startFilterDate,
-      DateTime? endFilterDate,
-      String? statusFilter,
-      TextEditingController? textController,
-      ArchivesResponseEntity? archives,
-      ArchiveDetailEntity? selectArchiveDetail,
-      ArchiveEntity? selectArchive,
-      Failure? failure});
+  $Res call({
+    Status status,
+    Status archiveStatus,
+    ArchivesFilterType filterType,
+    List<ArchivesFilterType> filters,
+    DateTime? startFilterDate,
+    DateTime? endFilterDate,
+    String? statusFilter,
+    TextEditingController? textController,
+    ArchivesResponseEntity? archives,
+    ArchivesSummaryEntity summary,
+    int loadedLimit,
+    bool isLoadingMore,
+    ArchiveDetailEntity? selectArchiveDetail,
+    ArchiveEntity? selectArchive,
+    Failure? failure,
+  });
 }
 
 /// @nodoc
@@ -2532,60 +2961,78 @@ class _$ArchivesStateCopyWithImpl<$Res, $Val extends ArchivesState>
     Object? statusFilter = freezed,
     Object? textController = freezed,
     Object? archives = freezed,
+    Object? summary = null,
+    Object? loadedLimit = null,
+    Object? isLoadingMore = null,
     Object? selectArchiveDetail = freezed,
     Object? selectArchive = freezed,
     Object? failure = freezed,
   }) {
-    return _then(_value.copyWith(
-      status: null == status
-          ? _value.status
-          : status // ignore: cast_nullable_to_non_nullable
-              as Status,
-      archiveStatus: null == archiveStatus
-          ? _value.archiveStatus
-          : archiveStatus // ignore: cast_nullable_to_non_nullable
-              as Status,
-      filterType: null == filterType
-          ? _value.filterType
-          : filterType // ignore: cast_nullable_to_non_nullable
-              as ArchivesFilterType,
-      filters: null == filters
-          ? _value.filters
-          : filters // ignore: cast_nullable_to_non_nullable
-              as List<ArchivesFilterType>,
-      startFilterDate: freezed == startFilterDate
-          ? _value.startFilterDate
-          : startFilterDate // ignore: cast_nullable_to_non_nullable
-              as DateTime?,
-      endFilterDate: freezed == endFilterDate
-          ? _value.endFilterDate
-          : endFilterDate // ignore: cast_nullable_to_non_nullable
-              as DateTime?,
-      statusFilter: freezed == statusFilter
-          ? _value.statusFilter
-          : statusFilter // ignore: cast_nullable_to_non_nullable
-              as String?,
-      textController: freezed == textController
-          ? _value.textController
-          : textController // ignore: cast_nullable_to_non_nullable
-              as TextEditingController?,
-      archives: freezed == archives
-          ? _value.archives
-          : archives // ignore: cast_nullable_to_non_nullable
-              as ArchivesResponseEntity?,
-      selectArchiveDetail: freezed == selectArchiveDetail
-          ? _value.selectArchiveDetail
-          : selectArchiveDetail // ignore: cast_nullable_to_non_nullable
-              as ArchiveDetailEntity?,
-      selectArchive: freezed == selectArchive
-          ? _value.selectArchive
-          : selectArchive // ignore: cast_nullable_to_non_nullable
-              as ArchiveEntity?,
-      failure: freezed == failure
-          ? _value.failure
-          : failure // ignore: cast_nullable_to_non_nullable
-              as Failure?,
-    ) as $Val);
+    return _then(
+      _value.copyWith(
+            status: null == status
+                ? _value.status
+                : status // ignore: cast_nullable_to_non_nullable
+                      as Status,
+            archiveStatus: null == archiveStatus
+                ? _value.archiveStatus
+                : archiveStatus // ignore: cast_nullable_to_non_nullable
+                      as Status,
+            filterType: null == filterType
+                ? _value.filterType
+                : filterType // ignore: cast_nullable_to_non_nullable
+                      as ArchivesFilterType,
+            filters: null == filters
+                ? _value.filters
+                : filters // ignore: cast_nullable_to_non_nullable
+                      as List<ArchivesFilterType>,
+            startFilterDate: freezed == startFilterDate
+                ? _value.startFilterDate
+                : startFilterDate // ignore: cast_nullable_to_non_nullable
+                      as DateTime?,
+            endFilterDate: freezed == endFilterDate
+                ? _value.endFilterDate
+                : endFilterDate // ignore: cast_nullable_to_non_nullable
+                      as DateTime?,
+            statusFilter: freezed == statusFilter
+                ? _value.statusFilter
+                : statusFilter // ignore: cast_nullable_to_non_nullable
+                      as String?,
+            textController: freezed == textController
+                ? _value.textController
+                : textController // ignore: cast_nullable_to_non_nullable
+                      as TextEditingController?,
+            archives: freezed == archives
+                ? _value.archives
+                : archives // ignore: cast_nullable_to_non_nullable
+                      as ArchivesResponseEntity?,
+            summary: null == summary
+                ? _value.summary
+                : summary // ignore: cast_nullable_to_non_nullable
+                      as ArchivesSummaryEntity,
+            loadedLimit: null == loadedLimit
+                ? _value.loadedLimit
+                : loadedLimit // ignore: cast_nullable_to_non_nullable
+                      as int,
+            isLoadingMore: null == isLoadingMore
+                ? _value.isLoadingMore
+                : isLoadingMore // ignore: cast_nullable_to_non_nullable
+                      as bool,
+            selectArchiveDetail: freezed == selectArchiveDetail
+                ? _value.selectArchiveDetail
+                : selectArchiveDetail // ignore: cast_nullable_to_non_nullable
+                      as ArchiveDetailEntity?,
+            selectArchive: freezed == selectArchive
+                ? _value.selectArchive
+                : selectArchive // ignore: cast_nullable_to_non_nullable
+                      as ArchiveEntity?,
+            failure: freezed == failure
+                ? _value.failure
+                : failure // ignore: cast_nullable_to_non_nullable
+                      as Failure?,
+          )
+          as $Val,
+    );
   }
 }
 
@@ -2593,23 +3040,28 @@ class _$ArchivesStateCopyWithImpl<$Res, $Val extends ArchivesState>
 abstract class _$$ArchivesStateImplCopyWith<$Res>
     implements $ArchivesStateCopyWith<$Res> {
   factory _$$ArchivesStateImplCopyWith(
-          _$ArchivesStateImpl value, $Res Function(_$ArchivesStateImpl) then) =
-      __$$ArchivesStateImplCopyWithImpl<$Res>;
+    _$ArchivesStateImpl value,
+    $Res Function(_$ArchivesStateImpl) then,
+  ) = __$$ArchivesStateImplCopyWithImpl<$Res>;
   @override
   @useResult
-  $Res call(
-      {Status status,
-      Status archiveStatus,
-      ArchivesFilterType filterType,
-      List<ArchivesFilterType> filters,
-      DateTime? startFilterDate,
-      DateTime? endFilterDate,
-      String? statusFilter,
-      TextEditingController? textController,
-      ArchivesResponseEntity? archives,
-      ArchiveDetailEntity? selectArchiveDetail,
-      ArchiveEntity? selectArchive,
-      Failure? failure});
+  $Res call({
+    Status status,
+    Status archiveStatus,
+    ArchivesFilterType filterType,
+    List<ArchivesFilterType> filters,
+    DateTime? startFilterDate,
+    DateTime? endFilterDate,
+    String? statusFilter,
+    TextEditingController? textController,
+    ArchivesResponseEntity? archives,
+    ArchivesSummaryEntity summary,
+    int loadedLimit,
+    bool isLoadingMore,
+    ArchiveDetailEntity? selectArchiveDetail,
+    ArchiveEntity? selectArchive,
+    Failure? failure,
+  });
 }
 
 /// @nodoc
@@ -2617,8 +3069,9 @@ class __$$ArchivesStateImplCopyWithImpl<$Res>
     extends _$ArchivesStateCopyWithImpl<$Res, _$ArchivesStateImpl>
     implements _$$ArchivesStateImplCopyWith<$Res> {
   __$$ArchivesStateImplCopyWithImpl(
-      _$ArchivesStateImpl _value, $Res Function(_$ArchivesStateImpl) _then)
-      : super(_value, _then);
+    _$ArchivesStateImpl _value,
+    $Res Function(_$ArchivesStateImpl) _then,
+  ) : super(_value, _then);
 
   @pragma('vm:prefer-inline')
   @override
@@ -2632,85 +3085,106 @@ class __$$ArchivesStateImplCopyWithImpl<$Res>
     Object? statusFilter = freezed,
     Object? textController = freezed,
     Object? archives = freezed,
+    Object? summary = null,
+    Object? loadedLimit = null,
+    Object? isLoadingMore = null,
     Object? selectArchiveDetail = freezed,
     Object? selectArchive = freezed,
     Object? failure = freezed,
   }) {
-    return _then(_$ArchivesStateImpl(
-      status: null == status
-          ? _value.status
-          : status // ignore: cast_nullable_to_non_nullable
-              as Status,
-      archiveStatus: null == archiveStatus
-          ? _value.archiveStatus
-          : archiveStatus // ignore: cast_nullable_to_non_nullable
-              as Status,
-      filterType: null == filterType
-          ? _value.filterType
-          : filterType // ignore: cast_nullable_to_non_nullable
-              as ArchivesFilterType,
-      filters: null == filters
-          ? _value._filters
-          : filters // ignore: cast_nullable_to_non_nullable
-              as List<ArchivesFilterType>,
-      startFilterDate: freezed == startFilterDate
-          ? _value.startFilterDate
-          : startFilterDate // ignore: cast_nullable_to_non_nullable
-              as DateTime?,
-      endFilterDate: freezed == endFilterDate
-          ? _value.endFilterDate
-          : endFilterDate // ignore: cast_nullable_to_non_nullable
-              as DateTime?,
-      statusFilter: freezed == statusFilter
-          ? _value.statusFilter
-          : statusFilter // ignore: cast_nullable_to_non_nullable
-              as String?,
-      textController: freezed == textController
-          ? _value.textController
-          : textController // ignore: cast_nullable_to_non_nullable
-              as TextEditingController?,
-      archives: freezed == archives
-          ? _value.archives
-          : archives // ignore: cast_nullable_to_non_nullable
-              as ArchivesResponseEntity?,
-      selectArchiveDetail: freezed == selectArchiveDetail
-          ? _value.selectArchiveDetail
-          : selectArchiveDetail // ignore: cast_nullable_to_non_nullable
-              as ArchiveDetailEntity?,
-      selectArchive: freezed == selectArchive
-          ? _value.selectArchive
-          : selectArchive // ignore: cast_nullable_to_non_nullable
-              as ArchiveEntity?,
-      failure: freezed == failure
-          ? _value.failure
-          : failure // ignore: cast_nullable_to_non_nullable
-              as Failure?,
-    ));
+    return _then(
+      _$ArchivesStateImpl(
+        status: null == status
+            ? _value.status
+            : status // ignore: cast_nullable_to_non_nullable
+                  as Status,
+        archiveStatus: null == archiveStatus
+            ? _value.archiveStatus
+            : archiveStatus // ignore: cast_nullable_to_non_nullable
+                  as Status,
+        filterType: null == filterType
+            ? _value.filterType
+            : filterType // ignore: cast_nullable_to_non_nullable
+                  as ArchivesFilterType,
+        filters: null == filters
+            ? _value._filters
+            : filters // ignore: cast_nullable_to_non_nullable
+                  as List<ArchivesFilterType>,
+        startFilterDate: freezed == startFilterDate
+            ? _value.startFilterDate
+            : startFilterDate // ignore: cast_nullable_to_non_nullable
+                  as DateTime?,
+        endFilterDate: freezed == endFilterDate
+            ? _value.endFilterDate
+            : endFilterDate // ignore: cast_nullable_to_non_nullable
+                  as DateTime?,
+        statusFilter: freezed == statusFilter
+            ? _value.statusFilter
+            : statusFilter // ignore: cast_nullable_to_non_nullable
+                  as String?,
+        textController: freezed == textController
+            ? _value.textController
+            : textController // ignore: cast_nullable_to_non_nullable
+                  as TextEditingController?,
+        archives: freezed == archives
+            ? _value.archives
+            : archives // ignore: cast_nullable_to_non_nullable
+                  as ArchivesResponseEntity?,
+        summary: null == summary
+            ? _value.summary
+            : summary // ignore: cast_nullable_to_non_nullable
+                  as ArchivesSummaryEntity,
+        loadedLimit: null == loadedLimit
+            ? _value.loadedLimit
+            : loadedLimit // ignore: cast_nullable_to_non_nullable
+                  as int,
+        isLoadingMore: null == isLoadingMore
+            ? _value.isLoadingMore
+            : isLoadingMore // ignore: cast_nullable_to_non_nullable
+                  as bool,
+        selectArchiveDetail: freezed == selectArchiveDetail
+            ? _value.selectArchiveDetail
+            : selectArchiveDetail // ignore: cast_nullable_to_non_nullable
+                  as ArchiveDetailEntity?,
+        selectArchive: freezed == selectArchive
+            ? _value.selectArchive
+            : selectArchive // ignore: cast_nullable_to_non_nullable
+                  as ArchiveEntity?,
+        failure: freezed == failure
+            ? _value.failure
+            : failure // ignore: cast_nullable_to_non_nullable
+                  as Failure?,
+      ),
+    );
   }
 }
 
 /// @nodoc
 
-class _$ArchivesStateImpl implements _ArchivesState {
-  const _$ArchivesStateImpl(
-      {this.status = Status.UNKNOWN,
-      this.archiveStatus = Status.UNKNOWN,
-      this.filterType = ArchivesFilterType.Today,
-      final List<ArchivesFilterType> filters = const [
-        ArchivesFilterType.All,
-        ArchivesFilterType.Today,
-        ArchivesFilterType.Week,
-        ArchivesFilterType.month
-      ],
-      this.startFilterDate,
-      this.endFilterDate,
-      this.statusFilter,
-      this.textController,
-      this.archives,
-      this.selectArchiveDetail,
-      this.selectArchive,
-      this.failure})
-      : _filters = filters;
+class _$ArchivesStateImpl extends _ArchivesState with DiagnosticableTreeMixin {
+  const _$ArchivesStateImpl({
+    this.status = Status.UNKNOWN,
+    this.archiveStatus = Status.UNKNOWN,
+    this.filterType = ArchivesFilterType.Today,
+    final List<ArchivesFilterType> filters = const [
+      ArchivesFilterType.All,
+      ArchivesFilterType.Today,
+      ArchivesFilterType.Week,
+      ArchivesFilterType.month,
+    ],
+    this.startFilterDate,
+    this.endFilterDate,
+    this.statusFilter,
+    this.textController,
+    this.archives,
+    this.summary = const ArchivesSummaryEntity(),
+    this.loadedLimit = kArchivesPageSize,
+    this.isLoadingMore = false,
+    this.selectArchiveDetail,
+    this.selectArchive,
+    this.failure,
+  }) : _filters = filters,
+       super._();
 
   @override
   @JsonKey()
@@ -2740,6 +3214,24 @@ class _$ArchivesStateImpl implements _ArchivesState {
   final TextEditingController? textController;
   @override
   final ArchivesResponseEntity? archives;
+
+  /// Totals for the whole filtered window — not a fold over [archives],
+  /// which only ever holds what has been scrolled to.
+  @override
+  @JsonKey()
+  final ArchivesSummaryEntity summary;
+
+  /// How many rows the current query asks for. Grows by
+  /// [kArchivesPageSize] each time the operator reaches the end of the list.
+  @override
+  @JsonKey()
+  final int loadedLimit;
+
+  /// A window growth is in flight — the list shows a footer spinner and
+  /// ignores further load-more requests until it lands.
+  @override
+  @JsonKey()
+  final bool isLoadingMore;
   @override
   final ArchiveDetailEntity? selectArchiveDetail;
   @override
@@ -2748,8 +3240,30 @@ class _$ArchivesStateImpl implements _ArchivesState {
   final Failure? failure;
 
   @override
-  String toString() {
-    return 'ArchivesState(status: $status, archiveStatus: $archiveStatus, filterType: $filterType, filters: $filters, startFilterDate: $startFilterDate, endFilterDate: $endFilterDate, statusFilter: $statusFilter, textController: $textController, archives: $archives, selectArchiveDetail: $selectArchiveDetail, selectArchive: $selectArchive, failure: $failure)';
+  String toString({DiagnosticLevel minLevel = DiagnosticLevel.info}) {
+    return 'ArchivesState(status: $status, archiveStatus: $archiveStatus, filterType: $filterType, filters: $filters, startFilterDate: $startFilterDate, endFilterDate: $endFilterDate, statusFilter: $statusFilter, textController: $textController, archives: $archives, summary: $summary, loadedLimit: $loadedLimit, isLoadingMore: $isLoadingMore, selectArchiveDetail: $selectArchiveDetail, selectArchive: $selectArchive, failure: $failure)';
+  }
+
+  @override
+  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+    super.debugFillProperties(properties);
+    properties
+      ..add(DiagnosticsProperty('type', 'ArchivesState'))
+      ..add(DiagnosticsProperty('status', status))
+      ..add(DiagnosticsProperty('archiveStatus', archiveStatus))
+      ..add(DiagnosticsProperty('filterType', filterType))
+      ..add(DiagnosticsProperty('filters', filters))
+      ..add(DiagnosticsProperty('startFilterDate', startFilterDate))
+      ..add(DiagnosticsProperty('endFilterDate', endFilterDate))
+      ..add(DiagnosticsProperty('statusFilter', statusFilter))
+      ..add(DiagnosticsProperty('textController', textController))
+      ..add(DiagnosticsProperty('archives', archives))
+      ..add(DiagnosticsProperty('summary', summary))
+      ..add(DiagnosticsProperty('loadedLimit', loadedLimit))
+      ..add(DiagnosticsProperty('isLoadingMore', isLoadingMore))
+      ..add(DiagnosticsProperty('selectArchiveDetail', selectArchiveDetail))
+      ..add(DiagnosticsProperty('selectArchive', selectArchive))
+      ..add(DiagnosticsProperty('failure', failure));
   }
 
   @override
@@ -2773,6 +3287,11 @@ class _$ArchivesStateImpl implements _ArchivesState {
                 other.textController == textController) &&
             (identical(other.archives, archives) ||
                 other.archives == archives) &&
+            (identical(other.summary, summary) || other.summary == summary) &&
+            (identical(other.loadedLimit, loadedLimit) ||
+                other.loadedLimit == loadedLimit) &&
+            (identical(other.isLoadingMore, isLoadingMore) ||
+                other.isLoadingMore == isLoadingMore) &&
             (identical(other.selectArchiveDetail, selectArchiveDetail) ||
                 other.selectArchiveDetail == selectArchiveDetail) &&
             (identical(other.selectArchive, selectArchive) ||
@@ -2782,19 +3301,23 @@ class _$ArchivesStateImpl implements _ArchivesState {
 
   @override
   int get hashCode => Object.hash(
-      runtimeType,
-      status,
-      archiveStatus,
-      filterType,
-      const DeepCollectionEquality().hash(_filters),
-      startFilterDate,
-      endFilterDate,
-      statusFilter,
-      textController,
-      archives,
-      selectArchiveDetail,
-      selectArchive,
-      failure);
+    runtimeType,
+    status,
+    archiveStatus,
+    filterType,
+    const DeepCollectionEquality().hash(_filters),
+    startFilterDate,
+    endFilterDate,
+    statusFilter,
+    textController,
+    archives,
+    summary,
+    loadedLimit,
+    isLoadingMore,
+    selectArchiveDetail,
+    selectArchive,
+    failure,
+  );
 
   @JsonKey(ignore: true)
   @override
@@ -2803,20 +3326,25 @@ class _$ArchivesStateImpl implements _ArchivesState {
       __$$ArchivesStateImplCopyWithImpl<_$ArchivesStateImpl>(this, _$identity);
 }
 
-abstract class _ArchivesState implements ArchivesState {
-  const factory _ArchivesState(
-      {final Status status,
-      final Status archiveStatus,
-      final ArchivesFilterType filterType,
-      final List<ArchivesFilterType> filters,
-      final DateTime? startFilterDate,
-      final DateTime? endFilterDate,
-      final String? statusFilter,
-      final TextEditingController? textController,
-      final ArchivesResponseEntity? archives,
-      final ArchiveDetailEntity? selectArchiveDetail,
-      final ArchiveEntity? selectArchive,
-      final Failure? failure}) = _$ArchivesStateImpl;
+abstract class _ArchivesState extends ArchivesState {
+  const factory _ArchivesState({
+    final Status status,
+    final Status archiveStatus,
+    final ArchivesFilterType filterType,
+    final List<ArchivesFilterType> filters,
+    final DateTime? startFilterDate,
+    final DateTime? endFilterDate,
+    final String? statusFilter,
+    final TextEditingController? textController,
+    final ArchivesResponseEntity? archives,
+    final ArchivesSummaryEntity summary,
+    final int loadedLimit,
+    final bool isLoadingMore,
+    final ArchiveDetailEntity? selectArchiveDetail,
+    final ArchiveEntity? selectArchive,
+    final Failure? failure,
+  }) = _$ArchivesStateImpl;
+  const _ArchivesState._() : super._();
 
   @override
   Status get status;
@@ -2836,6 +3364,18 @@ abstract class _ArchivesState implements ArchivesState {
   TextEditingController? get textController;
   @override
   ArchivesResponseEntity? get archives;
+  @override
+  /// Totals for the whole filtered window — not a fold over [archives],
+  /// which only ever holds what has been scrolled to.
+  ArchivesSummaryEntity get summary;
+  @override
+  /// How many rows the current query asks for. Grows by
+  /// [kArchivesPageSize] each time the operator reaches the end of the list.
+  int get loadedLimit;
+  @override
+  /// A window growth is in flight — the list shows a footer spinner and
+  /// ignores further load-more requests until it lands.
+  bool get isLoadingMore;
   @override
   ArchiveDetailEntity? get selectArchiveDetail;
   @override

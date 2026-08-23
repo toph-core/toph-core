@@ -88,11 +88,29 @@ class AuthDatasourceImpl implements AuthDatasource {
     final BrandIdTokenPair? brandIdToken = await _tokenStorage.readBrandIdToken();
     if (brandIdToken == null) return const Left(UnknownFailure());
 
-    // Offline-first: internet yo'q bo'lsa API ga murojaat qilib vaqt
-    // sarflamasdan darhol cache dan (LoginPinCubit.login() bilan bir xil
-    // naqsh — §11 Phase 6, offline manager-pincode tekshiruvi).
+    // Local first, and not only when offline. This used to consult the cache
+    // only after a failed request, so an authorization prompt in the middle of
+    // an order — a void, a discount — waited on the network every time the
+    // terminal happened to have connectivity. A PIN this terminal has already
+    // verified is answered here, with no request; the same inversion
+    // `LoginPinCubit.login` makes, for the same reason.
+    //
+    // Revocation still works, one attempt later: [_revalidateInBackground]
+    // purges a PIN the server has since rejected, so the next prompt refuses
+    // it. Offline that was already the behaviour.
+    final cached = await _offlineAuthCache.getForPin(
+      brandIdToken.brandId,
+      pincode,
+    );
+    if (cached != null) {
+      _revalidateInBackground(brandIdToken, pincode);
+      return Right(UserModel.fromJson(cached.userModelJson));
+    }
+
+    // No local answer — this PIN has not been verified on this terminal, or it
+    // was revoked and purged. Only the server can settle it.
     if (!_client.isOnline) {
-      return _verifyFromCache(brandIdToken.brandId, pincode);
+      return const Left(ConnectionFailure());
     }
 
     try {
@@ -130,13 +148,10 @@ class AuthDatasourceImpl implements AuthDatasource {
         await _offlineAuthCache.removeForPin(brandIdToken.brandId, pincode);
         return Left(failure);
       }
-      // Ulanish/timeout/server xatosi — aniq javob yo'q, cache'dan urinib
-      // ko'ramiz.
-      return _verifyFromCache(
-        brandIdToken.brandId,
-        pincode,
-        fallbackFailure: failure,
-      );
+      // Ulanish/timeout/server xatosi — aniq javob yo'q. Cache'ga qaytib
+      // urinishning ma'nosi yo'q: bu yerga faqat cache'da javob topilmagani
+      // uchun kelinadi, shuning uchun xatoni o'zini qaytaramiz.
+      return Left(failure);
     } on FormatException catch (e, st) {
       if (kDebugMode) print('ParsingError: $e\n$st');
       return const Left(ParsingFailure());
@@ -149,14 +164,45 @@ class AuthDatasourceImpl implements AuthDatasource {
     }
   }
 
-  Future<Either<Failure, UserModel>> _verifyFromCache(
-    String brandId,
-    String pincode, {
-    Failure fallbackFailure = const ConnectionFailure(),
-  }) async {
-    final cached = await _offlineAuthCache.getForPin(brandId, pincode);
-    if (cached == null) return Left(fallbackFailure);
-    return Right(UserModel.fromJson(cached.userModelJson));
+  /// Re-checks a cache-served role PIN against the server, after the caller
+  /// has already been answered.
+  ///
+  /// Not awaited and silent by design: its only effect is to purge a PIN the
+  /// server now rejects, so the next authorization prompt refuses it. A
+  /// transport failure means nothing was learned, so nothing is done — and it
+  /// never writes tokens, because this is a role check, not a session.
+  void _revalidateInBackground(BrandIdTokenPair brandIdToken, String pincode) {
+    if (!_client.isOnline) return;
+    unawaited(() async {
+      try {
+        final response = await _client.post(
+          ListAPI.loginPinCode,
+          data: LoginRequestModel(
+            brandId: brandIdToken.brandId,
+            password: brandIdToken.password,
+            pincode: pincode,
+          ).toJson(),
+        );
+        final LoginResponse model = LoginResponse.fromJson(response.data['data']);
+        final user = model.user;
+        if (user == null) return;
+        // Keep the cached role current too — a waiter promoted to manager on
+        // another terminal should not have to wait for a cache miss.
+        await _offlineAuthCache.saveForPin(
+          brandId: brandIdToken.brandId,
+          pincode: pincode,
+          user: user,
+          accessToken: model.accessToken,
+          refreshToken: model.refreshToken,
+        );
+      } on DioException catch (exception) {
+        if (handleDioException(exception).isDefiniteAuthRejection) {
+          await _offlineAuthCache.removeForPin(brandIdToken.brandId, pincode);
+        }
+      } catch (_) {
+        // Background hygiene; a throw here must not surface anywhere.
+      }
+    }());
   }
 
   @override

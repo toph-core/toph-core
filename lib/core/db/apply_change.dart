@@ -59,10 +59,57 @@ class ApplyStats {
       'failed: $failed)';
 }
 
+/// One row this terminal changed on its own authority, on its way to the LAN.
+///
+/// [payload] is the raw row as the writer supplied it, *not* the normalized
+/// form stored in SQLite: a peer runs it back through the same
+/// [PayloadNormalizer] on the way in, so both replicas derive their columns
+/// from identical input by the identical function. Null for a delete.
+typedef LocalChangeSink = void Function({
+  required String entity,
+  required String action,
+  required String id,
+  Map<String, dynamic>? payload,
+});
+
 class ChangeApplier {
   final LocalDatabase _db;
 
-  const ChangeApplier(this._db);
+  /// Where locally-originated rows go so other terminals on the LAN can apply
+  /// them. Null on a terminal with no hub wiring, and on every applier a test
+  /// builds without one — the whole local-first path works unchanged without
+  /// it, which is the point: peer propagation is additive.
+  final LocalChangeSink? _onLocalChange;
+
+  /// True while [applyFromPeer] is running.
+  ///
+  /// The hub already fans a message out to every other terminal
+  /// (`LanHubServer._broadcastExcept`), so a receiver that re-emitted what it
+  /// just applied would put the leader and its followers in a permanent echo.
+  /// One flag, checked at the single emission point, is what keeps the feed
+  /// one-hop — and it is safe as a plain bool because an apply is synchronous
+  /// and Dart is single-threaded.
+  bool _fromPeer = false;
+
+  ChangeApplier(this._db, {LocalChangeSink? onLocalChange})
+      : _onLocalChange = onLocalChange;
+
+  /// Queues [_onLocalChange] for after the current transaction commits.
+  ///
+  /// Deferred rather than immediate so a rolled-back write is never seen by a
+  /// peer — see [LocalDatabase.afterCommit].
+  void _emitLocalChange({
+    required String entity,
+    required String action,
+    required String id,
+    Map<String, dynamic>? payload,
+  }) {
+    final sink = _onLocalChange;
+    if (sink == null || _fromPeer) return;
+    _db.afterCommit(
+      () => sink(entity: entity, action: action, id: id, payload: payload),
+    );
+  }
 
   /// Applies a decoded `POST /api/v1/sync/pull` response body.
   ///
@@ -189,8 +236,52 @@ class ChangeApplier {
     // acknowledged (Phase 2), after which the server's version takes over.
     if (_db.isPending(spec.name, id)) return stats._add(skippedPending: 1);
 
+    _retireClientTwin(spec, id, raw);
+
     _db.upsert(spec, id, PayloadNormalizer.normalize(spec, raw));
     return stats._add(applied: 1);
+  }
+
+  /// Removes the client-invented row this server row supersedes.
+  ///
+  /// `order_items` is the one replicated entity whose primary key the backend
+  /// does **not** take from the client. `LocalWriter.write`'s contract — "the
+  /// id a terminal invents offline is the id the row keeps forever" — is true
+  /// of `orders`, whose create honours a client-supplied id, and false here:
+  /// both `CreateOrder` and `AddOrderItems` mint `uuid.New()` and ignore
+  /// whatever `id` the request carried (`back/internal/service/order.go`).
+  ///
+  /// So a line rung on this terminal was written locally under a client uuid
+  /// and came back on the feed under a different one, and nothing connected
+  /// the two. The replica kept both. One physical line, two rows — and every
+  /// read that sums `order_items` (the open check, the payment screen, the
+  /// kitchen receipt) counted it twice, while the archive read its total off
+  /// the server's `food_total` and stayed right. That is the split a cashier
+  /// sees as "the table says 1 000 000 and the orders tab says 500 000".
+  ///
+  /// `client_item_id` (`migrations/tenants/70_order_items_client_id.up.sql`)
+  /// is the key the backend does honour, and it rides back on the server row.
+  /// So the twin is identified exactly, by the id this terminal chose — never
+  /// by matching on good, price or timestamp, which would eventually retire a
+  /// line the operator rang twice on purpose.
+  ///
+  /// Deleted through the same emit as any other change: peers were told about
+  /// the local row when it was written and have to be told it is gone.
+  void _retireClientTwin(
+    EntitySpec spec,
+    String serverId,
+    Map<String, dynamic> raw,
+  ) {
+    if (spec.name != 'order_items') return;
+    final clientId = raw['client_item_id']?.toString();
+    if (clientId == null || clientId.isEmpty || clientId == serverId) return;
+    if (_db.byId(spec.name, clientId) == null) return;
+    _db.deleteRow(spec.name, clientId);
+    // The twin is gone, so its guards have nothing left to guard. Left behind
+    // they would shield an id no row has from every future pull.
+    _db.clearPending(spec.name, clientId);
+    _db.clearProvisional(spec.name, clientId);
+    _emitLocalChange(entity: spec.name, action: 'delete', id: clientId);
   }
 
   /// Applies a single change. The entry point for the Phase 5 LAN relay and for
@@ -209,7 +300,20 @@ class ChangeApplier {
         case 'create':
         case 'update':
           if (payload == null) return const ApplyStats(failed: 1);
-          return _applyUpsert(spec, payload, const ApplyStats());
+          final stats = _applyUpsert(spec, payload, const ApplyStats());
+          // Only a row that actually landed is worth telling peers about — a
+          // pending-skip means this terminal kept its own version, so there is
+          // nothing new here to hand on.
+          if (stats.applied > 0) {
+            final id = payload[spec.pk]!.toString();
+            _emitLocalChange(
+              entity: entity,
+              action: action,
+              id: id,
+              payload: payload,
+            );
+          }
+          return stats;
         case 'delete':
           final id = entityId ?? payload?[spec.pk]?.toString();
           if (id == null || id.isEmpty) return const ApplyStats(failed: 1);
@@ -217,11 +321,42 @@ class ChangeApplier {
             return const ApplyStats(skippedPending: 1);
           }
           _db.deleteRow(entity, id);
+          _emitLocalChange(entity: entity, action: 'delete', id: id);
           return const ApplyStats(deleted: 1);
         default:
           return const ApplyStats(failed: 1);
       }
     });
+  }
+
+  /// Applies a row another terminal on this LAN just wrote.
+  ///
+  /// Identical to [applyOne] in every respect but one: it does not re-emit.
+  /// The row reached this terminal because the hub already fanned it out to
+  /// everyone, so passing it on again would be an echo, not replication.
+  ///
+  /// Note what this deliberately does *not* do — mark the row pending, or
+  /// enqueue anything. The terminal that originated the write owns its trip to
+  /// the server; a peer holds the row only so its operator can see it, and
+  /// lets the next cloud pull replace it with the canonical version. Two
+  /// terminals queuing the same create is exactly the duplicate this avoids.
+  ApplyStats applyFromPeer({
+    required String entity,
+    required String action,
+    String? entityId,
+    Map<String, dynamic>? payload,
+  }) {
+    _fromPeer = true;
+    try {
+      return applyOne(
+        entity: entity,
+        action: action,
+        entityId: entityId,
+        payload: payload,
+      );
+    } finally {
+      _fromPeer = false;
+    }
   }
 
   /// Writes a locally-originated row and guards it against replication until
@@ -240,6 +375,34 @@ class ChangeApplier {
     _db.transaction(() {
       _db.upsert(spec, id, PayloadNormalizer.normalize(spec, payload));
       _db.markPending(entity, id);
+      // Peers get the row itself, never the pending guard: the guard says
+      // "this terminal owes the server a write", which is true here and false
+      // everywhere else.
+      _emitLocalChange(
+        entity: entity,
+        action: 'update',
+        id: id,
+        payload: payload,
+      );
+    });
+  }
+
+  /// Removes a locally-deleted row and guards it against replication until the
+  /// outbox confirms the delete — the delete-shaped twin of [applyLocalWrite],
+  /// and `LocalWriter.delete`'s way of reaching peers.
+  ///
+  /// Separate from [applyOne]'s `delete` branch because the two mean different
+  /// things: this one asserts local authority over the row, where `applyOne`
+  /// yields to it.
+  void applyLocalDelete({required String entity, required String id}) {
+    final spec = kEntitiesByName[entity];
+    if (spec == null) {
+      throw ArgumentError.value(entity, 'entity', 'not a replicated entity');
+    }
+    _db.transaction(() {
+      _db.deleteRow(entity, id);
+      _db.markPending(entity, id);
+      _emitLocalChange(entity: entity, action: 'delete', id: id);
     });
   }
 
