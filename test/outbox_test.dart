@@ -491,4 +491,33 @@ void main() {
       expect(store.quarantineDepth, 0);
     });
   });
+
+  group('replay order is enqueue order', () {
+    // The bug this pins: `ready()` used to tie-break on `id`, a random UUID,
+    // while `created_at` is only millisecond resolution. An order and its own
+    // line items are enqueued in one synchronous call, so they share a
+    // millisecond and sorted randomly — and a line sent before the order that
+    // owns it is a 4xx, which this outbox treats as permanent, so the line was
+    // dropped outright.
+    test('operations enqueued in the same millisecond keep insertion order',
+        () {
+      final db = LocalDatabase.open(':memory:');
+      addTearDown(db.dispose);
+      final store = OutboxStore(db);
+
+      // Ids deliberately chosen so UUID-ish lexical order contradicts
+      // insertion order: sorting on `id` would return them reversed.
+      const ids = ['zzz-order', 'mmm-item-1', 'aaa-item-2'];
+      for (final id in ids) {
+        store.enqueue(
+          id: id,
+          entity: id == 'zzz-order' ? 'orders' : 'order_items',
+          action: 'create',
+          entityId: id,
+        );
+      }
+
+      expect(store.ready().map((op) => op.id), ids);
+    });
+  });
 }

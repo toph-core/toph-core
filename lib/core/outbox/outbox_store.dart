@@ -79,11 +79,30 @@ class OutboxStore {
   /// preserves those dependencies without encoding any of them. Grouping by
   /// type, which the Hive queue did, actively breaks this: it reorders a
   /// pause→resume→pause timer sequence into something that never happened.
+  /// Operations due for a send attempt, oldest first.
+  ///
+  /// The tie-break is `rowid`, not `id`, and that is the whole point.
+  /// `created_at` is millisecond resolution while `id` is a random UUID, so two
+  /// operations enqueued inside the same millisecond — an order and its own
+  /// line items, which is the common case, since they are written in one
+  /// synchronous call — sorted in *random* order. When a line sorted ahead of
+  /// the order that owns it, the server was asked to attach a line to an order
+  /// it had never heard of; that is a 4xx, which this outbox treats as
+  /// permanent, so the line was dropped and never retried.
+  ///
+  /// The chain-key mechanism in `OutboxDrainer` does not save this. It holds a
+  /// chain back once one of its operations has *failed*, which is one pass too
+  /// late — within a single pass the drainer iterates in exactly this order.
+  ///
+  /// `rowid` is sqlite's implicit insertion counter (this table has a TEXT
+  /// primary key, so it is a rowid table and one exists). It is monotonic per
+  /// insert, which makes replay order equal enqueue order and makes causality a
+  /// property of the queue rather than something each handler has to defend.
   List<OutboxOperation> ready({int limit = 100}) {
     final rows = _db.select(
       'SELECT * FROM ${LocalTables.outbox} '
       'WHERE status = ? AND next_attempt_at <= ? '
-      'ORDER BY created_at ASC, id ASC LIMIT ?',
+      'ORDER BY created_at ASC, rowid ASC LIMIT ?',
       [OutboxStatus.pending.name, _now().millisecondsSinceEpoch, limit],
     );
     return [for (final row in rows) OutboxOperation.fromRow(row)];
