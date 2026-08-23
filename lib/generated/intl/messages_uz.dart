@@ -111,6 +111,8 @@ class MessageLookup extends MessageLookupByLibrary {
         "strAverageCheck":
             MessageLookupByLibrary.simpleMessage("O\'rtacha chek"),
         "strAverageShort": MessageLookupByLibrary.simpleMessage("o\'rt."),
+        "strAwaitingServerData": MessageLookupByLibrary.simpleMessage(
+            "Hozircha serverdan kelmayapti"),
         "strBackToScreen":
             MessageLookupByLibrary.simpleMessage("Orqaga qaytish"),
         "strBillSuffix": MessageLookupByLibrary.simpleMessage("hisob"),
@@ -707,10 +709,14 @@ class MessageLookup extends MessageLookupByLibrary {
             MessageLookupByLibrary.simpleMessage("Tranzaksiyalar"),
         "strTransactionsAdminOnly": MessageLookupByLibrary.simpleMessage(
             "Tranzaksiyalarga faqat administrator, menejer yoki kassir kira oladi."),
+        "strTransactionsAwaitingServerHint": MessageLookupByLibrary.simpleMessage(
+            "Tranzaksiyalar bu terminalga hali yuborilmayapti. Yangi yozuvlar baribir saqlanadi va serverga jo\'natiladi."),
         "strTransfer": MessageLookupByLibrary.simpleMessage("Ko\'chirish"),
         "strTuesday": MessageLookupByLibrary.simpleMessage("Seshanba"),
         "strTxnGroupLabel": MessageLookupByLibrary.simpleMessage("Guruh"),
         "strTxnGroupName": MessageLookupByLibrary.simpleMessage("Guruh nomi"),
+        "strTxnGroupsAwaitingServerHint": MessageLookupByLibrary.simpleMessage(
+            "Guruhlar bu terminalga hali yuborilmayapti. Yangi guruhlar baribir saqlanadi va serverga jo\'natiladi."),
         "strTxnGroupsTitle": MessageLookupByLibrary.simpleMessage("Guruhlar"),
         "strTxnTransfer": MessageLookupByLibrary.simpleMessage("O\'tkazma"),
         "strTypeColumnHeader": MessageLookupByLibrary.simpleMessage("Tur"),

@@ -1,3 +1,4 @@
+import 'package:mary_ai_pos/core/db/entity_registry.dart';
 import 'package:mary_ai_pos/core/db/local_database.dart';
 
 /// OFFLINE_FIRST_EVERYWHERE_PLAN.md Phase 4 — the transactions list screen's
@@ -21,6 +22,21 @@ class TransactionsQuery {
   /// The list rebuilds when any transaction changes, so a sale rung on another
   /// terminal appears without a reload.
   static const watchedTables = {'transactions'};
+
+  static const _table = 'transactions';
+
+  /// True while the ledger cannot receive a row from `/sync/pull`.
+  ///
+  /// Same question, same shape, same reason as
+  /// `TransactionPickersQuery.awaitingBackendReplication`: a screen showing an
+  /// empty ledger needs to know whether it is looking at "no cash has moved" or
+  /// "the server is not sending the ledger yet", and those deserve different
+  /// words. It reads the registry rather than counting rows, so it is honest
+  /// even on a venue that genuinely has no transactions, and it flips to
+  /// `false` on its own once the entry is marked live —
+  /// `test/registry_backend_pin_test.dart` forces that to happen as soon as the
+  /// backend trigger exists.
+  bool get awaitingBackendReplication => !isFedByChangeLog(_table);
 
   /// One page of the ledger, newest first — the order the server returned.
   List<Map<String, dynamic>> transactions({

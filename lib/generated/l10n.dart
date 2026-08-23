@@ -1510,6 +1510,36 @@ class S {
     );
   }
 
+  /// `Not synced yet`
+  String get strAwaitingServerData {
+    return Intl.message(
+      'Not synced yet',
+      name: 'strAwaitingServerData',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Transactions are not being sent to this terminal yet. New entries are still saved and sent to the server.`
+  String get strTransactionsAwaitingServerHint {
+    return Intl.message(
+      'Transactions are not being sent to this terminal yet. New entries are still saved and sent to the server.',
+      name: 'strTransactionsAwaitingServerHint',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Groups are not being sent to this terminal yet. New groups are still saved and sent to the server.`
+  String get strTxnGroupsAwaitingServerHint {
+    return Intl.message(
+      'Groups are not being sent to this terminal yet. New groups are still saved and sent to the server.',
+      name: 'strTxnGroupsAwaitingServerHint',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Required`
   String get strFieldRequired {
     return Intl.message(

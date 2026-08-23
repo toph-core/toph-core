@@ -109,6 +109,8 @@ class MessageLookup extends MessageLookupByLibrary {
             MessageLookupByLibrary.simpleMessage("Доступные элементы"),
         "strAverageCheck": MessageLookupByLibrary.simpleMessage("Средний чек"),
         "strAverageShort": MessageLookupByLibrary.simpleMessage("ср."),
+        "strAwaitingServerData":
+            MessageLookupByLibrary.simpleMessage("Пока не приходит с сервера"),
         "strBackToScreen": MessageLookupByLibrary.simpleMessage("Назад"),
         "strBillSuffix": MessageLookupByLibrary.simpleMessage("счёт"),
         "strBusy": MessageLookupByLibrary.simpleMessage("Занят"),
@@ -696,11 +698,15 @@ class MessageLookup extends MessageLookupByLibrary {
         "strTransactions": MessageLookupByLibrary.simpleMessage("Транзакции"),
         "strTransactionsAdminOnly": MessageLookupByLibrary.simpleMessage(
             "Доступ к транзакциям есть только у администратора, менеджера или кассира."),
+        "strTransactionsAwaitingServerHint": MessageLookupByLibrary.simpleMessage(
+            "Транзакции пока не приходят на этот терминал. Новые записи всё равно сохраняются и отправляются на сервер."),
         "strTransfer": MessageLookupByLibrary.simpleMessage("Перенести"),
         "strTuesday": MessageLookupByLibrary.simpleMessage("Вторник"),
         "strTxnGroupLabel": MessageLookupByLibrary.simpleMessage("Группа"),
         "strTxnGroupName":
             MessageLookupByLibrary.simpleMessage("Название группы"),
+        "strTxnGroupsAwaitingServerHint": MessageLookupByLibrary.simpleMessage(
+            "Группы пока не приходят на этот терминал. Новые группы всё равно сохраняются и отправляются на сервер."),
         "strTxnGroupsTitle": MessageLookupByLibrary.simpleMessage("Группы"),
         "strTxnTransfer": MessageLookupByLibrary.simpleMessage("Перевод"),
         "strTypeColumnHeader": MessageLookupByLibrary.simpleMessage("Тип"),

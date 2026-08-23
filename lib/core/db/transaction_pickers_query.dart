@@ -10,22 +10,18 @@ import 'package:mary_ai_pos/core/db/local_database.dart';
 /// `TransactionsQuery` — these read every live row with no branch filter and
 /// return the raw server map the pickers already decode (`id`, `name`).
 ///
-/// **Both tables are empty today, and that is a server-side gap, not a bug
-/// here.** The comment this replaces claimed "tenants migration 70
-/// (change_log_missing_triggers) added the `group_transactions` and
-/// `cash_registers` triggers and backfilled the live rows". No such migration
-/// exists — the backend's highest tenant migration is
-/// `70_order_items_client_id`, and the eight-trigger migration that comment
-/// describes is written but unmerged (SERVER_PLAN.md P0-1). So no row ever
-/// arrives for either table, and nothing writes them locally.
+/// **Whether either table can receive a row is a server-side question, and
+/// this class answers it out loud.** Both are fed by a `trg_change_log_*`
+/// trigger; while one is missing, its picker renders a blank list that reads
+/// as "this venue has none" — a different statement, and a wrong one.
+/// [awaitingBackendReplication] is the difference between the two, so a picker
+/// can say the second rather than implying the first.
 ///
-/// The queries below are correct and stay as they are; what changes is that
-/// the emptiness is now *legible*. [awaitingBackendReplication] answers
-/// whether a caller is looking at "this venue has no cash registers" or "the
-/// server is not sending them yet", so a picker can say the second out loud
-/// instead of showing a blank list. [kEntitiesAwaitingBackendTrigger] is the
-/// registry-level record and `test/registry_backend_pin_test.dart` pins it to
-/// the backend's SQL, so when the trigger lands this whole paragraph goes.
+/// The queries below do not change with the answer. [ReplicationStatus] on the
+/// registry entry is the record, and `test/registry_backend_pin_test.dart`
+/// pins it to the backend's own SQL in both directions — so these getters go
+/// false on their own when the trigger lands, and true again if it is ever
+/// dropped, without anyone editing this file.
 class TransactionPickersQuery {
   final LocalDatabase _db;
 

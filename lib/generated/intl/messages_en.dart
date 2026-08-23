@@ -105,6 +105,8 @@ class MessageLookup extends MessageLookupByLibrary {
         "strAverageCheck":
             MessageLookupByLibrary.simpleMessage("Average check"),
         "strAverageShort": MessageLookupByLibrary.simpleMessage("avg"),
+        "strAwaitingServerData":
+            MessageLookupByLibrary.simpleMessage("Not synced yet"),
         "strBackToScreen": MessageLookupByLibrary.simpleMessage("Go back"),
         "strBillSuffix": MessageLookupByLibrary.simpleMessage("bill"),
         "strBusy": MessageLookupByLibrary.simpleMessage("Busy"),
@@ -674,10 +676,14 @@ class MessageLookup extends MessageLookupByLibrary {
         "strTransactions": MessageLookupByLibrary.simpleMessage("Transactions"),
         "strTransactionsAdminOnly": MessageLookupByLibrary.simpleMessage(
             "Only administrator, manager or cashier can access transactions."),
+        "strTransactionsAwaitingServerHint": MessageLookupByLibrary.simpleMessage(
+            "Transactions are not being sent to this terminal yet. New entries are still saved and sent to the server."),
         "strTransfer": MessageLookupByLibrary.simpleMessage("Move"),
         "strTuesday": MessageLookupByLibrary.simpleMessage("Tuesday"),
         "strTxnGroupLabel": MessageLookupByLibrary.simpleMessage("Group"),
         "strTxnGroupName": MessageLookupByLibrary.simpleMessage("Group name"),
+        "strTxnGroupsAwaitingServerHint": MessageLookupByLibrary.simpleMessage(
+            "Groups are not being sent to this terminal yet. New groups are still saved and sent to the server."),
         "strTxnGroupsTitle": MessageLookupByLibrary.simpleMessage("Groups"),
         "strTxnTransfer": MessageLookupByLibrary.simpleMessage("Transfer"),
         "strTypeColumnHeader": MessageLookupByLibrary.simpleMessage("Type"),

@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:dartz/dartz.dart' show Either;
+import 'package:dartz/dartz.dart' show Either, Unit;
 import 'package:flutter/material.dart';
 import 'package:mary_ai_pos/core/components/flush_bars.dart';
 import 'package:mary_ai_pos/core/error/failure.dart';
@@ -75,26 +75,24 @@ class _TransactionsListSectionState extends State<TransactionsListSection> {
       NumberPaginatorController();
   final TextEditingController _searchCtrl = TextEditingController();
 
-  bool _loading = true;
-  String? _error;
   List<_Transaction> _transactions = const [];
   List<_Option> _cashRegisters = const [];
   List<_Option> _categories = const [];
   StreamSubscription<List<Map<String, dynamic>>>? _cashRegistersSub;
   StreamSubscription<List<Map<String, dynamic>>>? _groupsSub;
+  StreamSubscription<TransactionsPage>? _ledgerSub;
 
   int _page = 1;
   int _pageSize = 20;
-  int? _totalCount;
+  int _totalCount = 0;
   String? _typeFilter;
   String? _cashRegisterFilter;
   String _searchQuery = '';
   Timer? _searchDebounce;
 
   int get _totalPages {
-    final t = _totalCount;
-    if (t == null || t <= 0) return 1;
-    final p = (t + _pageSize - 1) ~/ _pageSize;
+    if (_totalCount <= 0) return 1;
+    final p = (_totalCount + _pageSize - 1) ~/ _pageSize;
     return p > 0 ? p : 1;
   }
 
@@ -102,26 +100,32 @@ class _TransactionsListSectionState extends State<TransactionsListSection> {
   void initState() {
     super.initState();
     _loadOptions();
-    _load(page: 1);
+    // The first page synchronously, so the first frame already has rows. The
+    // read is a local SELECT — there is no interval between asking and being
+    // answered for a spinner to fill, which is why this screen no longer has
+    // one.
+    _apply(_controller.getTransactions(
+      limit: _pageSize,
+      offset: 0,
+      search: null,
+      type: null,
+      cashRegisterId: null,
+    ));
+    _subscribeToLedger();
   }
 
   @override
   void dispose() {
     _cashRegistersSub?.cancel();
     _groupsSub?.cancel();
+    _ledgerSub?.cancel();
     _searchDebounce?.cancel();
     _paginatorController.dispose();
     _searchCtrl.dispose();
     super.dispose();
   }
 
-  /// offline-first-target-architecture.md §8 Phase 5: reactive reads over
-  /// TransactionsRepository/LocalDatabase (already hydrated by SyncEngine,
-  /// §8 Phase 1) instead of a fetch-on-init — both are small filter/picker
-  /// option lists, not the paginated ledger itself (`_load` below, which
-  /// stays a direct paginated `MainRepository.getTransactions` call — no
-  /// bounded local mirror to page through instead, same reasoning already
-  /// used elsewhere in this codebase for live search).
+  /// The two filter/picker option lists, live from the replica.
   void _loadOptions() {
     _cashRegistersSub = _controller.watchCashRegisters().listen((registers) {
       if (!mounted) return;
@@ -133,31 +137,51 @@ class _TransactionsListSectionState extends State<TransactionsListSection> {
     });
   }
 
-  Future<void> _load({required int page}) async {
-    setState(() {
-      _loading = true;
-      _error = null;
+  /// Re-points the ledger subscription at the current page and filters.
+  ///
+  /// Every page turn, page-size change and filter change goes through here,
+  /// and the stream re-emits on every change to `transactions` — so a sale
+  /// rung on another terminal, and this terminal's own edit, reach the list by
+  /// the same path. There is no "refetch after save" step, because there is
+  /// nothing to refetch.
+  void _subscribeToLedger() {
+    _ledgerSub?.cancel();
+    _ledgerSub = _controller
+        .watchTransactions(
+          limit: _pageSize,
+          offset: (_page - 1) * _pageSize,
+          search: _searchQuery.isEmpty ? null : _searchQuery,
+          type: _typeFilter,
+          cashRegisterId: _cashRegisterFilter,
+        )
+        .listen((page) {
+      if (!mounted) return;
+      // A delete can empty the last page. Step back rather than showing a
+      // blank list under a paginator that still offers the page.
+      if (page.items.isEmpty &&
+          page.total > 0 &&
+          (_page - 1) * _pageSize >= page.total) {
+        setState(() => _totalCount = page.total);
+        _goToPage(_totalPages);
+        return;
+      }
+      setState(() => _apply(page));
     });
-    final result = await _controller.getTransactions(
-      limit: _pageSize,
-      offset: (page - 1) * _pageSize,
-      search: _searchQuery.isEmpty ? null : _searchQuery,
-      type: _typeFilter,
-      cashRegisterId: _cashRegisterFilter,
-    );
-    if (!mounted) return;
-    result.fold(
-      (failure) => setState(() {
-        _loading = false;
-        _error = failure.getLocalizedMessage(context);
-      }),
-      (data) => setState(() {
-        _transactions = data.items.map(_Transaction.fromJson).toList();
-        _totalCount = data.total;
-        _page = page;
-        _loading = false;
-      }),
-    );
+  }
+
+  void _apply(TransactionsPage page) {
+    _transactions = page.items.map(_Transaction.fromJson).toList();
+    _totalCount = page.total;
+  }
+
+  void _goToPage(int page) {
+    if (page < 1 || page == _page) return;
+    setState(() => _page = page);
+    // Kept in step even when the move did not come from a tap — the step-back
+    // above turns pages by itself, and a paginator still highlighting the page
+    // it left would be lying about which one is on screen.
+    _paginatorController.navigateToPage(page - 1);
+    _subscribeToLedger();
   }
 
   String _optionName(List<_Option> options, String? id) {
@@ -170,8 +194,11 @@ class _TransactionsListSectionState extends State<TransactionsListSection> {
         .name;
   }
 
+  /// No reload after save. The list is a subscription to the replica, so a
+  /// write that lands locally reaches this screen the same way replication's
+  /// changes do — the old `_load(page: …)` refetch had nothing left to do.
   Future<void> _openCreateDialog() async {
-    final saved = await showDialog<bool>(
+    await showDialog<bool>(
       context: context,
       barrierDismissible: false,
       builder: (_) => _TransactionEditDialog(
@@ -180,11 +207,10 @@ class _TransactionsListSectionState extends State<TransactionsListSection> {
         categories: _categories,
       ),
     );
-    if (saved == true && mounted) _load(page: 1);
   }
 
   Future<void> _openEditDialog(_Transaction tx) async {
-    final saved = await showDialog<bool>(
+    await showDialog<bool>(
       context: context,
       barrierDismissible: false,
       builder: (_) => _TransactionEditDialog(
@@ -194,7 +220,6 @@ class _TransactionsListSectionState extends State<TransactionsListSection> {
         existing: tx,
       ),
     );
-    if (saved == true && mounted) _load(page: _page);
   }
 
   Future<void> _confirmDelete(_Transaction tx) async {
@@ -219,11 +244,12 @@ class _TransactionsListSectionState extends State<TransactionsListSection> {
       ),
     );
     if (ok != true || !mounted) return;
-    final result = await _controller.deleteTransaction(tx.id);
-    if (!mounted) return;
-    result.fold(
-      (failure) => showErrorMessage(context, failure.getLocalizedMessage(context)),
-      (_) => _load(page: _page),
+    // Synchronous: the row is gone from the replica and the DELETE is queued
+    // before this returns. Nothing to await, so nothing to fail on the network.
+    _controller.deleteTransaction(tx.id).fold(
+      (failure) =>
+          showErrorMessage(context, failure.getLocalizedMessage(context)),
+      (_) {},
     );
   }
 
@@ -231,9 +257,7 @@ class _TransactionsListSectionState extends State<TransactionsListSection> {
   Widget build(BuildContext context) {
     return SectionShell(
       title: S.current.strTransactions,
-      subtitle: _totalCount == null
-          ? null
-          : S.current.strTotalCount(_totalCount!),
+      subtitle: S.current.strTotalCount(_totalCount),
       trailing: SectionPrimaryButton(
         icon: Icons.add_rounded,
         label: S.current.strAddTransaction,
@@ -258,8 +282,13 @@ class _TransactionsListSectionState extends State<TransactionsListSection> {
     _searchDebounce?.cancel();
     _searchDebounce = Timer(const Duration(milliseconds: 350), () {
       if (!mounted) return;
-      setState(() => _searchQuery = v.trim());
-      _load(page: 1);
+      final next = v.trim();
+      if (next == _searchQuery) return;
+      setState(() {
+        _searchQuery = next;
+        _page = 1;
+      });
+      _subscribeToLedger();
     });
   }
 
@@ -291,8 +320,11 @@ class _TransactionsListSectionState extends State<TransactionsListSection> {
                       onPressed: () {
                         _searchDebounce?.cancel();
                         _searchCtrl.clear();
-                        setState(() => _searchQuery = '');
-                        _load(page: 1);
+                        setState(() {
+                          _searchQuery = '';
+                          _page = 1;
+                        });
+                        _subscribeToLedger();
                       },
                     ),
               hintText: S.current.strSearch,
@@ -328,8 +360,11 @@ class _TransactionsListSectionState extends State<TransactionsListSection> {
               ),
             ],
             onChanged: (v) {
-              setState(() => _typeFilter = v);
-              _load(page: 1);
+              setState(() {
+                _typeFilter = v;
+                _page = 1;
+              });
+              _subscribeToLedger();
             },
           ),
         ),
@@ -356,8 +391,11 @@ class _TransactionsListSectionState extends State<TransactionsListSection> {
               ),
             ],
             onChanged: (v) {
-              setState(() => _cashRegisterFilter = v);
-              _load(page: 1);
+              setState(() {
+                _cashRegisterFilter = v;
+                _page = 1;
+              });
+              _subscribeToLedger();
             },
           ),
         ),
@@ -365,37 +403,27 @@ class _TransactionsListSectionState extends State<TransactionsListSection> {
     );
   }
 
+  /// No loading branch and no error branch.
+  ///
+  /// Both existed only because the ledger was a paginated REST call: a spinner
+  /// for the round trip, a retry button for when it failed. The read is a local
+  /// `SELECT` now — it has already answered by the time this builds, and it
+  /// cannot fail with a connection error — so an empty list is the only state
+  /// left to say something about, and there are two truthful things it can
+  /// mean.
   Widget _buildBody() {
-    final colors = context.colors;
-    if (_loading) {
-      return const Center(child: CircularProgressIndicator.adaptive());
-    }
-    if (_error != null) {
-      return Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.error_outline, size: 32, color: colors.systemError),
-            const SizedBox(height: 10),
-            SizedBox(
-              width: 320,
-              child: Text(
-                _error!,
-                textAlign: TextAlign.center,
-                style: TextStyle(color: colors.systemError, fontSize: 13),
-              ),
-            ),
-            const SizedBox(height: 12),
-            SectionPrimaryButton(
-              icon: Icons.refresh_rounded,
-              label: S.current.strRetry,
-              onPressed: () => _load(page: _page),
-            ),
-          ],
-        ),
-      );
-    }
     if (_transactions.isEmpty) {
+      // Nothing the backend sends can ever reach this table yet, so an "add
+      // your first transaction" prompt would be inviting the operator to
+      // repeat a movement that did happen and simply is not shown. Writes
+      // still work and still queue; only the list is blind.
+      if (_controller.ledgerAwaitingBackendReplication) {
+        return SectionEmptyState(
+          icon: Icons.cloud_sync_outlined,
+          title: S.current.strAwaitingServerData,
+          subtitle: S.current.strTransactionsAwaitingServerHint,
+        );
+      }
       return SectionEmptyState(
         icon: Icons.receipt_long_outlined,
         title: S.current.strNoTransactionsYet,
@@ -447,10 +475,7 @@ class _TransactionsListSectionState extends State<TransactionsListSection> {
               controller: _paginatorController,
               numberPages: _totalPages,
               initialPage: (_page - 1).clamp(0, _totalPages - 1),
-              onPageChange: (i) {
-                if (_loading) return;
-                _load(page: i + 1);
-              },
+              onPageChange: (i) => _goToPage(i + 1),
               child: const SizedBox(
                 height: 40,
                 child: Row(
@@ -489,9 +514,12 @@ class _TransactionsListSectionState extends State<TransactionsListSection> {
                   )
                   .toList(),
               onChanged: (v) {
-                if (v == null || v == _pageSize || _loading) return;
-                setState(() => _pageSize = v);
-                _load(page: 1);
+                if (v == null || v == _pageSize) return;
+                setState(() {
+                  _pageSize = v;
+                  _page = 1;
+                });
+                _subscribeToLedger();
               },
             ),
           ),
@@ -718,7 +746,10 @@ class _TransactionEditDialogState extends State<_TransactionEditDialog> {
   String? _categoryId;
   String _payType = 'cash';
   late DateTime _date;
-  bool _saving = false;
+
+  /// A form validation message, or a local write that failed — a malformed
+  /// row, a disk error. Never a connection error: nothing in this dialog
+  /// touches the network.
   String? _error;
 
   bool get _isCreate => widget.existing == null;
@@ -762,8 +793,10 @@ class _TransactionEditDialogState extends State<_TransactionEditDialog> {
     if (picked != null) setState(() => _date = picked);
   }
 
-  Future<void> _save() async {
-    if (_saving) return;
+  /// Synchronous throughout: the row and its outbox operation commit before
+  /// this returns, so there is no window in which the dialog is waiting on
+  /// anything and no `_saving` spinner with a network call behind it.
+  void _save() {
     if (!(_formKey.currentState?.validate() ?? false)) return;
     if (_isCreate) {
       if (_isTransfer) {
@@ -777,15 +810,12 @@ class _TransactionEditDialogState extends State<_TransactionEditDialog> {
       }
     }
 
-    setState(() {
-      _saving = true;
-      _error = null;
-    });
+    setState(() => _error = null);
 
-    final Either<Failure, bool> result;
+    final Either<Failure, Unit> result;
     if (_isCreate) {
       if (_isTransfer) {
-        result = await widget.controller.createTransferTransaction({
+        result = widget.controller.createTransferTransaction({
           'from_cash_register_id': _fromCashRegisterId,
           'to_cash_register_id': _toCashRegisterId,
           if (_categoryId != null) 'group_transaction_id': _categoryId,
@@ -795,7 +825,7 @@ class _TransactionEditDialogState extends State<_TransactionEditDialog> {
           'date': _toApiDateTime(_date),
         });
       } else {
-        result = await widget.controller.createIncomeExpenseTransaction({
+        result = widget.controller.createIncomeExpenseTransaction({
           'type': _createType.apiValue,
           'cash_register_id': _cashRegisterId,
           if (_categoryId != null) 'group_transaction_id': _categoryId,
@@ -806,7 +836,7 @@ class _TransactionEditDialogState extends State<_TransactionEditDialog> {
         });
       }
     } else {
-      result = await widget.controller.updateTransaction(
+      result = widget.controller.updateTransaction(
         widget.existing!.id,
         {
           'amount': _rawAmount,
@@ -816,12 +846,9 @@ class _TransactionEditDialogState extends State<_TransactionEditDialog> {
         },
       );
     }
-    if (!mounted) return;
     result.fold(
-      (failure) => setState(() {
-        _saving = false;
-        _error = failure.getLocalizedMessage(context);
-      }),
+      (failure) =>
+          setState(() => _error = failure.getLocalizedMessage(context)),
       (_) => Navigator.pop(context, true),
     );
   }
@@ -860,9 +887,7 @@ class _TransactionEditDialogState extends State<_TransactionEditDialog> {
                         ),
                       ),
                       IconButton(
-                        onPressed: _saving
-                            ? null
-                            : () => Navigator.pop(context, false),
+                        onPressed: () => Navigator.pop(context, false),
                         icon: const Icon(Icons.close_rounded),
                         color: colors.textSecondary,
                       ),
@@ -1085,31 +1110,21 @@ class _TransactionEditDialogState extends State<_TransactionEditDialog> {
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [
                       TextButton(
-                        onPressed: _saving
-                            ? null
-                            : () => Navigator.pop(context, false),
+                        onPressed: () => Navigator.pop(context, false),
                         child: Text(S.current.strCancelShort),
                       ),
                       const SizedBox(width: 6),
+                      // No busy state: the save commits locally and pops. The
+                      // spinner that used to live here was the network round
+                      // trip, and there is no longer one to wait for.
                       ElevatedButton(
-                        onPressed: _saving ? null : _save,
+                        onPressed: _save,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: colors.buttonBrand,
                           foregroundColor: colors.textOnBrand,
                           elevation: 0,
                         ),
-                        child: _saving
-                            ? const SizedBox(
-                                width: 14,
-                                height: 14,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 1.5,
-                                  valueColor: AlwaysStoppedAnimation(
-                                    Colors.white,
-                                  ),
-                                ),
-                              )
-                            : Text(S.current.strSave),
+                        child: Text(S.current.strSave),
                       ),
                     ],
                   ),
@@ -1199,6 +1214,16 @@ class _TransactionEditDialogState extends State<_TransactionEditDialog> {
           decoration: InputDecoration(
             isDense: true,
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+            // An empty picker with a "required field" complaint under it tells
+            // the operator to pick something that cannot be picked. When the
+            // registers are missing because nothing replicates them, say that
+            // instead — quietly, as helper text, since it is a transitional
+            // state and not their mistake.
+            helperText: widget.cashRegisters.isEmpty &&
+                    widget.controller.registersAwaitingBackendReplication
+                ? S.current.strAwaitingServerData
+                : null,
+            helperMaxLines: 2,
           ),
           items: widget.cashRegisters
               .map(

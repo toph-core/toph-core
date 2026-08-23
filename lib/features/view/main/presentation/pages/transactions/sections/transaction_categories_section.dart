@@ -5,7 +5,6 @@ import 'package:mary_ai_pos/core/components/flush_bars.dart';
 import 'package:mary_ai_pos/core/extension/for_context.dart';
 import 'package:mary_ai_pos/core/widgets/app_scaffold.dart';
 import 'package:mary_ai_pos/core/widgets/styled_virtual_keyboard.dart';
-import 'package:mary_ai_pos/core/sync/sync_engine.dart';
 import 'package:mary_ai_pos/di.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/transactions/transaction_categories_controller.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/settings/widgets/section_shell.dart';
@@ -25,8 +24,6 @@ class _TransactionCategoriesSectionState
       inject<TransactionCategoriesController>();
   final TextEditingController _searchCtrl = TextEditingController();
 
-  bool _loading = true;
-  String? _error;
   List<_Category> _categories = const [];
   String _searchQuery = '';
   Timer? _searchDebounce;
@@ -46,40 +43,38 @@ class _TransactionCategoriesSectionState
     super.dispose();
   }
 
-  /// The unfiltered list is a reactive replica subscription; an active search
-  /// query is a local filter over the same replicated catalogue (`_load`
-  /// below). Both offline, neither a spinner.
+  /// One subscription, filtered or not.
+  ///
+  /// The search box used to *cancel* this subscription and swap in a one-shot
+  /// query, so that "an unrelated background sync can't overwrite search
+  /// results". That was a defence against a fetch, and there is no longer a
+  /// fetch: both the list and the search read the same replicated catalogue,
+  /// so the filter can simply be re-applied on every emission. A group renamed
+  /// on another terminal now reaches this screen while a search is active,
+  /// which it previously could not.
   void _subscribeToGroups() {
     _groupsSub = _controller.watchGroups().listen((groups) {
       if (!mounted) return;
-      setState(() {
-        _categories = groups.map(_Category.fromJson).toList();
-        _loading = false;
-        _error = null;
-      });
+      setState(() => _categories = _visible(groups));
     });
   }
 
-  void _load() {
-    if (_searchQuery.isEmpty) return; // reactive subscription already covers this
-    final data = _controller.searchGroups(_searchQuery);
+  /// The rows to show: the emitted catalogue as it came, or the same
+  /// catalogue narrowed by the active query.
+  List<_Category> _visible(List<Map<String, dynamic>> all) {
+    final rows =
+        _searchQuery.isEmpty ? all : _controller.searchGroups(_searchQuery);
+    return rows.map(_Category.fromJson).toList();
+  }
+
+  /// Re-runs the filter after the query itself changes. A *write* needs
+  /// nothing here — the subscription re-emits when the local row lands.
+  void _applyFilter() {
     if (!mounted) return;
-    setState(() {
-      _categories = data.map(_Category.fromJson).toList();
-      _loading = false;
-      _error = null;
-    });
-  }
-
-  /// Re-syncs after a write. While actively searching, re-runs the filter;
-  /// otherwise just asks for a fresh sync pass — the reactive subscription
-  /// above picks it up.
-  Future<void> _refreshAfterWrite() async {
-    if (_searchQuery.isNotEmpty) {
-      _load();
-    } else {
-      await inject<SyncEngine>().tick(force: true);
-    }
+    setState(
+      () => _categories =
+          _controller.searchGroups(_searchQuery).map(_Category.fromJson).toList(),
+    );
   }
 
   void _onSearchChanged(String v) {
@@ -87,29 +82,23 @@ class _TransactionCategoriesSectionState
     _searchDebounce?.cancel();
     _searchDebounce = Timer(const Duration(milliseconds: 350), () {
       if (!mounted) return;
-      final newQuery = v.trim();
-      setState(() => _searchQuery = newQuery);
-      if (newQuery.isEmpty) {
-        // Back to the unfiltered list — resume the reactive subscription
-        // rather than a one-shot fetch.
-        _groupsSub?.cancel();
-        _subscribeToGroups();
-      } else {
-        // Stop reacting to the unfiltered list while a search is active, so
-        // an unrelated background sync can't overwrite search results.
-        _groupsSub?.cancel();
-        _load();
-      }
+      final next = v.trim();
+      if (next == _searchQuery) return;
+      _searchQuery = next;
+      _applyFilter();
     });
   }
 
+  /// No refresh after save. The list is a subscription to the replica, so a
+  /// write that lands locally reaches this screen the same way replication's
+  /// changes do — the old forced `SyncEngine.tick` had nothing left to do, and
+  /// was the last reason this widget knew the sync engine existed.
   Future<void> _openEditor({_Category? existing}) async {
-    final saved = await showDialog<bool>(
+    await showDialog<bool>(
       context: context,
       barrierDismissible: false,
       builder: (_) => _CategoryEditDialog(controller: _controller, existing: existing),
     );
-    if (saved == true && mounted) await _refreshAfterWrite();
   }
 
   Future<void> _confirmDelete(_Category c) async {
@@ -134,11 +123,12 @@ class _TransactionCategoriesSectionState
       ),
     );
     if (ok != true || !mounted) return;
-    final result = await _controller.deleteGroup(c.id);
-    if (!mounted) return;
-    result.fold(
-      (failure) => showErrorMessage(context, failure.getLocalizedMessage(context)),
-      (_) => _refreshAfterWrite(),
+    // Synchronous: the row is gone from the replica and the DELETE is queued
+    // before this returns. Nothing to await, so nothing to fail on the network.
+    _controller.deleteGroup(c.id).fold(
+      (failure) =>
+          showErrorMessage(context, failure.getLocalizedMessage(context)),
+      (_) {},
     );
   }
 
@@ -187,8 +177,8 @@ class _TransactionCategoriesSectionState
                 onPressed: () {
                   _searchDebounce?.cancel();
                   _searchCtrl.clear();
-                  setState(() => _searchQuery = '');
-                  _load();
+                  _searchQuery = '';
+                  _applyFilter();
                 },
               ),
         hintText: S.current.strSearch,
@@ -199,37 +189,23 @@ class _TransactionCategoriesSectionState
     );
   }
 
+  /// No loading branch and no error branch — neither had anything left to
+  /// describe once the read became a local `SELECT`. What is left is an empty
+  /// list, which means two different things.
   Widget _buildBody() {
-    final colors = context.colors;
-    if (_loading) {
-      return const Center(child: CircularProgressIndicator.adaptive());
-    }
-    if (_error != null) {
-      return Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.error_outline, size: 32, color: colors.systemError),
-            const SizedBox(height: 10),
-            SizedBox(
-              width: 320,
-              child: Text(
-                _error!,
-                textAlign: TextAlign.center,
-                style: TextStyle(color: colors.systemError, fontSize: 13),
-              ),
-            ),
-            const SizedBox(height: 12),
-            SectionPrimaryButton(
-              icon: Icons.refresh_rounded,
-              label: S.current.strRetry,
-              onPressed: _load,
-            ),
-          ],
-        ),
-      );
-    }
     if (_categories.isEmpty) {
+      // Nothing the backend sends can reach `group_transactions` yet, so this
+      // list can only ever be empty. Saying "no groups yet" beside an "add
+      // one" button would invite the operator to create the group they already
+      // created and cannot see.
+      if (_searchQuery.isEmpty &&
+          _controller.groupsAwaitingBackendReplication) {
+        return SectionEmptyState(
+          icon: Icons.cloud_sync_outlined,
+          title: S.current.strAwaitingServerData,
+          subtitle: S.current.strTxnGroupsAwaitingServerHint,
+        );
+      }
       return SectionEmptyState(
         icon: Icons.sell_outlined,
         title: S.current.strNoTxnGroupsYet,
@@ -356,7 +332,9 @@ class _CategoryEditDialog extends StatefulWidget {
 class _CategoryEditDialogState extends State<_CategoryEditDialog> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _nameCtrl;
-  bool _saving = false;
+
+  /// A form validation message, or a local write that failed. Never a
+  /// connection error: nothing in this dialog touches the network.
   String? _error;
 
   bool get _isCreate => widget.existing == null;
@@ -374,23 +352,18 @@ class _CategoryEditDialogState extends State<_CategoryEditDialog> {
     super.dispose();
   }
 
-  Future<void> _save() async {
-    if (_saving) return;
+  /// Synchronous: the row and its outbox operation commit before this
+  /// returns, so there is no window in which the dialog waits on anything.
+  void _save() {
     if (!(_formKey.currentState?.validate() ?? false)) return;
-    setState(() {
-      _saving = true;
-      _error = null;
-    });
+    setState(() => _error = null);
     final name = _nameCtrl.text.trim();
     final result = _isCreate
-        ? await widget.controller.createGroup(name)
-        : await widget.controller.updateGroup(widget.existing!.id, name);
-    if (!mounted) return;
+        ? widget.controller.createGroup(name)
+        : widget.controller.updateGroup(widget.existing!.id, name);
     result.fold(
-      (failure) => setState(() {
-        _saving = false;
-        _error = failure.getLocalizedMessage(context);
-      }),
+      (failure) =>
+          setState(() => _error = failure.getLocalizedMessage(context)),
       (_) => Navigator.pop(context, true),
     );
   }
@@ -426,9 +399,7 @@ class _CategoryEditDialogState extends State<_CategoryEditDialog> {
                       ),
                     ),
                     IconButton(
-                      onPressed: _saving
-                          ? null
-                          : () => Navigator.pop(context, false),
+                      onPressed: () => Navigator.pop(context, false),
                       icon: const Icon(Icons.close_rounded),
                       color: colors.textSecondary,
                     ),
@@ -465,31 +436,21 @@ class _CategoryEditDialogState extends State<_CategoryEditDialog> {
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
                     TextButton(
-                      onPressed: _saving
-                          ? null
-                          : () => Navigator.pop(context, false),
+                      onPressed: () => Navigator.pop(context, false),
                       child: Text(S.current.strCancelShort),
                     ),
                     const SizedBox(width: 6),
+                    // No busy state: the save commits locally and pops. The
+                    // spinner that used to live here was the network round
+                    // trip, and there is no longer one to wait for.
                     ElevatedButton(
-                      onPressed: _saving ? null : _save,
+                      onPressed: _save,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: colors.buttonBrand,
                         foregroundColor: colors.textOnBrand,
                         elevation: 0,
                       ),
-                      child: _saving
-                          ? const SizedBox(
-                              width: 14,
-                              height: 14,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 1.5,
-                                valueColor: AlwaysStoppedAnimation(
-                                  Colors.white,
-                                ),
-                              ),
-                            )
-                          : Text(S.current.strSave),
+                      child: Text(S.current.strSave),
                     ),
                   ],
                 ),
