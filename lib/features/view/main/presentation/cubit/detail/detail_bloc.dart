@@ -9,7 +9,6 @@ import 'package:mary_ai_pos/core/utils/helper/helper_widget.dart';
 import 'package:mary_ai_pos/core/constants/constants.dart';
 
 import 'package:mary_ai_pos/core/service/printer/printer_service.dart';
-import 'package:mary_ai_pos/core/services/cache/cache_service.dart';
 import 'package:mary_ai_pos/core/error/failure.dart';
 import 'package:mary_ai_pos/core/utils/uuid.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/cafe_tables/cafe_tables_model.dart';
@@ -53,7 +52,6 @@ EventTransformer<T> debounce<T>(Duration duration) {
 /// online-path 409/failure handling this file used to do inline is gone —
 /// nothing left to catch, since nothing here awaits the network anymore.
 class DetailBloc extends Bloc<DetailEvent, DetailState> {
-  final CacheService _cache;
   final PrinterService _printerService;
   final MainRepository _mainRepository;
   final MenuRepository _menuRepository;
@@ -67,8 +65,8 @@ class DetailBloc extends Bloc<DetailEvent, DetailState> {
 
   // Existing item +/- backend sinxronizatsiya uchun:
   // - `_existingLineInfo`: UI itemining goods.name → underlying line item id'lari,
-  //   good_id, va serverdagi joriy qty. Har bir /bills/{id} refetch dan keyin
-  //   `_enrichExistingGoodsWithTimestamps` da yangilanadi.
+  //   good_id, va joriy qty. Har safar `_applyDetailToState` replikadagi
+  //   qatorlardan qayta quradi.
   // - `_existingSnapshots`: foydalanuvchi tugmani bosgan paytdagi server holati
   //   (debounce davomida saqlanadi). Debounce tugagach, joriy UI qty bilan
   //   solishtirib net delta hisoblanadi.
@@ -84,7 +82,6 @@ class DetailBloc extends Bloc<DetailEvent, DetailState> {
   final Map<String, String> _pendingCancelComments = {};
 
   DetailBloc(
-    this._cache,
     this._printerService,
     this._mainRepository,
     this._menuRepository,
@@ -188,9 +185,6 @@ class DetailBloc extends Bloc<DetailEvent, DetailState> {
         lastDetail = detail;
         _ordersRepository.saveOrderDetailSnapshot(event.billId, detail.toJson());
         _applyDetailToState(detail, event.billId, emit);
-        if (detail.id.isNotEmpty) {
-          unawaited(_enrichExistingGoodsWithTimestamps(detail.id, emit));
-        }
       },
     );
   }
@@ -200,94 +194,6 @@ class DetailBloc extends Bloc<DetailEvent, DetailState> {
     if (detail == null || isClosed) return;
     lastDetail = detail;
     _applyDetailToState(detail, event.tableId, emit);
-    if (detail.id.isNotEmpty) {
-      unawaited(_enrichExistingGoodsWithTimestamps(detail.id, emit));
-    }
-  }
-
-  Future<void> _enrichExistingGoodsWithTimestamps(
-    String orderId,
-    Emitter<DetailState> emit,
-  ) async {
-    try {
-      final result = await _mainRepository.getOrderItemsRaw(orderId);
-      final res = result.fold((_) => null, (r) => r);
-      if (res == null || isClosed) return;
-      final raw = res['data'];
-      final List<dynamic> list = raw is List
-          ? raw
-          : (raw is Map<String, dynamic> && raw['items'] is List
-              ? raw['items'] as List
-              : const []);
-      // name -> earliest createdAt
-      final tsByName = <String, DateTime>{};
-      // name -> aggregated server-side info (line ids, good_id, total qty)
-      // /api/v1/order-items/order/{id} har bir line uchun good_id qaytaradi —
-      // increment/decrement uchun zarur (bekor qilish + qayta yaratish).
-      final infoByName = <String, _ExistingLineInfo>{};
-      for (final entry in list.whereType<Map>()) {
-        final m = Map<String, dynamic>.from(entry);
-        final name = (m['good_name'] ?? m['name'] ?? '').toString();
-        if (name.isEmpty) continue;
-        final status = (m['status'] ?? '').toString().toLowerCase();
-        if (status == 'cancelled') continue; // bekor qilingan — ko'rsatmaymiz
-        final lineId = (m['id'] ?? '').toString();
-        final goodId = (m['good_id'] ?? '').toString();
-        final qty = (m['quantity'] as num?)?.toInt() ?? 0;
-        final comment = (m['comment'] ?? '').toString();
-
-        final rawDate = m['created_at'] ?? m['createdAt'];
-        DateTime? created;
-        if (rawDate is String && rawDate.isNotEmpty) {
-          created = DateTime.tryParse(rawDate)?.toLocal();
-        }
-        if (created != null) {
-          final existingTs = tsByName[name];
-          if (existingTs == null || created.isBefore(existingTs)) {
-            tsByName[name] = created;
-          }
-        }
-
-        if (lineId.isEmpty || goodId.isEmpty) continue;
-        final existing = infoByName[name];
-        if (existing == null) {
-          infoByName[name] = _ExistingLineInfo(
-            goodId: goodId,
-            comment: comment,
-            lineIds: [lineId],
-            totalQuantity: qty,
-          );
-        } else {
-          existing.lineIds.add(lineId);
-          infoByName[name] = existing.copyWith(
-            totalQuantity: existing.totalQuantity + qty,
-            // Birinchi line'ning comment'ini saqlaymiz (oddiy holatda barcha
-            // line'lar bir xil mahsulot uchun bir xil good_id ga ega).
-          );
-        }
-      }
-
-      // Line-info xaritasi — debounce snapshot lardan tashqari foydalaniladi
-      _existingLineInfo
-        ..clear()
-        ..addAll(infoByName);
-
-      if (tsByName.isEmpty || isClosed) return;
-
-      // Cache'ga saqlaymiz — offline'da ham itemlar uchun vaqt ko'rinadi
-      await _cache.saveItemTimestamps(orderId, tsByName);
-
-      final updated = state.existingGoods.map((g) {
-        // Offline pending itemlar (⏳ prefix) o'z timestamp'iga ega — tegmaymiz
-        if (g.commet == 'pending_offline') return g;
-        final t = tsByName[g.goods.name];
-        if (t == null) return g;
-        return g.copyWith(createdAt: t);
-      }).toList();
-      emit(state.copyWith(existingGoods: updated));
-    } catch (_) {
-      // Endpoint ishlamasa yoki javob noto'g'ri — sukut bilan o'tamiz
-    }
   }
 
   /// Server/cache detail + offline queue itemlarni birlashtiradi.
@@ -297,17 +203,15 @@ class DetailBloc extends Bloc<DetailEvent, DetailState> {
     String tableId,
     Emitter<DetailState> emit,
   ) {
-    // Cache'da saqlangan timestamplar — offline rejimda ham vaqtlar ko'rinadi
-    final cachedTs = _cache.getItemTimestamps(detail.id);
-
     // 1. Server itemlarini guruhlash: bir xil nom → miqdorini qo'sh
     final Map<String, OrderItem> grouped = {};
     for (final g in detail.goods) {
       if (g.status == 'cancelled') continue; // cancelled — ko'rsatmaymiz
       final key = g.name;
-      // Bill javobida `created_at` yo'q, lekin avvalgi sessiyada
-      // `/order-items/order/{id}` orqali olingan vaqt cache'da bo'lishi mumkin
-      final ts = g.createdAt ?? cachedTs[g.name];
+      // Har bir replika `order_items` qatori o'z `created_at` ini olib
+      // yuradi — server yozgani ham, offline yozilgani ham — shuning uchun
+      // eski `CacheService` vaqt-xaritasi endi keraksiz.
+      final ts = g.createdAt;
       if (grouped.containsKey(key)) {
         // Bir xil nomli itemlar guruhlansa — eng erta qo'shilgan vaqtni
         // saqlaymiz (foydalanuvchi "qachon birinchi marta urilgan" ni ko'radi).

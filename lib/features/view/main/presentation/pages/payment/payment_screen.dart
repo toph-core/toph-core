@@ -281,15 +281,10 @@ class _ItemsList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // PaymentBloc.state.itemTimestamps — `/order-items/order/{id}` dan
-    // olingan name->earliestCreatedAt mapping (bills javobida yo'q).
-    final timestamps = context.select<PaymentBloc, Map<String, DateTime>>(
-      (b) => b.state.itemTimestamps,
-    );
     final Map<String, _PayItem> grouped = {};
     final List<_PayItem> cancelled = [];
     for (final g in detail.goods) {
-      final ts = (g.createdAt as DateTime?) ?? timestamps[g.name];
+      final ts = g.createdAt as DateTime?;
       if (g.status == 'cancelled') {
         cancelled.add(
           _PayItem(

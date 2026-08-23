@@ -8,7 +8,6 @@ import 'package:mary_ai_pos/core/components/flush_bars.dart';
 import 'package:mary_ai_pos/core/constants/constants.dart';
 import 'package:mary_ai_pos/core/error/failure.dart';
 import 'package:mary_ai_pos/core/routes/app_routes.dart';
-import 'package:mary_ai_pos/core/services/cache/cache_service.dart';
 import 'package:mary_ai_pos/core/utils/helper/helper_widget.dart';
 import 'package:mary_ai_pos/core/pricing/order_totals.dart';
 import 'package:mary_ai_pos/di.dart' show inject;
@@ -94,15 +93,7 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
     on<_DiscountType>(_updateDiscountType);
     on<_UpdateDiscountAmount>(_updateDiscountAmount);
     on<_UpdateHourPrice>(_updateHourPrice);
-    on<_ItemTimestampsLoaded>(_onItemTimestampsLoaded);
     on<_UpdateApplyService>(_updateApplyService);
-  }
-
-  void _onItemTimestampsLoaded(
-    _ItemTimestampsLoaded event,
-    Emitter<PaymentState> emit,
-  ) {
-    emit(state.copyWith(itemTimestamps: event.timestamps));
   }
 
   void _updateApplyService(_UpdateApplyService event, emit) {
@@ -342,7 +333,6 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
       emit(state.copyWith(detailStatus: Status.LOADING, failure: null, detail: null));
       return;
     }
-    final cachedTs = inject<CacheService>().getItemTimestamps(detail.id);
     final prefill = totals(detail: detail).grandTotal;
     final currentEntered = int.tryParse(state.enterSum) ?? 0;
     // Prefill when empty, OR when enterSum is still the stale under-total
@@ -350,18 +340,14 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
     final shouldPrefill = currentEntered <= 0 ||
         currentEntered == prefill ||
         (state.hourPrice > 0.01 && currentEntered < prefill);
-    // CLIENT_FACING_OFFLINE_PLAN.md §6: item timestamps are a pure local
-    // read now — `OrdersRepositoryImpl` records `name -> earliestCreatedAt`
-    // into the same cache at the moment items are committed locally, so the
-    // unconditional `/order-items` network fetch that used to fire on every
-    // detail update is gone. Items added by other terminals before that
-    // capture existed simply show no timestamp until a future sync-side
-    // hydration fills them (see EXECUTION_CONCERNS.md).
+    // Item timestamps are no longer carried in state: every replica
+    // `order_items` row has its own `created_at` — the server's for a synced
+    // line, the terminal's for one rung in offline — so the screen reads it
+    // off the line itself instead of a name-keyed side map.
     emit(state.copyWith(
       status: Status.SUCCESS,
       detailStatus: Status.SUCCESS,
       detail: detail,
-      itemTimestamps: cachedTs,
       enterSum: shouldPrefill ? prefill.toString() : state.enterSum,
       failure: null,
     ));
