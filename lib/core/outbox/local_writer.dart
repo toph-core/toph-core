@@ -41,6 +41,18 @@ class LocalWriter {
   /// order sends a payment request but leaves an updated order behind. It
   /// defaults to [row], which is right for ordinary creates and updates.
   ///
+  /// [merge] makes [row] a **patch** rather than the whole row: the stored row
+  /// is read and [row]'s keys are laid over it. A replicated row is stored as
+  /// one JSON blob and [LocalDatabase.upsert] replaces that blob wholesale, so
+  /// an action that changes a handful of fields — closing a bill sets
+  /// `bill_status`, `paid_at` and the settled money columns and must leave
+  /// `created_at`, `bill_no`, `guest_count` and the rest exactly as they were —
+  /// has no way to express itself without this. A key present in the patch with
+  /// a `null` value clears the stored one, which is what the server's own
+  /// `discount_percent = $5` does when no percent was given. When the row does
+  /// not exist yet the patch is written as-is, so the caller should include the
+  /// primary key.
+  ///
   /// Returns the outbox operation id.
   String write({
     required String entity,
@@ -49,16 +61,20 @@ class LocalWriter {
     String action = 'update',
     Map<String, dynamic>? request,
     String? operationId,
+    bool merge = false,
   }) {
     final opId = operationId ?? generateUuidV4();
     return _db.transaction(() {
-      _applier.applyLocalWrite(entity: entity, id: id, payload: row);
+      final payload = merge ? {...?_db.byId(entity, id), ...row} : row;
+      _applier.applyLocalWrite(entity: entity, id: id, payload: payload);
       return _outbox.enqueue(
         id: opId,
         entity: entity,
         action: action,
         entityId: id,
-        payload: request ?? row,
+        // The *patch* is never what gets sent: a merge write always states its
+        // request explicitly, and for a whole-row write [payload] is [row].
+        payload: request ?? payload,
       );
     });
   }

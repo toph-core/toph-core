@@ -26,12 +26,38 @@ class OrderDetailQuery {
   /// change — a price edit on another terminal reaches the open bill live.
   static const watchedTables = {'orders', 'order_items', 'goods', 'cafe_tables', 'halls'};
 
+  /// What makes a bill live, as one SQL predicate over an `orders o`.
+  ///
+  /// Two clauses, and each of them is a shape the server actually produces.
+  ///
+  ///  * **`bill_status IN ('open', 'opened')`.** The backend's `bill_status`
+  ///    enum is `('opened', 'closed', 'paid', 'debt', 'deleted')` —
+  ///    `migrations/tenants/6_orders.up.sql` — and `to_jsonb(NEW)` puts that
+  ///    label verbatim in the change feed. The client writes `'open'` on a
+  ///    locally-created order. Matching only one of the two spellings loses
+  ///    half the open bills in the venue: `= 'open'` alone hides every order
+  ///    the feed delivered (one opened on another terminal, or this
+  ///    terminal's own once its create acks and the pull re-delivers it).
+  ///  * **not `status = 'cancelled'`.** A comped check closes through
+  ///    `/orders/{id}/cancel`, and `CancelOrder` sets `status = 'cancelled'`
+  ///    while leaving `bill_status` at `opened`. Without this clause a
+  ///    cancelled bill stays on its table forever, on the server's own shape.
+  ///    `status` is nullable in the replica, and `NULL <> 'cancelled'` is NULL
+  ///    in SQL, so the null case is spelled out rather than left to the
+  ///    comparison.
+  ///
+  /// [liveOrderById] deliberately applies neither: the payment screen holds an
+  /// order id and must keep rendering the bill it just settled.
+  static const _liveBill =
+      "o.deleted_at IS NULL AND o.bill_status IN ('open', 'opened') "
+      "AND (o.status IS NULL OR o.status <> 'cancelled')";
+
   /// The open bill for [tableId], or null if the table is free.
   ///
-  /// "Open" is `bill_status = 'open'`, matching how the server marks a live bill
-  /// and how [ArchivesQuery] filters closed ones. If two open orders ever exist
-  /// for one table — which the flow is not supposed to allow — the most recently
-  /// created wins, so the screen shows the current bill rather than a stale one.
+  /// "Open" is [_liveBill] — which is also how [ArchivesQuery] filters closed
+  /// ones, from the other side. If two open orders ever exist for one table —
+  /// which the flow is not supposed to allow — the most recently created wins,
+  /// so the screen shows the current bill rather than a stale one.
   Map<String, dynamic>? liveOrderForTable(String tableId) {
     final rows = _db.select(
       '''
@@ -40,7 +66,7 @@ class OrderDetailQuery {
         FROM orders o
         LEFT JOIN cafe_tables t ON t.id = o.table_id AND t.deleted_at IS NULL
         LEFT JOIN halls       h ON h.id = t.hall_id   AND h.deleted_at IS NULL
-       WHERE o.table_id = ? AND o.deleted_at IS NULL AND o.bill_status = 'open'
+       WHERE o.table_id = ? AND $_liveBill
        ORDER BY o.created_at DESC
        LIMIT 1
       ''',
@@ -56,6 +82,10 @@ class OrderDetailQuery {
   /// the same detail read) and the payment screen (which must keep showing the
   /// bill after `bill_status` has flipped to paid). The table/hall join stays a
   /// LEFT JOIN, so a takeaway order with no `table_id` still assembles.
+  ///
+  /// The absence of [_liveBill] here is load-bearing, not an omission: paying
+  /// now flips the row to `paid` synchronously, and this is the read that keeps
+  /// the settled bill on screen and in the archive afterwards.
   Map<String, dynamic>? liveOrderById(String orderId) {
     final rows = _db.select(
       '''
@@ -77,9 +107,9 @@ class OrderDetailQuery {
   /// source, off the replica instead of iterating the retiring Hive box.
   List<Map<String, dynamic>> openOrders() {
     final ids = _db.select(
-      "SELECT id FROM orders "
-      "WHERE deleted_at IS NULL AND bill_status = 'open' "
-      "ORDER BY created_at DESC",
+      "SELECT o.id AS id FROM orders o "
+      "WHERE $_liveBill "
+      "ORDER BY o.created_at DESC",
     );
     final out = <Map<String, dynamic>>[];
     for (final row in ids) {

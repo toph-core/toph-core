@@ -143,7 +143,8 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
       emit(state.copyWith(discountType: event.dicountType));
 
   void _payment(_Payment event, Emitter<PaymentState> emit) async {
-    if (state.detail == null) return;
+    final detail = state.detail;
+    if (detail == null) return;
     final enteredAmt = int.tryParse(state.enterSum) ?? 0;
     // Exactly the number the cashier is looking at — see [totals].
     final due = totals();
@@ -158,17 +159,17 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
 
     emit(state.copyWith(status: Status.LOADING));
 
-    final effectiveTableId = state.tableId ?? state.detail!.tableId;
+    final effectiveTableId = state.tableId ?? detail.tableId;
 
     // Total 0 bo'lsa — /pay emas /cancel. Local-first: bitta lokal yozuv,
     // hech qachon tarmoqni kutmaydi (§4).
     if (dueTot <= 0) {
       await _paymentRepository.cancelZeroTotalOrder(
-        orderId: state.detail!.id,
+        orderId: detail.id,
         tableId: effectiveTableId,
       );
       _paymentSucceeded = true;
-      _onPaymentSuccess();
+      _onPaymentSuccess(detail);
       return;
     }
 
@@ -180,7 +181,7 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
         : 0;
 
     await _paymentRepository.pay(
-      orderId: state.detail!.id,
+      orderId: detail.id,
       tableId: effectiveTableId,
       paidAmount: paidAmount,
       paymentType: state.paymentType.name,
@@ -188,13 +189,17 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
       discountAmount: discountAmount,
       discountPercent: discountPercent,
       tableCharge: due.tableCharge,
+      // The same object the receipt below is printed from, so the row the
+      // repository closes the bill on carries the figures the customer was
+      // just handed rather than zeros until the payment syncs.
+      settled: due,
     );
     showSuccessMessage(
       navigatorKey.currentContext!,
       "To'lov navbatga qo'shildi — internet kelganda yuboriladi",
     );
     _paymentSucceeded = true;
-    _onPaymentSuccess();
+    _onPaymentSuccess(detail);
   }
 
   bool _paymentSucceeded = false;
@@ -225,7 +230,16 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
     }
   }
 
-  void _onPaymentSuccess() {
+  /// [detail] is the bill as it stood when the cashier pressed pay, captured by
+  /// [_payment] before the write rather than re-read from state here.
+  ///
+  /// The write closes the bill in the replica synchronously, and the detail
+  /// subscription re-reads immediately — so `state.detail` is no longer a safe
+  /// source for the receipt on this path. (`_onDetailUpdated` also holds the
+  /// last known bill for the screen's sake; this makes the receipt independent
+  /// of that, because a receipt printed from the wrong bill is not a cosmetic
+  /// failure.)
+  void _onPaymentSuccess(ArchiveDetailEntity detail) {
     final discPct = state.discountType == DiscountType.percent
         ? (int.tryParse(state.discountAmount) ?? 0).toDouble()
         : 0.0;
@@ -233,7 +247,7 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
         ? (int.tryParse(state.discountAmount) ?? 0).toDouble()
         : 0.0;
     _printerService.printCashierReceiptFromDetail(
-      detail: state.detail!,
+      detail: detail,
       hourAmount: state.hourPrice,
       discountPercent: discPct,
       discountAmount: discAmt,
@@ -245,13 +259,18 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
     // The order is closed — drop its local timer record so a stale timer
     // doesn't linger for the next order on this table (plan §2; the server
     // closes its own timer when the queued /pay lands).
-    final paidOrderId = state.detail?.id;
-    if (paidOrderId != null && paidOrderId.isNotEmpty) {
+    final paidOrderId = detail.id;
+    if (paidOrderId.isNotEmpty) {
       unawaited(inject<TableTimerLocalRepository>().evictTimer(paidOrderId));
     }
     final mainCubit = navigatorKey.currentContext!.read<MainCubit>();
-    final effectiveTableId = state.tableId ?? state.detail?.tableId;
-    if (effectiveTableId != null && effectiveTableId.isNotEmpty) {
+    // Occupancy stays where it already lived: the `_table_status` overlay, via
+    // MainCubit → TablesRepository. It is local authority and durable, so the
+    // table is free across a restart — and it is deliberately NOT rewritten by
+    // the payment repository, which would put a second writer on the same fact.
+    // What changed is that the `orders` row now agrees with it.
+    final effectiveTableId = state.tableId ?? detail.tableId;
+    if (effectiveTableId.isNotEmpty) {
       mainCubit.broadcastTableStatus(effectiveTableId, TableStatus.free);
       // Order is fully paid off — any leftover local draft for this table
       // (uncommitted cart items) is stale now and must not resurface next
@@ -326,10 +345,19 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
   void _onDetailUpdated(_DetailUpdated event, Emitter<PaymentState> emit) {
     final detail = event.detail;
     if (detail == null) {
-      // Nothing in LocalDatabase yet for this key — SyncEngine's hydration
-      // pass (or this order's own local-first create) hasn't landed a row
-      // here yet. Not an error: the stream will fire again the instant it
-      // does.
+      // Two different nulls, and only one of them means "nothing yet".
+      //
+      // Before the bill exists locally, null is exactly that: the replica has
+      // no row for this key and the stream will fire again the instant it
+      // does. But a dine-in payment screen watches by *table id*, and
+      // `liveOrderForTable` stops matching the moment the bill closes — which
+      // is now the moment the cashier pays, not a pull later. So a null that
+      // arrives after a bill was already on screen is the settled bill leaving
+      // the open-bill read, and blanking the screen on it would take the
+      // receipt away from under the cashier mid-payment. The last known bill
+      // is held instead; it is the one this screen exists to settle, and the
+      // screen is about to be popped anyway.
+      if (state.detail != null) return;
       emit(state.copyWith(detailStatus: Status.LOADING, failure: null, detail: null));
       return;
     }

@@ -95,8 +95,10 @@ class OrdersRepositoryImpl implements OrdersRepository {
   @override
   Future<void> evictOrderDetail(String key) async {
     // Nothing to do on the replica — a bill leaves the open-order read the
-    // moment its `bill_status` stops being 'open' (pay/cancel write that), which
-    // is exactly what [OrderDetailQuery] filters on. Kept to satisfy the
+    // moment it stops being live, and `PaymentRepository` writes that onto the
+    // row itself now: `bill_status = 'paid'` for a settled check,
+    // `status = 'cancelled'` for a comped one. Both are what
+    // [OrderDetailQuery]'s live-bill predicate filters on. Kept to satisfy the
     // interface; the Hive box it used to clear is no longer read.
   }
 
