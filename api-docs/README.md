@@ -3,8 +3,8 @@
 MaryAI API server with multi-language support (uz, ru, en)
 
 - **Version:** `1.0`
-- **Base URL:** `https://api.maryai.uz/`
-- **Swagger:** `https://api.maryai.uz/swagger/doc.json`
+- **Base URL:** `https://api.maryaidev.uz/`
+- **Swagger:** `https://api.maryaidev.uz/swagger/doc.json`
 - **Endpoints:** 426
 - **Tags:** 50
 - **Definitions:** [341 models](definitions.md)

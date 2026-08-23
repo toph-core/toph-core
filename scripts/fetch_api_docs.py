@@ -5,7 +5,7 @@ Usage (from repo root):
     python3 scripts/fetch_api_docs.py
 
 Optional:
-    python3 scripts/fetch_api_docs.py --url https://api.maryai.uz/swagger/doc.json
+    python3 scripts/fetch_api_docs.py --url https://api.maryaidev.uz/swagger/doc.json
     python3 scripts/fetch_api_docs.py --out api-docs
 """
 
@@ -20,7 +20,7 @@ import urllib.request
 from collections import defaultdict
 from pathlib import Path
 
-DEFAULT_URL = "https://api.maryai.uz/swagger/doc.json"
+DEFAULT_URL = "https://api.maryaidev.uz/swagger/doc.json"
 DEFAULT_OUT = "api-docs"
 
 

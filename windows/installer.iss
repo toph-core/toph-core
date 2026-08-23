@@ -3,7 +3,7 @@
   #define MyAppVersion "1.0.0"
 #endif
 #define MyAppPublisher "Mary AI"
-#define MyAppURL "https://maryai.uz"
+#define MyAppURL "https://maryaidev.uz"
 #define MyAppExeName "mary_ai_pos.exe"
 
 [Setup]
