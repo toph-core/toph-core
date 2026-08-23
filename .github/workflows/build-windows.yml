@@ -69,7 +69,21 @@ jobs:
           echo "version=$ver" >> $env:GITHUB_OUTPUT
           echo "build=$build" >> $env:GITHUB_OUTPUT
           echo "full=$ver+$build" >> $env:GITHUB_OUTPUT
+
+          # Release identity is computed once here so the release step, the
+          # verification step and the summary link can never disagree about
+          # which tag this build published under.
+          if ('${{ github.ref_type }}' -eq 'tag') {
+            $tag = '${{ github.ref_name }}'
+            $relName = "Mary AI POS v$ver"
+          } else {
+            $tag = "v$ver-dev.${{ github.run_number }}"
+            $relName = "Mary AI POS v$ver-dev.${{ github.run_number }}"
+          }
+          echo "tag=$tag" >> $env:GITHUB_OUTPUT
+          echo "release_name=$relName" >> $env:GITHUB_OUTPUT
           Write-Host "Version: $ver+$build"
+          Write-Host "Release tag: $tag"
 
       - name: Build Windows Release
         run: flutter build windows --release --verbose --build-name=${{ steps.version.outputs.version }} --build-number=${{ steps.version.outputs.build }}
@@ -118,15 +132,31 @@ jobs:
             Write-Host "SHA256: $($hash.Hash)  $($_.Name)"
           }
 
+      # Fails the build if Inno Setup exited 0 without actually emitting a
+      # setup .exe, so a publish step can never be handed an empty directory
+      # and report success over nothing.
       - name: List installer output
         shell: pwsh
         run: |
+          if (-not (Test-Path build\windows\installer)) {
+            Write-Error "build\windows\installer does not exist - Inno Setup produced no output."
+            exit 1
+          }
           Get-ChildItem build\windows\installer\ | Format-Table Name, Length, LastWriteTime
+          $exe = @(Get-ChildItem build\windows\installer\*.exe -ErrorAction SilentlyContinue)
+          if ($exe.Count -eq 0) {
+            Write-Error "No installer .exe in build\windows\installer - nothing to publish."
+            exit 1
+          }
+          Write-Host "Found $($exe.Count) installer executable(s)."
 
       # Skipped on release builds — the Release page carries the same files, and
       # a second copy in artifact storage is what exhausts the shared quota.
-      # continue-on-error so a full quota never fails an otherwise-green build.
+      # continue-on-error so a full quota never fails an otherwise-green build;
+      # the Release fallback below then guarantees the installer is still
+      # downloadable, and "Verify installer is downloadable" enforces it.
       - name: Upload installer artifact
+        id: upload_artifact
         if: github.ref_type != 'tag' && github.event.inputs.create_release != 'true'
         uses: actions/upload-artifact@v4
         continue-on-error: true
@@ -139,12 +169,18 @@ jobs:
           if-no-files-found: error
           overwrite: true
 
+      # Runs for tags and explicit release dispatches, and as a fallback
+      # whenever the artifact upload failed. Release assets are billed
+      # separately from Actions artifacts and GHCR packages, so this path
+      # still works when the shared artifact quota is exhausted - which is
+      # what makes "every green run leaves a downloadable installer" true.
       - name: Create GitHub Release
-        if: startsWith(github.ref, 'refs/tags/v') || github.event.inputs.create_release == 'true'
+        id: release
+        if: startsWith(github.ref, 'refs/tags/v') || github.event.inputs.create_release == 'true' || steps.upload_artifact.outcome == 'failure'
         uses: softprops/action-gh-release@v2
         with:
-          name: ${{ github.ref_type == 'tag' && format('Mary AI POS v{0}', steps.version.outputs.version) || format('Mary AI POS v{0}-dev.{1}', steps.version.outputs.version, github.run_number) }}
-          tag_name: ${{ github.ref_type == 'tag' && github.ref_name || format('v{0}-dev.{1}', steps.version.outputs.version, github.run_number) }}
+          name: ${{ steps.version.outputs.release_name }}
+          tag_name: ${{ steps.version.outputs.tag }}
           # Without this the action tags the default branch, so a branch build
           # ships a binary under a tag pointing at code it was not built from.
           target_commitish: ${{ github.sha }}
@@ -153,23 +189,67 @@ jobs:
           # A branch dispatch publishes a prerelease under its own -dev.N tag, so
           # it never overwrites the shipped vX.Y.Z release or displaces "Latest".
           prerelease: ${{ github.ref_type != 'tag' }}
+          # Never publish an empty release - an assetless release would satisfy
+          # the verification step below while giving nobody a file to download.
+          fail_on_unmatched_files: true
           files: |
             build/windows/installer/*.exe
             build/windows/installer/*.sha256
+
+      # The guarantee. A green run means the installer is downloadable from at
+      # least one place; if both publish paths fell through, go red here rather
+      # than reporting success over a run that produced nothing.
+      - name: Verify installer is downloadable
+        shell: pwsh
+        run: |
+          $artifact = '${{ steps.upload_artifact.outcome }}'
+          $release = '${{ steps.release.outcome }}'
+          Write-Host "Artifact upload: $artifact"
+          Write-Host "Release publish: $release"
+          if ($release -ne 'success' -and $artifact -ne 'success') {
+            Write-Error "No downloadable installer was published. The artifact upload did not succeed and no Release was created, so this run produced nothing to download."
+            exit 1
+          }
+          Write-Host "OK - the installer is downloadable."
 
       - name: Build summary
         if: always()
         shell: pwsh
         run: |
-          $summary = @"
-          ## Mary AI POS Windows Build
+          $artifact = '${{ steps.upload_artifact.outcome }}'
+          $release = '${{ steps.release.outcome }}'
+          $repoUrl = "${{ github.server_url }}/${{ github.repository }}"
 
-          - **Version**: ${{ steps.version.outputs.full }}
-          - **Status**: ${{ job.status }}
-          - **Trigger**: ${{ github.event_name }}
-          - **Branch/Tag**: ${{ github.ref_name }}
+          $lines = @(
+            "## Mary AI POS Windows Build"
+            ""
+            "- **Version**: ${{ steps.version.outputs.full }}"
+            "- **Status**: ${{ job.status }}"
+            "- **Trigger**: ${{ github.event_name }}"
+            "- **Branch/Tag**: ${{ github.ref_name }}"
+            ""
+            "### Installer download"
+            ""
+          )
 
-          ### Artifacts
-          - Installer: ``MaryAIPOS-Installer-v${{ steps.version.outputs.version }}-${{ github.run_number }}``
-          "@
-          $summary | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Encoding utf8 -Append
+          if ($release -eq 'success') {
+            $tag = '${{ steps.version.outputs.tag }}'
+            $lines += "Published as a **GitHub Release** - not an Actions artifact, so look under Releases rather than on this run page:"
+            $lines += ""
+            $lines += "$repoUrl/releases/tag/$tag"
+            $lines += ""
+          }
+
+          if ($artifact -eq 'success') {
+            $lines += "Attached to this run as an **Actions artifact**, downloadable from the Artifacts section of this summary page for the next 5 days:"
+            $lines += ""
+            $lines += "**MaryAIPOS-Installer-v${{ steps.version.outputs.version }}-${{ github.run_number }}**"
+            $lines += ""
+          }
+
+          if ($release -ne 'success' -and $artifact -ne 'success') {
+            $lines += "> [!WARNING]"
+            $lines += "> This run published no downloadable installer."
+          }
+
+          $lines | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Encoding utf8 -Append
