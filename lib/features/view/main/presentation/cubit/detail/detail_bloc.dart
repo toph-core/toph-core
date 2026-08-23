@@ -720,7 +720,7 @@ class DetailBloc extends Bloc<DetailEvent, DetailState> {
   /// Mavjud buyurtmaga +delta qo'shilganda oshxona chekini chiqarish.
   /// `existingGoods` dagi `goods.id` line-id ni saqlaydi (mahsulot id emas),
   /// `categoryId` esa bo'sh — shuning uchun real good_id/category_id ni
-  /// goods cache'idan tiklaymiz; header [lastDetail] dan olinadi.
+  /// replikadagi katalogdan tiklaymiz; header [lastDetail] dan olinadi.
   void _printKitchenForExistingAdd({
     required String goodId,
     required String fallbackName,
@@ -728,13 +728,7 @@ class DetailBloc extends Bloc<DetailEvent, DetailState> {
     required String comment,
   }) {
     if (goodId.isEmpty || quantity <= 0) return;
-    GoodsModel? good;
-    for (final g in _menuRepository.getAllGoods()) {
-      if (g.id == goodId) {
-        good = g;
-        break;
-      }
-    }
+    final good = _menuRepository.getGoodById(goodId);
     final detail = lastDetail;
     final tableNumber = detail?.tableNumber.toInt() ?? 0;
     unawaited(_printerService.printKitchenReceiptFor(

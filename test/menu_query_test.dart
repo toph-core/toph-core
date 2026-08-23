@@ -83,6 +83,33 @@ void main() {
     });
   });
 
+  group('goodById — the receipt builders\' lookup', () {
+    test('resolves one good by primary key', () {
+      good('g1', name: 'Osh', category: 'c-1');
+      good('g2', name: 'Lagmon', category: 'c-2');
+      expect(query.goodById('g1')?.name, 'Osh');
+      expect(query.goodById('g2')?.categoryId, 'c-2');
+    });
+
+    test('an unknown id, or an empty one, is null rather than a throw', () {
+      good('g1');
+      expect(query.goodById('nope'), isNull);
+      expect(query.goodById(''), isNull);
+    });
+
+    test('a good removed from the menu still resolves, so a reprint of an '
+        'older bill keeps its name and category', () {
+      good('g1', name: 'Retired dish', deletedAt: 1735689600000);
+      expect(query.goodsForCategory('c-1'), isEmpty);
+      expect(query.goodById('g1')?.name, 'Retired dish');
+    });
+
+    test('a row the model cannot decode is null, not a throw', () {
+      put('goods', {'id': 'bad', 'name': 'Broken', 'category_id': 'c-1'});
+      expect(query.goodById('bad'), isNull);
+    });
+  });
+
   group('ingredient & compound pickers (raw maps)', () {
     test('live, ordered by name, soft-deleted excluded', () {
       put('ingredients', {'id': 'i2', 'name': 'Salt'});

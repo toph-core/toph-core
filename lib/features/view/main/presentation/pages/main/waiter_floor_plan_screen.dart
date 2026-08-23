@@ -149,6 +149,7 @@ class _WaiterFloorPlanScreenState extends State<WaiterFloorPlanScreen> {
                     halls: halls,
                     selectedHallId: state.selectedHallId,
                     tables: tables,
+                    allTables: state.allTables ?? [],
                     isLoading: state.status == Status.OTHER_LOADING,
                   ),
                 ),

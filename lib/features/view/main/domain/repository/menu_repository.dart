@@ -19,6 +19,11 @@ abstract class MenuRepository {
   List<DepartmentModel> getDepartments();
 
   Stream<List<GoodsModel>> watchGoodsForCategory(String categoryId);
+
+  /// One good by id — what the receipt builders need to recover a line
+  /// item's real category/department from its `good_id`. Null when the
+  /// catalog has no such row.
+  GoodsModel? getGoodById(String id);
   List<GoodsModel> getGoodsForCategory(String categoryId);
 
   /// The whole catalog, unfiltered — for callers that need to resolve a good by

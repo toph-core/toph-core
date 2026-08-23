@@ -7,13 +7,13 @@ import 'package:mary_ai_pos/core/error/failure.dart';
 import 'package:mary_ai_pos/core/pricing/order_totals.dart';
 import 'package:mary_ai_pos/core/utils/helper/helper_widget.dart';
 import 'package:mary_ai_pos/core/service/printer/printer_service.dart';
-import 'package:mary_ai_pos/features/view/main/domain/repository/menu_repository.dart';
 import 'package:mary_ai_pos/core/utils/uuid.dart';
 import 'package:mary_ai_pos/di.dart';
 import 'package:mary_ai_pos/features/view/auth/data/models/user/user_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/goods/goods_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/open_order/open_order_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/order_line_item/order_line_item_model.dart';
+import 'package:mary_ai_pos/features/view/main/domain/repository/menu_repository.dart';
 import 'package:mary_ai_pos/features/view/main/domain/repository/waiter_local_repository.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/detail/detail_bloc.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/shift/shift_bloc.dart';
@@ -384,19 +384,17 @@ class WaiterCubit extends Cubit<WaiterState> {
     required double discountPercent,
     required double discountAmount,
   }) {
-    // Cheklarda departament bo'yicha guruhlash uchun replikadagi goods
-    // ro'yxatidan real category/department id larini olamiz.
-    final goodsById = <String, GoodsModel>{
-      for (final g in inject<MenuRepository>().getAllGoods()) g.id: g,
-    };
+    // Cheklarda departament bo'yicha guruhlash uchun replikadagi katalogdan
+    // real category/department id larini olamiz.
+    final menu = inject<MenuRepository>();
     final receiptItems = lineItems.where((l) => !l.isCancelled).map((l) {
-      final cached = goodsById[l.goodId];
+      final good = menu.getGoodById(l.goodId);
       return OrderItem(
         goods: GoodsModel(
-          categoryId: cached?.categoryId ?? '',
+          categoryId: good?.categoryId ?? '',
           cookTime: 0,
           costPrice: l.price,
-          departmentId: cached?.departmentId ?? '',
+          departmentId: good?.departmentId ?? '',
           description: '',
           id: l.goodId,
           name: l.displayName,

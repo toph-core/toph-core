@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:mary_ai_pos/core/common/custom_shimmer_container.dart';
-import 'package:mary_ai_pos/core/services/cache/cache_service.dart';
 import 'package:mary_ai_pos/di.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/cafe_tables/cafe_tables_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/hall/hall_model.dart';
@@ -20,6 +19,12 @@ class TabFilter extends StatelessWidget {
   final String? selectedHallId;
   final List<HallModel> halls;
   final List<CafeTableModel> tables;
+
+  /// Every table in the venue — `MainState.allTables`. The pill counts come
+  /// from this rather than [tables] so that selecting a hall does not zero
+  /// out every other pill's count.
+  final List<CafeTableModel> allTables;
+
   final bool isLoading;
 
   /// Enables the leading "Barchasi" pill that unsets the hall filter
@@ -31,6 +36,7 @@ class TabFilter extends StatelessWidget {
     required this.halls,
     this.selectedHallId,
     this.tables = const [],
+    this.allTables = const [],
     required this.isLoading,
     this.showAllOption = true,
   });
@@ -53,20 +59,14 @@ class TabFilter extends StatelessWidget {
       );
     }
 
-    // Counts: cache dagi barcha stollarni o'qib, har zal bo'yicha hisoblaymiz.
-    // Shuning uchun zal tanlovi o'zgarsa ham countlar turg'un qoladi.
-    final allCached = inject<CacheService>()
-        .getTables()
-        .map((e) => CafeTableModel.fromJson(e))
-        .toList();
-    final bool useCache = allCached.isNotEmpty;
-    final int allCount = useCache ? allCached.length : tables.length;
-    int countFor(String hallId) {
-      if (useCache) {
-        return allCached.where((t) => t.hallId == hallId).length;
-      }
-      return tables.where((t) => t.hallId == hallId).length;
-    }
+    // Counts come from the venue-wide list so a hall selection doesn't zero
+    // out the other pills. Falls back to the visible slice only before the
+    // first `allTables` emission has landed.
+    final bool useAll = allTables.isNotEmpty;
+    final counted = useAll ? allTables : tables;
+    final int allCount = counted.length;
+    int countFor(String hallId) =>
+        counted.where((t) => t.hallId == hallId).length;
 
     return SizedBox(
       height: 42,

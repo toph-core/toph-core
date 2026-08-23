@@ -41,6 +41,9 @@ class MenuRepositoryImpl implements MenuRepository {
       _query.watchGoodsForCategory(categoryId);
 
   @override
+  GoodsModel? getGoodById(String id) => _query.goodById(id);
+
+  @override
   List<GoodsModel> getGoodsForCategory(String categoryId) =>
       _query.goodsForCategory(categoryId);
 

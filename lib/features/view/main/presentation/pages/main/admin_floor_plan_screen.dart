@@ -49,6 +49,7 @@ class _AdminFloorPlanScreenState extends State<AdminFloorPlanScreen> {
                   child: TabFilter(
                     halls: state.halls ?? [],
                     selectedHallId: state.selectedHallId,
+                    allTables: state.allTables ?? [],
                     isLoading: state.status == Status.OTHER_LOADING,
                   ),
                 ),

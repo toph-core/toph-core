@@ -78,7 +78,6 @@ import 'package:mary_ai_pos/features/view/main/domain/repository/transactions_re
 import 'package:mary_ai_pos/features/view/main/domain/repository/archives_local_repository.dart';
 import 'package:mary_ai_pos/features/view/main/domain/repository/table_timer_local_repository.dart';
 import 'package:mary_ai_pos/features/view/main/domain/repository/waiter_local_repository.dart';
-import 'package:mary_ai_pos/features/view/main/domain/usecase/get_departments_usecase.dart';
 import 'package:mary_ai_pos/features/view/main/domain/usecase/sync_printer_settings_usecase.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/archive/archive_bloc.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/counter/counter_cubit.dart';
@@ -491,7 +490,6 @@ void _useCase() {
   inject.registerLazySingleton(() => GetAppLangauageUsecase(inject()));
   inject.registerLazySingleton(() => SetAppLanguageUscase(inject()));
   inject.registerLazySingleton(() => LoginWithBrandUsecase(inject()));
-  inject.registerLazySingleton(() => GetDepartmentsUsecase(inject()));
   inject.registerLazySingleton(() => LogoutUsecase(inject()));
   inject.registerLazySingleton(() => CheckUserDataUsecase(inject()));
   inject.registerLazySingleton(() => GetUserUsecase(inject()));

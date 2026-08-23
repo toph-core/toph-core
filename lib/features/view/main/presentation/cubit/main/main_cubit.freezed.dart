@@ -17,6 +17,15 @@ final _privateConstructorUsedError = UnsupportedError(
 /// @nodoc
 mixin _$MainState {
   List<CafeTableModel>? get tables => throw _privateConstructorUsedError;
+
+  /// Every table in the venue, regardless of the selected hall.
+  ///
+  /// [tables] is the current selection's slice, so the hall pills cannot
+  /// count from it — picking a hall would collapse every other pill's
+  /// count to zero. This is the second, unfiltered subscription that keeps
+  /// those counts steady, and it is what the pill row reads instead of
+  /// reaching into a cache from inside `build()`.
+  List<CafeTableModel>? get allTables => throw _privateConstructorUsedError;
   List<HallModel>? get halls => throw _privateConstructorUsedError;
   bool get isLoading => throw _privateConstructorUsedError;
   String? get selectedHallId => throw _privateConstructorUsedError;
@@ -35,6 +44,7 @@ abstract class $MainStateCopyWith<$Res> {
   @useResult
   $Res call(
       {List<CafeTableModel>? tables,
+      List<CafeTableModel>? allTables,
       List<HallModel>? halls,
       bool isLoading,
       String? selectedHallId,
@@ -56,6 +66,7 @@ class _$MainStateCopyWithImpl<$Res, $Val extends MainState>
   @override
   $Res call({
     Object? tables = freezed,
+    Object? allTables = freezed,
     Object? halls = freezed,
     Object? isLoading = null,
     Object? selectedHallId = freezed,
@@ -66,6 +77,10 @@ class _$MainStateCopyWithImpl<$Res, $Val extends MainState>
       tables: freezed == tables
           ? _value.tables
           : tables // ignore: cast_nullable_to_non_nullable
+              as List<CafeTableModel>?,
+      allTables: freezed == allTables
+          ? _value.allTables
+          : allTables // ignore: cast_nullable_to_non_nullable
               as List<CafeTableModel>?,
       halls: freezed == halls
           ? _value.halls
@@ -101,6 +116,7 @@ abstract class _$$MainStateImplCopyWith<$Res>
   @useResult
   $Res call(
       {List<CafeTableModel>? tables,
+      List<CafeTableModel>? allTables,
       List<HallModel>? halls,
       bool isLoading,
       String? selectedHallId,
@@ -120,6 +136,7 @@ class __$$MainStateImplCopyWithImpl<$Res>
   @override
   $Res call({
     Object? tables = freezed,
+    Object? allTables = freezed,
     Object? halls = freezed,
     Object? isLoading = null,
     Object? selectedHallId = freezed,
@@ -130,6 +147,10 @@ class __$$MainStateImplCopyWithImpl<$Res>
       tables: freezed == tables
           ? _value._tables
           : tables // ignore: cast_nullable_to_non_nullable
+              as List<CafeTableModel>?,
+      allTables: freezed == allTables
+          ? _value._allTables
+          : allTables // ignore: cast_nullable_to_non_nullable
               as List<CafeTableModel>?,
       halls: freezed == halls
           ? _value._halls
@@ -160,12 +181,14 @@ class __$$MainStateImplCopyWithImpl<$Res>
 class _$MainStateImpl implements _MainState {
   const _$MainStateImpl(
       {final List<CafeTableModel>? tables,
+      final List<CafeTableModel>? allTables,
       final List<HallModel>? halls,
       this.isLoading = false,
       this.selectedHallId,
       this.failure = const UnknownFailure(),
       this.status = Status.UNKNOWN})
       : _tables = tables,
+        _allTables = allTables,
         _halls = halls;
 
   final List<CafeTableModel>? _tables;
@@ -174,6 +197,31 @@ class _$MainStateImpl implements _MainState {
     final value = _tables;
     if (value == null) return null;
     if (_tables is EqualUnmodifiableListView) return _tables;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(value);
+  }
+
+  /// Every table in the venue, regardless of the selected hall.
+  ///
+  /// [tables] is the current selection's slice, so the hall pills cannot
+  /// count from it — picking a hall would collapse every other pill's
+  /// count to zero. This is the second, unfiltered subscription that keeps
+  /// those counts steady, and it is what the pill row reads instead of
+  /// reaching into a cache from inside `build()`.
+  final List<CafeTableModel>? _allTables;
+
+  /// Every table in the venue, regardless of the selected hall.
+  ///
+  /// [tables] is the current selection's slice, so the hall pills cannot
+  /// count from it — picking a hall would collapse every other pill's
+  /// count to zero. This is the second, unfiltered subscription that keeps
+  /// those counts steady, and it is what the pill row reads instead of
+  /// reaching into a cache from inside `build()`.
+  @override
+  List<CafeTableModel>? get allTables {
+    final value = _allTables;
+    if (value == null) return null;
+    if (_allTables is EqualUnmodifiableListView) return _allTables;
     // ignore: implicit_dynamic_type
     return EqualUnmodifiableListView(value);
   }
@@ -202,7 +250,7 @@ class _$MainStateImpl implements _MainState {
 
   @override
   String toString() {
-    return 'MainState(tables: $tables, halls: $halls, isLoading: $isLoading, selectedHallId: $selectedHallId, failure: $failure, status: $status)';
+    return 'MainState(tables: $tables, allTables: $allTables, halls: $halls, isLoading: $isLoading, selectedHallId: $selectedHallId, failure: $failure, status: $status)';
   }
 
   @override
@@ -211,6 +259,8 @@ class _$MainStateImpl implements _MainState {
         (other.runtimeType == runtimeType &&
             other is _$MainStateImpl &&
             const DeepCollectionEquality().equals(other._tables, _tables) &&
+            const DeepCollectionEquality()
+                .equals(other._allTables, _allTables) &&
             const DeepCollectionEquality().equals(other._halls, _halls) &&
             (identical(other.isLoading, isLoading) ||
                 other.isLoading == isLoading) &&
@@ -224,6 +274,7 @@ class _$MainStateImpl implements _MainState {
   int get hashCode => Object.hash(
       runtimeType,
       const DeepCollectionEquality().hash(_tables),
+      const DeepCollectionEquality().hash(_allTables),
       const DeepCollectionEquality().hash(_halls),
       isLoading,
       selectedHallId,
@@ -240,6 +291,7 @@ class _$MainStateImpl implements _MainState {
 abstract class _MainState implements MainState {
   const factory _MainState(
       {final List<CafeTableModel>? tables,
+      final List<CafeTableModel>? allTables,
       final List<HallModel>? halls,
       final bool isLoading,
       final String? selectedHallId,
@@ -248,6 +300,16 @@ abstract class _MainState implements MainState {
 
   @override
   List<CafeTableModel>? get tables;
+  @override
+
+  /// Every table in the venue, regardless of the selected hall.
+  ///
+  /// [tables] is the current selection's slice, so the hall pills cannot
+  /// count from it — picking a hall would collapse every other pill's
+  /// count to zero. This is the second, unfiltered subscription that keeps
+  /// those counts steady, and it is what the pill row reads instead of
+  /// reaching into a cache from inside `build()`.
+  List<CafeTableModel>? get allTables;
   @override
   List<HallModel>? get halls;
   @override

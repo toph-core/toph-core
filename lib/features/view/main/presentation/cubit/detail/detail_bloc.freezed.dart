@@ -6490,7 +6490,7 @@ class _$DetailStateCopyWithImpl<$Res, $Val extends DetailState>
   @override
   $Res call({
     Object? status = null,
-    Object? failure = freezed,
+    Object? failure = null,
     Object? textController = freezed,
     Object? categories = freezed,
     Object? goods = freezed,
@@ -6505,7 +6505,7 @@ class _$DetailStateCopyWithImpl<$Res, $Val extends DetailState>
           ? _value.status
           : status // ignore: cast_nullable_to_non_nullable
               as Status,
-      failure: freezed == failure
+      failure: null == failure
           ? _value.failure
           : failure // ignore: cast_nullable_to_non_nullable
               as Failure,
@@ -6578,7 +6578,7 @@ class __$$DetailStateImplCopyWithImpl<$Res>
   @override
   $Res call({
     Object? status = null,
-    Object? failure = freezed,
+    Object? failure = null,
     Object? textController = freezed,
     Object? categories = freezed,
     Object? goods = freezed,
@@ -6593,7 +6593,7 @@ class __$$DetailStateImplCopyWithImpl<$Res>
           ? _value.status
           : status // ignore: cast_nullable_to_non_nullable
               as Status,
-      failure: freezed == failure
+      failure: null == failure
           ? _value.failure
           : failure // ignore: cast_nullable_to_non_nullable
               as Failure,
@@ -6732,7 +6732,7 @@ class _$DetailStateImpl implements _DetailState {
         (other.runtimeType == runtimeType &&
             other is _$DetailStateImpl &&
             (identical(other.status, status) || other.status == status) &&
-            const DeepCollectionEquality().equals(other.failure, failure) &&
+            (identical(other.failure, failure) || other.failure == failure) &&
             (identical(other.textController, textController) ||
                 other.textController == textController) &&
             const DeepCollectionEquality()
@@ -6754,7 +6754,7 @@ class _$DetailStateImpl implements _DetailState {
   int get hashCode => Object.hash(
       runtimeType,
       status,
-      const DeepCollectionEquality().hash(failure),
+      failure,
       textController,
       const DeepCollectionEquality().hash(_categories),
       const DeepCollectionEquality().hash(_goods),

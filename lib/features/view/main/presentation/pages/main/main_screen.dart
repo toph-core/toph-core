@@ -88,6 +88,7 @@ class _MainScreenState extends State<MainScreen> {
                       TabFilter(
                         halls: state.halls ?? [],
                         selectedHallId: state.selectedHallId,
+                        allTables: state.allTables ?? [],
                         isLoading: state.status == Status.OTHER_LOADING,
                       ),
                       HallWidget(

@@ -27,12 +27,16 @@ class MainCubit extends Cubit<MainState> {
   StreamSubscription<({String tableId, String status})>? _lanSub;
   StreamSubscription<List<HallModel>>? _hallsSub;
   StreamSubscription<List<CafeTableModel>>? _tablesSub;
+  StreamSubscription<List<CafeTableModel>>? _allTablesSub;
 
   MainCubit(this._tablesRepository, this._lanHub, this._orders)
       : super(const MainState()) {
     _lanSub = _lanHub.onRemoteTableUpdate.listen(_applyRemoteTableUpdate);
     _hallsSub = _tablesRepository.watchHalls().listen((halls) {
       emit(state.copyWith(halls: halls, status: Status.SUCCESS));
+    });
+    _allTablesSub = _tablesRepository.watchAllTables().listen((tables) {
+      emit(state.copyWith(allTables: tables));
     });
     _watchTablesForSelection();
   }
@@ -132,6 +136,7 @@ class MainCubit extends Cubit<MainState> {
     _lanSub?.cancel();
     _hallsSub?.cancel();
     _tablesSub?.cancel();
+    _allTablesSub?.cancel();
     return super.close();
   }
 }

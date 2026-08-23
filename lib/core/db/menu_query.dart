@@ -38,6 +38,24 @@ class MenuQuery {
 
   Stream<List<GoodsModel>> watchGoods() => _db.watch({'goods'}, goods);
 
+  /// One good by id, or null when the catalog has no such row.
+  ///
+  /// A primary-key lookup rather than a scan of the whole catalog, which is
+  /// what the receipt builders did against the Hive blob. Soft-deleted rows
+  /// still resolve: a line item can name a good that has since been removed
+  /// from the menu, and a reprint of that bill must still find its name and
+  /// category.
+  GoodsModel? goodById(String id) {
+    if (id.isEmpty) return null;
+    final rows = _db.selectData('SELECT data FROM goods WHERE id = ?', [id]);
+    if (rows.isEmpty) return null;
+    try {
+      return GoodsModel.fromJson(rows.first);
+    } catch (_) {
+      return null;
+    }
+  }
+
   List<GoodsModel> goodsForCategory(String categoryId) {
     if (categoryId == 'all') return goods();
     return _decode(
