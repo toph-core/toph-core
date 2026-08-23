@@ -125,18 +125,21 @@ Run these on a device, dine-in **and** waiter **and** takeaway where noted:
 
 ## Still on Hive (not this flow)
 
-- **`login_data_scope` (§9).** Auth-critical tenant-switch wipe + a "did setup
-  land data" check; entangled with what still populates the Hive catalog.
-  Deferred to a session where the app runs, because the failure mode (a tenant
-  switch that leaves stale data, or a setup-check that mis-reports) is not
-  CI-observable and lands on the login path.
-- **`SyncEngine`** still hydrates the Hive catalog (goods/categories/users/…)
-  and `CacheService` (≈20 files still read it — the menu goods lookups for
-  receipts, the PIN-login user cache, `main_repository` REST fallbacks). Those
-  readers must move before the Hive `LocalDatabase`/`CacheService` can be
-  deleted (§10).
-- **`di.dart`** is the composition root, retired last with the Hive
-  `LocalDatabase`/`CacheService` (§10).
+Both entries here are **done**. `login_data_scope` moved with the rest of the
+CacheService wipe path: the brand-switch wipe is now `resetAndBootstrap`'s own
+first act (so clear and refill are one operation, with no window where the
+terminal has an empty database and no bootstrap running), and the "did setup
+land data" check asks the replica's `tableCounts()` for the same two entities
+it used to ask the Hive box for. `di.dart` no longer constructs either store,
+because neither exists — see `OFFLINE_FIRST_EVERYWHERE_PLAN.md` §6b.
+
+`SyncEngine`'s legacy hydration, listed here as the blocker for both, is
+deleted. It was the Hive store's last writer.
+
+What still uses Hive is a different thing entirely and out of this flow's
+scope: the legacy `OfflineQueueService` (payment, table timers, shift
+open/close), the print queue, and the audit log. Those are write paths, not
+replicated state.
 
 The table-timer store (§8) previously listed here is **done** — see item 6 in
 "What was built."

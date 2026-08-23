@@ -351,74 +351,83 @@ None of these block Phases 0-4; they raise the ceiling.
 
 ---
 
-## 6b. Status finding — two storage engines run in parallel
+## 6b. Status — one storage engine, and what is left
 
-Discovered while wiring the first Phase 4 read (transactions). The client has
-**two** `LocalDatabase` classes, and the migration between them is half done:
+The two-engine split this section used to record is **closed**. The Hive
+`LocalDatabase` and `CacheService` are deleted; `lib/core/database/` and
+`lib/core/services/cache/` no longer exist. Every screen reads the SQLite
+replica at `lib/core/db/`, and the `§7` ratchet that counted the remaining
+Hive-bound files down to zero has inverted into an assertion that neither
+store can come back.
 
-- **SQLite `core/db/`** — the offline-first target. The change feed lands here;
-  `halls_tables`, `menu_admin`, `users`, `archives`, `tables` and now the
-  transactions read sit on it.
-- **Hive `core/database/`** — the old `CacheService`, evolved. **`orders`,
-  `waiter`, the order-detail read path, `menu` and `table_timer` still read from
-  it.**
+Getting there was, in order: the order/waiter/timer flows (recorded in
+`ORDER_FLOW_MIGRATION_PLAN.md`), then the back-office and cross-cutting
+readers — the customer menu, receipts and kitchen printing, hall counts,
+archive bill detail, transaction-group search, service charge, menu images —
+and finally the legacy hydration itself.
 
-So the entire backend sync effort fills the SQLite replica, while the most
-important screens in the POS — the order flow — read the Hive store the feed
-never touches. The `deleted_at` fix, the branch scoping, the snapshot, the
-compaction: none of it reaches those screens yet, because those screens are on
-the wrong engine.
+### What the Phase 4 cut actually removed
 
-This reframes Phase 4. It is not "rewire screens onto the replica" from a clean
-base; it is "finish moving off two engines onto one", and the order flow — the
-highest-value, highest-traffic path — is the biggest piece still on Hive. The
-`Hive present -> 86 files` line in the definition of done below is this, not
-stragglers.
+`SyncEngine` lost 266 lines: `_hydrateReferenceData` and its five-way parallel
+fetch, plus the per-entity passes for goods-by-category, ingredients and
+compounds, transaction groups, cash registers, printer settings, service
+charge, open order details, the goods mirror, and `prefetchAllGoods`. One
+`POST /sync/pull` loop replaced all of it, which was the whole premise of §1.
 
-Recommended order when this resumes: the order/waiter read path first (it is
-what the sync work exists to serve), then the remaining back-office lists, which
-are smaller and lower-traffic.
+Twelve `MainRepository` reads had no caller left once that block went and were
+deleted with it. Two survive as genuine transport and are named in §9 below.
 
-### Order-flow read — verified against the replica, and a crash fixed
+**What survives the cut is a closed list, and the criterion is explicit:** an
+entity belongs in `SyncEngine._fillFeedGaps` only if the backend logs no
+change-log trigger for it. Today that is exactly two —
 
-Resuming the order-detail read produced two concrete results, both provable
-without a running app:
+- **Table timers.** `table_time_sessions` has no trigger (§5 item 1). Asking
+  per open order is the only way server timer truth reaches a terminal, and a
+  time-based table's charge is usually the largest line on its bill. The pass
+  is now driven off the replica: busy time-based tables from
+  `HallsTablesQuery`, whose rows carry the venue's *live* occupancy rather than
+  the server's stale `status`, and each one's open order from
+  `OrderDetailQuery`.
+- **Menu images.** Minio is a blob store, not a logged table.
 
-1. **The shape contract holds.** `OrderDetailQuery`'s output, decoded through
-   `ArchiveDetailModel.fromJson`, maps 1:1 onto what the order screen's bloc
-   (`detail_bloc._applyDetailToState`) already reads. The item name comes from
-   the joined `good_name` — exactly the key `OrderFoodModel` reads — and
-   `table_number` / `hall_name` / `bill_status` / `guest_count`, plus each
-   item's `id` / `price` / `status` / `quantity` / `comment` / `created_at` /
-   `good_id`, all line up. So the read swap's *data* is correct; nothing in the
-   model layer changes to consume the replica.
+Adding a fetch here for anything that replicates would reintroduce the second
+data path this phase removed. §5 item 1 landing deletes the first of the two.
 
-2. **A crash the earlier "verified in sqlite" missed.** The read ordered its
-   items by the bare column `oi.created_at`, but `order_items` promotes only
-   `order_id` / `good_id` / `status` — there is no such column, so the query
-   raised `no such column: oi.created_at` against the real generated schema for
-   any order that has items. (The verification that shipped it must have run
-   against a schema that didn't match the registry; the committed Dart test
-   would have caught it the first time it ran.) Fixed to
-   `json_extract(oi.data, '$.created_at')` — the access the registry prescribes
-   for non-promoted fields — verified end-to-end in sqlite against a schema
-   built faithfully from `kReplicatedEntities`, and pinned by a test case whose
-   id order contradicts its time order so an id-only fallback fails it. A sweep
-   of the sibling queries (`archives`, `halls_tables`, `menu_admin`,
-   `transactions`, `users`) found no other reference to a non-existent column.
+### Two defects found and fixed on the way
 
-What remains app-gated is unchanged and now sharply bounded: only the
-**optimistic-write overlay** for a brand-new order not yet reflected by the
-feed. Today that order reaches the screen solely through the Hive snapshot
-(`create_order_bloc` → `saveOrderDetailSnapshot` → `watchOrderDetail(tableId)`);
-nothing writes it into the SQLite `orders` / `order_items` tables. Swapping
-`OrdersRepositoryImpl.watchOrderDetail` / `getOrderDetail` onto
-`OrderDetailQuery` is safe for already-synced orders but must not lose that
-optimistic display — so it pairs with writing the local order and items into the
-replica (guarded by `_pending`) on `createOrder` / `addItems`. That write pair
-is the piece that needs the app to confirm the overlay still behaves.
+Both were pre-existing, both are pinned by tests that fail against the old
+code:
 
----
+1. **`LocalDatabase.clearAll` left the previous tenant's occupancy behind.**
+   It named its local-only tables one by one and missed `_table_status` and
+   `_provisional`, so a brand switch wiped every replicated row but kept the
+   old venue's live table occupancy and its invented ids — precisely the
+   stale-tenant-state failure the wipe exists to prevent. It iterates
+   `LocalTables.all` now, so a local table added later cannot be forgotten.
+   (The same edit removed four stray `CREATE TABLE` blocks that a bad context
+   match in `e4db501` had dropped into `clearAll` and `tableCounts`.)
+
+2. **The §7 Hive ratchet had a hole.** It matched the literal import string
+   for `core/database/`, which the package form contains and the relative form
+   does not — so `lib/core/sync/sync_engine.dart`, which reached the store as
+   `'../database/local_database.dart'`, sat outside the countdown the entire
+   time, invisible while the allowlist claimed two entries and meant three.
+   The rule resolves imports against the importing file's directory now.
+
+### The one deliberate exception
+
+`PrinterConfigStorage` holds the USB printer names in `SharedPreferences`, per
+§2 — an entry.id → Windows printer name mapping only means anything on the PC
+the cable is plugged into. It is the only value from the retired cache box that
+existed nowhere else, so `LegacyUsbPrinterNames` reads it out of the old Hive
+box once per launch and no-ops thereafter. Delete that shim, its `di.dart`
+call and `adoptLegacyUsbPrinterNames` once every terminal has run a build
+containing them.
+
+Hive itself is still a dependency: the legacy `OfflineQueueService` (payment,
+table timers, shift open/close), the print queue and the audit log run on it.
+Those are write-path migrations, tracked separately — no *replicated* state
+lives in Hive any more.
 
 ## 7. Definition of done
 
@@ -439,15 +448,19 @@ tests; `[~]` is partial with the remainder pinned to a ratchet allowlist.
       `test/change_feed_relay_test.dart`.
 - [~] Networking confined to the transport layer — enforced by the §9.1 ratchet
       and `scripts/check_import_boundary.sh`. One feature-layer file remains,
-      `main_datasources.dart`, which goes once the order / waiter / timer
-      consumers move off `MainRepository`.
-- [~] Exactly one database class; `CacheService` and Hive `LocalDatabase`
-      deleted — the §7 Hive-store ratchet is the live countdown. Done so far:
-      transactions, lease occupancy, and the customer menu. Remaining (5): the
-      orders, waiter, table_timer and login_data_scope repositories, then
-      `di.dart` — after which `lib/core/database/` and the ~22 `CacheService`
-      references are deleted. All five are write-path / app-gated; the order
-      flow is specified end-to-end in `ORDER_FLOW_MIGRATION_PLAN.md`.
+      `main_datasources.dart`. Its read surface is down to two callers that are
+      genuine transport, not screen reads: `getOrderTableTimer` (the untriggered
+      `table_time_sessions`, §5 item 1) and `getPrinterSettings` (device config,
+      applied at login). The third, `getPaymentDetailWithTableId`, is
+      `detail_bloc`'s narrow fallback for a brand-new dine-in order — obsolete
+      on paper, since `createOrder` now writes the order and its lines to the
+      replica synchronously, but removing it wants the app to confirm the
+      optimistic display first.
+- [x] Exactly one database class; `CacheService` and Hive `LocalDatabase`
+      deleted. `lib/core/database/` and `lib/core/services/cache/` are gone,
+      and the ratchet that counted them down now asserts they cannot return.
+      See §6b for the route and for the one deliberate `SharedPreferences`
+      exception §2 allows.
 - [ ] Every screen renders with the cable pulled, cold-started — needs the §9.3
       offline integration suite (Dio replaced by a throwing client). Not built;
       it is the one guard that must drive the whole app, so it wants a running
