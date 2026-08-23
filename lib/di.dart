@@ -3,6 +3,12 @@ import 'dart:convert';
 import 'package:alice/alice.dart';
 import 'package:alice/model/alice_configuration.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
+// §9.3's offline suite swaps `HttpClientAdapter` — Dio's own transport
+// extension point — for one that throws, so the whole app runs with the cable
+// genuinely pulled. This file is already the transport layer as far as the
+// §9.1 ratchet is concerned; see `DiOverrides` below for why the seam lives
+// here rather than in a parallel test-only wiring.
+import 'package:dio/dio.dart' show HttpClientAdapter;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:mary_ai_pos/core/api/app_security_context.dart';
 import 'package:mary_ai_pos/core/api/dio_client.dart';
@@ -114,8 +120,56 @@ import 'package:mary_ai_pos/features/view/main/presentation/cubit/table_timer/ta
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/waiter/waiter_cubit.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/ui_prefs/ui_prefs_cubit.dart';
 
+/// The two places `initDi` reaches for something a test cannot supply, and
+/// nothing else.
+///
+/// OFFLINE_FIRST_EVERYWHERE_PLAN.md §9.3 asks for "the whole app driven with
+/// the Dio client replaced by one that throws on any call" — which means the
+/// offline suite has to boot the *real* composition root, not a hand-rolled
+/// copy of it. §9's opening line is the reason that matters: the previous
+/// attempts failed because "fixes landed on one path and not its duplicate."
+/// A second, test-only wiring would be exactly that duplicate, and it would
+/// go stale the first time someone registered a dependency here and nowhere
+/// else — silently, because the suite would still be green.
+///
+/// So the seam is deliberately the smallest thing that unblocks a headless
+/// boot, and it is *only* the two constructions that need a platform the test
+/// binding does not provide:
+///
+/// * [database] — `LocalDatabaseFactory.openDefault()` resolves a real
+///   application-support directory through `path_provider`, a plugin with no
+///   implementation under `flutter test`. A test passes
+///   `LocalDatabase.open(':memory:')` instead.
+/// * [httpClientAdapter] — Dio's own extension point, swapped in before
+///   anything can use the client. This is what makes the cable-pulled suite
+///   mean something: the adapter throws, so no code path anywhere in the app
+///   can complete a request, and any screen or action that quietly depends on
+///   one fails instead of passing on a cached response.
+///
+/// Everything else `initDi` touches already has a real, settable seam of its
+/// own that a test installs from the outside and this class therefore has no
+/// business duplicating: `SharedPreferences.setMockInitialValues`,
+/// `FlutterSecureStoragePlatform.instance`, `ConnectivityPlatform.instance`,
+/// and `Hive.init` pointed at a temporary directory.
+///
+/// Passing no overrides — the production call in `main()` — leaves every line
+/// below byte-for-byte what it was: the two `??`/`if` guards fall through to
+/// the same constructions.
+class DiOverrides {
+  const DiOverrides({this.database, this.httpClientAdapter});
+
+  /// Replaces the on-disk replica. When null, the real application-support
+  /// file is opened.
+  final replica.LocalDatabase? database;
+
+  /// Installed on `DioClient.dio` immediately after construction, before the
+  /// probe client is attached and long before any request is made. When null,
+  /// Dio keeps whatever adapter `DioClient` configured for itself.
+  final HttpClientAdapter? httpClientAdapter;
+}
+
 final inject = GetIt.instance;
-Future<void> initDi() async {
+Future<void> initDi({DiOverrides? overrides}) async {
   final SharedPreferences prefs = await SharedPreferences.getInstance();
   const secureStorage = FlutterSecureStorage();
 
@@ -148,7 +202,8 @@ Future<void> initDi() async {
   // OFFLINE_FIRST_EVERYWHERE_PLAN.md §2 — the replica of the tenant database,
   // and now the only one. `CacheService` and the Hive `LocalDatabase` that
   // used to be constructed above are deleted; every screen reads this.
-  final replicaDb = await replica.LocalDatabaseFactory.openDefault();
+  final replicaDb =
+      overrides?.database ?? await replica.LocalDatabaseFactory.openDefault();
   final changeApplier = replica.ChangeApplier(replicaDb);
   inject.registerSingleton<replica.LocalDatabase>(replicaDb);
   inject.registerSingleton<replica.ChangeApplier>(changeApplier);
@@ -193,6 +248,11 @@ Future<void> initDi() async {
     connectivityCubit,
     securityContext: securityContext,
   );
+  // Before `attachProbeClient` below and before `syncEngine.start()`'s first
+  // tick, so a test's throwing adapter is in place for every request the app
+  // could possibly make — including the ones startup makes on its own.
+  final adapterOverride = overrides?.httpClientAdapter;
+  if (adapterOverride != null) dioClient.dio.httpClientAdapter = adapterOverride;
   alice.addAdapter(dioClient.aliceDioAdapter);
   inject.registerSingleton<DioClient>(dioClient);
   connectivityCubit.attachProbeClient(dioClient);
