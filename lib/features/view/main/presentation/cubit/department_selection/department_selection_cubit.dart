@@ -7,24 +7,19 @@ import 'package:mary_ai_pos/core/error/failure.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/category/category_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/department/department_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/goods/goods_model.dart';
-import 'package:mary_ai_pos/features/view/main/domain/repository/menu_local_repository.dart';
 import 'package:mary_ai_pos/features/view/main/domain/repository/menu_repository.dart';
 import 'package:mary_ai_pos/generated/l10n.dart';
 
-/// Offline-first: departments/categories come from `MenuRepository`, the
-/// reactive `LocalDatabase`-backed surface `SyncEngine` keeps hydrated
-/// (§8 Phase 1) and `DetailBloc`/`menu_meals_list_screen.dart` already read
-/// from — a synchronous local read plus a live subscription, never a network
-/// await, so opening this screen never blocks on a round-trip. Goods search
-/// is a local filter too now (CLIENT_FACING_OFFLINE_PLAN.md §3) — the
-/// `MenuLocalRepository` call below resolves against the synced goods box,
-/// not the network.
+/// Offline-first: departments, categories *and* goods search all come from
+/// `MenuRepository` — the reactive surface over the SQLite replica that
+/// `DetailBloc`/`menu_meals_list_screen.dart` already read from. A
+/// synchronous local read plus a live subscription, never a network await,
+/// so opening this screen never blocks on a round-trip.
 class DepartmentSelectionCubit extends Cubit<DepartmentSelectionState> {
-  DepartmentSelectionCubit(this._menuRepository, this._searchRepository)
+  DepartmentSelectionCubit(this._menuRepository)
     : super(const DepartmentSelectionState());
 
   final MenuRepository _menuRepository;
-  final MenuLocalRepository _searchRepository;
 
   StreamSubscription<List<DepartmentModel>>? _departmentsSub;
   StreamSubscription<List<CategoryModel>>? _categoriesSub;
@@ -68,8 +63,8 @@ class DepartmentSelectionCubit extends Cubit<DepartmentSelectionState> {
   }
 
   /// Categories are filtered locally (name contains) via [filteredCategories].
-  /// Matching menu items come from a debounced local filter over the synced
-  /// goods box (CLIENT_FACING_OFFLINE_PLAN.md §3) — no network involved.
+  /// Matching menu items come from a debounced local filter over the
+  /// replicated `goods` table — no network involved.
   void search(String query) {
     final q = query.trim();
     if (q == state.searchQuery) return;
@@ -82,13 +77,9 @@ class DepartmentSelectionCubit extends Cubit<DepartmentSelectionState> {
     _searchDebounce = Timer(_searchDebounceDuration, () => _searchGoods(q));
   }
 
-  Future<void> _searchGoods(String query) async {
-    final result = await _searchRepository.searchGoodsByName(query);
+  void _searchGoods(String query) {
     if (isClosed || state.searchQuery != query) return;
-    result.fold(
-      (failure) => emit(state.copyWith(matchedGoods: const [])),
-      (goods) => emit(state.copyWith(matchedGoods: goods)),
-    );
+    emit(state.copyWith(matchedGoods: _menuRepository.searchGoodsByName(query)));
   }
 
   @override

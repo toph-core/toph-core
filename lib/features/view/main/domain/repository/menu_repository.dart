@@ -3,14 +3,14 @@ import 'package:mary_ai_pos/features/view/main/data/models/category/category_mod
 import 'package:mary_ai_pos/features/view/main/data/models/department/department_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/goods/goods_model.dart';
 
-/// offline-first-target-architecture.md §9 (V5) + V9 (menu images). Not to
-/// be confused with `MenuLocalRepository` (`menu_local_repository.dart`) —
-/// that's the earlier, network-first-when-online/Future-based repository
-/// from an earlier migration pass (`offline-first-architecture-plan.md`);
-/// it's now only used for the live, uncached goods-name search
-/// (`searchGoodsByName`). `DepartmentSelectionCubit` reads departments/
-/// categories from this repository (purely-reactive `watchX()`/`getX()`
-/// over `LocalDatabase`), same as `DetailBloc`.
+/// offline-first-target-architecture.md §9 (V5) + V9 (menu images).
+///
+/// The single menu read surface: purely reactive `watchX()`/`getX()` over the
+/// SQLite replica, with no network path and no Future. It absorbed the last
+/// caller of the earlier network-first `MenuLocalRepository`, which is
+/// deleted — goods-name search is a local filter over the replicated `goods`
+/// table like every other read here. `DepartmentSelectionCubit`, `DetailBloc`
+/// and `menu_meals_list_screen.dart` all read from it.
 abstract class MenuRepository {
   Stream<List<CategoryModel>> watchCategories();
   List<CategoryModel> getCategories();

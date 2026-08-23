@@ -63,7 +63,6 @@ import 'package:mary_ai_pos/features/view/main/presentation/cubit/halls_tables/h
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/menu_admin/menu_goods_cubit.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/menu_admin/menu_manage_cubit.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/users/users_cubit.dart';
-import 'package:mary_ai_pos/features/view/main/data/repository/menu_local_repository_impl.dart';
 import 'package:mary_ai_pos/features/view/main/data/repository/table_timer_local_repository_impl.dart';
 import 'package:mary_ai_pos/features/view/main/data/repository/waiter_local_repository_impl.dart';
 import 'package:mary_ai_pos/features/view/main/data/repository/orders_repository_impl.dart';
@@ -77,7 +76,6 @@ import 'package:mary_ai_pos/features/view/main/domain/repository/tables_reposito
 import 'package:mary_ai_pos/features/view/main/domain/repository/menu_repository.dart';
 import 'package:mary_ai_pos/features/view/main/domain/repository/transactions_repository.dart';
 import 'package:mary_ai_pos/features/view/main/domain/repository/archives_local_repository.dart';
-import 'package:mary_ai_pos/features/view/main/domain/repository/menu_local_repository.dart';
 import 'package:mary_ai_pos/features/view/main/domain/repository/table_timer_local_repository.dart';
 import 'package:mary_ai_pos/features/view/main/domain/repository/waiter_local_repository.dart';
 import 'package:mary_ai_pos/features/view/main/domain/usecase/get_departments_usecase.dart';
@@ -405,9 +403,6 @@ void _repositories() {
       inject(),
     ),
   );
-  inject.registerLazySingleton<MenuLocalRepository>(
-    () => MenuLocalRepositoryImpl(inject(), inject(), inject(), inject()),
-  );
   // CLIENT_FACING_OFFLINE_PLAN.md §2 — local-first now: LocalDatabase +
   // outbox + OrdersRepository (for the timed-order create), no DioClient.
   // The timed-order create is lease-gated (LAN_HUB_AND_LEASING_PLAN.md §8).
@@ -564,7 +559,7 @@ void _cubit() {
     ),
   );
   inject.registerFactory(
-    () => DepartmentSelectionCubit(inject(), inject()),
+    () => DepartmentSelectionCubit(inject()),
   );
   inject.registerFactory(
     () => CreateOrderBloc(
