@@ -53,7 +53,7 @@ void registerTransactionsOutboxHandlers(
       send: (op) async {
         final payload = op.payload;
         if (_isTransfer(payload)) {
-          return _resultOf(await remote.createTransferTransaction(payload));
+          return _created(await remote.createTransferTransaction(payload));
         }
         final type = payload['type'];
         if (type is! String || type.isEmpty) {
@@ -63,7 +63,7 @@ void registerTransactionsOutboxHandlers(
             'transfer (no from/to cash register)',
           );
         }
-        return _resultOf(await remote.createIncomeExpenseTransaction(payload));
+        return _created(await remote.createIncomeExpenseTransaction(payload));
       },
     ),
   );
@@ -96,7 +96,7 @@ void registerTransactionsOutboxHandlers(
     OutboxHandler(
       send: (op) => _withName(
         op,
-        (name) async => _resultOf(await remote.createTransactionGroup(name)),
+        (name) async => _created(await remote.createTransactionGroup(name)),
       ),
     ),
   );
@@ -181,11 +181,30 @@ OutboxExecutionResult _deleted(Either<Failure, bool> result) => result.fold(
       (_) => const OutboxExecutionResult.succeeded(),
     );
 
-/// None of these endpoints hand back a row through [MainRepository] — its
-/// transaction methods return `bool` — so a success carries no `serverRow` to
-/// converge on. The server's version arrives through replication, and until it
-/// does the drainer drops the provisional row rather than showing an id it
-/// cannot justify. See `TransactionsRepositoryImpl`'s class doc.
+/// A create that came back with the row the server wrote.
+///
+/// The three create endpoints assign their own ids, so the local row is sitting
+/// under a provisional one. Handing the response to the drainer is what lets it
+/// swap that row for the server's in place — and, just as importantly, repoint
+/// anything still queued that referenced the provisional id: a movement filed
+/// under a transaction group that was itself created offline carries that
+/// group's provisional id in `group_transaction_id`.
+///
+/// Until these methods returned a row, the drainer took its documented no-id
+/// branch and simply deleted the local row on success, so a movement the
+/// operator had just entered disappeared from the ledger until the next pull
+/// delivered the server's copy.
+///
+/// What this still does not fix is a lost *response*: `POST /transactions/…`
+/// takes no client-supplied id or idempotency key, so a create whose reply is
+/// dropped after the server committed is retried and posts a second movement.
+/// That needs the endpoint to accept a client id, the way `CreateOrder` does.
+OutboxExecutionResult _created(Either<Failure, Map<String, dynamic>> result) =>
+    result.fold(
+      _outcome,
+      (row) => OutboxExecutionResult.succeeded(serverRow: row),
+    );
+
 OutboxExecutionResult _resultOf(Either<Failure, bool> result) =>
     result.fold(_outcome, (_) => const OutboxExecutionResult.succeeded());
 

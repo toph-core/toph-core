@@ -385,6 +385,56 @@ void main() {
       expect(db.byId('translations', localId)!['en'], 'New');
       expect(db.isProvisional('translations', localId), isTrue);
     });
+
+    test('the caller is handed that id, not just a success flag', () {
+      // The menu editor needs something to put in `name_i18n` before the save.
+      // While this returned `Unit` the screen had no id to use, so it refused
+      // the save outright and a new menu item could not be created at all —
+      // online or offline.
+      final id = repo
+          .createTranslation({'en': 'New', 'ru': 'Новый', 'uz': 'Yangi'})
+          .getOrElse(() => '');
+
+      expect(id, isNotEmpty);
+      expect(id, outbox.pending().single.entityId);
+      expect(db.byId('translations', id)!['uz'], 'Yangi');
+    });
+
+    test('a meal composed offline saves, carrying the local translation id',
+        () {
+      // End to end through the repository, the way `_submit` drives it: two
+      // translations, then the good that references them. Three queued
+      // operations and a good the list screen can already show.
+      final nameId = repo
+          .createTranslation({'en': 'Plov', 'ru': 'Плов', 'uz': 'Osh'})
+          .getOrElse(() => '');
+      final descId = repo
+          .createTranslation({'en': 'Rice', 'ru': 'Рис', 'uz': 'Guruch'})
+          .getOrElse(() => '');
+
+      final saved = repo.saveGood(body: {
+        'good': {
+          'name': 'Osh',
+          'name_i18n': nameId,
+          'description_i18n': descId,
+          'price': '25000',
+          'category_id': 'c-1',
+        },
+        'ingredient_calculations': const [],
+        'compound_calculations': const [],
+      });
+
+      expect(saved.isRight(), isTrue);
+      final ops = outbox.pending();
+      expect(ops.map((o) => '${o.entity}/${o.action}'), [
+        'translations/create',
+        'translations/create',
+        'goods/create',
+      ]);
+      final good = ops.last.payload['good'] as Map;
+      expect(good['name_i18n'], nameId);
+      expect(good['description_i18n'], descId);
+    });
   });
 
   group('the picker lists', () {

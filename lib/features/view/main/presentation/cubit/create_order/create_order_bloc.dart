@@ -42,12 +42,7 @@ class CreateOrderBloc extends Bloc<CreateOrderEvent, CreateOrderState> {
   final PrinterService _printerService;
   final ShiftBloc _shiftBloc;
 
-  // Active order ID for busy tables — set via bindActiveOrder()
-  String? _activeOrderId;
-
-  void bindActiveOrder(String orderId) => _activeOrderId = orderId;
-
-  // Oshxona cheki header'i uchun stol raqami — bindActiveOrder() singari UI
+  // Oshxona cheki header'i uchun stol raqami — UI
   // dan bog'lanadi (state freezed, regen talab qilmaslik uchun oddiy field).
   int _tableNumber = 0;
 
@@ -94,30 +89,32 @@ class CreateOrderBloc extends Bloc<CreateOrderEvent, CreateOrderState> {
     }
 
     // ── Dine-in ────────────────────────────────────────────────
-    // Kalit qoida: agar `_activeOrderId` bog'langan bo'lsa — mavjud
-    // buyurtmaga item qo'shamiz. `state.tableStatus` free bo'lsa ham shunday
-    // ishlaydi — UI holati eskirgan bo'lsa ham muammo bo'lmaydi, chunki bu
-    // endi ham network-await emas, faqat lokal yozuv.
-    if (_activeOrderId != null) {
+    // Kalit qoida: bu stolda tirik hisob bormi — buni **replikadan** so'raymiz,
+    // UI bog'lab bergan order id dan emas.
+    //
+    // Ilgari bu yerda ikkita yo'l bor edi: `bindActiveOrder` bergan id bo'lsa —
+    // unga qo'shish, aks holda stol busy bo'lsa — "Buyurtma ID topilmadi" xatosi.
+    // Ikkalasi ham UI ushlab turgan qiymatga ishonardi, va ikkalasi ham
+    // hisob boshqa terminalda yopilganda buzilardi: bog'langan id eskirsa —
+    // taomlar allaqachon to'langan buyurtmaga jimgina ketardi; id bo'lmasa —
+    // kassir hech qachon chiqib ketolmaydigan xato ko'rardi (stol busy, lekin
+    // ochiq hisob yo'q). Endi manba bitta — `OrdersRepository.getOrderDetail`
+    // faqat *tirik* hisobni qaytaradi (`OrderDetailQuery.liveBill`).
+    final live = _ordersRepository.getOrderDetail(state.tableId);
+    final liveOrderId = live?.id ?? '';
+    if (liveOrderId.isNotEmpty) {
       await _addItemsToExistingOrder(
-        orderId: _activeOrderId!,
+        orderId: liveOrderId,
         orders: event.orders,
         emit: emit,
       );
       return;
     }
 
-    // Qo'shimcha himoya: stol busy lekin orderId hali bog'lanmagan.
-    // Foydalanuvchi ekranni yangilab qayta urinsin (fetchBillOrders
-    // activeOrderId ni yozib qo'yadi).
-    if (state.tableStatus == TableStatus.busy) {
-      showErrorMessage(
-        navigatorKey.currentContext!,
-        "Buyurtma ID topilmadi. Ekranni yangilab qayta urinib ko'ring.",
-      );
-      emit(state.copyWith(status: Status.ERROR));
-      return;
-    }
+    // Tirik hisob yo'q. Stol UI da hali "busy" ko'rinsa ham — yangi hisob
+    // ochamiz (ilgarigi boshi berk xato o'rniga). Haqiqiy cross-terminal
+    // poyga bo'lsa, `orders/create` ning 409-merge shoxi replay paytida
+    // birlashtiradi — bu yo'lning allaqachon mavjud kafolati.
 
     // LAN_HUB_AND_LEASING_PLAN.md §5/§9 — the lease is back (the
     // client-facing plan's carve-out #2 is reverted per product decision,
@@ -166,7 +163,6 @@ class CreateOrderBloc extends Bloc<CreateOrderEvent, CreateOrderState> {
       state.tableId,
       _buildLocalOrderSnapshot(id: clientOrderId, orders: event.orders).toJson(),
     );
-    bindActiveOrder(clientOrderId);
     // Ephemeral claim cleared the instant this local write is confirmed —
     // same-process callback or one LAN message, never a network wait (§6
     // Lease Recovery). Only a granted lease holds anything; an unreachable

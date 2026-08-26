@@ -292,18 +292,21 @@ class _MenuManageScreenState extends State<MenuManageScreen> {
     _applyCalculationsOnly(data);
   }
 
-  /// Thrown when a save needs a translation id that cannot exist yet.
-  ///
-  /// `good.name_i18n` is a *reference* to a translation row, and `/translations`
-  /// assigns its id server-side. Editing an existing meal's translations is a
-  /// local update and works offline. Creating the first ones does not: queueing
-  /// the translation would leave the good referencing nothing, so the meal would
-  /// save with its translations silently dropped. Refusing is the honest
-  /// outcome — this is the same server-assigned-id problem as everywhere else
-  /// (DECISIONS.md D1), just one where the id is load-bearing for a second row.
-  static const _needsConnectionForNewTranslation = 'new-translation';
-
   /// Returns the translation id to reference, or null when none is needed.
+  ///
+  /// `good.name_i18n` is a *reference* to a translation row, and
+  /// `POST /translations` assigns its id server-side. That used to make a new
+  /// meal unsaveable: the screen queued the translation and then refused the
+  /// save outright, because a good referencing an id nobody had assigned yet
+  /// looked like a good whose translations would be silently dropped.
+  ///
+  /// It is not, any more. The translation is written locally under a
+  /// provisional id (`LocalWriter.create`) and that id is what goes into the
+  /// good. `OutboxDrainer` holds the good's own operation back until the
+  /// translation's create is acknowledged, then rewrites the reference to the
+  /// real id before the good is sent — so the pair can be composed entirely
+  /// offline and still reach the server intact. This is DECISIONS.md D1's
+  /// answer applied to a load-bearing reference rather than a display id.
   String? _upsertTranslation(
     String? existingId, {
     required String en,
@@ -320,8 +323,11 @@ class _MenuManageScreenState extends State<MenuManageScreen> {
       }
       return existingId;
     }
-    _cubit.createTranslation(body);
-    throw const MessageFailure(_needsConnectionForNewTranslation);
+    final created = _cubit.createTranslation(body);
+    if (created == null || created.isEmpty) {
+      throw MessageFailure(_cubit.state.error ?? 'Tarjima saqlanmadi');
+    }
+    return created;
   }
 
   Map<String, String> _scopeHeaders(UserModel? u) {

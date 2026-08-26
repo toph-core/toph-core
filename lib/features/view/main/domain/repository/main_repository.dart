@@ -66,7 +66,7 @@ abstract class MainRepository {
 
   Future<Either<Failure, bool>> deletePrinterSetting(String id);
 
-  Future<Either<Failure, bool>> createTransactionGroup(String name);
+  Future<Either<Failure, Map<String, dynamic>>> createTransactionGroup(String name);
 
   Future<Either<Failure, bool>> updateTransactionGroup(String id, String name);
 
@@ -81,11 +81,11 @@ abstract class MainRepository {
     String? cashRegisterId,
   });
 
-  Future<Either<Failure, bool>> createIncomeExpenseTransaction(
+  Future<Either<Failure, Map<String, dynamic>>> createIncomeExpenseTransaction(
     Map<String, dynamic> body,
   );
 
-  Future<Either<Failure, bool>> createTransferTransaction(
+  Future<Either<Failure, Map<String, dynamic>>> createTransferTransaction(
     Map<String, dynamic> body,
   );
 

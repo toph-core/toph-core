@@ -25,6 +25,7 @@ import 'package:mary_ai_pos/core/db/apply_change.dart' as replica;
 import 'package:mary_ai_pos/core/db/local_database.dart' as replica;
 import 'package:mary_ai_pos/core/db/local_database_factory.dart' as replica;
 import 'package:mary_ai_pos/core/db/order_detail_query.dart' as replica;
+import 'package:mary_ai_pos/core/db/table_occupancy_reconciler.dart' as replica;
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/printers/printers_controller.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/transactions/transaction_categories_controller.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/transactions/transactions_list_controller.dart';
@@ -242,6 +243,15 @@ Future<void> initDi({DiOverrides? overrides}) async {
     replica.OrderDetailQuery(replicaDb),
   );
 
+  // Occupancy and table timers are local authority, so no pull can correct
+  // them — and until this ran, nothing did: a bill settled anywhere but this
+  // terminal left its table busy and its hourly timer charging forever, on top
+  // of an order screen that showed an empty 0-som bill because the paid order
+  // is (correctly) no longer a live one. One pass at startup heals a terminal
+  // that was off while the venue closed its checks; `ChangeApplier` keeps it
+  // true from here on. Synchronous and tiny — a handful of tables.
+  replica.TableOccupancyReconciler(replicaDb).reconcileAll();
+
   // OFFLINE_FIRST_EVERYWHERE_PLAN.md Phase 2 — the outbox, in the same SQLite
   // file as the replica so a local row and its queued send commit together.
   // The executor registry is deliberately empty here: Phase 4 registers a
@@ -307,6 +317,11 @@ Future<void> initDi({DiOverrides? overrides}) async {
   // which was true when it was written and has been wrong since the flip.
   final leaderElection = LeaderElectionService(lanHub: lanHubService, prefs: prefs);
   inject.registerSingleton<LeaderElectionService>(leaderElection);
+  // Election owns the discovery socket whenever it is enabled, so the settings
+  // screen has to ask it — not LanHubService's own idle instance — which UDP
+  // port is actually bound. A callback rather than a dependency: these two are
+  // constructed together and a real reference back would be a cycle.
+  lanHubService.discoveryPortReporter = () => leaderElection.boundDiscoveryPort;
 
   // Phase 1 — the replication loop. Registered before SyncEngine because
   // SyncEngine drives it from the sync triggers it already owns; nothing else

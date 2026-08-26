@@ -11,6 +11,7 @@ library;
 import 'entity_registry.dart';
 import 'local_database.dart';
 import 'payload_normalizer.dart';
+import 'table_occupancy_reconciler.dart';
 
 /// Outcome of applying a batch. Surfaced on the sync-status screen and asserted
 /// in tests; nothing branches on it at runtime.
@@ -91,8 +92,51 @@ class ChangeApplier {
   /// and Dart is single-threaded.
   bool _fromPeer = false;
 
+  /// Occupancy and table timers are derived from the bills this class applies —
+  /// see [TableOccupancyReconciler] for why they cannot be left to the screens
+  /// that happen to be open.
+  late final TableOccupancyReconciler _occupancy =
+      TableOccupancyReconciler(_db);
+
+  /// Tables whose orders the in-flight apply touched, drained by whichever
+  /// entry point started it.
+  ///
+  /// Collected rather than reconciled inline because a pull batch can carry an
+  /// order's create and its payment in the same transaction: reconciling per
+  /// row would decide occupancy from a half-applied batch. Safe as plain
+  /// instance state — an apply is synchronous and Dart is single-threaded.
+  final Set<String> _touchedOrderTables = <String>{};
+
   ChangeApplier(this._db, {LocalChangeSink? onLocalChange})
       : _onLocalChange = onLocalChange;
+
+  /// Records both ends of an `orders` row's occupancy: the table it names, and
+  /// the table the stored copy names.
+  ///
+  /// Both, because a transfer rewrites `table_id` — the source table has to be
+  /// reconsidered too, or a moved bill leaves it busy forever. Must be called
+  /// *before* the row is written, while the stored copy is still the old one.
+  void _noteOrderTables(String entity, String id, [Map<String, dynamic>? row]) {
+    if (entity != 'orders') return;
+    final incoming = row?['table_id']?.toString() ?? '';
+    if (incoming.isNotEmpty) _touchedOrderTables.add(incoming);
+    for (final stored in _db.select(
+      'SELECT table_id AS table_id FROM orders WHERE id = ?',
+      [id],
+    )) {
+      final tableId = stored['table_id'] as String? ?? '';
+      if (tableId.isNotEmpty) _touchedOrderTables.add(tableId);
+    }
+  }
+
+  /// Re-derives occupancy for everything the batch touched. Call inside the
+  /// apply's own transaction, once the last row has landed.
+  void _reconcileTouchedTables() {
+    if (_touchedOrderTables.isEmpty) return;
+    final tables = Set<String>.of(_touchedOrderTables);
+    _touchedOrderTables.clear();
+    _occupancy.reconcileTables(tables);
+  }
 
   /// Queues [_onLocalChange] for after the current transaction commits.
   ///
@@ -155,6 +199,11 @@ class ChangeApplier {
       // deleted upstream would otherwise leave its status row behind forever.
       // Cheap, and only when tables actually changed.
       if (sawTables) _db.pruneTableStatuses();
+      // Every bill in the batch has landed, so the floor can be re-derived from
+      // them: a bill settled on another terminal frees its table here, and one
+      // opened there marks it busy. Inside the batch transaction, so the two
+      // never commit apart.
+      _reconcileTouchedTables();
       if (cursor is num && advanceCursor) {
         final next = cursor.toInt();
         // Never move the cursor backwards: a retried or out-of-order batch must
@@ -214,6 +263,7 @@ class ChangeApplier {
           out = out._add(skippedPending: 1);
           continue;
         }
+        _noteOrderTables(entity, entityId);
         _db.deleteRow(entity, entityId);
         out = out._add(deleted: 1);
       }
@@ -236,6 +286,7 @@ class ChangeApplier {
     // acknowledged (Phase 2), after which the server's version takes over.
     if (_db.isPending(spec.name, id)) return stats._add(skippedPending: 1);
 
+    _noteOrderTables(spec.name, id, raw);
     _retireClientTwin(spec, id, raw);
 
     _db.upsert(spec, id, PayloadNormalizer.normalize(spec, raw));
@@ -313,6 +364,7 @@ class ChangeApplier {
               payload: payload,
             );
           }
+          _reconcileTouchedTables();
           return stats;
         case 'delete':
           final id = entityId ?? payload?[spec.pk]?.toString();
@@ -320,8 +372,10 @@ class ChangeApplier {
           if (_db.isPending(entity, id)) {
             return const ApplyStats(skippedPending: 1);
           }
+          _noteOrderTables(entity, id);
           _db.deleteRow(entity, id);
           _emitLocalChange(entity: entity, action: 'delete', id: id);
+          _reconcileTouchedTables();
           return const ApplyStats(deleted: 1);
         default:
           return const ApplyStats(failed: 1);
@@ -373,6 +427,7 @@ class ChangeApplier {
       throw ArgumentError.value(entity, 'entity', 'not a replicated entity');
     }
     _db.transaction(() {
+      _noteOrderTables(entity, id, payload);
       _db.upsert(spec, id, PayloadNormalizer.normalize(spec, payload));
       _db.markPending(entity, id);
       // Peers get the row itself, never the pending guard: the guard says
@@ -384,6 +439,12 @@ class ChangeApplier {
         id: id,
         payload: payload,
       );
+      // The local half of the same rule the pull path applies: taking a payment
+      // here closes the bill on the row above, so the table frees itself and
+      // its timer is dropped without the payment screen having to remember —
+      // and, crucially, without depending on that screen being the one that
+      // took it.
+      _reconcileTouchedTables();
     });
   }
 
@@ -400,9 +461,11 @@ class ChangeApplier {
       throw ArgumentError.value(entity, 'entity', 'not a replicated entity');
     }
     _db.transaction(() {
+      _noteOrderTables(entity, id);
       _db.deleteRow(entity, id);
       _db.markPending(entity, id);
       _emitLocalChange(entity: entity, action: 'delete', id: id);
+      _reconcileTouchedTables();
     });
   }
 

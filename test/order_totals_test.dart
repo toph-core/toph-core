@@ -55,6 +55,29 @@ void main() {
       expect(t.serviceAmount, 49200);
     });
 
+    test('a bill edited offline prices from the local rows, not the stale '
+        'server grand_total', () {
+      // The bill synced at 246000 + 20% = 295200. A line was then rung in
+      // offline, so the local `order_items` rows now sum to 300000 while
+      // `grand_total` still carries the pre-edit figure.
+      //
+      // This branch used to take `grand_total` whenever no line was
+      // cancelled, and `offlineExtra` — which once compensated by summing the
+      // legacy Hive queue — has had no callers since item writes moved onto
+      // the outbox. So the cashier collected 295200 on a 360000 bill, the
+      // queued pay came back 400 insufficient, and the bill reopened unpaid.
+      final t = OrderTotals.fromDetail(
+        _Detail(
+          goods: [_Good(price: 300000)],
+          servicePercent: 20,
+          grandTotal: 295200, // stale — priced before the offline add
+        ),
+      );
+      expect(t.itemsAmount, 300000);
+      expect(t.serviceAmount, 60000);
+      expect(t.grandTotal, 360000, reason: 'the local rows are the authority');
+    });
+
     test('simple table: recomputes when cancelled lines present', () {
       final t = OrderTotals.fromDetail(
         _Detail(

@@ -129,7 +129,10 @@ class ShiftBloc extends Bloc<ShiftEvent, ShiftState> {
     await _printerService.printShiftCloseReceipt(
       shiftId: shift.id,
       openedAt: shift.openedAt,
-      closingCard: 0,
+      // What the cashier actually counted on the numpad (`_updateCardSum`),
+      // not a literal zero. The receipt is the paper record of the drawer at
+      // close; printing 0 on every shift made it worthless as one.
+      closingCard: int.tryParse(s.cardSum) ?? 0,
       cashierLabel: name.isEmpty ? shift.cashierId : name,
     );
   }
@@ -157,15 +160,25 @@ class ShiftBloc extends Bloc<ShiftEvent, ShiftState> {
   /// `SharedPreferences`, not the replica (the plan's one deliberate
   /// non-database exception), so there is no local row for the writer to
   /// commit alongside the operation.
-  void _enqueueCloseShift(String cashRegisterId) {
+  /// [closingCash]/[closingCard] are the amounts the cashier counted into the
+  /// numpad before pressing close (`_updateCashSum`/`_updateCardSum`). They
+  /// used to be hard-coded `'0'` here, so every shift on every terminal
+  /// reconciled against a declared drawer of nothing — the count the cashier
+  /// was asked for was collected by the UI and then thrown away on the way to
+  /// the queue.
+  void _enqueueCloseShift(
+    String cashRegisterId, {
+    required String closingCash,
+    required String closingCard,
+  }) {
     inject<LocalWriter>().enqueueOnly(
       entity: kShiftEntity,
       action: kShiftClose,
       entityId: cashRegisterId,
       request: {
         'cash_register_id': cashRegisterId,
-        'closing_cash': '0',
-        'closing_card': '0',
+        'closing_cash': closingCash,
+        'closing_card': closingCard,
       },
     );
   }
@@ -185,7 +198,11 @@ class ShiftBloc extends Bloc<ShiftEvent, ShiftState> {
 
     emit(state.copyWith(status: Status.LOADING));
     await _printShiftCloseFromState(state);
-    _enqueueCloseShift(shift.cashRegisterId);
+    _enqueueCloseShift(
+      shift.cashRegisterId,
+      closingCash: state.cashSum,
+      closingCard: state.cardSum,
+    );
     await _clearLocalShift();
     if (emit.isDone) return;
     showSuccessMessage(

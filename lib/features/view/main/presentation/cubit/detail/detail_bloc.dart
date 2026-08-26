@@ -185,8 +185,28 @@ class DetailBloc extends Bloc<DetailEvent, DetailState> {
   }
 
   void _onOrderDetailUpdated(_OrderDetailUpdated event, Emitter<DetailState> emit) {
+    if (isClosed) return;
     final detail = event.detail;
-    if (detail == null || isClosed) return;
+    if (detail == null) {
+      // The bill stopped being live while this screen was open — settled or
+      // comped on another terminal, most often. A null used to be ignored,
+      // which left the cashier looking at the items and the `activeOrderId` of
+      // a bill that no longer exists: every +/- and every "add" then went to a
+      // closed order and was silently lost. Clearing is the honest answer, and
+      // the table has already freed itself underneath (see
+      // `TableOccupancyReconciler`), so re-entering it opens a fresh bill.
+      //
+      // `selectedGoods` is deliberately untouched: an uncommitted cart is the
+      // operator's own typing, not the server's business.
+      lastDetail = null;
+      _existingLineInfo.clear();
+      emit(state.copyWith(
+        existingGoods: const [],
+        activeOrderId: null,
+        existingSyncingNames: const <String>{},
+      ));
+      return;
+    }
     lastDetail = detail;
     _applyDetailToState(detail, event.tableId, emit);
   }
@@ -532,6 +552,25 @@ class DetailBloc extends Bloc<DetailEvent, DetailState> {
       // ConnectionFailure fork — matches the exact idempotency-key reuse
       // reasoning `create_order_bloc.dart` already documents (§13 risk #2).
       final addItemClientId = generateUuidV4();
+
+      // Narx replikadagi katalogdan olinadi (`getGoodById` — PK bo'yicha
+      // lokal qidiruv, tarmoqni kutmaydi). Ilgari bu yerda `price: '0'`
+      // qattiq yozilgan edi: offline tahrirlangan qator bepul bo'lib qolar,
+      // va agar chekdagi yagona qator shu bo'lsa, umumiy summa 0 ga tushib
+      // `payment_bloc` uni `cancelZeroTotalOrder` orqali jimgina bekor
+      // qilardi — ya'ni haqiqiy chek daromadsiz yopilardi.
+      final catalogGood = _menuRepository.getGoodById(snapshot.goodId);
+      final lineGoods = GoodsModel(
+        id: snapshot.goodId,
+        name: catalogGood?.name ?? itemName ?? '',
+        price: catalogGood?.price ?? '0',
+        categoryId: catalogGood?.categoryId ?? '',
+        cookTime: catalogGood?.cookTime ?? 0,
+        costPrice: catalogGood?.costPrice ?? '0',
+        description: catalogGood?.description ?? '',
+        profit: catalogGood?.profit ?? '0',
+        profitMargin: catalogGood?.profitMargin ?? '0',
+      );
       if (delta > 0) {
         // Plus: yangi line item qo'shamiz
         await _ordersRepository.addItems(
@@ -539,17 +578,7 @@ class DetailBloc extends Bloc<DetailEvent, DetailState> {
           orderId: state.activeOrderId!,
           items: [
             OrderItem(
-              goods: GoodsModel(
-                id: snapshot.goodId,
-                name: itemName ?? '',
-                price: '0',
-                categoryId: '',
-                cookTime: 0,
-                costPrice: '0',
-                description: '',
-                profit: '0',
-                profitMargin: '0',
-              ),
+              goods: lineGoods,
               quantity: delta,
               comment: snapshot.comment,
             ),
@@ -579,17 +608,7 @@ class DetailBloc extends Bloc<DetailEvent, DetailState> {
             orderId: state.activeOrderId!,
             items: [
               OrderItem(
-                goods: GoodsModel(
-                  id: snapshot.goodId,
-                  name: itemName ?? '',
-                  price: '0',
-                  categoryId: '',
-                  cookTime: 0,
-                  costPrice: '0',
-                  description: '',
-                  profit: '0',
-                  profitMargin: '0',
-                ),
+                goods: lineGoods,
                 quantity: desiredQty,
                 comment: snapshot.comment,
               ),

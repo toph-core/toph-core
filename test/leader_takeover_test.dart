@@ -19,6 +19,7 @@ import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mary_ai_pos/core/services/lan_hub/lan_discovery_service.dart';
 import 'package:mary_ai_pos/core/services/lan_hub/lan_hub_service.dart';
+import 'package:mary_ai_pos/core/services/lan_hub/lan_ports.dart';
 import 'package:mary_ai_pos/core/services/lan_hub/leader_election_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -102,6 +103,29 @@ class BusDiscovery implements LanDiscoveryService {
 class FakeLanHub implements LanHubService {
   LanMode fakeMode = LanMode.disabled;
   String fakeServerIp = '';
+
+  /// Port fields added with the configurable/auto-fallback port work. The
+  /// election service reads these on every start and adopt, so a fake missing
+  /// them fails as `noSuchMethod` rather than a useful assertion.
+  int fakeServerPort = kDefaultHubPort;
+
+  @override
+  int get serverPort => fakeServerPort;
+
+  @override
+  Future<void> setServerPort(int port) async => fakeServerPort = port;
+
+  @override
+  int get preferredHubPort => kDefaultHubPort;
+
+  @override
+  int get preferredDiscoveryPort => kDefaultDiscoveryPort;
+
+  /// Null — these fakes never bind a real socket, so the election service
+  /// falls back to [preferredHubPort] when announcing, exactly as it would on
+  /// a terminal whose server has not come up yet.
+  @override
+  int? get activeHubPort => null;
 
   @override
   LanMode get mode => fakeMode;

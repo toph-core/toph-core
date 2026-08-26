@@ -614,13 +614,11 @@ class _ActionButtons extends StatelessWidget {
               isLoading: createState.status == Status.LOADING,
               onTap: selectedGoods.isNotEmpty
                   ? () {
-                      final bloc = context.read<CreateOrderBloc>();
-                      final activeId = context
-                          .read<DetailBloc>()
-                          .state
-                          .activeOrderId;
-                      if (activeId != null) bloc.bindActiveOrder(activeId);
-                      bloc.add(
+                      // No `bindActiveOrder` hand-off any more: CreateOrderBloc
+                      // resolves the table's live bill from the replica itself,
+                      // which is the only copy that stays right when the bill is
+                      // settled somewhere else.
+                      context.read<CreateOrderBloc>().add(
                         CreateOrderEvent.createOrder(orders: selectedGoods),
                       );
                     }
@@ -633,31 +631,22 @@ class _ActionButtons extends StatelessWidget {
 
     // Busy table — Add items + Payment
     return BlocProvider(
-      create: (ctx) {
-        final bloc = inject<CreateOrderBloc>()
-          ..bindTableNumber(cafeTable?.number ?? 0)
-          ..add(
-            CreateOrderEvent.started(
-              tableId: tableId,
-              guestCount: guestCount,
-              tableStatus: tableStatus,
-            ),
-          );
-        final activeId = ctx.read<DetailBloc>().state.activeOrderId;
-        if (activeId != null) bloc.bindActiveOrder(activeId);
-        return bloc;
-      },
-      child: MultiBlocListener(
-        listeners: [
-          BlocListener<DetailBloc, DetailState>(
-            listenWhen: (p, c) =>
-                p.activeOrderId != c.activeOrderId && c.activeOrderId != null,
-            listener: (ctx, s) {
-              ctx.read<CreateOrderBloc>().bindActiveOrder(s.activeOrderId!);
-            },
+      create: (ctx) => inject<CreateOrderBloc>()
+        ..bindTableNumber(cafeTable?.number ?? 0)
+        ..add(
+          CreateOrderEvent.started(
+            tableId: tableId,
+            guestCount: guestCount,
+            tableStatus: tableStatus,
           ),
-        ],
-        child: BlocConsumer<CreateOrderBloc, CreateOrderState>(
+        ),
+      // The `DetailBloc.activeOrderId` hand-off that used to sit here — one
+      // push at create time and a listener re-pushing it on every change — is
+      // gone. It was a copy of a fact the replica already holds, and a copy
+      // that goes stale the moment the bill is settled on another terminal:
+      // the last id it pushed stayed bound, so "add items" wrote into a paid
+      // check. `CreateOrderBloc` reads the live bill itself now.
+      child: BlocConsumer<CreateOrderBloc, CreateOrderState>(
           listener: (context, createState) {
             if (createState.status != Status.LOADING && createState.success) {
               showSuccessMessage(context, S.current.strOrderSuccessCreated);
@@ -677,13 +666,7 @@ class _ActionButtons extends StatelessWidget {
                     bgColor: const Color(0xFF16A34A),
                     isLoading: createState.status == Status.LOADING,
                     onTap: () {
-                      final bloc = context.read<CreateOrderBloc>();
-                      final activeId = context
-                          .read<DetailBloc>()
-                          .state
-                          .activeOrderId;
-                      if (activeId != null) bloc.bindActiveOrder(activeId);
-                      bloc.add(
+                      context.read<CreateOrderBloc>().add(
                         CreateOrderEvent.createOrder(orders: selectedGoods),
                       );
                     },
@@ -713,6 +696,13 @@ class _ActionButtons extends StatelessWidget {
                       AppRoutes.paymentScreen,
                       arguments: {
                         'table_id': tableId,
+                        // The bill's own id, alongside the table it sits on.
+                        // The payment screen resolves by table first and falls
+                        // back to this, and only the id half survives the bill
+                        // leaving the open-bill predicate — which is what left
+                        // the screen spinning on a check that was already
+                        // settled or comped.
+                        'order_id': detailBloc.state.activeOrderId,
                         'table_type': cafeTable?.tableType ?? 'simple',
                         'hour_amount': hourAmt,
                         'timer_started_at': timerData?.startedAt,
@@ -745,7 +735,6 @@ class _ActionButtons extends StatelessWidget {
             );
           },
         ),
-      ),
     );
   }
 }

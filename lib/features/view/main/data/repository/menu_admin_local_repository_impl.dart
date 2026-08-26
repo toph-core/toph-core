@@ -171,15 +171,18 @@ class MenuAdminLocalRepositoryImpl implements MenuAdminLocalRepository {
       });
 
   @override
-  Either<Failure, Unit> createTranslation(
+  Either<Failure, String> createTranslation(
     Map<String, dynamic> body,
   ) =>
-      _guard(() {
+      _guardValue(() {
         // Written locally under a provisional id, which a good referencing it
         // can now carry: the drainer repoints that reference when the real id
         // arrives. This is what unblocks D11.
-        _writer.create(entity: 'translations', row: body, request: body);
-        return unit;
+        //
+        // The id is returned rather than swallowed — it is the whole point. A
+        // caller composing a good needs something to put in `name_i18n` before
+        // the server has spoken, and this is it.
+        return _writer.create(entity: 'translations', row: body, request: body);
       });
 
   @override
@@ -199,7 +202,9 @@ class MenuAdminLocalRepositoryImpl implements MenuAdminLocalRepository {
         return unit;
       });
 
-  Either<Failure, Unit> _guard(Unit Function() body) {
+  Either<Failure, Unit> _guard(Unit Function() body) => _guardValue(body);
+
+  Either<Failure, T> _guardValue<T>(T Function() body) {
     try {
       return Right(body());
     } catch (e) {

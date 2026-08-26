@@ -19,6 +19,22 @@ abstract class OrdersRepository {
   /// repository existed).
   Stream<ArchiveDetailModel?> watchOrderDetail(String key);
 
+  /// The same read, over more than one key, first hit wins.
+  ///
+  /// A screen usually holds both halves of a bill's identity — the table it
+  /// sits on and the order's own id — and the two keys do not resolve the
+  /// same set of bills: a table key only ever matches a *live* bill
+  /// (`OrderDetailQuery.liveOrderForTable`), while an order key matches the
+  /// row whatever its `bill_status` (`liveOrderById`). Watching by table
+  /// alone therefore goes permanently null the moment a bill leaves the
+  /// open-bill predicate — settled on this terminal, settled on another and
+  /// pulled in, or comped — and a screen whose only render gate is "detail is
+  /// not null" has no way back from that.
+  ///
+  /// Keys are tried in order and empty ones skipped, so a caller can pass
+  /// `[tableId, orderId]` without pre-filtering nulls away.
+  Stream<ArchiveDetailModel?> watchOrderDetailForAny(List<String?> keys);
+
   /// Synchronous snapshot — for a one-off read that doesn't want to hold a
   /// subscription open (e.g. a kitchen-receipt print decision).
   ArchiveDetailModel? getOrderDetail(String key);

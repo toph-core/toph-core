@@ -207,6 +207,59 @@ void main() {
       expect(result.blocked, 1);
       expect(itemsExec.sent, isEmpty);
     });
+
+    test('a predecessor in backoff still blocks its chain', () async {
+      // Same ordering rule as above, one step later in the predecessor's
+      // life. The order create has already been tried, failed, and is now
+      // sitting out its backoff window — so `ready()` does not return it,
+      // and a chain nobody can see is a chain nobody blocks. The item used
+      // to sail straight past the order it belongs to; on a real terminal
+      // that is a pay overtaking its own create, or a shift close
+      // overtaking a payment that is still retrying.
+      executors.register(
+        'orders',
+        'create',
+        OutboxHandler(
+          send: (op) async => const OutboxExecutionResult.retry('offline'),
+        ),
+      );
+      final itemsExec = ScriptedExecutor();
+      executors.register(
+        'order_items',
+        'create',
+        OutboxHandler(
+          send: itemsExec.call,
+          chainKey: (op) => op.payload['order_id'] as String,
+        ),
+      );
+
+      writer.write(
+        entity: 'orders',
+        id: 'o-1',
+        row: {'id': 'o-1', 'table_id': 't-1'},
+        action: 'create',
+      );
+
+      // First pass: the order fails and enters its backoff window.
+      await drainer.drain();
+      expect(store.ready(), isEmpty, reason: 'the order is backing off');
+
+      clock.advance(const Duration(seconds: 1));
+      writer.write(
+        entity: 'order_items',
+        id: 'i-1',
+        row: {'id': 'i-1', 'order_id': 'o-1', 'good_id': 'g-1', 'quantity': 1},
+        action: 'create',
+      );
+
+      // Second pass: only the item is eligible, and it must still be held.
+      final result = await drainer.drain();
+
+      expect(itemsExec.sent, isEmpty,
+          reason: 'the server has still never heard of o-1');
+      expect(result.blocked, 1);
+      expect(store.depth, 2, reason: 'both are still queued');
+    });
   });
 
   group('retry and backoff', () {

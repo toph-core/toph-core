@@ -128,7 +128,12 @@ abstract class MainDataSources {
     String? search,
   });
 
-  Future<Either<Failure, bool>> createTransactionGroup(String name);
+  /// `POST /api/v1/group-transactions`. Returns the created row, because the
+  /// endpoint assigns the id and a locally-created group is sitting under a
+  /// provisional one until it is told otherwise.
+  Future<Either<Failure, Map<String, dynamic>>> createTransactionGroup(
+    String name,
+  );
 
   Future<Either<Failure, bool>> updateTransactionGroup(String id, String name);
 
@@ -151,11 +156,16 @@ abstract class MainDataSources {
     String? cashRegisterId,
   });
 
-  Future<Either<Failure, bool>> createIncomeExpenseTransaction(
+  /// `POST /api/v1/transactions/income-expense`. Returns the created row —
+  /// the ledger row the operator is already looking at was written under a
+  /// provisional id, and this is what lets it converge instead of vanishing.
+  Future<Either<Failure, Map<String, dynamic>>> createIncomeExpenseTransaction(
     Map<String, dynamic> body,
   );
 
-  Future<Either<Failure, bool>> createTransferTransaction(
+  /// `POST /api/v1/transactions/transfer`. Returns the created row, for the
+  /// same reason as [createIncomeExpenseTransaction].
+  Future<Either<Failure, Map<String, dynamic>>> createTransferTransaction(
     Map<String, dynamic> body,
   );
 
@@ -1006,10 +1016,13 @@ class MainDataSourcesImpl implements MainDataSources {
   }
 
   @override
-  Future<Either<Failure, bool>> createTransactionGroup(String name) async {
+  Future<Either<Failure, Map<String, dynamic>>> createTransactionGroup(
+    String name,
+  ) async {
     try {
-      await _client.post(ListAPI.groupTransactions, data: {'name': name});
-      return const Right(true);
+      final res =
+          await _client.post(ListAPI.groupTransactions, data: {'name': name});
+      return Right(_asMap(res.data));
     } on DioException catch (exception) {
       return Left(handleDioException(exception));
     } catch (e, st) {
@@ -1107,12 +1120,13 @@ class MainDataSourcesImpl implements MainDataSources {
   }
 
   @override
-  Future<Either<Failure, bool>> createIncomeExpenseTransaction(
+  Future<Either<Failure, Map<String, dynamic>>> createIncomeExpenseTransaction(
     Map<String, dynamic> body,
   ) async {
     try {
-      await _client.post(ListAPI.transactionsIncomeExpense, data: body);
-      return const Right(true);
+      final res =
+          await _client.post(ListAPI.transactionsIncomeExpense, data: body);
+      return Right(_asMap(res.data));
     } on DioException catch (exception) {
       return Left(handleDioException(exception));
     } catch (e, st) {
@@ -1122,12 +1136,12 @@ class MainDataSourcesImpl implements MainDataSources {
   }
 
   @override
-  Future<Either<Failure, bool>> createTransferTransaction(
+  Future<Either<Failure, Map<String, dynamic>>> createTransferTransaction(
     Map<String, dynamic> body,
   ) async {
     try {
-      await _client.post(ListAPI.transactionsTransfer, data: body);
-      return const Right(true);
+      final res = await _client.post(ListAPI.transactionsTransfer, data: body);
+      return Right(_asMap(res.data));
     } on DioException catch (exception) {
       return Left(handleDioException(exception));
     } catch (e, st) {

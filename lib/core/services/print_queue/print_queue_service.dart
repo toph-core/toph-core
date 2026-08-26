@@ -62,6 +62,26 @@ class PrintQueueService {
   final PrintResultBroadcaster _broadcastResult;
 
   final Map<String, Timer> _claimTimers = {};
+
+  /// Job ids this terminal has already put through a printer, newest last.
+  ///
+  /// A re-announce does not mean "print another" — it means the originator
+  /// never heard a result. It re-announces on claim timeout and on lease
+  /// expiry, and both fire happily against a terminal that printed the ticket
+  /// and then had its `printJobResult` dropped, or was simply slower than the
+  /// lease. Nothing on this side remembered the job, so the paper came out
+  /// twice; the originator's own state guards sit on the *other* terminal and
+  /// cannot see it.
+  ///
+  /// Only successful prints are recorded. A failure produced no paper, so
+  /// re-announcing it is a genuine retry and must be allowed through.
+  ///
+  /// In memory only: it covers the claim/lease window, which is seconds. A
+  /// terminal restart clears it, and a re-announce that outlives a restart
+  /// would print again — persisting this needs the Hive box and has not been
+  /// done.
+  static const int _printedMemory = 500;
+  final Set<String> _printedJobIds = <String>{};
   final Map<String, Timer> _leaseTimers = {};
   final Map<String, Completer<({bool ok, String? error})>> _pending = {};
 
@@ -371,6 +391,14 @@ class PrintQueueService {
   }) async {
     final windowsName = _printerConfigStorage.getUsbPrinterName(entryId);
     if (windowsName == null || windowsName.isEmpty) return; // not mine
+    if (_printedJobIds.contains(jobId)) {
+      // Already printed here. The originator is asking again because it never
+      // heard the result, so answer it — but do not put a second ticket
+      // through the printer.
+      _broadcastClaim(jobId);
+      _broadcastResult(jobId, 'printed', null);
+      return;
+    }
     _broadcastClaim(jobId);
     try {
       final bytes = base64Decode(payloadBase64);
@@ -381,6 +409,12 @@ class PrintQueueService {
         windowsPrinterName: windowsName,
       );
       final r = await _printerService.printRenderedBytes(config, bytes);
+      if (r.ok) {
+        if (_printedJobIds.length >= _printedMemory) {
+          _printedJobIds.remove(_printedJobIds.first);
+        }
+        _printedJobIds.add(jobId);
+      }
       _broadcastResult(jobId, r.ok ? 'printed' : 'failed', r.error);
     } catch (e) {
       if (kDebugMode) print('[PrintQueue] Relayed print xatosi: $e');

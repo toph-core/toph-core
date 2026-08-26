@@ -134,7 +134,7 @@ class MainRepositoryImpl implements MainRepository {
       _dataSources.deletePrinterSetting(id);
 
   @override
-  Future<Either<Failure, bool>> createTransactionGroup(String name) =>
+  Future<Either<Failure, Map<String, dynamic>>> createTransactionGroup(String name) =>
       _dataSources.createTransactionGroup(name);
 
   @override
@@ -162,12 +162,12 @@ class MainRepositoryImpl implements MainRepository {
       );
 
   @override
-  Future<Either<Failure, bool>> createIncomeExpenseTransaction(
+  Future<Either<Failure, Map<String, dynamic>>> createIncomeExpenseTransaction(
     Map<String, dynamic> body,
   ) => _dataSources.createIncomeExpenseTransaction(body);
 
   @override
-  Future<Either<Failure, bool>> createTransferTransaction(
+  Future<Either<Failure, Map<String, dynamic>>> createTransferTransaction(
     Map<String, dynamic> body,
   ) => _dataSources.createTransferTransaction(body);
 

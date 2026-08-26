@@ -87,21 +87,31 @@ class MenuManageCubit extends Cubit<MenuManageState> {
 
   bool deleteGood(String id) => _apply(() => _repository.deleteGood(id));
 
-  bool createTranslation(Map<String, dynamic> body) =>
-      _apply(() => _repository.createTranslation(body));
+  /// The id the new translation was written under, or null if the local write
+  /// failed. Provisional until the drainer hears the server's, which is why a
+  /// caller may reference it immediately — see
+  /// [MenuAdminLocalRepository.createTranslation].
+  String? createTranslation(Map<String, dynamic> body) =>
+      _applyValue(() => _repository.createTranslation(body));
 
   bool updateTranslation(String id, Map<String, dynamic> body) =>
       _apply(() => _repository.updateTranslation(id, body));
 
-  bool _apply(Either<Failure, Unit> Function() write) {
+  bool _apply(Either<Failure, Unit> Function() write) =>
+      _applyValue(write) != null;
+
+  /// Runs a local write, mirrors its failure into [state], and hands back what
+  /// the write produced — null when it failed. [_apply] is the shape for writes
+  /// whose only answer is "it happened".
+  T? _applyValue<T>(Either<Failure, T> Function() write) {
     return write().fold(
       (failure) {
         emit(state.copyWith(error: failure.toString(), notice: null));
-        return false;
+        return null;
       },
-      (_) {
+      (value) {
         emit(state.copyWith(error: null));
-        return true;
+        return value;
       },
     );
   }

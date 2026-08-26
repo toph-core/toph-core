@@ -34,27 +34,36 @@ import 'package:mary_ai_pos/features/view/main/domain/repository/transactions_re
 class _FakeMainRepository implements MainRepository {
   Either<Failure, bool> result = const Right(true);
 
+  /// What a create endpoint hands back on success. The three creates return
+  /// the row the server wrote so the drainer can swap the provisional one for
+  /// it; [result]'s failures still apply to them, so a test that sets a `Left`
+  /// gets that failure from every endpoint alike.
+  Map<String, dynamic> createdRow = const {'id': 'server-id'};
+
+  Either<Failure, Map<String, dynamic>> get _created =>
+      result.fold(Left.new, (_) => Right(createdRow));
+
   /// One entry per request that actually left, in order, so "sent once" is a
   /// countable claim rather than a hopeful one.
   final calls = <String>[];
   final bodies = <Map<String, dynamic>>[];
 
   @override
-  Future<Either<Failure, bool>> createIncomeExpenseTransaction(
+  Future<Either<Failure, Map<String, dynamic>>> createIncomeExpenseTransaction(
     Map<String, dynamic> body,
   ) async {
     calls.add('income-expense');
     bodies.add(body);
-    return result;
+    return _created;
   }
 
   @override
-  Future<Either<Failure, bool>> createTransferTransaction(
+  Future<Either<Failure, Map<String, dynamic>>> createTransferTransaction(
     Map<String, dynamic> body,
   ) async {
     calls.add('transfer');
     bodies.add(body);
-    return result;
+    return _created;
   }
 
   @override
@@ -74,9 +83,11 @@ class _FakeMainRepository implements MainRepository {
   }
 
   @override
-  Future<Either<Failure, bool>> createTransactionGroup(String name) async {
+  Future<Either<Failure, Map<String, dynamic>>> createTransactionGroup(
+    String name,
+  ) async {
     calls.add('group-create:$name');
-    return result;
+    return _created;
   }
 
   @override
@@ -162,12 +173,25 @@ void main() {
       expect(remote.calls, isEmpty);
     });
 
-    test('a create carries no serverRow — the row comes back by pull', () async {
-      // MainRepository's transaction methods return bool, so there is nothing
-      // for the drainer to converge the local row onto. Pinned because the
-      // provisional-row lifecycle below depends on it.
+    test('a create carries the row the server wrote', () async {
+      // The endpoint assigns the id, so the local row is provisional until
+      // this comes back. Carrying the response is what lets the drainer swap
+      // the provisional row for the server's in place — and repoint anything
+      // still queued that quoted the provisional id — instead of deleting the
+      // movement the operator just entered and waiting for the next pull.
       final result = await send(_op(payload: const {'type': 'income'}));
-      expect(result.serverRow, isNull);
+      expect(result.outcome, OutboxOutcome.succeeded);
+      expect(result.serverRow, {'id': 'server-id'});
+    });
+
+    test('a transfer create carries its row too', () async {
+      final result = await send(_op(payload: const {
+        'from_cash_register_id': 'reg-1',
+        'to_cash_register_id': 'reg-2',
+        'amount': '100',
+      }));
+      expect(remote.calls, ['transfer']);
+      expect(result.serverRow, {'id': 'server-id'});
     });
   });
 

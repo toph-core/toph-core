@@ -91,6 +91,20 @@ class OrdersRepositoryImpl implements OrdersRepository {
       .map(_decode);
 
   @override
+  Stream<ArchiveDetailModel?> watchOrderDetailForAny(List<String?> keys) => _db
+      .watch(OrderDetailQuery.watchedTables, () => _resolveAny(keys))
+      .map(_decode);
+
+  Map<String, dynamic>? _resolveAny(List<String?> keys) {
+    for (final key in keys) {
+      if (key == null || key.isEmpty) continue;
+      final row = _resolve(key);
+      if (row != null) return row;
+    }
+    return null;
+  }
+
+  @override
   ArchiveDetailModel? getOrderDetail(String key) => _decode(_resolve(key));
 
   @override

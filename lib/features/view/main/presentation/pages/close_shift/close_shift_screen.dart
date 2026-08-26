@@ -6,6 +6,8 @@ import 'package:mary_ai_pos/core/routes/app_routes.dart';
 import 'package:mary_ai_pos/core/sync/sync_engine.dart';
 import 'package:mary_ai_pos/core/widgets/app_scaffold.dart';
 import 'package:mary_ai_pos/core/widgets/manager_pincode_dialog.dart';
+import 'package:mary_ai_pos/core/components/flush_bars.dart';
+import 'package:mary_ai_pos/core/db/order_detail_query.dart' as replica;
 import 'package:mary_ai_pos/di.dart';
 import 'package:mary_ai_pos/features/view/auth/presentation/cubit/bloc/user_bloc.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/cafe_tables/cafe_tables_model.dart';
@@ -1883,6 +1885,26 @@ class _CloseShiftCTA extends StatelessWidget {
         .where((t) => t.status == TableStatus.busy)
         .toList()
       ..sort((a, b) => a.number.compareTo(b.number));
+
+    // Occupancy only ever knew about tables. A takeaway bill carries no table
+    // at all — `OrderDetailQuery` assembles it over LEFT JOINs precisely so it
+    // still reads — so it is open, unpaid, and completely invisible to the
+    // check above. Closing the shift over the top of one stranded real money
+    // on a bill nobody was looking at. `openOrders()` filters on `liveBill`
+    // with no table constraint, so it sees both kinds; anything it returns
+    // without a joined table number is what occupancy cannot speak for.
+    final tablelessBills = inject<replica.OrderDetailQuery>()
+        .openOrders()
+        .where((o) => o['table_number'] == null && o['table_id'] == null)
+        .length;
+    if (tablelessBills > 0) {
+      showErrorMessage(
+        context,
+        "Yopilmagan $tablelessBills ta stolsiz (olib ketish) chek bor. "
+        "Smenani yopishdan oldin ularni yoping.",
+      );
+      return;
+    }
 
     if (openTables.isNotEmpty) {
       showDialog<void>(

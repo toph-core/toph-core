@@ -135,7 +135,13 @@ void main() {
       expect(bodyItems, hasLength(1));
       // The line id the server will honour is in the body, and it is the same id
       // the local row was written under (no reconciliation needed).
-      final sentId = bodyItems.single['id'] as String;
+      //
+      // It travels as `client_item_id`, not `id`: the backend assigns an order
+      // item its own primary key (`uuid.New()`) and ignores an `id` in the item
+      // body, so `client_item_id` is the only key it honours
+      // (`migrations/tenants/70_order_items_client_id.up.sql`). This assertion
+      // pinned `id` and went red when the payload was corrected to match.
+      final sentId = bodyItems.single['client_item_id'] as String;
       expect(sentId, isNotEmpty);
       final storedId = (repo.getOrderDetail('tb1')!.goods.single).id;
       expect(sentId, storedId);

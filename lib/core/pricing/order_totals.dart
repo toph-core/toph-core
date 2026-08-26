@@ -162,7 +162,6 @@ class OrderTotals {
       serviceInt = (foodSum * pct / 100).round();
       coreTotal = (foodSum + tableCharge).round() + serviceInt;
     } else {
-      final hasCancelled = detail.goods.any((g) => g.status == 'cancelled');
       final pct = detail.servicePercent > 0
           ? detail.servicePercent
           : servicePercentFallback;
@@ -170,11 +169,27 @@ class OrderTotals {
           ? detail.serviceAmount.round()
           : (foodSum * pct / 100).round();
 
-      if (!hasCancelled && detail.grandTotal > 0.01) {
-        coreTotal = detail.grandTotal.round();
-      } else {
-        coreTotal = itemsInt + serviceInt;
-      }
+      // Phase 4, now due — this is the switch the doc comment above demanded
+      // "in the same change" as the write migration, and the write migration
+      // has since happened without it.
+      //
+      // This branch used to take `detail.grand_total` whenever no line was
+      // cancelled. That figure is the server's, from the last sync. Once item
+      // writes moved onto the outbox, the legacy Hive queue that
+      // [offlineExtra] summed went empty — it now has no callers at all and is
+      // permanently 0 — so nothing was left compensating for the difference.
+      // A bill edited offline was therefore charged its pre-edit total: the
+      // adds were invisible, the cashier collected too little, and the queued
+      // pay came back 400 insufficient, quarantined, and reopened the bill
+      // hours later.
+      //
+      // `detail.goods` is read from the local `order_items` rows (see
+      // `OrderDetailQuery`), so `itemsInt` already reflects offline adds and
+      // voids. Those rows are this application's authority on what is on a
+      // bill, so they are what prices it. The server's figure survives only
+      // where there is nothing local to price — the empty-goods fallback
+      // below.
+      coreTotal = itemsInt + serviceInt;
     }
 
     var base = includeService

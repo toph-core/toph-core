@@ -8,7 +8,6 @@ import 'package:mary_ai_pos/features/view/auth/presentation/cubit/bloc/user_bloc
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'lan_discovery_service.dart';
-import 'lan_hub_server.dart';
 import 'lan_hub_service.dart';
 
 /// offline-first-target-architecture.md §7 — automatic leader failover.
@@ -130,6 +129,11 @@ class LeaderElectionService {
 
   Future<void> setPriority(int value) => _prefs.setInt(_keyPriority, value);
 
+  /// UDP port this service's heartbeat socket actually bound — wired into
+  /// `LanHubService.discoveryPortReporter` by `di.dart` so settings can show
+  /// the live discovery port no matter which service owns the socket.
+  int? get boundDiscoveryPort => _discovery.boundPort;
+
   ElectionRole _role = ElectionRole.idle;
   ElectionRole get role => _role;
 
@@ -193,7 +197,7 @@ class LeaderElectionService {
     }
     _branchWait?.cancel();
     _branchWait = null;
-    await _discovery.startListening();
+    await _discovery.startListening(port: _lanHub.preferredDiscoveryPort);
     _sub = _discovery.onAnnouncement.listen((a) => _onAnnouncement(a, branchId));
     // §7 "Reconnection re-discovery is non-blocking": start as a plain
     // follower and let the first heartbeat window pass before ever
@@ -290,19 +294,27 @@ class LeaderElectionService {
     await _persistEpoch(epoch);
     _currentLeaderIp = a.ip;
     if (a.terminalId == _myTerminalId()) return; // our own claim, echoed back
-    final alreadyFollowingThisLeader =
-        _lanHub.mode == LanMode.client && _lanHub.serverIp == a.ip;
+    final alreadyFollowingThisLeader = _lanHub.mode == LanMode.client &&
+        _lanHub.serverIp == a.ip &&
+        _lanHub.serverPort == a.port;
     if (alreadyFollowingThisLeader && _role == ElectionRole.follower) return;
-    await _becomeFollower(a.ip);
+    await _becomeFollower(a.ip, a.port);
   }
 
-  Future<void> _becomeFollower(String leaderIp) async {
-    if (kDebugMode) print('[LeaderElection] Adopting leader at $leaderIp (epoch $_epoch)');
+  /// [leaderPort] comes from the announcement's `ws_port` rather than being
+  /// assumed: a leader whose preferred hub port was busy binds the next free
+  /// one, and a follower that ignored this would dial a closed port forever.
+  Future<void> _becomeFollower(String leaderIp, int leaderPort) async {
+    if (kDebugMode) {
+      print('[LeaderElection] Adopting leader at $leaderIp:$leaderPort '
+          '(epoch $_epoch)');
+    }
     // If we were announcing as leader (tiebreak stand-down), stop the
     // heartbeat but keep the socket listening — no-op otherwise.
     _discovery.stopAnnouncing();
     _setRole(ElectionRole.follower);
     await _lanHub.setServerIp(leaderIp);
+    await _lanHub.setServerPort(leaderPort);
     await _lanHub.setMode(LanMode.client);
     await _lanHub.restart();
   }
@@ -341,9 +353,12 @@ class LeaderElectionService {
     _currentLeaderIp = null; // this terminal IS the leader now
     await _lanHub.setMode(LanMode.server);
     await _lanHub.restart();
+    // After `restart()`, so the server has bound and `activeHubPort` reports
+    // the port it really got rather than the one we hoped for.
     await _discovery.startAnnouncing(
       branchId: branchId,
-      wsPort: LanHubServer.defaultPort,
+      wsPort: _lanHub.activeHubPort ?? _lanHub.preferredHubPort,
+      port: _lanHub.preferredDiscoveryPort,
       heartbeatExtra: () => (
         role: 'leader',
         priority: priority,

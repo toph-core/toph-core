@@ -78,7 +78,13 @@ abstract class MenuAdminLocalRepository {
 
   Either<Failure, Unit> deleteGood(String id);
 
-  Either<Failure, Unit> createTranslation(Map<String, dynamic> body);
+  /// Writes a translation row locally and queues its create.
+  ///
+  /// Returns the id the row was written under — provisional, because
+  /// `POST /translations` assigns its own. A good saved in the same breath
+  /// carries that id in `name_i18n`, and the drainer repoints it when the real
+  /// one arrives, so the pair survives being composed entirely offline.
+  Either<Failure, String> createTranslation(Map<String, dynamic> body);
 
   Either<Failure, Unit> updateTranslation(
     String id,

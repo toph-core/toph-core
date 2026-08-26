@@ -217,6 +217,157 @@ void main() {
     });
   });
 
+  group('a dependent write waits for the id it references', () {
+    // The rewrite above only helps if the dependent has not already been sent.
+    // Within one drain pass the queue is replayed in enqueue order, so the
+    // translation goes first and the good is repointed in time. The interesting
+    // case is the one that pass cannot fix: the translation's create *fails*,
+    // and the good — a different row, so a different causal chain — would
+    // otherwise sail past it carrying an id no server has ever assigned.
+
+    /// Records what each handler was actually asked to send, and lets the
+    /// translation create be failed on demand.
+    ({OutboxDrainer drainer, List<Map<String, dynamic>> sent}) rig({
+      required bool translationFails,
+    }) {
+      final sent = <Map<String, dynamic>>[];
+      final executors = OutboxExecutors();
+      executors.register(
+        'translations',
+        'create',
+        OutboxHandler(
+          send: (op) async {
+            if (translationFails) {
+              return const OutboxExecutionResult.retry('no connectivity');
+            }
+            sent.add({'entity': 'translations', ...op.payload});
+            return const OutboxExecutionResult.succeeded(
+              serverRow: {'id': 'trans-real', 'uz': 'Osh'},
+            );
+          },
+        ),
+      );
+      executors.register(
+        'goods',
+        'create',
+        OutboxHandler(
+          send: (op) async {
+            sent.add({'entity': 'goods', ...op.payload});
+            return const OutboxExecutionResult.succeeded(
+              serverRow: {'id': 'good-real', 'name': 'Osh'},
+            );
+          },
+        ),
+      );
+      return (
+        drainer: OutboxDrainer(
+          db: db,
+          store: store,
+          applier: applier,
+          executors: executors,
+        ),
+        sent: sent,
+      );
+    }
+
+    /// The pair the menu editor composes offline: a translation row, then a
+    /// good whose `name_i18n` points at it.
+    String queueMealWithNewTranslation() {
+      final translationId =
+          writer.create(entity: 'translations', row: {'uz': 'Osh'});
+      writer.create(
+        entity: 'goods',
+        row: {'name': 'Osh', 'name_i18n': translationId},
+        request: {
+          'good': {'name': 'Osh', 'name_i18n': translationId},
+          'ingredient_calculations': const [],
+        },
+      );
+      return translationId;
+    }
+
+    test('the good is sent with the real translation id, never the local one',
+        () async {
+      final translationId = queueMealWithNewTranslation();
+      final r = rig(translationFails: false);
+
+      final result = await r.drainer.drain();
+
+      expect(result.sent, 2);
+      final good = r.sent.firstWhere((e) => e['entity'] == 'goods');
+      expect((good['good'] as Map)['name_i18n'], 'trans-real');
+      expect((good['good'] as Map)['name_i18n'], isNot(translationId));
+    });
+
+    test('the good is held back while its translation is still failing',
+        () async {
+      queueMealWithNewTranslation();
+      final r = rig(translationFails: true);
+
+      final result = await r.drainer.drain();
+
+      // Nothing left. Before the guard the good went out anyway — a different
+      // entity id, so a different chain — and the server was handed a
+      // `name_i18n` it could not resolve, which is a 4xx, which this queue
+      // treats as permanent. The meal was lost for good.
+      expect(r.sent, isEmpty);
+      expect(result.sent, 0);
+      expect(result.blocked, 1);
+      expect(result.retrying, 1);
+      // Still queued, both of them, so the next pass can finish the job.
+      expect(store.pending().length, 2);
+    });
+
+    test('it goes out on the next pass, repointed', () async {
+      queueMealWithNewTranslation();
+      await rig(translationFails: true).drainer.drain();
+
+      store.clearBackoff();
+      final r = rig(translationFails: false);
+      final result = await r.drainer.drain();
+
+      expect(result.sent, 2);
+      final good = r.sent.firstWhere((e) => e['entity'] == 'goods');
+      expect((good['good'] as Map)['name_i18n'], 'trans-real');
+    });
+
+    test('an unrelated write is not held back by someone else\'s wait',
+        () async {
+      // The guard is a reference test, not a global stop: a good that names no
+      // unresolved id must still leave while another one waits.
+      queueMealWithNewTranslation();
+      writer.create(
+        entity: 'goods',
+        row: {'name': 'Somsa'},
+        request: {
+          'good': {'name': 'Somsa'},
+          'ingredient_calculations': const [],
+        },
+      );
+
+      final r = rig(translationFails: true);
+      final result = await r.drainer.drain();
+
+      expect(result.sent, 1);
+      expect(r.sent.single['good'], {'name': 'Somsa'});
+    });
+
+    test('a create quoting its own provisional id is not held by itself', () {
+      // The op that resolves an id must never be the op that waits on it.
+      final id = writer.create(
+        entity: 'halls',
+        row: {'name': 'Zal'},
+        request: {'id': 'ignored', 'name': 'Zal'},
+      );
+      expect(db.isProvisional('halls', id), isTrue);
+
+      // Re-queue the same body with the id in it, addressed to the same row.
+      store.rewriteReferences(oldId: 'ignored', newId: id);
+
+      expect(store.pending().single.entityId, id);
+    });
+  });
+
   group('client-supplied ids are left alone', () {
     test('a write that was never provisional keeps its id', () async {
       // Orders carry the id their terminal invents, because the backend accepts

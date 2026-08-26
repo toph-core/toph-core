@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 
 import 'lan_hub_message.dart';
+import 'lan_ports.dart';
 
 /// Validates a connecting terminal's presented `(token, branchId)` before its
 /// socket is trusted for broadcast. Owned by `LanHubService` (which has the
@@ -39,10 +40,12 @@ typedef LanLeaseReleaseHandler = void Function(LanHubMessage leaseReleaseMessage
 typedef LanBroadcastListener = void Function(LanHubMessage message);
 
 class LanHubServer {
-  static const defaultPort = 8765;
+  static const defaultPort = kDefaultHubPort;
   static const _authTimeout = Duration(seconds: 5);
 
   HttpServer? _server;
+  int? _boundPort;
+  String? _lastBindError;
   final Set<WebSocket> _clients = {};
   LanAuthValidator? _authValidator;
   LanRelayHandler? _onRelayOp;
@@ -52,6 +55,24 @@ class LanHubServer {
 
   bool get isRunning => _server != null;
   int get clientCount => _clients.length;
+
+  /// TCP port this hub is actually accepting WebSocket connections on, or null
+  /// when nothing is bound. Followers are told this value through the discovery
+  /// beacon's `ws_port`, and settings shows it so a fallback is visible.
+  int? get boundPort => _boundPort;
+
+  /// Why [start] failed to bind, when [isRunning] is false. Null while healthy.
+  ///
+  /// This used to be a `kDebugMode` print and nothing else, so a release build
+  /// with an occupied port presented as a hub with zero connected clients —
+  /// identical to a healthy hub nobody had joined yet.
+  String? get lastBindError => _lastBindError;
+
+  /// Reactive mirror of [boundPort]/[lastBindError] for the settings screen,
+  /// so a bind outcome shows up without the screen polling for it. Null port
+  /// means "not listening"; see [clientCountNotifier] for why one long-lived
+  /// notifier per server is correct here.
+  final ValueNotifier<int?> boundPortNotifier = ValueNotifier(null);
 
   /// Reactive mirror of [clientCount] — for a sync-status screen to show a
   /// live peer count in `server` mode without its own polling timer. One
@@ -63,6 +84,12 @@ class LanHubServer {
 
   void _syncClientCount() => clientCountNotifier.value = _clients.length;
 
+  /// Binds the first free port at or above [port].
+  ///
+  /// The hub port can move freely because the discovery beacon carries the
+  /// real one in `ws_port` — a follower reads it from the announcement instead
+  /// of assuming 8765. Only a manually-typed address has to be told, which is
+  /// why the settings field accepts `ip:port`.
   Future<void> start({
     int port = defaultPort,
     required LanAuthValidator authValidator,
@@ -77,13 +104,28 @@ class LanHubServer {
     _onBroadcast = onBroadcast;
     _onLeaseRequest = onLeaseRequest;
     _onLeaseRelease = onLeaseRelease;
-    try {
-      _server = await HttpServer.bind(InternetAddress.anyIPv4, port);
-      _server!.listen(_handleRequest);
-      if (kDebugMode) print('[LanHub] Server started on port $port');
-    } catch (e) {
-      if (kDebugMode) print('[LanHub] Failed to start server: $e');
+    Object? lastError;
+    for (final candidate in candidatePorts(port)) {
+      try {
+        final server = await HttpServer.bind(InternetAddress.anyIPv4, candidate);
+        server.listen(_handleRequest);
+        _server = server;
+        _boundPort = candidate;
+        _lastBindError = null;
+        boundPortNotifier.value = candidate;
+        if (kDebugMode) {
+          final note = candidate == port ? '' : ' (preferred $port was busy)';
+          print('[LanHub] Server started on port $candidate$note');
+        }
+        return;
+      } catch (e) {
+        lastError = e;
+      }
     }
+    _boundPort = null;
+    _lastBindError = lastError?.toString() ?? 'bind failed';
+    boundPortNotifier.value = null;
+    if (kDebugMode) print('[LanHub] Failed to start server: $lastError');
   }
 
   void _handleRequest(HttpRequest request) async {
@@ -233,6 +275,9 @@ class LanHubServer {
     _syncClientCount();
     await _server?.close(force: true);
     _server = null;
+    _boundPort = null;
+    _lastBindError = null;
+    boundPortNotifier.value = null;
     _authValidator = null;
     _onRelayOp = null;
     _onBroadcast = null;

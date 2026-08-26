@@ -143,6 +143,23 @@ class OutboxStore {
     return [for (final row in rows) OutboxOperation.fromRow(row)];
   }
 
+  /// Pending operations whose retry clock has **not** expired yet.
+  ///
+  /// [ready] excludes these on purpose — they must not be *sent* this pass.
+  /// But the drainer also decides what to hold back from what it can see, and
+  /// an operation it cannot see cannot block anything: the moment a create
+  /// started backing off, its chain looked empty and the pay queued behind it
+  /// sailed past. Callers seed these chains as blocked before draining.
+  List<OutboxOperation> backingOff({int limit = 100}) {
+    final rows = _db.select(
+      'SELECT * FROM ${LocalTables.outbox} '
+      'WHERE status = ? AND next_attempt_at > ? '
+      'ORDER BY created_at ASC, rowid ASC LIMIT ?',
+      [OutboxStatus.pending.name, _now().millisecondsSinceEpoch, limit],
+    );
+    return [for (final row in rows) OutboxOperation.fromRow(row)];
+  }
+
   /// Every pending operation, ready or backing off — for queue-depth display.
   /// Replaces every reference to [oldId] with [newId] across operations that
   /// have not been sent.
@@ -343,6 +360,13 @@ class OutboxStore {
       [OutboxStatus.pending.name],
     );
   }
+
+  /// One operation by id, whatever its status, or null if it is gone.
+  ///
+  /// The drainer re-reads through this after a reconciliation rewrote queued
+  /// payloads: it holds operations it decoded at the start of the pass, and a
+  /// rewrite that landed since would otherwise be invisible to it.
+  OutboxOperation? find(String id) => _byId(id);
 
   OutboxOperation? _byId(String id) {
     final rows = _db.select(

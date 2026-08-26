@@ -115,9 +115,18 @@ void registerMenuAdminOutboxHandlers(
     'translations',
     'create',
     OutboxHandler(
+      // The response is carried back, not discarded, and that is load-bearing.
+      // A translation is written locally under a provisional id and a good
+      // composed in the same breath quotes that id in `name_i18n`. The drainer
+      // can only repoint that reference — and only avoid dropping the local
+      // row — if this hands it the row the server actually created. Discarding
+      // it left the good pointing at an id no server had ever heard of.
       send: (op) async {
         final result = await remote.createTranslation(op.payload);
-        return result.fold(_outcome, (_) => const OutboxExecutionResult.succeeded());
+        return result.fold(
+          _outcome,
+          (row) => OutboxExecutionResult.succeeded(serverRow: row),
+        );
       },
     ),
   );

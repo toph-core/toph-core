@@ -5,6 +5,8 @@ import 'dart:math';
 
 import 'package:flutter/foundation.dart';
 
+import 'lan_ports.dart';
+
 /// One hub's self-announcement, as heard by a listener on the LAN.
 ///
 /// [role]/[priority]/[epoch]/[terminalId] are optional — populated only by a
@@ -40,13 +42,25 @@ typedef HubAnnouncement = ({
 /// `LanHubServer`'s existing JWT-based `auth` exchange over the WebSocket
 /// once a terminal decides (manually or via this picker) which IP to dial.
 class LanDiscoveryService {
-  static const defaultPort = 8766;
+  static const defaultPort = kDefaultDiscoveryPort;
   static const _announceInterval = Duration(seconds: 2);
   static const _magic = 'mary_ai_pos_hub';
 
   RawDatagramSocket? _socket;
   Timer? _announceTimer;
-  int _activePort = defaultPort;
+
+  /// Ports this instance broadcasts to — every candidate derived from the
+  /// configured preference, not just the one we managed to bind. A hub pushed
+  /// onto 8767 by a busy 8766 must still reach a listener that got 8766, and
+  /// vice versa; without this the fallback would trade one silent failure for
+  /// another.
+  List<int> _targetPorts = candidatePorts(kDefaultDiscoveryPort);
+
+  /// The port actually bound, or null when nothing is bound — either because
+  /// this instance was never started, or because every candidate was busy.
+  int? _boundPort;
+  String? _lastBindError;
+
   final _announcements = StreamController<HubAnnouncement>.broadcast();
 
   /// Per-process random id stamped on every announcement this instance
@@ -60,6 +74,15 @@ class LanDiscoveryService {
   Stream<HubAnnouncement> get onAnnouncement => _announcements.stream;
 
   bool get isActive => _socket != null;
+
+  /// UDP port this instance is actually listening on — surfaced in settings so
+  /// a fallback away from the configured preference is visible rather than
+  /// something only a debug build could reveal.
+  int? get boundPort => _boundPort;
+
+  /// Why the last bind attempt failed, when [isActive] is false after a start
+  /// call. Null while healthy.
+  String? get lastBindError => _lastBindError;
 
   static String _generateInstanceId() {
     final rand = Random();
@@ -84,6 +107,10 @@ class LanDiscoveryService {
         Function()? heartbeatExtra,
   }) async {
     await _ensureSocket(port);
+    // Deliberately still arms the timer when the bind failed: `_send` no-ops
+    // without a socket, and callers poll [isActive]/[lastBindError] for the
+    // real state. Bailing out here instead would mean a beacon that never
+    // recovers if `stop`/`start` is retried against a now-free port.
     _announceTimer?.cancel();
     _announceTimer = Timer.periodic(_announceInterval, (_) {
       final extra = heartbeatExtra?.call();
@@ -115,16 +142,41 @@ class LanDiscoveryService {
     await _ensureSocket(port);
   }
 
+  /// Binds the first free port in [candidatePorts], recording which one won so
+  /// [boundPort] can show it and [lastBindError] can explain a total failure.
+  ///
+  /// Walking a range rather than taking a single port is what keeps a busy
+  /// 8766 from disabling discovery outright — including the common self-inflicted
+  /// case of two `LanDiscoveryService` instances in this same process (the
+  /// election heartbeat and a manual settings scan), which previously fought
+  /// over one port and left whichever lost silently deaf.
   Future<void> _ensureSocket(int port) async {
     if (_socket != null) return;
-    try {
-      _socket = await RawDatagramSocket.bind(InternetAddress.anyIPv4, port);
-      _activePort = port;
-      _socket!.broadcastEnabled = true;
-      _socket!.listen(_onEvent);
-      if (kDebugMode) print('[LanDiscovery] Listening on UDP $port');
-    } catch (e) {
-      if (kDebugMode) print('[LanDiscovery] Failed to bind UDP $port: $e');
+    _targetPorts = candidatePorts(port);
+    Object? lastError;
+    for (final candidate in _targetPorts) {
+      try {
+        final socket =
+            await RawDatagramSocket.bind(InternetAddress.anyIPv4, candidate);
+        socket.broadcastEnabled = true;
+        socket.listen(_onEvent);
+        _socket = socket;
+        _boundPort = candidate;
+        _lastBindError = null;
+        if (kDebugMode) {
+          final note = candidate == port ? '' : ' (preferred $port was busy)';
+          print('[LanDiscovery] Listening on UDP $candidate$note');
+        }
+        return;
+      } catch (e) {
+        lastError = e;
+      }
+    }
+    _boundPort = null;
+    _lastBindError = lastError?.toString() ?? 'bind failed';
+    if (kDebugMode) {
+      print('[LanDiscovery] No free UDP port in '
+          '${_targetPorts.first}-${_targetPorts.last}: $lastError');
     }
   }
 
@@ -178,9 +230,14 @@ class LanDiscoveryService {
       if (epoch != null) 'epoch': epoch,
       if (terminalId != null) 'terminal_id': terminalId,
     }));
-    try {
-      socket.send(payload, InternetAddress('255.255.255.255'), _activePort);
-    } catch (_) {}
+    final broadcast = InternetAddress('255.255.255.255');
+    for (final target in _targetPorts) {
+      try {
+        socket.send(payload, broadcast, target);
+      } catch (_) {
+        // One unreachable target port must not stop the rest of the sweep.
+      }
+    }
   }
 
   /// Stops the announce beacon only, keeping the socket (and therefore
@@ -200,6 +257,7 @@ class LanDiscoveryService {
     _announceTimer = null;
     _socket?.close();
     _socket = null;
+    _boundPort = null;
   }
 
   Future<void> dispose() async {

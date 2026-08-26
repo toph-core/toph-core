@@ -48,13 +48,18 @@ class OrderDetailQuery {
   ///
   /// [liveOrderById] deliberately applies neither: the payment screen holds an
   /// order id and must keep rendering the bill it just settled.
-  static const _liveBill =
+  ///
+  /// Public because `TableOccupancyReconciler` derives table occupancy from the
+  /// same predicate. Two definitions of "this bill is still on the table" that
+  /// could drift apart is precisely how a floor ends up disagreeing with its
+  /// own order screen.
+  static const liveBill =
       "o.deleted_at IS NULL AND o.bill_status IN ('open', 'opened') "
       "AND (o.status IS NULL OR o.status <> 'cancelled')";
 
   /// The open bill for [tableId], or null if the table is free.
   ///
-  /// "Open" is [_liveBill] — which is also how [ArchivesQuery] filters closed
+  /// "Open" is [liveBill] — which is also how [ArchivesQuery] filters closed
   /// ones, from the other side. If two open orders ever exist for one table —
   /// which the flow is not supposed to allow — the most recently created wins,
   /// so the screen shows the current bill rather than a stale one.
@@ -66,7 +71,7 @@ class OrderDetailQuery {
         FROM orders o
         LEFT JOIN cafe_tables t ON t.id = o.table_id AND t.deleted_at IS NULL
         LEFT JOIN halls       h ON h.id = t.hall_id   AND h.deleted_at IS NULL
-       WHERE o.table_id = ? AND $_liveBill
+       WHERE o.table_id = ? AND $liveBill
        ORDER BY o.created_at DESC
        LIMIT 1
       ''',
@@ -83,7 +88,7 @@ class OrderDetailQuery {
   /// bill after `bill_status` has flipped to paid). The table/hall join stays a
   /// LEFT JOIN, so a takeaway order with no `table_id` still assembles.
   ///
-  /// The absence of [_liveBill] here is load-bearing, not an omission: paying
+  /// The absence of [liveBill] here is load-bearing, not an omission: paying
   /// now flips the row to `paid` synchronously, and this is the read that keeps
   /// the settled bill on screen and in the archive afterwards.
   Map<String, dynamic>? liveOrderById(String orderId) {
@@ -108,7 +113,7 @@ class OrderDetailQuery {
   List<Map<String, dynamic>> openOrders() {
     final ids = _db.select(
       "SELECT o.id AS id FROM orders o "
-      "WHERE $_liveBill "
+      "WHERE $liveBill "
       "ORDER BY o.created_at DESC",
     );
     final out = <Map<String, dynamic>>[];

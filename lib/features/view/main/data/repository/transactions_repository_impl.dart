@@ -27,15 +27,20 @@ import 'package:mary_ai_pos/features/view/main/domain/repository/transactions_re
 /// a provisional id, mark it, and let the drainer swap it for the server's when
 /// the create's response comes back.
 ///
-/// There is one honest consequence worth stating rather than burying. The
-/// halls and users creates return the created row, so the swap is invisible.
-/// `MainRepository.createIncomeExpenseTransaction` and its siblings return only
-/// `bool` — the endpoint's body is not carried through that interface — so the
-/// drainer takes its documented no-id branch: the provisional row is dropped on
-/// success and the server's version arrives on the next pull. The operator sees
-/// their movement immediately and, once the terminal is online again, sees it
-/// blink to the server's copy. That is the same trade-off, not a new one; it
-/// closes for free the day `MainRepository` returns the row.
+/// The swap is invisible, as it is for halls and users. It was not always:
+/// `MainRepository.createIncomeExpenseTransaction` and its siblings used to
+/// return a bare `bool`, so the drainer took its documented no-id branch and
+/// deleted the provisional row on success — a movement the operator had just
+/// entered vanished from the ledger until the next pull delivered the server's
+/// copy. Those three methods now return the created row, so the local row is
+/// replaced in place and anything still queued that quoted its provisional id
+/// — a movement filed under a group created in the same offline stretch — is
+/// repointed before it is sent.
+///
+/// What remains open is a lost *response*: `POST /transactions/…` accepts no
+/// client-supplied id or idempotency key, so a create whose reply is dropped
+/// after the server committed is retried and posts a second movement. That
+/// needs the endpoint to take a client id, the way `CreateOrder` does.
 ///
 /// ## Money
 ///

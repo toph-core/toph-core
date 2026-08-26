@@ -336,8 +336,13 @@ void main() {
       // test.
       final source =
           File('lib/core/outbox/outbox_drainer.dart').readAsStringSync();
-      final reconcile =
-          source.substring(source.indexOf('void _reconcile('));
+      // Matched on the name alone: the return type has changed once already
+      // (it now reports how many queued payloads were repointed) and pinning
+      // the signature made this fail for a reason that had nothing to do with
+      // what it is guarding.
+      final start = source.indexOf('_reconcile(\n');
+      expect(start, isNot(-1), reason: '_reconcile has been renamed');
+      final reconcile = source.substring(start);
       expect(
         reconcile.contains('_db.deleteRow('),
         isFalse,

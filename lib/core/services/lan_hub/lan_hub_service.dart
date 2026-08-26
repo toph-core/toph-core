@@ -21,16 +21,27 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:mary_ai_pos/core/services/lease/lease_manager.dart';
 
 import 'lan_discovery_service.dart';
+import 'local_ip_lookup.dart';
 import 'lan_hub_client.dart';
 import 'lan_hub_message.dart';
 import 'lan_hub_server.dart';
+import 'lan_ports.dart';
 import 'leader_election_service.dart';
 
 enum LanMode { disabled, server, client }
 
+/// One hub found by a settings-screen scan: the address to dial *and* the port
+/// it announced. The port matters now that a hub may have fallen back off its
+/// preferred one — a picker that returned bare IPs would send the follower to
+/// a closed port.
+typedef DiscoveredHub = ({String ip, int port});
+
 class LanHubService {
   static const _keyMode = 'lan_mode';
   static const _keyServerIp = 'lan_server_ip';
+  static const _keyServerPort = 'lan_server_port';
+  static const _keyHubPort = 'lan_hub_port';
+  static const _keyDiscoveryPort = 'lan_discovery_port';
 
   final SharedPreferences _prefs;
   final AppTokenStorage _tokenStorage;
@@ -87,6 +98,54 @@ class LanHubService {
 
   Future<void> setServerIp(String ip) => _prefs.setString(_keyServerIp, ip);
 
+  /// Port a `client` dials on [serverIp]. Set from a discovery announcement's
+  /// `ws_port` (so a hub that fell back to 8766 is still reachable) or from an
+  /// `ip:port` typed into settings.
+  int get serverPort => _prefs.getInt(_keyServerPort) ?? preferredHubPort;
+
+  Future<void> setServerPort(int port) =>
+      _prefs.setInt(_keyServerPort, normalizePort(port));
+
+  /// Operator-configured *preference*, not necessarily what is in use — the
+  /// actual bound port is [activeHubPort], which may have walked upward if
+  /// this one was occupied.
+  int get preferredHubPort =>
+      normalizePort(_prefs.getInt(_keyHubPort) ?? kDefaultHubPort);
+
+  Future<void> setPreferredHubPort(int port) =>
+      _prefs.setInt(_keyHubPort, normalizePort(port));
+
+  int get preferredDiscoveryPort =>
+      normalizePort(_prefs.getInt(_keyDiscoveryPort) ?? kDefaultDiscoveryPort);
+
+  Future<void> setPreferredDiscoveryPort(int port) =>
+      _prefs.setInt(_keyDiscoveryPort, normalizePort(port));
+
+  /// TCP port the hub is actually listening on right now, or null when it is
+  /// not listening — either not in `server` mode, or every candidate port was
+  /// busy (see [hubBindError]).
+  int? get activeHubPort => _server.boundPort;
+
+  String? get hubBindError => _server.lastBindError;
+
+  ValueListenable<int?> get activeHubPortListenable => _server.boundPortNotifier;
+
+  /// UDP port the discovery beacon is bound to. Read from whichever service
+  /// currently owns the socket: with leader election enabled that is
+  /// `LeaderElectionService`'s own instance, so this reports null here and the
+  /// election service is asked instead — see [discoveryPortReporter].
+  int? get activeDiscoveryPort =>
+      _discovery.boundPort ?? discoveryPortReporter?.call();
+
+  String? get discoveryBindError => _discovery.lastBindError;
+
+  /// Set by `di.dart` to `LeaderElectionService`'s bound-port getter, so the
+  /// settings screen can show one discovery port regardless of which service
+  /// owns the socket. A plain callback rather than a dependency because
+  /// `LeaderElectionService` is constructed *with* this service and injecting
+  /// it back would be a cycle.
+  int? Function()? discoveryPortReporter;
+
   /// App start da chaqiriladi. Callers must wait until every DI registration
   /// this transitively needs (notably `UserBloc`, for branch id) is done —
   /// `client` mode connects immediately if a server IP is already saved, and
@@ -95,6 +154,7 @@ class LanHubService {
     switch (mode) {
       case LanMode.server:
         await _server.start(
+          port: preferredHubPort,
           authValidator: _validateIncomingAuth,
           onRelayOp: _handleRelayOp,
           // Bo'lmasa server o'z clientlaridan kelgan broadcastlarni faqat
@@ -125,7 +185,11 @@ class LanHubService {
       case LanMode.client:
         final ip = serverIp;
         if (ip.isNotEmpty) {
-          await _client.connect(ip, getCredentials: _readOwnCredentials);
+          await _client.connect(
+            ip,
+            port: serverPort,
+            getCredentials: _readOwnCredentials,
+          );
           _client.onMessage.listen(_handleRemoteMessage);
         }
         break;
@@ -148,7 +212,10 @@ class LanHubService {
     if (myBranchId.isEmpty) return;
     await _discovery.startAnnouncing(
       branchId: myBranchId,
-      wsPort: LanHubServer.defaultPort,
+      // The port actually bound, not the constant — a hub that fell back must
+      // advertise where it really is, or followers dial a closed port.
+      wsPort: activeHubPort ?? preferredHubPort,
+      port: preferredDiscoveryPort,
     );
     await _discoverySub?.cancel();
     _discoverySub = _discovery.onAnnouncement.listen((a) {
@@ -167,24 +234,43 @@ class LanHubService {
   /// in `client` mode the discovery socket isn't otherwise in use (the
   /// standing conflict watch above only ever runs under `server`), so this
   /// always starts from a clean, dedicated scan and fully stops afterward.
-  Future<List<String>> discoverHubs({
+  Future<List<DiscoveredHub>> discoverHubs({
     Duration timeout = const Duration(seconds: 4),
   }) async {
     final myBranchId = inject<UserBloc>().state.userMOdel?.branchId ?? '';
     if (myBranchId.isEmpty) return [];
-    final found = <String>{};
+    // Keyed by ip so a hub heard several times collapses to one entry, while
+    // the announced `ws_port` is kept rather than discarded — dropping it was
+    // what forced every discovered hub to be dialled on the default port.
+    final found = <String, int>{};
     final sub = _discovery.onAnnouncement.listen((a) {
-      if (a.branchId == myBranchId) found.add(a.ip);
+      if (a.branchId == myBranchId) found[a.ip] = a.port;
     });
     try {
-      await _discovery.startListening();
+      await _discovery.startListening(port: preferredDiscoveryPort);
       await Future.delayed(timeout);
     } finally {
       await sub.cancel();
       await _discovery.stop();
     }
-    return found.toList();
+    return [
+      for (final e in found.entries) (ip: e.key, port: e.value),
+    ];
   }
+
+  /// Port this terminal's hub listens on when in `server` mode — the one
+  /// actually bound where there is one, falling back to the configured
+  /// preference so the settings card can still show what *would* be used.
+  int get hubPort => activeHubPort ?? preferredHubPort;
+
+  /// Leader side of the manual-entry fallback: every IPv4 address this device
+  /// is reachable at, best candidate first. `discoverHubs` above answers "what
+  /// can this client hear?", which is the wrong question when the hub is
+  /// announcing from an interface no client can dial (a docker bridge, a VPN
+  /// tunnel — the hub binds `anyIPv4`, so it answers on all of them). This
+  /// answers "what should I type in?" from the hub's own side, where the
+  /// interface names are known.
+  Future<List<LocalAddress>> localAddresses() => listLocalIpv4Addresses();
 
   Future<LanAuthCredentials> _readOwnCredentials() async {
     final token = await _tokenStorage.readAccessToken() ?? '';

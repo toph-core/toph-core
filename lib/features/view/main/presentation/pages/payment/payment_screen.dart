@@ -118,10 +118,15 @@ class _PaymentScreenState extends State<PaymentScreen> {
           child: BlocBuilder<PaymentBloc, PaymentState>(
             builder: (context, state) {
               if (state.detail == null) {
+                // Two states, and the second one used to be unreachable:
+                // `PaymentBloc` never emitted `Status.ERROR`, so a bill that
+                // could not be resolved rendered the spinner below forever —
+                // no message, no back button, nothing but a restart. The
+                // replica read behind this screen is synchronous and
+                // authoritative, so "not found" is now an answer the bloc
+                // actually gives, and it arrives with a way out.
                 if (state.detailStatus == Status.ERROR) {
-                  return Center(
-                    child: Text(S.current.strPaymentInfoNotFound),
-                  );
+                  return _BillNotFound(tableId: tableId, orderId: orderId);
                 }
                 return const Center(
                   child: CircularProgressIndicator.adaptive(),
@@ -676,4 +681,73 @@ String _fmtHm(DateTime dt) {
   final h = l.hour.toString().padLeft(2, '0');
   final m = l.minute.toString().padLeft(2, '0');
   return '$h:$m';
+}
+
+/// What the cashier sees when neither key resolves to a bill.
+///
+/// It names the keys it looked under, because the two ways this happens are
+/// hard to tell apart from the floor: a table whose occupancy overlay says
+/// busy while no live `orders` row backs it, and a bill already settled or
+/// comped elsewhere. Either way the screen must not be a dead end — that is
+/// the whole defect this replaces.
+class _BillNotFound extends StatelessWidget {
+  final String? tableId;
+  final String? orderId;
+
+  const _BillNotFound({required this.tableId, required this.orderId});
+
+  @override
+  Widget build(BuildContext context) {
+    final keys = [
+      if (tableId != null && tableId!.isNotEmpty) 'table: $tableId',
+      if (orderId != null && orderId!.isNotEmpty) 'order: $orderId',
+    ].join('   ');
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 460),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.receipt_long_outlined, size: 48, color: _kS400),
+            const SizedBox(height: 16),
+            Text(
+              S.current.strPaymentInfoNotFound,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                color: _kS900,
+                fontFamily: 'Inter',
+              ),
+            ),
+            if (keys.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Text(
+                keys,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: _kS500,
+                  fontFamily: 'Inter',
+                ),
+              ),
+            ],
+            const SizedBox(height: 24),
+            FilledButton(
+              style: FilledButton.styleFrom(
+                backgroundColor: _kBrand,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 28,
+                  vertical: 14,
+                ),
+              ),
+              onPressed: () => Navigator.of(context).maybePop(),
+              child: Text(S.current.strBackToScreen),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }

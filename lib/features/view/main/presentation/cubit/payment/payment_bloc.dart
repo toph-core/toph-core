@@ -164,6 +164,26 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
     // Total 0 bo'lsa — /pay emas /cancel. Local-first: bitta lokal yozuv,
     // hech qachon tarmoqni kutmaydi (§4).
     if (dueTot <= 0) {
+      // A 0 total is a comp only when the bill genuinely has nothing on it.
+      // Reaching 0 because a charge failed to *load* is indistinguishable
+      // from a real comp by the time we get here, and the difference is a
+      // whole session's revenue: a time-billed table pushed from the archive
+      // sider arrives with no `hour_amount`, so a pure-time bill priced at 0
+      // and was written off silently, receipt and all. Anything indicating
+      // billable content therefore refuses rather than comps.
+      final hasLiveGoods = detail.goods.any((g) => g.status != 'cancelled');
+      final hasTableTime = state.hourPrice > 0.01 ||
+          _timerTotalSec > 0 ||
+          _timerStartedAt != null;
+      if (hasLiveGoods || hasTableTime) {
+        emit(state.copyWith(status: Status.ERROR));
+        showErrorMessage(
+          navigatorKey.currentContext!,
+          "Chek summasi 0 ko'rinmoqda, lekin unda hisoblanadigan pozitsiya "
+          "yoki stol vaqti bor. Ekranni yangilab qayta urinib ko'ring.",
+        );
+        return;
+      }
       await _paymentRepository.cancelZeroTotalOrder(
         orderId: detail.id,
         tableId: effectiveTableId,
@@ -328,18 +348,67 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
     add(const PaymentEvent.getDetail());
   }
 
+  /// Both halves of the bill's identity, in the order they are tried.
+  ///
+  /// The table key was the only one used here, and it resolves through
+  /// `OrderDetailQuery.liveOrderForTable` — the *live*-bill predicate. So any
+  /// bill that had already left that predicate (settled on this terminal,
+  /// settled on another terminal and pulled in, or comped) resolved to null
+  /// on every emission, and this screen's only render gate is
+  /// `state.detail != null`: the cashier got a spinner that could never
+  /// finish, on a check they were trying to close. The order key resolves
+  /// through `liveOrderById`, which deliberately applies no bill-status
+  /// filter, so it still finds that row.
+  List<String?> get _detailKeys => [state.tableId, state.orderId];
+
   Future<void> _onGetDetail(
     _GetDetail event,
     Emitter<PaymentState> emit,
   ) async {
-    final key = state.tableId ?? state.orderId;
-    if (key == null) return;
+    final keys = _detailKeys.where((k) => k != null && k.isNotEmpty).toList();
+    if (keys.isEmpty) {
+      // Neither key was handed over — nothing to watch, and no later
+      // emission will change that. Say so rather than spinning forever.
+      emit(state.copyWith(status: Status.ERROR, detailStatus: Status.ERROR));
+      return;
+    }
 
     await _detailSub?.cancel();
-    _detailSub = _ordersRepository.watchOrderDetail(key).listen((detail) {
+    _detailSub = _ordersRepository.watchOrderDetailForAny(keys).listen((detail) {
       if (isClosed) return;
       add(PaymentEvent.detailUpdated(detail: detail));
     });
+    unawaited(_hydrateTableChargeFromLocalTimer());
+  }
+
+  /// The table charge, recovered from the local timer when the caller did not
+  /// hand one over.
+  ///
+  /// Only `order_actions_bar` passes `hour_amount`; the archive sider and
+  /// `create_order_bloc` push this screen with `order_id` alone. The fallback
+  /// that was supposed to cover them is dead code — `HourPriceEvent.started`
+  /// is declared and handled but dispatched from nowhere in `lib/`, so the
+  /// listener in `payment_screen` never fires and the charge stayed 0.
+  ///
+  /// Stored amounts only: `finalAmount` once the timer is frozen, otherwise
+  /// `currentAmount`. The per-second accrual `TableTimerState` renders is a
+  /// display refinement and is deliberately not reproduced here — this needs
+  /// to be right, not live.
+  Future<void> _hydrateTableChargeFromLocalTimer() async {
+    if (state.hourPrice > 0.01) return;
+    final orderId = state.orderId ?? state.detail?.id;
+    if (orderId == null || orderId.isEmpty) return;
+    try {
+      final timerRepo = inject<TableTimerLocalRepository>();
+      final t = (await timerRepo.getTimer(orderId)).fold((_) => null, (r) => r);
+      if (t == null || isClosed) return;
+      final frozen = parseAmountToInt(t.finalAmount);
+      final amount = frozen > 0 ? frozen : parseAmountToInt(t.currentAmount);
+      if (amount <= 0) return;
+      add(PaymentEvent.upadeHourPrice(hourPrice: amount.toDouble()));
+    } catch (_) {
+      // Best-effort — a missing local timer must never block settling a bill.
+    }
   }
 
   void _onDetailUpdated(_DetailUpdated event, Emitter<PaymentState> emit) {
@@ -358,7 +427,19 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
       // is held instead; it is the one this screen exists to settle, and the
       // screen is about to be popped anyway.
       if (state.detail != null) return;
-      emit(state.copyWith(detailStatus: Status.LOADING, failure: null, detail: null));
+      // Nothing is in flight to wait for. This is a synchronous read of the
+      // local replica, which is this app's authority on what bills exist, so
+      // a null on the first emission is an answer — "no bill under either
+      // key" — not a stage on the way to one. Rendering it as LOADING is what
+      // turned a missing bill into a spinner with no end and no way out; the
+      // subscription stays open, so a bill that does turn up later still
+      // lands on screen.
+      emit(state.copyWith(
+        status: Status.ERROR,
+        detailStatus: Status.ERROR,
+        failure: null,
+        detail: null,
+      ));
       return;
     }
     final prefill = totals(detail: detail).grandTotal;
