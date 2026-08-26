@@ -35,6 +35,22 @@ enum Status { LOADING, UNKNOWN, SUCCESS, ERROR, OTHER, OTHER_LOADING, IDLE }
 
 enum OrderStatus { opened, pending, open, closed, paid, debt, deleted, none }
 
+/// Whether a bill is still open (not yet settled).
+///
+/// Single source of truth for the money-critical rule this predicate gates: a
+/// time-based table's **running** charge is folded into the bill's displayed
+/// total only while the bill is open. Once it is paid, the server has already
+/// baked the table charge into `grand_total`, so adding it again would
+/// double-count. Kept in lockstep with `archives_query.dart`'s SQL
+/// `_isOpenBill` ('open','opened','pending') — the header revenue sum and the
+/// per-check totals must agree.
+extension OrderStatusBill on OrderStatus {
+  bool get isOpenBill =>
+      this == OrderStatus.open ||
+      this == OrderStatus.opened ||
+      this == OrderStatus.pending;
+}
+
 enum ArchivesFilterType { All, Today, Week, month, Year, date }
 
 enum GoodsCategoryType { all, category }

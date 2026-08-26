@@ -109,11 +109,22 @@ class ArchiveRightSiderBar extends StatelessWidget {
                   itemsTotal: detail.foodTotal.round(),
                 ),
                 12.hBox,
+                // An open bill's `grand_total` does not yet include the
+                // running table charge — the server only folds it in at
+                // payment — so add it here for open bills, matching
+                // `ArchivesQuery.summary`'s revenue sum and the check row.
+                // A paid bill already carries it in `grand_total`; adding
+                // again would double-count.
                 _TotalsCard(
                   subtotal: detail.foodTotal.round(),
                   serviceFee: detail.serviceAmount.round(),
                   discount: detail.discountAmount.round(),
-                  total: detail.grandTotal.round(),
+                  tableCharge: _isOpenOrderStatus(archive.status)
+                      ? detail.tableAmount.round()
+                      : 0,
+                  total: _isOpenOrderStatus(archive.status)
+                      ? (detail.grandTotal + detail.tableAmount).round()
+                      : detail.grandTotal.round(),
                 ),
               ],
             );
@@ -742,12 +753,18 @@ class _TotalsCard extends StatelessWidget {
   final int subtotal;
   final int serviceFee;
   final int discount;
+
+  /// Running table (time) charge, shown as its own line only when non-zero —
+  /// i.e. an open time-based bill (see the call site). Already inside
+  /// [total] when shown.
+  final int tableCharge;
   final int total;
 
   const _TotalsCard({
     required this.subtotal,
     required this.serviceFee,
     required this.discount,
+    this.tableCharge = 0,
     required this.total,
   });
 
@@ -770,6 +787,13 @@ class _TotalsCard extends StatelessWidget {
             ),
             8.hBox,
             _MetaRow(label: S.current.strDiscount, value: discount.formatN),
+            if (tableCharge > 0) ...[
+              8.hBox,
+              _MetaRow(
+                label: S.current.strHourlyPayment,
+                value: tableCharge.formatN,
+              ),
+            ],
             8.hBox,
             Row(
               children: [
@@ -799,8 +823,4 @@ class _TotalsCard extends StatelessWidget {
   }
 }
 
-bool _isOpenOrderStatus(OrderStatus status) {
-  return status == OrderStatus.open ||
-      status == OrderStatus.opened ||
-      status == OrderStatus.pending;
-}
+bool _isOpenOrderStatus(OrderStatus status) => status.isOpenBill;

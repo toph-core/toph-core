@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:mary_ai_pos/core/constants/constants.dart';
 import 'package:mary_ai_pos/core/extension/date_time_extension.dart';
 import 'package:mary_ai_pos/core/extension/for_context.dart';
 import 'package:mary_ai_pos/core/extension/int_extension.dart';
@@ -23,6 +24,13 @@ class CheckItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // An open bill's `grand_total` (→ [ArchiveEntity.totalPrice]) does not yet
+    // include the running table (time) charge — the server folds it in only at
+    // payment. Add it here for open bills so the row matches the detail card
+    // and `ArchivesQuery.summary`'s revenue; a paid bill already carries it.
+    final displayTotal = archive.status.isOpenBill
+        ? archive.totalPrice + archive.tableAmount
+        : archive.totalPrice;
     return GestureDetector(
       onTap: () => context.read<ArchivesBloc>().add(
         ArchivesEvent.selectArchive(id: archive.id),
@@ -58,7 +66,7 @@ class CheckItem extends StatelessWidget {
                 ),
                 const Spacer(),
                 Text(
-                  archive.totalPrice.formatN,
+                  displayTotal.formatN,
                   style: context.textStyles.bold20.copyWith(
                     fontWeight: FontWeight.w500,
                   ),
