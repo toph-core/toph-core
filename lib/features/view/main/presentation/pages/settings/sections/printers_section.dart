@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:mary_ai_pos/core/components/flush_bars.dart';
 import 'package:mary_ai_pos/core/extension/for_context.dart';
+import 'package:mary_ai_pos/core/service/printer/printer_config.dart';
 import 'package:mary_ai_pos/core/service/printer/printer_config_storage.dart';
 import 'package:mary_ai_pos/core/service/printer/printer_service.dart';
 import 'package:mary_ai_pos/core/service/printer/printer_setting_entry.dart';
@@ -85,6 +86,7 @@ class _PrintersSectionState extends State<PrintersSection> {
     );
     if (!mounted) return;
     inject<PrinterConfigStorage>().removeUsbPrinterName(item.id);
+    inject<PrinterConfigStorage>().removePaperSize(item.id);
     _loadAll();
   }
 
@@ -186,6 +188,7 @@ class _PrinterCardState extends State<_PrinterCard> {
       port: entry.port,
       connectionType: entry.connectionType,
       windowsPrinterName: windowsPrinterName,
+      paperSize: inject<PrinterConfigStorage>().getPaperSize(entry.id),
     );
     if (!mounted) return;
     setState(() => _testing = false);
@@ -617,6 +620,9 @@ class _PrinterEditDialogState extends State<_PrinterEditDialog> {
   late final TextEditingController _portCtrl;
   String _type = 'category';
   String _connection = 'cable';
+  // Chek kengligi — XPRINTER_SETUP.md: ba'zi "80mm" printerlar 32 belgi (58mm)
+  // chiqaradi, boshqalari 48 (80mm). Shu qurilmada `entryId` bo'yicha saqlanadi.
+  String _paperSizeCode = kPaperSizeCode80;
   final Set<String> _selectedCategoryIds = {};
   bool _saving = false;
   String? _saveError;
@@ -640,6 +646,9 @@ class _PrinterEditDialogState extends State<_PrinterEditDialog> {
     if (e != null) {
       _type = e.type.isNotEmpty ? e.type : 'category';
       _connection = e.connectionType.isNotEmpty ? e.connectionType : 'cable';
+      _paperSizeCode =
+          inject<PrinterConfigStorage>().getPaperSizeCode(e.id) ??
+              kPaperSizeCode80;
       _selectedCategoryIds.addAll(e.connectedEntityIds);
       if (_connection == 'usb') {
         _windowsPrinterName =
@@ -732,6 +741,9 @@ class _PrinterEditDialogState extends State<_PrinterEditDialog> {
 
     await widget.storage.upsertEntry(entry);
 
+    // Chek kengligi — shu qurilmada, `entryId` bo'yicha (backend saqlamaydi).
+    await widget.storage.savePaperSizeCode(entryId, _paperSizeCode);
+
     final cache = inject<PrinterConfigStorage>();
     if (_connection == 'usb' && _windowsPrinterName != null) {
       await cache.saveUsbPrinterName(entryId, _windowsPrinterName!);
@@ -806,6 +818,7 @@ class _PrinterEditDialogState extends State<_PrinterEditDialog> {
       port: _connection == 'usb' ? 0 : int.parse(_portCtrl.text.trim()),
       connectionType: _connection,
       windowsPrinterName: _connection == 'usb' ? _windowsPrinterName : null,
+      paperSize: paperSizeFromCode(_paperSizeCode),
     );
     if (!mounted) return;
     setState(() {
@@ -950,6 +963,31 @@ class _PrinterEditDialogState extends State<_PrinterEditDialog> {
                                 icon: Icons.usb_rounded,
                                 helper: 'To\'g\'ridan',
                               ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+                      _LabeledField(
+                        label: 'Chek kengligi',
+                        helper: 'Ba\'zi "80mm" printerlar 32 belgi (58mm) '
+                            'chiqaradi — chek matni buzilsa 58mm ni tanlang',
+                        child: _SegmentedChoice<String>(
+                          value: _paperSizeCode,
+                          onChanged: (v) =>
+                              setState(() => _paperSizeCode = v),
+                          options: const [
+                            _ChoiceOption(
+                              value: kPaperSizeCode80,
+                              label: '80 mm',
+                              icon: Icons.receipt_long_rounded,
+                              helper: '48 belgi',
+                            ),
+                            _ChoiceOption(
+                              value: kPaperSizeCode58,
+                              label: '58 mm',
+                              icon: Icons.receipt_rounded,
+                              helper: '32 belgi',
+                            ),
                           ],
                         ),
                       ),

@@ -1,5 +1,26 @@
 import 'package:esc_pos_utils_plus/esc_pos_utils_plus.dart';
 
+/// Chek kengligi (belgi/qator) — printerga qarab tanlanadi. XPRINTER_SETUP.md
+/// da o'lchangan haqiqiy holat: Xprinter XP-K200L "80mm sinf" bo'lsa ham,
+/// standart shriftda **32 belgi**dan keyin qatorni buzadi — ya'ni 58mm
+/// shabloniga to'g'ri keladi. 80mm printerlar esa 48 belgi chiqaradi. Shu
+/// sababli kenglik har bir printer uchun alohida tanlanadi.
+///
+/// Backend `printer-settings`da bu ustun yo'q, shuning uchun USB printer nomi
+/// kabi shu qurilmada, `entryId` bo'yicha saqlanadi
+/// (`PrinterConfigStorage.getPaperSize`).
+const String kPaperSizeCode58 = 'mm58';
+const String kPaperSizeCode80 = 'mm80';
+
+/// Saqlangan kod (`'mm58'`/`'mm80'`) → `PaperSize`. Noma'lum/bo'sh qiymat
+/// mavjud xulq-atvorni saqlab, 80mm ga tushadi.
+PaperSize paperSizeFromCode(String? code) =>
+    code == kPaperSizeCode58 ? PaperSize.mm58 : PaperSize.mm80;
+
+/// `PaperSize` → saqlanadigan kod.
+String paperSizeToCode(PaperSize size) =>
+    size == PaperSize.mm58 ? kPaperSizeCode58 : kPaperSizeCode80;
+
 class PrinterConfig {
   final String ip;
   final int port;

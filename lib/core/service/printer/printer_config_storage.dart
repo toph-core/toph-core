@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:esc_pos_utils_plus/esc_pos_utils_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'printer_config.dart';
@@ -111,6 +112,46 @@ class PrinterConfigStorage {
     }
   }
 
+  // ─── Chek kengligi / paper size (per-device, never synced) ───────────
+  //
+  // XPRINTER_SETUP.md: bir printer "80mm sinf" bo'lsa ham 32 belgi (58mm
+  // shabloni) chiqarishi mumkin, boshqasi esa 48 (80mm). Backend
+  // `printer-settings`da bunday ustun yo'q, shuning uchun tanlov — USB printer
+  // nomi kabi — shu qurilmada `entryId` bo'yicha saqlanadi va keyingi
+  // login sinxronizatsiyasida yo'qolmaydi.
+
+  static const _paperSizesKey = 'printer_paper_sizes_json';
+
+  Map<String, String> _paperSizes() {
+    final raw = _prefs.getString(_paperSizesKey);
+    if (raw == null || raw.isEmpty) return {};
+    try {
+      final map = jsonDecode(raw) as Map;
+      return map.map((k, v) => MapEntry(k.toString(), v.toString()));
+    } catch (_) {
+      return {};
+    }
+  }
+
+  /// Saqlangan kod (`'mm58'`/`'mm80'`) yoki `null` (tanlanmagan → 80mm).
+  String? getPaperSizeCode(String entryId) => _paperSizes()[entryId];
+
+  /// Bu printer uchun chek kengligi — tanlanmagan bo'lsa 80mm (mavjud xulq).
+  PaperSize getPaperSize(String entryId) =>
+      paperSizeFromCode(getPaperSizeCode(entryId));
+
+  Future<void> savePaperSizeCode(String entryId, String code) async {
+    final map = _paperSizes()..[entryId] = code;
+    await _prefs.setString(_paperSizesKey, jsonEncode(map));
+  }
+
+  Future<void> removePaperSize(String entryId) async {
+    final map = _paperSizes();
+    if (map.remove(entryId) != null) {
+      await _prefs.setString(_paperSizesKey, jsonEncode(map));
+    }
+  }
+
   /// Backend hali ko'rmagan yangi yozuv uchun — vaqt tamg'asi asosida,
   /// shu qurilmada takrorlanmaydigan id.
   String generateLocalId() =>
@@ -128,6 +169,7 @@ class PrinterConfigStorage {
           port: e.port,
           connectionType: e.connectionType,
           entryId: e.id,
+          paperSize: getPaperSize(e.id),
         );
       }
     }
@@ -159,6 +201,7 @@ class PrinterConfigStorage {
               port: e.port,
               connectionType: e.connectionType,
               entryId: e.id,
+              paperSize: getPaperSize(e.id),
             );
           }
         }
@@ -174,6 +217,7 @@ class PrinterConfigStorage {
               port: e.port,
               connectionType: e.connectionType,
               entryId: e.id,
+              paperSize: getPaperSize(e.id),
             );
           }
         }

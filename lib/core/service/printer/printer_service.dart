@@ -154,7 +154,10 @@ class PrinterService {
 
   /// TCP orqali yuborish; juda kichik bo‘laklar ESC/raster oqimini sindirishi mumkin.
   static const _socketChunkBytes = 8192;
-  static const List<int> _buzzerBytes = [0x1B, 0x42, 0x02, 0x03];
+
+  /// Buzzer — `ESC B n t` (`1B 42 n t`). XPRINTER_SETUP.md da shu aynan
+  /// qurilmada (`1B 42 03 03`) sinab ko'rilgan va eshitiladigan signal bergan.
+  static const List<int> _buzzerBytes = [0x1B, 0x42, 0x03, 0x03];
 
   static List<List<int>> _socketSendChunks(List<int> bytes) {
     if (bytes.isEmpty) return [bytes];
@@ -760,15 +763,31 @@ class PrinterService {
     return _enumerateLocalPrinters().map((p) => p.name).toList();
   }
 
+  /// `ERROR_INVALID_DATATYPE` — RAW oqim GDI/ishlab chiqaruvchi drayveriga
+  /// yuborilganda qaytadi (XPRINTER_SETUP.md, 4-muammo). Bunday navbat
+  /// "sahifa" render qiladi, ESC/POS baytlarini qabul qilmaydi.
+  static const int _errorInvalidDatatype = 1804;
+
+  /// RAW navbat topilmaganda beriladigan yo'l-yo'riq — XPRINTER_SETUP.md dagi
+  /// yechim: xuddi shu portda "Generic / Text Only" drayverli navbat qo'shish.
+  String _rawDatatypeHint(String name) =>
+      '"$name" printeri RAW ESC/POS ni qabul qilmadi '
+      '(xato $_errorInvalidDatatype — INVALID_DATATYPE).\n'
+      'Bu odatda GDI/ishlab chiqaruvchi drayveri — u faqat "sahifa" chop etadi, '
+      'kesish/signal/shtrix-kod baytlarini bajarmaydi.\n'
+      'Yechim: xuddi shu USB portda "Generic / Text Only" drayveri bilan '
+      'yangi navbat (masalan "XP80-Raw") qo\'shing va shu yerda o\'shani tanlang.';
+
   /// Win32 API orqali raw bytes yuboradi.
   ({bool ok, String? error}) _writeRawToPrinter(String name, List<int> bytes) {
     final pName = name.toNativeUtf16();
     final phPrinter = calloc<HANDLE>();
 
     if (OpenPrinter(pName, phPrinter, nullptr) == 0) {
+      final err = GetLastError();
       calloc.free(phPrinter);
       malloc.free(pName);
-      return (ok: false, error: "Printer ochilmadi: $name");
+      return (ok: false, error: "Printer ochilmadi: $name (xato $err)");
     }
 
     final hPrinter = phPrinter.value;
@@ -783,13 +802,21 @@ class PrinterService {
       ..ref.pDatatype = pDatatype;
 
     final jobId = StartDocPrinter(hPrinter, 1, pDocInfo.cast());
+    // GetLastError darhol olinadi — keyingi Win32 chaqiruvi uni almashtiradi.
+    final startErr = jobId == 0 ? GetLastError() : 0;
     calloc.free(pDocInfo);
     malloc.free(pDocName);
     malloc.free(pDatatype);
 
     if (jobId == 0) {
       ClosePrinter(hPrinter);
-      return (ok: false, error: "StartDocPrinter muvaffaqiyatsiz: $name");
+      if (startErr == _errorInvalidDatatype) {
+        return (ok: false, error: _rawDatatypeHint(name));
+      }
+      return (
+        ok: false,
+        error: "StartDocPrinter muvaffaqiyatsiz: $name (xato $startErr)",
+      );
     }
 
     StartPagePrinter(hPrinter);
@@ -797,7 +824,9 @@ class PrinterService {
     final pData = calloc<Uint8>(bytes.length);
     pData.asTypedList(bytes.length).setAll(0, bytes);
     final pWritten = calloc<DWORD>();
-    WritePrinter(hPrinter, pData, bytes.length, pWritten);
+    final wrote = WritePrinter(hPrinter, pData, bytes.length, pWritten);
+    final writeErr = wrote == 0 ? GetLastError() : 0;
+    final written = pWritten.value;
     calloc.free(pData);
     calloc.free(pWritten);
 
@@ -805,7 +834,26 @@ class PrinterService {
     EndDocPrinter(hPrinter);
     ClosePrinter(hPrinter);
 
-    debugPrint('[PrinterService] USB chek yuborildi → $name');
+    // Ilgari WritePrinter natijasi tekshirilmasdi — GDI navbatga yuborilgan
+    // RAW oqim "yuborildi" deb ko'rinardi, aslida hech narsa chop etilmasdi.
+    if (wrote == 0) {
+      if (writeErr == _errorInvalidDatatype) {
+        return (ok: false, error: _rawDatatypeHint(name));
+      }
+      return (
+        ok: false,
+        error: "WritePrinter muvaffaqiyatsiz: $name (xato $writeErr)",
+      );
+    }
+    if (written < bytes.length) {
+      return (
+        ok: false,
+        error: "Chek to'liq yuborilmadi: $name "
+            "($written/${bytes.length} bayt)",
+      );
+    }
+
+    debugPrint('[PrinterService] USB chek yuborildi → $name ($written bayt)');
     return (ok: true, error: null);
   }
 }
