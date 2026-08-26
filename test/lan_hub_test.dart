@@ -618,5 +618,87 @@ void main() {
       await sender.dispose();
       await receiver.dispose();
     });
+
+    test('disconnect() does not auto-reconnect, but a later connect() still can', () async {
+      // Regression: `disconnect()` closes the socket, whose `onDone` used to
+      // call `_scheduleReconnect()` unconditionally — so an intentional close
+      // (e.g. LanHubService.restart() demoting a client to disabled/server, or
+      // pointing it at a new leader) silently revived the link ~2s later. The
+      // fix gates auto-reconnect on an intent flag that disconnect() clears.
+      await server.start(
+        port: port,
+        authValidator: (token, branchId) async => true,
+        onRelayOp: (_) async => 'synced',
+      );
+
+      final client = LanHubClient();
+      await client.connect(
+        '127.0.0.1',
+        port: port,
+        getCredentials: () async => (token: 't', branchId: 'b'),
+      );
+      await _waitUntil(() => client.isConnected);
+      expect(server.clientCount, 1);
+
+      await client.disconnect();
+      await _waitUntil(() => server.clientCount == 0);
+      expect(client.isConnected, isFalse);
+
+      // Wait well past the ~2s(+jitter) base reconnect delay: a stray
+      // auto-reconnect would have re-joined by now. It must not.
+      await Future.delayed(const Duration(milliseconds: 3500));
+      expect(
+        client.isConnected,
+        isFalse,
+        reason: 'disconnect() must not schedule an auto-reconnect',
+      );
+      expect(server.clientCount, 0);
+
+      // An explicit connect() after a disconnect still works — disconnect only
+      // suppresses the *automatic* retry, it does not permanently kill the
+      // client (that is dispose()).
+      await client.connect(
+        '127.0.0.1',
+        port: port,
+        getCredentials: () async => (token: 't', branchId: 'b'),
+      );
+      await _waitUntil(() => client.isConnected);
+      expect(server.clientCount, 1);
+
+      await client.dispose();
+    });
+
+    test('stop() with multiple connected clients tears down cleanly, no ConcurrentModificationError', () async {
+      // Regression: stop() iterated the live `_clients` set while awaiting each
+      // socket close, and a socket's own `onDone` removing itself mid-loop
+      // could throw ConcurrentModificationError. It now iterates a snapshot.
+      await server.start(
+        port: port,
+        authValidator: (token, branchId) async => true,
+        onRelayOp: (_) async => 'synced',
+      );
+
+      final clients = [
+        for (var i = 0; i < 4; i++) LanHubClient(),
+      ];
+      for (final c in clients) {
+        await c.connect(
+          '127.0.0.1',
+          port: port,
+          getCredentials: () async => (token: 't', branchId: 'b'),
+        );
+      }
+      await _waitUntil(() => server.clientCount == clients.length);
+
+      // Must complete without throwing.
+      await server.stop();
+      expect(server.clientCount, 0);
+
+      // Clean up the clients (they will each try to auto-reconnect after the
+      // genuine drop; dispose cancels those pending timers).
+      for (final c in clients) {
+        await c.dispose();
+      }
+    });
   });
 }

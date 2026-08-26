@@ -268,7 +268,11 @@ class LanHubServer {
   }
 
   Future<void> stop() async {
-    for (final ws in _clients) {
+    // Iterate a snapshot: `await ws.close()` lets each socket's own `onDone`
+    // fire and `_clients.remove(ws)` mid-loop, which over the live set would
+    // throw ConcurrentModificationError — the same reason `broadcast` and
+    // `_broadcastExcept` copy with `List.of`.
+    for (final ws in List.of(_clients)) {
       await ws.close();
     }
     _clients.clear();

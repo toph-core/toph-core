@@ -66,12 +66,24 @@ class LanHubService {
 
   String? get conflictingHubIp => _hubConflictController.valueOrNull;
 
+  /// The one, lifelong subscription to `_client.onMessage`. Attached here in
+  /// the constructor — never per-`init()` — because `_client` outlives every
+  /// `restart()`/`init()` cycle and `onMessage` is a *broadcast* stream: a
+  /// fresh `listen` on each client-mode `init()` (as this used to do) stacked
+  /// another live handler that was never cancelled, so after a couple of
+  /// leader changes every remote localChange / timer / print / table message
+  /// was applied two or three times over. One subscription for the object's
+  /// life is the whole point.
+  StreamSubscription<LanHubMessage>? _clientMessageSub;
+
   LanHubService(
     this._prefs, {
     required AppTokenStorage tokenStorage,
     required ConnectivityCubit connectivity,
   })  : _tokenStorage = tokenStorage,
-        _connectivity = connectivity;
+        _connectivity = connectivity {
+    _clientMessageSub = _client.onMessage.listen(_handleRemoteMessage);
+  }
 
   LanMode get mode {
     final v = _prefs.getString(_keyMode) ?? 'disabled';
@@ -185,12 +197,14 @@ class LanHubService {
       case LanMode.client:
         final ip = serverIp;
         if (ip.isNotEmpty) {
+          // No `onMessage.listen` here — the sole subscription is attached
+          // once in the constructor and survives every restart (see
+          // `_clientMessageSub`). Re-subscribing per init() was the leak.
           await _client.connect(
             ip,
             port: serverPort,
             getCredentials: _readOwnCredentials,
           );
-          _client.onMessage.listen(_handleRemoteMessage);
         }
         break;
       case LanMode.disabled:
@@ -550,6 +564,8 @@ class LanHubService {
   }
 
   Future<void> dispose() async {
+    await _clientMessageSub?.cancel();
+    _clientMessageSub = null;
     await _server.stop();
     await _client.dispose();
     await _discoverySub?.cancel();

@@ -16,6 +16,18 @@ class LanHubClient {
   String? _serverIp;
   int _port = defaultPort;
   bool _disposed = false;
+
+  /// Whether this client currently *wants* to be connected. `connect()` sets
+  /// it, `disconnect()`/`dispose()` clear it. The auto-reconnect
+  /// ([_scheduleReconnect]) is gated on it, so an intentional close does not
+  /// immediately resurrect the socket: closing `_ws` fires the listener's
+  /// `onDone`, which used to reconnect unconditionally — meaning after a mode
+  /// change (e.g. `LanHubService.restart()` demoting a client, or adopting a
+  /// new leader) a stray reconnect ~2s later revived a link that was meant to
+  /// be gone, or raced the fresh connect and orphaned a still-listening socket.
+  bool _wantConnection = false;
+  Timer? _reconnectTimer;
+
   int _reconnectAttempts = 0;
   final Random _random = Random();
 
@@ -72,6 +84,9 @@ class LanHubClient {
     _serverIp = ip;
     _port = port;
     _getCredentials = getCredentials;
+    _wantConnection = true;
+    _reconnectTimer?.cancel();
+    _reconnectTimer = null;
     await _doConnect();
   }
 
@@ -150,7 +165,8 @@ class LanHubClient {
   }
 
   void _scheduleReconnect() {
-    if (_disposed) return;
+    // Never resurrect a link the caller intentionally closed (or disposed).
+    if (_disposed || !_wantConnection) return;
     final delay = _nextReconnectDelay();
     _reconnectAttempts++;
     if (kDebugMode) {
@@ -158,7 +174,13 @@ class LanHubClient {
         '[LanHub] Reconnecting in ${delay.inMilliseconds}ms (attempt $_reconnectAttempts)',
       );
     }
-    Future.delayed(delay, _doConnect);
+    // A cancelable Timer (not a bare `Future.delayed`) so `disconnect()` can
+    // stop a reconnect that is already scheduled but not yet fired.
+    _reconnectTimer?.cancel();
+    _reconnectTimer = Timer(delay, () {
+      _reconnectTimer = null;
+      _doConnect();
+    });
   }
 
   void send(LanHubMessage message) {
@@ -254,8 +276,15 @@ class LanHubClient {
     send(LanHubMessage.leaseRelease(tableId: tableId, terminalId: terminalId));
   }
 
-  /// Ulanishni yopadi, ammo qayta ulanishga ruxsat beradi.
+  /// Ulanishni yopadi. Qayta ulanish faqat keyingi [connect] chaqiruvida —
+  /// bu yerda avtomatik qayta ulanish o'chiriladi, aks holda `onDone`
+  /// (`_onDisconnected`) darhol yangi ulanishni rejalashtirib yuborardi va
+  /// rejim o'zgargach (`LanHubService.restart()`) ulanish "o'lmasdan" qayta
+  /// tiklanardi. Butunlay to'xtatish uchun [dispose].
   Future<void> disconnect() async {
+    _wantConnection = false;
+    _reconnectTimer?.cancel();
+    _reconnectTimer = null;
     await _ws?.close();
     _ws = null;
     _authorized = false;
@@ -265,6 +294,9 @@ class LanHubClient {
   /// To'liq o'chirish — qayta ulanish mumkin emas.
   Future<void> dispose() async {
     _disposed = true;
+    _wantConnection = false;
+    _reconnectTimer?.cancel();
+    _reconnectTimer = null;
     await _ws?.close();
     _ws = null;
     if (!_controller.isClosed) await _controller.close();
