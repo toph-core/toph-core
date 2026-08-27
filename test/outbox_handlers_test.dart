@@ -168,6 +168,26 @@ void main() {
     });
   });
 
+  group('outcomeForStatusCode — the raw-status twin used by order/timer handlers', () {
+    test('transient statuses retry, so a mid-shift token lapse or a throttle '
+        'does not quarantine a payment/order/timer write', () {
+      expect(outcomeForStatusCode(401), OutboxOutcome.retry); // expired token
+      expect(outcomeForStatusCode(408), OutboxOutcome.retry); // request timeout
+      expect(outcomeForStatusCode(429), OutboxOutcome.retry); // rate limited
+      expect(outcomeForStatusCode(null), OutboxOutcome.retry); // no response
+      expect(outcomeForStatusCode(500), OutboxOutcome.retry); // 5xx, no verdict
+      expect(outcomeForStatusCode(503), OutboxOutcome.retry);
+    });
+
+    test('a genuine 4xx verdict is permanent', () {
+      expect(outcomeForStatusCode(400), OutboxOutcome.permanent);
+      expect(outcomeForStatusCode(403), OutboxOutcome.permanent);
+      expect(outcomeForStatusCode(404), OutboxOutcome.permanent);
+      expect(outcomeForStatusCode(409), OutboxOutcome.permanent);
+      expect(outcomeForStatusCode(422), OutboxOutcome.permanent);
+    });
+  });
+
   group('users handlers', () {
     late OutboxExecutors executors;
     late _FakeMainRepository remote;

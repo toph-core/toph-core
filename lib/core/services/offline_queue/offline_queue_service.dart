@@ -8,6 +8,8 @@ import 'package:flutter/foundation.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:mary_ai_pos/core/api/dio_client.dart';
 import 'package:mary_ai_pos/core/api/list_api.dart';
+import 'package:mary_ai_pos/core/outbox/failure_outcome.dart';
+import 'package:mary_ai_pos/core/outbox/outbox_executor.dart';
 import 'package:mary_ai_pos/core/sync/sync_engine.dart';
 import 'package:mary_ai_pos/core/utils/order_conflict_helper.dart';
 import 'package:mary_ai_pos/core/utils/uuid.dart';
@@ -609,11 +611,15 @@ class OfflineQueueService {
   }
 
   /// Server tomonidan rad etilgan xatolar (qayta urinish kerak emas).
+  ///
+  /// Bir manba orqali hal qilinadi ([outcomeForStatusCode]) — outbox va boshqa
+  /// handlerlar bilan bir xil qoida. Transient 4xx (401 — token yangilanadi,
+  /// 408/429 — throttle) terminal EMAS: relayed op saqlanib, keyin qayta
+  /// uriniladi, aks holda vaqtinchalik token tugashi yozuvni yo'qotardi.
   bool _isTerminalError(Object e) {
     if (e is DioException) {
-      final code = e.response?.statusCode;
-      // 4xx — client xato (eskirgan ma'lumot, noto'g'ri so'rov)
-      if (code != null && code >= 400 && code < 500) return true;
+      return outcomeForStatusCode(e.response?.statusCode) ==
+          OutboxOutcome.permanent;
     }
     return false;
   }

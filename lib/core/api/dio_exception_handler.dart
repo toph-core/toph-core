@@ -36,7 +36,20 @@ Failure handleDioException(DioException error) {
       // auth rejection to `isDefiniteAuthRejection`, which could purge a
       // valid offline-cached credential during exactly the kind of backend
       // outage that mechanism exists to survive.
-      if (statusCode >= 400 && statusCode < 500 && data is Map<String, dynamic>) {
+      //
+      // The transient 4xx (401 token lapse, 408 request timeout, 429 throttle)
+      // are excluded for the same reason on the write side: `MessageFailure`
+      // is quarantined by `outcomeForFailure`, so capturing a 401-with-body
+      // here would strand an outbox write the interceptor's refresh would
+      // otherwise recover. They fall through to the switch below (401 →
+      // `UnauthorizedFailure`, 408 → `TimeoutFailure`, 429 → `UnknownFailure`),
+      // all of which retry — and 401 still classifies as a definite auth
+      // rejection via `UnauthorizedFailure`, so PIN-cache revocation is intact.
+      const transientStatuses = {401, 408, 429};
+      if (statusCode >= 400 &&
+          statusCode < 500 &&
+          !transientStatuses.contains(statusCode) &&
+          data is Map<String, dynamic>) {
         if (data['error'] != null) {
           return MessageFailure(data['error'].toString());
         }

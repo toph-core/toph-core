@@ -35,6 +35,7 @@ import 'package:mary_ai_pos/core/api/list_api.dart';
 import 'package:mary_ai_pos/core/utils/order_conflict_helper.dart';
 import 'package:mary_ai_pos/core/utils/uuid.dart';
 
+import 'failure_outcome.dart';
 import 'outbox_executor.dart';
 import 'outbox_operation.dart';
 
@@ -262,10 +263,16 @@ Future<OutboxExecutionResult> _send(Future<void> Function() request) async {
 
 OutboxExecutionResult _mapDioError(DioException e) {
   final code = e.response?.statusCode;
-  if (code != null && code >= 400 && code < 500) {
-    return OutboxExecutionResult.permanent('HTTP $code: ${e.message ?? ''}');
-  }
-  return OutboxExecutionResult.retry(e.message ?? 'network error');
+  final message =
+      code != null ? 'HTTP $code: ${e.message ?? ''}' : (e.message ?? 'network error');
+  // One rule, shared with every other handler (`outcomeForStatusCode` /
+  // `outcomeForFailure`): a transient 401/408/429 keeps its place in the queue
+  // instead of being quarantined and reverted.
+  return switch (outcomeForStatusCode(code)) {
+    OutboxOutcome.retry => OutboxExecutionResult.retry(message),
+    OutboxOutcome.permanent => OutboxExecutionResult.permanent(message),
+    OutboxOutcome.succeeded => const OutboxExecutionResult.succeeded(),
+  };
 }
 
 /// offline-first-target-architecture.md §6/§13 — a duplicate-table-open 409

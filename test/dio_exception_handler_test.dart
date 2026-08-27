@@ -25,9 +25,28 @@ void main() {
       expect((failure as MessageFailure).message, 'bad input');
     });
 
-    test('a 401 with an error body still maps to MessageFailure (message wins)', () {
-      final failure = handleDioException(withResponse(401, {'error': 'wrong pincode'}));
-      expect(failure, isA<MessageFailure>());
+    test('a transient 4xx with an error body is NOT captured as a permanent '
+        'MessageFailure — it must stay retryable on the write side', () {
+      // 401: still a definite auth rejection (via UnauthorizedFailure), so
+      // PIN-cache revocation is intact — but not a quarantined MessageFailure,
+      // which would strand an outbox write the interceptor's refresh recovers.
+      final unauthorized =
+          handleDioException(withResponse(401, {'error': 'wrong pincode'}));
+      expect(unauthorized, isA<UnauthorizedFailure>());
+      expect(unauthorized.isDefiniteAuthRejection, isTrue);
+
+      // 408 request timeout → TimeoutFailure (retryable), never MessageFailure.
+      expect(
+        handleDioException(withResponse(408, {'error': 'timeout'})),
+        isA<TimeoutFailure>(),
+      );
+
+      // 429 throttle → UnknownFailure (retryable), and NOT a definite auth
+      // rejection, so a rate-limit burst can't purge a valid offline PIN.
+      final throttled =
+          handleDioException(withResponse(429, {'error': 'slow down'}));
+      expect(throttled, isA<UnknownFailure>());
+      expect(throttled.isDefiniteAuthRejection, isFalse);
     });
 
     test(

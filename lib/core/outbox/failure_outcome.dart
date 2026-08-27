@@ -52,3 +52,33 @@ OutboxOutcome outcomeForFailure(Failure failure) => switch (failure) {
       // really transient and gets quarantined costs a write.
       _ => OutboxOutcome.retry,
     };
+
+/// The same retry/quarantine decision as [outcomeForFailure], for the handlers
+/// that hold a raw HTTP status code rather than a [Failure] — the
+/// `DioException`-typed order and timer/shift handlers, which used to inline
+/// their own `4xx => permanent` rule and so quarantined writes this function
+/// (and [outcomeForFailure]) deliberately retries.
+///
+/// The divergence mattered most in exactly those handlers: a payment, an order,
+/// a timer or a shift-close is the write you least want stranded by a transient
+/// 401 (a mid-shift token lapse the interceptor refreshes) or a 429 (the server
+/// shedding load under a sync burst).
+OutboxOutcome outcomeForStatusCode(int? code) {
+  // No response at all — a transport fault that never reached a verdict.
+  if (code == null) return OutboxOutcome.retry;
+
+  // Transient 4xx: the server did not judge the write on its merits.
+  //  - 401 Unauthorized: expired access token, the ordinary case; the Dio
+  //    interceptor refreshes it, and if it truly never recovers the attempt
+  //    budget quarantines it later, for the right reason. Same rule as
+  //    `outcomeForFailure`'s `UnauthorizedFailure`.
+  //  - 408 Request Timeout / 429 Too Many Requests: throttling or a timed-out
+  //    request — no verdict, so keep the write's place in the queue.
+  if (code == 401 || code == 408 || code == 429) return OutboxOutcome.retry;
+
+  // Any other 4xx is a verdict that replaying only reproduces.
+  if (code >= 400 && code < 500) return OutboxOutcome.permanent;
+
+  // 5xx and everything else — the request never got a verdict on the merits.
+  return OutboxOutcome.retry;
+}

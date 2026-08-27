@@ -140,15 +140,19 @@ String timerOrderIdOf(OutboxOperation op) {
   return op.payload['order_id'] as String? ?? '';
 }
 
-/// A 4xx is a verdict → permanent; anything else never reached one → retry.
-/// The same rule `outcomeForFailure` applies to `Failure`-typed handlers,
-/// restated because the timer handlers speak `DioException` directly.
+/// Maps a raw `DioException` to the shared retry/quarantine rule
+/// ([outcomeForStatusCode]) — the same decision `outcomeForFailure` makes for
+/// `Failure`-typed handlers. A transient 401/408/429 retries; any other 4xx is
+/// a verdict and quarantines.
 OutboxExecutionResult _mapDioError(DioException e) {
   final code = e.response?.statusCode;
-  if (code != null && code >= 400 && code < 500) {
-    return OutboxExecutionResult.permanent('HTTP $code: ${e.message ?? ''}');
-  }
-  return OutboxExecutionResult.retry(e.message ?? 'network error');
+  final message =
+      code != null ? 'HTTP $code: ${e.message ?? ''}' : (e.message ?? 'network error');
+  return switch (outcomeForStatusCode(code)) {
+    OutboxOutcome.retry => OutboxExecutionResult.retry(message),
+    OutboxOutcome.permanent => OutboxExecutionResult.permanent(message),
+    OutboxOutcome.succeeded => const OutboxExecutionResult.succeeded(),
+  };
 }
 
 // ── Shift open / close ──────────────────────────────────────────────────────
