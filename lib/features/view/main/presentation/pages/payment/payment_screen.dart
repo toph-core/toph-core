@@ -11,6 +11,8 @@ import 'package:mary_ai_pos/features/view/main/presentation/cubit/payment/paymen
 import 'package:mary_ai_pos/features/view/main/presentation/pages/payment/widgets/payment_center_column.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/payment/widgets/payment_right_side_bar.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/payment/widgets/payment_top_bar.dart';
+import 'package:mary_ai_pos/features/view/main/domain/repository/service_charge_repository.dart';
+import 'package:mary_ai_pos/features/view/auth/presentation/cubit/bloc/user_bloc.dart';
 import 'package:mary_ai_pos/generated/l10n.dart';
 
 const _kS900 = Color(0xFF0F172A);
@@ -49,9 +51,24 @@ class _PaymentScreenState extends State<PaymentScreen> {
   late final int _timerTotalSec = (args['timer_total_sec'] as int?) ?? 0;
   late final String? _timerPricePerHour =
       args['timer_price_per_hour'] as String?;
-  // Navigatsiyadan kelgan service_percent (bills endpoint qaytarmasa fallback)
-  late final double _servicePercent =
-      (args['service_percent'] as num?)?.toDouble() ?? 0.0;
+  // Navigatsiyadan kelgan service_percent; bo'lmasa — filialning standart
+  // xizmat foizi (replikadagi `branches` sozlamasi).
+  //
+  // Onlayn rejimda backend har bir buyurtmaga xizmat foizini o'zi qo'shib
+  // qaytarardi, shuning uchun to'lov oynasida xizmat belgisi (checkbox)
+  // ko'rinardi. Offline yaratilgan ochiq schyotda esa `service_percent` 0
+  // bo'ladi (backend uni faqat sinxronda qo'shadi) — natijada checkbox
+  // yo'qolib qolardi. Filial sozlamasidan zaxira sifatida foydalanish uni
+  // qaytaradi va xizmat haqini to'g'ri hisoblaydi.
+  late final double _servicePercent = _resolveServicePercent();
+
+  double _resolveServicePercent() {
+    final fromArgs = (args['service_percent'] as num?)?.toDouble() ?? 0.0;
+    if (fromArgs > 0) return fromArgs;
+    final branchId = inject<UserBloc>().state.userMOdel?.branchId ?? '';
+    if (branchId.isEmpty) return 0.0;
+    return inject<ServiceChargeRepository>().getServicePercent(branchId) ?? 0.0;
+  }
 
   @override
   void dispose() {
