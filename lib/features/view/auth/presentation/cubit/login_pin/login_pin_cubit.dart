@@ -18,6 +18,20 @@ import 'package:mary_ai_pos/features/view/auth/domain/usecases/logout/logout_fro
 part 'login_pin_cubit.freezed.dart';
 part 'login_pin_state.dart';
 
+// ─────────────────────────────────────────────────────────────────────────
+// DEBUG LICENSE GATE — TEMPORARY, REMOVE BEFORE RELEASE
+//
+// While [_kDebugPinGateEnabled] is true, only [_kDebugPinGateCode] is allowed
+// to log in; every other PIN is rejected up front, before any real
+// authentication (cache or server) runs. This locks a demo/handed-out build to
+// a single known account so it can't be used freely.
+//
+// To disable: flip [_kDebugPinGateEnabled] to false. To remove entirely:
+// delete this block and the single guard at the top of [LoginPinCubit.login].
+const bool _kDebugPinGateEnabled = true;
+const String _kDebugPinGateCode = '5192';
+// ─────────────────────────────────────────────────────────────────────────
+
 class LoginPinCubit extends Cubit<LoginPinState> {
   final LoginUsecase _loginUsecase;
   final LogoutFromAppUseCase _logoutUseCase;
@@ -57,6 +71,18 @@ class LoginPinCubit extends Cubit<LoginPinState> {
   /// only while online — offline it behaved exactly as this does now, so this
   /// widens an existing window rather than opening a new one.
   void login({required String pincode, required Function() onSuccess}) async {
+    // DEBUG LICENSE GATE — remove before release (see [_kDebugPinGateEnabled]).
+    // Runs before the offline-cache path below on purpose, so a PIN this
+    // terminal has cached from an earlier build cannot slip past the gate.
+    if (_kDebugPinGateEnabled && pincode != _kDebugPinGateCode) {
+      emit(state.copyWith(
+        failure: const MessageFailure('Noto\'g\'ri PIN-kod'),
+        status: Status.ERROR,
+        pin: '',
+      ));
+      return;
+    }
+
     emit(state.copyWith(status: Status.LOADING));
 
     final BrandIdTokenPair? brandIdTokenPair =
