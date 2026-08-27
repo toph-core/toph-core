@@ -140,6 +140,15 @@ class OrderDetailQuery {
       // Joined, not stored — the server synthesised these onto the projection.
       'table_number': row['table_number'],
       'hall_name': row['hall_name'],
+      // The time-based table charge is persisted under `table_charge` (see
+      // `orders_repository_impl.saveOrderDetailSnapshot`), but every model
+      // built off this map — `ArchiveDetailModel`, `OpenOrderModel` — reads it
+      // under the REST projection's name `table_amount`. Without this remap
+      // that field parses to 0, which silently zeroed the archive detail's
+      // table-charge line and total, its receipt's hour amount, and the
+      // open-order lists. `ArchivesQuery.page()` bridges the same gap the same
+      // way for the list model.
+      'table_amount': order['table_charge'] ?? order['table_amount'],
       'items': itemsForOrder(id),
     };
   }
