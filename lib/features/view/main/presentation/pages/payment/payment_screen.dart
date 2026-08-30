@@ -62,12 +62,20 @@ class _PaymentScreenState extends State<PaymentScreen> {
   // qaytaradi va xizmat haqini to'g'ri hisoblaydi.
   late final double _servicePercent = _resolveServicePercent();
 
+  /// Xizmat foizi hech qayerda sozlanmagan bo'lsa qo'llaniladigan standart.
+  static const double _kDefaultServicePercent = 20;
+
   double _resolveServicePercent() {
     final fromArgs = (args['service_percent'] as num?)?.toDouble() ?? 0.0;
     if (fromArgs > 0) return fromArgs;
     final branchId = inject<UserBloc>().state.userMOdel?.branchId ?? '';
-    if (branchId.isEmpty) return 0.0;
-    return inject<ServiceChargeRepository>().getServicePercent(branchId) ?? 0.0;
+    final configured = branchId.isEmpty
+        ? 0.0
+        : (inject<ServiceChargeRepository>().getServicePercent(branchId) ?? 0.0);
+    if (configured > 0) return configured;
+    // Neither the order nor the branch carries a percent — fall back to the
+    // product default so the service fee is always present and charged.
+    return _kDefaultServicePercent;
   }
 
   @override
