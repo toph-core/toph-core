@@ -1,0 +1,19 @@
+# Code generation reads `lib/` only.
+#
+# Nothing under `test/` has ever needed a generated part — there is no
+# `.g.dart`, `.freezed.dart` or `.mocks.dart` in the whole directory — but the
+# builders scanned it anyway, and every builder refuses to run when *any* file
+# it scanned fails to parse. `test/registry_backend_pin_test.dart` uses
+# null-aware elements (`[?override, ...]`), which the analyzer pinned in
+# `pubspec.lock` does not understand, so a single test file the generators have
+# no interest in was failing every build in the repo.
+#
+# Narrowing the source set fixes that at the cause: the generators are pointed
+# at the only directory whose output they produce. Upgrading the analyzer would
+# also work and is the better long-term answer; this does not block it.
+targets:
+  $default:
+    sources:
+      - lib/**
+      - pubspec.yaml
+      - $package$

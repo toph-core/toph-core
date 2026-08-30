@@ -5,8 +5,6 @@ import 'package:mary_ai_pos/core/auth/storage/token_storage_impl.dart';
 import 'package:mary_ai_pos/core/db/local_database.dart';
 import 'package:mary_ai_pos/core/sync/replication_service.dart';
 import 'package:mary_ai_pos/core/sync/sync_engine.dart';
-import 'package:mary_ai_pos/features/view/main/presentation/cubit/shift/shift_bloc.dart'
-    show ShiftBloc;
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// CLIENT_FACING_OFFLINE_PLAN.md §1 — the brand/branch-aware retention rule
@@ -69,8 +67,21 @@ class LoginDataScopeService {
         _syncEngine = syncEngine,
         _prefs = prefs;
 
-  /// Same claim-decode `ShiftBloc` uses — the JWT's `cash_register_id` is
-  /// the only place the terminal's branch binding exists today (plan §1).
+  /// The JWT's `cash_register_id` is the only place the terminal's own
+  /// register binding exists today (plan §1). `ShiftBloc` used to decode the
+  /// same claim for the same reason; it no longer needs to, since a shift is
+  /// the branch's rather than the register's.
+  /// Where `ShiftBloc` used to keep this terminal's private active shift,
+  /// before the shift became a replicated `branch_shifts` row shared by the
+  /// whole branch. Kept only so an upgrading terminal's leftover record is
+  /// cleared once rather than lingering in SharedPreferences forever; nothing
+  /// reads it.
+  ///
+  /// Public so the brand-switch test can assert the clear actually happens —
+  /// the record lives outside the replica, so it is the one piece of shift
+  /// state the replica wipe cannot account for.
+  static const String legacyLocalShiftPrefsKey = 'pos_local_active_shift';
+
   static String? _jwtClaim(String jwt, String key) {
     try {
       final parts = jwt.split('.');
@@ -123,11 +134,17 @@ class LoginDataScopeService {
       // the refill are one operation and there is no window in which the
       // terminal has an empty database and no bootstrap running.
       //
-      // The active-shift record lives in SharedPreferences, outside the
-      // replica — and `ShiftBloc._checkShift` is local-only, so a stale shift
-      // from the previous brand would be presented as this brand's active
-      // shift if it survived the switch.
-      await _prefs.remove(ShiftBloc.localShiftPrefsKey);
+      // The shift needs no special handling here any more. It used to live in
+      // SharedPreferences, outside the replica, so a stale shift from the
+      // previous brand would have been presented as this brand's active shift
+      // if it survived the switch — hence the explicit removal that used to
+      // stand here. It is a `branch_shifts` row now, inside the replica, so
+      // `resetAndBootstrap`'s wipe takes it with everything else, and the
+      // active-shift query is branch-scoped besides.
+      //
+      // The legacy key is still cleared, once, so a terminal upgrading from a
+      // build that wrote it does not leave the record behind forever.
+      await _prefs.remove(legacyLocalShiftPrefsKey);
       await _storage.setPosInitialized(false);
     }
 

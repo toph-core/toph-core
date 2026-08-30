@@ -165,6 +165,15 @@ void main() {
       // no start, so splitting one aggregate's three verbs across two
       // mechanisms would have been the worse trade.
       'lib/core/outbox/timer_shift_outbox.dart',
+      // The branch shift's write transport, and the reason this list does not
+      // grow on net: it takes the shift replay over from the per-register
+      // handlers in `timer_shift_outbox.dart` above, which stay only long
+      // enough to drain shifts an older build already queued. Speaks Dio for
+      // the same reason `orders_outbox.dart` does — the branch-shift endpoints
+      // exist for this queue and fit no CRUD repository, and the conflict
+      // response (a losing open comes back carrying the *winning* shift) is
+      // replay logic, not a repository's business.
+      'lib/core/outbox/branch_shift_outbox.dart',
       'lib/di.dart',
       // The last feature-layer file that speaks HTTP. Phase 4 deletes it;
       // when it goes, this entry goes and the rule becomes absolute.
@@ -210,6 +219,8 @@ void main() {
       // Outbox replay and sync — the layer whose job this is.
       'lib/core/outbox/orders_outbox.dart',
       'lib/core/outbox/timer_shift_outbox.dart',
+      // See the note beside this entry in the `transport` list above.
+      'lib/core/outbox/branch_shift_outbox.dart',
       'lib/core/services/connectivity/connectivity_cubit.dart',
       'lib/core/services/lan_hub/lan_hub_service.dart',
       'lib/core/services/offline_queue/offline_queue_service.dart',

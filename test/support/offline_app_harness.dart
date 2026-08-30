@@ -47,9 +47,7 @@ import 'package:mary_ai_pos/core/utils/helper/helper_widget.dart'
 import 'package:mary_ai_pos/core/services/lan_hub/leader_election_service.dart';
 import 'package:mary_ai_pos/di.dart';
 import 'package:mary_ai_pos/features/view/auth/data/models/user/user_model.dart';
-import 'package:mary_ai_pos/features/view/main/data/models/shift/shift_response_model.dart';
 import 'package:mary_ai_pos/features/view/main/domain/repository/orders_repository.dart';
-import 'package:mary_ai_pos/features/view/main/presentation/cubit/shift/shift_bloc.dart';
 import 'package:mary_ai_pos/main.dart' show MyApp;
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -133,6 +131,10 @@ const kTimedTableId = 'tb-timed';
 const kCategoryId = 'cat-1';
 const kGoodId = 'g-osh';
 const kCashRegisterId = 'cr-1';
+
+/// The branch shift [OfflineAppHarness.openShift] seeds. Fixed rather than
+/// generated so [OfflineAppHarness.clearShift] can address it.
+const kSeededShiftId = 'shift-1';
 const kOpenOrderId = 'ord-open';
 const kPaidOrderId = 'ord-paid';
 
@@ -504,27 +506,32 @@ class OfflineAppHarness {
   /// render test about the screen it names; the open-shift action itself is
   /// exercised as a user action in its own test.
   Future<void> openShift() async {
-    final now = DateTime.now();
-    await inject<SharedPreferences>().setString(
-      ShiftBloc.localShiftPrefsKey,
-      jsonEncode(
-        ShiftResponseModel(
-          id: 'local_${now.millisecondsSinceEpoch}',
-          branchId: kBranchId,
-          cashRegisterId: kCashRegisterId,
-          cashierId: 'u-1',
-          openedAt: now,
-          createdAt: now,
-          updatedAt: now,
-        ).toJson(),
-      ),
-    );
+    final now = DateTime.now().toUtc();
+    // Seeded as a replicated row, because that is what a shift now is: the
+    // branch's `branch_shifts` record, which every terminal in the venue reads.
+    // Seeding it through [put] rather than through the open-shift flow also
+    // makes this indistinguishable from "the terminal beside this one opened
+    // the shift and it arrived over the LAN" — which is the state most of these
+    // tests are actually describing.
+    put('branch_shifts', {
+      'id': kSeededShiftId,
+      'branch_id': kBranchId,
+      'opened_by': 'u-1',
+      'closed_by': null,
+      'opened_at': now.toIso8601String(),
+      'closed_at': null,
+      'opening_cash': '0',
+      'opening_card': '0',
+      'closing_cash': null,
+      'closing_card': null,
+    });
   }
 
-  /// Clears the local shift record — the state a terminal is in before the
-  /// first cashier of the day signs on.
-  Future<void> clearShift() =>
-      inject<SharedPreferences>().remove(ShiftBloc.localShiftPrefsKey);
+  /// Clears the branch's shift — the state a venue is in before the first
+  /// cashier of the day signs on.
+  Future<void> clearShift() async {
+    db.deleteRow('branch_shifts', kSeededShiftId);
+  }
 
   /// The app's own order-detail read, resolved out of the live DI — so an
   /// assertion about "the order is there" is answered by the same query the

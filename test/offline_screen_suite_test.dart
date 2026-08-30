@@ -22,9 +22,9 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mary_ai_pos/core/db/order_detail_query.dart';
-import 'package:mary_ai_pos/core/outbox/timer_shift_outbox.dart' show kShiftEntity;
+import 'package:mary_ai_pos/core/db/branch_shift_query.dart';
+import 'package:mary_ai_pos/core/outbox/branch_shift_outbox.dart' show kBranchShiftEntity;
 import 'package:mary_ai_pos/core/routes/app_routes.dart';
-import 'package:mary_ai_pos/di.dart';
 import 'package:mary_ai_pos/features/view/auth/presentation/pages/login/login_screen.dart';
 import 'package:mary_ai_pos/features/view/auth/presentation/pages/initial_setup/initial_setup_screen.dart';
 import 'package:mary_ai_pos/features/view/auth/presentation/pages/login_pin/login_pin_screen.dart';
@@ -44,10 +44,8 @@ import 'package:mary_ai_pos/features/view/main/presentation/pages/notification/n
 import 'package:mary_ai_pos/features/view/main/presentation/pages/payment/payment_screen.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/settings/settings_screen.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/transactions/transactions_screen.dart';
-import 'package:mary_ai_pos/features/view/main/presentation/cubit/shift/shift_bloc.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/waiter/waiter_screen.dart';
 import 'package:mary_ai_pos/generated/l10n.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 import 'support/offline_app_harness.dart';
 
@@ -673,12 +671,16 @@ void main() {
       );
       await app.settle(tester, rounds: 30);
 
+      // The shift is a replicated row now, so "recorded locally" means a
+      // `branch_shifts` row in the replica — the same row every other terminal
+      // in the branch will read, rather than a note in this terminal's own
+      // SharedPreferences that nothing else could see.
       expect(
-        inject<SharedPreferences>().getString(ShiftBloc.localShiftPrefsKey),
+        BranchShiftQuery(app.db).activeShift(kBranchId),
         isNotNull,
         reason: 'the shift was not recorded locally',
       );
-      expect(app.outboxEntities(), contains(kShiftEntity));
+      expect(app.outboxEntities(), contains(kBranchShiftEntity));
       expectNoNetworkReach(app, 'opens a shift');
     }, shiftOpen: false);
   });

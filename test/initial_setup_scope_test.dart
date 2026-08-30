@@ -2,8 +2,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mary_ai_pos/core/auth/storage/token_storage_impl.dart';
 import 'package:mary_ai_pos/core/services/auth/login_data_scope_service.dart';
 import 'package:mary_ai_pos/di.dart';
-import 'package:mary_ai_pos/features/view/main/presentation/cubit/shift/shift_bloc.dart'
-    show ShiftBloc;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'support/offline_app_harness.dart';
@@ -80,15 +78,17 @@ void main() {
           cashRegisterId: '',
         );
         await storage.setPosInitialized(true);
-        // The active-shift record lives outside the replica, and
-        // `ShiftBloc._checkShift` is local-only, so a survivor would be
-        // presented as the *new* brand's open shift.
+        // The shift is a replicated `branch_shifts` row now, so the replica
+        // wipe carries it. What is still checked here is the *legacy* key: a
+        // terminal upgrading from a build that kept the shift in
+        // SharedPreferences must not have that record survive a brand switch,
+        // where it would otherwise sit outside the replica forever.
         await inject<SharedPreferences>()
-            .setString(ShiftBloc.localShiftPrefsKey, '{"id":"old-shift"}');
+            .setString(LoginDataScopeService.legacyLocalShiftPrefsKey, '{"id":"old-shift"}');
 
         expect(await scope.onSuccessfulLogin(), LoginDataScope.initialSetup);
         expect(
-          inject<SharedPreferences>().getString(ShiftBloc.localShiftPrefsKey),
+          inject<SharedPreferences>().getString(LoginDataScopeService.legacyLocalShiftPrefsKey),
           isNull,
           reason: "the previous brand's shift survived the switch",
         );

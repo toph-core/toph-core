@@ -284,7 +284,20 @@ class ChangeApplier {
     // a pull landing between a cashier's write and its replay would silently
     // revert what they just did. The guard clears when the replay is
     // acknowledged (Phase 2), after which the server's version takes over.
-    if (_db.isPending(spec.name, id)) return stats._add(skippedPending: 1);
+    //
+    // The one exception is a monotonic set — see [EntitySpec.monotonicSetKey].
+    //
+    // The complement is checked first and is unconditional: a monotonic key
+    // never goes back to unset, whoever sent the row and whatever the pending
+    // flag says. Without that, draining a queued open reopened a shift that had
+    // already been closed — `OutboxDrainer._succeed` clears the pending guard
+    // *before* applying the response, so the guard below could not see it, and
+    // the server's still-open row (its close had not drained yet) overwrote the
+    // local close and was broadcast to every LAN peer as a reopen.
+    if (_wouldUnsetMonotonic(spec, id, raw)) return stats._add(skippedPending: 1);
+    if (_db.isPending(spec.name, id) && !_completesMonotonicSet(spec, id, raw)) {
+      return stats._add(skippedPending: 1);
+    }
 
     _noteOrderTables(spec.name, id, raw);
     _retireClientTwin(spec, id, raw);
@@ -292,6 +305,55 @@ class ChangeApplier {
     _db.upsert(spec, id, PayloadNormalizer.normalize(spec, raw));
     return stats._add(applied: 1);
   }
+
+  /// Whether [raw] would clear this entity's monotonic key on a row where it is
+  /// already set — a transition that is never legitimate.
+  ///
+  /// `branch_shifts.closed_at` is set once and never cleared: the backend has
+  /// no reopen, and the column only ever goes null → timestamp. So a row
+  /// arriving with it unset is stale by construction, no matter which path
+  /// delivered it, and applying it would put a till back to trading under a
+  /// shift the venue has closed.
+  ///
+  /// Counted as `skippedPending` for want of a better bucket — the meaning is
+  /// the same one that field already carries, "the local copy was kept" — and a
+  /// new stat would ripple through `ReplicationService` and its tests for no
+  /// behavioural gain.
+  bool _wouldUnsetMonotonic(
+    EntitySpec spec,
+    String id,
+    Map<String, dynamic> raw,
+  ) {
+    final key = spec.monotonicSetKey;
+    if (key == null) return false;
+    if (!_isUnset(raw[key])) return false;
+    final stored = _db.byId(spec.name, id);
+    if (stored == null) return false;
+    return !_isUnset(stored[key]);
+  }
+
+  /// Whether [raw] sets this entity's monotonic key on a row where it is still
+  /// unset — the one case an arriving row is allowed past the pending guard.
+  ///
+  /// The direction matters and is asserted here rather than assumed: only
+  /// unset → set passes. A row arriving with the key *unset*, onto a local row
+  /// where it is set, is still skipped, so a pull carrying the pre-close server
+  /// copy cannot reopen a shift this terminal has closed and not yet reported.
+  bool _completesMonotonicSet(
+    EntitySpec spec,
+    String id,
+    Map<String, dynamic> raw,
+  ) {
+    final key = spec.monotonicSetKey;
+    if (key == null) return false;
+    if (_isUnset(raw[key])) return false;
+    final stored = _db.byId(spec.name, id);
+    if (stored == null) return false;
+    return _isUnset(stored[key]);
+  }
+
+  static bool _isUnset(Object? value) =>
+      value == null || value.toString().isEmpty;
 
   /// Removes the client-invented row this server row supersedes.
   ///

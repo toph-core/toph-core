@@ -91,6 +91,15 @@ class ListAPI {
       "/api/v1/cash-register-shifts/$id/close";
   static const String openShift = "/api/v1/cash-register-shifts";
 
+  // ── Branch shifts ─────────────────────────────────────────────────────────
+  // The venue-wide shift. Unlike [activeShift] above there is no
+  // `cash_register_id` query parameter: the branch is already fixed by the
+  // caller's token, and taking a register id would reintroduce the per-terminal
+  // split these endpoints exist to remove.
+  static const String branchShifts = "/api/v1/branch-shifts";
+  static const String activeBranchShift = "/api/v1/branch-shifts/active";
+  static String closeBranchShift(String id) => "/api/v1/branch-shifts/$id/close";
+
   //! POS printers (ESC/POS TCP) — `data`: printer yozuvlari massivi
   static const String printerSettings = "api/v1/settings/printer-settings";
 

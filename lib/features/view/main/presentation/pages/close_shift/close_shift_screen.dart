@@ -387,7 +387,7 @@ class _ShiftDashboard extends StatelessWidget {
       (b) => b.state.archives?.archives ?? const [],
     );
     final cashierName = context.select<UserBloc, String>(
-      (b) => b.state.userMOdel?.fullName ?? shift.cashierId,
+      (b) => b.state.userMOdel?.fullName ?? shift.openedBy ?? '',
     );
     final openedAt = shift.openedAt ?? DateTime.now();
 

@@ -20,6 +20,7 @@ mixin _$ShiftEvent {
   TResult when<TResult extends Object?>({
     required TResult Function() started,
     required TResult Function() checkShift,
+    required TResult Function() shiftRowChanged,
     required TResult Function(String value) updateCashSum,
     required TResult Function(String value) updateCardSum,
     required TResult Function(ShiftSumType type) updateSumType,
@@ -32,6 +33,7 @@ mixin _$ShiftEvent {
   TResult? whenOrNull<TResult extends Object?>({
     TResult? Function()? started,
     TResult? Function()? checkShift,
+    TResult? Function()? shiftRowChanged,
     TResult? Function(String value)? updateCashSum,
     TResult? Function(String value)? updateCardSum,
     TResult? Function(ShiftSumType type)? updateSumType,
@@ -44,6 +46,7 @@ mixin _$ShiftEvent {
   TResult maybeWhen<TResult extends Object?>({
     TResult Function()? started,
     TResult Function()? checkShift,
+    TResult Function()? shiftRowChanged,
     TResult Function(String value)? updateCashSum,
     TResult Function(String value)? updateCardSum,
     TResult Function(ShiftSumType type)? updateSumType,
@@ -57,6 +60,7 @@ mixin _$ShiftEvent {
   TResult map<TResult extends Object?>({
     required TResult Function(_Started value) started,
     required TResult Function(_CheckShift value) checkShift,
+    required TResult Function(_ShiftRowChanged value) shiftRowChanged,
     required TResult Function(_UpdateCashSum value) updateCashSum,
     required TResult Function(_UpdateCardSum value) updateCardSum,
     required TResult Function(_UpdateSumType value) updateSumType,
@@ -69,6 +73,7 @@ mixin _$ShiftEvent {
   TResult? mapOrNull<TResult extends Object?>({
     TResult? Function(_Started value)? started,
     TResult? Function(_CheckShift value)? checkShift,
+    TResult? Function(_ShiftRowChanged value)? shiftRowChanged,
     TResult? Function(_UpdateCashSum value)? updateCashSum,
     TResult? Function(_UpdateCardSum value)? updateCardSum,
     TResult? Function(_UpdateSumType value)? updateSumType,
@@ -81,6 +86,7 @@ mixin _$ShiftEvent {
   TResult maybeMap<TResult extends Object?>({
     TResult Function(_Started value)? started,
     TResult Function(_CheckShift value)? checkShift,
+    TResult Function(_ShiftRowChanged value)? shiftRowChanged,
     TResult Function(_UpdateCashSum value)? updateCashSum,
     TResult Function(_UpdateCardSum value)? updateCardSum,
     TResult Function(_UpdateSumType value)? updateSumType,
@@ -150,6 +156,7 @@ class _$StartedImpl implements _Started {
   TResult when<TResult extends Object?>({
     required TResult Function() started,
     required TResult Function() checkShift,
+    required TResult Function() shiftRowChanged,
     required TResult Function(String value) updateCashSum,
     required TResult Function(String value) updateCardSum,
     required TResult Function(ShiftSumType type) updateSumType,
@@ -165,6 +172,7 @@ class _$StartedImpl implements _Started {
   TResult? whenOrNull<TResult extends Object?>({
     TResult? Function()? started,
     TResult? Function()? checkShift,
+    TResult? Function()? shiftRowChanged,
     TResult? Function(String value)? updateCashSum,
     TResult? Function(String value)? updateCardSum,
     TResult? Function(ShiftSumType type)? updateSumType,
@@ -180,6 +188,7 @@ class _$StartedImpl implements _Started {
   TResult maybeWhen<TResult extends Object?>({
     TResult Function()? started,
     TResult Function()? checkShift,
+    TResult Function()? shiftRowChanged,
     TResult Function(String value)? updateCashSum,
     TResult Function(String value)? updateCardSum,
     TResult Function(ShiftSumType type)? updateSumType,
@@ -199,6 +208,7 @@ class _$StartedImpl implements _Started {
   TResult map<TResult extends Object?>({
     required TResult Function(_Started value) started,
     required TResult Function(_CheckShift value) checkShift,
+    required TResult Function(_ShiftRowChanged value) shiftRowChanged,
     required TResult Function(_UpdateCashSum value) updateCashSum,
     required TResult Function(_UpdateCardSum value) updateCardSum,
     required TResult Function(_UpdateSumType value) updateSumType,
@@ -214,6 +224,7 @@ class _$StartedImpl implements _Started {
   TResult? mapOrNull<TResult extends Object?>({
     TResult? Function(_Started value)? started,
     TResult? Function(_CheckShift value)? checkShift,
+    TResult? Function(_ShiftRowChanged value)? shiftRowChanged,
     TResult? Function(_UpdateCashSum value)? updateCashSum,
     TResult? Function(_UpdateCardSum value)? updateCardSum,
     TResult? Function(_UpdateSumType value)? updateSumType,
@@ -229,6 +240,7 @@ class _$StartedImpl implements _Started {
   TResult maybeMap<TResult extends Object?>({
     TResult Function(_Started value)? started,
     TResult Function(_CheckShift value)? checkShift,
+    TResult Function(_ShiftRowChanged value)? shiftRowChanged,
     TResult Function(_UpdateCashSum value)? updateCashSum,
     TResult Function(_UpdateCardSum value)? updateCardSum,
     TResult Function(_UpdateSumType value)? updateSumType,
@@ -288,6 +300,7 @@ class _$CheckShiftImpl implements _CheckShift {
   TResult when<TResult extends Object?>({
     required TResult Function() started,
     required TResult Function() checkShift,
+    required TResult Function() shiftRowChanged,
     required TResult Function(String value) updateCashSum,
     required TResult Function(String value) updateCardSum,
     required TResult Function(ShiftSumType type) updateSumType,
@@ -303,6 +316,7 @@ class _$CheckShiftImpl implements _CheckShift {
   TResult? whenOrNull<TResult extends Object?>({
     TResult? Function()? started,
     TResult? Function()? checkShift,
+    TResult? Function()? shiftRowChanged,
     TResult? Function(String value)? updateCashSum,
     TResult? Function(String value)? updateCardSum,
     TResult? Function(ShiftSumType type)? updateSumType,
@@ -318,6 +332,7 @@ class _$CheckShiftImpl implements _CheckShift {
   TResult maybeWhen<TResult extends Object?>({
     TResult Function()? started,
     TResult Function()? checkShift,
+    TResult Function()? shiftRowChanged,
     TResult Function(String value)? updateCashSum,
     TResult Function(String value)? updateCardSum,
     TResult Function(ShiftSumType type)? updateSumType,
@@ -337,6 +352,7 @@ class _$CheckShiftImpl implements _CheckShift {
   TResult map<TResult extends Object?>({
     required TResult Function(_Started value) started,
     required TResult Function(_CheckShift value) checkShift,
+    required TResult Function(_ShiftRowChanged value) shiftRowChanged,
     required TResult Function(_UpdateCashSum value) updateCashSum,
     required TResult Function(_UpdateCardSum value) updateCardSum,
     required TResult Function(_UpdateSumType value) updateSumType,
@@ -352,6 +368,7 @@ class _$CheckShiftImpl implements _CheckShift {
   TResult? mapOrNull<TResult extends Object?>({
     TResult? Function(_Started value)? started,
     TResult? Function(_CheckShift value)? checkShift,
+    TResult? Function(_ShiftRowChanged value)? shiftRowChanged,
     TResult? Function(_UpdateCashSum value)? updateCashSum,
     TResult? Function(_UpdateCardSum value)? updateCardSum,
     TResult? Function(_UpdateSumType value)? updateSumType,
@@ -367,6 +384,7 @@ class _$CheckShiftImpl implements _CheckShift {
   TResult maybeMap<TResult extends Object?>({
     TResult Function(_Started value)? started,
     TResult Function(_CheckShift value)? checkShift,
+    TResult Function(_ShiftRowChanged value)? shiftRowChanged,
     TResult Function(_UpdateCashSum value)? updateCashSum,
     TResult Function(_UpdateCardSum value)? updateCardSum,
     TResult Function(_UpdateSumType value)? updateSumType,
@@ -384,6 +402,150 @@ class _$CheckShiftImpl implements _CheckShift {
 
 abstract class _CheckShift implements ShiftEvent {
   const factory _CheckShift() = _$CheckShiftImpl;
+}
+
+/// @nodoc
+abstract class _$$ShiftRowChangedImplCopyWith<$Res> {
+  factory _$$ShiftRowChangedImplCopyWith(_$ShiftRowChangedImpl value,
+          $Res Function(_$ShiftRowChangedImpl) then) =
+      __$$ShiftRowChangedImplCopyWithImpl<$Res>;
+}
+
+/// @nodoc
+class __$$ShiftRowChangedImplCopyWithImpl<$Res>
+    extends _$ShiftEventCopyWithImpl<$Res, _$ShiftRowChangedImpl>
+    implements _$$ShiftRowChangedImplCopyWith<$Res> {
+  __$$ShiftRowChangedImplCopyWithImpl(
+      _$ShiftRowChangedImpl _value, $Res Function(_$ShiftRowChangedImpl) _then)
+      : super(_value, _then);
+}
+
+/// @nodoc
+
+class _$ShiftRowChangedImpl implements _ShiftRowChanged {
+  const _$ShiftRowChangedImpl();
+
+  @override
+  String toString() {
+    return 'ShiftEvent.shiftRowChanged()';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType && other is _$ShiftRowChangedImpl);
+  }
+
+  @override
+  int get hashCode => runtimeType.hashCode;
+
+  @override
+  @optionalTypeArgs
+  TResult when<TResult extends Object?>({
+    required TResult Function() started,
+    required TResult Function() checkShift,
+    required TResult Function() shiftRowChanged,
+    required TResult Function(String value) updateCashSum,
+    required TResult Function(String value) updateCardSum,
+    required TResult Function(ShiftSumType type) updateSumType,
+    required TResult Function() openShift,
+    required TResult Function() closeShift,
+    required TResult Function() printShiftReport,
+  }) {
+    return shiftRowChanged();
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult? whenOrNull<TResult extends Object?>({
+    TResult? Function()? started,
+    TResult? Function()? checkShift,
+    TResult? Function()? shiftRowChanged,
+    TResult? Function(String value)? updateCashSum,
+    TResult? Function(String value)? updateCardSum,
+    TResult? Function(ShiftSumType type)? updateSumType,
+    TResult? Function()? openShift,
+    TResult? Function()? closeShift,
+    TResult? Function()? printShiftReport,
+  }) {
+    return shiftRowChanged?.call();
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult maybeWhen<TResult extends Object?>({
+    TResult Function()? started,
+    TResult Function()? checkShift,
+    TResult Function()? shiftRowChanged,
+    TResult Function(String value)? updateCashSum,
+    TResult Function(String value)? updateCardSum,
+    TResult Function(ShiftSumType type)? updateSumType,
+    TResult Function()? openShift,
+    TResult Function()? closeShift,
+    TResult Function()? printShiftReport,
+    required TResult orElse(),
+  }) {
+    if (shiftRowChanged != null) {
+      return shiftRowChanged();
+    }
+    return orElse();
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult map<TResult extends Object?>({
+    required TResult Function(_Started value) started,
+    required TResult Function(_CheckShift value) checkShift,
+    required TResult Function(_ShiftRowChanged value) shiftRowChanged,
+    required TResult Function(_UpdateCashSum value) updateCashSum,
+    required TResult Function(_UpdateCardSum value) updateCardSum,
+    required TResult Function(_UpdateSumType value) updateSumType,
+    required TResult Function(_OpenShift value) openShift,
+    required TResult Function(_CloseShift value) closeShift,
+    required TResult Function(_PrintShiftReport value) printShiftReport,
+  }) {
+    return shiftRowChanged(this);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult? mapOrNull<TResult extends Object?>({
+    TResult? Function(_Started value)? started,
+    TResult? Function(_CheckShift value)? checkShift,
+    TResult? Function(_ShiftRowChanged value)? shiftRowChanged,
+    TResult? Function(_UpdateCashSum value)? updateCashSum,
+    TResult? Function(_UpdateCardSum value)? updateCardSum,
+    TResult? Function(_UpdateSumType value)? updateSumType,
+    TResult? Function(_OpenShift value)? openShift,
+    TResult? Function(_CloseShift value)? closeShift,
+    TResult? Function(_PrintShiftReport value)? printShiftReport,
+  }) {
+    return shiftRowChanged?.call(this);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult maybeMap<TResult extends Object?>({
+    TResult Function(_Started value)? started,
+    TResult Function(_CheckShift value)? checkShift,
+    TResult Function(_ShiftRowChanged value)? shiftRowChanged,
+    TResult Function(_UpdateCashSum value)? updateCashSum,
+    TResult Function(_UpdateCardSum value)? updateCardSum,
+    TResult Function(_UpdateSumType value)? updateSumType,
+    TResult Function(_OpenShift value)? openShift,
+    TResult Function(_CloseShift value)? closeShift,
+    TResult Function(_PrintShiftReport value)? printShiftReport,
+    required TResult orElse(),
+  }) {
+    if (shiftRowChanged != null) {
+      return shiftRowChanged(this);
+    }
+    return orElse();
+  }
+}
+
+abstract class _ShiftRowChanged implements ShiftEvent {
+  const factory _ShiftRowChanged() = _$ShiftRowChangedImpl;
 }
 
 /// @nodoc
@@ -452,6 +614,7 @@ class _$UpdateCashSumImpl implements _UpdateCashSum {
   TResult when<TResult extends Object?>({
     required TResult Function() started,
     required TResult Function() checkShift,
+    required TResult Function() shiftRowChanged,
     required TResult Function(String value) updateCashSum,
     required TResult Function(String value) updateCardSum,
     required TResult Function(ShiftSumType type) updateSumType,
@@ -467,6 +630,7 @@ class _$UpdateCashSumImpl implements _UpdateCashSum {
   TResult? whenOrNull<TResult extends Object?>({
     TResult? Function()? started,
     TResult? Function()? checkShift,
+    TResult? Function()? shiftRowChanged,
     TResult? Function(String value)? updateCashSum,
     TResult? Function(String value)? updateCardSum,
     TResult? Function(ShiftSumType type)? updateSumType,
@@ -482,6 +646,7 @@ class _$UpdateCashSumImpl implements _UpdateCashSum {
   TResult maybeWhen<TResult extends Object?>({
     TResult Function()? started,
     TResult Function()? checkShift,
+    TResult Function()? shiftRowChanged,
     TResult Function(String value)? updateCashSum,
     TResult Function(String value)? updateCardSum,
     TResult Function(ShiftSumType type)? updateSumType,
@@ -501,6 +666,7 @@ class _$UpdateCashSumImpl implements _UpdateCashSum {
   TResult map<TResult extends Object?>({
     required TResult Function(_Started value) started,
     required TResult Function(_CheckShift value) checkShift,
+    required TResult Function(_ShiftRowChanged value) shiftRowChanged,
     required TResult Function(_UpdateCashSum value) updateCashSum,
     required TResult Function(_UpdateCardSum value) updateCardSum,
     required TResult Function(_UpdateSumType value) updateSumType,
@@ -516,6 +682,7 @@ class _$UpdateCashSumImpl implements _UpdateCashSum {
   TResult? mapOrNull<TResult extends Object?>({
     TResult? Function(_Started value)? started,
     TResult? Function(_CheckShift value)? checkShift,
+    TResult? Function(_ShiftRowChanged value)? shiftRowChanged,
     TResult? Function(_UpdateCashSum value)? updateCashSum,
     TResult? Function(_UpdateCardSum value)? updateCardSum,
     TResult? Function(_UpdateSumType value)? updateSumType,
@@ -531,6 +698,7 @@ class _$UpdateCashSumImpl implements _UpdateCashSum {
   TResult maybeMap<TResult extends Object?>({
     TResult Function(_Started value)? started,
     TResult Function(_CheckShift value)? checkShift,
+    TResult Function(_ShiftRowChanged value)? shiftRowChanged,
     TResult Function(_UpdateCashSum value)? updateCashSum,
     TResult Function(_UpdateCardSum value)? updateCardSum,
     TResult Function(_UpdateSumType value)? updateSumType,
@@ -622,6 +790,7 @@ class _$UpdateCardSumImpl implements _UpdateCardSum {
   TResult when<TResult extends Object?>({
     required TResult Function() started,
     required TResult Function() checkShift,
+    required TResult Function() shiftRowChanged,
     required TResult Function(String value) updateCashSum,
     required TResult Function(String value) updateCardSum,
     required TResult Function(ShiftSumType type) updateSumType,
@@ -637,6 +806,7 @@ class _$UpdateCardSumImpl implements _UpdateCardSum {
   TResult? whenOrNull<TResult extends Object?>({
     TResult? Function()? started,
     TResult? Function()? checkShift,
+    TResult? Function()? shiftRowChanged,
     TResult? Function(String value)? updateCashSum,
     TResult? Function(String value)? updateCardSum,
     TResult? Function(ShiftSumType type)? updateSumType,
@@ -652,6 +822,7 @@ class _$UpdateCardSumImpl implements _UpdateCardSum {
   TResult maybeWhen<TResult extends Object?>({
     TResult Function()? started,
     TResult Function()? checkShift,
+    TResult Function()? shiftRowChanged,
     TResult Function(String value)? updateCashSum,
     TResult Function(String value)? updateCardSum,
     TResult Function(ShiftSumType type)? updateSumType,
@@ -671,6 +842,7 @@ class _$UpdateCardSumImpl implements _UpdateCardSum {
   TResult map<TResult extends Object?>({
     required TResult Function(_Started value) started,
     required TResult Function(_CheckShift value) checkShift,
+    required TResult Function(_ShiftRowChanged value) shiftRowChanged,
     required TResult Function(_UpdateCashSum value) updateCashSum,
     required TResult Function(_UpdateCardSum value) updateCardSum,
     required TResult Function(_UpdateSumType value) updateSumType,
@@ -686,6 +858,7 @@ class _$UpdateCardSumImpl implements _UpdateCardSum {
   TResult? mapOrNull<TResult extends Object?>({
     TResult? Function(_Started value)? started,
     TResult? Function(_CheckShift value)? checkShift,
+    TResult? Function(_ShiftRowChanged value)? shiftRowChanged,
     TResult? Function(_UpdateCashSum value)? updateCashSum,
     TResult? Function(_UpdateCardSum value)? updateCardSum,
     TResult? Function(_UpdateSumType value)? updateSumType,
@@ -701,6 +874,7 @@ class _$UpdateCardSumImpl implements _UpdateCardSum {
   TResult maybeMap<TResult extends Object?>({
     TResult Function(_Started value)? started,
     TResult Function(_CheckShift value)? checkShift,
+    TResult Function(_ShiftRowChanged value)? shiftRowChanged,
     TResult Function(_UpdateCashSum value)? updateCashSum,
     TResult Function(_UpdateCardSum value)? updateCardSum,
     TResult Function(_UpdateSumType value)? updateSumType,
@@ -792,6 +966,7 @@ class _$UpdateSumTypeImpl implements _UpdateSumType {
   TResult when<TResult extends Object?>({
     required TResult Function() started,
     required TResult Function() checkShift,
+    required TResult Function() shiftRowChanged,
     required TResult Function(String value) updateCashSum,
     required TResult Function(String value) updateCardSum,
     required TResult Function(ShiftSumType type) updateSumType,
@@ -807,6 +982,7 @@ class _$UpdateSumTypeImpl implements _UpdateSumType {
   TResult? whenOrNull<TResult extends Object?>({
     TResult? Function()? started,
     TResult? Function()? checkShift,
+    TResult? Function()? shiftRowChanged,
     TResult? Function(String value)? updateCashSum,
     TResult? Function(String value)? updateCardSum,
     TResult? Function(ShiftSumType type)? updateSumType,
@@ -822,6 +998,7 @@ class _$UpdateSumTypeImpl implements _UpdateSumType {
   TResult maybeWhen<TResult extends Object?>({
     TResult Function()? started,
     TResult Function()? checkShift,
+    TResult Function()? shiftRowChanged,
     TResult Function(String value)? updateCashSum,
     TResult Function(String value)? updateCardSum,
     TResult Function(ShiftSumType type)? updateSumType,
@@ -841,6 +1018,7 @@ class _$UpdateSumTypeImpl implements _UpdateSumType {
   TResult map<TResult extends Object?>({
     required TResult Function(_Started value) started,
     required TResult Function(_CheckShift value) checkShift,
+    required TResult Function(_ShiftRowChanged value) shiftRowChanged,
     required TResult Function(_UpdateCashSum value) updateCashSum,
     required TResult Function(_UpdateCardSum value) updateCardSum,
     required TResult Function(_UpdateSumType value) updateSumType,
@@ -856,6 +1034,7 @@ class _$UpdateSumTypeImpl implements _UpdateSumType {
   TResult? mapOrNull<TResult extends Object?>({
     TResult? Function(_Started value)? started,
     TResult? Function(_CheckShift value)? checkShift,
+    TResult? Function(_ShiftRowChanged value)? shiftRowChanged,
     TResult? Function(_UpdateCashSum value)? updateCashSum,
     TResult? Function(_UpdateCardSum value)? updateCardSum,
     TResult? Function(_UpdateSumType value)? updateSumType,
@@ -871,6 +1050,7 @@ class _$UpdateSumTypeImpl implements _UpdateSumType {
   TResult maybeMap<TResult extends Object?>({
     TResult Function(_Started value)? started,
     TResult Function(_CheckShift value)? checkShift,
+    TResult Function(_ShiftRowChanged value)? shiftRowChanged,
     TResult Function(_UpdateCashSum value)? updateCashSum,
     TResult Function(_UpdateCardSum value)? updateCardSum,
     TResult Function(_UpdateSumType value)? updateSumType,
@@ -936,6 +1116,7 @@ class _$OpenShiftImpl implements _OpenShift {
   TResult when<TResult extends Object?>({
     required TResult Function() started,
     required TResult Function() checkShift,
+    required TResult Function() shiftRowChanged,
     required TResult Function(String value) updateCashSum,
     required TResult Function(String value) updateCardSum,
     required TResult Function(ShiftSumType type) updateSumType,
@@ -951,6 +1132,7 @@ class _$OpenShiftImpl implements _OpenShift {
   TResult? whenOrNull<TResult extends Object?>({
     TResult? Function()? started,
     TResult? Function()? checkShift,
+    TResult? Function()? shiftRowChanged,
     TResult? Function(String value)? updateCashSum,
     TResult? Function(String value)? updateCardSum,
     TResult? Function(ShiftSumType type)? updateSumType,
@@ -966,6 +1148,7 @@ class _$OpenShiftImpl implements _OpenShift {
   TResult maybeWhen<TResult extends Object?>({
     TResult Function()? started,
     TResult Function()? checkShift,
+    TResult Function()? shiftRowChanged,
     TResult Function(String value)? updateCashSum,
     TResult Function(String value)? updateCardSum,
     TResult Function(ShiftSumType type)? updateSumType,
@@ -985,6 +1168,7 @@ class _$OpenShiftImpl implements _OpenShift {
   TResult map<TResult extends Object?>({
     required TResult Function(_Started value) started,
     required TResult Function(_CheckShift value) checkShift,
+    required TResult Function(_ShiftRowChanged value) shiftRowChanged,
     required TResult Function(_UpdateCashSum value) updateCashSum,
     required TResult Function(_UpdateCardSum value) updateCardSum,
     required TResult Function(_UpdateSumType value) updateSumType,
@@ -1000,6 +1184,7 @@ class _$OpenShiftImpl implements _OpenShift {
   TResult? mapOrNull<TResult extends Object?>({
     TResult? Function(_Started value)? started,
     TResult? Function(_CheckShift value)? checkShift,
+    TResult? Function(_ShiftRowChanged value)? shiftRowChanged,
     TResult? Function(_UpdateCashSum value)? updateCashSum,
     TResult? Function(_UpdateCardSum value)? updateCardSum,
     TResult? Function(_UpdateSumType value)? updateSumType,
@@ -1015,6 +1200,7 @@ class _$OpenShiftImpl implements _OpenShift {
   TResult maybeMap<TResult extends Object?>({
     TResult Function(_Started value)? started,
     TResult Function(_CheckShift value)? checkShift,
+    TResult Function(_ShiftRowChanged value)? shiftRowChanged,
     TResult Function(_UpdateCashSum value)? updateCashSum,
     TResult Function(_UpdateCardSum value)? updateCardSum,
     TResult Function(_UpdateSumType value)? updateSumType,
@@ -1074,6 +1260,7 @@ class _$CloseShiftImpl implements _CloseShift {
   TResult when<TResult extends Object?>({
     required TResult Function() started,
     required TResult Function() checkShift,
+    required TResult Function() shiftRowChanged,
     required TResult Function(String value) updateCashSum,
     required TResult Function(String value) updateCardSum,
     required TResult Function(ShiftSumType type) updateSumType,
@@ -1089,6 +1276,7 @@ class _$CloseShiftImpl implements _CloseShift {
   TResult? whenOrNull<TResult extends Object?>({
     TResult? Function()? started,
     TResult? Function()? checkShift,
+    TResult? Function()? shiftRowChanged,
     TResult? Function(String value)? updateCashSum,
     TResult? Function(String value)? updateCardSum,
     TResult? Function(ShiftSumType type)? updateSumType,
@@ -1104,6 +1292,7 @@ class _$CloseShiftImpl implements _CloseShift {
   TResult maybeWhen<TResult extends Object?>({
     TResult Function()? started,
     TResult Function()? checkShift,
+    TResult Function()? shiftRowChanged,
     TResult Function(String value)? updateCashSum,
     TResult Function(String value)? updateCardSum,
     TResult Function(ShiftSumType type)? updateSumType,
@@ -1123,6 +1312,7 @@ class _$CloseShiftImpl implements _CloseShift {
   TResult map<TResult extends Object?>({
     required TResult Function(_Started value) started,
     required TResult Function(_CheckShift value) checkShift,
+    required TResult Function(_ShiftRowChanged value) shiftRowChanged,
     required TResult Function(_UpdateCashSum value) updateCashSum,
     required TResult Function(_UpdateCardSum value) updateCardSum,
     required TResult Function(_UpdateSumType value) updateSumType,
@@ -1138,6 +1328,7 @@ class _$CloseShiftImpl implements _CloseShift {
   TResult? mapOrNull<TResult extends Object?>({
     TResult? Function(_Started value)? started,
     TResult? Function(_CheckShift value)? checkShift,
+    TResult? Function(_ShiftRowChanged value)? shiftRowChanged,
     TResult? Function(_UpdateCashSum value)? updateCashSum,
     TResult? Function(_UpdateCardSum value)? updateCardSum,
     TResult? Function(_UpdateSumType value)? updateSumType,
@@ -1153,6 +1344,7 @@ class _$CloseShiftImpl implements _CloseShift {
   TResult maybeMap<TResult extends Object?>({
     TResult Function(_Started value)? started,
     TResult Function(_CheckShift value)? checkShift,
+    TResult Function(_ShiftRowChanged value)? shiftRowChanged,
     TResult Function(_UpdateCashSum value)? updateCashSum,
     TResult Function(_UpdateCardSum value)? updateCardSum,
     TResult Function(_UpdateSumType value)? updateSumType,
@@ -1212,6 +1404,7 @@ class _$PrintShiftReportImpl implements _PrintShiftReport {
   TResult when<TResult extends Object?>({
     required TResult Function() started,
     required TResult Function() checkShift,
+    required TResult Function() shiftRowChanged,
     required TResult Function(String value) updateCashSum,
     required TResult Function(String value) updateCardSum,
     required TResult Function(ShiftSumType type) updateSumType,
@@ -1227,6 +1420,7 @@ class _$PrintShiftReportImpl implements _PrintShiftReport {
   TResult? whenOrNull<TResult extends Object?>({
     TResult? Function()? started,
     TResult? Function()? checkShift,
+    TResult? Function()? shiftRowChanged,
     TResult? Function(String value)? updateCashSum,
     TResult? Function(String value)? updateCardSum,
     TResult? Function(ShiftSumType type)? updateSumType,
@@ -1242,6 +1436,7 @@ class _$PrintShiftReportImpl implements _PrintShiftReport {
   TResult maybeWhen<TResult extends Object?>({
     TResult Function()? started,
     TResult Function()? checkShift,
+    TResult Function()? shiftRowChanged,
     TResult Function(String value)? updateCashSum,
     TResult Function(String value)? updateCardSum,
     TResult Function(ShiftSumType type)? updateSumType,
@@ -1261,6 +1456,7 @@ class _$PrintShiftReportImpl implements _PrintShiftReport {
   TResult map<TResult extends Object?>({
     required TResult Function(_Started value) started,
     required TResult Function(_CheckShift value) checkShift,
+    required TResult Function(_ShiftRowChanged value) shiftRowChanged,
     required TResult Function(_UpdateCashSum value) updateCashSum,
     required TResult Function(_UpdateCardSum value) updateCardSum,
     required TResult Function(_UpdateSumType value) updateSumType,
@@ -1276,6 +1472,7 @@ class _$PrintShiftReportImpl implements _PrintShiftReport {
   TResult? mapOrNull<TResult extends Object?>({
     TResult? Function(_Started value)? started,
     TResult? Function(_CheckShift value)? checkShift,
+    TResult? Function(_ShiftRowChanged value)? shiftRowChanged,
     TResult? Function(_UpdateCashSum value)? updateCashSum,
     TResult? Function(_UpdateCardSum value)? updateCardSum,
     TResult? Function(_UpdateSumType value)? updateSumType,
@@ -1291,6 +1488,7 @@ class _$PrintShiftReportImpl implements _PrintShiftReport {
   TResult maybeMap<TResult extends Object?>({
     TResult Function(_Started value)? started,
     TResult Function(_CheckShift value)? checkShift,
+    TResult Function(_ShiftRowChanged value)? shiftRowChanged,
     TResult Function(_UpdateCashSum value)? updateCashSum,
     TResult Function(_UpdateCardSum value)? updateCardSum,
     TResult Function(_UpdateSumType value)? updateSumType,
@@ -1313,7 +1511,7 @@ abstract class _PrintShiftReport implements ShiftEvent {
 /// @nodoc
 mixin _$ShiftState {
   Status get status => throw _privateConstructorUsedError;
-  ShiftResponseModel? get shift => throw _privateConstructorUsedError;
+  BranchShiftModel? get shift => throw _privateConstructorUsedError;
   ShiftSumType get sum => throw _privateConstructorUsedError;
   String get cashSum => throw _privateConstructorUsedError;
   String get cardSum => throw _privateConstructorUsedError;
@@ -1332,13 +1530,13 @@ abstract class $ShiftStateCopyWith<$Res> {
   @useResult
   $Res call(
       {Status status,
-      ShiftResponseModel? shift,
+      BranchShiftModel? shift,
       ShiftSumType sum,
       String cashSum,
       String cardSum,
       Failure? failure});
 
-  $ShiftResponseModelCopyWith<$Res>? get shift;
+  $BranchShiftModelCopyWith<$Res>? get shift;
 }
 
 /// @nodoc
@@ -1369,7 +1567,7 @@ class _$ShiftStateCopyWithImpl<$Res, $Val extends ShiftState>
       shift: freezed == shift
           ? _value.shift
           : shift // ignore: cast_nullable_to_non_nullable
-              as ShiftResponseModel?,
+              as BranchShiftModel?,
       sum: null == sum
           ? _value.sum
           : sum // ignore: cast_nullable_to_non_nullable
@@ -1391,12 +1589,12 @@ class _$ShiftStateCopyWithImpl<$Res, $Val extends ShiftState>
 
   @override
   @pragma('vm:prefer-inline')
-  $ShiftResponseModelCopyWith<$Res>? get shift {
+  $BranchShiftModelCopyWith<$Res>? get shift {
     if (_value.shift == null) {
       return null;
     }
 
-    return $ShiftResponseModelCopyWith<$Res>(_value.shift!, (value) {
+    return $BranchShiftModelCopyWith<$Res>(_value.shift!, (value) {
       return _then(_value.copyWith(shift: value) as $Val);
     });
   }
@@ -1412,14 +1610,14 @@ abstract class _$$ShiftStateImplCopyWith<$Res>
   @useResult
   $Res call(
       {Status status,
-      ShiftResponseModel? shift,
+      BranchShiftModel? shift,
       ShiftSumType sum,
       String cashSum,
       String cardSum,
       Failure? failure});
 
   @override
-  $ShiftResponseModelCopyWith<$Res>? get shift;
+  $BranchShiftModelCopyWith<$Res>? get shift;
 }
 
 /// @nodoc
@@ -1448,7 +1646,7 @@ class __$$ShiftStateImplCopyWithImpl<$Res>
       shift: freezed == shift
           ? _value.shift
           : shift // ignore: cast_nullable_to_non_nullable
-              as ShiftResponseModel?,
+              as BranchShiftModel?,
       sum: null == sum
           ? _value.sum
           : sum // ignore: cast_nullable_to_non_nullable
@@ -1484,7 +1682,7 @@ class _$ShiftStateImpl implements _ShiftState {
   @JsonKey()
   final Status status;
   @override
-  final ShiftResponseModel? shift;
+  final BranchShiftModel? shift;
   @override
   @JsonKey()
   final ShiftSumType sum;
@@ -1529,7 +1727,7 @@ class _$ShiftStateImpl implements _ShiftState {
 abstract class _ShiftState implements ShiftState {
   const factory _ShiftState(
       {final Status status,
-      final ShiftResponseModel? shift,
+      final BranchShiftModel? shift,
       final ShiftSumType sum,
       final String cashSum,
       final String cardSum,
@@ -1538,7 +1736,7 @@ abstract class _ShiftState implements ShiftState {
   @override
   Status get status;
   @override
-  ShiftResponseModel? get shift;
+  BranchShiftModel? get shift;
   @override
   ShiftSumType get sum;
   @override

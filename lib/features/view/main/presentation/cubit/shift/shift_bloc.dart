@@ -1,58 +1,76 @@
-import 'dart:convert';
+import 'dart:async';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:mary_ai_pos/core/api/api.dart';
-import 'package:mary_ai_pos/core/auth/storage/token_storage_impl.dart';
-import 'package:mary_ai_pos/core/components/flush_bars.dart';
+import 'package:mary_ai_pos/core/db/branch_shift_query.dart';
 import 'package:mary_ai_pos/core/error/failure.dart';
-import 'package:mary_ai_pos/core/routes/app_routes.dart';
+import 'package:mary_ai_pos/core/components/flush_bars.dart';
+import 'package:mary_ai_pos/core/outbox/branch_shift_outbox.dart';
 import 'package:mary_ai_pos/core/outbox/local_writer.dart';
-import 'package:mary_ai_pos/core/outbox/timer_shift_outbox.dart';
-import 'package:mary_ai_pos/core/utils/helper/helper_widget.dart';
-import 'package:mary_ai_pos/di.dart' show inject;
-import 'package:mary_ai_pos/features/view/auth/presentation/cubit/bloc/user_bloc.dart';
-import 'package:mary_ai_pos/features/view/main/data/models/shift/shift_response_model.dart';
+import 'package:mary_ai_pos/core/routes/app_routes.dart';
 import 'package:mary_ai_pos/core/service/printer/printer_service.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:mary_ai_pos/core/utils/helper/helper_widget.dart';
+import 'package:mary_ai_pos/core/utils/uuid.dart';
+import 'package:mary_ai_pos/features/view/auth/presentation/cubit/bloc/user_bloc.dart';
+import 'package:mary_ai_pos/features/view/main/data/models/branch_shift/branch_shift_model.dart';
 
 part 'shift_event.dart';
 part 'shift_state.dart';
 part 'shift_bloc.freezed.dart';
 
-/// offline-first-target-architecture.md §4/§8 Phase 2. `_openShift`/
-/// `_closeShift` are local-first, always — a single local commit (write the
-/// local shift record + enqueue the outbox op) that returns without
-/// awaiting the network, same shape every other write in this app now has.
-/// Previously both awaited the real `OpenShiftUsecase`/`CloseShiftUsecase`
-/// call first and only fell back to the queue on a connectivity-classified
-/// failure; a genuine validation rejection (e.g. "already has an open
-/// shift") was therefore visible synchronously. That synchronous rejection
-/// is gone now — a real conflict surfaces later via the outbox's quarantine
-/// list (§12 rule 5's "deliberate fallback for genuinely ambiguous cases"),
-/// not as an immediate on-screen error. Flagged in
-/// EXECUTION_CONCERNS.md as a real, visible behavior change worth a second
-/// look, not something decided silently.
+/// The venue's shift — one per branch, shared by every terminal in it.
 ///
-/// `_checkShift` is local-only now (CLIENT_FACING_OFFLINE_PLAN.md §1): the
-/// local shift record is primary and no network call is initiated from this
-/// bloc at all. If shift state can drift from the server, reconciling it is
-/// the sync engine's job in the background, not this bloc's — flagged in
-/// EXECUTION_CONCERNS.md as a cross-side dependency, since no such
-/// reconciliation pass exists on that side yet.
+/// **What changed and why.** This bloc used to keep the active shift in
+/// `SharedPreferences`, privately, on each terminal. Nothing was shared, so
+/// nothing could agree: a two-till cafe had two "current" shifts with two
+/// opening floats, the second till showed no shift until its own cashier
+/// opened one, and closing on one till left the other still trading. There was
+/// no query, anywhere, that could say what the branch's shift was.
+///
+/// The shift is now a replicated row (`branch_shifts`), which makes the
+/// terminals agree by construction rather than by convention:
+///
+/// * **Reads** come from the replica through [BranchShiftQuery], and this bloc
+///   *watches* it. A peer's open or close lands in the local database — over
+///   the LAN in the same instant, or from `/sync/pull` later — and the screen
+///   updates without anyone reloading anything.
+/// * **Writes** go through [LocalWriter], which commits the row and queues the
+///   operation in one transaction and broadcasts the row to every LAN peer as
+///   it does. So the till beside this one sees the shift open before the server
+///   has heard of it, which is the case the venue actually cares about: the
+///   internet is down and there are customers.
+/// * **Arbitration** — two terminals opening offline at the same moment — is
+///   settled by the server when the queue drains, and the loser converges onto
+///   the winner's row automatically (see `branch_shift_outbox.dart`). No shift
+///   is lost and no cashier is shown an error, because neither of them did
+///   anything wrong.
+///
+/// Still local-first, exactly as before: nothing here awaits the network, and
+/// a genuine server-side rejection surfaces through the outbox's quarantine
+/// list rather than synchronously on screen.
 class ShiftBloc extends Bloc<ShiftEvent, ShiftState> {
-  final SharedPreferences _prefs;
-  final AppTokenStorage _tokenStorage;
   final PrinterService _printerService;
-  //
+  final BranchShiftQuery _shifts;
+  final LocalWriter _writer;
+
+  /// Live subscription to the branch's shift row.
+  ///
+  /// This is what makes one terminal's open visible on all the others. Without
+  /// it the row would still arrive — replication does not need a listener — but
+  /// this bloc would not notice until something else happened to rebuild it,
+  /// which is the "the other till still shows no shift" complaint in a
+  /// different costume.
+  StreamSubscription<Map<String, dynamic>?>? _watch;
+
   ShiftBloc({
-    required SharedPreferences prefs,
-    required AppTokenStorage tokenStorage,
     required PrinterService printerService,
-  }) : _prefs = prefs,
-       _tokenStorage = tokenStorage,
-       _printerService = printerService,
-       super(const ShiftState()) {
+    required BranchShiftQuery shifts,
+    required LocalWriter writer,
+  })  : _printerService = printerService,
+        _shifts = shifts,
+        _writer = writer,
+        super(const ShiftState()) {
     on<_Started>(_started);
     on<_CheckShift>(_checkShift);
     on<_UpdateCashSum>(_updateCashSum);
@@ -61,69 +79,70 @@ class ShiftBloc extends Bloc<ShiftEvent, ShiftState> {
     on<_OpenShift>(_openShift);
     on<_CloseShift>(_closeShift);
     on<_PrintShiftReport>(_printShiftReport);
+    on<_ShiftRowChanged>(_shiftRowChanged);
   }
 
-  /// Public because the brand-switch wipe (`LoginDataScopeService`) must
-  /// clear this record too — with `_checkShift` local-only, a stale shift
-  /// from the previous brand would otherwise be presented as active.
-  static const String localShiftPrefsKey = 'pos_local_active_shift';
+  @override
+  Future<void> close() async {
+    await _watch?.cancel();
+    return super.close();
+  }
 
-  ShiftResponseModel? _readLocalShift() {
+  /// The branch this terminal trades in.
+  ///
+  /// The same source the LAN hub authenticates peers against
+  /// (`LanHubService._validateIncomingAuth`), so a terminal cannot be watching
+  /// one branch's shift while exchanging rows with another's.
+  String get _branchId =>
+      navigatorKey.currentContext?.read<UserBloc>().state.userMOdel?.branchId ??
+      '';
+
+  String get _userId =>
+      navigatorKey.currentContext?.read<UserBloc>().state.userMOdel?.id ?? '';
+
+  BranchShiftModel? _readActive() {
+    final row = _shifts.activeShift(_branchId);
+    if (row == null) return null;
     try {
-      final raw = _prefs.getString(localShiftPrefsKey);
-      if (raw == null || raw.isEmpty) return null;
-      final json = jsonDecode(raw);
-      if (json is! Map<String, dynamic>) return null;
-      return ShiftResponseModel.fromJson(json);
+      return BranchShiftModel.fromJson(row);
     } catch (_) {
+      // A row we cannot parse is not a shift we can trade under. Treating it as
+      // "no shift" sends the cashier to the open screen, which is recoverable;
+      // treating it as a shift would put the till in a state no screen can
+      // describe.
       return null;
     }
   }
 
-  Future<void> _writeLocalShift(ShiftResponseModel shift) async {
-    try {
-      await _prefs.setString(localShiftPrefsKey, jsonEncode(shift.toJson()));
-    } catch (_) {}
+  void _listen() {
+    _watch?.cancel();
+    final branchId = _branchId;
+    if (branchId.isEmpty) return;
+    _watch = _shifts.watchActiveShift(branchId).listen(
+      (_) {
+        if (!isClosed) add(const ShiftEvent.shiftRowChanged());
+      },
+      onError: (_) {},
+    );
   }
 
-  Future<void> _clearLocalShift() async {
-    try {
-      await _prefs.remove(localShiftPrefsKey);
-    } catch (_) {}
+  /// Re-reads the shift after the row changed underneath us — a peer opened or
+  /// closed it, or the outbox reconciled this terminal's own row onto the one
+  /// that won.
+  void _shiftRowChanged(_ShiftRowChanged event, Emitter<ShiftState> emit) {
+    final active = _readActive();
+    if (active?.id == state.shift?.id) return;
+    emit(state.copyWith(shift: active));
   }
 
-  static String? _jwtClaim(String jwt, String key) {
-    try {
-      final parts = jwt.split('.');
-      if (parts.length < 2) return null;
-      final payload = parts[1];
-      final normalized = base64Url.normalize(payload);
-      final decoded = utf8.decode(base64Url.decode(normalized));
-      final obj = jsonDecode(decoded);
-      if (obj is! Map) return null;
-      final v = obj[key];
-      if (v == null) return null;
-      return v.toString();
-    } catch (_) {
-      return null;
-    }
-  }
-
-  Future<String> _resolveCashRegisterId() async {
-    final token = await _tokenStorage.readAccessToken();
-    if (token == null || token.isEmpty) return '';
-    return _jwtClaim(token, 'cash_register_id') ?? '';
-  }
-
-  String _resolveCashierId() {
-    final ctx = navigatorKey.currentContext;
-    final id = ctx?.read<UserBloc>().state.userMOdel?.id ?? '';
-    return id;
-  }
-
-  Future<void> _printShiftCloseFromState(ShiftState s) async {
-    final shift = s.shift;
-    if (shift == null) return;
+  /// Prints the close receipt for [shift], with the counts held in [s].
+  ///
+  /// [shift] is passed rather than read back off `s.shift` because the two can
+  /// differ: `_closeShift` falls back to the replica when the bloc's own state
+  /// has no shift (a peer opened it and this bloc had not caught up). Reading
+  /// the state here meant that fallback closed the shift with no receipt
+  /// printed at all — the one artefact the cashier is actually accountable for.
+  Future<void> _printShiftClose(BranchShiftModel shift, ShiftState s) async {
     final ctx = navigatorKey.currentContext;
     final name = ctx?.read<UserBloc>().state.userMOdel?.fullName ?? '';
     await _printerService.printShiftCloseReceipt(
@@ -133,7 +152,7 @@ class ShiftBloc extends Bloc<ShiftEvent, ShiftState> {
       // not a literal zero. The receipt is the paper record of the drawer at
       // close; printing 0 on every shift made it worthless as one.
       closingCard: int.tryParse(s.cardSum) ?? 0,
-      cashierLabel: name.isEmpty ? shift.cashierId : name,
+      cashierLabel: name.isEmpty ? (shift.openedBy ?? shift.id) : name,
     );
   }
 
@@ -141,69 +160,142 @@ class ShiftBloc extends Bloc<ShiftEvent, ShiftState> {
     _PrintShiftReport event,
     Emitter<ShiftState> emit,
   ) async {
-    await _printShiftCloseFromState(state);
+    final shift = state.shift ?? _readActive();
+    if (shift == null) return;
+    await _printShiftClose(shift, state);
   }
 
-  /// Cash-register id is both the operation's `entityId` and, through it, its
-  /// chain key — the shift's own id isn't known/valid yet for an
-  /// offline-opened (`local_...`) shift, and even for a real shift we don't
-  /// want the replay depending on an id that might be stale by the time
-  /// connectivity returns. The close handler resolves the register's currently
-  /// active shift instead (`timer_shift_outbox.dart`).
+  /// Opens the branch's shift.
   ///
-  /// Sharing that key with the open is what keeps a close from overtaking the
-  /// open it belongs to: `OutboxDrainer` holds a whole chain back for the pass
-  /// once one of its operations fails, and within a pass the queue replays in
-  /// enqueue order.
+  /// The id is invented here and kept: the receipt printed a second later names
+  /// it, so it cannot be a placeholder the server later replaces. `create`
+  /// rather than `write` because the row is provisional until the server
+  /// confirms it — that is what lets the drainer swap this terminal's row for
+  /// the winning one, in the rare case two terminals opened at once offline,
+  /// without the cashier seeing anything happen.
   ///
-  /// `enqueueOnly` rather than `write`: the active shift lives in
-  /// `SharedPreferences`, not the replica (the plan's one deliberate
-  /// non-database exception), so there is no local row for the writer to
-  /// commit alongside the operation.
-  /// [closingCash]/[closingCard] are the amounts the cashier counted into the
-  /// numpad before pressing close (`_updateCashSum`/`_updateCardSum`). They
-  /// used to be hard-coded `'0'` here, so every shift on every terminal
-  /// reconciled against a declared drawer of nothing — the count the cashier
-  /// was asked for was collected by the UI and then thrown away on the way to
-  /// the queue.
-  void _enqueueCloseShift(
-    String cashRegisterId, {
-    required String closingCash,
-    required String closingCard,
-  }) {
-    inject<LocalWriter>().enqueueOnly(
-      entity: kShiftEntity,
-      action: kShiftClose,
-      entityId: cashRegisterId,
+  /// Guarded against a second open: if the branch already has a shift — this
+  /// terminal's or a peer's, arrived over the LAN a moment ago — the existing
+  /// one is adopted instead of a second row being written. The server enforces
+  /// this too; doing it here as well is what stops the UI from ever showing a
+  /// shift that is about to be reconciled away.
+  Future<void> _openShift(_OpenShift event, Emitter<ShiftState> emit) async {
+    emit(state.copyWith(status: Status.LOADING));
+
+    final existing = _readActive();
+    if (existing != null) {
+      _goToMain();
+      showSuccessMessage(
+        navigatorKey.currentContext!,
+        "Smena allaqachon ochilgan",
+      );
+      emit(state.copyWith(status: Status.SUCCESS, shift: existing));
+      return;
+    }
+
+    final branchId = _branchId;
+    if (branchId.isEmpty) {
+      // Without a branch there is nothing to open a shift *for*, and a row
+      // written under an empty branch id would be invisible to every read.
+      emit(
+        state.copyWith(
+          status: Status.ERROR,
+          failure: const ServerFailure(),
+        ),
+      );
+      return;
+    }
+
+    final id = generateUuidV4();
+    final now = DateTime.now();
+    final openCash = int.tryParse(state.cashSum) ?? 0;
+    final openCard = int.tryParse(state.cardSum) ?? 0;
+    final openedBy = _userId;
+
+    final row = <String, dynamic>{
+      'id': id,
+      'branch_id': branchId,
+      'opened_by': openedBy.isEmpty ? null : openedBy,
+      'closed_by': null,
+      'opened_at': now.toUtc().toIso8601String(),
+      // Explicitly null rather than absent: `closed_at` is a promoted column
+      // and the active-shift query is `closed_at IS NULL`, so it has to be
+      // written, not merely left out.
+      'closed_at': null,
+      'opening_cash': openCash.toString(),
+      'opening_card': openCard.toString(),
+      'closing_cash': null,
+      'closing_card': null,
+    };
+
+    _writer.create(
+      entity: kBranchShiftEntity,
+      id: id,
+      row: row,
+      // `opened_by` is deliberately absent from the request: the backend takes
+      // it from the JWT, so a queued open is attributed to whoever's session
+      // drains it — the same rule the per-register open followed.
       request: {
-        'cash_register_id': cashRegisterId,
+        'id': id,
+        'opening_cash': openCash.toString(),
+        'opening_card': openCard.toString(),
+      },
+    );
+
+    _goToMain();
+    if (emit.isDone) return;
+    showSuccessMessage(navigatorKey.currentContext!, "Smena ochildi");
+    emit(
+      state.copyWith(
+        status: Status.SUCCESS,
+        shift: _readActive(),
+        cardSum: '0',
+        cashSum: '0',
+      ),
+    );
+  }
+
+  /// Closes the branch's shift — for the whole branch, not this terminal.
+  ///
+  /// A merge write, not a whole-row one: the stored row keeps `opened_at`, the
+  /// opening float and the id it was created with, and only the four closing
+  /// fields are laid over it. Writing the whole row instead would mean this
+  /// terminal's idea of the opening float overwrites the one the terminal that
+  /// actually opened the shift recorded.
+  ///
+  /// The local commit takes effect immediately — `closed_at` is set, so
+  /// [BranchShiftQuery.activeShift] stops returning it — and broadcasts to
+  /// every LAN peer, so the other tills stop trading under it at the same
+  /// moment rather than whenever they next reach the server.
+  Future<void> _closeShift(_CloseShift event, Emitter<ShiftState> emit) async {
+    final shift = state.shift ?? _readActive();
+    if (shift == null) return;
+
+    emit(state.copyWith(status: Status.LOADING));
+    await _printShiftClose(shift, state);
+
+    final closingCash = state.cashSum;
+    final closingCard = state.cardSum;
+    final closedBy = _userId;
+
+    _writer.write(
+      entity: kBranchShiftEntity,
+      id: shift.id,
+      action: kBranchShiftClose,
+      merge: true,
+      row: {
+        'id': shift.id,
+        'closed_at': DateTime.now().toUtc().toIso8601String(),
+        'closed_by': closedBy.isEmpty ? null : closedBy,
+        'closing_cash': closingCash,
+        'closing_card': closingCard,
+      },
+      request: {
         'closing_cash': closingCash,
         'closing_card': closingCard,
       },
     );
-  }
 
-  /// §4/§9: local-first, always. `local_...` id stands in until sync
-  /// replaces it — the close handler resolves the real shift by
-  /// `cash_register_id` at replay time, not by this id.
-  /// No `AuthCubit.logout()` call here, unlike the old synchronous-success
-  /// path — that immediate-logout behavior only ever fired when the online
-  /// call had already been confirmed by the server; since every close is
-  /// now deferred to replay, this mirrors what the old *offline* branches
-  /// already did (no logout), not the old online branch. Flagged in
-  /// EXECUTION_CONCERNS.md — a real, visible UX change worth a second look.
-  Future<void> _closeShift(_CloseShift event, Emitter<ShiftState> emit) async {
-    final shift = state.shift;
-    if (shift == null) return;
-
-    emit(state.copyWith(status: Status.LOADING));
-    await _printShiftCloseFromState(state);
-    _enqueueCloseShift(
-      shift.cashRegisterId,
-      closingCash: state.cashSum,
-      closingCard: state.cardSum,
-    );
-    await _clearLocalShift();
     if (emit.isDone) return;
     showSuccessMessage(
       navigatorKey.currentContext!,
@@ -213,62 +305,6 @@ class ShiftBloc extends Bloc<ShiftEvent, ShiftState> {
       state.copyWith(
         status: Status.SUCCESS,
         shift: null,
-        cardSum: '0',
-        cashSum: '0',
-      ),
-    );
-  }
-
-  /// §4/§9: local-first, always — a synthetic `local_...` shift is written
-  /// and the open queued unconditionally, no network await first. A real
-  /// validation rejection (e.g. "already has an open shift" on this
-  /// register) is no longer visible synchronously — see the class doc.
-  Future<void> _openShift(_OpenShift evente, Emitter<ShiftState> emit) async {
-    emit(state.copyWith(status: Status.LOADING));
-    final cashRegisterId = await _resolveCashRegisterId();
-    final cashierId = _resolveCashierId();
-    final openCash = int.tryParse(state.cashSum) ?? 0;
-    final openCard = int.tryParse(state.cardSum) ?? 0;
-    final now = DateTime.now();
-
-    final local = ShiftResponseModel(
-      id: 'local_${now.millisecondsSinceEpoch}',
-      cashRegisterId: cashRegisterId,
-      cashierId: cashierId,
-      openedAt: now,
-      openingCash: openCash,
-      openinCard: openCard,
-      createdAt: now,
-      updatedAt: now,
-    );
-    await _writeLocalShift(local);
-    // Same entityId/chain key as the close — see `_enqueueCloseShift`.
-    // `cashier_id` is deliberately absent: the backend takes it from the JWT,
-    // so it is resolved by whoever's session drains the queue.
-    inject<LocalWriter>().enqueueOnly(
-      entity: kShiftEntity,
-      action: kShiftOpen,
-      entityId: cashRegisterId,
-      request: {
-        'cash_register_id': cashRegisterId,
-        'opening_cash': openCash.toString(),
-        'opening_card': openCard.toString(),
-      },
-    );
-    if (emit.isDone) return;
-    Navigator.pushNamedAndRemoveUntil(
-      navigatorKey.currentContext!,
-      AppRoutes.mainScreen,
-      (router) => true,
-    );
-    showSuccessMessage(
-      navigatorKey.currentContext!,
-      "Smena ochildi",
-    );
-    emit(
-      state.copyWith(
-        status: Status.SUCCESS,
-        shift: local,
         cardSum: '0',
         cashSum: '0',
       ),
@@ -309,26 +345,35 @@ class ShiftBloc extends Bloc<ShiftEvent, ShiftState> {
     }
   }
 
-  /// CLIENT_FACING_OFFLINE_PLAN.md §1: the local shift record is primary —
-  /// no network call is initiated from here at all. The previous
-  /// server-first check (with local fallback) is gone; "no local shift" now
-  /// routes to the open-shift flow exactly like the server's "no active
-  /// shift" answer used to.
+  /// Local-only, as before — but "local" now means the branch's row rather than
+  /// this terminal's private note, so a cashier arriving at a till that has
+  /// never opened a shift finds the venue's shift already open on it.
   Future<void> _checkShift(_CheckShift event, Emitter<ShiftState> emit) async {
     emit(state.copyWith(status: Status.LOADING));
-    final local = _readLocalShift();
-    if (local == null) {
+    _listen();
+    final active = _readActive();
+    if (active == null) {
       final ctx = navigatorKey.currentContext;
       if (ctx != null && ctx.mounted) {
         Navigator.pushNamed(ctx, AppRoutes.closeShiftScreen);
       }
     }
     if (emit.isDone) return;
-    emit(state.copyWith(status: Status.SUCCESS, shift: local));
+    emit(state.copyWith(status: Status.SUCCESS, shift: active));
   }
 
   void _started(_Started event, Emitter<ShiftState> emit) {
-    final local = _readLocalShift();
-    emit(ShiftState(shift: local));
+    _listen();
+    emit(ShiftState(shift: _readActive()));
+  }
+
+  void _goToMain() {
+    final ctx = navigatorKey.currentContext;
+    if (ctx == null || !ctx.mounted) return;
+    Navigator.pushNamedAndRemoveUntil(
+      ctx,
+      AppRoutes.mainScreen,
+      (router) => true,
+    );
   }
 }

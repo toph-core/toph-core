@@ -33,6 +33,8 @@ import 'package:mary_ai_pos/features/view/main/presentation/cubit/table_timer/ti
 import 'package:mary_ai_pos/core/media/local_image_cache.dart';
 import 'package:mary_ai_pos/core/outbox/local_writer.dart';
 import 'package:mary_ai_pos/core/outbox/orders_outbox.dart';
+import 'package:mary_ai_pos/core/db/branch_shift_query.dart';
+import 'package:mary_ai_pos/core/outbox/branch_shift_outbox.dart';
 import 'package:mary_ai_pos/core/outbox/timer_shift_outbox.dart';
 import 'package:mary_ai_pos/core/outbox/outbox_drainer.dart';
 import 'package:mary_ai_pos/core/outbox/outbox_executor.dart';
@@ -449,6 +451,11 @@ Future<void> initDi({DiOverrides? overrides}) async {
     inject<DioClient>(),
     inject<MainRepository>(),
   );
+  // Branch shifts speak HTTP directly for the same reason the order aggregate
+  // does — the endpoints exist for this queue and fit no CRUD repository. The
+  // per-register shift handlers above stay registered: they still drain shifts
+  // queued by an older build of the app that has not been updated yet.
+  registerBranchShiftOutboxHandlers(outboxExecutors, inject<DioClient>());
 
   // BACKEND_SYNC_PLAN.md §5: every registration the startup tick's
   // hydration pass resolves lazily (MainRepository, UserBloc, ...) exists
@@ -654,9 +661,13 @@ void _cubit() {
   inject.registerFactory(() => MenuManageCubit(inject()));
   inject.registerLazySingleton(
     () => ShiftBloc(
-      prefs: inject(),
-      tokenStorage: inject(),
       printerService: inject(),
+      // Reads the branch's shift straight off the replica, and writes it back
+      // through the same LocalWriter every other write in the app uses — which
+      // is what puts the shift on every terminal in the venue instead of in one
+      // terminal's SharedPreferences.
+      shifts: BranchShiftQuery(inject<replica.LocalDatabase>()),
+      writer: inject<LocalWriter>(),
     ),
   );
 
@@ -698,7 +709,7 @@ void _cubit() {
   );
   inject.registerFactory(() => CounterCubit());
   inject.registerFactory(
-    () => ArchivesBloc(archivesRepository: inject()),
+    () => ArchivesBloc(archivesRepository: inject(), tableTimers: inject()),
   );
   inject.registerFactory(() => ArchiveBloc(archivesRepository: inject()));
   inject.registerFactory(

@@ -100,6 +100,11 @@ void main() {
         'modifier_calculation', 'order_item_modifiers', 'order_items', 'orders',
         // The migration-70 entities the client now consumes (see note above):
         'transactions', 'group_transactions', 'cash_registers',
+        // The branch-wide shift (74_branch_shifts.up.sql). Replicated from the
+        // day it was created rather than added to the registry later: the whole
+        // point of the table is that every terminal in a branch sees the same
+        // shift, which it can only do if the row reaches them.
+        'branch_shifts',
         'storages', 'suppliers', 'translations', 'user_payments',
         'users',
       };

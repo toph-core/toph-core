@@ -149,6 +149,29 @@ class EntitySpec {
   /// UI honest in the meantime.
   final ReplicationStatus status;
 
+  /// A key whose transition from empty to set is **monotonic**, and which an
+  /// arriving row may therefore apply even over an unsynced local edit.
+  ///
+  /// [ChangeApplier] normally refuses to overwrite a row this terminal has
+  /// pending, because a stale row landing between a cashier's write and its
+  /// replay would silently revert what they just did. That rule is right for
+  /// almost everything and wrong for one shape: a field that only ever goes
+  /// from unset to set, written by a *different* terminal.
+  ///
+  /// `branch_shifts.closed_at` is that shape. The till that opened the venue's
+  /// shift holds it pending until its queue drains; a colleague closing the
+  /// shift on the till beside it sends the closed row, and the pending guard
+  /// dropped it — so the terminal that opened the shift kept trading under a
+  /// shift the branch had already closed. That is the exact failure a
+  /// branch-wide shift exists to prevent.
+  ///
+  /// Deliberately one-directional. The reverse — an arriving row with the key
+  /// *unset* landing on a locally-closed row — stays guarded, so a pull that
+  /// delivers the still-open server copy cannot reopen a shift this terminal
+  /// has just closed and not yet reported. Relaxing the guard in both
+  /// directions would trade one visible bug for another.
+  final String? monotonicSetKey;
+
   /// Why this entity is not yet fed, and what closes the gap.
   ///
   /// Required in spirit for a [ReplicationStatus.pendingBackendTrigger] entry
@@ -164,6 +187,7 @@ class EntitySpec {
     this.redactKeys = const {},
     this.status = ReplicationStatus.live,
     this.pendingReason,
+    this.monotonicSetKey,
   });
 
   /// True when `/sync/pull` actually delivers rows for this entity.
@@ -261,6 +285,39 @@ const List<EntitySpec> kReplicatedEntities = [
     name: 'branches',
     promoted: [PromotedColumn('name', SqlType.text)],
     numericKeys: {'default_service_percent'},
+  ),
+  // The venue's shift, and the reason this entity is replicated at all: every
+  // terminal in a branch must see the same open shift, including the ones that
+  // did not open it. `cash_register_shifts` stays out of the registry (see
+  // `kIntentionallyNotReplicated` in registry_backend_pin_test.dart) because it
+  // is per-register by construction and so has nothing branch-wide to agree on.
+  //
+  // Being a replicated entity is what gives the shift both halves of "synced
+  // between local instances first": `LocalWriter` writes the row through
+  // `ChangeApplier.applyLocalWrite`, which broadcasts it to LAN peers the
+  // instant it is committed, and `/sync/pull` carries the same row to any
+  // terminal that was not on the network at the time. One row, two delivery
+  // paths, no second code path deciding what a shift is.
+  EntitySpec(
+    name: 'branch_shifts',
+    promoted: [
+      PromotedColumn('branch_id', SqlType.text, indexed: true),
+      // Indexed because it is the only column the hot query filters on: the
+      // active shift is "the branch's row with no closed_at".
+      PromotedColumn('closed_at', SqlType.text, indexed: true),
+      PromotedColumn('opened_at', SqlType.text, indexed: true),
+      PromotedColumn('opened_by', SqlType.text),
+      PromotedColumn('closed_by', SqlType.text),
+    ],
+    numericKeys: {
+      'opening_cash',
+      'opening_card',
+      'closing_cash',
+      'closing_card',
+    },
+    // A close made on any till in the branch has to reach the till that opened
+    // the shift, which still holds its own row pending. See [monotonicSetKey].
+    monotonicSetKey: 'closed_at',
   ),
   EntitySpec(
     name: 'cafe_tables',
