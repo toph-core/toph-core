@@ -34,6 +34,25 @@ class ArchivesState with _$ArchivesState {
     @Default(false) bool isLoadingMore,
     ArchiveDetailEntity? selectArchiveDetail,
     ArchiveEntity? selectArchive,
+
+    /// The selected bill's table (time) charge as the local timer currently
+    /// holds it, in whole so'm.
+    ///
+    /// The server reports `table_amount: 0` until a bill is paid — it only
+    /// computes the charge at settlement — so for an open bill this is the
+    /// only place the running amount exists, and without it the details panel
+    /// showed no charge for exactly the bills that were accruing one. 0 when
+    /// there is no local timer for the selection, in which case the panel
+    /// falls back to the detail's own `tableAmount`.
+    @Default(0) int selectedTableCharge,
+
+    /// The selected bill's active-period breakdown, synthesized from the
+    /// local timer record — the fallback for a bill whose server-side
+    /// `table_sessions` have not been hydrated onto this terminal yet, which
+    /// is the normal case for a bill that is still open. Empty when there is
+    /// nothing local to read; the panel prefers the detail's own
+    /// `activePeriods` whenever those exist.
+    @Default(<TableSegment>[]) List<TableSegment> selectedTableSegments,
     Failure? failure,
   }) = _ArchivesState;
 

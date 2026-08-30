@@ -85,7 +85,13 @@ class AuthDatasourceImpl implements AuthDatasource {
 
   @override
   Future<Either<Failure, UserModel>> verifyPincodeRole(String pincode) async {
-    final BrandIdTokenPair? brandIdToken = await _tokenStorage.readBrandIdToken();
+    final BrandIdTokenPair? brandIdToken;
+    try {
+      brandIdToken = await _tokenStorage.readBrandIdToken();
+    } catch (e, st) {
+      if (kDebugMode) print('Pincode role check storage error: $e\n$st');
+      return const Left(CacheFailure());
+    }
     if (brandIdToken == null) return const Left(UnknownFailure());
 
     // Local first, and not only when offline. This used to consult the cache
@@ -98,13 +104,21 @@ class AuthDatasourceImpl implements AuthDatasource {
     // Revocation still works, one attempt later: [_revalidateInBackground]
     // purges a PIN the server has since rejected, so the next prompt refuses
     // it. Offline that was already the behaviour.
-    final cached = await _offlineAuthCache.getForPin(
-      brandIdToken.brandId,
-      pincode,
-    );
-    if (cached != null) {
-      _revalidateInBackground(brandIdToken, pincode);
-      return Right(UserModel.fromJson(cached.userModelJson));
+    // Guarded: a corrupt cache row must surface as a refusal the prompt can
+    // show, not as an exception thrown past the `Either` contract.
+    try {
+      final cached = await _offlineAuthCache.getForPin(
+        brandIdToken.brandId,
+        pincode,
+      );
+      if (cached != null) {
+        final cachedUser = UserModel.fromJson(cached.userModelJson);
+        _revalidateInBackground(brandIdToken, pincode);
+        return Right(cachedUser);
+      }
+    } catch (e, st) {
+      if (kDebugMode) print('Pincode role cache read error: $e\n$st');
+      return const Left(CacheFailure());
     }
 
     // No local answer — this PIN has not been verified on this terminal, or it

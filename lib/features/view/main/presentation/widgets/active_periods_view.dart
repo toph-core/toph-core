@@ -21,7 +21,11 @@ class ActivePeriodsDialog extends StatelessWidget {
   final List<TableSegment> segments;
   final DateTime? startedAt;
 
-  const ActivePeriodsDialog({super.key, required this.segments, this.startedAt});
+  const ActivePeriodsDialog({
+    super.key,
+    required this.segments,
+    this.startedAt,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -64,20 +68,7 @@ class ActivePeriodsDialog extends StatelessWidget {
             if (startedAt != null)
               Padding(
                 padding: const EdgeInsets.fromLTRB(24, 6, 24, 0),
-                child: Row(
-                  children: [
-                    const Icon(
-                      Icons.schedule_rounded,
-                      size: 13,
-                      color: _kGraySoft,
-                    ),
-                    6.wBox,
-                    Text(
-                      '${S.current.strOpenedAtLabel} ${_fmtClock(startedAt!)}',
-                      style: const TextStyle(fontSize: 12.5, color: _kGraySoft),
-                    ),
-                  ],
-                ),
+                child: _OpenedAtLine(startedAt: startedAt!),
               ),
             Padding(
               padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
@@ -100,7 +91,17 @@ class ActivePeriodsDialog extends StatelessWidget {
 
 class ActivePeriodsSection extends StatefulWidget {
   final List<TableSegment> segments;
-  const ActivePeriodsSection({super.key, required this.segments});
+
+  /// When the bill was opened, rendered as the same `Открыт: HH:MM` line
+  /// [ActivePeriodsDialog] shows under its title — the inline form carries
+  /// the whole breakdown, not a reduced version of it.
+  final DateTime? startedAt;
+
+  const ActivePeriodsSection({
+    super.key,
+    required this.segments,
+    this.startedAt,
+  });
 
   @override
   State<ActivePeriodsSection> createState() => _ActivePeriodsSectionState();
@@ -144,8 +145,12 @@ class _ActivePeriodsSectionState extends State<ActivePeriodsSection> {
                       ),
                     ),
                     if (segments.isNotEmpty)
+                      // Bare amount, no `Итого:` prefix — this header is the
+                      // charge line for the section, styled exactly like the
+                      // order-items accordion's. The labelled total belongs
+                      // to the footer inside, where the design spec puts it.
                       Text(
-                        '${S.current.strTotalActiveTime} ${_totalAmount(segments).round().formatN}',
+                        _totalAmount(segments).round().formatN,
                         style: context.textStyles.bodySm.copyWith(
                           fontWeight: FontWeight.w600,
                           color: context.colors.bgBrand,
@@ -169,6 +174,12 @@ class _ActivePeriodsSectionState extends State<ActivePeriodsSection> {
               firstChild: const SizedBox(width: double.infinity),
               secondChild: Column(
                 children: [
+                  if (widget.startedAt != null)
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
+                      child: _OpenedAtLine(startedAt: widget.startedAt!),
+                    ),
+                  Divider(height: 1, color: context.colors.border),
                   _ActivePeriodsList(segments: segments, scrollable: false),
                   if (segments.isNotEmpty)
                     _ActivePeriodsSummaryFooter(segments: segments),
@@ -183,6 +194,27 @@ class _ActivePeriodsSectionState extends State<ActivePeriodsSection> {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// `Открыт: HH:MM`, shared by the dialog and the inline section so the two
+/// presentations of the same data can't drift apart.
+class _OpenedAtLine extends StatelessWidget {
+  final DateTime startedAt;
+  const _OpenedAtLine({required this.startedAt});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        const Icon(Icons.schedule_rounded, size: 13, color: _kGraySoft),
+        6.wBox,
+        Text(
+          '${S.current.strOpenedAtLabel} ${_fmtClock(startedAt)}',
+          style: const TextStyle(fontSize: 12.5, color: _kGraySoft),
+        ),
+      ],
     );
   }
 }
@@ -294,7 +326,10 @@ class _ActivePeriodRow extends StatelessWidget {
                         padding: const EdgeInsets.only(top: 1),
                         child: Text(
                           '${price.round().formatN}/soat',
-                          style: const TextStyle(fontSize: 12, color: _kGraySoft),
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: _kGraySoft,
+                          ),
                         ),
                       ),
                   ],

@@ -52,6 +52,21 @@ class MySmartDioInterceptor extends Interceptor {
       final bool isRefreshCall = err.requestOptions.path.endsWith(
         ListAPI.refresh,
       );
+      // `login-pincode` is a credential check, not a session-authenticated
+      // call: a 401 here means "that PIN is wrong", never "this terminal's
+      // session expired". `onRequest` attaches the active session's
+      // Authorization header to every request, this one included, so without
+      // this exclusion a wrong manager PIN looked like an expired session —
+      // the interceptor refreshed the token, replayed the request, got the
+      // same 401, and logged the cashier out mid-order while the PIN dialog
+      // was still on screen waiting for an answer that never came.
+      final bool isCredentialCheck = err.requestOptions.path.endsWith(
+        ListAPI.loginPinCode,
+      );
+      if (isCredentialCheck) {
+        return handler.next(err);
+      }
+
       final String? authHeader = err.requestOptions.headers['Authorization']
           ?.toString();
       final bool hasAuthHeader =
@@ -60,7 +75,6 @@ class MySmartDioInterceptor extends Interceptor {
           authHeader != 'Bearer ';
 
       // Do not force logout for unauthorized calls made without auth token.
-      // Example: wrong pin on login-pincode endpoint.
       if (!hasAuthHeader && !isRefreshCall) {
         return handler.next(err);
       }

@@ -116,19 +116,32 @@ class _AppPincodeDialogState extends State<AppPincodeDialog>
 
   Future<void> _verify() async {
     setState(() => _verifying = true);
-    final ok = await widget.onConfirm(_pin);
+
+    // A validator that throws must not be able to leave the keypad disabled
+    // with a full row of dots and no way forward — that reads as a frozen
+    // dialog, and the only escape is the close button. Anything other than a
+    // clean `true` is treated exactly like a wrong PIN: clear the input, say
+    // so, and let the user try again.
+    bool ok = false;
+    try {
+      ok = await widget.onConfirm(_pin);
+    } catch (_) {
+      ok = false;
+    }
+
     if (!mounted) return;
     if (ok) {
       Navigator.of(context).pop(true);
-    } else {
-      unawaited(HapticFeedback.heavyImpact());
-      _shakeCtrl.forward(from: 0);
-      setState(() {
-        _pin = '';
-        _hasError = true;
-        _verifying = false;
-      });
+      return;
     }
+
+    unawaited(HapticFeedback.heavyImpact());
+    _shakeCtrl.forward(from: 0);
+    setState(() {
+      _pin = '';
+      _hasError = true;
+      _verifying = false;
+    });
   }
 
   @override

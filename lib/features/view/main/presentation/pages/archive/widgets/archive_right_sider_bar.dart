@@ -59,6 +59,24 @@ class ArchiveRightSiderBar extends StatelessWidget {
               );
             }
 
+            // A paid bill's charge is settled and already inside
+            // `grand_total`; an open one is still running, and the server
+            // reports 0 for it until settlement — `ArchivesBloc` follows the
+            // local timer record for the selection, which is where the
+            // running amount actually lives.
+            final tableCharge = _isOpenOrderStatus(archive.status)
+                ? (state.selectedTableCharge > 0
+                      ? state.selectedTableCharge
+                      : detail.tableAmount.round())
+                : detail.tableAmount.round();
+
+            // Server-side sessions when this terminal has them; otherwise the
+            // breakdown the local timer can account for, which is all an open
+            // bill usually has.
+            final periods = detail.activePeriods.isNotEmpty
+                ? detail.activePeriods
+                : state.selectedTableSegments;
+
             return ListView(
               physics: const BouncingScrollPhysics(),
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
@@ -73,7 +91,7 @@ class ArchiveRightSiderBar extends StatelessWidget {
                     await inject<PrinterService>()
                         .printCashierReceiptFromDetail(
                           detail: detail,
-                          hourAmount: detail.tableAmount,
+                          hourAmount: tableCharge.toDouble(),
                           timerStartedAt: detail.opened,
                           timerPauses: detail.pausePeriods,
                         );
@@ -97,17 +115,23 @@ class ArchiveRightSiderBar extends StatelessWidget {
                   cashierName: detail.cashierName,
                   opened: archive.opened,
                   paymentType: detail.paymentType,
-                  tableAmount: detail.tableAmount.round(),
                 ),
-                if (detail.activePeriods.isNotEmpty) ...[
-                  8.hBox,
-                  ActivePeriodsSection(segments: detail.activePeriods),
-                ],
                 12.hBox,
                 _OrderDetailsAccordion(
                   goods: detail.goods,
                   itemsTotal: detail.foodTotal.round(),
                 ),
+                // The table charge gets the same treatment as the items
+                // right above it: one collapsed line carrying the amount,
+                // opening onto the full per-table / per-interval breakdown
+                // rather than a separate dialog.
+                if (periods.isNotEmpty) ...[
+                  8.hBox,
+                  ActivePeriodsSection(
+                    segments: periods,
+                    startedAt: detail.opened,
+                  ),
+                ],
                 12.hBox,
                 // An open bill's `grand_total` does not yet include the
                 // running table charge — the server only folds it in at
@@ -119,11 +143,9 @@ class ArchiveRightSiderBar extends StatelessWidget {
                   subtotal: detail.foodTotal.round(),
                   serviceFee: detail.serviceAmount.round(),
                   discount: detail.discountAmount.round(),
-                  tableCharge: _isOpenOrderStatus(archive.status)
-                      ? detail.tableAmount.round()
-                      : 0,
+                  tableCharge: tableCharge,
                   total: _isOpenOrderStatus(archive.status)
-                      ? (detail.grandTotal + detail.tableAmount).round()
+                      ? detail.grandTotal.round() + tableCharge
                       : detail.grandTotal.round(),
                 ),
               ],
@@ -439,7 +461,6 @@ class _MetaCard extends StatelessWidget {
   final String cashierName;
   final DateTime? opened;
   final String paymentType;
-  final int tableAmount;
 
   const _MetaCard({
     required this.tableNumber,
@@ -447,7 +468,6 @@ class _MetaCard extends StatelessWidget {
     required this.cashierName,
     required this.opened,
     required this.paymentType,
-    required this.tableAmount,
   });
 
   String _paymentLabel() {
@@ -492,13 +512,6 @@ class _MetaCard extends StatelessWidget {
               label: S.current.strPaymentMethodLabel,
               value: _paymentLabel(),
             ),
-            if (tableAmount > 0) ...[
-              6.hBox,
-              _MetaRow(
-                label: S.current.strHourlyPayment,
-                value: tableAmount.formatN,
-              ),
-            ],
           ],
         ).paddingSymmetric(horizontal: 12, vertical: 10),
       ),

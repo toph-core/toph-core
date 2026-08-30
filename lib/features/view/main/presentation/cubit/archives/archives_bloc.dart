@@ -10,12 +10,14 @@ import 'package:mary_ai_pos/core/sync/sync_engine.dart';
 import 'package:mary_ai_pos/di.dart' show inject;
 import 'package:mary_ai_pos/features/view/main/data/models/archives_filter_request/archives_filter_request_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/pagination_request/pagination_request_model.dart';
+import 'package:mary_ai_pos/features/view/main/data/models/table_timer/table_timer_response_model.dart';
 import 'package:mary_ai_pos/features/view/main/domain/entities/archive_detail_entity.dart';
 import 'package:mary_ai_pos/features/view/main/domain/entities/archive_entity.dart';
 import 'package:mary_ai_pos/features/view/main/domain/entities/archives_filter_request_entity.dart';
 import 'package:mary_ai_pos/features/view/main/domain/entities/archives_response_entity.dart';
 import 'package:mary_ai_pos/features/view/main/domain/entities/archives_summary_entity.dart';
 import 'package:mary_ai_pos/features/view/main/domain/repository/archives_local_repository.dart';
+import 'package:mary_ai_pos/features/view/main/domain/repository/table_timer_local_repository.dart';
 import 'package:rxdart/rxdart.dart';
 
 part 'archives_event.dart';
@@ -49,8 +51,18 @@ part 'archives_bloc.freezed.dart';
 /// it existing at all.
 class ArchivesBloc extends Bloc<ArchivesEvent, ArchivesState> {
   final ArchivesLocalRepository _archivesRepository;
+
+  /// Optional so every existing construction of this bloc keeps working; a
+  /// bloc built without it simply never reports a running table charge, and
+  /// the panel falls back to the server's `table_amount`.
+  final TableTimerLocalRepository? _tableTimers;
+
   StreamSubscription<ArchivesResponseEntity?>? _archivesSub;
   StreamSubscription<ArchivesSummaryEntity>? _summarySub;
+
+  /// Follows the *selected* bill only, and is torn down and rebuilt on every
+  /// selection — one row's timer, not the venue's.
+  StreamSubscription<TableTimerResponse?>? _tableChargeSub;
 
   /// Set the instant [close] begins, and checked before every dispatch below.
   ///
@@ -61,9 +73,12 @@ class ArchivesBloc extends Bloc<ArchivesEvent, ArchivesState> {
   /// screen is closed by an ordinary back press — would take the throw.
   bool _closing = false;
 
-  ArchivesBloc({required ArchivesLocalRepository archivesRepository})
-    : _archivesRepository = archivesRepository,
-      super(ArchivesState.initial()) {
+  ArchivesBloc({
+    required ArchivesLocalRepository archivesRepository,
+    TableTimerLocalRepository? tableTimers,
+  }) : _archivesRepository = archivesRepository,
+       _tableTimers = tableTimers,
+       super(ArchivesState.initial()) {
     on<_Started>(_onStarted);
     on<_StatusChanged>(_onStatusChanged);
     on<_ArchivesUpdated>(_onArchivesUpdated);
@@ -73,6 +88,8 @@ class ArchivesBloc extends Bloc<ArchivesEvent, ArchivesState> {
     on<_SearchChanged>(_onSearchChanged);
     on<_SelectArchive>(_selectArchive);
     on<_GetArchiveDetail>(_getArchiveDetail);
+    on<_TableChargeUpdated>(_onTableChargeUpdated);
+    on<_TableSegmentsUpdated>(_onTableSegmentsUpdated);
     on<_UpdateFilterType>(_updateFilterType);
     on<_UpdateFilterDateRange>(_updateFilterDateRange);
     on<_UpdateStatusFilter>(_updateStatusFilter);
@@ -130,6 +147,15 @@ class ArchivesBloc extends Bloc<ArchivesEvent, ArchivesState> {
   void _resubscribe() {
     _archivesSub?.cancel();
     _summarySub?.cancel();
+    // `_tableChargeSub` is deliberately NOT cancelled here. It tracks the
+    // *selected bill's* timer, which has nothing to do with which archives are
+    // listed — and nothing in this bloc clears `selectArchive` on a filter
+    // change, so the bill stays on screen. Cancelling it here (without ever
+    // re-arming it, since only `_watchTableCharge` does that) froze the running
+    // table charge on a still-selected bill after any load-more, filter,
+    // search or date-range change. Its lifetime belongs to the selection:
+    // `_watchTableCharge` cancels the previous one, and `close()` cancels the
+    // last.
     final filter = _filter;
 
     _archivesSub = _archivesRepository
@@ -325,8 +351,14 @@ class ArchivesBloc extends Bloc<ArchivesEvent, ArchivesState> {
 
   Future<void> _loadDetail(String id, Emitter<ArchivesState> emit) async {
     emit(
-      state.copyWith(archiveStatus: Status.LOADING, selectArchiveDetail: null),
+      state.copyWith(
+        archiveStatus: Status.LOADING,
+        selectArchiveDetail: null,
+        selectedTableCharge: 0,
+        selectedTableSegments: const [],
+      ),
     );
+    _watchTableCharge(id);
     final response = await _archivesRepository.getArchiveWithId(id);
     if (_closing || isClosed || emit.isDone) return;
     response.fold(
@@ -335,6 +367,79 @@ class ArchivesBloc extends Bloc<ArchivesEvent, ArchivesState> {
         state.copyWith(archiveStatus: Status.SUCCESS, selectArchiveDetail: r),
       ),
     );
+  }
+
+  /// Subscribes to the selected bill's local timer record.
+  ///
+  /// Stored amounts only — `final_amount` once the timer is frozen, otherwise
+  /// `current_amount` — which is exactly what
+  /// `PaymentBloc._hydrateTableChargeFromLocalTimer` reads, so the number the
+  /// details panel shows is the number payment will charge. The per-second
+  /// accrual the table badge renders is a display refinement and is
+  /// deliberately not reproduced here.
+  void _watchTableCharge(String orderId) {
+    _tableChargeSub?.cancel();
+    _tableChargeSub = null;
+
+    final timers = _tableTimers;
+    if (timers == null || orderId.isEmpty) return;
+
+    _tableChargeSub = timers.watchTimer(orderId).listen(
+      (timer) {
+        if (_closing || isClosed || timer == null) return;
+        final frozen = parseAmountToInt(timer.finalAmount);
+        final amount = frozen > 0
+            ? frozen
+            : parseAmountToInt(timer.currentAmount);
+        add(ArchivesEvent.tableChargeUpdated(amount));
+        unawaited(_readTableSegments(orderId));
+      },
+      // A local timer that cannot be read must never take the panel down
+      // with it — the bill's own totals are already on screen.
+      onError: (_) {},
+    );
+  }
+
+  void _onTableChargeUpdated(
+    _TableChargeUpdated event,
+    Emitter<ArchivesState> emit,
+  ) {
+    if (event.amount == state.selectedTableCharge) return;
+    emit(state.copyWith(selectedTableCharge: event.amount));
+  }
+
+  /// Reads the active-period breakdown the local timer can account for.
+  ///
+  /// The details panel renders the server's `table_sessions` when it has
+  /// them, but a bill that is still open usually has none on this terminal —
+  /// which left the breakdown accordion with nothing to show for exactly the
+  /// bills that were accruing a charge. `getBillDetails` synthesizes the same
+  /// [TableSegment] shape from the local record, so the accordion renders the
+  /// running periods offline, and the moment a server snapshot arrives it is
+  /// simply preferred over this.
+  Future<void> _readTableSegments(String orderId) async {
+    final timers = _tableTimers;
+    if (timers == null) return;
+
+    final result = await timers.getBillDetails(orderId);
+    if (_closing || isClosed) return;
+    // Still the same selection? A fast click through the list can land this
+    // after the operator has moved on.
+    if (state.selectArchive?.id != orderId) return;
+
+    final segments = result.fold(
+      (_) => const <TableSegment>[],
+      (details) => details.segments,
+    );
+    if (segments.isEmpty) return;
+    add(ArchivesEvent.tableSegmentsUpdated(segments));
+  }
+
+  void _onTableSegmentsUpdated(
+    _TableSegmentsUpdated event,
+    Emitter<ArchivesState> emit,
+  ) {
+    emit(state.copyWith(selectedTableSegments: event.segments));
   }
 
   void _onStatusChanged(_StatusChanged event, Emitter<ArchivesState> emit) {
@@ -392,6 +497,9 @@ class ArchivesBloc extends Bloc<ArchivesEvent, ArchivesState> {
     _closing = true;
     _archivesSub?.cancel();
     _summarySub?.cancel();
+    // Cancelled here too, or one live timer subscription leaks per visit to the
+    // archive screen — this bloc is a factory, so a new one is built each time.
+    _tableChargeSub?.cancel();
     state.textController?.dispose();
     return super.close();
   }

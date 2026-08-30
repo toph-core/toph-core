@@ -21,6 +21,15 @@ class ArchivesEvent with _$ArchivesEvent {
   const factory ArchivesEvent.selectArchive({required String id}) =
       _SelectArchive;
   const factory ArchivesEvent.getArchiveDetail() = _GetArchiveDetail;
+
+  /// The selected bill's local timer moved — carries the charge it now holds.
+  const factory ArchivesEvent.tableChargeUpdated(int amount) =
+      _TableChargeUpdated;
+
+  /// The active-period breakdown read back for the selected bill.
+  const factory ArchivesEvent.tableSegmentsUpdated(
+    List<TableSegment> segments,
+  ) = _TableSegmentsUpdated;
   const factory ArchivesEvent.updateFilterType({
     required ArchivesFilterType type,
   }) = _UpdateFilterType;
