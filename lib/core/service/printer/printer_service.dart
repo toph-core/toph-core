@@ -410,7 +410,10 @@ class PrinterService {
       final bytes = await _buildTestTicket(config);
       // Tez javob uchun bitta urinish + bitta qayta urinish — Save tugmasidan
       // farqli o'laroq, foydalanuvchi "Test" bosgach uzoq kutmasligi kerak.
-      return await _connectAndPrint(config, bytes, beep: true, maxRetries: 1);
+      // The dialog only shows ok/error; `connectFailed` is for the relay
+      // decision, which the test button has no part in.
+      final r = await _connectAndPrint(config, bytes, beep: true, maxRetries: 1);
+      return (ok: r.ok, error: r.error);
     } catch (e, st) {
       debugPrint('[PrinterService] Test print xatosi: $e\n$st');
       return (ok: false, error: e.toString());
@@ -588,7 +591,7 @@ class PrinterService {
   /// executing a job relayed here from another terminal — the receipt was
   /// already rendered wherever the job originated, so only the transport
   /// step happens here.
-  Future<({bool ok, String? error})> printRenderedBytes(
+  Future<PrintAttempt> printRenderedBytes(
     PrinterConfig config,
     List<int> bytes, {
     bool beep = true,
@@ -622,7 +625,13 @@ class PrinterService {
   }
 
   /// Printer’ga ulanib bytes yuboradi: cable → Windows USB API, wlan/wifi → TCP.
-  Future<({bool ok, String? error})> _connectAndPrint(
+  ///
+  /// [PrintAttempt.connectFailed] tells the caller whether the failure happened
+  /// before anything left this machine. Only the TCP path can say so, and only
+  /// when no attempt in the retry loop ever got a socket open: once one has,
+  /// part of the ticket may already be on paper, and the job must not be sent
+  /// anywhere a second time.
+  Future<PrintAttempt> _connectAndPrint(
     PrinterConfig config,
     List<int> bytes, {
     int maxRetries = 2,
@@ -634,7 +643,11 @@ class PrinterService {
     final data = beep ? [...bytes, ..._buzzerBytes] : bytes;
     if (config.usesWindowsPrinter) {
       if (!Platform.isWindows) {
-        return (ok: false, error: "USB printer faqat Windows da ishlaydi.");
+        return (
+          ok: false,
+          error: "USB printer faqat Windows da ishlaydi.",
+          connectFailed: false,
+        );
       }
       // `windowsPrinterName` odatda ad-hoc konfiglarda (Test Printer) to'g'ridan
       // -to'g'ri keladi; `_storage`dan kelgan haqiqiy chek konfiglari faqat
@@ -644,18 +657,28 @@ class PrinterService {
           (config.entryId != null
               ? _storage.getUsbPrinterName(config.entryId!)
               : null);
-      return _printViaWindowsRaw(data, targetPrinterName: targetName);
+      final r = await _printViaWindowsRaw(data, targetPrinterName: targetName);
+      // The Windows spooler path never reports `connectFailed`. Its failures
+      // are either "the chosen printer is not installed here" — which no other
+      // terminal's spooler can help with — or a write that may have reached
+      // the device. Neither is safe to hand to the relay.
+      return (ok: r.ok, error: r.error, connectFailed: false);
     }
 
     if (!config.usesNetworkTcp) {
       return (
         ok: false,
         error: "Printer ulanish turi [${config.connectionType}] qo’llab-quvvatlanmaydi.",
+        connectFailed: false,
       );
     }
 
     int attempt = 0;
     String? lastSocketMessage;
+    // Sticky across the retry loop: once any attempt has had a socket open,
+    // bytes may have reached the printer, so the final failure is no longer a
+    // "nothing was sent" one — whatever the last attempt's own error was.
+    var everConnected = false;
     while (attempt <= maxRetries) {
       try {
         final socket = await Socket.connect(
@@ -663,6 +686,7 @@ class PrinterService {
           config.port,
           timeout: Duration(milliseconds: config.timeoutMs),
         );
+        everConnected = true;
 
         // 250 bayt — raster (logo) va boshqa buyruqlarni o‘rtadan uzib, printer
         // qolganini matn sifatida chop etishi mumkin. Katta bo‘lak yoki bitta yuborish.
@@ -673,7 +697,7 @@ class PrinterService {
         socket.destroy();
 
         debugPrint('[PrinterService] Chek yuborildi → ${config.ip}:${config.port}');
-        return (ok: true, error: null);
+        return (ok: true, error: null, connectFailed: false);
       } on SocketException catch (e) {
         lastSocketMessage = _formatSocketException(e);
         attempt++;
@@ -682,7 +706,11 @@ class PrinterService {
             '[PrinterService] Printer ${config.ip} offline ($lastSocketMessage). '
             '$maxRetries urinishdan keyin bekor qilindi.',
           );
-          return (ok: false, error: lastSocketMessage);
+          return (
+            ok: false,
+            error: lastSocketMessage,
+            connectFailed: !everConnected,
+          );
         }
         debugPrint('[PrinterService] Ulanish xatosi, qayta urinish $attempt/$maxRetries...');
         await Future.delayed(const Duration(seconds: 1));
@@ -690,10 +718,14 @@ class PrinterService {
         if (kDebugMode) {
           debugPrint('[PrinterService] Yuborish xatosi: $e\n$st');
         }
-        return (ok: false, error: e.toString());
+        return (ok: false, error: e.toString(), connectFailed: false);
       }
     }
-    return (ok: false, error: 'Ulanib bo\'lmadi (${config.ip}:${config.port})');
+    return (
+      ok: false,
+      error: 'Ulanib bo\'lmadi (${config.ip}:${config.port})',
+      connectFailed: !everConnected,
+    );
   }
 
   /// Android/iOS ba'zida `message` bo'sh; `osError` — "Network is unreachable" va h.k.

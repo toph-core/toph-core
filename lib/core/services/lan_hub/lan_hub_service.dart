@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
@@ -9,6 +10,8 @@ import 'package:mary_ai_pos/core/constants/constants.dart';
 import 'package:mary_ai_pos/core/services/connectivity/connectivity_cubit.dart';
 import 'package:mary_ai_pos/core/services/offline_queue/offline_queue_service.dart';
 import 'package:mary_ai_pos/core/services/offline_queue/pending_operation.dart';
+import 'package:mary_ai_pos/core/service/printer/printer_config_storage.dart';
+import 'package:mary_ai_pos/core/service/printer/printer_setting_entry.dart';
 import 'package:mary_ai_pos/core/services/print_queue/print_queue_service.dart';
 import 'package:mary_ai_pos/core/utils/jwt_utils.dart';
 import 'package:mary_ai_pos/core/sync/change_feed_relay.dart';
@@ -452,6 +455,16 @@ class LanHubService {
           );
         }
         break;
+      case LanHubMessageType.printerSettings:
+        // Every role, like `localChange`: a printer hangs off whichever
+        // terminal it is plugged into, leader or follower, and the hub has
+        // already passed this on to the rest.
+        final entries = msg.printerEntries;
+        final peer = msg.printTerminalId;
+        if (entries != null && peer != null && peer.isNotEmpty) {
+          unawaited(_applyPeerPrinterSettings(peer, entries));
+        }
+        break;
       case LanHubMessageType.printJobResult:
         if (msg.printJobId != null && msg.printResult != null) {
           inject<PrintQueueService>().onRemoteResult(
@@ -464,6 +477,46 @@ class LanHubService {
       default:
         break;
     }
+  }
+
+  Future<void> _applyPeerPrinterSettings(String peer, String entriesJson) async {
+    try {
+      final decoded = jsonDecode(entriesJson);
+      if (decoded is! List) return;
+      await inject<PrinterConfigStorage>().applyPeerPrinterSettings(
+        peerTerminalId: peer,
+        entries: PrinterSettingEntry.listFromJsonList(decoded),
+      );
+    } catch (e) {
+      if (kDebugMode) print('[LanHub] printerSettings parse xatosi: $e');
+    }
+  }
+
+  /// Tells the rest of the venue which printers are attached to **this**
+  /// terminal, so a job for one of them is relayed here instead of being
+  /// dialled from a machine that cannot reach it.
+  ///
+  /// Sent when the hub link comes up, when the peer set changes, and after any
+  /// local printer-settings change (`di.dart` wires the first two, the
+  /// settings screen the third) — the same three moments the print relay's own
+  /// `retryPendingRelays` cares about. Cheap enough to repeat: a handful of
+  /// rows, and the receiver's merge is idempotent.
+  ///
+  /// Only this terminal's own entries go out. What it learned from a peer
+  /// stays where it was learned — echoing it back would let a printer's owner
+  /// drift around the venue.
+  void announcePrinterSettings() {
+    if (mode == LanMode.disabled) return;
+    final storage = inject<PrinterConfigStorage>();
+    _sendOrBroadcast(
+      LanHubMessage.printerSettings(
+        terminalId: inject<PrintQueueService>().terminalId,
+        cashRegisterId: storage.myCashRegisterId,
+        entriesJson: PrinterSettingEntry.encodeList(
+          storage.entriesOwnedByThisTerminal(),
+        ),
+      ),
+    );
   }
 
   /// Stol holati o'zgarganda chaqiriladi (order create / pay).

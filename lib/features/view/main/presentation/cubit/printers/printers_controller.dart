@@ -1,5 +1,6 @@
 import 'package:dartz/dartz.dart';
 import 'package:mary_ai_pos/core/error/failure.dart';
+import 'package:mary_ai_pos/core/service/printer/printer_setting_entry.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/category/category_model.dart';
 import 'package:mary_ai_pos/features/view/main/domain/repository/main_repository.dart';
 import 'package:mary_ai_pos/features/view/main/domain/repository/menu_repository.dart';
@@ -15,11 +16,12 @@ import 'package:mary_ai_pos/features/view/main/domain/repository/menu_repository
 ///   [MenuRepository] (a synchronous `LocalDatabase` query) rather than the old
 ///   cache-then-best-effort-network dance. Always available, offline, no
 ///   empty-then-populate flash.
-/// - **Printer sync stays best-effort over [MainRepository].** Printer settings
-///   are device-local first (`PrinterConfigStorage`); pushing/deleting them on
-///   the backend is fire-and-forget and its failures are swallowed by the
-///   caller, exactly as before — that write path is not yet on the outbox and
-///   is out of scope here.
+/// - **Printer writes go to the backend over [MainRepository].** Printer
+///   settings are device-local first (`PrinterConfigStorage`), but the push is
+///   no longer fire-and-forget: the settings screen waits for it, adopts the id
+///   the server assigns, and tells the operator when the entry stayed local.
+///   That write path is still not on the outbox (see `write_path_guard_test`),
+///   so offline it fails — visibly now, instead of silently.
 class PrintersController {
   final MenuRepository _menu;
   final MainRepository _remote;
@@ -31,9 +33,11 @@ class PrintersController {
   /// The category catalogue, live from the replica.
   List<CategoryModel> categories() => _menu.getCategories();
 
-  /// Best-effort backend upsert of a printer setting. The device-local store is
-  /// authoritative; the caller does not block on this and ignores its result.
-  Future<Either<Failure, bool>> pushPrinterSetting(
+  /// Backend upsert of a printer setting. The device-local store is
+  /// authoritative, but the caller waits for this and acts on the result: the
+  /// returned record's id replaces the local one, and a failure is shown to the
+  /// operator rather than swallowed.
+  Future<Either<Failure, PrinterSettingEntry?>> pushPrinterSetting(
     Map<String, dynamic> body, {
     String? existingId,
   }) =>

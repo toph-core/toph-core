@@ -397,8 +397,19 @@ class PrintQueueService {
     );
     await _box.put(job.id, job);
 
-    final ownedElsewhere = !config.isUnowned &&
-        !config.isOwnedBy(_printerConfigStorage.myCashRegisterId);
+    // Ownership, in the order the two sources are trusted:
+    //
+    //  1. `owner_cash_register_id`, when the backend has populated it. It is
+    //     the real registry and it keeps deciding, exactly as before.
+    //  2. Otherwise, what the terminal that owns the printer told us over the
+    //     LAN (`PrinterConfigStorage.applyPeerPrinterSettings`). In this venue
+    //     that is all there is: the deployed backend has no owner column and
+    //     the token carries no cash register id, so every entry reads as
+    //     unowned and every terminal used to dial every printer itself.
+    final lanOwner = _printerConfigStorage.lanOwnerOf(job.entryId);
+    final ownedElsewhere = config.isUnowned
+        ? (lanOwner != null && lanOwner != terminalId)
+        : !config.isOwnedBy(_printerConfigStorage.myCashRegisterId);
 
     if (!ownedElsewhere) {
       if (!config.usesWindowsPrinter) {
@@ -464,6 +475,9 @@ class PrintQueueService {
     required bool beep,
   }) async {
     final r = await _printerService.printRenderedBytes(config, bytes, beep: beep);
+    if (!r.ok && r.connectFailed && _isLanRelayPossible()) {
+      return _relayAfterLocalFailure(job, r.error);
+    }
     job.ownerTerminalId = terminalId;
     if (r.ok) {
       job.stateEnum = PrintJobState.printed;
@@ -482,6 +496,45 @@ class PrintQueueService {
       _clearCallerBudget(job.id);
     }
     return (ok: r.ok, error: r.error, deferred: false);
+  }
+
+  /// This terminal could not reach the printer — offer the job to the LAN
+  /// before writing it off.
+  ///
+  /// Why this exists: ownership is what normally routes a job to the terminal
+  /// that can reach the printer, and every printer row created before the
+  /// backend could record an owner has none. To this terminal an unowned
+  /// printer looks reachable, so a kitchen ticket raised on the client dials
+  /// the kitchen printer directly, cannot reach it across the venue's network,
+  /// and dies — while the hub, sitting on the same switch as the printer,
+  /// could have printed it. Announcing lets that terminal put its hand up.
+  ///
+  /// Reached **only** on [PrintAttempt.connectFailed] — no socket ever opened,
+  /// so nothing reached the printer and handing the same bytes to another
+  /// terminal cannot produce a second receipt. Every other failure (a write
+  /// that broke half way, a USB spooler error) finalizes exactly as before.
+  ///
+  /// The claim/grant/lease protocol is untouched: this is the same announce
+  /// the owned-elsewhere path makes, on the same timers, and the caller is
+  /// released on the same [callerBudget] rather than waiting out the claim.
+  Future<PrintDispatchResult> _relayAfterLocalFailure(
+    PrintJob job,
+    String? localError,
+  ) async {
+    job.lastError = "Printerga shu terminaldan ulanib bo'lmadi "
+        "($localError) — chek boshqa terminallarga taklif qilindi.";
+    job.stateEnum = PrintJobState.queued;
+    await job.save();
+
+    // Answered now, not after the claim wait. The local attempt has already
+    // cost the caller a socket timeout (up to 6s), and the till may not be
+    // held for the relay's stages on top of that — the announce and everything
+    // after it run behind the released caller. Marking the caller released is
+    // what obliges `_complete` to surface a later failure through
+    // `_onLateFailure`: the till has been told the receipt is queued.
+    _callerReleased.add(job.id);
+    _announceAndWaitForClaim(job);
+    return (ok: false, error: job.lastError, deferred: true);
   }
 
   /// Releases the caller after [callerBudget] whatever stage the job is at.
@@ -769,7 +822,7 @@ class PrintQueueService {
   /// The printer this terminal would drive for an announced `entryId`, or
   /// `null` when the announcement is not this terminal's to answer.
   ///
-  /// Two ways a job can be ours, in priority order:
+  /// Three ways a job can be ours, in priority order:
   ///
   ///  1. **The synced entry names our cash register as its owner.** This is the
   ///     real registry, and it covers every transport — a network printer only
@@ -782,6 +835,13 @@ class PrintQueueService {
   ///     kept for unowned USB rows — `getUsbPrinterName` was the only "who owns
   ///     this printer" signal that existed before the backend could record one,
   ///     and rows created under the old scheme still rely on it.
+  ///  3. **It is an unowned network printer** and the originator has already
+  ///     failed to reach it. Detailed at the branch itself.
+  ///
+  /// Rules 2 and 3 are off the table for an entry a peer has announced as its
+  /// own over the LAN: that announcement is a positive statement about which
+  /// machine the printer is plugged into, and this terminal answering it would
+  /// take the job away from the one that can print it.
   ///
   /// A USB printer we own but have no Windows name for is deliberately *not*
   /// claimed: claiming a job we cannot print would consume the originator's
@@ -802,14 +862,48 @@ class PrintQueueService {
       return config;
     }
 
+    final lanOwner = _printerConfigStorage.lanOwnerOf(entryId);
+    if (lanOwner != null && lanOwner != terminalId) {
+      // Another terminal has announced this printer as its own. Whatever else
+      // this terminal knows about the entry, the job is not ours to take.
+      return null;
+    }
+
     final windowsName = _printerConfigStorage.getUsbPrinterName(entryId);
-    if (windowsName == null || windowsName.isEmpty) return null;
-    return PrinterConfig(
-      ip: '',
-      connectionType: 'usb',
-      entryId: entryId,
-      windowsPrinterName: windowsName,
-    );
+    if (windowsName != null && windowsName.isNotEmpty) {
+      return PrinterConfig(
+        ip: '',
+        connectionType: 'usb',
+        entryId: entryId,
+        windowsPrinterName: windowsName,
+      );
+    }
+
+    //  3. **An unowned network printer this terminal may be able to reach.**
+    //     Only announced at all because the originator tried it and could not
+    //     get a socket open (`_relayAfterLocalFailure`) — on a venue whose
+    //     printer rows carry no owner, that is the sole signal that some other
+    //     terminal has to try. So this terminal offers to, and finds out by
+    //     dialing: the config is the same entry, the same address, the same
+    //     ticket, and if it cannot reach it either the job fails exactly as it
+    //     would have.
+    //
+    //     Owned entries deliberately do not reach here — an owner is a
+    //     positive statement about which machine can drive the printer, and a
+    //     non-owner claiming would undo it.
+    if (entry != null &&
+        entry.isUnowned &&
+        entry.isNetworkTcp &&
+        // Not one we learned from a peer: that peer said the printer is
+        // attached to *it*, so claiming would take a job away from the
+        // terminal that can actually reach it.
+        !_printerConfigStorage.isLanLearned(entryId)) {
+      final config = _printerConfigStorage.configForEntryId(entryId);
+      if (config != null && config.ip.isNotEmpty && config.port > 0) {
+        return config;
+      }
+    }
+    return null;
   }
 
   /// `LanHubService` calls this when a `printJobAnnounce` arrives from

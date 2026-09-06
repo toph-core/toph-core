@@ -19,6 +19,7 @@ enum LanHubMessageType {
   changeFeed,
   localChange,
   timerAction,
+  printerSettings,
 }
 
 class LanHubMessage {
@@ -167,6 +168,21 @@ class LanHubMessage {
   /// the same money without a second implementation deciding what those are.
   final String? timerRecord;
 
+  /// [printerSettings] only: the sending terminal's printer entries, JSON —
+  /// the same `PrinterSettingEntry.encodeList` shape the local store and the
+  /// backend's `data[]` both use, so the receiver parses it with
+  /// `PrinterSettingEntry.listFromJsonList` and no LAN-specific format exists
+  /// to keep in step. Each entry carries its own `id`, deliberately: a
+  /// `printJobAnnounce` names only an entry id, so the two terminals have to
+  /// call the printer by the same name for the owner's lookup to hit.
+  final String? printerEntries;
+
+  /// [printerSettings] only: the sender's `cash_register_id`, or `''` when its
+  /// token carries no such claim — which is the case in the venue this was
+  /// built for. Sent anyway: the moment the backend starts issuing them, the
+  /// receiver has one without a protocol change.
+  final String? printerCashRegisterId;
+
   /// [leaseRejected] only: which terminal currently holds the table, when
   /// known (offline-first-target-architecture.md §6) — surfaced to the
   /// cashier as "already opened on another terminal", not required for the
@@ -205,6 +221,8 @@ class LanHubMessage {
     this.timerOrderId,
     this.timerActionName,
     this.timerRecord,
+    this.printerEntries,
+    this.printerCashRegisterId,
   });
 
   factory LanHubMessage.tableStatus({
@@ -415,6 +433,29 @@ class LanHubMessage {
         changeOrigin: origin,
       );
 
+  /// Broadcast by a terminal to tell the venue which printers are attached to
+  /// **it** — the routing knowledge the backend cannot currently supply.
+  ///
+  /// The deployed backend predates printer ownership and the POS token carries
+  /// no `cash_register_id`, so every printer row reads as unowned on every
+  /// terminal: the hub has no entry at all for the till's USB close-check
+  /// printer (and falls back to a hardcoded address), and the client dials a
+  /// kitchen printer it cannot route to. This message is how each side learns
+  /// what the other has, so `PrintQueueService` relays instead of guessing.
+  ///
+  /// Peer-to-peer like [localChange], and for the same reason: a printer can
+  /// hang off any terminal, not only the leader.
+  factory LanHubMessage.printerSettings({
+    required String terminalId,
+    required String cashRegisterId,
+    required String entriesJson,
+  }) => LanHubMessage(
+        type: LanHubMessageType.printerSettings,
+        printTerminalId: terminalId,
+        printerCashRegisterId: cashRegisterId,
+        printerEntries: entriesJson,
+      );
+
   String toJson() => jsonEncode({
         'type': type.name,
         'table_id': tableId,
@@ -447,6 +488,9 @@ class LanHubMessage {
         if (timerOrderId != null) 'timer_order_id': timerOrderId,
         if (timerActionName != null) 'timer_action': timerActionName,
         if (timerRecord != null) 'timer_record': timerRecord,
+        if (printerEntries != null) 'printer_entries': printerEntries,
+        if (printerCashRegisterId != null)
+          'printer_cash_register_id': printerCashRegisterId,
       });
 
   static LanHubMessage? tryParse(String raw) {
@@ -488,6 +532,8 @@ class LanHubMessage {
         timerOrderId: map['timer_order_id'] as String?,
         timerActionName: map['timer_action'] as String?,
         timerRecord: map['timer_record'] as String?,
+        printerEntries: map['printer_entries'] as String?,
+        printerCashRegisterId: map['printer_cash_register_id'] as String?,
       );
     } catch (_) {
       return null;

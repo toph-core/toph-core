@@ -8,13 +8,31 @@ import 'printer_setting_entry.dart';
 
 /// Printer sozlamalarining **shu qurilmadagi** manzili — sozlamalar ekrani
 /// to'g'ridan-to'g'ri shu yerga o'qiydi/yozadi (backendga bog'liq emas).
-/// Backenddagi `GET/POST/PUT/DELETE /api/v1/settings/printer-settings` faqat
-/// eng yaxshi urinish sifatida, alohida chaqiriladi — muvaffaqiyatsiz bo'lsa
-/// ham lokal holat o'zgarmasdan ishlashda davom etadi (`printers_section.dart`).
-/// `SyncPrinterSettingsUsecase` (login paytida) hali ham backend ro'yxati
-/// bilan almashtirib qo'yishi mumkin — shu sababli faqat lokal saqlangan
-/// (backendga hech qachon yuborilmagan) yozuvlar keyingi loginda yo'qolishi
-/// mumkin. Hozircha qasddan shunday — sinov bosqichi.
+/// Backenddagi `GET/POST/PUT/DELETE /api/v1/settings/printer-settings` —
+/// ikkinchi nusxa: sozlamalar ekrani yozuvni lokal saqlagandan keyin uni
+/// serverga yuboradi va **javobini kutadi** (`printers_section.dart`):
+///
+///  * yuborildi — yozuv backend bergan `id` ga o'tkaziladi
+///    ([adoptBackendId]), shu qurilmadagi USB nomi va chek kengligi u bilan
+///    birga ko'chadi. Shu sababli bitta printerning id'si ikki terminalda
+///    ajralib ketmaydi va keyingi tahrir `PUT` sifatida to'g'ri boradi;
+///  * yuborilmadi (tarmoq yo'q, server xato qaytardi) — yozuv `local-…` id
+///    bilan lokal qoladi, operatorga «faqat shu terminalda saqlandi» deb
+///    aytiladi, va keyingi login sinxronizatsiyasi uni **o'chirmaydi**:
+///    [mergeBackendPrinterSettings] backend ro'yxatiga faqat-lokal yozuvlarni
+///    qo'shib qo'yadi. Qayta saqlaganda `local-` id `POST` sifatida ketadi
+///    (`PUT /…/local-…` ni backend `uuid.Parse` da rad etadi), ya'ni yozuv
+///    o'zini tuzata oladi.
+/// Tells the other terminals which printers are attached to this one.
+///
+/// A plain callback, registered in `di.dart` as
+/// `LanHubService.announcePrinterSettings` — the same typedef-instead-of-import
+/// shape `PrintAnnounceBroadcaster` and `LanRelayHandler` already use, and for
+/// the same reason: the settings screen has to trigger an announcement, and
+/// nothing in the printer or presentation layer should have to import the LAN
+/// hub to do it.
+typedef PrinterSettingsAnnouncer = void Function();
+
 class PrinterConfigStorage {
   PrinterConfigStorage(this._prefs);
 
@@ -30,14 +48,110 @@ class PrinterConfigStorage {
     await _prefs.setString(_jsonKey, PrinterSettingEntry.encodeList(list));
   }
 
+  /// Login sinxronizatsiyasi (`SyncPrinterSettingsUsecase`) uchun: backend
+  /// ro'yxatini qabul qiladi, lekin **hali serverga yetib bormagan** yozuvlarni
+  /// o'chirib yubormaydi.
+  ///
+  /// Backendga yuborilgan har bir yozuv o'sha yerdagi `id` ni oladi
+  /// ([adoptBackendId]), demak `local-…` id qolgan yozuv — faqat shu qurilmada
+  /// bor yozuv. Uni backend ro'yxatida yo'q deb o'chirish operatorning ishini
+  /// yo'qotish bo'lardi (aynan shu tizimdan chiqqanda printerni «yeb qo'ygan»),
+  /// shuning uchun u ro'yxat oxiriga qo'shib qo'yiladi — oxiriga, chunki
+  /// [getCloseCheckPrinter] va [categoryPrinterForOrNull] «birinchi mos»
+  /// tanlaydi va backenddagi yozuvlarning ustunligi o'zgarmasligi kerak.
+  ///
+  /// Bundan mustasno: o'sha printer server ro'yxatida boshqa `id` bilan
+  /// turgan bo'lsa (masalan yuborish o'tgan-u, javobi yo'qolgan, yoki uni
+  /// qo'shni terminal qo'shgan) — nusxa saqlanmaydi, [applyPrinterSettingsList]
+  /// esa USB nomi va chek kengligini yangi id ga ko'chiradi. Aynanlik kaliti
+  /// [_identityKey] — backenddagi `uq_printer_settings_identity_active` bilan
+  /// bir xil.
+  ///
+  /// LAN orqali bilib olingan yozuvlar ([applyPeerPrinterSettings]) ham
+  /// saqlanadi, lekin boshqa sababdan: ular qo'shni terminalning bilimi, bu
+  /// terminal ularni serverga yubormaydi ham, «server o'chirgan» deb hisoblay
+  /// olmaydi ham. Server ro'yxatida o'sha printer bo'lsa — serverniki qoladi
+  /// (u haqiqiy yozuv), egalik belgisi esa uning id'siga ko'chiriladi, aks
+  /// holda ish yana noto'g'ri terminalga ketardi.
+  Future<void> mergeBackendPrinterSettings(
+    List<PrinterSettingEntry> remote,
+  ) async {
+    final remoteByIdentity = <String, PrinterSettingEntry>{
+      for (final e in remote) _identityKey(e): e,
+    };
+    final lanOwners = _lanOwners();
+
+    final kept = <PrinterSettingEntry>[];
+    final movedOwnership = <String, String>{};
+    for (final e in _entries()) {
+      final match = remoteByIdentity[_identityKey(e)];
+      final lanOwner = lanOwners[e.id];
+      if (lanOwner != null) {
+        if (match == null) {
+          kept.add(e);
+        } else if (match.id != e.id) {
+          movedOwnership[match.id] = lanOwner;
+        }
+        continue;
+      }
+      // Faqat lokal: hali serverga yetkazilmagan operator yozuvi.
+      if (isLocalId(e.id) && match == null) kept.add(e);
+    }
+
+    final next = [...remote, ...kept];
+    if (movedOwnership.isNotEmpty) {
+      lanOwners.addAll(movedOwnership);
+      await _prefs.setString(_lanOwnersKey, jsonEncode(lanOwners));
+    }
+    await applyPrinterSettingsList(next);
+    await _pruneLanOwners(next.map((e) => e.id).toSet());
+  }
+
+  /// Backend yozuvni qabul qilgach — lokal `local-…` id ni backend bergan
+  /// [backendId] ga almashtiradi.
+  ///
+  /// Shu qurilmadagi USB printer nomi va chek kengligi yozuv id'si bo'yicha
+  /// saqlanadi, shuning uchun almashtirish [applyPrinterSettingsList] orqali
+  /// o'tadi: [_rekeyDeviceLocalState] ikkalasini aynanlik bo'yicha yangi id ga
+  /// ko'chiradi. Eski id endi hech qanday yozuvga tegishli emas — uning
+  /// qoldiqlari o'chiriladi (ko'chirishdan **keyin**).
+  Future<void> adoptBackendId({
+    required String localId,
+    required String backendId,
+    String? branchId,
+  }) async {
+    final from = localId.trim();
+    final to = backendId.trim();
+    if (from.isEmpty || to.isEmpty || from == to) return;
+
+    final list = _entries();
+    final idx = list.indexWhere((e) => e.id == from);
+    if (idx < 0) return;
+
+    final adopted = list[idx].copyWith(id: to, branchId: branchId);
+    list.removeAt(idx);
+    // Backend id shu yerda allaqachon bo'lsa (masalan avvalgi sinxronizatsiya
+    // olib kelgan) — ikki nusxa qoldirilmaydi.
+    final dup = list.indexWhere((e) => e.id == to);
+    if (dup >= 0) {
+      list[dup] = adopted;
+    } else {
+      list.insert(idx, adopted);
+    }
+    await applyPrinterSettingsList(list);
+    await removeUsbPrinterName(from);
+    await removePaperSize(from);
+  }
+
   /// Carries this device's per-entry state across a change of entry id.
   ///
-  /// A printer added on this terminal gets a local id (`generateLocalId`)
-  /// because the push to the backend is best-effort and its response is not
-  /// waited on. The backend assigns its own UUID, and the next login's
-  /// `SyncPrinterSettingsUsecase` replaces the whole list with the server's —
-  /// at which point the two maps keyed by entry id, the USB printer name and
-  /// the paper size, point at an id nothing has any more.
+  /// A printer added on this terminal starts with a local id
+  /// (`generateLocalId`) and keeps it until the backend answers with its own
+  /// UUID — an answer that never comes while the terminal is offline. Either
+  /// [adoptBackendId] or the next login's `SyncPrinterSettingsUsecase`
+  /// eventually swaps that id out, and at that moment the two maps keyed by
+  /// entry id, the USB printer name and the paper size, would point at an id
+  /// nothing has any more.
   ///
   /// For a USB printer that is not cosmetic: the Windows printer name is the
   /// only thing that says *which* attached printer to drive, and without it
@@ -288,10 +402,150 @@ class PrinterConfigStorage {
     }
   }
 
+  // ─── Printers other terminals have told us about (LAN) ──────────────
+  //
+  // The venue this exists for has no ownership data at all: the deployed
+  // backend predates `owner_cash_register_id`, and the POS token carries no
+  // `cash_register_id` claim, so `myCashRegisterId` is `''` on every terminal
+  // and every printer reads as unowned. Two consequences, both seen in
+  // production: the hub has no `close_check` entry for the till's USB printer
+  // and falls back to the hardcoded `192.168.1.222`, and the client dials the
+  // kitchen printer it cannot route to instead of relaying to the hub.
+  //
+  // So each terminal tells its peers, over the LAN hub, which printer entries
+  // are attached to *it* ([LanHubMessage.printerSettings]). What arrives is
+  // recorded here: the entry itself in the normal list, so every lookup on the
+  // print path finds it, plus this map from entry id to the **LAN terminal
+  // id** that owns it.
+  //
+  // Why a separate map and not `ownerCashRegisterId`: that field goes to the
+  // backend verbatim as `owner_cash_register_id`, where a non-UUID is
+  // rejected outright. A LAN terminal id is not a cash register id and must
+  // never be written into one. Keeping them apart also means the backend's
+  // own ownership keeps winning the moment it starts issuing cash register
+  // ids — nothing here has to be undone.
+
+  static const _lanOwnersKey = 'printer_lan_owners_json';
+
+  Map<String, String> _lanOwners() {
+    final raw = _prefs.getString(_lanOwnersKey);
+    if (raw == null || raw.isEmpty) return {};
+    try {
+      final map = jsonDecode(raw) as Map;
+      return map.map((k, v) => MapEntry(k.toString(), v.toString()));
+    } catch (_) {
+      return {};
+    }
+  }
+
+  /// The LAN terminal id that told us this printer is attached to it, or
+  /// `null` for an entry this terminal holds in its own right (created here,
+  /// or synced from the backend).
+  String? lanOwnerOf(String entryId) {
+    final id = _lanOwners()[entryId];
+    return (id == null || id.isEmpty) ? null : id;
+  }
+
+  /// Bu yozuvni qo'shni terminal e'lon qilgan — shu qurilmaniki emas.
+  bool isLanLearned(String entryId) => lanOwnerOf(entryId) != null;
+
+  /// Shu terminalning **o'z** printerlari — qo'shnilarga e'lon qilinadigan
+  /// ro'yxat. LAN orqali bilib olinganlari qaytarilmaydi: ular boshqa
+  /// terminalning bilimi, uni aylantirib qaytarish egalikni chalkashtiradi.
+  List<PrinterSettingEntry> entriesOwnedByThisTerminal() {
+    final lan = _lanOwners();
+    return _entries().where((e) => !lan.containsKey(e.id)).toList();
+  }
+
+  /// Qo'shni terminal e'lon qilgan printerlarini qabul qiladi.
+  ///
+  /// Rules, in the order they matter:
+  ///
+  ///  * **A printer this terminal already holds is left alone.** Matching is
+  ///    on [_identityKey], the same tuple the backend's
+  ///    `uq_printer_settings_identity_active` uses, so "the same printer under
+  ///    a different id" counts as already held. A peer's announcement never
+  ///    edits or re-keys an entry the operator created here, and never takes
+  ///    ownership of one: if both terminals consider a printer theirs, both
+  ///    keep trying it directly, and a job only relays if the connection
+  ///    actually fails. Marking it as the peer's on both sides would leave
+  ///    nobody willing to claim.
+  ///  * **Everything else is added under the peer's own entry id**, unchanged.
+  ///    That id agreement is the point: `printJobAnnounce` carries only an
+  ///    entry id, so the owner's lookup only hits if both sides call the
+  ///    printer by the same name.
+  ///  * **The peer's list is authoritative for its own entries.** One it no
+  ///    longer sends has been deleted there, so it goes here too.
+  ///
+  /// Nothing learned this way is ever pushed to the backend — that is the
+  /// peer's row to push, not ours.
+  Future<void> applyPeerPrinterSettings({
+    required String peerTerminalId,
+    required List<PrinterSettingEntry> entries,
+  }) async {
+    final peer = peerTerminalId.trim();
+    if (peer.isEmpty) return;
+
+    final current = _entries();
+    final lanOwners = _lanOwners();
+
+    // What this terminal holds in its own right — never touched below.
+    final ownIdentities = <String>{
+      for (final e in current)
+        if (!lanOwners.containsKey(e.id)) _identityKey(e),
+    };
+
+    final incoming = <PrinterSettingEntry>[];
+    for (final e in entries) {
+      if (e.id.trim().isEmpty) continue;
+      if (ownIdentities.contains(_identityKey(e))) continue;
+      incoming.add(e);
+    }
+    final incomingIds = incoming.map((e) => e.id).toSet();
+
+    final next = <PrinterSettingEntry>[];
+    for (final e in current) {
+      // This peer's previous announcement: replaced wholesale by the one in
+      // hand, so a printer deleted there disappears here too.
+      if (lanOwners[e.id] == peer && !incomingIds.contains(e.id)) {
+        lanOwners.remove(e.id);
+        continue;
+      }
+      if (incomingIds.contains(e.id)) continue; // re-added below, fresher
+      next.add(e);
+    }
+    for (final e in incoming) {
+      next.add(e);
+      lanOwners[e.id] = peer;
+    }
+
+    await _prefs.setString(_lanOwnersKey, jsonEncode(lanOwners));
+    await applyPrinterSettingsList(next);
+  }
+
+  /// Ro'yxatda qolmagan yozuvlar uchun LAN egalik yozuvlarini tozalaydi.
+  Future<void> _pruneLanOwners(Set<String> survivingIds) async {
+    final lanOwners = _lanOwners();
+    final before = lanOwners.length;
+    lanOwners.removeWhere((id, _) => !survivingIds.contains(id));
+    if (lanOwners.length != before) {
+      await _prefs.setString(_lanOwnersKey, jsonEncode(lanOwners));
+    }
+  }
+
+  /// Backend hali ko'rmagan yozuv id'sining prefiksi. Backend id'lari — UUID,
+  /// shuning uchun prefiks ikkisini aralashtirmaydi.
+  static const localIdPrefix = 'local-';
+
   /// Backend hali ko'rmagan yangi yozuv uchun — vaqt tamg'asi asosida,
   /// shu qurilmada takrorlanmaydigan id.
   String generateLocalId() =>
-      'local-${DateTime.now().microsecondsSinceEpoch}';
+      '$localIdPrefix${DateTime.now().microsecondsSinceEpoch}';
+
+  /// [id] — faqat shu qurilmada yaratilgan, backend hali bilmaydigan yozuvniki.
+  /// Bunga `PUT /…/{id}` yuborib bo'lmaydi: backend id ni `uuid.Parse` qiladi
+  /// va rad etadi — shuning uchun bunday yozuv har doim `POST` bilan ketadi.
+  static bool isLocalId(String id) => id.trim().startsWith(localIdPrefix);
 
   /// `GET printer-settings` muvaffaqiyatli yozilgan bo‘lsa `true` (bo‘sh ro‘yxat ham `true`).
   bool get hasPrinterSettingsEntries => _entries().isNotEmpty;

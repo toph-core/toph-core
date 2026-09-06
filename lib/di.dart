@@ -452,6 +452,21 @@ Future<void> initDi({DiOverrides? overrides}) async {
     if (connected) printQueueService.retryPendingRelays();
   });
 
+  // The same three moments, for the routing knowledge itself: a terminal that
+  // has just joined (or just been joined) has to say which printers hang off
+  // it, or its peers go on dialling printers they cannot reach. The third
+  // moment — a printer added or edited here — is announced by the settings
+  // screen itself, which is the only place that knows a change happened.
+  inject.registerSingleton<PrinterSettingsAnnouncer>(
+    lanHubService.announcePrinterSettings,
+  );
+  lanHubService.clientCountListenable.addListener(
+    lanHubService.announcePrinterSettings,
+  );
+  lanHubService.onClientConnectionChanged.listen((connected) {
+    if (connected) lanHubService.announcePrinterSettings();
+  });
+
   _dataSources();
   _repositories();
   _useCase();

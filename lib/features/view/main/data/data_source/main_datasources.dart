@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:mary_ai_pos/core/api/dio_client.dart';
 import 'package:mary_ai_pos/core/api/dio_exception_handler.dart';
 import 'package:mary_ai_pos/core/api/list_api.dart';
+import 'package:mary_ai_pos/core/service/printer/printer_config_storage.dart';
 import 'package:mary_ai_pos/core/service/printer/printer_setting_entry.dart';
 import 'package:mary_ai_pos/core/error/failure.dart';
 import 'package:mary_ai_pos/features/view/auth/data/models/user/user_model.dart';
@@ -26,6 +27,46 @@ import 'package:mary_ai_pos/features/view/main/domain/entities/archive_detail_en
 /// one.
 Map<String, dynamic> _asMap(dynamic raw) =>
     raw is Map ? Map<String, dynamic>.from(raw) : const {};
+
+/// The address an addressless (`usb`) printer is re-sent with when the server
+/// still insists on one.
+///
+/// The deployed backend predates `75_printer_settings_owner`: its
+/// `validatePrinterAddress` has no addressless branch and answers a USB create
+/// with HTTP 400 "ip is required" / "ip talab qilinadi". That rejection is the
+/// reason a USB printer never persisted and never reached the other terminal.
+///
+/// Sent only as a fallback, never as the first attempt: the current backend
+/// blanks the address of an addressless printer anyway
+/// (`normalizePrinterAddress`), so the moment it ships the clean payload is
+/// accepted and this retry stops happening on its own — nothing has to be
+/// undone here.
+///
+/// Its limitation, accepted knowingly: the old schema's unique index is
+/// `(ip, port, type)`, so every USB printer in a brand collapses onto one
+/// key and the brand can hold at most two of them (one per `type`) before the
+/// server starts answering "duplicate". The venue has one. The new backend's
+/// `uq_printer_settings_identity_active` includes owner and name, which
+/// removes the limit — that, not a per-terminal placeholder port, is the fix.
+const _legacyPlaceholderIp = '127.0.0.1';
+const _legacyPlaceholderPort = 9100;
+
+/// Whether [e] is the old backend refusing an addressless printer for want of
+/// an address — the one rejection the placeholder retry answers.
+///
+/// Deliberately narrow: a 400 on a printer create that is *not* about the
+/// address (a duplicate, a bad category id) must surface as the failure it is.
+bool _rejectedForMissingAddress(DioException e, Map<String, dynamic> body) {
+  if (e.response?.statusCode != 400) return false;
+  final connection =
+      (body['connection_type'] ?? '').toString().trim().toLowerCase();
+  final ip = (body['ip'] ?? '').toString().trim();
+  // Only an addressless printer sent without an address can be answered this
+  // way; anything else with an ip complaint has a real ip problem.
+  if (connection != 'usb' || ip.isNotEmpty) return false;
+  final text = e.response?.data.toString().toLowerCase() ?? '';
+  return text.contains('ip is required') || text.contains('ip talab qilinadi');
+}
 
 abstract class MainDataSources {
   /// All tables across every hall. The per-hall read that used to sit beside
@@ -108,11 +149,22 @@ abstract class MainDataSources {
   /// `PUT /api/v1/branches/{id}` — updates `default_service_percent`.
   Future<Either<Failure, bool>> saveServiceCharge(String branchId, double value);
 
-  /// `POST`/`PUT /api/v1/settings/printer-settings[/{id}]` — best-effort
-  /// backend mirror of a printer routing entry. Local storage
-  /// (`PrinterConfigStorage`) is always the source of truth on this
-  /// terminal; this is a background sync attempt, not a required step.
-  Future<Either<Failure, bool>> pushPrinterSetting(
+  /// `POST`/`PUT /api/v1/settings/printer-settings[/{id}]` — the backend copy
+  /// of a printer routing entry. Local storage (`PrinterConfigStorage`) stays
+  /// the source of truth on this terminal, but the caller waits for this: a
+  /// printer only the local store knows about is invisible to the other
+  /// terminals and does not survive the next login sync.
+  ///
+  /// Returns the record the server stored, whose `id` the caller adopts
+  /// locally (`PrinterConfigStorage.adoptBackendId`) so the same printer does
+  /// not end up under two different ids on two terminals. `null` on the right
+  /// means "the server accepted it but did not send a parseable record back" —
+  /// a success with nothing to adopt, not a failure.
+  ///
+  /// [existingId] beginning with `PrinterConfigStorage.localIdPrefix` is sent
+  /// as a create, not an update: it is an id the backend has never issued and
+  /// `PUT /…/local-…` is rejected by its `uuid.Parse`.
+  Future<Either<Failure, PrinterSettingEntry?>> pushPrinterSetting(
     Map<String, dynamic> body, {
     String? existingId,
   });
@@ -956,17 +1008,44 @@ class MainDataSourcesImpl implements MainDataSources {
   }
 
   @override
-  Future<Either<Failure, bool>> pushPrinterSetting(
+  Future<Either<Failure, PrinterSettingEntry?>> pushPrinterSetting(
     Map<String, dynamic> body, {
     String? existingId,
   }) async {
     try {
-      if (existingId == null) {
-        await _client.post(ListAPI.printerSettings, data: body);
-      } else {
-        await _client.put('${ListAPI.printerSettings}/$existingId', data: body);
+      final id = existingId?.trim() ?? '';
+      // A `local-…` id is one this device invented while the backend was
+      // unreachable; the server has never issued it and rejects it in
+      // `uuid.Parse`, so the entry is created rather than updated. Without
+      // this, an entry whose create failed could never be pushed again.
+      final isUpdate = id.isNotEmpty && !PrinterConfigStorage.isLocalId(id);
+      Future<Response<dynamic>> send(Map<String, dynamic> payload) => isUpdate
+          ? _client.put('${ListAPI.printerSettings}/$id', data: payload)
+          : _client.post(ListAPI.printerSettings, data: payload);
+
+      Response<dynamic> response;
+      try {
+        response = await send(body);
+      } on DioException catch (e) {
+        if (!_rejectedForMissingAddress(e, body)) rethrow;
+        // Retry once with a placeholder address — see [_legacyPlaceholderIp].
+        // Only the wire payload carries it; the local entry keeps its empty
+        // address, so nothing on the print path ever sees 127.0.0.1.
+        response = await send({
+          ...body,
+          'ip': _legacyPlaceholderIp,
+          'port': _legacyPlaceholderPort,
+        });
       }
-      return const Right(true);
+
+      // `{status, message, data: {...}, code}`, and the bare row is tolerated
+      // too — same shape handling as `getPrinterSettings`.
+      final root = _asMap(response.data);
+      final envelope = root['data'];
+      final record = _asMap(envelope is Map ? envelope : root);
+      final saved = record['id']?.toString().trim() ?? '';
+      if (saved.isEmpty) return const Right(null);
+      return Right(PrinterSettingEntry.fromJson(record));
     } on DioException catch (exception) {
       return Left(handleDioException(exception));
     } catch (e, st) {

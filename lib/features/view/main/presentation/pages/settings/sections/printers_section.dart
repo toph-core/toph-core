@@ -47,7 +47,24 @@ class _PrintersSectionState extends State<PrintersSection> {
     });
   }
 
+  /// Bu yozuvni qo'shni terminal LAN orqali e'lon qilgan — u yerdagi
+  /// printer, shu qurilmada faqat marshrutlash uchun ko'rinadi.
+  bool _isPeerEntry(PrinterSettingEntry e) => _storage.isLanLearned(e.id);
+
+  static const _peerEntryNotice =
+      'Bu printer boshqa terminalga ulangan — uni o\'sha terminalning '
+      'sozlamalaridan o\'zgartiring. Cheklar bu yerdan LAN orqali avtomatik '
+      'yuboriladi.';
+
   Future<void> _openEditor({PrinterSettingEntry? existing}) async {
+    // A peer's row is peer knowledge, not this terminal's to edit: saving it
+    // here would push another terminal's printer to the backend under this
+    // terminal's hand, and the peer's next announcement would overwrite it
+    // anyway.
+    if (existing != null && _isPeerEntry(existing)) {
+      showErrorMessage(context, _peerEntryNotice);
+      return;
+    }
     final saved = await showDialog<bool>(
       context: context,
       barrierDismissible: false,
@@ -60,10 +77,17 @@ class _PrintersSectionState extends State<PrintersSection> {
     );
     if (saved == true && mounted) {
       _loadAll();
+      // Tell the other terminals what changed here, so a job for this printer
+      // is relayed to this machine rather than dialled from theirs.
+      inject<PrinterSettingsAnnouncer>()();
     }
   }
 
   Future<void> _confirmDelete(PrinterSettingEntry item) async {
+    if (_isPeerEntry(item)) {
+      showErrorMessage(context, _peerEntryNotice);
+      return;
+    }
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => _ConfirmDeleteDialog(
@@ -76,18 +100,23 @@ class _PrintersSectionState extends State<PrintersSection> {
     // Lokal — har doim ishlaydi. Backend — eng yaxshi urinish, muvaffaqiyatsiz
     // bo'lsa ham lokal o'chirish kuchda qoladi (faqat sinov uchun jim log).
     await _storage.deleteEntry(item.id);
-    unawaited(
-      _printers.deletePrinterSetting(item.id).then((result) {
-        result.fold(
-          (f) => debugPrint('[PrintersSection] Backend delete xatosi (e\'tiborsiz): $f'),
-          (_) {},
-        );
-      }),
-    );
+    // `local-…` — backend bu yozuvni hech qachon ko'rmagan (uni `uuid.Parse`
+    // da rad etadi), so'rov yuborishning ma'nosi yo'q.
+    if (!PrinterConfigStorage.isLocalId(item.id)) {
+      unawaited(
+        _printers.deletePrinterSetting(item.id).then((result) {
+          result.fold(
+            (f) => debugPrint('[PrintersSection] Backend delete xatosi (e\'tiborsiz): $f'),
+            (_) {},
+          );
+        }),
+      );
+    }
     if (!mounted) return;
     inject<PrinterConfigStorage>().removeUsbPrinterName(item.id);
     inject<PrinterConfigStorage>().removePaperSize(item.id);
     _loadAll();
+    inject<PrinterSettingsAnnouncer>()();
   }
 
   String _categoryName(String id) {
@@ -174,8 +203,9 @@ class _PrinterCardState extends State<_PrinterCard> {
     // registered to another terminal it would simply sit out its socket
     // timeout and report a failure that says nothing useful — better to say
     // where the test has to be run from.
-    if (!entry.isUnowned &&
-        !inject<PrinterConfigStorage>().isOwnedByThisTerminal(entry)) {
+    final storage = inject<PrinterConfigStorage>();
+    if (storage.isLanLearned(entry.id) ||
+        (!entry.isUnowned && !storage.isOwnedByThisTerminal(entry))) {
       showErrorMessage(
         context,
         'Bu printer boshqa terminalga biriktirilgan — testni o\'sha '
@@ -294,6 +324,16 @@ class _PrinterCardState extends State<_PrinterCard> {
                         color: typeColor,
                         label: isCloseCheck ? S.current.strCheckPrinter : S.current.strCategory,
                       ),
+                      // A printer the neighbouring terminal announced over the
+                      // LAN. Shown, because the operator needs to know the
+                      // venue has it — but it is that terminal's to change.
+                      if (inject<PrinterConfigStorage>().isLanLearned(entry.id)) ...[
+                        const SizedBox(width: 6),
+                        _Badge(
+                          color: colors.textSecondary,
+                          label: 'Boshqa terminal',
+                        ),
+                      ],
                     ],
                   ),
                   const SizedBox(height: 6),
@@ -694,6 +734,16 @@ class _PrinterEditDialogState extends State<_PrinterEditDialog> {
   final Set<String> _selectedCategoryIds = {};
   bool _saving = false;
   String? _saveError;
+
+  /// Shu dialogda yaratilgan yozuvning lokal id'si — faqat yangi printer
+  /// uchun va faqat backendga yetkazilgunicha.
+  String? _localEntryId;
+
+  /// Lokal saqlandi, lekin backendga yuborib bo'lmadi — operatorga aytiladigan
+  /// ogohlantirish. `null` bo'lmasa dialog yopilmagan holda turadi: o'sha
+  /// Saqlash tugmasi qayta urinish uchun qoladi, yopish esa ro'yxatni
+  /// yangilaydi (yozuv lokal saqlangan, uni ko'rsatish kerak).
+  String? _localOnlyWarning;
   bool _testing = false;
   bool? _testOk; // null = no test run yet
   String? _testMessage;
@@ -817,10 +867,16 @@ class _PrinterEditDialogState extends State<_PrinterEditDialog> {
     return null;
   }
 
-  /// Lokal saqlash — har doim ishlaydi, birlamchi manba. Backendga yuborish
-  /// alohida, eng yaxshi urinish sifatida ([_pushToBackendBestEffort]): u
-  /// muvaffaqiyatsiz bo'lsa ham (masalan tarmoq yo'q) Save baribir
-  /// muvaffaqiyatli yakunlanadi — hozircha shu tarzda sinovdan o'tkazilmoqda.
+  /// Lokal saqlash — har doim ishlaydi, birlamchi manba. Undan keyin yozuv
+  /// backendga yuboriladi va **javobi kutiladi** ([_pushToBackend]):
+  ///
+  ///  * yuborildi — dialog yopiladi, yozuv backend id'siga o'tkaziladi;
+  ///  * yuborilmadi — lokal saqlangani kuchda qoladi, lekin dialog yopilmaydi:
+  ///    operator printer faqat shu terminalda turganini ko'radi va tarmoq
+  ///    tiklanganda Saqlashni qayta bosa oladi. Ilgari bu holat jim
+  ///    `debugPrint` bo'lib ketardi — printer qo'shildi ko'rinardi-yu,
+  ///    qo'shni terminal uni umuman bilmasdi, tizimdan chiqilganda esa yo'q
+  ///    bo'lardi.
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
     if (_type == 'category' && _selectedCategoryIds.isEmpty) {
@@ -835,6 +891,7 @@ class _PrinterEditDialogState extends State<_PrinterEditDialog> {
     setState(() {
       _saving = true;
       _saveError = null;
+      _localOnlyWarning = null;
     });
 
     // USB has no address. It used to be given a placeholder `127.0.0.1:9100`
@@ -847,7 +904,11 @@ class _PrinterEditDialogState extends State<_PrinterEditDialog> {
     final isUsb = _connection == 'usb';
     final ip = isUsb ? '' : _ipCtrl.text.trim();
     final port = isUsb ? 0 : int.parse(_portCtrl.text.trim());
-    final entryId = widget.existing?.id ?? widget.storage.generateLocalId();
+    // Bitta lokal id — «Qayta urinish» bosilganda yangisi yaratilmaydi,
+    // aks holda har urinish ro'yxatga yana bitta nusxa qo'shardi.
+    final entryId =
+        widget.existing?.id ?? _localEntryId ?? widget.storage.generateLocalId();
+    _localEntryId = entryId;
     final entry = PrinterSettingEntry(
       id: entryId,
       ip: ip,
@@ -875,18 +936,32 @@ class _PrinterEditDialogState extends State<_PrinterEditDialog> {
       await cache.removeUsbPrinterName(entryId);
     }
 
-    unawaited(_pushToBackendBestEffort(entry));
+    final pushed = await _pushToBackend(entry);
 
     if (!mounted) return;
+    if (!pushed) {
+      setState(() {
+        _saving = false;
+        _localOnlyWarning =
+            'Printer faqat shu terminalda saqlandi — serverga yuborib '
+            'bo\'lmadi. Boshqa terminallar uni ko\'rmaydi, tizimdan '
+            'chiqsangiz esa yo\'qoladi. Aloqa tiklangach shu oynada yana '
+            'saqlang.';
+      });
+      return;
+    }
     Navigator.pop(context, true);
   }
 
-  /// Backendga yozishga urinadi — muvaffaqiyat/muvaffaqiyatsizligi Save
-  /// natijasiga ta'sir qilmaydi, faqat log qoldiradi. Yangi yozuv uchun
-  /// backend berishi mumkin bo'lgan boshqa id'ga qasddan almashtirilmaydi —
-  /// lokal [entryId] shu qurilmada USB tanlovi va print-time qidiruvi uchun
-  /// yagona manba bo'lib qoladi.
-  Future<void> _pushToBackendBestEffort(PrinterSettingEntry entry) async {
+  /// Backendga yozadi. Muvaffaqiyatli bo'lsa `true`, va yozuv backend bergan
+  /// `id` ga o'tkaziladi ([PrinterConfigStorage.adoptBackendId]) — shu
+  /// qurilmadagi USB nomi va chek kengligi u bilan birga ko'chadi.
+  ///
+  /// Ilgari lokal `local-…` id qasddan qoldirilar edi. Natijada bir printer
+  /// ikki terminalda ikki xil id ostida turar, keyingi tahrir esa
+  /// `PUT /…/local-…` bo'lib backend tomonidan rad etilardi (u id ni
+  /// `uuid.Parse` qiladi) — ya'ni yozuv o'zini hech qachon tuzata olmasdi.
+  Future<bool> _pushToBackend(PrinterSettingEntry entry) async {
     final body = {
       'ip': entry.ip,
       'port': entry.port,
@@ -902,15 +977,32 @@ class _PrinterEditDialogState extends State<_PrinterEditDialog> {
     };
     final result = await widget.controller.pushPrinterSetting(
       body,
+      // `local-…` bo'lsa data-source uni yaratish (`POST`) sifatida yuboradi.
       existingId: widget.existing?.id,
     );
+    PrinterSettingEntry? saved;
+    var ok = true;
     result.fold(
-      (f) => debugPrint(
-        '[PrinterEditDialog] Backend yozish xatosi (e\'tiborsiz, '
-        'lokal saqlandi): $f',
-      ),
-      (_) => debugPrint('[PrinterEditDialog] Backendga yozildi: ${entry.id}'),
+      (f) {
+        debugPrint('[PrinterEditDialog] Backend yozish xatosi: $f');
+        ok = false;
+      },
+      // `null` — server qabul qildi, lekin javobida yozuv yo'q: id ni
+      // almashtirmaymiz, ammo bu muvaffaqiyat.
+      (record) => saved = record,
     );
+    if (!ok) return false;
+
+    final backendId = saved?.id ?? '';
+    if (backendId.isNotEmpty && backendId != entry.id) {
+      await widget.storage.adoptBackendId(
+        localId: entry.id,
+        backendId: backendId,
+        branchId: (saved?.branchId ?? '').isNotEmpty ? saved!.branchId : null,
+      );
+    }
+    debugPrint('[PrinterEditDialog] Backendga yozildi: $backendId');
+    return true;
   }
 
   /// IP/port/ulanish turini — hozir formaga kiritilgan qiymatlarni, saqlash
@@ -978,7 +1070,7 @@ class _PrinterEditDialogState extends State<_PrinterEditDialog> {
               subtitle: isEdit
                   ? 'Printer sozlamalarini o\'zgartiring'
                   : 'Yangi ESC/POS TCP printerni qo\'shing',
-              onClose: () => Navigator.pop(context, false),
+              onClose: () => Navigator.pop(context, _localOnlyWarning != null),
             ),
             Flexible(
               child: SingleChildScrollView(
@@ -1231,6 +1323,38 @@ class _PrinterEditDialogState extends State<_PrinterEditDialog> {
                           ),
                         ),
                       ],
+                      // Lokal saqlandi, serverga yetmadi — xato emas, lekin
+                      // jim ham qoldirilmaydi: printer shu terminaldan
+                      // tashqarida yo'q.
+                      if (_localOnlyWarning != null) ...[
+                        const SizedBox(height: 14),
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: colors.systemAccent.withOpacity(0.12),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Icon(Icons.warning_amber_rounded,
+                                  size: 16, color: colors.systemAccent),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  _localOnlyWarning!,
+                                  style: TextStyle(
+                                    color: colors.systemAccent,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w500,
+                                    fontFamily: 'Inter',
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                       if (_saveError != null) ...[
                         const SizedBox(height: 14),
                         Container(
@@ -1278,13 +1402,23 @@ class _PrinterEditDialogState extends State<_PrinterEditDialog> {
                   ),
                   Row(
                     children: [
+                      // Lokal saqlangandan keyin yopish — «bekor qilish» emas:
+                      // yozuv ro'yxatda bor, ekran uni ko'rsatishi uchun
+                      // `true` qaytariladi.
                       _DialogButton.ghost(
-                        label: S.current.strCancel,
+                        label: _localOnlyWarning == null
+                            ? S.current.strCancel
+                            : 'Yopish',
                         onPressed: _saving
                             ? null
-                            : () => Navigator.pop(context, false),
+                            : () => Navigator.pop(
+                                  context,
+                                  _localOnlyWarning != null,
+                                ),
                       ),
                       const SizedBox(width: 8),
+                      // Yorliq o'zgarmaydi — ogohlantirishdan keyin ham aynan
+                      // shu tugma qayta yuborishga urinadi.
                       _SavingButton(
                         saving: _saving,
                         label: isEdit ? S.current.strSave : S.current.strAdd,

@@ -59,7 +59,11 @@ abstract class MainRepository {
 
   Future<Either<Failure, bool>> saveServiceCharge(String branchId, double value);
 
-  Future<Either<Failure, bool>> pushPrinterSetting(
+  /// Backendga printer yozuvini yozadi va **server saqlagan yozuvni**
+  /// qaytaradi — chaqiruvchi uning `id` sini lokal yozuvga o'tkazadi
+  /// (`PrinterConfigStorage.adoptBackendId`). O'ng tomondagi `null` — server
+  /// qabul qildi, lekin javobida o'qib bo'ladigan yozuv yo'q.
+  Future<Either<Failure, PrinterSettingEntry?>> pushPrinterSetting(
     Map<String, dynamic> body, {
     String? existingId,
   });

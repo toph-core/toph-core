@@ -16,7 +16,10 @@ class SyncPrinterSettingsUsecase extends UseCase<Unit, NoParams> {
     return result.fold(
       (l) async => Left<Failure, Unit>(l),
       (list) async {
-        await _storage.applyPrinterSettingsList(list);
+        // Almashtirish emas, birlashtirish: serverga hali yetib bormagan
+        // (`local-…`) yozuv login paytida o'chib ketmasligi kerak — aynan shu
+        // operatorning qo'shgan printerini «yeb qo'yardi».
+        await _storage.mergeBackendPrinterSettings(list);
         return const Right(unit);
       },
     );

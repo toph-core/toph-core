@@ -124,7 +124,7 @@ class MainRepositoryImpl implements MainRepository {
       _dataSources.saveServiceCharge(branchId, value);
 
   @override
-  Future<Either<Failure, bool>> pushPrinterSetting(
+  Future<Either<Failure, PrinterSettingEntry?>> pushPrinterSetting(
     Map<String, dynamic> body, {
     String? existingId,
   }) => _dataSources.pushPrinterSetting(body, existingId: existingId);
