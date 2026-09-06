@@ -18,6 +18,7 @@ import 'package:mary_ai_pos/core/service/printer/printer_service.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/table_timer/table_timer_response_model.dart';
 import 'package:mary_ai_pos/features/view/main/domain/repository/orders_repository.dart';
 import 'package:mary_ai_pos/features/view/main/domain/repository/payment_repository.dart';
+import 'package:mary_ai_pos/features/view/main/domain/repository/service_charge_repository.dart';
 import 'package:mary_ai_pos/features/view/main/domain/repository/table_timer_local_repository.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/main/main_cubit.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/orders/orders_bloc.dart';
@@ -41,6 +42,7 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
   final OrdersRepository _ordersRepository;
   final PaymentRepository _paymentRepository;
   final PrinterService _printerService;
+  final ServiceChargeRepository _serviceChargeRepository;
 
   StreamSubscription<ArchiveDetailModel?>? _detailSub;
 
@@ -62,7 +64,37 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
   String? get timerPricePerHour => _timerPricePerHour;
   double get servicePercent => _servicePercent;
 
-  void setServicePercent(double percent) => _servicePercent = percent;
+  /// The percent applied when neither the bill nor the branch names one, so a
+  /// service fee is always present and charged rather than silently dropped.
+  static const double kDefaultServicePercent = 20;
+
+  /// Resolves the service percent for this bill and stores it on the bloc.
+  ///
+  /// Three tiers, in the order the money actually depends on: the percent
+  /// frozen onto the bill when it was created ([fromArgs]) wins, because a bill
+  /// must keep charging what it was opened at even if the branch setting
+  /// changes underneath it; then the branch's configured percent; then
+  /// [kDefaultServicePercent].
+  ///
+  /// This lived in `PaymentScreen`, which reached `ServiceChargeRepository`
+  /// out of the service locator from inside a widget — the §7 guardrail
+  /// `architecture_guard_test.dart` exists to prevent. [branchId] is passed in
+  /// rather than resolved here because the bloc has no session of its own, and
+  /// a bloc that reads the repository is the point of the rule; a bloc that
+  /// takes an id is not.
+  void resolveServicePercent({
+    required double fromArgs,
+    required String branchId,
+  }) {
+    if (fromArgs > 0) {
+      _servicePercent = fromArgs;
+      return;
+    }
+    final configured = branchId.isEmpty
+        ? 0.0
+        : (_serviceChargeRepository.getServicePercent(branchId) ?? 0.0);
+    _servicePercent = configured > 0 ? configured : kDefaultServicePercent;
+  }
 
   void setTimerInfo({
     DateTime? startedAt,
@@ -80,9 +112,11 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
     required OrdersRepository ordersRepository,
     required PaymentRepository paymentRepository,
     required PrinterService printerService,
+    required ServiceChargeRepository serviceChargeRepository,
   })  : _ordersRepository = ordersRepository,
         _paymentRepository = paymentRepository,
         _printerService = printerService,
+        _serviceChargeRepository = serviceChargeRepository,
         super(const PaymentState()) {
     on<_Started>(_onStarted);
     on<_GetDetail>(_onGetDetail);

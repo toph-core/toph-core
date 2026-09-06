@@ -30,6 +30,7 @@ import 'package:mary_ai_pos/core/service/printer/printer_service.dart';
 import 'package:mary_ai_pos/core/services/lan_hub/lan_hub_service.dart';
 import 'package:mary_ai_pos/features/view/main/data/repository/orders_repository_impl.dart';
 import 'package:mary_ai_pos/features/view/main/data/repository/payment_repository_impl.dart';
+import 'package:mary_ai_pos/features/view/main/data/repository/service_charge_repository_impl.dart';
 import 'package:mary_ai_pos/features/view/main/domain/repository/tables_repository.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/payment/payment_bloc.dart';
 
@@ -110,6 +111,11 @@ void main() {
       ordersRepository: orders,
       paymentRepository: PaymentRepositoryImpl(writer: writer),
       printerService: _FakePrinter(),
+      // The real implementation over the same replica, not a fake: it reads
+      // `branches.default_service_percent`, which these fixtures control
+      // anyway, so the bloc's service-percent resolution is exercised rather
+      // than stubbed out.
+      serviceChargeRepository: ServiceChargeRepositoryImpl(db, writer),
     );
 
     put('halls', {'id': 'h1', 'name': 'Main', 'branch_id': 'b1', 'deleted_at': 0});

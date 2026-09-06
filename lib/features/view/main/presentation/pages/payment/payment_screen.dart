@@ -11,7 +11,6 @@ import 'package:mary_ai_pos/features/view/main/presentation/cubit/payment/paymen
 import 'package:mary_ai_pos/features/view/main/presentation/pages/payment/widgets/payment_center_column.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/payment/widgets/payment_right_side_bar.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/payment/widgets/payment_top_bar.dart';
-import 'package:mary_ai_pos/features/view/main/domain/repository/service_charge_repository.dart';
 import 'package:mary_ai_pos/features/view/auth/presentation/cubit/bloc/user_bloc.dart';
 import 'package:mary_ai_pos/generated/l10n.dart';
 
@@ -60,23 +59,13 @@ class _PaymentScreenState extends State<PaymentScreen> {
   // bo'ladi (backend uni faqat sinxronda qo'shadi) — natijada checkbox
   // yo'qolib qolardi. Filial sozlamasidan zaxira sifatida foydalanish uni
   // qaytaradi va xizmat haqini to'g'ri hisoblaydi.
-  late final double _servicePercent = _resolveServicePercent();
-
-  /// Xizmat foizi hech qayerda sozlanmagan bo'lsa qo'llaniladigan standart.
-  static const double _kDefaultServicePercent = 20;
-
-  double _resolveServicePercent() {
-    final fromArgs = (args['service_percent'] as num?)?.toDouble() ?? 0.0;
-    if (fromArgs > 0) return fromArgs;
-    final branchId = inject<UserBloc>().state.userMOdel?.branchId ?? '';
-    final configured = branchId.isEmpty
-        ? 0.0
-        : (inject<ServiceChargeRepository>().getServicePercent(branchId) ?? 0.0);
-    if (configured > 0) return configured;
-    // Neither the order nor the branch carries a percent — fall back to the
-    // product default so the service fee is always present and charged.
-    return _kDefaultServicePercent;
-  }
+  /// The percent this bill was opened at, when it carries one. Everything else
+  /// about resolving the service percent — the branch's configured value, the
+  /// product default — belongs to `PaymentBloc.resolveServicePercent`, which
+  /// owns the repository read. A screen that pulled `ServiceChargeRepository`
+  /// out of the service locator itself is what §7 forbids.
+  double get _servicePercentFromArgs =>
+      (args['service_percent'] as num?)?.toDouble() ?? 0.0;
 
   @override
   void dispose() {
@@ -94,7 +83,11 @@ class _PaymentScreenState extends State<PaymentScreen> {
           BlocProvider(
             create: (_) {
               final bloc = inject<PaymentBloc>()
-                ..setServicePercent(_servicePercent)
+                ..resolveServicePercent(
+                  fromArgs: _servicePercentFromArgs,
+                  branchId:
+                      inject<UserBloc>().state.userMOdel?.branchId ?? '',
+                )
                 ..add(PaymentEvent.started(tableId: tableId, orderId: orderId));
               if (_passedHourAmount > 0) {
                 bloc.add(
@@ -183,7 +176,8 @@ class _PaymentScreenState extends State<PaymentScreen> {
                           width: sidePanelW,
                           child: _OrderSummaryColumn(
                             detail: state.detail!,
-                            servicePercentFallback: _servicePercent,
+                            servicePercentFallback:
+                                context.read<PaymentBloc>().servicePercent,
                             includeService: state.applyService,
                             onToggleService: (v) {
                               final bloc = context.read<PaymentBloc>();

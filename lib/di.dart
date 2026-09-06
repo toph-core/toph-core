@@ -717,6 +717,7 @@ void _cubit() {
       ordersRepository: inject(),
       paymentRepository: inject(),
       printerService: inject(),
+      serviceChargeRepository: inject(),
     ),
   );
   inject.registerFactory(() => NotificationBloc());
