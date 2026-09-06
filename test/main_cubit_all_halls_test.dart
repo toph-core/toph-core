@@ -49,6 +49,8 @@ void main() {
         'id': t.$1, 'hall_id': t.$2, 'number': t.$3,
         'pos_x': 10, 'pos_y': 10, 'width': 80, 'height': 80,
         'capacity': 4, 'status': 'free', 'deleted_at': null,
+        'rotation': 0, 'shape': 'square', 'table_type': 'simple',
+        'price_per_hour': '0',
       });
     }
   });
