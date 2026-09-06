@@ -43,6 +43,15 @@ class AuthRepositoryImpl implements AuthRepository {
       // LoginDataScopeService once the initial hydration has landed data
       // (CLIENT_FACING_OFFLINE_PLAN.md §1). Setting it at brand-login time,
       // before any data exists locally, is what left it meaningless before.
+      //
+      // Clear it, though: a full brand_id + password login is an explicit
+      // re-provision, so it must re-run initial setup even on a terminal that
+      // was initialized before. Turning the flag off here is what makes
+      // `onSuccessfulLogin` compute `firstTime == true` and return
+      // `LoginDataScope.initialSetup` after the pincode step. The PIN-only
+      // path (a partial logout to the pincode screen) never reaches here, so
+      // it keeps its data and does not reinitialize.
+      await _tokenStorage.setPosInitialized(false);
       return const Right(true);
     } catch (e) {
       return const Left(CacheFailure());

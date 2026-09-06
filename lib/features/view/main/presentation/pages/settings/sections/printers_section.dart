@@ -168,6 +168,23 @@ class _PrinterCardState extends State<_PrinterCard> {
   Future<void> _testPrint() async {
     if (_testing) return;
     final entry = widget.entry;
+
+    // Test print is a direct connection, not a queued job, so it cannot go
+    // through the LAN relay the way a real receipt does. Against a printer
+    // registered to another terminal it would simply sit out its socket
+    // timeout and report a failure that says nothing useful — better to say
+    // where the test has to be run from.
+    if (!entry.isUnowned &&
+        !inject<PrinterConfigStorage>().isOwnedByThisTerminal(entry)) {
+      showErrorMessage(
+        context,
+        'Bu printer boshqa terminalga biriktirilgan — testni o\'sha '
+        'terminaldan bajaring. Haqiqiy cheklar LAN orqali avtomatik '
+        'yuboriladi.',
+      );
+      return;
+    }
+
     final isUsb = entry.connectionType == 'usb';
     String? windowsPrinterName;
     if (isUsb) {
@@ -258,14 +275,18 @@ class _PrinterCardState extends State<_PrinterCard> {
                 children: [
                   Row(
                     children: [
-                      Text(
-                        '${entry.ip}:${entry.port}',
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w700,
-                          color: colors.textDefault,
-                          fontFamily: 'Inter',
-                          letterSpacing: -0.2,
+                      Flexible(
+                        child: Text(
+                          _title(entry),
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                            color: colors.textDefault,
+                            fontFamily: 'Inter',
+                            letterSpacing: -0.2,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                       const SizedBox(width: 10),
@@ -287,6 +308,24 @@ class _PrinterCardState extends State<_PrinterCard> {
                           fontSize: 12,
                           fontWeight: FontWeight.w500,
                           color: colors.textSecondary,
+                          fontFamily: 'Inter',
+                        ),
+                      ),
+                      _Dot(color: colors.border),
+                      Icon(
+                        _ownedHere ? Icons.desktop_windows_rounded : Icons.lan_rounded,
+                        size: 13,
+                        color: _ownedHere ? colors.systemAccent : colors.textSecondary,
+                      ),
+                      const SizedBox(width: 5),
+                      Text(
+                        _ownerLabel(entry),
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                          color: _ownedHere
+                              ? colors.systemAccent
+                              : colors.textSecondary,
                           fontFamily: 'Inter',
                         ),
                       ),
@@ -348,6 +387,26 @@ class _PrinterCardState extends State<_PrinterCard> {
         ),
       ),
     );
+  }
+
+  /// Whether this terminal is the printer's registered owner — the printers it
+  /// drives directly. Everything else either belongs to a sibling terminal (a
+  /// job for it is relayed over the LAN hub) or to nobody.
+  bool get _ownedHere =>
+      inject<PrinterConfigStorage>().isOwnedByThisTerminal(widget.entry);
+
+  /// A USB printer has no address to show, so the operator-supplied name is the
+  /// only thing that identifies it. Network printers fall back to `ip:port`,
+  /// which is what this card always used to show.
+  String _title(PrinterSettingEntry entry) {
+    if (entry.name.isNotEmpty) return entry.name;
+    if (entry.isAddressless) return 'USB printer';
+    return '${entry.ip}:${entry.port}';
+  }
+
+  String _ownerLabel(PrinterSettingEntry entry) {
+    if (entry.isUnowned) return 'Har qanday terminal';
+    return _ownedHere ? 'Shu terminal' : 'Boshqa terminal';
   }
 
   String _categoriesLabel(PrinterSettingEntry entry) {
@@ -618,8 +677,17 @@ class _PrinterEditDialogState extends State<_PrinterEditDialog> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _ipCtrl;
   late final TextEditingController _portCtrl;
+  late final TextEditingController _nameCtrl;
   String _type = 'category';
   String _connection = 'cable';
+
+  /// Whether this printer is registered to *this* terminal. Defaults to true
+  /// for a new printer, and deliberately so: the overwhelmingly common case is
+  /// an operator adding the printer that is plugged into, or on the same
+  /// switch as, the machine they are standing at. Leaving it unowned by default
+  /// would preserve the old "every terminal can reach every printer"
+  /// assumption, which is the failure this whole feature exists to remove.
+  bool _ownedByThisTerminal = true;
   // Chek kengligi — XPRINTER_SETUP.md: ba'zi "80mm" printerlar 32 belgi (58mm)
   // chiqaradi, boshqalari 48 (80mm). Shu qurilmada `entryId` bo'yicha saqlanadi.
   String _paperSizeCode = kPaperSizeCode80;
@@ -642,10 +710,17 @@ class _PrinterEditDialogState extends State<_PrinterEditDialog> {
     super.initState();
     final e = widget.existing;
     _ipCtrl = TextEditingController(text: e?.ip ?? '');
-    _portCtrl = TextEditingController(text: (e?.port ?? 9100).toString());
+    _portCtrl = TextEditingController(
+      text: (e == null || e.port <= 0 ? 9100 : e.port).toString(),
+    );
+    _nameCtrl = TextEditingController(text: e?.name ?? '');
     if (e != null) {
       _type = e.type.isNotEmpty ? e.type : 'category';
       _connection = e.connectionType.isNotEmpty ? e.connectionType : 'cable';
+      // An existing printer keeps whatever it has: owned here, owned by a
+      // sibling terminal, or unowned. Editing must never silently re-home a
+      // printer onto whichever terminal happened to open the dialog.
+      _ownedByThisTerminal = widget.storage.isOwnedByThisTerminal(e);
       _paperSizeCode =
           inject<PrinterConfigStorage>().getPaperSizeCode(e.id) ??
               kPaperSizeCode80;
@@ -678,7 +753,46 @@ class _PrinterEditDialogState extends State<_PrinterEditDialog> {
   void dispose() {
     _ipCtrl.dispose();
     _portCtrl.dispose();
+    _nameCtrl.dispose();
     super.dispose();
+  }
+
+  /// The `cash_register_id` to store as this printer's owner: this terminal's
+  /// own when the operator marked it local, `''` (unowned — any terminal prints
+  /// to it directly) otherwise.
+  ///
+  /// Editing a printer that belongs to a *different* terminal keeps that
+  /// terminal's id rather than clearing it, so opening someone else's printer
+  /// to fix its category list cannot accidentally un-home it.
+  String _resolvedOwnerId() {
+    if (_ownedByThisTerminal) return widget.storage.myCashRegisterId;
+    final existingOwner = widget.existing?.ownerCashRegisterId ?? '';
+    if (existingOwner.isNotEmpty &&
+        !widget.storage.isOwnedByThisTerminal(widget.existing!)) {
+      return existingOwner;
+    }
+    return '';
+  }
+
+  /// Whether the printer being edited belongs to another terminal — the one
+  /// case where the ownership toggle is shown read-only, since this screen
+  /// cannot know that terminal's hardware.
+  bool get _ownedElsewhere {
+    final e = widget.existing;
+    if (e == null || e.isUnowned) return false;
+    return !widget.storage.isOwnedByThisTerminal(e);
+  }
+
+  String? _validateName(String? v) {
+    final name = v?.trim() ?? '';
+    // Required only where it is load-bearing: a USB printer has no address, so
+    // the name is the only thing separating two of them on one terminal — and
+    // the backend's uniqueness key includes it.
+    if (_connection == 'usb' && name.isEmpty) {
+      return 'USB printer uchun nom kerak';
+    }
+    if (name.length > 64) return 'Nom 64 belgidan oshmasin';
+    return null;
   }
 
   String? _validateIp(String? v) {
@@ -723,20 +837,28 @@ class _PrinterEditDialogState extends State<_PrinterEditDialog> {
       _saveError = null;
     });
 
-    // USB — IP/port backend sxemasi uchun placeholder, chop etishda
-    // ishlatilmaydi (haqiqiy nishon — [_windowsPrinterName] — faqat shu
-    // qurilmada lokal saqlanadi, pastda).
-    final ip = _connection == 'usb' ? '127.0.0.1' : _ipCtrl.text.trim();
-    final port = _connection == 'usb' ? 9100 : int.parse(_portCtrl.text.trim());
+    // USB has no address. It used to be given a placeholder `127.0.0.1:9100`
+    // to satisfy the backend's ip/port validation, which had the side effect of
+    // collapsing every USB printer in the brand onto one uniqueness key —
+    // `(ip, port, type)` left `type`'s two values as the only discriminator, so
+    // a brand could store exactly two USB printers in total. The API stopped
+    // requiring an address for `usb` in 75_printer_settings_owner; sending a
+    // blank one is now both honest and what keeps them distinct.
+    final isUsb = _connection == 'usb';
+    final ip = isUsb ? '' : _ipCtrl.text.trim();
+    final port = isUsb ? 0 : int.parse(_portCtrl.text.trim());
     final entryId = widget.existing?.id ?? widget.storage.generateLocalId();
     final entry = PrinterSettingEntry(
       id: entryId,
       ip: ip,
       port: port,
+      name: _nameCtrl.text.trim(),
       type: _type,
       connectedEntityIds:
           _type == 'category' ? _selectedCategoryIds.toList() : <String>[],
       connectionType: _connection,
+      branchId: widget.existing?.branchId ?? '',
+      ownerCashRegisterId: _resolvedOwnerId(),
     );
 
     await widget.storage.upsertEntry(entry);
@@ -745,7 +867,7 @@ class _PrinterEditDialogState extends State<_PrinterEditDialog> {
     await widget.storage.savePaperSizeCode(entryId, _paperSizeCode);
 
     final cache = inject<PrinterConfigStorage>();
-    if (_connection == 'usb' && _windowsPrinterName != null) {
+    if (isUsb && _windowsPrinterName != null) {
       await cache.saveUsbPrinterName(entryId, _windowsPrinterName!);
     } else {
       // Turi 'usb'dan boshqasiga o'zgargan bo'lishi mumkin — eski lokal
@@ -768,8 +890,14 @@ class _PrinterEditDialogState extends State<_PrinterEditDialog> {
     final body = {
       'ip': entry.ip,
       'port': entry.port,
+      'name': entry.name,
       'type': entry.type,
       'connection_type': entry.connectionType,
+      // Always sent, never omitted. The API reads an *absent*
+      // `owner_cash_register_id` as "the calling terminal" and an explicit `""`
+      // as "unowned"; this screen always knows which of the two the operator
+      // picked, so it says so rather than leaning on the default.
+      'owner_cash_register_id': entry.ownerCashRegisterId,
       'connected_entity_ids': entry.connectedEntityIds,
     };
     final result = await widget.controller.pushPrinterSetting(
@@ -860,6 +988,19 @@ class _PrinterEditDialogState extends State<_PrinterEditDialog> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
+                      _LabeledField(
+                        label: 'Nom',
+                        helper: _connection == 'usb'
+                            ? 'USB printerda manzil yo\'q — ro\'yxatda uni shu '
+                                'nom ajratib turadi («Oshxona», «Bar»)'
+                            : 'Ixtiyoriy — ro\'yxatda IP o\'rniga ko\'rinadi',
+                        child: _TextField(
+                          controller: _nameCtrl,
+                          hint: 'Oshxona',
+                          validator: _validateName,
+                        ),
+                      ),
+                      const SizedBox(height: 14),
                       if (_connection == 'usb') ...[
                         _LabeledField(
                           label: 'USB printer',
@@ -965,6 +1106,44 @@ class _PrinterEditDialogState extends State<_PrinterEditDialog> {
                               ),
                           ],
                         ),
+                      ),
+                      const SizedBox(height: 14),
+                      _LabeledField(
+                        label: 'Qaysi terminalga biriktirilgan',
+                        helper: _ownedElsewhere
+                            ? 'Bu printer boshqa terminalga biriktirilgan — '
+                                'cheklar LAN orqali o\'sha terminalga yuboriladi'
+                            : 'Printer faqat bitta kompyuterdan ko\'rinsa — USB '
+                                'kabel, oshxona kommutatori, boshqa Wi-Fi nuqtasi — '
+                                '«Shu terminal»ni tanlang: boshqa terminallar '
+                                'cheklarni LAN orqali shu yerga yuboradi. '
+                                '«Har qanday terminal» esa har bir kassa printerga '
+                                'o\'zi ulanadi.',
+                        child: _ownedElsewhere
+                            ? _ReadOnlyOwnerNotice(
+                                label: widget.existing?.name.isNotEmpty == true
+                                    ? '${widget.existing!.name} — boshqa terminal'
+                                    : 'Boshqa terminal',
+                              )
+                            : _SegmentedChoice<bool>(
+                                value: _ownedByThisTerminal,
+                                onChanged: (v) =>
+                                    setState(() => _ownedByThisTerminal = v),
+                                options: const [
+                                  _ChoiceOption(
+                                    value: true,
+                                    label: 'Shu terminal',
+                                    icon: Icons.desktop_windows_rounded,
+                                    helper: 'Faqat shu yerdan',
+                                  ),
+                                  _ChoiceOption(
+                                    value: false,
+                                    label: 'Har qanday terminal',
+                                    icon: Icons.lan_rounded,
+                                    helper: 'Hammadan ko\'rinadi',
+                                  ),
+                                ],
+                              ),
                       ),
                       const SizedBox(height: 14),
                       _LabeledField(
@@ -1391,6 +1570,48 @@ class _TextField extends StatelessWidget {
           borderRadius: BorderRadius.circular(10),
           borderSide: BorderSide(color: colors.systemError, width: 1.5),
         ),
+      ),
+    );
+  }
+}
+
+/// Shown in place of the ownership toggle when the printer being edited belongs
+/// to a different terminal. That terminal's hardware — its USB cable, its
+/// subnet — is not knowable from here, so the assignment is displayed rather
+/// than offered; reassigning is done from the terminal that will own it.
+class _ReadOnlyOwnerNotice extends StatelessWidget {
+  final String label;
+
+  const _ReadOnlyOwnerNotice({required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: colors.bgSecondary,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: colors.border),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.lan_rounded, size: 16, color: colors.textSecondary),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: colors.textSecondary,
+                fontFamily: 'Inter',
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
       ),
     );
   }

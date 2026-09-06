@@ -28,7 +28,7 @@ part 'login_pin_state.dart';
 //
 // To disable: flip [_kDebugPinGateEnabled] to false. To remove entirely:
 // delete this block and the single guard at the top of [LoginPinCubit.login].
-const bool _kDebugPinGateEnabled = true;
+const bool _kDebugPinGateEnabled = false;
 const String _kDebugPinGateCode = '5192';
 // ─────────────────────────────────────────────────────────────────────────
 

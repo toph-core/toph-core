@@ -20,6 +20,7 @@ import 'package:mary_ai_pos/features/view/main/domain/entities/order_food_entity
 import 'package:mary_ai_pos/features/view/main/domain/repository/menu_repository.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/detail/detail_bloc.dart';
 
+import 'print_dispatch_result.dart';
 import 'printer_config.dart';
 import 'printer_config_storage.dart';
 import 'receipt/cashier_receipt_builder.dart';
@@ -46,7 +47,7 @@ class PrinterService {
   /// this is never actually called unset in practice) — falls back to
   /// direct printing regardless, so a receipt can never silently vanish due
   /// to wiring order.
-  Future<({bool ok, String? error})> Function(
+  Future<PrintDispatchResult> Function(
     PrinterConfig config,
     List<int> bytes, {
     required String jobType,
@@ -54,7 +55,7 @@ class PrinterService {
   })? _dispatchViaQueue;
 
   void attachPrintQueue(
-    Future<({bool ok, String? error})> Function(
+    Future<PrintDispatchResult> Function(
       PrinterConfig config,
       List<int> bytes, {
       required String jobType,
@@ -64,17 +65,82 @@ class PrinterService {
     _dispatchViaQueue = dispatch;
   }
 
-  Future<({bool ok, String? error})> _dispatchOrPrint(
+  Future<PrintDispatchResult> _dispatchOrPrint(
     PrinterConfig config,
     List<int> bytes, {
     required String jobType,
     bool beep = true,
-  }) {
+  }) async {
     final dispatch = _dispatchViaQueue;
     if (dispatch != null) {
       return dispatch(config, bytes, jobType: jobType, beep: beep);
     }
-    return _connectAndPrint(config, bytes, beep: beep);
+    final r = await _connectAndPrint(config, bytes, beep: beep);
+    return (ok: r.ok, error: r.error, deferred: false);
+  }
+
+  /// Tells the operator about a receipt that failed *after* the till had
+  /// already been told it was queued (`PrintQueueService.callerBudget`).
+  ///
+  /// Without this a receipt could silently never appear: the cashier saw
+  /// "queued for the other terminal", walked away, and the eventual failure had
+  /// nowhere to surface.
+  void notifyLateFailure({
+    required String jobType,
+    required String ip,
+    required int port,
+    required String? error,
+  }) {
+    _notifyPrinterFailed(
+      PrinterConfig(ip: ip, port: port),
+      title: 'Navbatdagi chek chop etilmadi',
+      printerRole: switch (jobType) {
+        'kitchen' => 'category printer',
+        'shiftClose' => 'close_check printer (smena)',
+        _ => 'close_check printer',
+      },
+      detail: error,
+    );
+  }
+
+  /// Reports the outcome of a dispatched receipt to the operator.
+  ///
+  /// Three outcomes, not two. A [PrintDispatchResult.deferred] job has not
+  /// failed — it is queued against a terminal that is briefly away and will
+  /// print itself when that terminal returns — so it must not be dressed up in
+  /// the failure dialog's "check the network, the printer and the IP" advice.
+  /// Saying "failed" about a receipt that is about to come out trains the
+  /// cashier to reprint it, which is how a customer ends up with two.
+  void _reportDispatch(
+    PrintDispatchResult r,
+    PrinterConfig config, {
+    required String failureTitle,
+    required String printerRole,
+  }) {
+    if (r.ok) return;
+    if (r.deferred) {
+      final ctx = navigatorKey.currentContext;
+      if (ctx == null) return;
+      showStructuredErrorDismissible(
+        ctx,
+        title: 'Chek navbatga qo\'yildi',
+        icon: Icons.print_rounded,
+        paragraphs: [
+          printerRole,
+          r.error ??
+              "Printer boshqa terminalga biriktirilgan va u hozir tarmoqda yo'q.",
+          "Qayta chop etish shart emas — o'sha terminal qaytganda chek o'zi "
+              "chiqadi.",
+        ],
+      );
+      return;
+    }
+    _notifyPrinterFailed(
+      config,
+      title: failureTitle,
+      printerRole: printerRole,
+      detail: r.error,
+    );
   }
 
   /// Hozir tizimga kirgan foydalanuvchi (buyurtmani qabul qilgan/qo'shgan kishi) — cheklarda ko'rsatish uchun.
@@ -198,14 +264,12 @@ class PrinterService {
         departmentOrder: deptInfo.order,
       );
       final r = await _dispatchOrPrint(config, bytes, jobType: 'cashier');
-      if (!r.ok) {
-        _notifyPrinterFailed(
-          config,
-          title: 'Kassir cheki chop etilmadi',
-          printerRole: 'close_check printer (backend)',
-          detail: r.error,
-        );
-      }
+      _reportDispatch(
+        r,
+        config,
+        failureTitle: 'Kassir cheki chop etilmadi',
+        printerRole: 'close_check printer (backend)',
+      );
     } catch (e, st) {
       debugPrint('[PrinterService] Kassir cheki xatosi: $e\n$st');
       final config = _storage.closeCheckConfigOrFallback();
@@ -264,14 +328,12 @@ class PrinterService {
         closerName: _waiterName,
       );
       final r = await _dispatchOrPrint(config, bytes, jobType: 'cashier');
-      if (!r.ok) {
-        _notifyPrinterFailed(
-          config,
-          title: 'Kassir cheki chop etilmadi',
-          printerRole: 'close_check printer',
-          detail: r.error,
-        );
-      }
+      _reportDispatch(
+        r,
+        config,
+        failureTitle: 'Kassir cheki chop etilmadi',
+        printerRole: 'close_check printer',
+      );
     } catch (e, st) {
       debugPrint('[PrinterService] Kassir cheki xatosi: $e\n$st');
       final config = _storage.closeCheckConfigOrFallback();
@@ -301,14 +363,12 @@ class PrinterService {
         paperSize: config.paperSize,
       );
       final r = await _dispatchOrPrint(config, bytes, jobType: 'shiftClose');
-      if (!r.ok) {
-        _notifyPrinterFailed(
-          config,
-          title: 'Smena yopilish cheki chop etilmadi',
-          printerRole: 'close_check printer (backend)',
-          detail: r.error,
-        );
-      }
+      _reportDispatch(
+        r,
+        config,
+        failureTitle: 'Smena yopilish cheki chop etilmadi',
+        printerRole: 'close_check printer (backend)',
+      );
     } catch (e, st) {
       debugPrint('[PrinterService] Smena yopilish cheki: $e\n$st');
       final config = _storage.closeCheckConfigOrFallback();
@@ -467,7 +527,7 @@ class PrinterService {
     try {
       final categoryNames = _categoryNames;
       final configsInOrder = <PrinterConfig>[];
-      final dispatches = <Future<({bool ok, String? error})>>[];
+      final dispatches = <Future<PrintDispatchResult>>[];
       for (final k in byKey.keys) {
         final config = cfgByKey[k]!;
         final sub = byKey[k]!;
@@ -494,14 +554,12 @@ class PrinterService {
       // cheklarini ham sababsiz kechiktirar edi — oshxona cheklari shoshilinch.
       final results = await Future.wait(dispatches);
       for (var i = 0; i < results.length; i++) {
-        if (!results[i].ok) {
-          _notifyPrinterFailed(
-            configsInOrder[i],
-            title: 'Oshxona cheki chop etilmadi',
-            printerRole: 'category printer (backend) ${configsInOrder[i].ip}',
-            detail: results[i].error,
-          );
-        }
+        _reportDispatch(
+          results[i],
+          configsInOrder[i],
+          failureTitle: 'Oshxona cheki chop etilmadi',
+          printerRole: 'category printer (backend) ${configsInOrder[i].ip}',
+        );
       }
     } catch (e, st) {
       debugPrint('[PrinterService] Oshxona cheki xatosi: $e\n$st');

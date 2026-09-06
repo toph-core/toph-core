@@ -99,6 +99,11 @@ class AuthCubit extends Cubit<AuthState> {
             ),
           );
           await _tokenStorage.writeBrandIdToken(req);
+          // A full brand_id + password login re-provisions the terminal, the
+          // same as the online path in AuthRepositoryImpl.loginWithBrandId —
+          // even reached through the offline cache. Clearing the flag makes the
+          // pincode step's onSuccessfulLogin return initialSetup.
+          await _tokenStorage.setPosInitialized(false);
           emit(state.copyWith(status: Status.SUCCESS));
           onSuccess();
           return;

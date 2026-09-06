@@ -313,7 +313,7 @@ void main() {
             switch (variant) {
               case 0: // claimed and printed promptly, first attempt.
                 if (n == 1) {
-                  Timer(const Duration(milliseconds: 500), () => service.onRemoteClaim(jobId));
+                  Timer(const Duration(milliseconds: 500), () => service.onRemoteClaim(jobId, 'peer'));
                   Timer(
                     const Duration(seconds: 2),
                     () => service.onRemoteResult(jobId, 'printed', null),
@@ -322,7 +322,7 @@ void main() {
               case 1: // never claimed by anyone, either attempt — ends failed.
                 break;
               case 2: // claimed but the claimer vanishes (lease expires); resolves on retry.
-                Timer(const Duration(milliseconds: 500), () => service.onRemoteClaim(jobId));
+                Timer(const Duration(milliseconds: 500), () => service.onRemoteClaim(jobId, 'peer'));
                 if (n == 2) {
                   Timer(
                     const Duration(seconds: 2),
@@ -331,7 +331,7 @@ void main() {
                 }
               case 3: // claimed, then an explicit — terminal, non-retried — failure.
                 if (n == 1) {
-                  Timer(const Duration(milliseconds: 500), () => service.onRemoteClaim(jobId));
+                  Timer(const Duration(milliseconds: 500), () => service.onRemoteClaim(jobId, 'peer'));
                   Timer(
                     const Duration(seconds: 2),
                     () => service.onRemoteResult(jobId, 'failed', 'printer out of paper'),
@@ -347,7 +347,8 @@ void main() {
             prefs,
             isLanRelayPossible: () => true,
             broadcastAnnounce: onAnnounce,
-            broadcastClaim: (_) {},
+            broadcastClaim: (_, __) {},
+            broadcastGrant: (_, __) {},
             broadcastResult: (_, _, _) {},
           );
 

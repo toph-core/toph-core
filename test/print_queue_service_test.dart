@@ -43,6 +43,7 @@ void main() {
     bool Function() isLanRelayPossible = _alwaysTrue,
     PrintAnnounceBroadcaster broadcastAnnounce = _noopAnnounce,
     PrintClaimBroadcaster broadcastClaim = _noopClaim,
+    PrintGrantBroadcaster broadcastGrant = _noopGrant,
     PrintResultBroadcaster broadcastResult = _noopResult,
   }) async {
     SharedPreferences.setMockInitialValues({});
@@ -55,9 +56,15 @@ void main() {
       isLanRelayPossible: isLanRelayPossible,
       broadcastAnnounce: broadcastAnnounce,
       broadcastClaim: broadcastClaim,
+      broadcastGrant: broadcastGrant,
       broadcastResult: broadcastResult,
       claimWait: const Duration(milliseconds: 150),
       lease: const Duration(milliseconds: 200),
+      // Generous on purpose: these exercise the claim/lease state machine,
+      // whose stages here add up to longer than the production caller budget.
+      // The budget's own behaviour is covered separately, in
+      // print_relay_deferral_test.dart's ceiling group.
+      callerBudget: const Duration(seconds: 5),
     );
   }
 
@@ -165,7 +172,8 @@ void main() {
               entryId: entryId,
               payloadBase64: payloadBase64,
             ),
-        broadcastClaim: (_) {}, // B's claim goes straight back to A below
+        broadcastClaim: (_, __) {}, // B's claim goes straight back to A below
+        broadcastGrant: (jobId, t) => queueB.onRemoteGrant(jobId, t),
       );
       queueB = await newQueueService(
         box: await freshBox(),
@@ -237,7 +245,7 @@ void main() {
           announceCount++;
           // Someone claims it every time, but never reports back — e.g. it
           // crashed mid-print.
-          queue.onRemoteClaim(jobId);
+          queue.onRemoteClaim(jobId, 'peer');
         },
       );
 
@@ -569,7 +577,7 @@ void main() {
       final jobId = queueA.jobs.single.id;
       expect(queueA.jobs.single.stateEnum, PrintJobState.queued);
 
-      queueA.onRemoteClaim(jobId);
+      queueA.onRemoteClaim(jobId, 'peer');
       final claimedAtFirst = queueA.jobs.single.claimedAt;
       expect(queueA.jobs.single.stateEnum, PrintJobState.claimed);
       expect(claimedAtFirst, isNotNull);
@@ -577,7 +585,7 @@ void main() {
       // A second, duplicate claim for the same job — simulating either a
       // redelivered broadcast or a genuine second terminal racing in late.
       await Future.delayed(const Duration(milliseconds: 5));
-      queueA.onRemoteClaim(jobId);
+      queueA.onRemoteClaim(jobId, 'peer');
 
       expect(
         queueA.jobs.single.claimedAt,
@@ -615,7 +623,7 @@ void main() {
       // mutation it does happens regardless but the completer registration
       // is what `future` is actually waiting on.
       await Future.delayed(const Duration(milliseconds: 5));
-      queueA.onRemoteClaim(jobId);
+      queueA.onRemoteClaim(jobId, 'peer');
 
       queueA.onRemoteResult(jobId, 'printed', null);
       await future;
@@ -656,9 +664,17 @@ void main() {
       // be a definite-assignment error — A referencing itself before its
       // own `queueA = ...` has completed).
       final claimsSeenByA = <String>[];
-      void deliverClaimToA(String jobId) {
-        claimsSeenByA.add(jobId);
-        queueA.onRemoteClaim(jobId);
+      // Every result broadcast back to A is one terminal having actually put
+      // the job through a printer — the count that decides this test.
+      final printAttempts = <String>[];
+      void deliverClaimToA(String jobId, String terminalId) {
+        claimsSeenByA.add(terminalId);
+        queueA.onRemoteClaim(jobId, terminalId);
+      }
+
+      void deliverResultToA(String jobId, String result, String? error) {
+        printAttempts.add(result);
+        queueA.onRemoteResult(jobId, result, error);
       }
 
       queueA = await newQueueService(
@@ -686,20 +702,26 @@ void main() {
             payloadBase64: payloadBase64,
           );
         },
+        // A's grant is a broadcast like everything else: both B and C hear it,
+        // and each checks whether the named terminal is itself.
+        broadcastGrant: (jobId, terminalId) {
+          queueB.onRemoteGrant(jobId, terminalId);
+          queueC.onRemoteGrant(jobId, terminalId);
+        },
       );
       queueB = await newQueueService(
         box: await freshBox(),
         printerService: printerB,
         printerConfigStorage: cacheB,
         broadcastClaim: deliverClaimToA,
-        broadcastResult: queueA.onRemoteResult,
+        broadcastResult: deliverResultToA,
       );
       queueC = await newQueueService(
         box: await freshBox(),
         printerService: printerC,
         printerConfigStorage: cacheC,
         broadcastClaim: deliverClaimToA,
-        broadcastResult: queueA.onRemoteResult,
+        broadcastResult: deliverResultToA,
       );
 
       final r = await queueA.submitJob(
@@ -716,10 +738,23 @@ void main() {
         reason: 'both B and C must have claimed for this to test the race '
             'at all, not just a single-claimer happy path',
       );
-      // ...but only one of B/C actually printed (both fail deterministically
-      // on this non-Windows machine, either way) — the loser's claim
-      // arrived when the job was already `claimed`, so `onRemoteClaim`
-      // no-oped it instead of resetting ownership.
+      expect(
+        claimsSeenByA.toSet(),
+        hasLength(2),
+        reason: 'the two claims must come from distinct terminals',
+      );
+
+      // The point of the whole exchange: two terminals both able to serve the
+      // announced printer, and exactly one sheet of paper. A claim is a request
+      // to print, not permission — only the terminal A grants ever reaches a
+      // printer. Before grants existed both of these printed, and on Windows
+      // that was two physical receipts for one order.
+      expect(
+        printAttempts,
+        hasLength(1),
+        reason: 'exactly one terminal may print a job, ever',
+      );
+
       expect(r.ok, isFalse);
       expect(r.error, contains('Windows'));
       expect(queueA.jobs.single.stateEnum, PrintJobState.failed);
@@ -739,5 +774,6 @@ void _noopAnnounce({
   required String entryId,
   required String payloadBase64,
 }) {}
-void _noopClaim(String jobId) {}
+void _noopClaim(String jobId, String terminalId) {}
+void _noopGrant(String jobId, String terminalId) {}
 void _noopResult(String jobId, String result, String? error) {}

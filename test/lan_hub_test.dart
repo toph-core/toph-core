@@ -413,7 +413,7 @@ void main() {
       await _waitUntil(() => client.isConnected);
 
       client.send(
-        LanHubMessage.printJobClaim(jobId: 'job-2'),
+        LanHubMessage.printJobClaim(jobId: 'job-2', terminalId: 'peer'),
       );
 
       await _waitUntil(() => serverSideReceived.isNotEmpty);
@@ -609,8 +609,8 @@ void main() {
           .where((m) => m.type == LanHubMessageType.printJobClaim)
           .listen(received.add);
 
-      sender.send(LanHubMessage.printJobClaim(jobId: 'job-dup'));
-      sender.send(LanHubMessage.printJobClaim(jobId: 'job-dup'));
+      sender.send(LanHubMessage.printJobClaim(jobId: 'job-dup', terminalId: 'peer'));
+      sender.send(LanHubMessage.printJobClaim(jobId: 'job-dup', terminalId: 'peer'));
 
       await _waitUntil(() => received.length == 2);
       expect(received.every((m) => m.printJobId == 'job-dup'), isTrue);

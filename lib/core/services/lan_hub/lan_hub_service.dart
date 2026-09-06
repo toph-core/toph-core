@@ -438,7 +438,18 @@ class LanHubService {
         break;
       case LanHubMessageType.printJobClaim:
         if (msg.printJobId != null) {
-          inject<PrintQueueService>().onRemoteClaim(msg.printJobId!);
+          inject<PrintQueueService>().onRemoteClaim(
+            msg.printJobId!,
+            msg.printTerminalId ?? '',
+          );
+        }
+        break;
+      case LanHubMessageType.printJobGrant:
+        if (msg.printJobId != null && msg.printTerminalId != null) {
+          inject<PrintQueueService>().onRemoteGrant(
+            msg.printJobId!,
+            msg.printTerminalId!,
+          );
         }
         break;
       case LanHubMessageType.printJobResult:
@@ -528,8 +539,17 @@ class LanHubService {
     );
   }
 
-  void broadcastPrintJobClaim(String jobId) {
-    _sendOrBroadcast(LanHubMessage.printJobClaim(jobId: jobId));
+  void broadcastPrintJobClaim(String jobId, String terminalId) {
+    _sendOrBroadcast(
+      LanHubMessage.printJobClaim(jobId: jobId, terminalId: terminalId),
+    );
+  }
+
+  /// The originator naming the one terminal allowed to print [jobId].
+  void broadcastPrintJobGrant(String jobId, String terminalId) {
+    _sendOrBroadcast(
+      LanHubMessage.printJobGrant(jobId: jobId, terminalId: terminalId),
+    );
   }
 
   void broadcastPrintJobResult(String jobId, String result, String? error) {

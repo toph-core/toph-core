@@ -34,7 +34,10 @@ import 'package:mary_ai_pos/generated/l10n.dart';
 // Single-instance lock port — loopback TCP server.
 // Birinchi instance bu portga bind qiladi va tinglaydi.
 // Keyingi instance bind qila olmaydi → mavjud windowni focus qilib chiqadi.
-const _kSingleInstancePort = 45671;
+// Overridable via POS_SINGLE_INSTANCE_PORT so multiple instances can run
+// side by side on one machine for local multi-terminal testing.
+final int _kSingleInstancePort =
+    int.tryParse(Platform.environment['POS_SINGLE_INSTANCE_PORT'] ?? '') ?? 45671;
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();

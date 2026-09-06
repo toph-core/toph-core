@@ -422,10 +422,35 @@ Future<void> initDi({DiOverrides? overrides}) async {
           payloadBase64: payloadBase64,
         ),
     broadcastClaim: lanHubService.broadcastPrintJobClaim,
+    broadcastGrant: lanHubService.broadcastPrintJobGrant,
     broadcastResult: lanHubService.broadcastPrintJobResult,
+    // A job that fails after its caller was released on the 500ms budget has
+    // nobody left to return an error to, so it is surfaced here instead.
+    onLateFailure: (job) => printerService.notifyLateFailure(
+      jobType: job.jobType,
+      ip: job.ip,
+      port: job.port,
+      error: job.lastError,
+    ),
   );
   inject.registerSingleton<PrintQueueService>(printQueueService);
   printerService.attachPrintQueue(printQueueService.submitJob);
+
+  // A receipt waiting on the terminal that owns its printer should come out the
+  // moment that terminal is back, not up to `deferredRetryInterval` later — the
+  // usual shape of this is a till rebooting mid-service while the close check
+  // for an order someone else closed sits queued against it.
+  //
+  // Both roles, because either can be the one holding the queued job: the
+  // leader watches its follower count, a follower watches its own link to the
+  // leader. Wired here rather than inside `PrintQueueService`, which does not
+  // import `lan_hub_*` — same reason its broadcast callbacks are closures here.
+  lanHubService.clientCountListenable.addListener(
+    printQueueService.retryPendingRelays,
+  );
+  lanHubService.onClientConnectionChanged.listen((connected) {
+    if (connected) printQueueService.retryPendingRelays();
+  });
 
   _dataSources();
   _repositories();

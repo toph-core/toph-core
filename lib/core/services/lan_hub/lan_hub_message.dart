@@ -10,6 +10,7 @@ enum LanHubMessageType {
   relayOpResult,
   printJobAnnounce,
   printJobClaim,
+  printJobGrant,
   printJobResult,
   leaseRequest,
   leaseGranted,
@@ -87,6 +88,17 @@ class LanHubMessage {
 
   /// [printJobResult] only: human-readable failure detail, when present.
   final String? printError;
+
+  /// [printJobClaim]/[printJobGrant]: which terminal is claiming, and which
+  /// one the originator picked.
+  ///
+  /// A claim used to be advisory — a terminal decided the printer was its own,
+  /// said so, and printed straight away. With two terminals answering the same
+  /// announcement (an unowned entry that both have a local USB name for) that
+  /// meant two receipts: the originator ignored the second claim, but the
+  /// second terminal had already put paper through. Naming the claimant lets
+  /// the originator grant exactly one of them, and nobody prints unsolicited.
+  final String? printTerminalId;
 
   /// [leaseRequest]/[leaseGranted]/[leaseRejected]/[leaseRelease]: the
   /// requesting terminal's own id — correlates a follower's request with the
@@ -184,6 +196,7 @@ class LanHubMessage {
     this.feedFromCursor,
     this.printResult,
     this.printError,
+    this.printTerminalId,
     this.changeEntity,
     this.changeAction,
     this.changeEntityId,
@@ -270,8 +283,28 @@ class LanHubMessage {
   /// Sent by whichever terminal decides it owns the announced printer —
   /// tells the originator to stop its claim-wait timer and start its lease
   /// timer instead.
-  factory LanHubMessage.printJobClaim({required String jobId}) =>
-      LanHubMessage(type: LanHubMessageType.printJobClaim, printJobId: jobId);
+  factory LanHubMessage.printJobClaim({
+    required String jobId,
+    required String terminalId,
+  }) =>
+      LanHubMessage(
+        type: LanHubMessageType.printJobClaim,
+        printJobId: jobId,
+        printTerminalId: terminalId,
+      );
+
+  /// The originator's answer to the first claim it receives: [terminalId] may
+  /// print, everyone else must not. Later claims for the same job get no grant
+  /// at all, so a loser simply never starts.
+  factory LanHubMessage.printJobGrant({
+    required String jobId,
+    required String terminalId,
+  }) =>
+      LanHubMessage(
+        type: LanHubMessageType.printJobGrant,
+        printJobId: jobId,
+        printTerminalId: terminalId,
+      );
 
   /// Sent by the claiming terminal once its local print attempt finishes
   /// (either outcome) — the originator finalizes its `PrintJob` row on
@@ -401,6 +434,7 @@ class LanHubMessage {
         if (printPayloadBase64 != null) 'print_payload_b64': printPayloadBase64,
         if (printResult != null) 'print_result': printResult,
         if (printError != null) 'print_error': printError,
+        if (printTerminalId != null) 'print_terminal_id': printTerminalId,
         if (leaseTerminalId != null) 'lease_terminal_id': leaseTerminalId,
         if (leaseHeldBy != null) 'lease_held_by': leaseHeldBy,
         if (feedBody != null) 'feed_body': feedBody,
@@ -441,6 +475,7 @@ class LanHubMessage {
         printPayloadBase64: map['print_payload_b64'] as String?,
         printResult: map['print_result'] as String?,
         printError: map['print_error'] as String?,
+        printTerminalId: map['print_terminal_id'] as String?,
         leaseTerminalId: map['lease_terminal_id'] as String?,
         leaseHeldBy: map['lease_held_by'] as String?,
         feedBody: map['feed_body'] as String?,

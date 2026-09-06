@@ -41,6 +41,18 @@ class PrinterConfig {
   /// (first local printer whose port name starts with "USB").
   final String? windowsPrinterName;
 
+  /// The `cash_register_id` of the POS instance that can physically reach this
+  /// printer, or `''` when the printer is unowned and every terminal talks to
+  /// it directly.
+  ///
+  /// This is the field that ends the old "a network printer is reachable from
+  /// everywhere" assumption. A kitchen printer on the kitchen's own switch, or
+  /// one behind a second access point, answers exactly one machine; a job
+  /// raised anywhere else used to burn its socket timeout and fail. With an
+  /// owner set, `PrintQueueService` relays the job to that terminal instead —
+  /// the same path USB printers have always taken.
+  final String ownerCashRegisterId;
+
   const PrinterConfig({
     required this.ip,
     this.port = 9100,
@@ -49,12 +61,28 @@ class PrinterConfig {
     this.connectionType = 'cable',
     this.entryId,
     this.windowsPrinterName,
+    this.ownerCashRegisterId = '',
   });
 
-  /// Backend `GET/POST …/printer-settings` — `connection_type`: rasmiy jadvalda
-  /// **`cable`** (LAN) va **`wlan`** (Wi‑Fi); default `cable`. Ikkalasi ham
-  /// IP:port orqali TCP. **`usb`** — shu qurilmaga to'g'ridan-to'g'ri USB
-  /// kabel bilan ulangan printer, Windows spooler orqali (IP shart emas).
+  /// No owner recorded — any terminal prints to it directly, which is the
+  /// pre-ownership behaviour and stays the default for ad-hoc configs (the
+  /// close-check fallback, a Test Printer probe).
+  bool get isUnowned => ownerCashRegisterId.trim().isEmpty;
+
+  /// Whether this terminal, authenticated as [cashRegisterId], is the one that
+  /// owns the printer. An unowned printer is nobody's, so this is `false` for
+  /// it — callers treat "unowned" and "mine" separately.
+  bool isOwnedBy(String cashRegisterId) {
+    final owner = ownerCashRegisterId.trim();
+    if (owner.isEmpty) return false;
+    return owner.toLowerCase() == cashRegisterId.trim().toLowerCase();
+  }
+
+  /// Backend `GET/POST …/printer-settings` — `connection_type`: **`cable`**
+  /// (LAN), **`wlan`** (Wi‑Fi) va **`usb`**; default `cable`. Birinchi ikkitasi
+  /// IP:port orqali TCP. **`usb`** — egasining mashinasiga kabel bilan ulangan,
+  /// Windows spooler orqali chop etiladigan printer; unda manzil yo'q, shuning
+  /// uchun backend `ip`/`port`ni bo'sh saqlaydi (75_printer_settings_owner).
   final String connectionType;
 
   /// `usb` — Windows printer spooler orqali (OpenPrinter/WritePrinter),
@@ -83,6 +111,7 @@ class PrinterConfig {
     String? connectionType,
     String? entryId,
     String? windowsPrinterName,
+    String? ownerCashRegisterId,
   }) {
     return PrinterConfig(
       ip: ip ?? this.ip,
@@ -92,6 +121,7 @@ class PrinterConfig {
       connectionType: connectionType ?? this.connectionType,
       entryId: entryId ?? this.entryId,
       windowsPrinterName: windowsPrinterName ?? this.windowsPrinterName,
+      ownerCashRegisterId: ownerCashRegisterId ?? this.ownerCashRegisterId,
     );
   }
 
