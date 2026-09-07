@@ -6,10 +6,10 @@ import 'package:mary_ai_pos/core/extension/int_extension.dart';
 import 'package:mary_ai_pos/core/extension/number_formatter.dart';
 import 'package:mary_ai_pos/core/extension/widget_extension.dart';
 import 'package:mary_ai_pos/core/values/app_colors.dart';
+import 'package:mary_ai_pos/core/widgets/styled_virtual_keyboard.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/food_additional/food_additional_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/goods/goods_model.dart';
 import 'package:mary_ai_pos/generated/l10n.dart';
-import 'package:virtual_keyboard_multi_language/virtual_keyboard_multi_language.dart';
 
 class ShowFoodAdditional extends StatefulWidget {
   final List<FoodAdditionalModel> additionals;
@@ -57,6 +57,9 @@ class _ShowFoodAdditionalState extends State<ShowFoodAdditional> {
           child: ValueListenableBuilder(
             valueListenable: keyboardOpen,
             builder: (context, value, child) {
+              // The 300 px the package keyboard defaulted to, so the card's
+              // existing offset behaves exactly as it did before.
+              const keyboardHeight = 300.0;
               return DecoratedBox(
                 decoration: const BoxDecoration(color: Colors.transparent),
                 child: Stack(
@@ -242,9 +245,12 @@ class _ShowFoodAdditionalState extends State<ShowFoodAdditional> {
                           decoration: BoxDecoration(
                             color: context.colors.bgDefault,
                           ),
-                          child: VirtualKeyboard(
-                            textController: textEditingController,
-                            type: VirtualKeyboardType.Alphanumeric,
+                          // Same keyboard as the rest of the app — EN/UZ/RU,
+                          // shared language preference.
+                          child: StyledVirtualKeyboard(
+                            controller: textEditingController,
+                            height: keyboardHeight,
+                            onClose: () => keyboardOpen.value = false,
                           ),
                         ),
                       ),

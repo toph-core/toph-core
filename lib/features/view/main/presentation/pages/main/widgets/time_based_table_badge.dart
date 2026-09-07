@@ -62,8 +62,12 @@ class _TimeBasedTableBadgeState extends State<TimeBasedTableBadge> {
 
   bool get _isBusy => widget.table.status == TableStatus.busy;
 
+  /// `_pricePerHour` is held as text because its other source — a
+  /// `TableTimerResponse` — still carries the rate as a string. The table's own
+  /// rate is a number now, so it is rendered here rather than at every use.
   void _seedPriceFromTable() {
-    _pricePerHour = widget.table.pricePerHour ?? '';
+    final price = widget.table.pricePerHour;
+    _pricePerHour = (price == null || price <= 0) ? '' : price.round().toString();
   }
 
   /// CLIENT_FACING_OFFLINE_PLAN.md §2: this widget used to run its own,

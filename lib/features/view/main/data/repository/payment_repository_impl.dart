@@ -78,13 +78,16 @@ class PaymentRepositoryImpl implements PaymentRepository {
       'payment_type': paymentType,
       'apply_service': applyService,
       // §12 rule 1 (the design doc's own "single most safety-critical
-      // finding") — this payload previously had no client-generated
-      // idempotency key at all, unlike every other write in this app. A
-      // retried payOrder POST (a timeout after the charge actually landed
-      // server-side) had nothing for the backend to dedupe a duplicate
-      // charge on. Generated once here and baked into the persisted outbox
-      // payload, so every replay attempt resends the identical id rather
-      // than a fresh one per attempt.
+      // finding"). Generated once here and baked into the persisted outbox
+      // payload, so every replay attempt resends the identical id rather than
+      // a fresh one per attempt.
+      //
+      // Note what actually protects a replay today: `MarkOrderPaid` returns an
+      // already-paid order unchanged (its own "idempotency guard"), so a
+      // retried POST cannot insert a second `bill_payment`. The API has no
+      // `client_payment_id` field at all — `MarkOrderPaidRequest` does not
+      // declare it and `encoding/json` drops it silently — so this key is
+      // carried for the day the server keys on it, not relied on now.
       'client_payment_id': generateUuidV4(),
       // The moment the cashier closed the check, not the moment the terminal
       // got its network back. `MarkOrderPaidRequest.PaidAt` is optional and

@@ -10,6 +10,7 @@ import 'package:mary_ai_pos/core/sync/sync_engine.dart';
 import 'package:mary_ai_pos/core/utils/user_role_permissions.dart';
 import 'package:mary_ai_pos/core/routes/app_routes.dart';
 import 'package:mary_ai_pos/core/widgets/app_scaffold.dart';
+import 'package:mary_ai_pos/core/widgets/styled_virtual_keyboard.dart';
 import 'package:mary_ai_pos/di.dart';
 import 'package:mary_ai_pos/features/view/auth/presentation/cubit/bloc/user_bloc.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/category/category_model.dart';
@@ -19,9 +20,6 @@ import 'package:mary_ai_pos/features/view/main/presentation/pages/main/widgets/m
 import 'package:mary_ai_pos/features/view/main/presentation/widgets/product_grid_card.dart';
 import 'package:mary_ai_pos/generated/l10n.dart';
 import 'package:number_paginator/number_paginator.dart';
-// `_CategoryDialog` o'zining inline klaviaturasini ko'rsatadi (dialog Overlay'da —
-// AppScaffold'dagi GlobalVirtualKeyboard'ga teginmaydi).
-import 'package:virtual_keyboard_multi_language/virtual_keyboard_multi_language.dart';
 
 /// Admin/manager: kategoriyalar + taomlar ikkita panel ko'rinishida.
 class MenuMealsListScreen extends StatefulWidget {
@@ -788,7 +786,6 @@ class _CategoryDialogState extends State<_CategoryDialog> {
   late final TextEditingController _nameCtrl;
   bool _saving = false;
   bool _hasText = false;
-  bool _showKeyboard = false;
 
   @override
   void initState() {
@@ -807,10 +804,13 @@ class _CategoryDialogState extends State<_CategoryDialog> {
 
   @override
   void dispose() {
+    FloatingKeyboard.closeFor(_nameCtrl);
     _nameCtrl.removeListener(_onTextChanged);
     _nameCtrl.dispose();
     super.dispose();
   }
+
+  void _openKeyboard() => FloatingKeyboard.openText(context, _nameCtrl);
 
   Future<void> _submit() async {
     final name = _nameCtrl.text.trim();
@@ -891,7 +891,7 @@ class _CategoryDialogState extends State<_CategoryDialog> {
                 controller: _nameCtrl,
                 readOnly: true,
                 showCursor: true,
-                onTap: () => setState(() => _showKeyboard = true),
+                onTap: _openKeyboard,
                 style: TextStyle(
                   fontSize: 16,
                   color: c.textDefault,
@@ -977,25 +977,6 @@ class _CategoryDialogState extends State<_CategoryDialog> {
                   ),
                 ],
               ),
-              if (_showKeyboard) ...[
-                const SizedBox(height: 16),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
-                  child: ColoredBox(
-                    color: c.bgSecondary,
-                    child: VirtualKeyboard(
-                      height: 260,
-                      customLayoutKeys: VirtualKeyboardDefaultLayoutKeys([
-                        VirtualKeyboardDefaultLayouts.English,
-                      ]),
-                      textColor: c.textDefault,
-                      fontSize: 22,
-                      textController: _nameCtrl,
-                      type: VirtualKeyboardType.Alphanumeric,
-                    ),
-                  ),
-                ),
-              ],
             ],
           ),
         ),
@@ -1051,6 +1032,7 @@ class _SearchFieldState extends State<_SearchField> {
 
   @override
   void dispose() {
+    FloatingKeyboard.closeFor(_ctrl);
     _ctrl.removeListener(_onTextChanged);
     if (_ownsCtrl) _ctrl.dispose();
     _focusNode
@@ -1104,6 +1086,9 @@ class _SearchFieldState extends State<_SearchField> {
               textInputAction: TextInputAction.search,
               keyboardType: TextInputType.text,
               enableInteractiveSelection: true,
+              // `_onTextChanged` already relays edits, so the keyboard needs
+              // no `onChanged` of its own here.
+              onTap: () => FloatingKeyboard.openText(context, _ctrl),
               cursorColor: c.textBrand,
               style: TextStyle(
                 fontSize: fontSize,

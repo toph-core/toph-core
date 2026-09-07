@@ -1,37 +1,64 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:mary_ai_pos/core/auth/storage/token_storage_impl.dart';
 import 'package:mary_ai_pos/core/extension/for_context.dart';
+import 'package:mary_ai_pos/core/utils/helper/helper_widget.dart';
 import 'package:mary_ai_pos/di.dart';
 
-/// Shows [StyledVirtualKeyboard]/[StyledNumericKeyboard] as a floating
-/// overlay pinned to the bottom of the screen, sized the same way as
-/// [AppScaffold]'s app-wide keyboard.
+/// The app's single on-screen keyboard. Shows [StyledVirtualKeyboard] /
+/// [StyledNumericKeyboard] in the *root* [Overlay], so it appears on every
+/// screen and on top of dialogs alike.
 ///
 /// Dialogs (`showDialog`) live in the same root [Overlay] as the app, but
 /// their route's [OverlayEntry] is inserted *after* — and therefore paints
-/// on top of — whatever [AppScaffold] renders in its own `Stack`. That's
-/// why `AppScaffold.open` is invisible from inside a dialog. Inserting a
-/// new [OverlayEntry] straight into the root overlay (instead of nesting
-/// the keyboard inside the dialog's own widget tree) puts it above the
-/// dialog too, and lets it span the full screen instead of being squeezed
-/// into the dialog's width.
+/// on top of — anything a screen renders inside its own `Stack`. Inserting
+/// the keyboard straight into the root overlay puts it above the dialog
+/// too, and lets it span the full screen instead of being squeezed into the
+/// dialog's width.
+///
+/// Every text input in the app routes here (directly, or through
+/// `AppScaffold.open`), so at most one keyboard is ever on screen.
 class FloatingKeyboard {
   FloatingKeyboard._();
 
   static OverlayEntry? _entry;
 
+  /// The controller the open keyboard is currently typing into — lets a
+  /// second tap on the *same* field be a no-op instead of a close/reopen
+  /// flicker.
+  static TextEditingController? _current;
+
+  /// The overlay the keyboard is inserted into.
+  ///
+  /// Falls back to the root navigator's own overlay when the caller has no
+  /// usable context (e.g. `AppScaffold.open`, which is a bare static). Note
+  /// `navigatorKey.currentContext` is the Navigator's *own* element — the
+  /// overlay hangs below it, not above — so `Overlay.of` on that context
+  /// finds nothing; `NavigatorState.overlay` is the way in.
+  static OverlayState? _overlayFor(BuildContext? context) {
+    if (context != null && context.mounted) {
+      final overlay = Overlay.maybeOf(context, rootOverlay: true);
+      if (overlay != null) return overlay;
+    }
+    return navigatorKey.currentState?.overlay;
+  }
+
   static void openText(
-    BuildContext context,
+    BuildContext? context,
     TextEditingController controller, {
     ValueChanged<String>? onChanged,
     VoidCallback? onClose,
   }) {
+    final overlay = _overlayFor(context);
+    if (overlay == null) return;
+    if (_entry != null && identical(_current, controller)) return;
     _show(
-      context,
+      overlay,
+      controller,
       StyledVirtualKeyboard(
         controller: controller,
-        height: MediaQuery.of(context).size.height * .48,
+        height: _textKeyboardHeight(overlay.context),
         onClose: () {
           onClose?.call();
           close();
@@ -53,10 +80,13 @@ class FloatingKeyboard {
     ValueChanged<String>? onChanged,
     VoidCallback? onClose,
   }) {
+    if (!context.mounted) return;
+    if (_entry != null && identical(_current, controller)) return;
     const cardWidth = 340.0;
     const cardHeight = 300.0;
     _showAnchored(
       context,
+      controller,
       cardWidth: cardWidth,
       cardHeight: cardHeight,
       keyboard: StyledNumericKeyboard(
@@ -74,9 +104,61 @@ class FloatingKeyboard {
     );
   }
 
-  static void _show(BuildContext context, Widget keyboard) {
+  /// Picks the keyboard that matches the field: the compact numeric pad for
+  /// number/phone inputs, the full alphanumeric one for everything else.
+  ///
+  /// [context] should be the field's own context (the render box the numeric
+  /// pad anchors itself under) — a `Builder` around the field is the usual
+  /// way to get one.
+  static void openFor(
+    BuildContext context,
+    TextEditingController controller, {
+    TextInputType? keyboardType,
+    bool allowDecimal = false,
+    bool groupThousands = false,
+    ValueChanged<String>? onChanged,
+    VoidCallback? onClose,
+  }) {
+    if (isNumericType(keyboardType)) {
+      openNumeric(
+        context,
+        controller,
+        allowDecimal: allowDecimal || _allowsDecimal(keyboardType),
+        groupThousands: groupThousands,
+        onChanged: onChanged,
+        onClose: onClose,
+      );
+    } else {
+      openText(context, controller, onChanged: onChanged, onClose: onClose);
+    }
+  }
+
+  /// True for the input types that should get the digit pad rather than the
+  /// full keyboard.
+  static bool isNumericType(TextInputType? type) {
+    if (type == null) return false;
+    if (type == TextInputType.number || type == TextInputType.phone) {
+      return true;
+    }
+    // `numberWithOptions(...)` builds a fresh instance per call, so compare
+    // by description rather than by identity.
+    final name = type.toString();
+    return name.contains('number') || name.contains('phone');
+  }
+
+  static bool _allowsDecimal(TextInputType? type) => type?.decimal == true;
+
+  /// 48% of the screen, but never so tall that it swallows the whole window
+  /// on a short display nor so short that the keys stop being tappable.
+  static double _textKeyboardHeight(BuildContext context) =>
+      (MediaQuery.of(context).size.height * .48).clamp(260.0, 460.0);
+
+  static void _show(
+    OverlayState overlayState,
+    TextEditingController controller,
+    Widget keyboard,
+  ) {
     close();
-    final overlayState = Overlay.of(context, rootOverlay: true);
     final entry = OverlayEntry(
       // Positioned.fill (rather than a bare Stack) is what gives this entry
       // full-screen bounds inside Overlay's own internal Stack — a plain
@@ -85,16 +167,7 @@ class FloatingKeyboard {
       builder: (_) => Positioned.fill(
         child: Stack(
           children: [
-            // Tapping anywhere outside the keyboard closes it —
-            // translucent so the tap still reaches whatever's underneath
-            // (e.g. a dialog's Save button), matching AppScaffold's own
-            // keyboard behavior.
-            Positioned.fill(
-              child: GestureDetector(
-                behavior: HitTestBehavior.translucent,
-                onTap: close,
-              ),
-            ),
+            const _DismissCatcher(onDismiss: FloatingKeyboard.close),
             Positioned(
               left: 0,
               right: 0,
@@ -109,17 +182,20 @@ class FloatingKeyboard {
       ),
     );
     _entry = entry;
+    _current = controller;
     overlayState.insert(entry);
   }
 
   static void _showAnchored(
-    BuildContext anchorContext, {
+    BuildContext anchorContext,
+    TextEditingController controller, {
     required double cardWidth,
     required double cardHeight,
     required Widget keyboard,
   }) {
     close();
-    final overlayState = Overlay.of(anchorContext, rootOverlay: true);
+    final overlayState = _overlayFor(anchorContext);
+    if (overlayState == null) return;
     final overlayBox = overlayState.context.findRenderObject() as RenderBox?;
     final anchorBox = anchorContext.findRenderObject();
 
@@ -147,12 +223,7 @@ class FloatingKeyboard {
       builder: (_) => Positioned.fill(
         child: Stack(
           children: [
-            Positioned.fill(
-              child: GestureDetector(
-                behavior: HitTestBehavior.translucent,
-                onTap: close,
-              ),
-            ),
+            const _DismissCatcher(onDismiss: FloatingKeyboard.close),
             Positioned(
               left: left,
               top: top,
@@ -163,15 +234,95 @@ class FloatingKeyboard {
       ),
     );
     _entry = entry;
+    _current = controller;
     overlayState.insert(entry);
   }
 
+  /// Closes the keyboard only when it is the one typing into [controller].
+  ///
+  /// What `dispose` should call: by the time a field is torn down the
+  /// keyboard may already have moved on to another field (a dialog opened
+  /// over it, say), and an unconditional [close] would yank that one away.
+  static void closeFor(TextEditingController controller) {
+    if (identical(_current, controller)) close();
+  }
+
   /// Closes the floating keyboard, if one is open. Safe to call
-  /// unconditionally (e.g. from a dialog's `dispose`).
+  /// unconditionally.
   static void close() {
     _entry?.remove();
     _entry = null;
+    _current = null;
   }
+}
+
+/// Full-screen tap catcher that sits *under* the keyboard panel and closes
+/// it when the user taps anything else.
+///
+/// Deliberately a [Listener] and not a [GestureDetector]: a tap recognizer
+/// here would enter the gesture arena ahead of whatever button is underneath
+/// (the overlay is hit-tested first), win it, and swallow the press — so the
+/// first tap on a dialog's "Save" would only dismiss the keyboard and the
+/// user would have to tap twice. A raw pointer listener never joins the
+/// arena, so the button still fires on the same tap.
+///
+/// It dismisses on pointer *up*, and only when the pointer stayed put: a
+/// drag is someone scrolling the list behind the keyboard while they type a
+/// search, and that must not close what they are typing into. Up also lands
+/// before the gesture arena is swept, so a tap on another field dismisses
+/// first and that field's own `onTap` re-opens straight after.
+class _DismissCatcher extends StatefulWidget {
+  final VoidCallback onDismiss;
+
+  const _DismissCatcher({required this.onDismiss});
+
+  @override
+  State<_DismissCatcher> createState() => _DismissCatcherState();
+}
+
+class _DismissCatcherState extends State<_DismissCatcher> {
+  Offset? _downAt;
+
+  @override
+  Widget build(BuildContext context) {
+    return Positioned.fill(
+      child: Listener(
+        behavior: HitTestBehavior.translucent,
+        onPointerDown: (event) => _downAt = event.position,
+        onPointerCancel: (_) => _downAt = null,
+        onPointerUp: (event) {
+          final down = _downAt;
+          _downAt = null;
+          if (down == null) return;
+          if ((event.position - down).distance <= kTouchSlop) {
+            widget.onDismiss();
+          }
+        },
+      ),
+    );
+  }
+}
+
+/// Closes the on-screen keyboard whenever the navigation stack changes —
+/// a pushed dialog, a popped screen, a `Navigator.pushReplacement` on
+/// logout. Without this the overlay entry outlives the field it was typing
+/// into and hangs around over the next screen.
+class KeyboardRouteObserver extends NavigatorObserver {
+  @override
+  void didPush(Route<dynamic> route, Route<dynamic>? previousRoute) =>
+      FloatingKeyboard.close();
+
+  @override
+  void didPop(Route<dynamic> route, Route<dynamic>? previousRoute) =>
+      FloatingKeyboard.close();
+
+  @override
+  void didRemove(Route<dynamic> route, Route<dynamic>? previousRoute) =>
+      FloatingKeyboard.close();
+
+  @override
+  void didReplace({Route<dynamic>? newRoute, Route<dynamic>? oldRoute}) =>
+      FloatingKeyboard.close();
 }
 
 enum KeyboardLanguage { eng, uzb, rus }

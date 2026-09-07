@@ -4,6 +4,7 @@ import 'package:mary_ai_pos/core/common/custom_network_image.dart';
 import 'package:mary_ai_pos/core/constants/constants.dart';
 import 'package:mary_ai_pos/core/extension/for_context.dart';
 import 'package:mary_ai_pos/core/extension/number_formatter.dart';
+import 'package:mary_ai_pos/core/widgets/styled_virtual_keyboard.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/category/category_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/goods/goods_model.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/detail/detail_bloc.dart';
@@ -42,6 +43,7 @@ class _MenuPanelState extends State<MenuPanel> {
 
   @override
   void dispose() {
+    FloatingKeyboard.closeFor(_searchCtrl);
     _searchCtrl.removeListener(_onSearchChanged);
     _searchCtrl.dispose();
     super.dispose();
@@ -134,8 +136,11 @@ class _TopBar extends StatelessWidget {
                 builder: (context, value, _) {
                   return TextField(
                     controller: searchCtrl,
+                    textInputAction: TextInputAction.search,
                     // onChanged virtual keyboard bilan ishlamaydi —
                     // parent `_MenuPanelState` controller listener'ga ulangan.
+                    onTap: () =>
+                        FloatingKeyboard.openText(context, searchCtrl),
                     style: TextStyle(
                       fontSize: 13,
                       color: colors.textDefault,

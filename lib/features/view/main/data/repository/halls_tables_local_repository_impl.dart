@@ -42,7 +42,7 @@ class HallsTablesLocalRepositoryImpl implements HallsTablesLocalRepository {
 
   @override
   Either<Failure, Unit> createHall(Map<String, dynamic> body) =>
-      _queueCreate(_halls, body);
+      _queueCreate(_halls, body).map((_) => unit);
 
   @override
   Either<Failure, Unit> updateHall(
@@ -56,7 +56,7 @@ class HallsTablesLocalRepositoryImpl implements HallsTablesLocalRepository {
       _applyDelete(_halls, id);
 
   @override
-  Either<Failure, Unit> createTable(Map<String, dynamic> body) =>
+  Either<Failure, String> createTable(Map<String, dynamic> body) =>
       _queueCreate(_tables, body);
 
   @override
@@ -70,15 +70,25 @@ class HallsTablesLocalRepositoryImpl implements HallsTablesLocalRepository {
   Either<Failure, Unit> deleteTable(String id) =>
       _applyDelete(_tables, id);
 
-  Either<Failure, Unit> _queueCreate(
+  @override
+  Either<Failure, Unit> setTableStatus(String id, TableStatus status) =>
+      _guard(() {
+        // Straight to the occupancy overlay. No outbox row on purpose — see the
+        // interface doc: this is the one table field the server is not the
+        // authority for, and `away` is not a value it can even hold.
+        _db.setTableStatus(id, status.name);
+        return unit;
+      });
+
+  Either<Failure, String> _queueCreate(
     String entity,
     Map<String, dynamic> body,
   ) =>
       _guard(() {
         // Appears immediately under a provisional id, which the drainer swaps
-        // for the server's once the create lands. See DECISIONS.md D1.
-        _writer.create(entity: entity, row: body, request: body);
-        return unit;
+        // for the server's once the create lands. See DECISIONS.md D1. The id
+        // is returned so the caller can address the row in that window.
+        return _writer.create(entity: entity, row: body, request: body);
       });
 
   Either<Failure, Unit> _applyUpdate(
@@ -106,7 +116,7 @@ class HallsTablesLocalRepositoryImpl implements HallsTablesLocalRepository {
         return unit;
       });
 
-  Either<Failure, Unit> _guard(Unit Function() body) {
+  Either<Failure, T> _guard<T>(T Function() body) {
     try {
       return Right(body());
     } catch (e) {

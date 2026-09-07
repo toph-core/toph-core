@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:mary_ai_pos/core/extension/for_context.dart';
 import 'package:mary_ai_pos/core/extension/widget_extension.dart';
+import 'package:mary_ai_pos/core/widgets/styled_virtual_keyboard.dart';
 
 class CustomTextField extends StatelessWidget {
   const CustomTextField({
@@ -66,103 +67,126 @@ class CustomTextField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return TextFormField(
-      maxLines: maxLines ?? 1,
-      minLines: minLines ?? 1,
-      validator: validator,
-      readOnly: readOnly,
-      focusNode: focusNode,
-      inputFormatters: formatter,
-      onTap: onTap,
-      textAlign: textAlign,
-      initialValue: initialValue,
-      style:
-          style ??
-          Theme.of(
-            context,
-          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w400),
-      obscureText: obscure ?? false,
-      textInputAction: textInputAction,
-      keyboardType: textInputType,
-      onChanged: onChange,
-      onEditingComplete: onEditingComplete,
-      onTapOutside: (event) => onEditingComplete,
-      controller: textEditingController,
-      cursorColor: context.colors.borderBrand,
-      maxLength: maxLength,
-      autovalidateMode: AutovalidateMode.onUserInteraction,
-      decoration: InputDecoration(
-        // contentPadding:
-        //     EdgeInsets.symmetric(horizontal: (16), vertical: (12)),
-        counterText: '',
-        contentPadding:
-            contentPadding ??
-            const EdgeInsets.symmetric(horizontal: (16), vertical: (12)),
-        suffixIconConstraints: const BoxConstraints(
-          minHeight: (25),
-          minWidth: (25),
-        ),
-        prefixIcon: prefixIcon == null
-            ? null
-            : SvgPicture.asset(
-                prefixIcon ?? "",
-                colorFilter: ColorFilter.mode(
-                  preIconColor ?? context.colors.border,
-                  BlendMode.srcIn,
-                ),
-              ).paddingOnly(right: (6), left: (12), bottom: (10), top: (10)),
-        suffix: suffix,
-        suffixIcon: SizedBox(
-          height: 23,
-          width: 23,
-          child: suffixIcon,
-        ).paddingOnly(right: (16)),
-        hintStyle: hintStyle ?? context.textStyles.bodyMd,
-        hintText: hintText,
-        filled: true,
-        fillColor: fillColor ?? context.colors.bgSecondary,
-        focusedErrorBorder: OutlineInputBorder(
-          borderRadius: context.radius.buttonLg,
-          borderSide: BorderSide(
-            color: context.colors.systemError,
-            width: (1.5),
+    // Wrapped so the on-screen keyboard has the field's own render box to
+    // anchor the numeric pad under.
+    return Builder(
+      builder: (fieldContext) => TextFormField(
+        maxLines: maxLines ?? 1,
+        minLines: minLines ?? 1,
+        validator: validator,
+        readOnly: readOnly,
+        focusNode: focusNode,
+        inputFormatters: formatter,
+        // A read-only field is a display/picker, not something to type into,
+        // and a caller-supplied `onTap` (date picker, dropdown) owns the tap
+        // outright — everything else gets the on-screen keyboard, because the
+        // terminals this runs on have no physical one. An uncontrolled field
+        // (`initialValue`, no controller) has nothing for the keyboard to write
+        // into, so it is left alone too.
+        onTap: onTap ?? _openKeyboard(fieldContext),
+        textAlign: textAlign,
+        initialValue: initialValue,
+        style:
+            style ??
+            Theme.of(
+              context,
+            ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w400),
+        obscureText: obscure ?? false,
+        textInputAction: textInputAction,
+        keyboardType: textInputType,
+        onChanged: onChange,
+        onEditingComplete: onEditingComplete,
+        onTapOutside: (event) => onEditingComplete,
+        controller: textEditingController,
+        cursorColor: context.colors.borderBrand,
+        maxLength: maxLength,
+        autovalidateMode: AutovalidateMode.onUserInteraction,
+        decoration: InputDecoration(
+          // contentPadding:
+          //     EdgeInsets.symmetric(horizontal: (16), vertical: (12)),
+          counterText: '',
+          contentPadding:
+              contentPadding ??
+              const EdgeInsets.symmetric(horizontal: (16), vertical: (12)),
+          suffixIconConstraints: const BoxConstraints(
+            minHeight: (25),
+            minWidth: (25),
           ),
-        ),
-        enabledBorder: readOnly
-            ? OutlineInputBorder(
-                borderRadius: context.radius.buttonLg,
-                borderSide: const BorderSide(color: Colors.transparent),
-              )
-            : OutlineInputBorder(
-                borderRadius: context.radius.buttonLg,
-                borderSide: borderColor == null
-                    ? BorderSide.none
-                    : BorderSide(color: borderColor!, width: (1.5)),
-              ),
-        focusedBorder: readOnly
-            ? OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: Colors.transparent),
-              )
-            : OutlineInputBorder(
-                borderRadius: context.radius.buttonLg,
-                borderSide: BorderSide(
-                  color: context.colors.borderBrand,
-                  width: (1.5),
+          prefixIcon: prefixIcon == null
+              ? null
+              : SvgPicture.asset(
+                  prefixIcon ?? "",
+                  colorFilter: ColorFilter.mode(
+                    preIconColor ?? context.colors.border,
+                    BlendMode.srcIn,
+                  ),
+                ).paddingOnly(right: (6), left: (12), bottom: (10), top: (10)),
+          suffix: suffix,
+          suffixIcon: SizedBox(
+            height: 23,
+            width: 23,
+            child: suffixIcon,
+          ).paddingOnly(right: (16)),
+          hintStyle: hintStyle ?? context.textStyles.bodyMd,
+          hintText: hintText,
+          filled: true,
+          fillColor: fillColor ?? context.colors.bgSecondary,
+          focusedErrorBorder: OutlineInputBorder(
+            borderRadius: context.radius.buttonLg,
+            borderSide: BorderSide(
+              color: context.colors.systemError,
+              width: (1.5),
+            ),
+          ),
+          enabledBorder: readOnly
+              ? OutlineInputBorder(
+                  borderRadius: context.radius.buttonLg,
+                  borderSide: const BorderSide(color: Colors.transparent),
+                )
+              : OutlineInputBorder(
+                  borderRadius: context.radius.buttonLg,
+                  borderSide: borderColor == null
+                      ? BorderSide.none
+                      : BorderSide(color: borderColor!, width: (1.5)),
                 ),
-              ),
-        disabledBorder: OutlineInputBorder(
-          borderRadius: context.radius.buttonLg,
-          borderSide: BorderSide(color: context.colors.border, width: (1.5)),
-        ),
-        errorBorder: OutlineInputBorder(
-          borderRadius: context.radius.buttonLg,
-          borderSide: BorderSide(
-            color: context.colors.systemError,
-            width: (1.5),
+          focusedBorder: readOnly
+              ? OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: Colors.transparent),
+                )
+              : OutlineInputBorder(
+                  borderRadius: context.radius.buttonLg,
+                  borderSide: BorderSide(
+                    color: context.colors.borderBrand,
+                    width: (1.5),
+                  ),
+                ),
+          disabledBorder: OutlineInputBorder(
+            borderRadius: context.radius.buttonLg,
+            borderSide: BorderSide(color: context.colors.border, width: (1.5)),
+          ),
+          errorBorder: OutlineInputBorder(
+            borderRadius: context.radius.buttonLg,
+            borderSide: BorderSide(
+              color: context.colors.systemError,
+              width: (1.5),
+            ),
           ),
         ),
       ),
     );
+  }
+
+  /// `null` when this field should keep the platform's own tap behaviour —
+  /// nothing to type into, or nothing to type with.
+  VoidCallback? _openKeyboard(BuildContext fieldContext) {
+    final controller = textEditingController;
+    if (readOnly || controller == null) return null;
+    return () => FloatingKeyboard.openFor(
+          fieldContext,
+          controller,
+          keyboardType: textInputType,
+          onChanged: onChange == null ? null : (v) => onChange!(v),
+        );
   }
 }

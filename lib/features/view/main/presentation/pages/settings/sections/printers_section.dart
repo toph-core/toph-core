@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:mary_ai_pos/core/components/flush_bars.dart';
 import 'package:mary_ai_pos/core/extension/for_context.dart';
+import 'package:mary_ai_pos/core/widgets/styled_virtual_keyboard.dart';
 import 'package:mary_ai_pos/core/service/printer/printer_config.dart';
 import 'package:mary_ai_pos/core/service/printer/printer_config_storage.dart';
 import 'package:mary_ai_pos/core/service/printer/printer_service.dart';
@@ -1666,6 +1667,13 @@ class _TextField extends StatelessWidget {
       keyboardType: keyboard,
       validator: validator,
       inputFormatters: formatters,
+      // The printer dialog is a kiosk dialog — without this the field takes
+      // focus and there is nothing to type with.
+      onTap: () => FloatingKeyboard.openFor(
+        context,
+        controller,
+        keyboardType: keyboard,
+      ),
       style: TextStyle(
         fontSize: 14,
         fontWeight: FontWeight.w500,

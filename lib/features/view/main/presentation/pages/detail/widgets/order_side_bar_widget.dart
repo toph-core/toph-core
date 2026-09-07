@@ -4,6 +4,7 @@ import 'package:mary_ai_pos/core/constants/constants.dart';
 import 'package:mary_ai_pos/core/design_system/pos_design_system.dart';
 import 'package:mary_ai_pos/core/widgets/manager_pincode_dialog.dart';
 import 'package:mary_ai_pos/core/extension/for_context.dart';
+import 'package:mary_ai_pos/core/widgets/styled_virtual_keyboard.dart';
 import 'package:mary_ai_pos/core/extension/number_formatter.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/cafe_tables/cafe_tables_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/food_additional/food_additional_model.dart';
@@ -743,8 +744,15 @@ class _EditExistingOrderItemDialogState
 
   @override
   void dispose() {
+    FloatingKeyboard.closeFor(_cancelCommentController);
     _cancelCommentController.dispose();
     super.dispose();
+  }
+
+  void _onCancelCommentChanged(String _) {
+    if (_cancelCommentError != null) {
+      setState(() => _cancelCommentError = null);
+    }
   }
 
   void _selectQuickCancelComment(String comment) {
@@ -910,11 +918,12 @@ class _EditExistingOrderItemDialogState
                 TextField(
                   controller: _cancelCommentController,
                   maxLines: 3,
-                  onChanged: (_) {
-                    if (_cancelCommentError != null) {
-                      setState(() => _cancelCommentError = null);
-                    }
-                  },
+                  onTap: () => FloatingKeyboard.openText(
+                    context,
+                    _cancelCommentController,
+                    onChanged: _onCancelCommentChanged,
+                  ),
+                  onChanged: _onCancelCommentChanged,
                   decoration: InputDecoration(
                     hintText: S.current.strCancelOrderItemReasonHint,
                     errorText: _cancelCommentError,

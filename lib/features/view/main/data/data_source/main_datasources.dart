@@ -228,10 +228,10 @@ abstract class MainDataSources {
 
   Future<Either<Failure, bool>> deleteTransaction(String id);
 
-  /// `POST /api/v1/auth/register` — creates a new staff account.
+  /// `POST /api/v1/users` — creates a new staff account.
   Future<Either<Failure, Map<String, dynamic>>> createUser(Map<String, dynamic> body);
 
-  /// `PUT /api/v1/users/{id}`.
+  /// `PATCH /api/v1/users/{id}`.
   Future<Either<Failure, bool>> updateUser(String id, Map<String, dynamic> body);
 
   /// `DELETE /api/v1/users/{id}`.
@@ -473,14 +473,15 @@ class MainDataSourcesImpl implements MainDataSources {
 
   @override
   Future<Either<Failure, List<UserModel>>> getUsers() async {
-    // `GET /api/v1/users` is admin-only server-side (confirmed against the
-    // backend's RBAC config) — a normal waiter/cashier terminal session
-    // legitimately 403s there, which is why this used to be hard-disabled.
-    // `GET /api/v1/users/staff` is the role-appropriate endpoint (the
-    // backend's own doc comment: "Use for endpoints that Flutter reads
-    // during initial data pull") — reachable by admin/manager/superadmin AND
-    // a terminal-scoped session, so this now genuinely returns data instead
-    // of an unconditional empty list.
+    // `GET /api/v1/users` is admin-only server-side. `GET /api/v1/users/staff`
+    // is the wider endpoint — `RolesTerminalAndAdmin`, i.e. admin/manager/
+    // superadmin plus a terminal-scoped session — but *not* a plain waiter or
+    // cashier token, which still 403s here. The 403 branch below is the normal
+    // path for those roles, not a defensive edge case.
+    //
+    // Nothing on a screen depends on this any more: the waiter dropdown reads
+    // the replicated `users` table (`WaiterLocalRepositoryImpl.getStaffWaiters`),
+    // which every role can read offline.
     try {
       final response = await _client.get(
         ListAPI.usersStaff,
@@ -1261,7 +1262,7 @@ class MainDataSourcesImpl implements MainDataSources {
   @override
   Future<Either<Failure, Map<String, dynamic>>> createUser(Map<String, dynamic> body) async {
     try {
-      final response = await _client.post(ListAPI.authRegister, data: body);
+      final response = await _client.post(ListAPI.usersCreate, data: body);
       return Right(_asMap(response.data));
     } on DioException catch (exception) {
       return Left(handleDioException(exception));
@@ -1277,7 +1278,11 @@ class MainDataSourcesImpl implements MainDataSources {
     Map<String, dynamic> body,
   ) async {
     try {
-      await _client.put(ListAPI.userById(id), data: body);
+      // PATCH, not PUT. The route is registered as
+      // `users.PATCH("/:id", h.UpdateUserByID)` — a PUT there answers 405 and
+      // the queued staff edit quarantines. (The handler's Swagger annotation
+      // still says `[put]`; the router is the authority.)
+      await _client.patch(ListAPI.userById(id), data: body);
       return const Right(true);
     } on DioException catch (exception) {
       return Left(handleDioException(exception));

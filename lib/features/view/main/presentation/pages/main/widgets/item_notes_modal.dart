@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mary_ai_pos/core/extension/for_context.dart';
+import 'package:mary_ai_pos/core/widgets/styled_virtual_keyboard.dart';
 import 'package:mary_ai_pos/generated/l10n.dart';
 
 class ItemNotesModal extends StatefulWidget {
@@ -27,6 +28,7 @@ class _ItemNotesModalState extends State<ItemNotesModal> {
 
   @override
   void dispose() {
+    FloatingKeyboard.closeFor(_notesController);
     _notesController.dispose();
     super.dispose();
   }
@@ -82,6 +84,8 @@ class _ItemNotesModalState extends State<ItemNotesModal> {
             TextField(
               controller: _notesController,
               maxLines: 5,
+              onTap: () =>
+                  FloatingKeyboard.openText(context, _notesController),
               decoration: InputDecoration(
                 hintText: S.current.strEnterNotes,
                 hintStyle: context.textStyles.bodySm.copyWith(

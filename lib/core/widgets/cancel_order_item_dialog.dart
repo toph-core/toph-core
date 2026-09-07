@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mary_ai_pos/core/extension/for_context.dart';
+import 'package:mary_ai_pos/core/widgets/styled_virtual_keyboard.dart';
 import 'package:mary_ai_pos/generated/l10n.dart';
 
 /// Prompts for a required cancellation reason before cancelling a committed
@@ -27,12 +28,29 @@ class _CancelOrderItemDialogState extends State<_CancelOrderItemDialog> {
   void initState() {
     super.initState();
     _commentController = TextEditingController();
+    // The field is autofocused, so the on-screen keyboard has to come up with
+    // it — a kiosk terminal has no physical one to fall back on.
+    WidgetsBinding.instance.addPostFrameCallback((_) => _openKeyboard());
   }
 
   @override
   void dispose() {
+    FloatingKeyboard.closeFor(_commentController);
     _commentController.dispose();
     super.dispose();
+  }
+
+  void _openKeyboard() {
+    if (!mounted) return;
+    FloatingKeyboard.openText(
+      context,
+      _commentController,
+      onChanged: _onCommentChanged,
+    );
+  }
+
+  void _onCommentChanged(String _) {
+    if (_errorText != null) setState(() => _errorText = null);
   }
 
   void _selectQuickComment(String comment) {
@@ -90,9 +108,8 @@ class _CancelOrderItemDialogState extends State<_CancelOrderItemDialog> {
               controller: _commentController,
               maxLines: 3,
               autofocus: true,
-              onChanged: (_) {
-                if (_errorText != null) setState(() => _errorText = null);
-              },
+              onTap: _openKeyboard,
+              onChanged: _onCommentChanged,
               decoration: InputDecoration(
                 hintText: S.current.strCancelOrderItemReasonHint,
                 hintStyle: context.textStyles.bodySm.copyWith(

@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:mary_ai_pos/core/extension/for_context.dart';
+import 'package:mary_ai_pos/core/widgets/styled_virtual_keyboard.dart';
 import 'package:mary_ai_pos/core/services/lan_hub/lan_hub_service.dart';
 import 'package:mary_ai_pos/core/services/lan_hub/leader_election_service.dart';
 import 'package:mary_ai_pos/core/services/lan_hub/lan_ports.dart';
@@ -576,6 +577,7 @@ class _IpInputCard extends StatelessWidget {
                   // Not `.number`: the address now accepts an `ip:port` form,
                   // and a numeric keyboard offers no colon.
                   keyboardType: TextInputType.text,
+                  onTap: () => FloatingKeyboard.openText(context, controller),
                   style: TextStyle(
                     fontSize: 14,
                     fontFamily: 'Inter',
@@ -948,30 +950,34 @@ class _PortRow extends StatelessWidget {
           const SizedBox(width: 12),
           SizedBox(
             width: 110,
-            child: TextField(
-              controller: controller,
-              keyboardType: TextInputType.number,
-              style: TextStyle(
-                fontSize: 14,
-                fontFamily: 'Inter',
-                color: c.textDefault,
-              ),
-              decoration: InputDecoration(
-                contentPadding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                filled: true,
-                fillColor: c.bgSecondary,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                  borderSide: BorderSide(color: c.border),
+            child: Builder(
+              builder: (fieldContext) => TextField(
+                controller: controller,
+                keyboardType: TextInputType.number,
+                onTap: () =>
+                    FloatingKeyboard.openNumeric(fieldContext, controller),
+                style: TextStyle(
+                  fontSize: 14,
+                  fontFamily: 'Inter',
+                  color: c.textDefault,
                 ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                  borderSide: BorderSide(color: c.border),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                  borderSide: BorderSide(color: c.buttonBrand, width: 1.5),
+                decoration: InputDecoration(
+                  contentPadding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  filled: true,
+                  fillColor: c.bgSecondary,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: BorderSide(color: c.border),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: BorderSide(color: c.border),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: BorderSide(color: c.buttonBrand, width: 1.5),
+                  ),
                 ),
               ),
             ),

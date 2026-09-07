@@ -13,6 +13,7 @@ import 'package:mary_ai_pos/core/utils/validator.dart';
 import 'package:mary_ai_pos/core/values/app_assets.dart';
 import 'package:mary_ai_pos/core/widgets/brand_logo.dart';
 import 'package:mary_ai_pos/core/values/app_colors.dart';
+import 'package:mary_ai_pos/core/widgets/styled_virtual_keyboard.dart';
 import 'package:mary_ai_pos/core/values/app_strings.dart';
 import 'package:mary_ai_pos/features/view/auth/presentation/cubit/auth/auth_cubit.dart';
 import 'package:mary_ai_pos/features/view/auth/presentation/cubit/auth/auth_state.dart';
@@ -20,7 +21,6 @@ import 'package:mary_ai_pos/features/view/auth/presentation/cubit/settings/setti
 import 'package:mary_ai_pos/features/view/auth/presentation/pages/login/widgets/liquid_text_field.dart';
 import 'package:mary_ai_pos/features/view/auth/presentation/pages/login/widgets/obsecure_icon_button_widget.dart';
 import 'package:mary_ai_pos/generated/l10n.dart';
-import 'package:virtual_keyboard_multi_language/virtual_keyboard_multi_language.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -37,7 +37,6 @@ class _OnlineOfflineStudentScreenState extends State<LoginScreen>
   final FocusNode _brandIdFocusNode = FocusNode();
   final FocusNode _passwordFocusNode = FocusNode();
   TextEditingController? _activeController;
-  bool _shiftEnabled = false;
   bool _keyboardVisible = false;
 
   @override
@@ -65,81 +64,6 @@ class _OnlineOfflineStudentScreenState extends State<LoginScreen>
     _brandIdFocusNode.unfocus();
     _passwordFocusNode.unfocus();
     setState(() => _keyboardVisible = false);
-  }
-
-  void _onKeyPress(VirtualKeyboardKey key) {
-    if (_activeController == null) return;
-
-    final TextEditingController controller = _activeController!;
-
-    final String currentText = controller.text;
-    final TextSelection selection = controller.selection.isValid
-        ? controller.selection
-        : TextSelection.collapsed(offset: currentText.length);
-
-    if (key.keyType == VirtualKeyboardKeyType.String) {
-      final String char = (_shiftEnabled ? key.capsText : key.text) ?? '';
-      final String newText = currentText.replaceRange(
-        selection.start,
-        selection.end,
-        char,
-      );
-      controller.value = TextEditingValue(
-        text: newText,
-        selection: TextSelection.collapsed(
-          offset: selection.start + char.length,
-        ),
-      );
-    } else if (key.keyType == VirtualKeyboardKeyType.Action) {
-      switch (key.action) {
-        case VirtualKeyboardKeyAction.Backspace:
-          if (selection.start == selection.end && selection.start > 0) {
-            final String newText = currentText.replaceRange(
-              selection.start - 1,
-              selection.start,
-              '',
-            );
-            controller.value = TextEditingValue(
-              text: newText,
-              selection: TextSelection.collapsed(offset: selection.start - 1),
-            );
-          } else if (selection.start != selection.end) {
-            final String newText = currentText.replaceRange(
-              selection.start,
-              selection.end,
-              '',
-            );
-            controller.value = TextEditingValue(
-              text: newText,
-              selection: TextSelection.collapsed(offset: selection.start),
-            );
-          }
-          break;
-        case VirtualKeyboardKeyAction.Return:
-          break;
-        case VirtualKeyboardKeyAction.Space:
-          final String char = (key.text ?? ' ');
-          final String newText = currentText.replaceRange(
-            selection.start,
-            selection.end,
-            char,
-          );
-          controller.value = TextEditingValue(
-            text: newText,
-            selection: TextSelection.collapsed(
-              offset: selection.start + char.length,
-            ),
-          );
-          break;
-        case VirtualKeyboardKeyAction.Shift:
-          setState(() {
-            _shiftEnabled = !_shiftEnabled;
-          });
-          break;
-        default:
-      }
-    }
-    updateFormValidity();
   }
 
   @override
@@ -297,24 +221,18 @@ class _OnlineOfflineStudentScreenState extends State<LoginScreen>
                         )),
                         child: FadeTransition(opacity: anim, child: child),
                       ),
-                      child: _keyboardVisible
-                          ? DecoratedBox(
+                      // Same keyboard as the rest of the app (EN/UZ/RU, with
+                      // the shared language preference) instead of the
+                      // English-only one this screen used to roll itself.
+                      child: _keyboardVisible && _activeController != null
+                          ? SafeArea(
                               key: const ValueKey('kb-visible'),
-                              decoration: BoxDecoration(
-                                color: context.colors.bgSecondary,
-                              ),
-                              child: SafeArea(
-                                child: VirtualKeyboard(
-                                  height: context.h * .3,
-                                  customLayoutKeys:
-                                      VirtualKeyboardDefaultLayoutKeys([
-                                    VirtualKeyboardDefaultLayouts.English,
-                                  ]),
-                                  textColor: Colors.black,
-                                  fontSize: 24,
-                                  type: VirtualKeyboardType.Alphanumeric,
-                                  postKeyPress: _onKeyPress,
-                                ),
+                              top: false,
+                              child: StyledVirtualKeyboard(
+                                controller: _activeController!,
+                                height: context.h * .3,
+                                onClose: _dismissKeyboard,
+                                onChanged: (_) => updateFormValidity(),
                               ),
                             )
                           : const SizedBox.shrink(

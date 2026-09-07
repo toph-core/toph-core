@@ -31,7 +31,11 @@ abstract class HallsTablesLocalRepository {
   Either<Failure, Unit> deleteHall(String id);
 
   /// Queues a new table. Same server-assigned-id caveat as [createHall].
-  Either<Failure, Unit> createTable(Map<String, dynamic> body);
+  ///
+  /// Returns the provisional local id the row was written under, so a caller
+  /// can address the new table before the server's id arrives — [setTableStatus]
+  /// is the one that needs it.
+  Either<Failure, String> createTable(Map<String, dynamic> body);
 
   /// Applies [changes] to the table locally and queues the `PUT`.
   ///
@@ -46,4 +50,18 @@ abstract class HallsTablesLocalRepository {
   );
 
   Either<Failure, Unit> deleteTable(String id);
+
+  /// Sets a table's occupancy, locally and only locally.
+  ///
+  /// Occupancy is local authority — it lives in `_table_status` and is overlaid
+  /// on every table read (`HallsTablesQuery._withLiveStatus`), precisely so a
+  /// replication pass cannot overwrite the venue's live answer with whatever
+  /// the server last logged. So it does not travel in a table `PUT`, and this
+  /// queues nothing.
+  ///
+  /// It also cannot: `away` ("Closed") is a status this app has and the API
+  /// does not — `table_status` is a two-value Postgres enum. Sending it made
+  /// the update endpoint 400, and the outbox quarantines a 4xx permanently, so
+  /// the whole edit was lost with nothing said.
+  Either<Failure, Unit> setTableStatus(String id, TableStatus status);
 }

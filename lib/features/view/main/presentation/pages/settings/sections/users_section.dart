@@ -7,6 +7,7 @@ import 'package:mary_ai_pos/core/components/flush_bars.dart';
 import 'package:mary_ai_pos/core/extension/for_context.dart';
 import 'package:mary_ai_pos/core/theme/tokens/theme_colors.dart';
 import 'package:mary_ai_pos/core/widgets/app_scaffold.dart';
+import 'package:mary_ai_pos/core/widgets/styled_virtual_keyboard.dart';
 import 'package:mary_ai_pos/di.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/cubit/users/users_cubit.dart';
 import 'package:mary_ai_pos/features/view/main/presentation/pages/settings/widgets/section_shell.dart';
@@ -574,9 +575,15 @@ class _UserEditDialogState extends State<_UserEditDialog> {
     });
 
     final ok = _isCreate
+        // snake_case, matching `model.CreateStaffRequest`. The camelCase
+        // keys this used to send bound to nothing on the server — the create
+        // was rejected with "full_name is required" — and, because the same
+        // map is stored verbatim as the provisional local row, the new staff
+        // member also showed up nameless in the list until replication
+        // overwrote them.
         ? widget.cubit.createUser({
-            'fullName': _fullNameCtrl.text.trim(),
-            'phoneNumber': _phoneCtrl.text.trim(),
+            'full_name': _fullNameCtrl.text.trim(),
+            'phone_number': _phoneCtrl.text.trim(),
             'username': _usernameCtrl.text.trim(),
             'password': _passwordCtrl.text.trim(),
             if (_pincodeCtrl.text.trim().isNotEmpty)
@@ -878,17 +885,24 @@ class _UserEditDialogState extends State<_UserEditDialog> {
           ),
         ),
         const SizedBox(height: 6),
-        TextFormField(
-          controller: controller,
-          obscureText: obscure,
-          keyboardType: keyboard,
-          inputFormatters: formatters,
-          validator: validator,
-          decoration: InputDecoration(
-            hintText: hint,
-            isDense: true,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
+        Builder(
+          builder: (fieldContext) => TextFormField(
+            controller: controller,
+            obscureText: obscure,
+            keyboardType: keyboard,
+            inputFormatters: formatters,
+            validator: validator,
+            onTap: () => FloatingKeyboard.openFor(
+              fieldContext,
+              controller,
+              keyboardType: keyboard,
+            ),
+            decoration: InputDecoration(
+              hintText: hint,
+              isDense: true,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
             ),
           ),
         ),

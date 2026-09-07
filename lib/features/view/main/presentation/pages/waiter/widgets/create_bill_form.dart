@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mask_text_input_formatter/mask_text_input_formatter.dart';
 import 'package:mary_ai_pos/core/extension/for_context.dart';
+import 'package:mary_ai_pos/core/widgets/styled_virtual_keyboard.dart';
 import 'package:mary_ai_pos/core/extension/list_extension.dart';
 import 'package:mary_ai_pos/features/view/auth/data/models/user/user_model.dart';
 import 'package:mary_ai_pos/features/view/auth/presentation/cubit/bloc/user_bloc.dart';
@@ -720,6 +721,7 @@ class _InputField extends StatelessWidget {
     final colors = context.colors;
     return TextField(
       controller: controller,
+      onTap: () => FloatingKeyboard.openText(context, controller),
       style: TextStyle(fontSize: 13, color: colors.textDefault),
       decoration: InputDecoration(
         hintText: hint,

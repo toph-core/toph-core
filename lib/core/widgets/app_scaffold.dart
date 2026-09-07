@@ -21,55 +21,35 @@ class AppScaffold extends StatefulWidget {
   /// [onChanged], if provided, is invoked whenever a key press mutates the
   /// controller's text — the virtual keyboard writes to the controller
   /// directly, which does not trigger a [TextField]'s own `onChanged`.
-  static void open(TextEditingController controller, {ValueChanged<String>? onChanged}) {
-    _AppScaffoldState._openKeyboard(controller, onChanged);
+  ///
+  /// Kept as the entry point the screens already call, but the keyboard
+  /// itself now lives in the root [Overlay] ([FloatingKeyboard]) rather than
+  /// in this scaffold's own `Stack`. Screens outside an [AppScaffold]
+  /// (login, payment, waiter, order detail) used to get nothing at all from
+  /// this call, and dialogs got a keyboard painted *underneath* them.
+  static void open(
+    TextEditingController controller, {
+    ValueChanged<String>? onChanged,
+  }) {
+    FloatingKeyboard.openText(null, controller, onChanged: onChanged);
   }
 
   /// Closes the virtual keyboard.
-  static void close() {
-    _AppScaffoldState._closeKeyboard();
-  }
+  static void close() => FloatingKeyboard.close();
 
   @override
   State<AppScaffold> createState() => _AppScaffoldState();
 }
 
 class _AppScaffoldState extends State<AppScaffold> {
-  final ValueNotifier<bool> _showVirtualKeyboard = ValueNotifier<bool>(false);
-  final ValueNotifier<TextEditingController?> _keyboardController = ValueNotifier<TextEditingController?>(null);
-  ValueChanged<String>? _keyboardOnChanged;
-
-  static _AppScaffoldState? _instance;
-
-  static void _openKeyboard(
-    TextEditingController controller,
-    ValueChanged<String>? onChanged,
-  ) {
-    _instance?._keyboardOnChanged = onChanged;
-    _instance?._keyboardController.value = controller;
-    _instance?._showVirtualKeyboard.value = true;
-  }
-
-  static void _closeKeyboard() {
-    _instance?._showVirtualKeyboard.value = false;
-  }
-
   // BACKEND_SYNC_PLAN.md §5 (structural note): this widget no longer owns
   // any sync trigger. The app-startup tick and the reconnect-edge tick both
   // live in SyncEngine.start() now, and the old one-shot first-mount
   // prefetch gate (with its logout reset) is superseded by
   // LoginDataScopeService's login-triggered hydrateNow().
   @override
-  void initState() {
-    super.initState();
-    _instance = this;
-  }
-
-  @override
   void dispose() {
-    if (_instance == this) _instance = null;
-    _showVirtualKeyboard.dispose();
-    _keyboardController.dispose();
+    FloatingKeyboard.close();
     super.dispose();
   }
 
@@ -79,56 +59,20 @@ class _AppScaffoldState extends State<AppScaffold> {
       resizeToAvoidBottomInset: false,
       backgroundColor:
           widget.backgroundColor ?? Theme.of(context).scaffoldBackgroundColor,
-      body: Stack(
+      // The keyboard is an entry in the root Overlay now, so it needs no
+      // slot in this tree — and dismissing it on an outside tap is handled
+      // by the overlay's own pointer catcher.
+      body: Column(
         children: [
-          GestureDetector(
-            behavior: HitTestBehavior.translucent,
-            onTap: () {
-              if (_showVirtualKeyboard.value) {
-                _showVirtualKeyboard.value = false;
-              }
-            },
-            child: Column(
+          const OfflineBanner(),
+          const LanSoloBanner(),
+          Expanded(
+            child: Row(
               children: [
-                const OfflineBanner(),
-                const LanSoloBanner(),
-                Expanded(
-                  child: Row(
-                    children: [
-                      AppSidebar(activeRoute: widget.activeRoute),
-                      Expanded(child: widget.body),
-                    ],
-                  ),
-                ),
+                AppSidebar(activeRoute: widget.activeRoute),
+                Expanded(child: widget.body),
               ],
             ),
-          ),
-          // Virtual keyboard overlay
-          ValueListenableBuilder(
-            valueListenable: _showVirtualKeyboard,
-            builder: (context, show, _) {
-              if (!show) return const SizedBox.shrink();
-              return ValueListenableBuilder(
-                valueListenable: _keyboardController,
-                builder: (context, controller, _) {
-                  if (controller == null) return const SizedBox.shrink();
-                  return Positioned(
-                    bottom: 0,
-                    left: 0,
-                    right: 0,
-                    child: SafeArea(
-                      top: false,
-                      child: StyledVirtualKeyboard(
-                        controller: controller,
-                        height: MediaQuery.of(context).size.height * .48,
-                        onClose: () => _showVirtualKeyboard.value = false,
-                        onChanged: _keyboardOnChanged,
-                      ),
-                    ),
-                  );
-                },
-              );
-            },
           ),
         ],
       ),

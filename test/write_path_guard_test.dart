@@ -228,6 +228,13 @@ const Map<String, String> kLocalAuthorityWrites = {
       'Writes LocalTables.tableStatus only. Occupancy is local authority — see '
       'the doc on that constant — and reaches other terminals over the LAN '
       'hub, not the outbox.',
+  'lib/features/view/main/data/repository/halls_tables_local_repository_impl.dart#setTableStatus':
+      'Writes LocalTables.tableStatus only, for the same reason as '
+      'TablesRepositoryImpl.updateTableStatus — this is the settings screen '
+      'reaching the same local authority. It must NOT be queued: the table PUT '
+      'used to carry `status`, and because the editor offers `away` while the '
+      'API has a two-value `table_status` enum, that PUT came back 400 and the '
+      'outbox quarantined the whole edit.',
   'lib/features/view/main/data/repository/table_timer_local_repository_impl.dart#evictTimer':
       'Clears the LocalTables.tableTimers record after a bill is paid. There '
       'is nothing to send: the server closes its own table_time_sessions '

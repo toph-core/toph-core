@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:mary_ai_pos/core/constants/constants.dart';
 import 'package:mary_ai_pos/core/utils/app_formatter.dart';
 import 'package:mary_ai_pos/core/extension/for_context.dart';
+import 'package:mary_ai_pos/core/widgets/styled_virtual_keyboard.dart';
 import 'package:mary_ai_pos/core/extension/number_formatter.dart';
 import 'package:mary_ai_pos/core/theme/tokens/theme_colors.dart';
 import 'package:mary_ai_pos/features/view/auth/presentation/cubit/bloc/user_bloc.dart';
@@ -1165,6 +1166,7 @@ class _CloseOrderViewState extends State<_CloseOrderView> {
 
   @override
   void dispose() {
+    FloatingKeyboard.closeFor(_discountCtrl);
     _discountCtrl.dispose();
     super.dispose();
   }
@@ -1500,49 +1502,62 @@ class _CloseOrderViewState extends State<_CloseOrderView> {
                   const SizedBox(height: 8),
                   SizedBox(
                     height: 40,
-                    child: TextField(
-                      controller: _discountCtrl,
-                      keyboardType: const TextInputType.numberWithOptions(
-                        decimal: true,
-                      ),
-                      inputFormatters: _discountType == _DiscountType.amount
-                          ? [SumThousandsInputFormatter()]
-                          : null,
-                      style:
-                          TextStyle(fontSize: 14, color: colors.textDefault),
-                      decoration: InputDecoration(
-                        isDense: true,
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 10,
+                    child: Builder(
+                      builder: (fieldContext) => TextField(
+                        controller: _discountCtrl,
+                        keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true,
                         ),
-                        hintText: _discountType == _DiscountType.percent
-                            ? '0 – 100'
-                            : '0',
-                        hintStyle: TextStyle(
-                          fontSize: 13,
-                          color: colors.textSecondary,
+                        inputFormatters: _discountType == _DiscountType.amount
+                            ? [SumThousandsInputFormatter()]
+                            : null,
+                        // The numeric pad writes the controller directly,
+                        // which skips `inputFormatters` — so it has to do the
+                        // same thousands grouping itself in amount mode.
+                        onTap: () => FloatingKeyboard.openNumeric(
+                          fieldContext,
+                          _discountCtrl,
+                          groupThousands:
+                              _discountType == _DiscountType.amount,
+                          allowDecimal:
+                              _discountType == _DiscountType.percent,
                         ),
-                        suffixText: _discountType == _DiscountType.percent
-                            ? '%'
-                            : 'сум',
-                        suffixStyle: TextStyle(
-                          fontSize: 13,
-                          color: colors.textSecondary,
-                        ),
-                        filled: true,
-                        fillColor: colors.bgSecondary,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          borderSide: BorderSide(color: colors.border),
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          borderSide: BorderSide(color: colors.border),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          borderSide: BorderSide(color: colors.borderBrand),
+                        style:
+                            TextStyle(fontSize: 14, color: colors.textDefault),
+                        decoration: InputDecoration(
+                          isDense: true,
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 10,
+                          ),
+                          hintText: _discountType == _DiscountType.percent
+                              ? '0 – 100'
+                              : '0',
+                          hintStyle: TextStyle(
+                            fontSize: 13,
+                            color: colors.textSecondary,
+                          ),
+                          suffixText: _discountType == _DiscountType.percent
+                              ? '%'
+                              : 'сум',
+                          suffixStyle: TextStyle(
+                            fontSize: 13,
+                            color: colors.textSecondary,
+                          ),
+                          filled: true,
+                          fillColor: colors.bgSecondary,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: BorderSide(color: colors.border),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: BorderSide(color: colors.border),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: BorderSide(color: colors.borderBrand),
+                          ),
                         ),
                       ),
                     ),

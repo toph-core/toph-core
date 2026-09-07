@@ -5,12 +5,19 @@ class ListAPI {
   static const String loginPinCode = "api/v1/auth/login-pincode";
   static const String refresh = "api/v1/auth/refresh";
   static const String user = "api/v1/user/me";
-  /// Staff list reachable by a normal terminal/waiter/cashier session — unlike
-  /// [users] (admin-only), this is the endpoint the backend's own doc comment
-  /// says is meant for "Flutter reads during initial data pull".
+  /// Staff list for a **terminal-scoped or admin/manager/superadmin** session —
+  /// the backend gates it with `RolesTerminalAndAdmin` ("use for endpoints that
+  /// Flutter reads during initial data pull"). A plain waiter or cashier token
+  /// is *not* in that set and gets a 403, so this is not a substitute for the
+  /// replicated `users` table the screens actually read.
   static const String usersStaff = "api/v1/users/staff";
   static String userById(String id) => "api/v1/users/$id";
-  static const String authRegister = "api/v1/auth/register";
+
+  /// Staff account creation. **Not** `auth/register`: public self-registration
+  /// was removed from the API ("staff users are created via POST /api/v1/users
+  /// by admins", `handler.go`), so the old path answers 404 on every deployed
+  /// build and the queued create quarantined instead of landing.
+  static const String usersCreate = "api/v1/users";
   static const String passwordUpdate = "api/v1/user/password-update";
 
   //! general
@@ -33,7 +40,6 @@ class ListAPI {
       "/api/v1/translations?limit=$limit&offset=$offset";
   static const String createTranslation = "/api/v1/translations";
   static String translationById(String id) => "/api/v1/translations/$id";
-  static const String goodsSearch = "/api/v1/goods/search";
   static String goodsPaginated({int limit = 100, int offset = 0}) =>
       "/api/v1/goods?limit=$limit&offset=$offset";
 
@@ -47,9 +53,7 @@ class ListAPI {
   static const String compoundsLang = "/api/v1/compounds-lang";
 
   //! media
-  static const String mediaAudio = "api/v1/media/audio/download";
   static const String mediaImage = "api/v1/media/image/download";
-  static const String mediaBook = "api/v1/media/book/download";
   static const String mediaVideo = "api/v1/media/video/download";
   static const String mediaImagePost = "api/v1/media/image";
 

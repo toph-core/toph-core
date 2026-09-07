@@ -23,7 +23,7 @@ _$CafeTableModelImpl _$$CafeTableModelImplFromJson(Map<String, dynamic> json) =>
               unknownValue: TableShape.rectangle) ??
           TableShape.rectangle,
       tableType: json['table_type'] as String?,
-      pricePerHour: json['price_per_hour'] as String?,
+      pricePerHour: pricePerHourFromJson(json['price_per_hour']),
     );
 
 Map<String, dynamic> _$$CafeTableModelImplToJson(

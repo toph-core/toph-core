@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mary_ai_pos/core/components/flush_bars.dart';
 import 'package:mary_ai_pos/core/extension/for_context.dart';
+import 'package:mary_ai_pos/core/widgets/styled_virtual_keyboard.dart';
 import 'package:mary_ai_pos/core/utils/pos_units.dart';
 import 'package:mary_ai_pos/di.dart';
 import 'package:mary_ai_pos/features/view/auth/presentation/cubit/bloc/user_bloc.dart';
@@ -435,22 +436,12 @@ class _TablesDetailViewState extends State<_TablesDetailView> {
   }
 
   Map<String, dynamic> _tablePutPayload(
-      CafeTableModel t, int newPosX, int newPosY) {
-    return {
-      'hall_id': widget.hall.id,
-      'number': t.number,
-      'capacity': t.capacity,
-      'status': _statusToApi(t.status),
-      'shape': _shapeToApi(
-          t.shape == TableShape.rectangle ? TableShape.square : t.shape),
-      'table_type': t.tableType ?? 'simple',
-      'pos_x': newPosX,
-      'pos_y': newPosY,
-      'width': t.width.toInt(),
-      'height': t.height.toInt(),
-      'rotation': t.rotation.toInt(),
-    };
-  }
+          CafeTableModel t, int newPosX, int newPosY) =>
+      tableMovePayload(
+        hallId: widget.hall.id,
+        posX: newPosX,
+        posY: newPosY,
+      );
 
   /// Records a drag locally without writing it. See [_pendingMoves].
   void _stageMove(CafeTableModel t, int newPosX, int newPosY) {
@@ -502,29 +493,6 @@ class _TablesDetailViewState extends State<_TablesDetailView> {
     // Dropping the staged offsets is the whole undo: `_tables` derives from the
     // cubit's list, so it reverts to the stored positions on the next build.
     setState(() => _pendingMoves.clear());
-  }
-
-  String _shapeToApi(TableShape s) {
-    switch (s) {
-      case TableShape.circle:
-        return 'circle';
-      case TableShape.square:
-      case TableShape.rectangle:
-        return 'square';
-    }
-  }
-
-  String _statusToApi(TableStatus s) {
-    switch (s) {
-      case TableStatus.free:
-        return 'free';
-      case TableStatus.busy:
-        return 'busy';
-      case TableStatus.away:
-        return 'away';
-      case TableStatus.none:
-        return 'none';
-    }
   }
 
   Future<void> _confirmDeleteTable(CafeTableModel t) async {
@@ -1044,6 +1012,10 @@ class _TableEditDialogState extends State<_TableEditDialog> {
   late TableShape _shape;
   late String _type; // 'simple' | 'time_based'
   late TableStatus _status;
+
+  /// The status the dialog opened on, so a save can tell an actual status
+  /// change from an untouched field.
+  late TableStatus _initialStatus;
   bool _saving = false;
   String? _saveError;
 
@@ -1074,12 +1046,16 @@ class _TableEditDialogState extends State<_TableEditDialog> {
     _rotationCtrl = TextEditingController(
       text: (e?.rotation.toInt() ?? 0).toString(),
     );
-    _priceCtrl = TextEditingController(text: '0');
+    // Seeded from the row like every other field. It used to be hardcoded to
+    // '0', which meant editing a time-based table for any reason — a drag, a
+    // rename — silently wiped its hourly rate on save.
+    _priceCtrl = TextEditingController(text: _formatPrice(e?.pricePerHour));
     _shape = (e?.shape == TableShape.rectangle || e?.shape == null)
         ? TableShape.square
         : e!.shape;
     _type = e?.tableType ?? 'simple';
     _status = e?.status ?? TableStatus.free;
+    _initialStatus = _status;
   }
 
   @override
@@ -1130,12 +1106,23 @@ class _TableEditDialogState extends State<_TableEditDialog> {
     return null;
   }
 
-  String? _nonNegativeNumber(String? v) {
+  /// The field is only shown for `time_based`, where a 0 rate means a table
+  /// that runs a timer and charges nothing — always a mistake, and the backend
+  /// now rejects it on create and update alike.
+  String? _hourlyPrice(String? v) {
     final s = v?.trim().replaceAll(' ', '').replaceAll(',', '.') ?? '';
     if (s.isEmpty) return 'Kerakli maydon';
     final n = double.tryParse(s);
-    if (n == null || n < 0) return 'Manfiy bo\'lmasin';
+    if (n == null) return 'Noto\'g\'ri qiymat';
+    if (n <= 0) return 'Noldan katta bo\'lsin';
     return null;
+  }
+
+  /// Renders a stored rate for the thousands-spaced field, which keeps digits
+  /// only — so a `50000.00` from the API shows as `50 000`, not `50000.00`.
+  static String _formatPrice(double? v) {
+    if (v == null || v <= 0) return '';
+    return v.round().toString();
   }
 
   String _shapeToApi(TableShape s) {
@@ -1146,19 +1133,6 @@ class _TableEditDialogState extends State<_TableEditDialog> {
         return 'circle';
       case TableShape.square:
         return 'square';
-    }
-  }
-
-  String _statusToApi(TableStatus s) {
-    switch (s) {
-      case TableStatus.free:
-        return 'free';
-      case TableStatus.busy:
-        return 'busy';
-      case TableStatus.away:
-        return 'away';
-      case TableStatus.none:
-        return 'none';
     }
   }
 
@@ -1175,18 +1149,33 @@ class _TableEditDialogState extends State<_TableEditDialog> {
     final width = metersToPx(double.parse(_widthCtrl.text.trim().replaceAll(',', '.')));
     final height = metersToPx(double.parse(_heightCtrl.text.trim().replaceAll(',', '.')));
     final rotation = int.parse(_rotationCtrl.text.trim());
-    // backend price_per_hour ni string kutadi
+    // A whole JSON *number*. `price_per_hour` has been sent in two wrong
+    // shapes already, and both were 400s — a verdict, so the outbox
+    // quarantined the write and the table stayed on this terminal instead of
+    // reaching the server:
+    //
+    //  * a string (`"50000"`). No version of the API has ever accepted one:
+    //    the deployed `CreateCafeTableRequest.PricePerHour` is `*int64` and
+    //    the one in flight is `*float64`, and Go's decoder refuses a JSON
+    //    string for either.
+    //  * a fractional number (`50000.0`, which is what `jsonEncode` makes of a
+    //    Dart `double` even when the value is integral) — fine for `*float64`,
+    //    refused by the `*int64` that is actually deployed.
+    //
+    // An int is the one shape both accept. No precision is lost by parsing as
+    // one: `_ThousandsFormatter` strips everything but digits, so this field
+    // cannot hold a fraction in the first place.
     final pricePerHour = _type == 'time_based'
-        ? (_priceCtrl.text.trim().replaceAll(' ', '').replaceAll(',', '.').isEmpty
-            ? '0'
-            : _priceCtrl.text.trim().replaceAll(' ', '').replaceAll(',', '.'))
+        ? (int.tryParse(
+              _priceCtrl.text.trim().replaceAll(' ', '').replaceAll(',', '.'),
+            ) ??
+            0)
         : null;
     final existing = widget.existing;
     final body = {
       'hall_id': widget.hall.id,
       'number': number,
       'capacity': capacity,
-      'status': _statusToApi(_status),
       'shape': _shapeToApi(_shape),
       'table_type': _type,
       'pos_x': posX,
@@ -1197,9 +1186,21 @@ class _TableEditDialogState extends State<_TableEditDialog> {
       if (pricePerHour != null) 'price_per_hour': pricePerHour,
     };
 
-    final ok = existing == null
+    // `status` is deliberately absent from `body`. Occupancy is local
+    // authority — it lives in `_table_status`, overlaid on every table read —
+    // and `away` ("Yopiq") is not a value the API can hold at all, so sending
+    // it made the endpoint 400 and the outbox quarantine the entire edit.
+    // It is applied locally instead, and only when the operator moved it, so
+    // that resizing a table does not re-assert its occupancy as a side effect.
+    final String? tableId = existing == null
         ? widget.cubit.createTable(body)
-        : widget.cubit.updateTable(existing.id, body);
+        : (widget.cubit.updateTable(existing.id, body) ? existing.id : null);
+
+    final ok = tableId != null;
+    if (ok && _status != _initialStatus) {
+      widget.cubit.setTableStatus(tableId, _status);
+    }
+
     if (!mounted) return;
     if (ok) {
       Navigator.pop(context, true);
@@ -1371,7 +1372,7 @@ class _TableEditDialogState extends State<_TableEditDialog> {
                             controller: _priceCtrl,
                             hint: '50 000',
                             keyboard: TextInputType.number,
-                            validator: _nonNegativeNumber,
+                            validator: _hourlyPrice,
                             formatters: [_ThousandsFormatter()],
                           ),
                         ),
@@ -2624,6 +2625,11 @@ class _HallTextField extends StatelessWidget {
       keyboardType: keyboard,
       validator: validator,
       inputFormatters: formatters,
+      onTap: () => FloatingKeyboard.openFor(
+        context,
+        controller,
+        keyboardType: keyboard,
+      ),
       style: TextStyle(
         fontSize: 14,
         fontWeight: FontWeight.w500,
@@ -2666,3 +2672,40 @@ class _HallTextField extends StatelessWidget {
     );
   }
 }
+
+/// The body of a table *move* PUT: geometry, and nothing else.
+///
+/// It used to also send `status`, `table_type`, `shape`, `number`, `capacity`,
+/// `width`, `height` and `rotation` — every one of them read off the row on
+/// screen. Two of those were actively harmful.
+///
+/// `status` is the **local** occupancy overlay: `HallsTablesQuery._withLiveStatus`
+/// replaces a replicated row's status with the venue's live answer, which is
+/// the whole reason occupancy is stored apart from `cafe_tables`. So a drag
+/// pushed a local-authority field at the server. Worse, that overlay can hold
+/// `away` (a LAN broadcast sets it via `MainCubit._applyRemoteTableUpdate`,
+/// and the table editor offers it), while the update endpoint accepts only
+/// free/busy — `table_status` is a two-value Postgres enum. The PUT came back
+/// 400, and `outcomeForFailure` quarantines a 4xx permanently. The table moved
+/// on this terminal, reported "saved", and never reached the server or any
+/// other terminal.
+///
+/// `table_type` was sent as `t.tableType ?? 'simple'`, so a null on the model
+/// would have quietly converted a time-based table to a simple one — and with
+/// it, how the table bills.
+///
+/// Everything omitted keeps its stored value; the endpoint merges field by
+/// field. `hall_id` stays because it is not decoration: the outbox reads it to
+/// put the move on its hall's causal chain (`_hallChain`), so a move queued
+/// behind its hall's own create waits rather than racing a server that has
+/// never heard of the hall.
+Map<String, dynamic> tableMovePayload({
+  required String hallId,
+  required int posX,
+  required int posY,
+}) =>
+    {
+      'hall_id': hallId,
+      'pos_x': posX,
+      'pos_y': posY,
+    };

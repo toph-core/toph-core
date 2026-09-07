@@ -18,6 +18,7 @@ import 'package:mary_ai_pos/core/utils/app_formatter.dart';
 import 'package:mary_ai_pos/core/utils/user_role_permissions.dart';
 import 'package:mary_ai_pos/core/utils/helper/helper_widget.dart';
 import 'package:mary_ai_pos/core/widgets/app_scaffold.dart';
+import 'package:mary_ai_pos/core/widgets/styled_virtual_keyboard.dart';
 import 'package:mary_ai_pos/di.dart';
 import 'package:mary_ai_pos/features/view/auth/data/models/user/user_model.dart';
 import 'package:mary_ai_pos/features/view/auth/presentation/cubit/bloc/user_bloc.dart';
@@ -1399,6 +1400,10 @@ class _MenuManageScreenState extends State<MenuManageScreen> {
                 height: 1.2,
               ),
               cursorColor: colors.textBrand,
+              onTap: () => AppScaffold.open(
+                _availableSearchCtrl,
+                onChanged: (v) => setState(() => _availableSearchQuery = v),
+              ),
               onChanged: (v) => setState(() => _availableSearchQuery = v),
               decoration: InputDecoration(
                 hintText: S.current.strSearch,
@@ -1732,41 +1737,49 @@ class _MenuManageScreenState extends State<MenuManageScreen> {
       borderRadius: BorderRadius.circular(8),
       borderSide: BorderSide(color: colors.border),
     );
-    return TextField(
-      controller: controller,
-      keyboardType: const TextInputType.numberWithOptions(decimal: true),
-      textInputAction: TextInputAction.search,
-      inputFormatters: [
-        FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]')),
-      ],
-      textAlign: TextAlign.center,
-      textAlignVertical: TextAlignVertical.center,
-      onChanged: onChanged,
-      cursorColor: colors.textBrand,
-      decoration: InputDecoration(
-        filled: false,
-        suffixText: unit.isNotEmpty ? unit : null,
-        suffixStyle: TextStyle(
-          fontSize: 12,
-          fontWeight: FontWeight.w500,
-          color: colors.textTertiary,
+    return Builder(
+      builder: (fieldContext) => TextField(
+        controller: controller,
+        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+        textInputAction: TextInputAction.search,
+        inputFormatters: [
+          FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]')),
+        ],
+        textAlign: TextAlign.center,
+        textAlignVertical: TextAlignVertical.center,
+        onTap: () => FloatingKeyboard.openNumeric(
+          fieldContext,
+          controller,
+          allowDecimal: true,
+          onChanged: onChanged,
         ),
-        border: border,
-        enabledBorder: border,
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide: BorderSide(color: colors.borderBrand, width: 1.2),
+        onChanged: onChanged,
+        cursorColor: colors.textBrand,
+        decoration: InputDecoration(
+          filled: false,
+          suffixText: unit.isNotEmpty ? unit : null,
+          suffixStyle: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+            color: colors.textTertiary,
+          ),
+          border: border,
+          enabledBorder: border,
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8),
+            borderSide: BorderSide(color: colors.borderBrand, width: 1.2),
+          ),
+          isDense: true,
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 10,
+            vertical: 12,
+          ),
         ),
-        isDense: true,
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 10,
-          vertical: 12,
+        style: TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.w600,
+          color: colors.textDefault,
         ),
-      ),
-      style: TextStyle(
-        fontSize: 14,
-        fontWeight: FontWeight.w600,
-        color: colors.textDefault,
       ),
     );
   }
@@ -1790,6 +1803,7 @@ class _MenuManageScreenState extends State<MenuManageScreen> {
             children: [
               TextField(
                 controller: idCtrl,
+                onTap: () => FloatingKeyboard.openText(ctx, idCtrl),
                 style: TextStyle(color: c.textDefault, fontSize: 13),
                 decoration: InputDecoration(
                   labelText: 'ID',
@@ -1797,15 +1811,22 @@ class _MenuManageScreenState extends State<MenuManageScreen> {
                 ),
               ),
               const SizedBox(height: 8),
-              TextField(
-                controller: qtyCtrl,
-                keyboardType: const TextInputType.numberWithOptions(
-                  decimal: true,
-                ),
-                style: TextStyle(color: c.textDefault, fontSize: 13),
-                decoration: InputDecoration(
-                  labelText: S.current.strQuantity,
-                  labelStyle: TextStyle(color: c.textTertiary),
+              Builder(
+                builder: (qtyContext) => TextField(
+                  controller: qtyCtrl,
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
+                  onTap: () => FloatingKeyboard.openNumeric(
+                    qtyContext,
+                    qtyCtrl,
+                    allowDecimal: true,
+                  ),
+                  style: TextStyle(color: c.textDefault, fontSize: 13),
+                  decoration: InputDecoration(
+                    labelText: S.current.strQuantity,
+                    labelStyle: TextStyle(color: c.textTertiary),
+                  ),
                 ),
               ),
             ],
@@ -2185,43 +2206,49 @@ class _StyledInput extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
-    return TextField(
-      controller: controller,
-      keyboardType: keyboardType,
-      maxLines: maxLines,
-      inputFormatters: inputFormatters,
-      onTap: () => AppScaffold.open(controller),
-      style: TextStyle(
-        fontSize: 15,
-        color: colors.textDefault,
-        fontWeight: FontWeight.w500,
-        fontFamily: 'Inter',
-        letterSpacing: -0.1,
-      ),
-      decoration: InputDecoration(
-        hintText: hint,
-        hintStyle: TextStyle(
+    return Builder(
+      builder: (fieldContext) => TextField(
+        controller: controller,
+        keyboardType: keyboardType,
+        maxLines: maxLines,
+        inputFormatters: inputFormatters,
+        // `numericKeyboard` was threaded all the way here and then ignored —
+        // the digit pad it asks for now actually opens.
+        onTap: () => numericKeyboard
+            ? FloatingKeyboard.openNumeric(fieldContext, controller)
+            : AppScaffold.open(controller),
+        style: TextStyle(
           fontSize: 15,
-          color: colors.textTertiary,
+          color: colors.textDefault,
+          fontWeight: FontWeight.w500,
           fontFamily: 'Inter',
+          letterSpacing: -0.1,
         ),
-        contentPadding: EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: maxLines > 1 ? 14 : 18,
-        ),
-        filled: true,
-        fillColor: colors.bgDefault,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: colors.border),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: colors.border),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: colors.borderBrand, width: 1.5),
+        decoration: InputDecoration(
+          hintText: hint,
+          hintStyle: TextStyle(
+            fontSize: 15,
+            color: colors.textTertiary,
+            fontFamily: 'Inter',
+          ),
+          contentPadding: EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: maxLines > 1 ? 14 : 18,
+          ),
+          filled: true,
+          fillColor: colors.bgDefault,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: colors.border),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: colors.border),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: colors.borderBrand, width: 1.5),
+          ),
         ),
       ),
     );

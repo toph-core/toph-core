@@ -106,25 +106,38 @@ class HallsTablesCubit extends Cubit<HallsTablesState> {
 
   bool deleteHall(String id) => _apply(() => _repository.deleteHall(id));
 
-  bool createTable(Map<String, dynamic> body) =>
-      _apply(() => _repository.createTable(body));
+  /// Returns the new table's provisional local id, or null if the local write
+  /// was refused. The id is what [setTableStatus] needs to reach a table the
+  /// server has not assigned an id to yet.
+  String? createTable(Map<String, dynamic> body) =>
+      _applyValue(() => _repository.createTable(body));
 
   bool updateTable(String id, Map<String, dynamic> changes) =>
       _apply(() => _repository.updateTable(id, changes));
 
   bool deleteTable(String id) => _apply(() => _repository.deleteTable(id));
 
+  /// Local-only occupancy write; queues nothing. See
+  /// `HallsTablesLocalRepository.setTableStatus`.
+  bool setTableStatus(String id, TableStatus status) =>
+      _apply(() => _repository.setTableStatus(id, status));
+
   /// Runs a write and reports whether it was accepted locally. Synchronous
   /// throughout — a floor-plan drag never waits on anything.
-  bool _apply(Either<Failure, Unit> Function() write) {
+  bool _apply(Either<Failure, Unit> Function() write) =>
+      _applyValue(write) != null;
+
+  /// [_apply] for a write that returns something — the same error reporting,
+  /// with the value surfaced instead of a bare bool. Null means refused.
+  T? _applyValue<T extends Object>(Either<Failure, T> Function() write) {
     return write().fold(
       (failure) {
         emit(state.copyWith(error: failure.toString(), notice: null));
-        return false;
+        return null;
       },
-      (_) {
+      (value) {
         emit(state.copyWith(error: null));
-        return true;
+        return value;
       },
     );
   }

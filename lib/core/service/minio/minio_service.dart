@@ -83,33 +83,10 @@ class MinioService {
     }
   }
 
-  Future<Uint8List?> getAudioByObjectName(String objectName) async {
-    try {
-      final Response response = await _client.post(
-        ListAPI.mediaAudio,
-        data: {"object_name": objectName},
-        options: Options(responseType: ResponseType.bytes),
-      );
-
-      return response.data;
-    } catch (_) {
-      return null;
-    }
-  }
-
-  Future<Uint8List?> getBookByObjectName(String objectName) async {
-    try {
-      final Response response = await _client.post(
-        ListAPI.mediaBook,
-        data: {"object_name": objectName},
-        options: Options(responseType: ResponseType.bytes),
-      );
-
-      return response.data;
-    } catch (_) {
-      return null;
-    }
-  }
+  // No audio or book download here. `/api/v1/media/{audio,book}/download` do
+  // not exist on the API — only image and video do — so the two methods that
+  // called them could never return anything but null. They had no callers;
+  // keeping them was an invitation to wire up a 404.
 
   Future<Uint8List?> getVideoByObjectName(String objectName) async {
     try {

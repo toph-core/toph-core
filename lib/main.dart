@@ -20,6 +20,7 @@ import 'package:mary_ai_pos/core/theme/app_theme.dart';
 import 'package:mary_ai_pos/core/utils/helper/helper_widget.dart';
 import 'package:mary_ai_pos/core/utils/scroll_physics_modified.dart';
 import 'package:mary_ai_pos/core/utils/size_config.dart';
+import 'package:mary_ai_pos/core/widgets/styled_virtual_keyboard.dart';
 import 'package:mary_ai_pos/di.dart';
 import 'package:mary_ai_pos/features/view/auth/presentation/cubit/auth/auth_cubit.dart';
 import 'package:mary_ai_pos/features/view/auth/presentation/cubit/bloc/user_bloc.dart';
@@ -111,6 +112,10 @@ Future<void> main() async {
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
+  /// One long-lived instance — a fresh observer on every [MaterialApp]
+  /// rebuild would re-register with the navigator each time.
+  static final _keyboardRouteObserver = KeyboardRouteObserver();
+
   @override
   Widget build(BuildContext context) {
     SizeConfig().init(context);
@@ -146,6 +151,10 @@ class MyApp extends StatelessWidget {
             title: 'Mary AI POS',
             navigatorKey: navigatorKey,
             debugShowCheckedModeBanner: false,
+            // Any route change tears down the on-screen keyboard — it lives
+            // in the root Overlay, so nothing else would remove it when the
+            // field it types into goes away.
+            navigatorObservers: [_keyboardRouteObserver],
             onGenerateRoute: RouteGenerate().generate,
             localizationsDelegates: const [
               GlobalWidgetsLocalizations.delegate,

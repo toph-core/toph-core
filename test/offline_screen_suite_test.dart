@@ -257,7 +257,7 @@ CafeTableModel _table({
   required int number,
   TableStatus status = TableStatus.free,
   String? tableType = 'dine_in',
-  String? pricePerHour,
+  double? pricePerHour,
 }) => CafeTableModel(
   id: id,
   hallId: kHallId,
