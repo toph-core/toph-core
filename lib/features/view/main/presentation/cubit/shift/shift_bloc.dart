@@ -272,11 +272,14 @@ class ShiftBloc extends Bloc<ShiftEvent, ShiftState> {
     if (shift == null) return;
 
     emit(state.copyWith(status: Status.LOADING));
-    await _printShiftClose(shift, state);
 
     final closingCash = state.cashSum;
     final closingCard = state.cardSum;
     final closedBy = _userId;
+
+    // Snapshot before the SUCCESS emit below zeroes the counted sums, since
+    // the receipt is built after that point.
+    final counted = state;
 
     _writer.write(
       entity: kBranchShiftEntity,
@@ -295,6 +298,25 @@ class ShiftBloc extends Bloc<ShiftEvent, ShiftState> {
         'closing_card': closingCard,
       },
     );
+
+    // Printing is deliberately NOT awaited, and runs after the close is
+    // durable rather than before it.
+    //
+    // It used to gate the whole thing: `await _printShiftClose(...)` ran first,
+    // and a close-check printer that is switched off or on a stale IP does not
+    // refuse the connection — it simply never answers, so `Socket.connect`
+    // waits out its full timeout. `PrinterConfig.timeoutMs` defaults to 10s and
+    // `_connectAndPrint` retries twice with a 1s backoff, so the cashier stood
+    // in front of a spinner for up to ~32s before the shift was even recorded
+    // as closed. The print queue's 450ms caller budget does not help here: it
+    // is armed only on the relay path, and a printer that is unowned — which
+    // every row is until owners are assigned — takes the local path instead.
+    //
+    // Nothing is lost by not waiting. `PrintQueueService.submitJob` persists
+    // the job to its Hive box before dispatching, so the receipt survives a
+    // crash and stays retryable, and `printShiftCloseReceipt` already catches
+    // its own failures and raises the printer toast itself.
+    unawaited(_printShiftClose(shift, counted));
 
     if (emit.isDone) return;
     showSuccessMessage(
