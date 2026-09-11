@@ -78,8 +78,20 @@ class MainHeader extends StatelessWidget {
               ],
             ),
           ),
-          // Right: trailing + chips
-          Row(
+          // Right: trailing + chips.
+          //
+          // Flexible + scaleDown rather than a bare Row: the cluster is five
+          // fixed-width chips, and on a 1024 px monoblock — the smallest
+          // terminal this product ships on — a long cashier name or a
+          // translated label pushes it past the edge, where a Row simply cuts
+          // it off. Shrinking a few percent keeps every chip readable and
+          // whole; the left-hand title still yields first, because it is the
+          // one thing here that can ellipsize without losing meaning.
+          Flexible(
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerRight,
+              child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               if (trailing != null) ...[
@@ -98,6 +110,8 @@ class MainHeader extends StatelessWidget {
               // Language toggle
               const _LangToggle(),
             ],
+          ),
+            ),
           ),
         ],
       ),

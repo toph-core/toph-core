@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mary_ai_pos/core/common/custom_network_image.dart';
 import 'package:mary_ai_pos/core/constants/constants.dart';
 import 'package:mary_ai_pos/core/design_system/pos_design_system.dart';
+import 'package:mary_ai_pos/core/design_system/pos_grid_metrics.dart';
 import 'package:mary_ai_pos/core/extension/for_context.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/category/category_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/goods/goods_model.dart';
@@ -16,10 +17,7 @@ import 'package:mary_ai_pos/generated/l10n.dart';
 class CategorySelectionGrid extends StatelessWidget {
   final ValueChanged<CategoryModel> onCategorySelected;
 
-  const CategorySelectionGrid({
-    super.key,
-    required this.onCategorySelected,
-  });
+  const CategorySelectionGrid({super.key, required this.onCategorySelected});
 
   static const String allCategoriesId = 'all';
 
@@ -49,7 +47,9 @@ class CategorySelectionGrid extends StatelessWidget {
               final isSearching = state.searchQuery.isNotEmpty;
               final matchedGoods = state.matchedGoods;
 
-              if (state.status == Status.ERROR && categories.isEmpty && !isSearching) {
+              if (state.status == Status.ERROR &&
+                  categories.isEmpty &&
+                  !isSearching) {
                 return Center(
                   child: Text(
                     S.current.strFoodsCategoriesNotFound.trim(),
@@ -77,25 +77,20 @@ class CategorySelectionGrid extends StatelessWidget {
 
               return LayoutBuilder(
                 builder: (context, constraints) {
-                  const maxCardWidth = 180.0;
-                  const maxCardHeight = 200.0;
-                  const spacing = 12.0;
-                  const padding = 40.0;
-                  final available = constraints.maxWidth - padding;
-                  final crossCount =
-                      (available / (maxCardWidth + spacing)).floor().clamp(2, 8);
-                  final cardWidth =
-                      (available - spacing * (crossCount - 1)) / crossCount;
-                  final cardHeight =
-                      (cardWidth / 0.92).clamp(1.0, maxCardHeight);
-                  final aspectRatio = cardWidth / cardHeight;
-
-                  final gridDelegate = SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: crossCount,
-                    crossAxisSpacing: spacing,
-                    mainAxisSpacing: spacing,
-                    childAspectRatio: aspectRatio,
+                  // Same metrics as the product grid on the next screen, so a
+                  // category tile and the meal tiles behind it are the same
+                  // size on the same terminal.
+                  final grid = PosGridMetrics.forOrderGrid(
+                    constraints.maxWidth,
                   );
+
+                  final gridDelegate =
+                      SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: grid.columns,
+                        crossAxisSpacing: grid.spacing,
+                        mainAxisSpacing: grid.spacing,
+                        childAspectRatio: grid.aspectRatio,
+                      );
 
                   if (!isSearching) {
                     // First card is always "All Categories"
@@ -140,24 +135,26 @@ class CategorySelectionGrid extends StatelessWidget {
                           padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
                           sliver: SliverGrid(
                             gridDelegate: gridDelegate,
-                            delegate: SliverChildBuilderDelegate(
-                              (context, index) {
-                                final category = categories[index];
-                                return _CategoryCard(
-                                  name: category.name,
-                                  pictureUrl: category.pictureUrl,
-                                  colorCode: category.colorCode,
-                                  onTap: () => onCategorySelected(category),
-                                );
-                              },
-                              childCount: categories.length,
-                            ),
+                            delegate: SliverChildBuilderDelegate((
+                              context,
+                              index,
+                            ) {
+                              final category = categories[index];
+                              return _CategoryCard(
+                                name: category.name,
+                                pictureUrl: category.pictureUrl,
+                                colorCode: category.colorCode,
+                                onTap: () => onCategorySelected(category),
+                              );
+                            }, childCount: categories.length),
                           ),
                         ),
                       ],
                       if (matchedGoods.isNotEmpty) ...[
                         SliverToBoxAdapter(
-                          child: _SectionHeader(title: S.current.strFoodsColumn),
+                          child: _SectionHeader(
+                            title: S.current.strFoodsColumn,
+                          ),
                         ),
                         SliverPadding(
                           padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
@@ -223,9 +220,8 @@ class _MatchedGoodCard extends StatelessWidget {
 
     return ProductGridCard(
       good: good,
-      onTap: () => context.read<DetailBloc>().add(
-        DetailEvent.selectGood(good: good),
-      ),
+      onTap: () =>
+          context.read<DetailBloc>().add(DetailEvent.selectGood(good: good)),
       topRightBadge: cartQty > 0 ? ProductCartQtyBadge(qty: cartQty) : null,
     );
   }
@@ -265,8 +261,7 @@ class _CategoryCardState extends State<_CategoryCard> {
     final c = context.colors;
     final pic = widget.pictureUrl;
     final hasImage = pic != null && pic.isNotEmpty;
-    final initial =
-        widget.name.isNotEmpty ? widget.name[0].toUpperCase() : '•';
+    final initial = widget.name.isNotEmpty ? widget.name[0].toUpperCase() : '•';
     final accent = _accentColor ?? c.textBrand;
 
     return MouseRegion(
@@ -296,18 +291,26 @@ class _CategoryCardState extends State<_CategoryCard> {
                   ]
                 : null,
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Expanded(
-                flex: 4,
-                child: ClipRRect(
-                  borderRadius: const BorderRadius.vertical(
-                    top: Radius.circular(11),
-                  ),
-                  child: widget.isAllCard
-                      ? _AllCategoriesPlaceholder(accent: accent)
-                      : hasImage
+          child: LayoutBuilder(
+            builder: (context, box) {
+              // Same reason as ProductGridCard: seven columns on an
+              // entry-level terminal make this tile ~100 px wide, and 15 px
+              // type inside it leaves nothing for the picture.
+              final t = ((box.maxWidth - 100) / 80).clamp(0.0, 1.0);
+              double lerp(double from, double to) => from + (to - from) * t;
+
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Expanded(
+                    flex: 4,
+                    child: ClipRRect(
+                      borderRadius: const BorderRadius.vertical(
+                        top: Radius.circular(11),
+                      ),
+                      child: widget.isAllCard
+                          ? _AllCategoriesPlaceholder(accent: accent)
+                          : hasImage
                           ? CustomCachedNetworkImage(
                               minioObjectName: pic,
                               fit: BoxFit.cover,
@@ -322,30 +325,32 @@ class _CategoryCardState extends State<_CategoryCard> {
                               initial: initial,
                               accent: accent,
                             ),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(
-                  PosDimensions.m,
-                  PosDimensions.s + 2,
-                  PosDimensions.m,
-                  PosDimensions.m,
-                ),
-                child: Text(
-                  widget.name,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                    color: c.textDefault,
-                    fontFamily: PosTypography.family,
-                    height: 1.2,
-                    letterSpacing: -0.1,
+                    ),
                   ),
-                ),
-              ),
-            ],
+                  Padding(
+                    padding: EdgeInsets.fromLTRB(
+                      lerp(6, PosDimensions.m),
+                      lerp(4, PosDimensions.s + 2),
+                      lerp(6, PosDimensions.m),
+                      lerp(6, PosDimensions.m),
+                    ),
+                    child: Text(
+                      widget.name,
+                      maxLines: box.maxWidth >= 140 ? 2 : 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: lerp(11, 15),
+                        fontWeight: FontWeight.w600,
+                        color: c.textDefault,
+                        fontFamily: PosTypography.family,
+                        height: 1.2,
+                        letterSpacing: -0.1,
+                      ),
+                    ),
+                  ),
+                ],
+              );
+            },
           ),
         ),
       ),
@@ -365,17 +370,16 @@ class _AllCategoriesPlaceholder extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            accent.withOpacity(0.08),
-            accent.withOpacity(0.18),
-          ],
+          colors: [accent.withOpacity(0.08), accent.withOpacity(0.18)],
         ),
       ),
       alignment: Alignment.center,
-      child: Icon(
-        Icons.grid_view_rounded,
-        size: 42,
-        color: accent.withOpacity(0.7),
+      child: LayoutBuilder(
+        builder: (context, box) => Icon(
+          Icons.grid_view_rounded,
+          size: (box.biggest.shortestSide * 0.5).clamp(18.0, 42.0),
+          color: accent.withOpacity(0.7),
+        ),
       ),
     );
   }
@@ -385,10 +389,7 @@ class _InitialPlaceholder extends StatelessWidget {
   final String initial;
   final Color accent;
 
-  const _InitialPlaceholder({
-    required this.initial,
-    required this.accent,
-  });
+  const _InitialPlaceholder({required this.initial, required this.accent});
 
   @override
   Widget build(BuildContext context) {
@@ -397,21 +398,20 @@ class _InitialPlaceholder extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            accent.withOpacity(0.05),
-            accent.withOpacity(0.12),
-          ],
+          colors: [accent.withOpacity(0.05), accent.withOpacity(0.12)],
         ),
       ),
       alignment: Alignment.center,
-      child: Text(
-        initial,
-        style: TextStyle(
-          fontSize: 42,
-          fontWeight: FontWeight.w700,
-          color: accent.withOpacity(0.55),
-          fontFamily: 'Inter',
-          letterSpacing: -1,
+      child: LayoutBuilder(
+        builder: (context, box) => Text(
+          initial,
+          style: TextStyle(
+            fontSize: (box.biggest.shortestSide * 0.5).clamp(18.0, 42.0),
+            fontWeight: FontWeight.w700,
+            color: accent.withOpacity(0.55),
+            fontFamily: 'Inter',
+            letterSpacing: -1,
+          ),
         ),
       ),
     );

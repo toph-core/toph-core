@@ -112,10 +112,25 @@ class DeadNetworkAdapter implements HttpClientAdapter {
 /// exceptions" no matter how many a single `takeException()` consumes.
 /// Everything else — a throwing `build`, a null dereference in a bloc, a
 /// missing route argument — reaches the binding untouched and still fails.
-void _ignoreLayoutOverflow() {
+void _ignoreLayoutOverflow({List<String>? collectInto}) {
   final previous = FlutterError.onError;
   FlutterError.onError = (details) {
-    if (details.exception.toString().contains('overflowed by')) return;
+    // `is FlutterError` matters more than it looks. A RenderFlex overflow is a
+    // FlutterError; a `TestFailure` is not — and a test that *reports* an
+    // overflow quotes the words "overflowed by" in its own failure message. A
+    // bare substring match therefore swallowed the TestFailure as well, and
+    // `flutter_test` then asserted on the pending-exception it had been
+    // promised and never completed the test's completer: the run hung until
+    // it was killed, with no output. Filtering on the type keeps this to the
+    // framework errors it was written for.
+    if (details.exception is FlutterError &&
+        details.exception.toString().contains('overflowed by')) {
+      // Recorded rather than dropped when a caller is watching for them: the
+      // small-screen layout suite exists precisely to fail on these, and it
+      // cannot if the harness swallows them on its way past.
+      collectInto?.add(details.exception.toString());
+      return;
+    }
     previous?.call(details);
   };
   addTearDown(() => FlutterError.onError = previous);
@@ -639,7 +654,15 @@ class OfflineAppHarness {
 
   /// Pumps `MyApp`'s very first frame and stops there — the splash screen, as
   /// a cold-started terminal actually shows it, before any routing decision.
-  Future<void> pumpFirstFrame(WidgetTester tester) async {
+  /// [surfaceSize] is the terminal to render as. It defaults to the large
+  /// screen these layouts were drawn for; the small-screen suite passes the
+  /// sizes real POS hardware actually ships with, and [overflows] to collect
+  /// what does not fit on them.
+  Future<void> pumpFirstFrame(
+    WidgetTester tester, {
+    Size surfaceSize = const Size(1920, 1080),
+    List<String>? overflows,
+  }) async {
     // The POS is a landscape desktop app: `main()` pins the orientation and
     // asks the window manager for a 1000x600 minimum. The widget-test default
     // surface is 800x600, narrower than any layout in this product was ever
@@ -649,10 +672,21 @@ class OfflineAppHarness {
     // surfaces overflow in screens that are perfectly healthy on real
     // hardware, and those overflows would drown out the failures this suite
     // is actually looking for.
-    await tester.binding.setSurfaceSize(const Size(1920, 1080));
+    await tester.binding.setSurfaceSize(surfaceSize);
+    // The view as well as the surface. `setSurfaceSize` resizes what is
+    // rendered, but `MediaQuery` reads `view.physicalSize / devicePixelRatio` —
+    // so without this a suite that asks for a 1024x768 terminal still had every
+    // `PosBreakpoints` decision resolve against the default 2400x1800 view, and
+    // rendered the large-screen layout at small-screen dimensions. The suite
+    // would then pass while testing something nobody runs.
     tester.view.devicePixelRatio = 1.0;
-    addTearDown(() => tester.binding.setSurfaceSize(null));
-    _ignoreLayoutOverflow();
+    tester.view.physicalSize = surfaceSize;
+    addTearDown(() {
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+      return tester.binding.setSurfaceSize(null);
+    });
+    _ignoreLayoutOverflow(collectInto: overflows);
 
     await tester.pumpWidget(const MyApp());
     await tester.pump();
@@ -664,8 +698,16 @@ class OfflineAppHarness {
   /// storage reads before routing. This waits that out rather than
   /// short-circuiting it, because where splash lands offline is itself part of
   /// what the suite covers.
-  Future<void> pumpApp(WidgetTester tester) async {
-    await pumpFirstFrame(tester);
+  Future<void> pumpApp(
+    WidgetTester tester, {
+    Size surfaceSize = const Size(1920, 1080),
+    List<String>? overflows,
+  }) async {
+    await pumpFirstFrame(
+      tester,
+      surfaceSize: surfaceSize,
+      overflows: overflows,
+    );
     await tester.pump(const Duration(seconds: 1));
     await settle(tester);
   }

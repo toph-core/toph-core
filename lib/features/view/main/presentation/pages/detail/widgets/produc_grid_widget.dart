@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mary_ai_pos/core/constants/constants.dart';
+import 'package:mary_ai_pos/core/design_system/pos_grid_metrics.dart';
 import 'package:mary_ai_pos/core/extension/for_context.dart';
 import 'package:mary_ai_pos/core/theme/tokens/theme_colors.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/goods/goods_model.dart';
@@ -85,7 +86,9 @@ class _ProductGridWidgetState extends State<ProductGridWidget> {
             buildWhen: (p, c) => p.goods != c.goods || p.status != c.status,
             builder: (context, state) {
               if (state.status == Status.LOADING) {
-                return const Center(child: CircularProgressIndicator.adaptive());
+                return const Center(
+                  child: CircularProgressIndicator.adaptive(),
+                );
               }
               final products = state.goods;
               if (products == null || products.isEmpty) {
@@ -123,32 +126,23 @@ class _ProductGridWidgetState extends State<ProductGridWidget> {
                       radius: const Radius.circular(4),
                       child: LayoutBuilder(
                         builder: (context, constraints) {
-                          const maxCardWidth = 180.0;
-                          const maxCardHeight = 200.0;
-                          const spacing = 12.0;
-                          const padding = 40.0; // 20 L + 20 R
-                          final available = constraints.maxWidth - padding;
-                          final crossCount = (available / (maxCardWidth + spacing))
-                              .floor()
-                              .clamp(2, 8);
-                          final cardWidth =
-                              (available - spacing * (crossCount - 1)) /
-                                  crossCount;
-                          final cardHeight =
-                              (cardWidth / 0.92).clamp(1.0, maxCardHeight);
-                          final aspectRatio = cardWidth / cardHeight;
+                          // Seven columns wherever they stay readable — see
+                          // PosGridMetrics for why the old inline floor()
+                          // produced four oversized tiles on a small terminal.
+                          final grid = PosGridMetrics.forOrderGrid(
+                            constraints.maxWidth,
+                          );
 
                           return GridView.builder(
                             controller: _scrollCtrl,
-                            padding:
-                                const EdgeInsets.fromLTRB(20, 20, 20, 20),
+                            padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
                             gridDelegate:
                                 SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: crossCount,
-                              crossAxisSpacing: spacing,
-                              mainAxisSpacing: spacing,
-                              childAspectRatio: aspectRatio,
-                            ),
+                                  crossAxisCount: grid.columns,
+                                  crossAxisSpacing: grid.spacing,
+                                  mainAxisSpacing: grid.spacing,
+                                  childAspectRatio: grid.aspectRatio,
+                                ),
                             itemCount: pageItems.length,
                             itemBuilder: (context, index) =>
                                 _ProductCard(product: pageItems[index]),
@@ -180,9 +174,9 @@ class _ProductGridWidgetState extends State<ProductGridWidget> {
           Theme(
             data: Theme.of(context).copyWith(
               colorScheme: Theme.of(context).colorScheme.copyWith(
-                    secondary: colors.buttonBrand,
-                    onSecondary: colors.textOnBrand,
-                  ),
+                secondary: colors.buttonBrand,
+                onSecondary: colors.textOnBrand,
+              ),
             ),
             child: SizedBox(
               width: 320,
@@ -220,8 +214,10 @@ class _ProductGridWidgetState extends State<ProductGridWidget> {
               child: DropdownButton<int>(
                 value: _pageSize,
                 isDense: true,
-                icon: Icon(Icons.expand_more_rounded,
-                    color: colors.textSecondary),
+                icon: Icon(
+                  Icons.expand_more_rounded,
+                  color: colors.textSecondary,
+                ),
                 style: TextStyle(
                   fontSize: 13,
                   color: colors.textDefault,
@@ -264,18 +260,15 @@ class _ProductCard extends StatelessWidget {
           .where((g) => g.goods.id == product.id)
           .fold<int>(0, (sum, g) => sum + g.quantity);
       final existing = s.existingGoods
-          .where(
-            (g) => g.goods.id == product.id && g.commet != 'cancelled',
-          )
+          .where((g) => g.goods.id == product.id && g.commet != 'cancelled')
           .fold<int>(0, (sum, g) => sum + g.quantity);
       return selected + existing;
     });
 
     return ProductGridCard(
       good: product,
-      onTap: () => context.read<DetailBloc>().add(
-        DetailEvent.selectGood(good: product),
-      ),
+      onTap: () =>
+          context.read<DetailBloc>().add(DetailEvent.selectGood(good: product)),
       topRightBadge: cartQty > 0 ? ProductCartQtyBadge(qty: cartQty) : null,
     );
   }

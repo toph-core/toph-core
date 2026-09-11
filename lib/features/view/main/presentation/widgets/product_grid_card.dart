@@ -31,6 +31,17 @@ class ProductGridCard extends StatefulWidget {
 class _ProductGridCardState extends State<ProductGridCard> {
   bool _hovered = false;
 
+  /// Type and padding scale with the card, because the card no longer has one
+  /// size. The order grids now fit seven columns on an entry-level terminal
+  /// (`PosGridMetrics`), which puts this card at ~100 px wide there and ~180 px
+  /// on a large screen — and 15 px type inside a 100 px tile leaves no room for
+  /// the picture. [t] is 0 at the narrow end and 1 at the wide end, so a wide
+  /// screen keeps exactly the sizes this card has always used.
+  double _t(double width) => ((width - 100) / 80).clamp(0.0, 1.0);
+
+  static double _lerp(double from, double to, double t) =>
+      from + (to - from) * t;
+
   @override
   Widget build(BuildContext context) {
     final c = context.colors;
@@ -67,122 +78,136 @@ class _ProductGridCardState extends State<ProductGridCard> {
                   ]
                 : null,
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Expanded(
-                flex: 4,
-                child: Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    ClipRRect(
-                      borderRadius: const BorderRadius.vertical(
-                        top: Radius.circular(11),
-                      ),
-                      child: hasImage
-                          ? CustomCachedNetworkImage(
-                              minioObjectName: pic,
-                              fit: BoxFit.cover,
-                              width: double.infinity,
-                              height: double.infinity,
-                              errorWidget: _InitialPlaceholder(
-                                initial: initial,
+          child: LayoutBuilder(
+            builder: (context, box) {
+              final t = _t(box.maxWidth);
+              final nameSize = _lerp(11, 15, t);
+              final priceSize = _lerp(11.5, 16, t);
+              final unitSize = _lerp(9, 12, t);
+              final padH = _lerp(6, PosDimensions.m, t);
+              final padTop = _lerp(4, PosDimensions.s + 2, t);
+              final padBottom = _lerp(6, PosDimensions.m, t);
+              // Two lines of a long name are worth the space only once the tile
+              // is wide enough that the second line is not one word.
+              final nameLines = box.maxWidth >= 140 ? 2 : 1;
+
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Expanded(
+                    flex: 4,
+                    child: Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        ClipRRect(
+                          borderRadius: const BorderRadius.vertical(
+                            top: Radius.circular(11),
+                          ),
+                          child: hasImage
+                              ? CustomCachedNetworkImage(
+                                  minioObjectName: pic,
+                                  fit: BoxFit.cover,
+                                  width: double.infinity,
+                                  height: double.infinity,
+                                  errorWidget: _InitialPlaceholder(
+                                    initial: initial,
+                                  ),
+                                )
+                              : _InitialPlaceholder(initial: initial),
+                        ),
+                        if (widget.categoryName.isNotEmpty)
+                          Positioned(
+                            left: 8,
+                            bottom: 8,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 7,
+                                vertical: 3,
                               ),
-                            )
-                          : _InitialPlaceholder(initial: initial),
-                    ),
-                    if (widget.categoryName.isNotEmpty)
-                      Positioned(
-                        left: 8,
-                        bottom: 8,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 7,
-                            vertical: 3,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.94),
-                            borderRadius: BorderRadius.circular(5),
-                          ),
-                          child: Text(
-                            widget.categoryName,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              fontSize: 9.5,
-                              fontWeight: FontWeight.w600,
-                              color: c.textSecondary,
-                              fontFamily: 'Inter',
-                              letterSpacing: 0.2,
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.94),
+                                borderRadius: BorderRadius.circular(5),
+                              ),
+                              child: Text(
+                                widget.categoryName,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontSize: 9.5,
+                                  fontWeight: FontWeight.w600,
+                                  color: c.textSecondary,
+                                  fontFamily: 'Inter',
+                                  letterSpacing: 0.2,
+                                ),
+                              ),
                             ),
                           ),
-                        ),
-                      ),
-                    if (widget.topRightBadge != null)
-                      Positioned(
-                        top: 6,
-                        right: 6,
-                        child: widget.topRightBadge!,
-                      ),
-                  ],
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(
-                  PosDimensions.m,
-                  PosDimensions.s + 2,
-                  PosDimensions.m,
-                  PosDimensions.m,
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      widget.good.name,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                        color: c.textDefault,
-                        fontFamily: PosTypography.family,
-                        height: 1.2,
-                        letterSpacing: -0.1,
-                      ),
+                        if (widget.topRightBadge != null)
+                          Positioned(
+                            top: 6,
+                            right: 6,
+                            child: widget.topRightBadge!,
+                          ),
+                      ],
                     ),
-                    const SizedBox(height: PosDimensions.xs + 2),
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.baseline,
-                      textBaseline: TextBaseline.alphabetic,
+                  ),
+                  Padding(
+                    padding: EdgeInsets.fromLTRB(padH, padTop, padH, padBottom),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          AppFormatter.formatAmountWithSpaces(
-                            widget.good.price,
-                          ),
+                          widget.good.name,
+                          maxLines: nameLines,
+                          overflow: TextOverflow.ellipsis,
                           style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w700,
-                            color: c.textBrand,
+                            fontSize: nameSize,
+                            fontWeight: FontWeight.w600,
+                            color: c.textDefault,
                             fontFamily: PosTypography.family,
-                            letterSpacing: -0.2,
-                            fontFeatures: PosTypography.tabularFigures,
+                            height: 1.2,
+                            letterSpacing: -0.1,
                           ),
                         ),
-                        const SizedBox(width: 4),
-                        Text(
-                          "so'm",
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: c.textSecondary,
-                            fontFamily: PosTypography.family,
-                          ),
+                        SizedBox(height: _lerp(2, PosDimensions.xs + 2, t)),
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.baseline,
+                          textBaseline: TextBaseline.alphabetic,
+                          children: [
+                            Flexible(
+                              child: Text(
+                                AppFormatter.formatAmountWithSpaces(
+                                  widget.good.price,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontSize: priceSize,
+                                  fontWeight: FontWeight.w700,
+                                  color: c.textBrand,
+                                  fontFamily: PosTypography.family,
+                                  letterSpacing: -0.2,
+                                  fontFeatures: PosTypography.tabularFigures,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              "so'm",
+                              style: TextStyle(
+                                fontSize: unitSize,
+                                color: c.textSecondary,
+                                fontFamily: PosTypography.family,
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
-                  ],
-                ),
-              ),
-            ],
+                  ),
+                ],
+              );
+            },
           ),
         ),
       ),
@@ -210,14 +235,19 @@ class _InitialPlaceholder extends StatelessWidget {
         ),
       ),
       alignment: Alignment.center,
-      child: Text(
-        initial,
-        style: TextStyle(
-          fontSize: 42,
-          fontWeight: FontWeight.w700,
-          color: c.textBrand.withOpacity(0.55),
-          fontFamily: 'Inter',
-          letterSpacing: -1,
+      // Sized off the box rather than fixed at 42: the same placeholder is now
+      // drawn inside a ~60 px image area on a seven-column terminal, where a
+      // 42 px glyph is the whole tile.
+      child: LayoutBuilder(
+        builder: (context, box) => Text(
+          initial,
+          style: TextStyle(
+            fontSize: (box.biggest.shortestSide * 0.5).clamp(18.0, 42.0),
+            fontWeight: FontWeight.w700,
+            color: c.textBrand.withOpacity(0.55),
+            fontFamily: 'Inter',
+            letterSpacing: -1,
+          ),
         ),
       ),
     );
