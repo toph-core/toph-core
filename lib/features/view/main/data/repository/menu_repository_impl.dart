@@ -17,7 +17,8 @@ class MenuRepositoryImpl implements MenuRepository {
   MenuRepositoryImpl({
     required replica.LocalDatabase replicaDb,
     required LocalImageCache images,
-  })  : _query = MenuQuery(replicaDb),
+    String Function()? branchId,
+  })  : _query = MenuQuery(replicaDb, branchId: branchId),
         _images = images;
 
   @override

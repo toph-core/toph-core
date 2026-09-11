@@ -41,7 +41,10 @@ import 'package:mary_ai_pos/core/outbox/outbox_executor.dart';
 import 'package:mary_ai_pos/core/outbox/outbox_store.dart';
 import 'package:mary_ai_pos/core/sync/change_feed_relay.dart';
 import 'package:mary_ai_pos/core/sync/local_change_relay.dart';
+import 'package:mary_ai_pos/core/db/halls_tables_query.dart';
+import 'package:mary_ai_pos/core/sync/replica_repair.dart';
 import 'package:mary_ai_pos/core/sync/replication_service.dart';
+import 'package:mary_ai_pos/core/sync/snapshot_api_client.dart';
 import 'package:mary_ai_pos/core/sync/sync_api_client.dart';
 import 'package:mary_ai_pos/core/services/connectivity/connectivity_cubit.dart';
 import 'package:mary_ai_pos/core/services/lan_hub/lan_hub_service.dart';
@@ -361,6 +364,16 @@ Future<void> initDi({DiOverrides? overrides}) async {
   );
   inject.registerSingleton<ReplicationService>(replicationService);
 
+  // The other half of the inbound path: the feed patches this replica forward,
+  // this reconciles it against the server's current rows when the feed cannot.
+  // Driven only by SyncEngine, like ReplicationService above.
+  final replicaRepair = ReplicaRepair(
+    api: SnapshotApiClient(dioClient),
+    db: replicaDb,
+    applier: changeApplier,
+  );
+  inject.registerSingleton<ReplicaRepair>(replicaRepair);
+
   final syncEngine = SyncEngine(
     feed: inject<ChangeFeedRelay>(),
     connectivity: connectivityCubit,
@@ -368,6 +381,7 @@ Future<void> initDi({DiOverrides? overrides}) async {
     prefs: prefs,
     replication: replicationService,
     outbox: outboxDrainer,
+    repair: replicaRepair,
   );
   // NOTE: start() is deliberately deferred until after _cubit() below —
   // its immediate startup tick resolves MainRepository/UserBloc lazily, and
@@ -535,13 +549,20 @@ void _repositories() {
     () => MainRepositoryImpl(inject(), inject<replica.LocalDatabase>()),
   );
   inject.registerLazySingleton<ArchivesLocalRepository>(
-    () => ArchivesLocalRepositoryImpl(inject<replica.LocalDatabase>()),
+    () => ArchivesLocalRepositoryImpl(
+      inject<replica.LocalDatabase>(),
+      branchId: _currentBranchId,
+    ),
   );
   // OFFLINE_FIRST_EVERYWHERE_PLAN.md Phase 4 — the staff screen reads the
   // replica and writes through the outbox. Takes LocalDatabase + LocalWriter
   // and nothing else: no datasource, no DioClient, no ConnectivityCubit fork.
   inject.registerLazySingleton<UsersLocalRepository>(
-    () => UsersLocalRepositoryImpl(inject<replica.LocalDatabase>(), inject()),
+    () => UsersLocalRepositoryImpl(
+      inject<replica.LocalDatabase>(),
+      inject(),
+      branchId: _currentBranchId,
+    ),
   );
   // Same shape for halls & tables. Note this deliberately does *not* replace
   // `TablesRepository`, which still serves the floor plan and waiter screens
@@ -574,6 +595,7 @@ void _repositories() {
     () => HallsTablesLocalRepositoryImpl(
       inject<replica.LocalDatabase>(),
       inject(),
+      branchId: _currentBranchId,
     ),
   );
   // CLIENT_FACING_OFFLINE_PLAN.md §2 — local-first now: LocalDatabase +
@@ -624,12 +646,16 @@ void _repositories() {
   // Phase 4: halls/tables reads and occupancy move to the replica. The Hive
   // store still backs menus, bills and timers until their own screens follow.
   inject.registerLazySingleton<TablesRepository>(
-    () => TablesRepositoryImpl(localDb: inject<replica.LocalDatabase>()),
+    () => TablesRepositoryImpl(
+      localDb: inject<replica.LocalDatabase>(),
+      branchId: _currentBranchId,
+    ),
   );
   inject.registerLazySingleton<MenuRepository>(
     () => MenuRepositoryImpl(
       replicaDb: inject<replica.LocalDatabase>(),
       images: inject(),
+      branchId: _currentBranchId,
     ),
   );
   // Presentation-layer seam so PrintersSection reads categories from the replica
@@ -652,6 +678,7 @@ void _repositories() {
     () => TransactionsRepositoryImpl(
       replicaDb: inject<replica.LocalDatabase>(),
       writer: inject<LocalWriter>(),
+      branchId: _currentBranchId,
     ),
   );
 }
@@ -718,6 +745,23 @@ void _cubit() {
       syncPrinterSettingsUsecase: inject(),
     ),
   );
+  // Branch-scoped reads re-run when the session's branch changes.
+  //
+  // One listener rather than a hook in each auth path: the branch can arrive
+  // from a PIN login, a full login, a cached-profile restore on a cold offline
+  // start, or a server profile refresh, and every one of them ends here. The
+  // screens that care hold streams over `HallsTablesQuery.watchedTables`, and
+  // `MainCubit` is a singleton whose subscriptions outlive a login — so without
+  // this the floor plan kept whatever scope it was built with.
+  var lastBranchId = '';
+  inject<UserBloc>().stream.listen((state) {
+    final branchId = state.userMOdel?.branchId ?? '';
+    if (branchId == lastBranchId) return;
+    lastBranchId = branchId;
+    inject<replica.LocalDatabase>().touchChannel(
+      HallsTablesQuery.branchScopeChannel,
+    );
+  });
   inject.registerFactory(
     () => LoginPinCubit(
       inject(),
@@ -768,4 +812,24 @@ void _cubit() {
   );
   inject.registerLazySingleton(() => TableTimerSyncService());
   inject.registerFactory(() => TableTimerCubit(inject(), inject()));
+}
+
+/// This terminal's branch, for the reads that must not show another branch's
+/// data.
+///
+/// A function rather than a value because it is empty until the operator logs
+/// in, and the repositories that consult it are built long before that. It
+/// reads the same source every screen already uses — the cached `UserModel`,
+/// which `UserBloc` restores from the offline auth cache, so it answers with
+/// the cable pulled exactly as it does online.
+///
+/// Empty when nothing is logged in yet, which the queries read as "no filter"
+/// rather than "no rows".
+String _currentBranchId() {
+  try {
+    return inject<UserBloc>().state.userMOdel?.branchId ?? '';
+  } catch (_) {
+    // Resolved before UserBloc is registered, or in a test wiring without it.
+    return '';
+  }
 }

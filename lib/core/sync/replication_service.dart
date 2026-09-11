@@ -62,12 +62,23 @@ class ReplicationResult {
   final int rowsSkipped;
   final Object? error;
 
+  /// The server reported `snapshot_required` on at least one page: this
+  /// terminal cannot catch up from the feed and needs `ReplicaRepair`.
+  final bool snapshotRequired;
+
+  /// Entities that had a row refused on the way in. Their local copies may
+  /// hold something the server has since removed — see [ApplyStats
+  /// .refusedEntities].
+  final Set<String> refusedEntities;
+
   const ReplicationResult({
     required this.outcome,
     this.batches = 0,
     this.rowsApplied = 0,
     this.rowsSkipped = 0,
     this.error,
+    this.snapshotRequired = false,
+    this.refusedEntities = const {},
   });
 
   bool get ok =>
@@ -147,6 +158,8 @@ class ReplicationService {
     var batches = 0;
     var applied = 0;
     var skipped = 0;
+    var snapshotRequired = false;
+    final refused = <String>{};
 
     try {
       while (batches < maxBatches) {
@@ -159,6 +172,11 @@ class ReplicationService {
         onBatchApplied?.call(page.body, cursor);
         applied += stats.applied + stats.deleted;
         skipped += stats.skippedPending + stats.skippedUnknown + stats.failed;
+        // Carried out of the loop rather than acted on here: this class knows
+        // how to replicate, not how to repair, and the two must not become one
+        // component that does both.
+        snapshotRequired |= page.snapshotRequired;
+        refused.addAll(stats.refusedEntities);
         batches++;
 
         onProgress?.call(ReplicationProgress(
@@ -177,6 +195,8 @@ class ReplicationService {
             batches: batches,
             rowsApplied: applied,
             rowsSkipped: skipped,
+            snapshotRequired: snapshotRequired,
+            refusedEntities: refused,
           );
         }
         if (page.nextCursor <= cursor) {
@@ -185,6 +205,8 @@ class ReplicationService {
             batches: batches,
             rowsApplied: applied,
             rowsSkipped: skipped,
+            snapshotRequired: snapshotRequired,
+            refusedEntities: refused,
           );
         }
       }
@@ -194,6 +216,8 @@ class ReplicationService {
         batches: batches,
         rowsApplied: applied,
         rowsSkipped: skipped,
+        snapshotRequired: snapshotRequired,
+        refusedEntities: refused,
       );
     } catch (e, st) {
       if (kDebugMode) debugPrint('[Replication] drain failed: $e\n$st');
@@ -203,6 +227,8 @@ class ReplicationService {
         rowsApplied: applied,
         rowsSkipped: skipped,
         error: e,
+        snapshotRequired: snapshotRequired,
+        refusedEntities: refused,
       );
     } finally {
       _running = false;

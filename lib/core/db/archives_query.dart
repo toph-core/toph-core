@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:mary_ai_pos/core/db/branch_scope.dart';
 import 'package:mary_ai_pos/core/db/local_database.dart';
 import 'package:mary_ai_pos/features/view/main/domain/entities/archives_filter_request_entity.dart';
 
@@ -27,7 +28,13 @@ import 'package:mary_ai_pos/features/view/main/domain/entities/archives_filter_r
 class ArchivesQuery {
   final LocalDatabase _db;
 
-  const ArchivesQuery(this._db);
+  /// Bills are branch-scoped on the backend — `GetAllOrders` filters
+  /// `orders.branch_id`, and `order_items` inherit it through their order — so
+  /// the archive shows this venue's checks rather than every branch's.
+  final BranchScope _scope;
+
+  ArchivesQuery(this._db, {String Function()? branchId})
+    : _scope = BranchScope(_db, branchId: branchId);
 
   /// Tables whose changes invalidate a rendered page — the watch set.
   static const watchedTables = {
@@ -35,6 +42,7 @@ class ArchivesQuery {
     'order_items',
     'cafe_tables',
     'halls',
+    BranchScope.channel,
   };
 
   /// The `WHERE` every read here shares, so the page, its total and the
@@ -50,6 +58,12 @@ class ArchivesQuery {
 
     final where = <String>['o.deleted_at IS NULL'];
     final params = <Object?>[];
+
+    final branch = _scope.of('orders');
+    if (branch.isNotEmpty) {
+      where.add('o.branch_id = ?');
+      params.add(branch);
+    }
 
     // Prefix, not equality. The search box is a bill *number* field a cashier
     // types into while looking for a check, and typing the first digits of a

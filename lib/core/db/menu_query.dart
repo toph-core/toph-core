@@ -1,3 +1,4 @@
+import 'package:mary_ai_pos/core/db/branch_scope.dart';
 import 'package:mary_ai_pos/core/db/local_database.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/category/category_model.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/department/department_model.dart';
@@ -20,7 +21,18 @@ import 'package:mary_ai_pos/features/view/main/data/models/goods/goods_model.dar
 class MenuQuery {
   final LocalDatabase _db;
 
-  const MenuQuery(this._db);
+  /// Which rows belong to this terminal's branch.
+  ///
+  /// `goods` and `compounds` carry a `branch_id` and the backend's own list
+  /// queries filter on it (`goods.sql.go` GetAllGoods, `compound.sql.go`
+  /// GetAllCompounds), so these reads do too — the replica holds every branch
+  /// in the brand. `ingredients`, `ingredient_groups` and `translations` are
+  /// deliberately NOT filtered: the backend serves those brand-wide, and
+  /// ingredients are narrowed by `ingredient_visibility` instead.
+  final BranchScope _scope;
+
+  MenuQuery(this._db, {String Function()? branchId})
+    : _scope = BranchScope(_db, branchId: branchId);
 
   List<CategoryModel> categories() =>
       _decode(_live('categories'), CategoryModel.fromJson);
@@ -34,9 +46,10 @@ class MenuQuery {
   Stream<List<DepartmentModel>> watchDepartments() =>
       _db.watch({'departments'}, departments);
 
-  List<GoodsModel> goods() => _decode(_live('goods'), GoodsModel.fromJson);
+  List<GoodsModel> goods() => _decode(_scoped('goods'), GoodsModel.fromJson);
 
-  Stream<List<GoodsModel>> watchGoods() => _db.watch({'goods'}, goods);
+  Stream<List<GoodsModel>> watchGoods() =>
+      _db.watch({'goods', BranchScope.channel}, goods);
 
   /// One good by id, or null when the catalog has no such row.
   ///
@@ -58,33 +71,46 @@ class MenuQuery {
 
   List<GoodsModel> goodsForCategory(String categoryId) {
     if (categoryId == 'all') return goods();
+    final branch = _scope.clause('goods');
     return _decode(
       _db.selectData(
         'SELECT data FROM goods WHERE deleted_at IS NULL '
-        'AND category_id = ? ORDER BY name COLLATE NOCASE, id',
-        [categoryId],
+        'AND category_id = ? ${branch.sql}ORDER BY name COLLATE NOCASE, id',
+        [categoryId, ...branch.args],
       ),
       GoodsModel.fromJson,
     );
   }
 
-  Stream<List<GoodsModel>> watchGoodsForCategory(String categoryId) =>
-      _db.watch({'goods'}, () => goodsForCategory(categoryId));
+  Stream<List<GoodsModel>> watchGoodsForCategory(String categoryId) => _db.watch(
+    {'goods', BranchScope.channel},
+    () => goodsForCategory(categoryId),
+  );
 
   List<Map<String, dynamic>> ingredients() => _live('ingredients');
 
   Stream<List<Map<String, dynamic>>> watchIngredients() =>
       _db.watch({'ingredients'}, ingredients);
 
-  List<Map<String, dynamic>> compounds() => _live('compounds');
+  List<Map<String, dynamic>> compounds() => _scoped('compounds');
 
   Stream<List<Map<String, dynamic>>> watchCompounds() =>
-      _db.watch({'compounds'}, compounds);
+      _db.watch({'compounds', BranchScope.channel}, compounds);
 
   List<Map<String, dynamic>> _live(String table) => _db.selectData(
         'SELECT data FROM $table WHERE deleted_at IS NULL '
         'ORDER BY name COLLATE NOCASE, id',
       );
+
+  /// [_live], narrowed to this terminal's branch.
+  List<Map<String, dynamic>> _scoped(String table) {
+    final branch = _scope.clause(table);
+    return _db.selectData(
+      'SELECT data FROM $table WHERE deleted_at IS NULL '
+      '${branch.sql}ORDER BY name COLLATE NOCASE, id',
+      branch.args,
+    );
+  }
 
   static List<T> _decode<T>(
     List<Map<String, dynamic>> rows,

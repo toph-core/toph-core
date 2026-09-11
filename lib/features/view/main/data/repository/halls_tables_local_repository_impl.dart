@@ -14,8 +14,11 @@ class HallsTablesLocalRepositoryImpl implements HallsTablesLocalRepository {
   final LocalWriter _writer;
   final HallsTablesQuery _query;
 
-  HallsTablesLocalRepositoryImpl(this._db, this._writer)
-      : _query = HallsTablesQuery(_db);
+  HallsTablesLocalRepositoryImpl(
+    this._db,
+    this._writer, {
+    String Function()? branchId,
+  }) : _query = HallsTablesQuery(_db, branchId: branchId);
 
   static const _halls = 'halls';
   static const _tables = 'cafe_tables';
@@ -45,30 +48,22 @@ class HallsTablesLocalRepositoryImpl implements HallsTablesLocalRepository {
       _queueCreate(_halls, body).map((_) => unit);
 
   @override
-  Either<Failure, Unit> updateHall(
-    String id,
-    Map<String, dynamic> changes,
-  ) =>
+  Either<Failure, Unit> updateHall(String id, Map<String, dynamic> changes) =>
       _applyUpdate(_halls, id, changes);
 
   @override
-  Either<Failure, Unit> deleteHall(String id) =>
-      _applyDelete(_halls, id);
+  Either<Failure, Unit> deleteHall(String id) => _applyDelete(_halls, id);
 
   @override
   Either<Failure, String> createTable(Map<String, dynamic> body) =>
       _queueCreate(_tables, body);
 
   @override
-  Either<Failure, Unit> updateTable(
-    String id,
-    Map<String, dynamic> changes,
-  ) =>
+  Either<Failure, Unit> updateTable(String id, Map<String, dynamic> changes) =>
       _applyUpdate(_tables, id, changes);
 
   @override
-  Either<Failure, Unit> deleteTable(String id) =>
-      _applyDelete(_tables, id);
+  Either<Failure, Unit> deleteTable(String id) => _applyDelete(_tables, id);
 
   @override
   Either<Failure, Unit> setTableStatus(String id, TableStatus status) =>
@@ -83,38 +78,35 @@ class HallsTablesLocalRepositoryImpl implements HallsTablesLocalRepository {
   Either<Failure, String> _queueCreate(
     String entity,
     Map<String, dynamic> body,
-  ) =>
-      _guard(() {
-        // Appears immediately under a provisional id, which the drainer swaps
-        // for the server's once the create lands. See DECISIONS.md D1. The id
-        // is returned so the caller can address the row in that window.
-        return _writer.create(entity: entity, row: body, request: body);
-      });
+  ) => _guard(() {
+    // Appears immediately under a provisional id, which the drainer swaps
+    // for the server's once the create lands. See DECISIONS.md D1. The id
+    // is returned so the caller can address the row in that window.
+    return _writer.create(entity: entity, row: body, request: body);
+  });
 
   Either<Failure, Unit> _applyUpdate(
     String entity,
     String id,
     Map<String, dynamic> changes,
-  ) =>
-      _guard(() {
-        // Merged over the stored row so the replica keeps a whole entity — the
-        // table PUT body is nearly complete already, but a hall rename sends
-        // three fields and must not erase the rest.
-        final existing = _db.byId(entity, id) ?? const <String, dynamic>{};
-        _writer.write(
-          entity: entity,
-          id: id,
-          row: {...existing, ...changes, 'id': id},
-          request: changes,
-        );
-        return unit;
-      });
+  ) => _guard(() {
+    // Merged over the stored row so the replica keeps a whole entity — the
+    // table PUT body is nearly complete already, but a hall rename sends
+    // three fields and must not erase the rest.
+    final existing = _db.byId(entity, id) ?? const <String, dynamic>{};
+    _writer.write(
+      entity: entity,
+      id: id,
+      row: {...existing, ...changes, 'id': id},
+      request: changes,
+    );
+    return unit;
+  });
 
-  Either<Failure, Unit> _applyDelete(String entity, String id) =>
-      _guard(() {
-        _writer.delete(entity: entity, id: id);
-        return unit;
-      });
+  Either<Failure, Unit> _applyDelete(String entity, String id) => _guard(() {
+    _writer.delete(entity: entity, id: id);
+    return unit;
+  });
 
   Either<Failure, T> _guard<T>(T Function() body) {
     try {

@@ -93,9 +93,14 @@ class MenuAdminQuery {
   /// permission, and getting that backwards would show a branch the whole
   /// brand's catalogue, which is the bug this replaced.
   ///
-  /// The branch is not filtered here because it is already filtered upstream:
-  /// `change_log.branch_id` scopes the feed, so a terminal only ever receives
-  /// its own branch's visibility rows.
+  /// The branch is not filtered here. That used to be justified by "the feed
+  /// is branch-scoped upstream (`change_log.branch_id`)", which is not true and
+  /// never was: `change_log` carries `brand_id`, and `SyncS.Pull` has no branch
+  /// predicate — tenancy is by schema, which separates brands, not branches. So
+  /// a terminal does receive every branch's visibility rows, and this read
+  /// shows them. `HallsTablesQuery` now filters its own reads for exactly this
+  /// reason; doing the same here is unfinished work, kept visible rather than
+  /// papered over with a comment that reads as an assurance.
   ///
   /// EXISTS rather than the backend's INNER JOIN. The backend can join safely
   /// because its session pins one branch, so at most one visibility row can

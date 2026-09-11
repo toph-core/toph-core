@@ -225,6 +225,11 @@ void main() {
       'lib/core/services/lan_hub/lan_hub_service.dart',
       'lib/core/services/offline_queue/offline_queue_service.dart',
       'lib/core/sync/sync_api_client.dart',
+      // The snapshot half of the same protocol — transport for exactly one
+      // endpoint (`GET /sync/snapshot`), doing no storage and no decisions,
+      // the way `sync_api_client.dart` beside it does none for `/sync/pull`.
+      // `ReplicaRepair` owns the loop and `ChangeApplier` owns the writes.
+      'lib/core/sync/snapshot_api_client.dart',
       // Minio has no change-log trigger, so the engine fetches image blobs
       // itself — the documented exception in `SyncEngine._fillFeedGaps`.
       'lib/core/sync/sync_engine.dart',

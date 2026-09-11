@@ -15,6 +15,7 @@ import '../services/lan_hub/lan_hub_service.dart';
 import '../outbox/outbox_drainer.dart';
 import '../outbox/outbox_store.dart';
 import 'change_feed_relay.dart';
+import 'replica_repair.dart';
 import 'replication_service.dart';
 
 /// The only component that touches the network (OFFLINE_FIRST_EVERYWHERE_PLAN
@@ -54,6 +55,15 @@ class SyncEngine {
 
   /// Phase 2 — replay of locally-queued writes.
   final OutboxDrainer _outbox;
+
+  /// The reconciliation path for what the feed cannot deliver: rows the server
+  /// removed while this terminal was refusing or missing changes.
+  ///
+  /// Nullable because it is additive — a terminal (or a test) wired without it
+  /// replicates exactly as before, it just never repairs. Every trigger for it
+  /// lives here, beside the other sync triggers, rather than in the
+  /// replication loop it corrects.
+  final ReplicaRepair? _repair;
 
   /// The queue behind [_outbox], for the two things this engine needs that a
   /// drain does not expose: clearing backoff on a manual retry, and knowing
@@ -100,12 +110,14 @@ class SyncEngine {
     required ReplicationService replication,
     required ChangeFeedRelay feed,
     required OutboxDrainer outbox,
+    ReplicaRepair? repair,
   })  : _connectivity = connectivity,
         _lanHub = lanHub,
         _prefs = prefs,
         _replication = replication,
         _feed = feed,
-        _outbox = outbox;
+        _outbox = outbox,
+        _repair = repair;
 
   /// The replication loop, for the login flow's one-time bootstrap and the
   /// sync-status screen. Exposed here rather than injected directly anywhere
@@ -241,12 +253,22 @@ class SyncEngine {
           // recovery, not as a poll.
           if (force) _outboxStore.clearBackoff();
           await _outbox.drain();
+          var pulled = const ReplicationResult(
+            outcome: ReplicationOutcome.caughtUp,
+          );
           if (_feed.needsBackfill) {
-            final result = await _replication.drain();
-            if (result.outcome == ReplicationOutcome.caughtUp) {
+            pulled = await _replication.drain();
+            if (pulled.outcome == ReplicationOutcome.caughtUp) {
               _feed.backfillDone();
             }
           }
+          // Outside the backfill block on purpose. A follower's inbound rows
+          // arrive on the leader's broadcast, and it refuses them exactly as a
+          // pull would — so a follower accumulates repair debt without ever
+          // having a hole to backfill. Leaving the repair inside that block
+          // meant the one terminal that cannot pull for itself was also the one
+          // that could never reconcile.
+          await _repairIfNeeded(pulled);
           await _fillFeedGaps();
           _refreshUserProfile();
         }
@@ -260,7 +282,11 @@ class SyncEngine {
       // returning a version `_pending` then has to shield. Neither throws —
       // each returns a result — so one failing cannot stop what follows.
       await _outbox.drain();
-      await _replication.drain();
+      final result = await _replication.drain();
+      // After the drain, never before: the outbox has just emptied, so the
+      // pending guards that caused the refusals are gone and the sweep can
+      // tell a row the server deleted from one this terminal has not sent yet.
+      await _repairIfNeeded(result);
       await _fillFeedGaps();
       _refreshUserProfile();
       _recordSync();
@@ -268,6 +294,27 @@ class SyncEngine {
       if (kDebugMode) debugPrint('[SyncEngine] tick error: $e');
     } finally {
       _tickRunning = false;
+    }
+  }
+
+  /// Records what a replication pass learned about this replica's health, then
+  /// runs a repair pass if one is due.
+  ///
+  /// Both halves are here rather than inside [ReplicationService] because a
+  /// repair is a *sync trigger*, and §5 puts every sync trigger in this class.
+  /// It is awaited only to keep one network pass at a time; nothing upstream
+  /// waits on the returned future, so no user action ever does either.
+  Future<void> _repairIfNeeded(ReplicationResult result) async {
+    final repair = _repair;
+    if (repair == null) return;
+    if (result.snapshotRequired) repair.requireFull();
+    if (result.refusedEntities.isNotEmpty) {
+      repair.noteRefused(result.refusedEntities);
+    }
+    if (!repair.isNeeded) return;
+    final outcome = await repair.run();
+    if (kDebugMode && outcome.outcome != RepairOutcome.notNeeded) {
+      debugPrint('[SyncEngine] replica repair: $outcome');
     }
   }
 
@@ -283,7 +330,7 @@ class SyncEngine {
   Future<void> hydrateNow({bool includeGoods = false}) async {
     if (!_connectivity.isOnline) return;
     try {
-      await _replication.drain();
+      await _repairIfNeeded(await _replication.drain());
       await _fillFeedGaps();
       _recordSync();
     } catch (e) {

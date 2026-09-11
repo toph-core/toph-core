@@ -227,6 +227,22 @@ class LocalTables {
   /// alone, which is why it is recorded rather than inferred.
   static const provisional = '_provisional';
 
+  /// Rows this terminal learned about from a LAN peer rather than from the
+  /// server.
+  ///
+  /// A peer's row is deliberately not marked pending — the terminal that wrote
+  /// it owns its trip to the server, and two terminals queuing the same create
+  /// is the duplicate that would cause (see `ChangeApplier.applyFromPeer`). But
+  /// "not pending" also meant "nothing is protecting it", and a repair sweep
+  /// asks the server what exists: a bill rung on the next till, still sitting in
+  /// *its* outbox, is not in that answer. The sweep would delete a live check —
+  /// and broadcast the delete to the terminal that owns it.
+  ///
+  /// So provenance is recorded. An entry is written when a row arrives from a
+  /// peer and dropped the moment the server sends the same row, which is the
+  /// point at which the snapshot becomes authoritative about it.
+  static const peerOrigin = '_peer_origin';
+
   /// Live per-order table-timer records — the local-authority billing engine's
   /// store, moved off the retiring Hive box onto the replica DB.
   ///
@@ -581,10 +597,11 @@ const List<EntitySpec> kReplicatedEntities = [
   // migrations and fails if this line and that SQL disagree, in either
   // direction.
   //
-  // The rest of the original comment was always true and still is: the feed is
-  // branch-scoped on the backend (`change_log.branch_id`), so the local reads
-  // need no branch filter, and `name` is promoted because that is what the
-  // pickers order on.
+  // The rest of the original comment claimed the feed is branch-scoped on the
+  // backend (`change_log.branch_id`) and that the local reads therefore need no
+  // branch filter. There is no such column: `change_log` carries `brand_id`,
+  // and `SyncS.Pull` selects `WHERE id > $1`. What remains true is that `name`
+  // is promoted because that is what the pickers order on.
   EntitySpec(
     name: 'group_transactions',
     promoted: [PromotedColumn('name', SqlType.text)],
@@ -690,6 +707,33 @@ bool isFedByChangeLog(String entity) =>
 /// [EntitySpec.pk], which is not always the payload's `id` key
 /// (`bill_daily_counters` is keyed by `day`).
 const Set<String> kReservedColumns = {'id', 'deleted_at', 'data', 'synced_at'};
+
+/// Entities whose rows are work an operator did, not configuration someone
+/// typed into a settings screen.
+///
+/// The distinction exists for one decision: what to do with a local row whose
+/// create the server rejected for good. For a hall or a menu item the answer is
+/// to drop it — the server assigned no id, no other terminal has it, and
+/// leaving it behind puts something on screen that exists nowhere else. For a
+/// bill, a line on a bill, or a shift, dropping it would erase what somebody
+/// actually did at the till: items rung, money taken, a shift opened. Those
+/// rows stay, rejected or not, and the operator finds the failure in the
+/// quarantine list rather than discovering the check has vanished.
+///
+/// Note that "the client chose the id" is *not* the test. `order_items` picks
+/// its own ids and the backend still mints its own (see
+/// `ChangeApplier._retireClientTwin`), so id ownership says nothing about
+/// whether the row is safe to throw away.
+const Set<String> kOperatorWorkEntities = {
+  'orders',
+  'order_items',
+  'branch_shifts',
+  'cash_register_shifts',
+  'transactions',
+  'group_transactions',
+  'user_payments',
+  'table_time_sessions',
+};
 
 /// Validates the registry's internal consistency.
 ///

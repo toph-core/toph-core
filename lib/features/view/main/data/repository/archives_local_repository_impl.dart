@@ -38,8 +38,8 @@ class ArchivesLocalRepositoryImpl implements ArchivesLocalRepository {
   final ArchivesQuery _archives;
   final OrderDetailQuery _detail;
 
-  ArchivesLocalRepositoryImpl(LocalDatabase replica)
-    : _archives = ArchivesQuery(replica),
+  ArchivesLocalRepositoryImpl(LocalDatabase replica, {String Function()? branchId})
+    : _archives = ArchivesQuery(replica, branchId: branchId),
       _detail = OrderDetailQuery(replica);
 
   /// What the screen shows on open, before the operator has touched a filter.

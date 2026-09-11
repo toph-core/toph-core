@@ -18,9 +18,14 @@ class TablesRepositoryImpl implements TablesRepository {
   final LocalDatabase _db;
   final HallsTablesQuery _query;
 
-  TablesRepositoryImpl({required LocalDatabase localDb})
-      : _db = localDb,
-        _query = HallsTablesQuery(localDb);
+  /// [branchId] resolves this terminal's branch on every read — see
+  /// [HallsTablesQuery]'s branch-scope note. Optional so a test (or any caller
+  /// with no session) gets the unfiltered floor plan rather than an empty one.
+  TablesRepositoryImpl({
+    required LocalDatabase localDb,
+    String Function()? branchId,
+  }) : _db = localDb,
+       _query = HallsTablesQuery(localDb, branchId: branchId);
 
   @override
   Stream<List<HallModel>> watchHalls() =>
@@ -30,9 +35,9 @@ class TablesRepositoryImpl implements TablesRepository {
   List<HallModel> getHalls() => decodeRows(_query.halls(), HallModel.fromJson);
 
   @override
-  Stream<List<CafeTableModel>> watchAllTables() => _query
-      .watchTables()
-      .map((rows) => decodeRows(rows, CafeTableModel.fromJson));
+  Stream<List<CafeTableModel>> watchAllTables() => _query.watchTables().map(
+    (rows) => decodeRows(rows, CafeTableModel.fromJson),
+  );
 
   @override
   List<CafeTableModel> getAllTables() =>

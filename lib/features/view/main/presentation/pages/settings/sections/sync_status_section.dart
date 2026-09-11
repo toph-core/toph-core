@@ -1,5 +1,10 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:mary_ai_pos/core/db/entity_registry.dart';
+import 'package:mary_ai_pos/core/db/local_database.dart';
+import 'package:mary_ai_pos/core/outbox/outbox_operation.dart';
+import 'package:mary_ai_pos/core/outbox/outbox_store.dart';
 import 'package:mary_ai_pos/core/constants/constants.dart';
 import 'package:mary_ai_pos/core/extension/date_time_extension.dart';
 import 'package:mary_ai_pos/core/extension/for_context.dart';
@@ -8,9 +13,6 @@ import 'package:mary_ai_pos/core/services/audit/privileged_action_audit_log_serv
 import 'package:mary_ai_pos/core/services/lan_hub/lan_hub_service.dart';
 import 'package:mary_ai_pos/core/sync/local_change_relay.dart';
 import 'package:mary_ai_pos/core/theme/tokens/theme_colors.dart';
-import 'package:mary_ai_pos/core/services/offline_queue/offline_queue_service.dart';
-import 'package:mary_ai_pos/core/services/offline_queue/pending_operation.dart';
-import 'package:mary_ai_pos/core/services/offline_queue/quarantined_operation.dart';
 import 'package:mary_ai_pos/core/services/print_queue/print_job.dart';
 import 'package:mary_ai_pos/core/services/print_queue/print_queue_service.dart';
 import 'package:mary_ai_pos/core/sync/sync_engine.dart';
@@ -50,29 +52,6 @@ class SyncStatusSection extends StatelessWidget {
         ],
       ),
     );
-  }
-}
-
-String _typeLabel(PendingOperationType type) {
-  switch (type) {
-    case PendingOperationType.createOrder:
-      return 'Buyurtma yaratish';
-    case PendingOperationType.addItems:
-      return "Mahsulot qo'shish";
-    case PendingOperationType.payOrder:
-      return "To'lov";
-    case PendingOperationType.openShift:
-      return 'Smena ochish';
-    case PendingOperationType.closeShift:
-      return 'Smena yopish';
-    case PendingOperationType.cancelLineItems:
-      return 'Pozitsiyani bekor qilish';
-    case PendingOperationType.cancelOrder:
-      return 'Buyurtmani bekor qilish';
-    case PendingOperationType.transferTable:
-      return "Stolni ko'chirish";
-    case PendingOperationType.timerAction:
-      return 'Stol taymeri amali';
   }
 }
 
@@ -208,18 +187,28 @@ class _OutboxCardState extends State<_OutboxCard> {
 
   @override
   Widget build(BuildContext context) {
-    final queue = inject<OfflineQueueService>();
+    // `OutboxStore`, not `OfflineQueueService`. This card read the Hive queue,
+    // which has had no producer since the writes moved to the outbox — so it
+    // reported "everything is synced" on a terminal holding unsent work, which
+    // is the most reassuring possible way to be wrong.
+    final store = inject<OutboxStore>();
     final colors = context.colors;
-    return ValueListenableBuilder<Box<PendingOperation>>(
-      valueListenable: queue.listenable,
-      builder: (context, box, _) {
-        final depth = box.length;
-        final attempt = queue.lastAttemptAt;
+    return StreamBuilder<List<OutboxOperation>>(
+      stream: inject<LocalDatabase>().watch(
+        {LocalTables.outbox},
+        () => store.pending(limit: 500),
+      ),
+      builder: (context, snapshot) {
+        final ops = snapshot.data ?? const <OutboxOperation>[];
+        final depth = ops.length;
+        final attempt = inject<SyncEngine>().lastSyncAt.value;
         // §12 per-op retry observability: a single stuck op is visible as a
         // high worst-case retry count even when the rest of the queue is
         // healthy.
-        final maxRetries =
-            box.values.fold<int>(0, (m, o) => o.retryCount > m ? o.retryCount : m);
+        final maxRetries = ops.fold<int>(
+          0,
+          (m, o) => o.attempts > m ? o.attempts : m,
+        );
         return SoftCard(
           padding: const EdgeInsets.all(18),
           child: Column(
@@ -534,12 +523,18 @@ class _QuarantineCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final queue = inject<OfflineQueueService>();
+    // The real queue — see the note on `_OutboxCard`. A rejected write used to
+    // vanish with no message anywhere in the product; this is the one place
+    // that says it happened, and it was reading an empty box.
+    final store = inject<OutboxStore>();
     final colors = context.colors;
-    return ValueListenableBuilder<Box<QuarantinedOperation>>(
-      valueListenable: queue.quarantineListenable,
-      builder: (context, box, _) {
-        final items = queue.quarantined;
+    return StreamBuilder<List<OutboxOperation>>(
+      stream: inject<LocalDatabase>().watch(
+        {LocalTables.outbox},
+        () => store.quarantined(),
+      ),
+      builder: (context, snapshot) {
+        final items = snapshot.data ?? const <OutboxOperation>[];
         return SoftCard(
           padding: const EdgeInsets.all(18),
           child: Column(
@@ -568,7 +563,7 @@ class _QuarantineCard extends StatelessWidget {
 }
 
 class _QuarantineRow extends StatefulWidget {
-  final QuarantinedOperation op;
+  final OutboxOperation op;
   const _QuarantineRow({required this.op});
 
   @override
@@ -580,12 +575,15 @@ class _QuarantineRowState extends State<_QuarantineRow> {
 
   Future<void> _retry() async {
     setState(() => _busy = true);
-    await inject<OfflineQueueService>().retryQuarantined(widget.op.id);
+    inject<OutboxStore>().retryQuarantined(widget.op.id);
+    // Put it on the wire now rather than at the next tick — the operator
+    // pressed this because they are waiting for it.
+    unawaited(inject<SyncEngine>().tick(force: true));
   }
 
   Future<void> _dismiss() async {
     setState(() => _busy = true);
-    await inject<OfflineQueueService>().dismissQuarantined(widget.op.id);
+    inject<OutboxStore>().dismissQuarantined(widget.op.id);
   }
 
   @override
@@ -602,7 +600,7 @@ class _QuarantineRowState extends State<_QuarantineRow> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  '${_typeLabel(op.type)} · stol ${op.tableId.isEmpty ? '—' : op.tableId} · ${op.quarantinedAt.timeAgo}',
+                  '${op.entity} · ${op.action} · ${op.createdAt.timeAgo}',
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
@@ -612,7 +610,10 @@ class _QuarantineRowState extends State<_QuarantineRow> {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  op.reason,
+                  // The server's own words. They used to be discarded —
+                  // `MessageFailure` printed as "MessageFailure()" — so a
+                  // rejected write left nothing to act on.
+                  op.lastError ?? 'Server rad etdi',
                   style: TextStyle(
                     fontSize: 11,
                     color: colors.systemError,

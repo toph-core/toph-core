@@ -29,12 +29,34 @@ class ApplyStats {
   /// Rows that could not be applied (missing primary key, malformed payload).
   final int failed;
 
+  /// Entities that had at least one row refused or fail to apply.
+  ///
+  /// The cursor moves on regardless, and the feed never repeats a row, so these
+  /// are the entities whose local copies may now hold something the server has
+  /// removed. `ReplicaRepair` sweeps them; without this set nothing downstream
+  /// could tell a refusal from a clean batch.
+  ///
+  /// Deliberately not [skippedUnknown]'s entities — an entity this client does
+  /// not replicate has no local rows to reconcile.
+  final Set<String> refusedEntities;
+
+  /// The individual rows refused, as `entity/id`.
+  ///
+  /// A repair sweep needs these, not just the entity names. A snapshot row this
+  /// terminal refuses is a row the server *does* have — the local copy was kept
+  /// on purpose — so it must not then be deleted for being "absent from the
+  /// snapshot". Without this the monotonic guard on `branch_shifts.closed_at`
+  /// turned into the shift row vanishing outright.
+  final Set<String> refusedIds;
+
   const ApplyStats({
     this.applied = 0,
     this.deleted = 0,
     this.skippedPending = 0,
     this.skippedUnknown = 0,
     this.failed = 0,
+    this.refusedEntities = const {},
+    this.refusedIds = const {},
   });
 
   int get total => applied + deleted + skippedPending + skippedUnknown + failed;
@@ -45,19 +67,26 @@ class ApplyStats {
     int skippedPending = 0,
     int skippedUnknown = 0,
     int failed = 0,
-  }) =>
-      ApplyStats(
-        applied: this.applied + applied,
-        deleted: this.deleted + deleted,
-        skippedPending: this.skippedPending + skippedPending,
-        skippedUnknown: this.skippedUnknown + skippedUnknown,
-        failed: this.failed + failed,
-      );
+    String? refused,
+    String? refusedId,
+  }) => ApplyStats(
+    applied: this.applied + applied,
+    deleted: this.deleted + deleted,
+    skippedPending: this.skippedPending + skippedPending,
+    skippedUnknown: this.skippedUnknown + skippedUnknown,
+    failed: this.failed + failed,
+    refusedEntities: refused == null
+        ? refusedEntities
+        : {...refusedEntities, refused},
+    refusedIds: refusedId == null ? refusedIds : {...refusedIds, refusedId},
+  );
 
   @override
-  String toString() => 'ApplyStats(applied: $applied, deleted: $deleted, '
+  String toString() =>
+      'ApplyStats(applied: $applied, deleted: $deleted, '
       'skippedPending: $skippedPending, skippedUnknown: $skippedUnknown, '
-      'failed: $failed)';
+      'failed: $failed'
+      "${refusedEntities.isEmpty ? '' : ', refused: ${refusedEntities.join(',')}'})";
 }
 
 /// One row this terminal changed on its own authority, on its way to the LAN.
@@ -66,12 +95,13 @@ class ApplyStats {
 /// form stored in SQLite: a peer runs it back through the same
 /// [PayloadNormalizer] on the way in, so both replicas derive their columns
 /// from identical input by the identical function. Null for a delete.
-typedef LocalChangeSink = void Function({
-  required String entity,
-  required String action,
-  required String id,
-  Map<String, dynamic>? payload,
-});
+typedef LocalChangeSink =
+    void Function({
+      required String entity,
+      required String action,
+      required String id,
+      Map<String, dynamic>? payload,
+    });
 
 class ChangeApplier {
   final LocalDatabase _db;
@@ -95,8 +125,9 @@ class ChangeApplier {
   /// Occupancy and table timers are derived from the bills this class applies —
   /// see [TableOccupancyReconciler] for why they cannot be left to the screens
   /// that happen to be open.
-  late final TableOccupancyReconciler _occupancy =
-      TableOccupancyReconciler(_db);
+  late final TableOccupancyReconciler _occupancy = TableOccupancyReconciler(
+    _db,
+  );
 
   /// Tables whose orders the in-flight apply touched, drained by whichever
   /// entry point started it.
@@ -108,7 +139,7 @@ class ChangeApplier {
   final Set<String> _touchedOrderTables = <String>{};
 
   ChangeApplier(this._db, {LocalChangeSink? onLocalChange})
-      : _onLocalChange = onLocalChange;
+    : _onLocalChange = onLocalChange;
 
   /// Records both ends of an `orders` row's occupancy: the table it names, and
   /// the table the stored copy names.
@@ -222,7 +253,8 @@ class ChangeApplier {
     final spec = kEntitiesByName[entity];
     if (spec == null) {
       // Count every row so the skip is visible rather than silent.
-      final n = _lengthOf(changes['created']) +
+      final n =
+          _lengthOf(changes['created']) +
           _lengthOf(changes['updated']) +
           _lengthOf(changes['deleted']);
       return stats._add(skippedUnknown: n);
@@ -238,7 +270,7 @@ class ChangeApplier {
       if (list is! List) continue;
       for (final row in list) {
         if (row is! Map) {
-          out = out._add(failed: 1);
+          out = out._add(failed: 1, refused: entity);
           continue;
         }
         out = _applyUpsert(spec, Map<String, dynamic>.from(row), out);
@@ -256,15 +288,18 @@ class ChangeApplier {
       for (final id in deleted) {
         final entityId = id?.toString();
         if (entityId == null || entityId.isEmpty) {
-          out = out._add(failed: 1);
+          out = out._add(failed: 1, refused: entity);
           continue;
         }
         if (_db.isPending(entity, entityId)) {
-          out = out._add(skippedPending: 1);
+          // The worst refusal there is: a delete the feed will never repeat.
+          // Recorded so a repair pass sweeps this entity later.
+          out = out._add(skippedPending: 1, refused: entity);
           continue;
         }
         _noteOrderTables(entity, entityId);
         _db.deleteRow(entity, entityId);
+        _db.clearPeerOrigin(entity, entityId);
         out = out._add(deleted: 1);
       }
     }
@@ -278,7 +313,9 @@ class ChangeApplier {
     ApplyStats stats,
   ) {
     final id = raw[spec.pk]?.toString();
-    if (id == null || id.isEmpty) return stats._add(failed: 1);
+    if (id == null || id.isEmpty) {
+      return stats._add(failed: 1, refused: spec.name);
+    }
 
     // An unsynced local edit always wins over the incoming row. Without this,
     // a pull landing between a cashier's write and its replay would silently
@@ -294,15 +331,35 @@ class ChangeApplier {
     // *before* applying the response, so the guard below could not see it, and
     // the server's still-open row (its close had not drained yet) overwrote the
     // local close and was broadcast to every LAN peer as a reopen.
-    if (_wouldUnsetMonotonic(spec, id, raw)) return stats._add(skippedPending: 1);
-    if (_db.isPending(spec.name, id) && !_completesMonotonicSet(spec, id, raw)) {
-      return stats._add(skippedPending: 1);
+    if (_wouldUnsetMonotonic(spec, id, raw)) {
+      return stats._add(
+        skippedPending: 1,
+        refused: spec.name,
+        refusedId: '${spec.name}/$id',
+      );
+    }
+    if (_db.isPending(spec.name, id) &&
+        !_completesMonotonicSet(spec, id, raw)) {
+      return stats._add(
+        skippedPending: 1,
+        refused: spec.name,
+        refusedId: '${spec.name}/$id',
+      );
     }
 
     _noteOrderTables(spec.name, id, raw);
     _retireClientTwin(spec, id, raw);
 
     _db.upsert(spec, id, PayloadNormalizer.normalize(spec, raw));
+    // Provenance, for the repair sweep. A row that only ever arrived over the
+    // LAN is unsynced work belonging to another till and must not be swept;
+    // the same row arriving from the server settles that, because from then on
+    // the server's answer about it is authoritative.
+    if (_fromPeer) {
+      _db.markPeerOrigin(spec.name, id);
+    } else {
+      _db.clearPeerOrigin(spec.name, id);
+    }
     return stats._add(applied: 1);
   }
 
@@ -436,6 +493,7 @@ class ChangeApplier {
           }
           _noteOrderTables(entity, id);
           _db.deleteRow(entity, id);
+          _db.clearPeerOrigin(entity, id);
           _emitLocalChange(entity: entity, action: 'delete', id: id);
           _reconcileTouchedTables();
           return const ApplyStats(deleted: 1);
@@ -525,6 +583,7 @@ class ChangeApplier {
     _db.transaction(() {
       _noteOrderTables(entity, id);
       _db.deleteRow(entity, id);
+      _db.clearPeerOrigin(entity, id);
       _db.markPending(entity, id);
       _emitLocalChange(entity: entity, action: 'delete', id: id);
       _reconcileTouchedTables();

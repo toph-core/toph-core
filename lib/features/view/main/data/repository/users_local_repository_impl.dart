@@ -19,7 +19,8 @@ class UsersLocalRepositoryImpl implements UsersLocalRepository {
   final LocalWriter _writer;
   final UsersQuery _users;
 
-  UsersLocalRepositoryImpl(this._db, this._writer) : _users = UsersQuery(_db);
+  UsersLocalRepositoryImpl(this._db, this._writer, {String Function()? branchId})
+    : _users = UsersQuery(_db, branchId: branchId);
 
   static const _entity = 'users';
 

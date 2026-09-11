@@ -4,6 +4,7 @@ library;
 import 'package:flutter/foundation.dart';
 
 import '../db/apply_change.dart';
+import '../db/entity_registry.dart';
 import '../db/local_database.dart';
 import 'outbox_executor.dart';
 import 'outbox_operation.dart';
@@ -31,7 +32,8 @@ class OutboxDrainResult {
   bool get madeProgress => sent > 0;
 
   @override
-  String toString() => 'OutboxDrainResult(sent: $sent, retrying: $retrying, '
+  String toString() =>
+      'OutboxDrainResult(sent: $sent, retrying: $retrying, '
       'quarantined: $quarantined, blocked: $blocked)';
 }
 
@@ -48,10 +50,10 @@ class OutboxDrainer {
     required OutboxExecutors executors,
     required LocalDatabase db,
     required ChangeApplier applier,
-  })  : _store = store,
-        _executors = executors,
-        _db = db,
-        _applier = applier;
+  }) : _store = store,
+       _executors = executors,
+       _db = db,
+       _applier = applier;
 
   bool get isRunning => _running;
 
@@ -136,8 +138,11 @@ class OutboxDrainer {
           // times to reach the same conclusion, and it surfaces the gap —
           // an operation enqueued for an entity nobody registered a handler
           // for is a programming error, not a network condition.
-          _fail(op, 'no executor registered for ${op.entity}/${op.action}',
-              permanent: true);
+          _fail(
+            op,
+            'no executor registered for ${op.entity}/${op.action}',
+            permanent: true,
+          );
           quarantined++;
           blockedChains.add(chain);
           continue;
@@ -330,7 +335,10 @@ class OutboxDrainer {
         action: 'delete',
         entityId: provisionalId,
       );
-      rewritten = _store.rewriteReferences(oldId: provisionalId, newId: serverId);
+      rewritten = _store.rewriteReferences(
+        oldId: provisionalId,
+        newId: serverId,
+      );
     }
     _db.clearProvisional(op.entity, provisionalId);
     _applier.applyOne(
@@ -368,7 +376,36 @@ class OutboxDrainer {
           // win; the operator sees the change revert and finds the reason in
           // the quarantine list. A visible revert beats a silent private
           // truth.
+          //
+          // First, because the provisional cleanup below deletes through the
+          // applier, and the applier refuses to delete a row that is still
+          // guarded — the same ordering `_succeed` relies on.
           _db.clearPending(op.entity, entityId);
+
+          // Only a rejected *create*, and only for configuration. An update or
+          // a delete that fails does not mean the row should not exist, and a
+          // bill or a shift is never thrown away for having been rejected —
+          // see [kOperatorWorkEntities].
+          if (op.action == 'create' &&
+              !kOperatorWorkEntities.contains(op.entity) &&
+              _db.isProvisional(op.entity, entityId)) {
+            // A provisional row is a stand-in for one the server was going to
+            // create and has now refused for good. Nothing will ever deliver
+            // a real version of it, and no other terminal has it — so leaving
+            // it behind puts a table, hall or user on this screen that exists
+            // nowhere else, forever. `unsweptRowIds` cannot clean it up
+            // either: it deliberately protects provisional rows from the
+            // repair sweep as unsynced local work.
+            //
+            // Through the applier so LAN peers that were told about the row
+            // when it was written are told it is gone.
+            _applier.applyOne(
+              entity: op.entity,
+              action: 'delete',
+              entityId: entityId,
+            );
+            _db.clearProvisional(op.entity, entityId);
+          }
         }
       } else {
         _store.markFailed(op.id, error);

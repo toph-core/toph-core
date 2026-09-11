@@ -1,3 +1,4 @@
+import 'package:mary_ai_pos/core/db/branch_scope.dart';
 import 'package:mary_ai_pos/core/db/local_database.dart';
 
 /// OFFLINE_FIRST_EVERYWHERE_PLAN.md Phase 4 — the admin staff list as a local
@@ -19,10 +20,16 @@ import 'package:mary_ai_pos/core/db/local_database.dart';
 class UsersQuery {
   final LocalDatabase _db;
 
-  const UsersQuery(this._db);
+  /// Staff are branch-scoped on the backend — `GetAllUsers` and
+  /// `GetStaffUsers` both filter `users.branch_id` — so the staff list here
+  /// shows this venue's people, not every employee the brand has.
+  final BranchScope _scope;
+
+  UsersQuery(this._db, {String Function()? branchId})
+    : _scope = BranchScope(_db, branchId: branchId);
 
   /// Changes to these tables invalidate a rendered page — the watch set.
-  static const watchedTables = {'users'};
+  static const watchedTables = {'users', BranchScope.channel};
 
   /// One page of staff, in the shape `getAdminUsers` returned.
   ///
@@ -36,6 +43,12 @@ class UsersQuery {
   }) {
     final where = <String>['deleted_at IS NULL'];
     final params = <Object?>[];
+
+    final branch = _scope.of('users');
+    if (branch.isNotEmpty) {
+      where.add('branch_id = ?');
+      params.add(branch);
+    }
 
     if (role != null && role.isNotEmpty) {
       where.add('role = ?');

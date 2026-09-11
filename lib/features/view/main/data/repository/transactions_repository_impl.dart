@@ -70,8 +70,9 @@ class TransactionsRepositoryImpl implements TransactionsRepository {
   TransactionsRepositoryImpl({
     required replica.LocalDatabase replicaDb,
     LocalWriter? writer,
-  })  : _query = TransactionsQuery(replicaDb),
-        _pickers = TransactionPickersQuery(replicaDb),
+    String Function()? branchId,
+  })  : _query = TransactionsQuery(replicaDb, branchId: branchId),
+        _pickers = TransactionPickersQuery(replicaDb, branchId: branchId),
         _writer = writer ??
             LocalWriter(
               db: replicaDb,

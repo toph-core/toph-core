@@ -15,6 +15,7 @@ import 'package:mary_ai_pos/core/service/printer/printer_setting_entry.dart';
 import 'package:mary_ai_pos/core/services/print_queue/print_queue_service.dart';
 import 'package:mary_ai_pos/core/utils/jwt_utils.dart';
 import 'package:mary_ai_pos/core/sync/change_feed_relay.dart';
+import 'package:mary_ai_pos/core/sync/replica_repair.dart';
 import 'package:mary_ai_pos/core/sync/local_change_relay.dart';
 import 'package:mary_ai_pos/di.dart';
 import 'package:mary_ai_pos/features/view/auth/presentation/cubit/bloc/user_bloc.dart';
@@ -409,8 +410,22 @@ class LanHubService {
         if (mode == LanMode.client &&
             msg.feedBody != null &&
             msg.feedFromCursor != null) {
-          inject<ChangeFeedRelay>()
+          final stats = inject<ChangeFeedRelay>()
               .apply(body: msg.feedBody!, fromCursor: msg.feedFromCursor!);
+          // A follower applies the leader's batch through the same applier as a
+          // cloud pull, and refuses rows the same way — but this result used to
+          // be dropped, so a delete refused here was never recorded and the
+          // follower's replica stayed diverged for good. It is the only inbound
+          // feed a follower has, so this is the only place that refusal can be
+          // seen.
+          if (stats != null && stats.refusedEntities.isNotEmpty) {
+            try {
+              inject<ReplicaRepair>().noteRefused(stats.refusedEntities);
+            } catch (_) {
+              // A terminal wired without the repair path replicates exactly as
+              // before; it simply never repairs.
+            }
+          }
         }
         break;
       case LanHubMessageType.localChange:

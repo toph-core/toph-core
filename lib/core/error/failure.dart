@@ -28,6 +28,19 @@ class MessageFailure extends Failure {
 
   @override
   String getLocalizedMessage(BuildContext context) => message;
+
+  /// The message is part of the value — which also means it survives
+  /// `toString()`.
+  ///
+  /// `Failure` is an `Equatable` whose `props` default to empty, so this class
+  /// printed as `MessageFailure()` and two rejections for entirely different
+  /// reasons compared equal. That mattered in one place above all: the outbox
+  /// records `failure.toString()` as a quarantined write's reason, so the
+  /// server's own explanation — the thing it went to the trouble of sending —
+  /// was dropped on the floor, and a lost write left behind the word
+  /// "MessageFailure()" and nothing else to go on.
+  @override
+  List<Object> get props => [message];
 }
 
 class CacheFailure extends Failure {

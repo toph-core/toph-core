@@ -147,6 +147,16 @@ class LocalDatabase {
       )
     ''');
 
+    // Rows that reached this terminal over the LAN and not from the server.
+    _db.execute('''
+      CREATE TABLE IF NOT EXISTS ${LocalTables.peerOrigin} (
+        entity    TEXT NOT NULL,
+        entity_id TEXT NOT NULL,
+        since     INTEGER NOT NULL,
+        PRIMARY KEY (entity, entity_id)
+      )
+    ''');
+
     // Local-authority table occupancy. Never written by replication, never
     // read from the feed — see [LocalTables.tableStatus].
     _db.execute('''
@@ -356,7 +366,7 @@ class LocalDatabase {
       for (final c in spec.promoted) _coerce(data[c.name], c.type),
       _deletedAt(data),
       jsonEncode(data),
-      DateTime.now().millisecondsSinceEpoch,
+      nextSyncStamp(),
     ];
     final placeholders = List.filled(columns.length, '?').join(', ');
     _db.execute(
@@ -374,6 +384,16 @@ class LocalDatabase {
     _db.execute('DELETE FROM $entity WHERE id = ?', [id]);
     _touch(entity);
   }
+
+  /// Wakes every watcher of [channel] without writing anything.
+  ///
+  /// The change stream is how a read becomes reactive, and it carries table
+  /// names — but not every reason to re-read is a table write. A branch-scoped
+  /// query has to re-run when the *session's branch* changes, and that lives in
+  /// a bloc, not in SQLite. So the session gets a channel name of its own and
+  /// this publishes on it. Without it a floor plan subscribed before login kept
+  /// showing every branch's halls until some unrelated row happened to change.
+  void touchChannel(String channel) => _touch(channel);
 
   /// Runs a statement against a local-only table and wakes its watchers.
   ///
@@ -690,6 +710,32 @@ class LocalDatabase {
     );
   }
 
+  // ── Peer provenance ────────────────────────────────────────────────────
+
+  /// Records that [entityId] arrived from a LAN peer, not from the server.
+  void markPeerOrigin(String entity, String entityId) {
+    _db.execute(
+      'INSERT OR REPLACE INTO ${LocalTables.peerOrigin} '
+      '(entity, entity_id, since) VALUES (?, ?, ?)',
+      [entity, entityId, nextSyncStamp()],
+    );
+  }
+
+  /// Drops the marker once the server has sent this row itself — from here on
+  /// the server is authoritative about whether it still exists.
+  void clearPeerOrigin(String entity, String entityId) {
+    _db.execute(
+      'DELETE FROM ${LocalTables.peerOrigin} WHERE entity = ? AND entity_id = ?',
+      [entity, entityId],
+    );
+  }
+
+  bool isPeerOrigin(String entity, String entityId) => _db.select(
+    'SELECT 1 FROM ${LocalTables.peerOrigin} '
+    'WHERE entity = ? AND entity_id = ? LIMIT 1',
+    [entity, entityId],
+  ).isNotEmpty;
+
   // ── Local-write guard ──────────────────────────────────────────────────
 
   /// Marks a row as locally modified and not yet confirmed by the server.
@@ -717,6 +763,73 @@ class LocalDatabase {
       [entity, entityId],
     );
     return rows.isNotEmpty;
+  }
+
+  // ── Reconciliation ─────────────────────────────────────────────────────
+
+  int _lastStamp = 0;
+
+  /// The `synced_at` stamp for the next write — wall-clock milliseconds, but
+  /// **strictly increasing**, never repeating within a run.
+  ///
+  /// Plain `DateTime.now()` is not enough for what [unsweptRowIds] asks of it.
+  /// A repair pass takes a stamp to mean "before the walk began", and rows
+  /// written in the same millisecond the walk started would then compare equal
+  /// to it and survive a sweep they should not have — one lost delete per
+  /// coincidence, permanently, which is the whole class of bug this file is
+  /// trying to close. Two writes in one millisecond is unusual in a venue and
+  /// routine in a test, so the ambiguity would have been found late and in
+  /// production.
+  ///
+  /// Ties break forward rather than backward: a stamp is never lower than one
+  /// already issued, so the sequence survives a clock that steps back.
+  int nextSyncStamp() {
+    final now = DateTime.now().millisecondsSinceEpoch;
+    _lastStamp = now > _lastStamp ? now : _lastStamp + 1;
+    return _lastStamp;
+  }
+
+  /// Rows of [entity] a completed snapshot walk did not deliver — the ones the
+  /// server no longer has.
+  ///
+  /// [upsert] stamps `synced_at` on every row it writes, so "not delivered" is
+  /// simply "not stamped since the walk began". No id set is held in memory,
+  /// which matters because the walk covers every replicated entity and some of
+  /// them are large.
+  ///
+  /// Two kinds of row are deliberately excluded, and both are the offline-first
+  /// rule rather than an optimisation:
+  ///
+  /// * **Pending** — a local write the server has not acknowledged. The server
+  ///   cannot have sent it back yet, so its absence from the snapshot means
+  ///   nothing, and deleting it would throw away work the outbox is still
+  ///   carrying.
+  /// * **Provisional** — a row created here under a client-invented id. Same
+  ///   reason: the server has never heard of that id.
+  /// * **Peer-originated** — a row another terminal on this LAN wrote and has
+  ///   not yet pushed. It is unsynced work exactly like the two above; it just
+  ///   belongs to a different till. Without this the sweep deleted live checks
+  ///   rung on the next terminal over — and broadcast the delete back to it.
+  ///
+  /// So a terminal that has been offline for a week and has a queue full of
+  /// unsent work loses none of it to a repair pass, and neither does its
+  /// neighbour.
+  List<String> unsweptRowIds(String entity, int syncedBefore) {
+    final rows = _db.select(
+      'SELECT r.id AS id FROM $entity r '
+      'WHERE (r.synced_at IS NULL OR r.synced_at < ?) '
+      'AND NOT EXISTS (SELECT 1 FROM ${LocalTables.pending} p '
+      '                 WHERE p.entity = ? AND p.entity_id = r.id) '
+      'AND NOT EXISTS (SELECT 1 FROM ${LocalTables.provisional} v '
+      '                 WHERE v.entity = ? AND v.local_id = r.id) '
+      'AND NOT EXISTS (SELECT 1 FROM ${LocalTables.peerOrigin} o '
+      '                 WHERE o.entity = ? AND o.entity_id = r.id)',
+      [syncedBefore, entity, entity, entity],
+    );
+    return [
+      for (final row in rows)
+        if (row['id'] is String) row['id'] as String,
+    ];
   }
 
   // ── Meta ───────────────────────────────────────────────────────────────

@@ -1,14 +1,19 @@
 import 'package:mary_ai_pos/core/db/entity_registry.dart';
+import 'package:mary_ai_pos/core/db/branch_scope.dart';
 import 'package:mary_ai_pos/core/db/local_database.dart';
 
 /// OFFLINE_FIRST_EVERYWHERE_PLAN.md Phase 4 — the transactions screen's two
 /// picker lists (transaction groups, cash registers), moved off the Hive
 /// `LocalDatabase` onto the SQLite replica.
 ///
-/// Both are small id+name catalogues, read straight off the replica: the feed
-/// is branch-scoped on the backend (`change_log.branch_id`), so — like
-/// `TransactionsQuery` — these read every live row with no branch filter and
+/// Both are small id+name catalogues, read straight off the replica: like
+/// `TransactionsQuery`, these read every live row with no branch filter and
 /// return the raw server map the pickers already decode (`id`, `name`).
+///
+/// "No branch filter" used to be justified by the feed being branch-scoped
+/// upstream (`change_log.branch_id`). It is not — that column does not exist,
+/// and `SyncS.Pull` filters by cursor alone — so on a multi-branch brand these
+/// pickers do list every branch's rows. Recorded as the open gap it is.
 ///
 /// **Whether either table can receive a row is a server-side question, and
 /// this class answers it out loud.** Both are fed by a `trg_change_log_*`
@@ -25,7 +30,15 @@ import 'package:mary_ai_pos/core/db/local_database.dart';
 class TransactionPickersQuery {
   final LocalDatabase _db;
 
-  const TransactionPickersQuery(this._db);
+  /// Both catalogues are branch-scoped on the backend — `group_transactions`
+  /// and `cash_registers` each carry a `branch_id` their list queries filter
+  /// on. Neither column is promoted locally, so the filter reads it out of the
+  /// stored row; both tables are short enough that the unindexed lookup costs
+  /// nothing.
+  final BranchScope _scope;
+
+  TransactionPickersQuery(this._db, {String Function()? branchId})
+    : _scope = BranchScope(_db, branchId: branchId);
 
   static const _groupsTable = 'group_transactions';
   static const _registersTable = 'cash_registers';
@@ -51,7 +64,7 @@ class TransactionPickersQuery {
   /// Rebuilds when any group changes, so an edit on another terminal lands
   /// without a reload.
   Stream<List<Map<String, dynamic>>> watchTransactionGroups() =>
-      _db.watch({_groupsTable}, transactionGroups);
+      _db.watch({_groupsTable, BranchScope.channel}, transactionGroups);
 
   /// Groups whose name contains [query], case-insensitively — the picker's
   /// search box, answered locally.
@@ -64,10 +77,11 @@ class TransactionPickersQuery {
   List<Map<String, dynamic>> searchTransactionGroups(String query) {
     final q = query.trim();
     if (q.isEmpty) return transactionGroups();
+    final branch = _scope.clause(_groupsTable, json: true);
     return _db.selectData(
       'SELECT data FROM $_groupsTable WHERE deleted_at IS NULL '
-      "AND name LIKE ? ESCAPE '\\' ORDER BY name",
-      ['%${_escapeLike(q)}%'],
+      "AND name LIKE ? ESCAPE '\\' ${branch.sql}ORDER BY name",
+      ['%${_escapeLike(q)}%', ...branch.args],
     );
   }
 
@@ -82,9 +96,14 @@ class TransactionPickersQuery {
   List<Map<String, dynamic>> cashRegisters() => _liveByName(_registersTable);
 
   Stream<List<Map<String, dynamic>>> watchCashRegisters() =>
-      _db.watch({_registersTable}, cashRegisters);
+      _db.watch({_registersTable, BranchScope.channel}, cashRegisters);
 
-  List<Map<String, dynamic>> _liveByName(String table) => _db.selectData(
-        'SELECT data FROM $table WHERE deleted_at IS NULL ORDER BY name',
-      );
+  List<Map<String, dynamic>> _liveByName(String table) {
+    final branch = _scope.clause(table, json: true);
+    return _db.selectData(
+      'SELECT data FROM $table WHERE deleted_at IS NULL '
+      '${branch.sql}ORDER BY name',
+      branch.args,
+    );
+  }
 }

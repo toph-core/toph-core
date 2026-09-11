@@ -1,4 +1,5 @@
 import 'package:mary_ai_pos/core/db/entity_registry.dart';
+import 'package:mary_ai_pos/core/db/branch_scope.dart';
 import 'package:mary_ai_pos/core/db/local_database.dart';
 
 /// OFFLINE_FIRST_EVERYWHERE_PLAN.md Phase 4 — the transactions list screen's
@@ -17,11 +18,19 @@ import 'package:mary_ai_pos/core/db/local_database.dart';
 class TransactionsQuery {
   final LocalDatabase _db;
 
-  const TransactionsQuery(this._db);
+  /// The ledger is branch-scoped on the backend — `GetAllTransactions` filters
+  /// `branch_id`, and with `IS NOT DISTINCT FROM`, so a row whose branch is
+  /// NULL is visible only to a session that has no branch. A terminal always
+  /// has one, so plain equality here reproduces that exactly: a null-branch row
+  /// stays hidden rather than being shown as "unassigned".
+  final BranchScope _scope;
+
+  TransactionsQuery(this._db, {String Function()? branchId})
+    : _scope = BranchScope(_db, branchId: branchId);
 
   /// The list rebuilds when any transaction changes, so a sale rung on another
-  /// terminal appears without a reload.
-  static const watchedTables = {'transactions'};
+  /// terminal appears without a reload — and when the session's branch changes.
+  static const watchedTables = {'transactions', BranchScope.channel};
 
   static const _table = 'transactions';
 
@@ -78,6 +87,12 @@ class TransactionsQuery {
     // filter intends.
     final clauses = <String>['deleted_at IS NULL'];
     final params = <Object?>[];
+
+    final branch = _scope.of(_table);
+    if (branch.isNotEmpty) {
+      clauses.add('branch_id = ?');
+      params.add(branch);
+    }
 
     if (type != null && type.isNotEmpty) {
       clauses.add('type = ?');

@@ -32,11 +32,12 @@ void main() {
   Map<String, dynamic> hall({
     required String id,
     String name = 'Asosiy zal',
+    String branchId = 'b-1',
     int? deletedAt,
   }) =>
       {
         'id': id,
-        'branch_id': 'b-1',
+        'branch_id': branchId,
         'name': name,
         'width': 1000,
         'height': 800,
@@ -79,6 +80,81 @@ void main() {
   });
 
   tearDown(() => db.dispose());
+
+  group('branch scope', () {
+    // The feed is brand-wide: `change_log` has no branch_id and `SyncS.Pull`
+    // has no branch predicate, so a two-branch brand replicates both branches'
+    // halls onto every terminal. Filtering is the client's job, and these pin
+    // both halves of it — the filter, and the refusal to filter into a blank
+    // screen.
+    HallsTablesQuery queryFor(String branch) =>
+        HallsTablesQuery(db, branchId: () => branch);
+
+    void seedTwoBranches() {
+      put('halls', hall(id: 'h-1', branchId: 'b-1'));
+      put('halls', hall(id: 'h-2', name: 'Boshqa filial', branchId: 'b-2'));
+      put('cafe_tables', table(id: 't-1', hallId: 'h-1'));
+      put('cafe_tables', table(id: 't-2', hallId: 'h-1', number: 2));
+      put('cafe_tables', table(id: 't-9', hallId: 'h-2', number: 9));
+    }
+
+    test('another branch\'s halls and tables are not shown', () {
+      seedTwoBranches();
+
+      final halls = queryFor('b-1').halls();
+      final tables = queryFor('b-1').tables();
+
+      expect(halls.map((h) => h['id']), ['h-1']);
+      expect(tables.map((t) => t['id']), unorderedEquals(['t-1', 't-2']));
+    });
+
+    test('no session yet means no filter, not an empty floor plan', () {
+      seedTwoBranches();
+
+      expect(queryFor('').halls(), hasLength(2));
+      expect(queryFor('').tables(), hasLength(3));
+    });
+
+    test('a branch that owns no hall falls back to showing everything', () {
+      // The misconfiguration case: halls created against a different branch id
+      // than the one on this terminal's user. A superset beats a blank screen.
+      seedTwoBranches();
+
+      expect(queryFor('b-unknown').halls(), hasLength(2));
+      expect(queryFor('b-unknown').tables(), hasLength(3));
+    });
+
+    test('a branch change re-runs a stream built before login', () {
+      // MainCubit is a singleton: its floor-plan subscription is created once
+      // and outlives every login. The branch is empty until someone signs in,
+      // so without a signal on the session channel the first emission (every
+      // branch's halls) was also the last one until an unrelated row changed.
+      seedTwoBranches();
+      var branch = '';
+      final query = HallsTablesQuery(db, branchId: () => branch);
+      final seen = <int>[];
+      final sub = query.watchHalls().listen((halls) => seen.add(halls.length));
+
+      return Future(() async {
+        await Future<void>.delayed(Duration.zero);
+        expect(seen, [2], reason: 'no session yet — everything is shown');
+
+        branch = 'b-1';
+        db.touchChannel(HallsTablesQuery.branchScopeChannel);
+        await Future<void>.delayed(Duration.zero);
+
+        expect(seen.last, 1, reason: 'the login re-scoped the floor plan');
+        await sub.cancel();
+      });
+    });
+
+    test('one hall\'s tables are never filtered by branch', () {
+      // The caller named the hall, which is the narrower question.
+      seedTwoBranches();
+
+      expect(queryFor('b-1').tablesForHall('h-2').map((t) => t['id']), ['t-9']);
+    });
+  });
 
   group('HallsTablesQuery', () {
     test('excludes soft-deleted halls and tables', () {

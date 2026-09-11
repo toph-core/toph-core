@@ -27,10 +27,21 @@ class SyncPullPage {
   /// than the requested limit means the client has caught up.
   final int rowCount;
 
+  /// The server's warning that this terminal's cursor sits below the oldest
+  /// surviving `change_log` row: retention has removed the changes it missed,
+  /// so the feed can no longer reconstruct its state and only a snapshot can
+  /// (`73_change_log_retention.up.sql`, `SyncS.Pull`).
+  ///
+  /// Advisory in the protocol — the page still carries whatever the feed does
+  /// have — which is precisely why ignoring it was invisible: the terminal
+  /// looked caught up while holding rows the server deleted long ago.
+  final bool snapshotRequired;
+
   const SyncPullPage({
     required this.nextCursor,
     required this.body,
     required this.rowCount,
+    this.snapshotRequired = false,
   });
 
   static const empty = SyncPullPage(
@@ -94,6 +105,7 @@ class SyncApiClient implements SyncApi {
       nextCursor: next is num ? next.toInt() : cursor,
       body: body,
       rowCount: countRows(body['changes']),
+      snapshotRequired: body['snapshot_required'] == true,
     );
   }
 
