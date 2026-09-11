@@ -23,6 +23,8 @@ import 'package:mary_ai_pos/features/view/main/presentation/cubit/detail/detail_
 import 'print_dispatch_result.dart';
 import 'printer_config.dart';
 import 'printer_config_storage.dart';
+import 'package:mary_ai_pos/core/pricing/order_totals.dart';
+
 import 'receipt/cashier_receipt_builder.dart';
 import 'receipt/kitchen_receipt_builder.dart';
 import 'receipt/receipt_esc_pos_helper.dart';
@@ -292,6 +294,10 @@ class PrinterService {
     List<PauseInterval> timerPauses = const [],
     int timerTotalSec = 0,
     String? timerPricePerHour,
+    // What the cashier charged. Passed by the payment screen, omitted by the
+    // reprint paths — see `CashierReceiptBuilder.buildFromDetail`.
+    OrderTotals? totals,
+    double servicePercent = 0,
   }) async {
     try {
       final config = _storage.closeCheckConfigOrFallback();
@@ -322,6 +328,8 @@ class PrinterService {
         departmentIdOf: departmentIdOf,
         departmentNames: deptInfo.names,
         departmentOrder: deptInfo.order,
+        totals: totals,
+        servicePercent: servicePercent,
         // Chekni kim yopayotgani — hozir tizimga kirgan foydalanuvchi
         // (kassir yoki admin). `detail.cashierName` bo'sh bo'lsa shu ishlatiladi,
         // hech qachon "?" yoki bo'sh qator chiqmasligi uchun.

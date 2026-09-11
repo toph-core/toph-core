@@ -24,8 +24,8 @@ mixin _$OrderFoodModel {
   @JsonKey(name: "good_name")
   String get name => throw _privateConstructorUsedError;
   int get quantity => throw _privateConstructorUsedError;
-  @JsonKey(fromJson: parseInt)
-  int get price => throw _privateConstructorUsedError;
+  @JsonKey(fromJson: parseMoney)
+  double get price => throw _privateConstructorUsedError;
   String get comment => throw _privateConstructorUsedError;
   String get status =>
       throw _privateConstructorUsedError; // Backend `created_at` (UTC) — har bir item qachon buyurtmaga qo'shilgan.
@@ -51,7 +51,7 @@ abstract class $OrderFoodModelCopyWith<$Res> {
       {String id,
       @JsonKey(name: "good_name") String name,
       int quantity,
-      @JsonKey(fromJson: parseInt) int price,
+      @JsonKey(fromJson: parseMoney) double price,
       String comment,
       String status,
       @JsonKey(name: 'created_at', fromJson: _parseLocalDate)
@@ -97,7 +97,7 @@ class _$OrderFoodModelCopyWithImpl<$Res, $Val extends OrderFoodModel>
       price: null == price
           ? _value.price
           : price // ignore: cast_nullable_to_non_nullable
-              as int,
+              as double,
       comment: null == comment
           ? _value.comment
           : comment // ignore: cast_nullable_to_non_nullable
@@ -130,7 +130,7 @@ abstract class _$$OrderFoodModelImplCopyWith<$Res>
       {String id,
       @JsonKey(name: "good_name") String name,
       int quantity,
-      @JsonKey(fromJson: parseInt) int price,
+      @JsonKey(fromJson: parseMoney) double price,
       String comment,
       String status,
       @JsonKey(name: 'created_at', fromJson: _parseLocalDate)
@@ -174,7 +174,7 @@ class __$$OrderFoodModelImplCopyWithImpl<$Res>
       price: null == price
           ? _value.price
           : price // ignore: cast_nullable_to_non_nullable
-              as int,
+              as double,
       comment: null == comment
           ? _value.comment
           : comment // ignore: cast_nullable_to_non_nullable
@@ -202,7 +202,7 @@ class _$OrderFoodModelImpl extends _OrderFoodModel {
       {this.id = '',
       @JsonKey(name: "good_name") this.name = '',
       this.quantity = 0,
-      @JsonKey(fromJson: parseInt) this.price = 0,
+      @JsonKey(fromJson: parseMoney) this.price = 0.0,
       this.comment = '',
       this.status = 'pending',
       @JsonKey(name: 'created_at', fromJson: _parseLocalDate) this.createdAt,
@@ -222,8 +222,8 @@ class _$OrderFoodModelImpl extends _OrderFoodModel {
   @JsonKey()
   final int quantity;
   @override
-  @JsonKey(fromJson: parseInt)
-  final int price;
+  @JsonKey(fromJson: parseMoney)
+  final double price;
   @override
   @JsonKey()
   final String comment;
@@ -286,7 +286,7 @@ abstract class _OrderFoodModel extends OrderFoodModel {
       {final String id,
       @JsonKey(name: "good_name") final String name,
       final int quantity,
-      @JsonKey(fromJson: parseInt) final int price,
+      @JsonKey(fromJson: parseMoney) final double price,
       final String comment,
       final String status,
       @JsonKey(name: 'created_at', fromJson: _parseLocalDate)
@@ -305,8 +305,8 @@ abstract class _OrderFoodModel extends OrderFoodModel {
   @override
   int get quantity;
   @override
-  @JsonKey(fromJson: parseInt)
-  int get price;
+  @JsonKey(fromJson: parseMoney)
+  double get price;
   @override
   String get comment;
   @override

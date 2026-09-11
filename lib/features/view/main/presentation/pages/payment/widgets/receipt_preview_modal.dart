@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:mary_ai_pos/core/pricing/order_totals.dart';
 import 'package:mary_ai_pos/core/components/flush_bars.dart';
 import 'package:mary_ai_pos/core/constants/constants.dart';
 import 'package:mary_ai_pos/core/extension/number_formatter.dart';
@@ -46,7 +47,8 @@ class ReceiptPreviewModal extends StatelessWidget {
     final cashierName = context.select<UserBloc, String>(
       (b) => b.state.userMOdel?.fullName ?? detail.cashierName,
     );
-    final paymentState = context.watch<PaymentBloc>().state;
+    final bloc = context.watch<PaymentBloc>();
+    final paymentState = bloc.state;
     final discountAmt = int.tryParse(paymentState.discountAmount) ?? 0;
 
     return Dialog(
@@ -70,6 +72,12 @@ class ReceiptPreviewModal extends StatelessWidget {
                   detail: detail,
                   cashierName: cashierName,
                   finalTotal: finalTotal,
+                  // The same figures the paper is printed from, so the preview
+                  // cannot show one service line and print another. The bill is
+                  // unsettled at this point, so `detail.service_amount` is
+                  // still 0 — reading it here is what made the two disagree.
+                  totals: bloc.totals(detail: detail),
+                  servicePercent: bloc.servicePercent,
                   discountAmount: discountAmt,
                   discountType: paymentState.discountType,
                   timerStartedAt: timerStartedAt,
@@ -165,6 +173,12 @@ class _ReceiptCard extends StatelessWidget {
   final String? timerPricePerHour;
   final int hourAmount;
 
+  /// What the cashier is charging, when the caller knows it.
+  final OrderTotals? totals;
+
+  /// Branch service percent, for the label when the row cannot name one.
+  final double servicePercent;
+
   const _ReceiptCard({
     required this.detail,
     required this.cashierName,
@@ -176,6 +190,8 @@ class _ReceiptCard extends StatelessWidget {
     this.timerTotalSec = 0,
     this.timerPricePerHour,
     this.hourAmount = 0,
+    this.totals,
+    this.servicePercent = 0,
   });
 
   bool get _hasTimerData =>
@@ -211,8 +227,10 @@ class _ReceiptCard extends StatelessWidget {
         : '';
     final tableNum = detail.tableNumber.toInt();
     final subtotal = detail.foodTotal.toInt();
-    final service = detail.serviceAmount.toInt();
-    final servicePct = detail.servicePercent.toInt();
+    final service = totals?.serviceCharged ?? detail.serviceAmount.toInt();
+    final servicePct = detail.servicePercent > 0
+        ? detail.servicePercent.toInt()
+        : servicePercent.toInt();
 
     final cashierShort = _shortName(cashierName);
     final companyName = info.companyName.toUpperCase();
@@ -464,7 +482,7 @@ class _KVRow extends StatelessWidget {
 class _LineItem extends StatelessWidget {
   final String name;
   final int qty;
-  final int price;
+  final double price;
   final String comment;
 
   const _LineItem({
@@ -557,6 +575,10 @@ class _ActionsRow extends StatelessWidget {
         timerPauses: bloc.timerPauses,
         timerTotalSec: bloc.timerTotalSec,
         timerPricePerHour: bloc.timerPricePerHour,
+        // Same figures as the Yakunlash receipt — including the service fee,
+        // which the unsettled order row does not carry yet.
+        totals: bloc.totals(detail: detail),
+        servicePercent: bloc.servicePercent,
       ),
     );
     showInfoMessage(

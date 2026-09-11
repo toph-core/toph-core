@@ -92,6 +92,14 @@ class ArchiveRightSiderBar extends StatelessWidget {
                         .printCashierReceiptFromDetail(
                           detail: detail,
                           hourAmount: tableCharge.toDouble(),
+                          // The discount the bill was settled with. Omitting it
+                          // printed a reprint whose ИТОГО was the pre-discount
+                          // figure — more than the customer actually paid, on
+                          // the copy they are most likely to be handed in a
+                          // dispute. The settled row carries both forms; the
+                          // builder uses whichever is non-zero.
+                          discountPercent: detail.discountPercent,
+                          discountAmount: detail.discountAmount,
                           timerStartedAt: detail.opened,
                           timerPauses: detail.pausePeriods,
                         );

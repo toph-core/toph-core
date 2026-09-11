@@ -2,7 +2,11 @@ abstract class OrderFoodEntity {
   final String id;
   final String name;
   final int quantity;
-  final int price;
+
+  /// Unit price, in so'm, **with cents**. Not an int: a markup-derived price
+  /// like 666.66 is ordinary, and truncating it here is how a bill silently
+  /// came up short of what the backend charges.
+  final double price;
   final String comment;
   final String status;
   final DateTime? createdAt;

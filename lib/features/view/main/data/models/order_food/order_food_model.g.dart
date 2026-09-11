@@ -11,7 +11,7 @@ _$OrderFoodModelImpl _$$OrderFoodModelImplFromJson(Map<String, dynamic> json) =>
       id: json['id'] as String? ?? '',
       name: json['good_name'] as String? ?? '',
       quantity: (json['quantity'] as num?)?.toInt() ?? 0,
-      price: json['price'] == null ? 0 : parseInt(json['price']),
+      price: json['price'] == null ? 0.0 : parseMoney(json['price']),
       comment: json['comment'] as String? ?? '',
       status: json['status'] as String? ?? 'pending',
       createdAt: _parseLocalDate(json['created_at']),

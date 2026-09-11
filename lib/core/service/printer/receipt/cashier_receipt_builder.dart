@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:esc_pos_utils_plus/esc_pos_utils_plus.dart';
 import 'package:intl/intl.dart';
+import 'package:mary_ai_pos/core/pricing/order_totals.dart';
 import 'package:mary_ai_pos/core/service/printer/receipt/receipt_esc_pos_helper.dart';
 import 'package:mary_ai_pos/core/service/printer/receipt/receipt_notice_lines.dart';
 import 'package:mary_ai_pos/core/service/printer/receipt/receipt_som_format.dart';
@@ -47,20 +48,30 @@ class CashierReceiptBuilder {
     return '${s}s';
   }
 
-  /// Prefer recomputing from percent when [hourAmount] > 0 — API `service_amount`
-  /// on unpaid orders excludes service on the table charge (§7).
+  /// The service fee for a bill, charged on **items only**.
+  ///
+  /// The table charge is never serviced. That is the venue's rule, it is what
+  /// `OrderTotals.compute` has always implemented, and it is what the backend
+  /// re-derives at pay time — but this path added `hourAmount` into the base,
+  /// so the waiter's close receipt billed service on the hourly charge as well.
+  /// The amount actually taken came from `WaiterCubit._payAmountSom`, which
+  /// prices through `OrderTotals`, so the paper said one number and the till
+  /// took another — and the cashier's receipt for the same bill said a third.
+  ///
+  /// When a table charge is present the fee is recomputed from the percent
+  /// rather than read from the row: the API's `service_amount` on an unpaid
+  /// order is not yet the settled figure.
   static double _servicePart(OpenOrderModel order, double subtotal, {double hourAmount = 0}) {
     final sp = order.servicePercent;
-    final baseForService = subtotal + hourAmount;
     if (hourAmount > 0.0001) {
-      if (sp != null && sp > 0) return baseForService * sp / 100.0;
+      if (sp != null && sp > 0) return subtotal * sp / 100.0;
       return 0;
     }
     final explicit = order.serviceAmountValue;
     if (explicit > 0.0001) return explicit;
-    if (sp != null && sp > 0) return baseForService * sp / 100.0;
+    if (sp != null && sp > 0) return subtotal * sp / 100.0;
     final tot = order.totalAmountValue;
-    if (tot > baseForService + 0.01) return tot - baseForService;
+    if (tot > subtotal + 0.01) return tot - subtotal;
     return 0;
   }
 
@@ -583,6 +594,23 @@ class CashierReceiptBuilder {
     // Hozir tizimga kirgan foydalanuvchi — `detail.cashierName` bo'sh bo'lsa
     // shu ko'rsatiladi (hech qachon "?" yoki bo'sh emas).
     String closerName = '',
+    // The figures the cashier was shown and the customer was charged.
+    //
+    // Without them this method re-derives the service fee from the order row,
+    // and on the close-check path that row is the *unpaid* bill: the backend
+    // fills `service_amount` when it settles the payment, so at print time it
+    // is still 0 and the fee silently vanished from the receipt — while the
+    // same bill reprinted from the checks history, by then a settled row,
+    // showed it. Two formulas over two versions of one bill.
+    //
+    // So the payment screen hands over the `OrderTotals` it charged, and the
+    // receipt prints that. The derivation below stays for the reprint paths,
+    // which have no live payment state and a settled row that carries the
+    // right numbers already.
+    OrderTotals? totals,
+    // Only for the service line's "(N%)" label, when [totals] carries a fee
+    // the order row cannot name a percent for.
+    double servicePercent = 0,
   }) async {
     final profile = await CapabilityProfile.load();
     final gen = receiptGenerator(paperSize, profile);
@@ -719,17 +747,24 @@ class CashierReceiptBuilder {
     // Service applies to items only — table_charge is not serviced.
     // When table charge is present, ignore API service_amount (read path omits it on table).
     final baseForService = subtotal;
-    final serviceAmt = hourAmount > 0.0001
+    final serviceAmt = totals != null
+        // `serviceCharged`, not `serviceAmount`: a cashier who switched the
+        // service toggle off must not see the fee on the customer's receipt.
+        ? totals.serviceCharged.toDouble()
+        : hourAmount > 0.0001
         ? (detail.servicePercent > 0
-            ? baseForService * detail.servicePercent / 100
-            : 0.0)
+              ? baseForService * detail.servicePercent / 100
+              : 0.0)
         : (detail.serviceAmount > 0.0001
-            ? detail.serviceAmount
-            : (detail.servicePercent > 0
-                ? baseForService * detail.servicePercent / 100
-                : 0.0));
+              ? detail.serviceAmount
+              : (detail.servicePercent > 0
+                    ? baseForService * detail.servicePercent / 100
+                    : 0.0));
     if (serviceAmt > 0.0001) {
-      final servicePct = detail.servicePercent.toInt();
+      final pct = detail.servicePercent > 0
+          ? detail.servicePercent
+          : servicePercent;
+      final servicePct = pct.toInt();
       final label = servicePct > 0 ? 'Обслуживание ($servicePct%)' : 'Обслуживание';
       bytes += gen.row([
         PosColumn(text: label, width: 7),
@@ -741,8 +776,12 @@ class CashierReceiptBuilder {
       ]);
     }
 
-    final preDiscount = subtotal + hourAmount + serviceAmt;
-    final discVal = _discountValue(preDiscount, discountPercent, discountAmount);
+    final preDiscount = totals != null
+        ? totals.baseTotal.toDouble()
+        : subtotal + hourAmount + serviceAmt;
+    final discVal = totals != null
+        ? totals.discountValue.toDouble()
+        : _discountValue(preDiscount, discountPercent, discountAmount);
     if (discVal > 0.0001) {
       final discLabel = discountPercent > 0
           ? 'Скидка (${discountPercent.toInt()}%)'
@@ -759,7 +798,12 @@ class CashierReceiptBuilder {
 
     bytes += gen.hr(ch: '-');
 
-    final toPay = (preDiscount - discVal).clamp(0.0, double.infinity);
+    // The absolute total: items + table charge + service - discount, taken
+    // from the charged figures when the caller has them rather than re-added
+    // here from parts that may not include the fee.
+    final toPay = totals != null
+        ? totals.grandTotal.toDouble()
+        : (preDiscount - discVal).clamp(0.0, double.infinity);
     // ─── ИТОГО (big, bold) ────────────────────────────────────────────────
     bytes += gen.row([
       PosColumn(

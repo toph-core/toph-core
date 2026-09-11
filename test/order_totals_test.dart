@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mary_ai_pos/core/constants/constants.dart';
+import 'package:mary_ai_pos/core/extension/int_extension.dart';
 import 'package:mary_ai_pos/core/pricing/order_totals.dart';
 import 'package:mary_ai_pos/features/view/main/domain/entities/archive_detail_entity.dart';
 import 'package:mary_ai_pos/features/view/main/domain/entities/order_food_entity.dart';
@@ -41,6 +42,79 @@ class _Detail extends ArchiveDetailEntity {
 }
 
 void main() {
+  group('a fractional price is money, not a rounding error', () {
+    // Reconstructed from a payment this repository actually lost.
+    //
+    // Order 62879273 held four lines — 50000, 10000, 2x2000 and one at 666.66,
+    // a price the backend derives as cost x (1 + markup%). The replica stores
+    // canonicalised numerics as strings, so that line arrived as "666.66", and
+    // `parseInt` — which is `int.tryParse(...) ?? 0` — turned it into ZERO.
+    //
+    // The till asked for 76933. The backend sums the exact decimals and rounds
+    // once: 64666.66 + 20% = 77600. Short by 667, against a tolerance of 1, so
+    // `PayOrderBill` refused the settle, the API answered 400, and the outbox
+    // quarantined the payment. The customer was undercharged and the takings
+    // were lost, from one `?? 0`.
+    test('the line the backend charges is the line the till charges', () {
+      final t = OrderTotals.fromDetail(
+        _Detail(
+          goods: [
+            _Good(price: 50000),
+            _Good(price: 10000),
+            _Good(price: 2000, quantity: 2),
+            _Good(price: 666.66),
+          ],
+          servicePercent: 20,
+        ),
+      );
+
+      expect(t.itemsAmount, 64667, reason: 'the fractional line is not free');
+      expect(t.grandTotal, 77600, reason: "the backend's figure, exactly");
+    });
+
+    test('cents survive the replica round trip', () {
+      // The canonical string form the normalizer writes for 666.66.
+      expect(parseMoney('666.66'), 666.66);
+      expect(parseMoney(666.66), 666.66);
+      expect(parseMoney('50000'), 50000);
+      expect(parseMoney(null), 0);
+      // And the integer parser no longer silently zeroes one.
+      expect(parseInt('666.66'), 667);
+    });
+  });
+
+  group('service is charged on items, never on the table charge', () {
+    // The venue's rule, stated plainly because three different code paths
+    // priced this bill and one of them disagreed: the waiter's close receipt
+    // added the hourly charge into the service base, so the paper asked for
+    // more than the till took and more than the cashier's receipt for the same
+    // bill showed.
+    //
+    // 100 000 of food, 60 000 of table time, 10% service.
+    // Right: 100 000 + 60 000 + 10 000 = 170 000.
+    // Wrong: service on 160 000 = 16 000 → 176 000.
+    test('the engine puts service on food only', () {
+      final t = OrderTotals.compute(
+        itemsAmount: 100000,
+        tableCharge: 60000,
+        servicePercent: 10,
+      );
+
+      expect(t.serviceAmount, 10000);
+      expect(t.grandTotal, 170000);
+    });
+
+    test('the read path agrees with it', () {
+      final t = OrderTotals.fromDetail(
+        _Detail(goods: [_Good(price: 100000)], servicePercent: 10),
+        tableCharge: 60000,
+      );
+
+      expect(t.serviceAmount, 10000);
+      expect(t.grandTotal, 170000);
+    });
+  });
+
   group('OrderTotals — main formula', () {
     test('simple table: trusts API grand_total when no cancelled lines', () {
       final t = OrderTotals.fromDetail(

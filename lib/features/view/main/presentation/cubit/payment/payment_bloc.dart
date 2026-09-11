@@ -223,7 +223,7 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
         tableId: effectiveTableId,
       );
       _paymentSucceeded = true;
-      _onPaymentSuccess(detail);
+      _onPaymentSuccess(detail, due);
       return;
     }
 
@@ -253,7 +253,7 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
       "To'lov navbatga qo'shildi — internet kelganda yuboriladi",
     );
     _paymentSucceeded = true;
-    _onPaymentSuccess(detail);
+    _onPaymentSuccess(detail, due);
   }
 
   bool _paymentSucceeded = false;
@@ -293,7 +293,13 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
   /// last known bill for the screen's sake; this makes the receipt independent
   /// of that, because a receipt printed from the wrong bill is not a cosmetic
   /// failure.)
-  void _onPaymentSuccess(ArchiveDetailEntity detail) {
+  ///
+  /// [due] is the same `OrderTotals` the payment was charged from, handed to
+  /// the receipt so the paper shows the figures the customer just paid —
+  /// service fee included. Re-deriving them from [detail] printed a receipt
+  /// with no service line, because the fee is written onto the order row by
+  /// the backend at settle time and this row has not been settled yet.
+  void _onPaymentSuccess(ArchiveDetailEntity detail, OrderTotals due) {
     final discPct = state.discountType == DiscountType.percent
         ? (int.tryParse(state.discountAmount) ?? 0).toDouble()
         : 0.0;
@@ -305,6 +311,8 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
       hourAmount: state.hourPrice,
       discountPercent: discPct,
       discountAmount: discAmt,
+      totals: due,
+      servicePercent: _servicePercent,
       timerStartedAt: _timerStartedAt,
       timerPauses: _timerPauses,
       timerTotalSec: _timerTotalSec,

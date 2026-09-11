@@ -13,7 +13,7 @@ class OrderFoodModel with _$OrderFoodModel implements OrderFoodEntity {
     @Default('') String id,
     @JsonKey(name: "good_name") @Default('') String name,
     @Default(0) int quantity,
-    @JsonKey(fromJson: parseInt) @Default(0) int price,
+    @JsonKey(fromJson: parseMoney) @Default(0.0) double price,
     @Default('') String comment,
     @Default('pending') String status,
     // Backend `created_at` (UTC) — har bir item qachon buyurtmaga qo'shilgan.

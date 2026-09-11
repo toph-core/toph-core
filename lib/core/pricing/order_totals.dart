@@ -48,6 +48,19 @@ class OrderTotals {
   /// Amount due after discount — what `/pay` should receive as the target.
   final int grandTotal;
 
+  /// Whether [serviceAmount] is part of [baseTotal].
+  ///
+  /// [serviceAmount] alone cannot answer that: it is reported even when the
+  /// cashier switched service off, because the toggle has to show what it is
+  /// excluding. A receipt has to know the difference — it prints the fee only
+  /// when the customer is actually paying it — so the flag is kept rather than
+  /// left to each reader to remember.
+  final bool includeService;
+
+  /// The service fee the customer is charged: [serviceAmount], or nothing when
+  /// service was switched off.
+  int get serviceCharged => includeService ? serviceAmount : 0;
+
   const OrderTotals._({
     required this.itemsAmount,
     required this.tableCharge,
@@ -55,6 +68,7 @@ class OrderTotals {
     required this.baseTotal,
     required this.discountValue,
     required this.grandTotal,
+    required this.includeService,
   });
 
   /// The pure local engine — `order.go`'s pay-time formula, in Dart:
@@ -101,6 +115,7 @@ class OrderTotals {
       baseTotal: base,
       discountValue: discount,
       grandTotal: math.max(base - discount, 0),
+      includeService: includeService,
     );
   }
 
@@ -213,6 +228,7 @@ class OrderTotals {
       baseTotal: base,
       discountValue: discount,
       grandTotal: math.max(base - discount, 0),
+      includeService: includeService,
     );
   }
 

@@ -267,7 +267,9 @@ class CreateOrderBloc extends Bloc<CreateOrderEvent, CreateOrderState> {
             goodId: o.goods.id,
             name: o.goods.name,
             quantity: o.quantity,
-            price: (double.tryParse(o.goods.price) ?? 0).round(),
+            // Not rounded: the line keeps its cents, so the bill this
+            // terminal prices matches the one the backend re-derives.
+            price: double.tryParse(o.goods.price) ?? 0,
             comment: o.comment,
           ) as OrderFoodEntity,
       ],
