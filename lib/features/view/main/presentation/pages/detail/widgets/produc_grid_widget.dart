@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mary_ai_pos/core/constants/constants.dart';
 import 'package:mary_ai_pos/core/design_system/pos_grid_metrics.dart';
+import 'package:mary_ai_pos/core/utils/app_formatter.dart';
+import 'package:mary_ai_pos/core/design_system/pos_text_tile.dart';
 import 'package:mary_ai_pos/core/extension/for_context.dart';
 import 'package:mary_ai_pos/core/theme/tokens/theme_colors.dart';
 import 'package:mary_ai_pos/features/view/main/data/models/goods/goods_model.dart';
@@ -126,10 +128,10 @@ class _ProductGridWidgetState extends State<ProductGridWidget> {
                       radius: const Radius.circular(4),
                       child: LayoutBuilder(
                         builder: (context, constraints) {
-                          // Seven columns wherever they stay readable — see
-                          // PosGridMetrics for why the old inline floor()
-                          // produced four oversized tiles on a small terminal.
-                          final grid = PosGridMetrics.forOrderGrid(
+                          // The same metric the category screen uses, so a
+                          // meal tile and the category tile the operator just
+                          // tapped are the same size on the same terminal.
+                          final grid = PosGridMetrics.forTextTileGrid(
                             constraints.maxWidth,
                           );
 
@@ -141,7 +143,7 @@ class _ProductGridWidgetState extends State<ProductGridWidget> {
                                   crossAxisCount: grid.columns,
                                   crossAxisSpacing: grid.spacing,
                                   mainAxisSpacing: grid.spacing,
-                                  childAspectRatio: grid.aspectRatio,
+                                  mainAxisExtent: grid.cardHeight,
                                 ),
                             itemCount: pageItems.length,
                             itemBuilder: (context, index) =>
@@ -265,11 +267,16 @@ class _ProductCard extends StatelessWidget {
       return selected + existing;
     });
 
-    return ProductGridCard(
-      good: product,
+    return PosTextTile(
+      title: product.name,
+      accent: context.colors.textBrand,
       onTap: () =>
           context.read<DetailBloc>().add(DetailEvent.selectGood(good: product)),
-      topRightBadge: cartQty > 0 ? ProductCartQtyBadge(qty: cartQty) : null,
+      // Price stays on the tile: a cashier reads it off this grid constantly,
+      // and it is the one thing besides the name that belongs here. Sized by
+      // the tile, not here, so it tracks the name.
+      trailingText: AppFormatter.formatAmountWithSpaces(product.price),
+      badge: cartQty > 0 ? ProductCartQtyBadge(qty: cartQty) : null,
     );
   }
 }

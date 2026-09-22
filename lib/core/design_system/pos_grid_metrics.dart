@@ -102,8 +102,8 @@ class PosGridMetrics {
     );
   }
 
-  /// The category grid, which is a list of names rather than a wall of
-  /// pictures.
+  /// The ordering grids — categories on the first screen, meals on the second
+  /// — which are lists of names rather than walls of pictures.
   ///
   /// [forOrderGrid] is the wrong metric for it, and deliberately so. That one
   /// exists to make a category tile the same size as the meal tiles behind it,
@@ -123,14 +123,17 @@ class PosGridMetrics {
   /// 1800 px up.
   ///
   /// [cardHeight] is a real height rather than an aspect ratio, because an
-  /// aspect ratio would make the row taller every time the screen got wider —
-  /// which is exactly the "big button" the tile stopped being.
+  /// aspect ratio would make the row taller every time the screen got wider,
+  /// and a tile's height should not depend on how much room its neighbours
+  /// have. 84 is two comfortable lines of 15px type plus padding, so a long
+  /// name wraps instead of ellipsizing, and it is a generous touch target on a
+  /// counter-top monoblock.
   /// [horizontalPadding] is the grid's own padding, which the caller has
   /// already spent out of the width it reports.
-  factory PosGridMetrics.forCategoryTextGrid(
+  factory PosGridMetrics.forTextTileGrid(
     double availableWidth, {
     double maxCardWidth = 500,
-    double cardHeight = 56,
+    double cardHeight = 84,
     double spacing = 12,
     double horizontalPadding = 40,
   }) {
