@@ -11,6 +11,7 @@ import 'package:mary_ai_pos/core/services/auth/offline_auth_cache.dart';
 import 'package:mary_ai_pos/core/services/connectivity/connectivity_cubit.dart';
 import 'package:mary_ai_pos/core/usecase/usecase.dart';
 import 'package:mary_ai_pos/core/utils/helper/helper_widget.dart';
+import 'package:mary_ai_pos/generated/l10n.dart';
 import 'package:mary_ai_pos/features/view/auth/data/models/login/request/login_request_model.dart';
 import 'package:mary_ai_pos/features/view/auth/domain/usecases/login/login_usecase.dart';
 import 'package:mary_ai_pos/features/view/auth/domain/usecases/logout/logout_from_app_usecase.dart';
@@ -88,7 +89,21 @@ class LoginPinCubit extends Cubit<LoginPinState> {
     final BrandIdTokenPair? brandIdTokenPair =
         await _secureStorage.readBrandIdToken();
     if (brandIdTokenPair == null) {
-      emit(state.copyWith(status: Status.UNKNOWN));
+      // There is no brand credential to authenticate this PIN against, so this
+      // screen cannot do anything at all — the operator has to go back through
+      // brand id + password, which is what writes it.
+      //
+      // This used to emit `Status.UNKNOWN`, which nothing listens for: not this
+      // cubit, not the pincode screen, nowhere in the app. So the keypad
+      // accepted the last digit, the spinner never appeared, and the screen
+      // simply sat there. Indistinguishable from a wrong PIN, a dead network or
+      // a frozen app, and it left no trace in the log either, because the
+      // request was never made.
+      emit(state.copyWith(
+        status: Status.ERROR,
+        failure: MessageFailure(S.current.strLoginAgainWithBrand),
+        pin: '',
+      ));
       return;
     }
     final brandId = brandIdTokenPair.brandId;

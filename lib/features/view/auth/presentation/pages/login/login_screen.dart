@@ -75,6 +75,41 @@ class _OnlineOfflineStudentScreenState extends State<LoginScreen>
     super.dispose();
   }
 
+  /// Whether the tap may proceed — and, when it may not, why not, on screen.
+  ///
+  /// The button used to read `if (isValid) { login(...) }` and do nothing at
+  /// all otherwise: no request, no message, no spinner. An operator with a
+  /// credential the form dislikes got a button that looked enabled, felt
+  /// pressed, and produced silence. There was no way to tell that apart from a
+  /// dead network, and nothing in the log either, because the tap never reached
+  /// the cubit.
+  ///
+  /// Two things are wrong with trusting [isValid] alone, and re-validating here
+  /// fixes both:
+  ///
+  /// * It is **stale by up to 300ms**. `FormValidationMixin.updateFormValidity`
+  ///   debounces, so the notifier still says false for a moment after the last
+  ///   keystroke that made the form valid — and a fast operator, or one using
+  ///   the on-screen keyboard, taps inside that window.
+  /// * It is **silent**. `Form.validate()` re-runs every field's validator and
+  ///   paints the failures, so the operator sees "password must be at least 8
+  ///   characters" rather than nothing.
+  ///
+  /// Focus follows the first field that failed, because on a monoblock with the
+  /// on-screen keyboard up, the error text can sit behind the keyboard.
+  bool _canSubmit(bool isValid) {
+    final form = formKey.currentState;
+    if (form == null) return isValid;
+    if (form.validate()) return true;
+
+    if (Validator.nameChecker(_brandIdController.text) != null) {
+      _brandIdFocusNode.requestFocus();
+    } else {
+      _passwordFocusNode.requestFocus();
+    }
+    return false;
+  }
+
   @override
   Widget build(BuildContext context) {
     final cubit = context.read<AuthCubit>();
@@ -179,20 +214,19 @@ class _OnlineOfflineStudentScreenState extends State<LoginScreen>
                                   paddingV: 8,
                                   isLoading: state.status == Status.LOADING,
                                   onTap: () {
-                                    if (isValid) {
-                                      cubit.loginWithBrandId(
-                                        req: BrandIdTokenPair(
-                                          brandId: _brandIdController.text,
-                                          password: _passwordController.text,
-                                        ),
-                                        onSuccess: () {
-                                          Navigator.pushNamed(
-                                            context,
-                                            AppRoutes.loginPinScreen,
-                                          );
-                                        },
-                                      );
-                                    }
+                                    if (!_canSubmit(isValid)) return;
+                                    cubit.loginWithBrandId(
+                                      req: BrandIdTokenPair(
+                                        brandId: _brandIdController.text,
+                                        password: _passwordController.text,
+                                      ),
+                                      onSuccess: () {
+                                        Navigator.pushNamed(
+                                          context,
+                                          AppRoutes.loginPinScreen,
+                                        );
+                                      },
+                                    );
                                   },
                                   borderColor: AppColors.white,
                                   bgColor: AppColors.black.withOpacity(.3),

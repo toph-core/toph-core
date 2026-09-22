@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
+import 'package:mary_ai_pos/core/auth/storage/token_storage_impl.dart';
 import 'package:mary_ai_pos/di.dart';
 import 'package:mary_ai_pos/features/view/auth/presentation/cubit/bloc/user_bloc.dart';
 import 'package:mary_ai_pos/features/view/main/data/repository/table_timer_local_repository_impl.dart';
@@ -224,6 +225,25 @@ class SyncEngine {
   /// the button is meant to skip.
   Future<void> tick({bool force = false}) async {
     if (_tickRunning) return;
+    // Nothing this engine does works without a session, and every one of its
+    // calls is authenticated. On a terminal nobody has signed into yet — or
+    // whose stored token has expired, which is the same thing to the server —
+    // a pass produced three guaranteed 401s a minute: `POST /sync/pull`,
+    // `GET /sync/snapshot` and `GET /user/me`, each one a thrown DioException
+    // with a stack trace in the log.
+    //
+    // That was not merely noise. The `/user/me` rejection is what
+    // `UserBloc._getUser` read as "this session has ended", and it answered by
+    // purging the offline credential cache and tearing down every route back
+    // to the login screen — while the operator was standing at the pincode
+    // step trying to establish the very session it was complaining about. The
+    // bloc no longer does that on an auth route, and this stops the request
+    // being made at all.
+    //
+    // Checked here rather than in each caller so there is one answer to "may
+    // this terminal talk to the server", and so the periodic tick, the
+    // reconnect edges and the manual retry all get it.
+    if (!await _hasSession()) return;
     _tickRunning = true;
     try {
       _scheduleFullRepairIfDue(force: force);
@@ -296,6 +316,21 @@ class SyncEngine {
       if (kDebugMode) debugPrint('[SyncEngine] tick error: $e');
     } finally {
       _tickRunning = false;
+    }
+  }
+
+  /// Whether this terminal holds an access token to sync with.
+  ///
+  /// Resolved lazily through the injector, like `MainRepository` and
+  /// `OutboxStore` above: this engine is built in `di.dart` and a constructor
+  /// parameter would ripple into every caller and every test that builds one.
+  /// A missing registration means a test wired without auth, and those should
+  /// keep syncing exactly as they did — so it answers true.
+  Future<bool> _hasSession() async {
+    try {
+      return await inject<AppTokenStorage>().readAuthToken() != null;
+    } catch (_) {
+      return true;
     }
   }
 

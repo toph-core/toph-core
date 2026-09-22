@@ -46,6 +46,7 @@
   "strPassword": "Password",
   "strEnterCode": "Enter code",
   "strLogin": "Login",
+  "strLoginAgainWithBrand": "Sign in again with your Brand ID and password",
   "strProductNotFound": "Products not found",
   "strFoodsCategoriesNotFound": "Food categories not found!",
   "strSelectFoodsNotFound": "No orders. Tap a dish to add",

@@ -46,6 +46,7 @@
   "strPassword": "Пароль",
   "strEnterCode": "Введите код",
   "strLogin": "Войти",
+  "strLoginAgainWithBrand": "Войдите заново, используя Brand ID и пароль",
   "strProductNotFound": "Товары не найдены",
   "strFoodsCategoriesNotFound": "Категории блюд не найдены!",
   "strSelectFoodsNotFound": "Заказов нет. Нажмите на блюдо для добавления",

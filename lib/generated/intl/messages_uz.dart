@@ -396,6 +396,8 @@ class MessageLookup extends MessageLookupByLibrary {
         "strLocationMap":
             MessageLookupByLibrary.simpleMessage("Joylashuv xaritasi"),
         "strLogin": MessageLookupByLibrary.simpleMessage("Kirish"),
+        "strLoginAgainWithBrand": MessageLookupByLibrary.simpleMessage(
+            "Brend ID va parol bilan qaytadan kiring"),
         "strLogout": MessageLookupByLibrary.simpleMessage("Chiqish"),
         "strLogoutConfirm": MessageLookupByLibrary.simpleMessage(
             "Rostdan ham akauntdan chiqmoqchimisiz?"),

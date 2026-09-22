@@ -520,6 +520,16 @@ class S {
     );
   }
 
+  /// `Sign in again with your Brand ID and password`
+  String get strLoginAgainWithBrand {
+    return Intl.message(
+      'Sign in again with your Brand ID and password',
+      name: 'strLoginAgainWithBrand',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Products not found`
   String get strProductNotFound {
     return Intl.message(

@@ -46,6 +46,7 @@
   "strPassword": "Parol",
   "strEnterCode": "Kodni yozing",
   "strLogin": "Kirish",
+  "strLoginAgainWithBrand": "Brend ID va parol bilan qaytadan kiring",
   "strProductNotFound": "Mahsulotlar topilmadi",
   "strFoodsCategoriesNotFound": "Taomlar kategoriyasi topilmadi!",
   "strSelectFoodsNotFound": "Buyurtmalar yo'q. Qo'shish uchun ovqat ustiga bosing",

@@ -374,6 +374,8 @@ class MessageLookup extends MessageLookupByLibrary {
         "strLoadError": MessageLookupByLibrary.simpleMessage("Load error"),
         "strLocationMap": MessageLookupByLibrary.simpleMessage("Location map"),
         "strLogin": MessageLookupByLibrary.simpleMessage("Login"),
+        "strLoginAgainWithBrand": MessageLookupByLibrary.simpleMessage(
+            "Sign in again with your Brand ID and password"),
         "strLogout": MessageLookupByLibrary.simpleMessage("Logout"),
         "strLogoutConfirm": MessageLookupByLibrary.simpleMessage(
             "Are you sure you want to logout?"),

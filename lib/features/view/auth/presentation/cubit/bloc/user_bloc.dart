@@ -37,6 +37,28 @@ class UserBloc extends Bloc<UserEvent, UserState> {
   /// background sync side instead. The UI reads the cached profile via
   /// [_started]. The handler's own logic is unchanged: refresh the offline
   /// cache on success, purge it and return to login on a definite rejection.
+  /// The routes that *are* the logged-out state, where a 401 is the normal
+  /// condition rather than a session ending.
+  static const _authRoutes = {
+    AppRoutes.loginScreen,
+    AppRoutes.loginPinScreen,
+    AppRoutes.splashScreen,
+    AppRoutes.initialSetupScreen,
+  };
+
+  /// Whether the operator is currently somewhere in the sign-in flow.
+  ///
+  /// Read from the navigator rather than tracked in state, because the thing
+  /// being asked about is literally "what is on screen right now". Unknown
+  /// context, or a route with no name, counts as *not* an auth route: the
+  /// eject is the safer default for a session that really has ended, and this
+  /// guard only exists to stop it firing at the one moment it does harm.
+  bool _isOnAuthRoute() {
+    final context = navigatorKey.currentContext;
+    if (context == null) return false;
+    return _authRoutes.contains(ModalRoute.of(context)?.settings.name);
+  }
+
   void _getUser(_GetUser event, emit) async {
     // No LOADING emit when a profile is already on screen — this now runs
     // periodically in the background, and a status flicker on every tick
@@ -52,7 +74,12 @@ class UserBloc extends Bloc<UserEvent, UserState> {
     }
 
     final response = await _getUserUsecase.call(NoParams());
-    response.fold(
+    // Awaited. `fold` returns whatever its branches return, and both of these
+    // are `async` — so nothing used to wait for them, this handler completed
+    // first, and the `emit` inside each branch fired against a closed emitter:
+    // "emit was called after an event handler completed normally", thrown as an
+    // unhandled exception on every 401.
+    await response.fold(
       (l) async {
         if (!l.isDefiniteAuthRejection) {
           // Ulanish/timeout/server xatosi — aniq javob yo'q, cache'ga
@@ -68,16 +95,42 @@ class UserBloc extends Bloc<UserEvent, UserState> {
         // (`AppScaffold`ning har safar aloqa tiklanganda `UserEvent.getUser()`
         // yuborishi orqali) — hozirgi sessiya davomida foydalanuvchi
         // faolsizlantirilgan bo'lsa, keyingi muvaffaqiyatli aloqada aniqlanadi.
+        // ...unless the operator is already signing in. This refresh runs on a
+        // timer from `SyncEngine`, and on a terminal whose stored token has
+        // expired it answers 401 every few minutes — including while somebody
+        // is standing at the login flow trying to replace that very token.
+        //
+        // Ejecting them then is not a no-op, it is the bug: the brand screen
+        // does not authenticate (it stores brand id and password and moves on),
+        // so the real login happens at the pincode step — and
+        // `pushNamedAndRemoveUntil` tears that screen down mid-entry and drops
+        // them back at the start. Every attempt was interrupted by the next
+        // tick, and the purge below took their offline credentials with it, so
+        // the terminal could not fall back to a cached login either. From the
+        // floor it looks like the PIN simply does not work.
+        //
+        // There is nothing to eject them *from* here in any case: these routes
+        // are the logged-out state, and the session this would invalidate is
+        // the one they are busy replacing.
+        if (_isOnAuthRoute()) {
+          if (!emit.isDone) emit(state.copyWith(status: Status.ERROR, failure: l));
+          return;
+        }
+
         await _purgeOfflineCacheForCurrentUser();
         Navigator.pushNamedAndRemoveUntil(
           navigatorKey.currentContext!,
           AppRoutes.loginScreen,
           (route) => false,
         );
-        emit(state.copyWith(status: Status.ERROR, failure: l));
+        // Guarded: this branch is `async`, so between the await above and here
+        // the handler can have finished even though the fold is now awaited —
+        // a `close()` during logout is the ordinary way.
+        if (!emit.isDone) emit(state.copyWith(status: Status.ERROR, failure: l));
       },
       (r) async {
         // Navigation already happened in splash screen — just emit user data
+        if (emit.isDone) return;
         emit(state.copyWith(status: Status.SUCCESS, userMOdel: r));
         // Offline cache'ni yangilash — keyingi offline loginlar uchun
         unawaited(_updateOfflineCache(r));

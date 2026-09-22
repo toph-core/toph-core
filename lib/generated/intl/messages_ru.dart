@@ -390,6 +390,8 @@ class MessageLookup extends MessageLookupByLibrary {
         "strLocationMap":
             MessageLookupByLibrary.simpleMessage("Карта расположения"),
         "strLogin": MessageLookupByLibrary.simpleMessage("Войти"),
+        "strLoginAgainWithBrand": MessageLookupByLibrary.simpleMessage(
+            "Войдите заново, используя Brand ID и пароль"),
         "strLogout": MessageLookupByLibrary.simpleMessage("Выйти"),
         "strLogoutConfirm": MessageLookupByLibrary.simpleMessage(
             "Вы действительно хотите выйти из аккаунта?"),
