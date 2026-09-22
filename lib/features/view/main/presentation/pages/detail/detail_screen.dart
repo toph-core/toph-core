@@ -35,7 +35,7 @@ class _DetailScreenState extends State<DetailScreen> with DetailScreenMixin {
 
   // Hold blocs directly so _autoStartTimedOrder can call them without
   // needing a child BuildContext (MultiBlocProvider is a descendant)
-  late final TableTimerCubit _timerCubit = inject<TableTimerCubit>();
+  late TableTimerCubit _timerCubit;
   late DetailBloc _detailBloc;
 
   // department_selection_screen passes down the same DetailBloc it created
@@ -43,6 +43,19 @@ class _DetailScreenState extends State<DetailScreen> with DetailScreenMixin {
   // both the category and menu screens — a separate instance here used to
   // go stale the moment either screen edited the cart, silently dropping
   // additions or resurrecting cleared items when navigating back.
+  //
+  // The TableTimerCubit now comes down the same way, for the same reason and
+  // with a worse symptom. This screen used to `inject<TableTimerCubit>()` its
+  // own, so the category screen and the menu screen each held a cubit with its
+  // own state for one table's one running timer. Whichever screen had fetched
+  // showed the clock; the other showed nothing, or an older elapsed time — and
+  // which was which depended on the route the operator happened to take. One
+  // timer, one cubit.
+  //
+  // Ownership is tracked because whoever created it closes it: closing a cubit
+  // this screen was only lent would leave the category screen behind it holding
+  // a dead stream.
+  bool _ownsTimerCubit = true;
   bool _ownsDetailBloc = true;
 
   // Mutable: free → busy after timer auto-starts
@@ -58,6 +71,14 @@ class _DetailScreenState extends State<DetailScreen> with DetailScreenMixin {
     tableStatus = args['table_status'] as TableStatus;
 
     final initialCategoryId = args['initial_category_id'] as String?;
+
+    final sharedTimerCubit = args['timer_cubit'] as TableTimerCubit?;
+    if (sharedTimerCubit != null) {
+      _timerCubit = sharedTimerCubit;
+      _ownsTimerCubit = false;
+    } else {
+      _timerCubit = inject<TableTimerCubit>();
+    }
 
     final sharedDetailBloc = args['detail_bloc'] as DetailBloc?;
     if (sharedDetailBloc != null) {
@@ -97,7 +118,7 @@ class _DetailScreenState extends State<DetailScreen> with DetailScreenMixin {
 
   @override
   void dispose() {
-    _timerCubit.close();
+    if (_ownsTimerCubit) _timerCubit.close();
     if (_ownsDetailBloc) _detailBloc.close();
     showVirtualKeyboard.dispose();
     controller.dispose();

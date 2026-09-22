@@ -1269,7 +1269,7 @@ class _TimerBadgeRowState extends State<_TimerBadgeRow> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        _fmtTime(displaySec),
+                        displaySec.toHHMMSS,
                         style: TextStyle(
                           fontSize: 24,
                           fontWeight: FontWeight.w800,
@@ -1448,16 +1448,6 @@ class _TimerBadgeRowState extends State<_TimerBadgeRow> {
         ],
       ),
     );
-  }
-
-  static String _fmtTime(int sec) {
-    final h = sec ~/ 3600;
-    final m = (sec % 3600) ~/ 60;
-    final s = sec % 60;
-    final mm = m.toString().padLeft(2, '0');
-    final ss = s.toString().padLeft(2, '0');
-    if (h > 0) return '${h.toString().padLeft(2, '0')}:$mm:$ss';
-    return '$mm:$ss';
   }
 
   static String _fmtClock(DateTime dt) {

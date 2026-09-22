@@ -460,7 +460,7 @@ class _ActiveIntervalRow extends StatelessWidget {
 }
 
 /// `H:MM` — matches the design spec's duration format (no seconds), unlike
-/// the app-wide `toHHMMSS` extension which shows `M:SS` under an hour.
+/// the app-wide `toHHMMSS` extension, which shows seconds and zero-pads.
 String _fmtDur(int totalSeconds) {
   final totalMinutes = totalSeconds ~/ 60;
   final h = totalMinutes ~/ 60;

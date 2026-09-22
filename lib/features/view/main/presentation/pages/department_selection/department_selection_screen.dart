@@ -122,10 +122,12 @@ class _DepartmentSelectionScreenState extends State<DepartmentSelectionScreen> {
         'guest_count': guestCount,
         'table_status': tableStatus,
         'saved_orders': savedOrders,
-        // Pass the same DetailBloc instance so the cart (selectedGoods)
-        // stays identical between the category and menu screens — see
-        // note on `_ownsDetailBloc` in detail_screen.dart.
+        // Both handed down rather than re-injected on the other side: one
+        // table session has one cart and one running timer, and a second
+        // instance of either is a second answer to a question that has only
+        // one. See the note on `_ownsDetailBloc` in detail_screen.dart.
         'detail_bloc': _detailBloc,
+        'timer_cubit': _timerCubit,
         'initial_category_id': category.id,
       },
     );

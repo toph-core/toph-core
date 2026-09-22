@@ -325,7 +325,7 @@ class _TimerCompact extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
                       Text(
-                        _fmtTime(displaySec),
+                        displaySec.toHHMMSS,
                         style: const TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.w800,
@@ -434,16 +434,6 @@ class _TimerCompact extends StatelessWidget {
         );
       },
     );
-  }
-
-  static String _fmtTime(int sec) {
-    final h = sec ~/ 3600;
-    final m = (sec % 3600) ~/ 60;
-    final s = sec % 60;
-    final mm = m.toString().padLeft(2, '0');
-    final ss = s.toString().padLeft(2, '0');
-    if (h > 0) return '${h.toString().padLeft(2, '0')}:$mm:$ss';
-    return '$mm:$ss';
   }
 
   static String _fmtAmount(String raw) {
