@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io' show Platform;
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -61,10 +62,57 @@ class AppTokenStorage {
     TokensStorageKeys.lastPincode,
   };
 
+  /// Linux desktop, debug builds only: mirror secure values into
+  /// `SharedPreferences` so a broken libsecret cannot lock a developer out.
+  ///
+  /// On this platform `flutter_secure_storage` writes a libsecret item that it
+  /// then cannot read back — verified on both 9.2.4 and 10.3.1, with the item
+  /// present, unlocked, and findable by attribute over the Secret Service API.
+  /// The consequence is not a degraded experience, it is a terminal that cannot
+  /// sign in at all: the brand credential and the session token both read null,
+  /// so the pincode step can never build its request and every authenticated
+  /// call goes out bare and comes back 401.
+  ///
+  /// **This writes credentials in plaintext, so it is fenced twice.** Debug
+  /// builds only, and Linux only. A release binary — and every Windows,
+  /// Android and iOS build, debug or not — never touches this path and keeps
+  /// using the OS keystore alone.
+  /// Off unless the developer asks for it explicitly:
+  ///
+  /// ```
+  /// flutter run -d linux --dart-define=POS_DEV_INSECURE_TOKEN_MIRROR=true
+  /// ```
+  ///
+  /// It was briefly `kDebugMode && Platform.isLinux`, which was wrong.
+  /// `secure_storage_migration_test` asserts that a credential is never
+  /// readable from plain `SharedPreferences` — the invariant `migrateLegacy
+  /// Plaintext` and DECISIONS.md D14 exist to protect — and that test failed
+  /// the moment this defaulted on, which is exactly what it is for. A
+  /// workaround for one broken platform backend must not quietly relax a
+  /// security property everywhere else, so it is opt-in, and still fenced to
+  /// debug builds on Linux on top of that.
+  static const _mirrorRequested =
+      bool.fromEnvironment('POS_DEV_INSECURE_TOKEN_MIRROR');
+
+  static bool get _mirrorToPrefs =>
+      _mirrorRequested && kDebugMode && Platform.isLinux;
+
+  String _mirrorKey(TokensStorageKeys key) => 'dev_mirror_${key.keyName}';
+
   Future<String?> _read(TokensStorageKeys key) async {
     if (!_secureKeys.contains(key)) return _prefs.getString(key.keyName);
     try {
-      return await _secure.read(key: key.keyName);
+      final secure = await _secure.read(key: key.keyName);
+      if (secure != null) return secure;
+      if (_mirrorToPrefs) {
+        final mirrored = _prefs.getString(_mirrorKey(key));
+        if (mirrored != null && kDebugMode) {
+          debugPrint('[AppTokenStorage] ${key.keyName}: secure store returned '
+              'null, using the Linux debug mirror');
+        }
+        return mirrored;
+      }
+      return null;
     } catch (e, st) {
       // Every caller wraps its read in `catch (_) => null`, which makes a
       // backend that is refusing to answer indistinguishable from a key that
@@ -80,14 +128,25 @@ class AppTokenStorage {
     }
   }
 
-  Future<void> _write(TokensStorageKeys key, String value) =>
-      _secureKeys.contains(key)
-          ? _secure.write(key: key.keyName, value: value)
-          : _prefs.setString(key.keyName, value);
+  Future<void> _write(TokensStorageKeys key, String value) async {
+    if (!_secureKeys.contains(key)) {
+      await _prefs.setString(key.keyName, value);
+      return;
+    }
+    await _secure.write(key: key.keyName, value: value);
+    if (_mirrorToPrefs) await _prefs.setString(_mirrorKey(key), value);
+  }
 
-  Future<void> _delete(TokensStorageKeys key) => _secureKeys.contains(key)
-      ? _secure.delete(key: key.keyName)
-      : _prefs.remove(key.keyName);
+  Future<void> _delete(TokensStorageKeys key) async {
+    if (!_secureKeys.contains(key)) {
+      await _prefs.remove(key.keyName);
+      return;
+    }
+    await _secure.delete(key: key.keyName);
+    // The mirror has to go with it, or a logout would leave a credential
+    // behind that the next read happily picks back up.
+    if (_mirrorToPrefs) await _prefs.remove(_mirrorKey(key));
+  }
 
   /// Read auth token pair from storage
   Future<BrandIdTokenPair?> readBrandIdToken() async {
