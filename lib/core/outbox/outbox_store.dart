@@ -287,15 +287,15 @@ class OutboxStore {
   }
 
   /// A retryable failure: schedule the next attempt, or quarantine once the
-  /// attempt budget is spent.
-  void markFailed(String id, String error) {
+  /// attempt budget is spent. Returns true if the operation was quarantined.
+  bool markFailed(String id, String error) {
     final current = _byId(id);
-    if (current == null) return;
+    if (current == null) return false;
     final attempts = current.attempts + 1;
 
     if (attempts >= maxAttempts) {
       _quarantine(id, attempts, error);
-      return;
+      return true;
     }
 
     _db.executeOn(
@@ -309,6 +309,7 @@ class OutboxStore {
         id,
       ],
     );
+    return false;
   }
 
   /// A failure that retrying cannot fix — a validation rejection, a malformed

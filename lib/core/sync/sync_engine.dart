@@ -226,6 +226,8 @@ class SyncEngine {
     if (_tickRunning) return;
     _tickRunning = true;
     try {
+      _scheduleFullRepairIfDue(force: force);
+
       if (_lanHub.mode == LanMode.client) {
         // The legacy queue's `relayViaLan` call used to sit here, sending a
         // follower's writes to the leader when the follower had LAN but no
@@ -296,6 +298,56 @@ class SyncEngine {
       _tickRunning = false;
     }
   }
+
+  /// Asks for a full reconciliation when one is overdue, or when the operator
+  /// has asked for one.
+  ///
+  /// `ReplicaRepair` could previously only be triggered by something going
+  /// wrong *in this process*: the server answering `snapshot_required`, or a
+  /// pull refusing a row. Both are real signals and neither is reliable.
+  ///
+  /// `snapshot_required` was decided server-side by comparing the terminal's
+  /// cursor against `MIN(change_log.id)`, and compaction keeps the newest row
+  /// per entity forever — so that id stays near 1 for the life of a tenant and
+  /// the flag never fired for a terminal that had ever synced (fixed in the
+  /// backend, but a terminal cannot assume it is talking to a fixed one). A
+  /// refusal only gets recorded if the divergence happens while this build is
+  /// running; a replica that diverged under an older build, or in a process
+  /// that died before persisting the flag, had nothing left to raise it.
+  ///
+  /// The result was a replica that could be permanently wrong with no path
+  /// back — and reinstalling the app does not help, because the replica lives
+  /// in application support and survives it. So the terminal now reconciles on
+  /// a schedule whether or not it has noticed anything wrong. A pass is one
+  /// keyset walk of current rows; daily is often enough that no divergence
+  /// lasts a working week, and rare enough that it is invisible next to the
+  /// per-minute pull.
+  ///
+  /// [force] is the sync-status screen's button, which is the whole point of
+  /// having one: an operator looking at a screen they can see is wrong gets a
+  /// reconciliation now rather than at the next daily mark.
+  ///
+  /// The timestamp is written when the repair is *requested*, not when it
+  /// completes — `ReplicaRepair` persists its own flag and resumes an
+  /// interrupted walk across ticks, so a pass that cannot finish today must
+  /// not re-request itself every minute until it does.
+  void _scheduleFullRepairIfDue({required bool force}) {
+    final repair = _repair;
+    if (repair == null) return;
+
+    final now = DateTime.now().millisecondsSinceEpoch;
+    final last = int.tryParse(_prefs.getString(_lastFullRepairKey) ?? '') ?? 0;
+    if (!force && now - last < fullRepairInterval.inMilliseconds) return;
+
+    repair.requireFull();
+    unawaited(_prefs.setString(_lastFullRepairKey, '$now'));
+  }
+
+  static const _lastFullRepairKey = 'sync_engine_last_full_repair_at';
+
+  /// How long a replica may go without being checked against the server's
+  /// current rows.
+  static const fullRepairInterval = Duration(hours: 24);
 
   /// Records what a replication pass learned about this replica's health, then
   /// runs a repair pass if one is due.

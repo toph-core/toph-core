@@ -78,6 +78,7 @@ class LocalDatabase {
     final instance = LocalDatabase._(db);
     instance._configure();
     instance._migrate();
+    instance.releaseOrphanedGuards();
     return instance;
   }
 
@@ -364,7 +365,7 @@ class LocalDatabase {
     final values = <Object?>[
       id,
       for (final c in spec.promoted) _coerce(data[c.name], c.type),
-      _deletedAt(data),
+      _deletedAtFor(spec, id, data),
       jsonEncode(data),
       nextSyncStamp(),
     ];
@@ -406,6 +407,32 @@ class LocalDatabase {
   void executeOn(String table, String sql, [List<Object?> params = const []]) {
     _db.execute(sql, params);
     _touch(table);
+  }
+
+  /// [_deletedAt], except that a payload which says nothing about `deleted_at`
+  /// cannot bring a deleted row back.
+  ///
+  /// An upsert takes the whole row, so an absent key normally means "this
+  /// field is null". For the soft-delete marker that reading is dangerous:
+  /// it turns every partial payload into an undelete, and the row it undeletes
+  /// then gets a guard — `markPending` from a local write, `markPeerOrigin`
+  /// from a LAN broadcast — which is exactly what keeps a repair sweep off it.
+  /// A stale copy on the till next door, fanned out by the hub, could put a
+  /// deleted table back on this screen permanently.
+  ///
+  /// So an absent key preserves what is stored. A genuine restore still works,
+  /// because the server sends `deleted_at: 0` for a live row rather than
+  /// omitting it — `RestoreCafeTable` and friends come through the feed as an
+  /// ordinary update carrying that 0, and this lets it through.
+  int? _deletedAtFor(EntitySpec spec, String id, Map<String, dynamic> data) {
+    if (data.containsKey('deleted_at')) return _deletedAt(data);
+    final stored = _db.select(
+      'SELECT deleted_at AS deleted_at FROM ${spec.name} WHERE id = ? LIMIT 1',
+      [id],
+    );
+    if (stored.isEmpty) return null;
+    final value = stored.first['deleted_at'];
+    return value is int ? value : null;
   }
 
   /// The local soft-delete marker: NULL for a live row, epoch seconds for a
@@ -806,6 +833,17 @@ class LocalDatabase {
   ///   carrying.
   /// * **Provisional** — a row created here under a client-invented id. Same
   ///   reason: the server has never heard of that id.
+  ///
+  /// The first two are qualified, and the qualification is the difference
+  /// between a guard and a tombstone. Each is honoured only while the outbox
+  /// still holds an *unsent* operation for that row. A guard whose operation
+  /// was quarantined, or lost, is protecting nothing: there is no write on its
+  /// way to the server, so the row's absence from the snapshot means what it
+  /// says. Left unqualified, such a guard made the row immortal — `ChangeApplier`
+  /// refused the delete that would have removed it and this method refused to
+  /// sweep it, so a table the venue deleted stayed on one terminal's floor plan
+  /// for good. [releaseOrphanedGuards] clears the ones already on disk; this
+  /// keeps a new one from having the same effect.
   /// * **Peer-originated** — a row another terminal on this LAN wrote and has
   ///   not yet pushed. It is unsynced work exactly like the two above; it just
   ///   belongs to a different till. Without this the sweep deleted live checks
@@ -818,10 +856,14 @@ class LocalDatabase {
     final rows = _db.select(
       'SELECT r.id AS id FROM $entity r '
       'WHERE (r.synced_at IS NULL OR r.synced_at < ?) '
-      'AND NOT EXISTS (SELECT 1 FROM ${LocalTables.pending} p '
-      '                 WHERE p.entity = ? AND p.entity_id = r.id) '
-      'AND NOT EXISTS (SELECT 1 FROM ${LocalTables.provisional} v '
-      '                 WHERE v.entity = ? AND v.local_id = r.id) '
+      'AND NOT EXISTS (SELECT 1 FROM ${LocalTables.pending} '
+      '                 WHERE ${LocalTables.pending}.entity = ? '
+      '                   AND ${LocalTables.pending}.entity_id = r.id '
+      '                   AND ${_hasUnsentOperation(LocalTables.pending, 'entity', 'entity_id')}) '
+      'AND NOT EXISTS (SELECT 1 FROM ${LocalTables.provisional} '
+      '                 WHERE ${LocalTables.provisional}.entity = ? '
+      '                   AND ${LocalTables.provisional}.local_id = r.id '
+      '                   AND ${_hasUnsentOperation(LocalTables.provisional, 'entity', 'local_id')}) '
       'AND NOT EXISTS (SELECT 1 FROM ${LocalTables.peerOrigin} o '
       '                 WHERE o.entity = ? AND o.entity_id = r.id)',
       [syncedBefore, entity, entity, entity],
@@ -831,6 +873,67 @@ class LocalDatabase {
         if (row['id'] is String) row['id'] as String,
     ];
   }
+
+  /// Drops pending and provisional guards that no longer have an unsent outbox
+  /// operation behind them.
+  ///
+  /// A guard is a claim: "this terminal owes the server a write for this row,
+  /// so do not let replication touch it." The claim is only true while the
+  /// write still exists. Several paths used to leave one behind that outlived
+  /// its operation —
+  ///
+  /// * a retryable failure that exhausted its attempt budget quarantined the
+  ///   operation inside `OutboxStore.markFailed` and returned nothing, so
+  ///   `OutboxDrainer._fail` never reached the branch that releases the row
+  ///   (fixed there too, but the rows already stranded are still on disk);
+  /// * the process dying between a guard and its enqueue, on a build older
+  ///   than the transaction that now covers both;
+  /// * any version of this app that predates the two.
+  ///
+  /// A stranded guard is not a small thing. [unsweptRowIds] excludes guarded
+  /// rows from a repair sweep, and `ChangeApplier` refuses an incoming change
+  /// for one — including a *delete*, which the feed never repeats. So the row
+  /// is simultaneously immune to the delete that would remove it and to the
+  /// reconciliation that exists to catch exactly that. It is a row that no
+  /// longer exists anywhere else, on one terminal, permanently: a table the
+  /// venue removed months ago still on that machine's floor plan.
+  ///
+  /// Run at open, before anything reads: it is a repair of state already on
+  /// disk, and the first sync pass must see the truth rather than the claim.
+  void releaseOrphanedGuards() {
+    transaction(() {
+      _db.execute(
+        'DELETE FROM ${LocalTables.pending} WHERE NOT '
+        '${_hasUnsentOperation(LocalTables.pending, 'entity', 'entity_id')}',
+      );
+      _db.execute(
+        'DELETE FROM ${LocalTables.provisional} WHERE NOT '
+        '${_hasUnsentOperation(LocalTables.provisional, 'entity', 'local_id')}',
+      );
+    });
+  }
+
+  /// `EXISTS` over the outbox for the row a guard names.
+  ///
+  /// Qualified by table name rather than an alias so the same fragment works
+  /// inside a `DELETE`, which has no `FROM` clause to hang one on, and inside
+  /// [unsweptRowIds]'s correlated subquery.
+  ///
+  /// `'pending'` is `OutboxStatus.pending`, spelled rather than imported so
+  /// this file keeps no dependency on the outbox layer that sits above it. It
+  /// covers an operation waiting to be sent *and* one backing off between
+  /// attempts — both are unsent work whose guard is doing its job. The status
+  /// it deliberately excludes is `quarantined`: an operation nobody will send
+  /// again protects nothing.
+  static String _hasUnsentOperation(
+    String guardTable,
+    String entityColumn,
+    String idColumn,
+  ) =>
+      'EXISTS (SELECT 1 FROM ${LocalTables.outbox} o '
+      'WHERE o.entity = $guardTable.$entityColumn '
+      'AND o.entity_id = $guardTable.$idColumn '
+      "AND o.status = 'pending')";
 
   // ── Meta ───────────────────────────────────────────────────────────────
 

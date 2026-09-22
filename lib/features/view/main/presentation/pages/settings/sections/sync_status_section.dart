@@ -240,8 +240,24 @@ class _OutboxCardState extends State<_OutboxCard> {
 
 // ── Last sync ───────────────────────────────────────────────────────────
 
-class _LastSyncCard extends StatelessWidget {
+class _LastSyncCard extends StatefulWidget {
   const _LastSyncCard();
+
+  @override
+  State<_LastSyncCard> createState() => _LastSyncCardState();
+}
+
+class _LastSyncCardState extends State<_LastSyncCard> {
+  bool _syncing = false;
+
+  Future<void> _syncNow() async {
+    setState(() => _syncing = true);
+    try {
+      await inject<SyncEngine>().tick(force: true);
+    } finally {
+      if (mounted) setState(() => _syncing = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -259,6 +275,12 @@ class _LastSyncCard extends StatelessWidget {
             subtitle: lastSync == null
                 ? "Hali sinxronlanmagan"
                 : "${lastSync.timeAgo} (${lastSync.toHourMinute})",
+            trailing: _SmallButton(
+              label: "To'liq tekshirish",
+              onTap: _syncNow,
+              loading: _syncing,
+              primary: true,
+            ),
           ),
         );
       },

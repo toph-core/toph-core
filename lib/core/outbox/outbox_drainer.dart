@@ -167,8 +167,21 @@ class OutboxDrainer {
             unresolved.remove(op.entityId);
             sent++;
           case OutboxOutcome.retry:
-            _store.markFailed(op.id, result.error ?? 'unknown error');
-            retrying++;
+            // Through [_fail] rather than straight to the store. `markFailed`
+            // quarantines the operation itself once the attempt budget is
+            // spent, and a quarantined operation must release the row it was
+            // guarding — which only [_fail] does. Calling the store directly
+            // from here is how that release came to be missed, and a row whose
+            // guard outlives its operation can never be deleted or repaired
+            // again on this terminal.
+            if (_fail(op, result.error ?? 'unknown error', permanent: false)) {
+              // Given up on, so dependents stop waiting on an id that is never
+              // coming — the same reasoning as the permanent branch below.
+              unresolved.remove(op.entityId);
+              quarantined++;
+            } else {
+              retrying++;
+            }
             blockedChains.add(chain);
           case OutboxOutcome.permanent:
             _fail(op, result.error ?? 'rejected', permanent: true);
@@ -361,10 +374,30 @@ class OutboxDrainer {
     return null;
   }
 
-  void _fail(OutboxOperation op, String error, {required bool permanent}) {
-    _db.transaction(() {
+  /// Records a failed attempt, and releases the row when the operation is done
+  /// for. Returns whether it was quarantined.
+  bool _fail(OutboxOperation op, String error, {required bool permanent}) {
+    return _db.transaction(() {
+      // Whether this failure ended the operation, by either route: rejected on
+      // its merits, or retried until the attempt budget ran out.
+      //
+      // The second route used to be missed. `markFailed` quarantines the
+      // operation itself once attempts are spent, and this method only ran the
+      // release below on the `permanent` branch — so a write that simply kept
+      // failing was given up on while its row stayed guarded. Nothing clears a
+      // guard whose operation is gone, `ChangeApplier` refuses every incoming
+      // change for a guarded row including a delete, and `unsweptRowIds` used
+      // to skip it in a repair sweep. One exhausted retry budget, and a row the
+      // server had deleted was on that terminal forever.
+      final bool quarantined;
       if (permanent) {
         _store.markPermanentlyFailed(op.id, error);
+        quarantined = true;
+      } else {
+        quarantined = _store.markFailed(op.id, error);
+      }
+
+      if (quarantined) {
         final entityId = op.entityId;
         if (entityId != null && entityId.isNotEmpty) {
           // Deliberate: a quarantined write releases its local row.
@@ -407,9 +440,8 @@ class OutboxDrainer {
             _db.clearProvisional(op.entity, entityId);
           }
         }
-      } else {
-        _store.markFailed(op.id, error);
       }
+      return quarantined;
     });
   }
 }

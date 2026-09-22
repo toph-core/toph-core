@@ -273,3 +273,89 @@ would have landed in a table every staff screen can query.
 queued offline has to carry it to send later. That is narrower than a column in
 `users` — one row, drained and deleted — but it is not nothing, and offline
 staff creation deserves a second look before it reaches a venue.
+
+---
+
+## D15 — A guard is honoured only while its outbox operation is unsent
+
+**Found by.** Cafe tables the venue deleted months ago, still on one Windows
+terminal's floor plan and on no other machine with the same account.
+
+**The mechanism.** A pending/provisional guard means "this terminal owes the
+server a write for this row, so replication must not touch it". It was honoured
+unconditionally. Two paths left one behind that outlived its operation:
+
+* `OutboxDrainer.drain` sent a retryable failure straight to
+  `OutboxStore.markFailed`, which quarantines the operation once the attempt
+  budget is spent — but only `_fail(permanent: true)` released the row, and the
+  retry branch never called `_fail` at all. An endpoint down for eight attempts
+  therefore stranded the guard.
+* Any older build, or a process killed between the guard and its enqueue.
+
+A stranded guard is terminal. `ChangeApplier` refuses every incoming change for
+a guarded row *including a delete*, and the change feed never repeats one;
+`unsweptRowIds` then excluded the same row from the repair sweep that exists to
+catch exactly this. The row was immune to both of the only two things that
+could have removed it.
+
+**Chosen.** A guard now counts only while the outbox still holds an *unsent*
+(`OutboxStatus.pending` — queued or backing off) operation for that row.
+`releaseOrphanedGuards()` runs at open to clear the ones already on disk, and
+the retry branch routes through `_fail` so the release happens with the
+quarantine.
+
+**Why not simply cap retries and delete the row.** The row may be real: a table
+created offline whose create is still queued is not a ghost. The distinction
+that matters is not the row's age, it is whether a write is still on its way to
+the server. That is what the outbox already knows, so it is what the guard now
+asks.
+
+**Cost.** A repair sweep can now delete a row whose guard is orphaned but whose
+operation was legitimately lost some other way. Quarantine keeps the payload, so
+the write is recoverable by a human; the row is not. Judged the better failure —
+the alternative is what shipped, and it is unrecoverable by anyone.
+
+---
+
+## D16 — A payload that omits `deleted_at` cannot undelete
+
+**Fork.** `LocalDatabase.upsert` took an absent `deleted_at` key to mean null,
+i.e. live. That is right for a full server row and wrong for anything partial:
+it turns every partial payload into a restore.
+
+**Chosen.** An absent key preserves the stored value. An explicit
+`deleted_at: 0` still restores, which is what the backend actually sends —
+`RestoreCafeTable` arrives on the feed as an ordinary update carrying the 0.
+
+**Why it matters here.** The two paths that can upsert a partial row both
+*guard* what they write: `applyLocalWrite` marks it pending, `applyFromPeer`
+marks it peer-origin. So a stale `cafe_tables` row fanned out by a LAN leader
+that had not yet heard of the delete would resurrect the table *and* make it
+immune to the sweep — a second, independent way to manufacture D15's ghost.
+
+**What changes it.** If a write path ever needs to clear `deleted_at` without
+saying so, it should send the 0 rather than relax this.
+
+---
+
+## D17 — The terminal reconciles on a schedule, not only on a signal
+
+**Fork.** `ReplicaRepair` only ever ran when something raised a flag *in the
+current process*: the server answering `snapshot_required`, or a pull refusing a
+row.
+
+Neither is dependable. `snapshot_required` was decided server-side by comparing
+the terminal's cursor against `MIN(change_log.id)`, and compaction keeps the
+newest row per entity forever — so that id stays near 1 for the life of a tenant
+and the comparison was false for every terminal that had ever synced. A refusal
+is only recorded if the divergence happens while a build that records it is
+running.
+
+**Chosen.** A full repair every 24h, and one on the sync-status screen's button.
+Backend fixed too (`76_change_log_compaction_watermark`), but a terminal cannot
+assume the server it is talking to has been.
+
+**Cost.** One keyset walk of current rows per day per terminal.
+
+**What changes it.** If snapshot walks ever become expensive for a large tenant,
+the interval is one constant (`SyncEngine.fullRepairInterval`).

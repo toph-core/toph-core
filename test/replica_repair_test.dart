@@ -94,6 +94,12 @@ Map<String, dynamic> table(String id, {int number = 1, String hall = 'h1'}) => {
   'deleted_at': 0,
 };
 
+/// A sync stamp above anything [LocalDatabase.nextSyncStamp] can issue, so
+/// "written before this" means every row in the replica. Stamps are epoch
+/// milliseconds, so a small sentinel like `1 << 40` sits in 2004 and matches
+/// nothing.
+const _afterEverything = 1 << 62;
+
 void main() {
   late LocalDatabase db;
   late ChangeApplier applier;
@@ -215,7 +221,17 @@ void main() {
       seedTables(['t1', 't2']);
       // t2 carries a local edit the outbox has not sent. The server cannot
       // have it, and its absence from the snapshot proves nothing.
-      db.markPending('cafe_tables', 't2');
+      //
+      // Queued through LocalWriter rather than marked by hand: a guard is only
+      // honoured while an unsent operation stands behind it, so a bare
+      // `markPending` here would be asserting something the app cannot
+      // produce — and would pass whatever the sweep did with orphaned guards.
+      LocalWriter(db: db, applier: applier, outbox: OutboxStore(db)).write(
+        entity: 'cafe_tables',
+        id: 't2',
+        row: table('t2', number: 2),
+        request: table('t2', number: 2),
+      );
 
       final repair = repairOver(
         FakeSnapshotApi({
@@ -458,6 +474,219 @@ void main() {
 
       expect(result.outcome, RepairOutcome.notNeeded);
       expect(api.calls, isEmpty, reason: 'no request without a reason');
+    });
+  });
+
+  group('a guard must not outlive the write it was protecting', () {
+    // The ghost cafe tables. A guard says "this terminal owes the server a
+    // write for this row, so replication must not touch it" — and it was
+    // honoured unconditionally, including after the write it referred to was
+    // given up on. `ChangeApplier` then refused the server's delete (the feed
+    // never repeats one) and `unsweptRowIds` skipped the row in every repair
+    // sweep, so a table the venue removed stayed on that one terminal for
+    // good. The operator's only visible symptom was a floor plan that did not
+    // match anyone else's.
+
+    /// A drainer whose only handler always fails in a retryable way — an
+    /// endpoint that is down, or a payload the server keeps refusing with a
+    /// 5xx.
+    ({OutboxStore store, LocalWriter writer, OutboxDrainer drainer}) alwaysRetries(
+      String entity,
+      String action,
+    ) {
+      final store = OutboxStore(db);
+      final writer = LocalWriter(db: db, applier: applier, outbox: store);
+      final executors = OutboxExecutors()
+        ..register(
+          entity,
+          action,
+          OutboxHandler(
+            send: (op) async => const OutboxExecutionResult.retry('503'),
+          ),
+        );
+      return (
+        store: store,
+        writer: writer,
+        drainer: OutboxDrainer(
+          db: db,
+          store: store,
+          applier: applier,
+          executors: executors,
+        ),
+      );
+    }
+
+    test('an exhausted retry budget releases the row it guarded', () async {
+      final ctx = alwaysRetries('cafe_tables', 'update');
+      seedTables(['t1']);
+      ctx.writer.write(
+        entity: 'cafe_tables',
+        id: 't1',
+        row: table('t1', number: 9),
+        request: table('t1', number: 9),
+      );
+      expect(db.isPending('cafe_tables', 't1'), isTrue);
+
+      // Every attempt the store allows. Backoff is cleared between passes so
+      // the whole budget is spent here rather than over the next hour.
+      for (var attempt = 0; attempt < OutboxStore.maxAttempts; attempt++) {
+        ctx.store.clearBackoff();
+        await ctx.drainer.drain();
+      }
+
+      expect(
+        ctx.store.quarantined().length,
+        1,
+        reason: 'the operation itself was given up on',
+      );
+      expect(
+        db.isPending('cafe_tables', 't1'),
+        isFalse,
+        reason: 'and the row it was holding has to be let go with it',
+      );
+    });
+
+    test('the released row then accepts the delete it was refusing', () async {
+      final ctx = alwaysRetries('cafe_tables', 'update');
+      seedTables(['t1', 't2']);
+      ctx.writer.write(
+        entity: 'cafe_tables',
+        id: 't1',
+        row: table('t1', number: 9),
+        request: table('t1', number: 9),
+      );
+
+      applier.applyPullResponse({
+        'next_sync_cursor': 101,
+        'changes': {
+          'cafe_tables': {
+            'deleted': ['t1'],
+          },
+        },
+      });
+      expect(
+        tableIds(),
+        containsAll(['t1', 't2']),
+        reason: 'guarded, so the delete is refused — and never repeated',
+      );
+
+      for (var attempt = 0; attempt < OutboxStore.maxAttempts; attempt++) {
+        ctx.store.clearBackoff();
+        await ctx.drainer.drain();
+      }
+
+      // The delete is gone from the feed for good, so only a repair can
+      // finish the job — which is the point: the guard no longer blocks it.
+      final api = FakeSnapshotApi({
+        'cafe_tables': [table('t2', number: 2)],
+      });
+      final repair = repairOver(api)..requireFull();
+      final result = await repair.run();
+
+      expect(result.outcome, RepairOutcome.repaired);
+      expect(tableIds(), ['t2']);
+    });
+
+    test('a guard with no operation at all is dropped at open', () {
+      seedTables(['t1']);
+      // The state an older build left on disk: the row guarded, the operation
+      // that justified it long gone. Written straight to the guard table
+      // because no supported path can produce it any more.
+      db.markPending('cafe_tables', 't1');
+      expect(db.isPending('cafe_tables', 't1'), isTrue);
+
+      db.releaseOrphanedGuards();
+
+      expect(db.isPending('cafe_tables', 't1'), isFalse);
+      expect(
+        db.unsweptRowIds('cafe_tables', _afterEverything),
+        ['t1'],
+        reason: 'and the sweep can finally see it',
+      );
+    });
+
+    test('a guard with a live operation survives — unsynced work is kept', () {
+      final store = OutboxStore(db);
+      final writer = LocalWriter(db: db, applier: applier, outbox: store);
+      seedTables(['t1']);
+      writer.write(
+        entity: 'cafe_tables',
+        id: 't1',
+        row: table('t1', number: 9),
+        request: table('t1', number: 9),
+      );
+
+      db.releaseOrphanedGuards();
+
+      expect(
+        db.isPending('cafe_tables', 't1'),
+        isTrue,
+        reason: 'the write is still queued; the guard is doing its job',
+      );
+      expect(db.unsweptRowIds('cafe_tables', _afterEverything), isEmpty);
+    });
+  });
+
+  group('a partial payload cannot undelete a row', () {
+    // The other way a ghost is made. An upsert takes the whole row, so an
+    // absent key reads as null — and for `deleted_at` that turns any partial
+    // payload into a restore. The row then picks up a guard (pending from a
+    // local write, peer-origin from a LAN broadcast), which is exactly what
+    // keeps a repair sweep off it.
+
+    test('a peer broadcast of a stale row leaves it deleted', () {
+      seedTables(['t1']);
+      // The venue deleted it; this terminal heard, as a soft delete carried by
+      // an ordinary update.
+      applier.applyPullResponse({
+        'next_sync_cursor': 101,
+        'changes': {
+          'cafe_tables': {
+            'updated': [table('t1', number: 1)..['deleted_at'] = 1735000000],
+          },
+        },
+      });
+      expect(tableIds(), isEmpty);
+
+      // The till next door has not heard yet, and the hub fans its copy out.
+      final stale = table('t1', number: 1)..remove('deleted_at');
+      applier.applyFromPeer(
+        entity: 'cafe_tables',
+        action: 'update',
+        payload: stale,
+      );
+
+      expect(
+        tableIds(),
+        isEmpty,
+        reason: "a payload that says nothing about deleted_at cannot clear it",
+      );
+    });
+
+    test('an explicit deleted_at of 0 still restores — the backend has one', () {
+      seedTables(['t1']);
+      applier.applyPullResponse({
+        'next_sync_cursor': 101,
+        'changes': {
+          'cafe_tables': {
+            'updated': [table('t1', number: 1)..['deleted_at'] = 1735000000],
+          },
+        },
+      });
+      expect(tableIds(), isEmpty);
+
+      // RestoreCafeTable sets deleted_at back to 0, and that arrives on the
+      // feed as an ordinary update carrying the 0 — which must be honoured.
+      applier.applyPullResponse({
+        'next_sync_cursor': 102,
+        'changes': {
+          'cafe_tables': {
+            'updated': [table('t1', number: 1)],
+          },
+        },
+      });
+
+      expect(tableIds(), ['t1']);
     });
   });
 
