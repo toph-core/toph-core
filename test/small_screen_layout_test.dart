@@ -16,6 +16,9 @@
 library;
 
 import 'package:flutter/material.dart';
+// For RenderParagraph: the category-name assertion below asks the laid-out
+// paragraph itself whether it ellipsized, which `material` does not re-export.
+import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mary_ai_pos/core/design_system/pos_grid_metrics.dart';
 import 'package:mary_ai_pos/core/routes/app_routes.dart';
@@ -49,6 +52,12 @@ CafeTableModel _table({required String id, required int number}) =>
       tableType: 'dine_in',
     );
 
+/// A category name at the long end of this venue's real data.
+///
+/// Long enough that the old picture card — which gave the name one or two
+/// clipped lines under a full-bleed image — could not show it, and short enough
+/// that a text tile at 1366 px genuinely can.
+const _longCategoryName = 'Salatlar va sovuq zakuskalar';
 
 /// Boots the app at [size], runs [body], and fails on anything clipped.
 ///
@@ -135,6 +144,18 @@ void main() {
 
       testWidgets('the category screen fits $label', (tester) async {
         await _expectNoOverflow(tester, size, label, (tester, app) async {
+          // A name at the long end of what this venue's data actually holds.
+          // The tile is text-only now, so "does the name fit" is the whole
+          // question the card has left — and the old picture card answered it
+          // by ellipsizing, which is what the operator complained about.
+          app.put('categories', {
+            'id': 'long-cat',
+            'name': _longCategoryName,
+            'department_id': 'dp-1',
+            'branch_id': kBranchId,
+            'deleted_at': 0,
+          });
+
           await app.open(
             tester,
             AppRoutes.departmentSelectionScreen,
@@ -144,6 +165,35 @@ void main() {
               'table_status': TableStatus.free,
             },
           );
+
+          // Asserted at one width rather than all three. The tile is sized by
+          // `PosGridMetrics.forCategoryTextGrid`, which narrows the card as the
+          // screen narrows; 1366 is the width the venue's terminals actually
+          // run at, and pinning the claim to every size would be asserting the
+          // metric rather than the requirement.
+          if (size.width == 1366) {
+            final finder = find.text(_longCategoryName);
+            expect(finder, findsOneWidget);
+
+            // Re-laying the paragraph out under its own constraints is the only
+            // way to ask whether it ellipsized: `RenderParagraph` does not
+            // expose `didExceedMaxLines`, and the rendered text reads the same
+            // either way.
+            final paragraph = tester.renderObject<RenderParagraph>(finder);
+            final painter = TextPainter(
+              text: paragraph.text,
+              textDirection: paragraph.textDirection,
+              maxLines: tester.widget<Text>(finder).maxLines,
+            )..layout(maxWidth: paragraph.constraints.maxWidth);
+
+            expect(
+              painter.didExceedMaxLines,
+              isFalse,
+              reason:
+                  'A long category name must be fully visible, not ellipsized, '
+                  'at ${size.width.toInt()}x${size.height.toInt()}',
+            );
+          }
         });
       });
 

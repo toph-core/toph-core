@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:mary_ai_pos/core/common/custom_network_image.dart';
+
 import 'package:mary_ai_pos/core/constants/constants.dart';
 import 'package:mary_ai_pos/core/design_system/pos_design_system.dart';
 import 'package:mary_ai_pos/core/design_system/pos_grid_metrics.dart';
@@ -77,19 +77,26 @@ class CategorySelectionGrid extends StatelessWidget {
 
               return LayoutBuilder(
                 builder: (context, constraints) {
-                  // Same metrics as the product grid on the next screen, so a
-                  // category tile and the meal tiles behind it are the same
-                  // size on the same terminal.
-                  final grid = PosGridMetrics.forOrderGrid(
+                  final categoryGrid = PosGridMetrics.forCategoryTextGrid(
                     constraints.maxWidth,
                   );
-
-                  final gridDelegate =
+                  final categoryGridDelegate =
                       SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: grid.columns,
-                        crossAxisSpacing: grid.spacing,
-                        mainAxisSpacing: grid.spacing,
-                        childAspectRatio: grid.aspectRatio,
+                        crossAxisCount: categoryGrid.columns,
+                        crossAxisSpacing: categoryGrid.spacing,
+                        mainAxisSpacing: categoryGrid.spacing,
+                        mainAxisExtent: categoryGrid.cardHeight,
+                      );
+
+                  final goodsGrid = PosGridMetrics.forOrderGrid(
+                    constraints.maxWidth,
+                  );
+                  final goodsGridDelegate =
+                      SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: goodsGrid.columns,
+                        crossAxisSpacing: goodsGrid.spacing,
+                        mainAxisSpacing: goodsGrid.spacing,
+                        childAspectRatio: goodsGrid.aspectRatio,
                       );
 
                   if (!isSearching) {
@@ -97,13 +104,12 @@ class CategorySelectionGrid extends StatelessWidget {
                     final itemCount = categories.length + 1;
                     return GridView.builder(
                       padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
-                      gridDelegate: gridDelegate,
+                      gridDelegate: categoryGridDelegate,
                       itemCount: itemCount,
                       itemBuilder: (context, index) {
                         if (index == 0) {
                           return _CategoryCard(
                             name: S.current.strAllCategories,
-                            pictureUrl: null,
                             colorCode: null,
                             isAllCard: true,
                             onTap: () => onCategorySelected(
@@ -117,7 +123,6 @@ class CategorySelectionGrid extends StatelessWidget {
                         final category = categories[index - 1];
                         return _CategoryCard(
                           name: category.name,
-                          pictureUrl: category.pictureUrl,
                           colorCode: category.colorCode,
                           onTap: () => onCategorySelected(category),
                         );
@@ -134,7 +139,7 @@ class CategorySelectionGrid extends StatelessWidget {
                         SliverPadding(
                           padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
                           sliver: SliverGrid(
-                            gridDelegate: gridDelegate,
+                            gridDelegate: categoryGridDelegate,
                             delegate: SliverChildBuilderDelegate((
                               context,
                               index,
@@ -142,7 +147,6 @@ class CategorySelectionGrid extends StatelessWidget {
                               final category = categories[index];
                               return _CategoryCard(
                                 name: category.name,
-                                pictureUrl: category.pictureUrl,
                                 colorCode: category.colorCode,
                                 onTap: () => onCategorySelected(category),
                               );
@@ -159,7 +163,7 @@ class CategorySelectionGrid extends StatelessWidget {
                         SliverPadding(
                           padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
                           sliver: SliverGrid(
-                            gridDelegate: gridDelegate,
+                            gridDelegate: goodsGridDelegate,
                             delegate: SliverChildBuilderDelegate(
                               (context, index) =>
                                   _MatchedGoodCard(good: matchedGoods[index]),
@@ -229,14 +233,12 @@ class _MatchedGoodCard extends StatelessWidget {
 
 class _CategoryCard extends StatefulWidget {
   final String name;
-  final String? pictureUrl;
   final String? colorCode;
   final bool isAllCard;
   final VoidCallback onTap;
 
   const _CategoryCard({
     required this.name,
-    required this.pictureUrl,
     required this.colorCode,
     required this.onTap,
     this.isAllCard = false,
@@ -259,9 +261,6 @@ class _CategoryCardState extends State<_CategoryCard> {
   @override
   Widget build(BuildContext context) {
     final c = context.colors;
-    final pic = widget.pictureUrl;
-    final hasImage = pic != null && pic.isNotEmpty;
-    final initial = widget.name.isNotEmpty ? widget.name[0].toUpperCase() : '•';
     final accent = _accentColor ?? c.textBrand;
 
     return MouseRegion(
@@ -274,6 +273,10 @@ class _CategoryCardState extends State<_CategoryCard> {
           duration: const Duration(milliseconds: 180),
           curve: Curves.easeOut,
           transform: Matrix4.translationValues(0, _hovered ? -2 : 0, 0),
+          // So the accent bar below can be a plain rectangle: the clip gives it
+          // the card's own left corners, which is one radius to keep in step
+          // instead of two.
+          clipBehavior: Clip.antiAlias,
           decoration: BoxDecoration(
             color: c.bgDefault,
             borderRadius: BorderRadius.circular(12),
@@ -291,126 +294,50 @@ class _CategoryCardState extends State<_CategoryCard> {
                   ]
                 : null,
           ),
-          child: LayoutBuilder(
-            builder: (context, box) {
-              // Same reason as ProductGridCard: seven columns on an
-              // entry-level terminal make this tile ~100 px wide, and 15 px
-              // type inside it leaves nothing for the picture.
-              final t = ((box.maxWidth - 100) / 80).clamp(0.0, 1.0);
-              double lerp(double from, double to) => from + (to - from) * t;
-
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Expanded(
-                    flex: 4,
-                    child: ClipRRect(
-                      borderRadius: const BorderRadius.vertical(
-                        top: Radius.circular(11),
-                      ),
-                      child: widget.isAllCard
-                          ? _AllCategoriesPlaceholder(accent: accent)
-                          : hasImage
-                          ? CustomCachedNetworkImage(
-                              minioObjectName: pic,
-                              fit: BoxFit.cover,
-                              width: double.infinity,
-                              height: double.infinity,
-                              errorWidget: _InitialPlaceholder(
-                                initial: initial,
-                                accent: accent,
-                              ),
-                            )
-                          : _InitialPlaceholder(
-                              initial: initial,
-                              accent: accent,
-                            ),
+          // A row, not a column with a picture above the name.
+          //
+          // The tile used to give four fifths of its height to the category's
+          // image, and — since almost no category has one — that space was
+          // filled by a single giant initial, with the name clipped to one or
+          // two lines underneath. The initial told the operator nothing the
+          // name did not, and it was the reason the name had no room.
+          //
+          // So the picture and the initial are both gone. `colorCode` is what
+          // survives of the visual identity, as a bar down the leading edge:
+          // it is the one thing on the old card that distinguished categories
+          // at a glance without costing the name any width.
+          child: Row(
+            children: [
+              Container(width: 6, color: accent),
+              const SizedBox(width: 12),
+              if (widget.isAllCard) ...[
+                Icon(
+                  Icons.grid_view_rounded,
+                  size: 20,
+                  color: accent,
+                ),
+                const SizedBox(width: 8),
+              ],
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 4.0),
+                  child: Text(
+                    widget.name,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: c.textDefault,
+                      fontFamily: PosTypography.family,
+                      height: 1.2,
+                      letterSpacing: -0.1,
                     ),
                   ),
-                  Padding(
-                    padding: EdgeInsets.fromLTRB(
-                      lerp(6, PosDimensions.m),
-                      lerp(4, PosDimensions.s + 2),
-                      lerp(6, PosDimensions.m),
-                      lerp(6, PosDimensions.m),
-                    ),
-                    child: Text(
-                      widget.name,
-                      maxLines: box.maxWidth >= 140 ? 2 : 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: lerp(11, 15),
-                        fontWeight: FontWeight.w600,
-                        color: c.textDefault,
-                        fontFamily: PosTypography.family,
-                        height: 1.2,
-                        letterSpacing: -0.1,
-                      ),
-                    ),
-                  ),
-                ],
-              );
-            },
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _AllCategoriesPlaceholder extends StatelessWidget {
-  final Color accent;
-
-  const _AllCategoriesPlaceholder({required this.accent});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [accent.withOpacity(0.08), accent.withOpacity(0.18)],
-        ),
-      ),
-      alignment: Alignment.center,
-      child: LayoutBuilder(
-        builder: (context, box) => Icon(
-          Icons.grid_view_rounded,
-          size: (box.biggest.shortestSide * 0.5).clamp(18.0, 42.0),
-          color: accent.withOpacity(0.7),
-        ),
-      ),
-    );
-  }
-}
-
-class _InitialPlaceholder extends StatelessWidget {
-  final String initial;
-  final Color accent;
-
-  const _InitialPlaceholder({required this.initial, required this.accent});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [accent.withOpacity(0.05), accent.withOpacity(0.12)],
-        ),
-      ),
-      alignment: Alignment.center,
-      child: LayoutBuilder(
-        builder: (context, box) => Text(
-          initial,
-          style: TextStyle(
-            fontSize: (box.biggest.shortestSide * 0.5).clamp(18.0, 42.0),
-            fontWeight: FontWeight.w700,
-            color: accent.withOpacity(0.55),
-            fontFamily: 'Inter',
-            letterSpacing: -1,
+                ),
+              ),
+              const SizedBox(width: 12),
+            ],
           ),
         ),
       ),

@@ -101,4 +101,53 @@ class PosGridMetrics {
       spacing: spacing,
     );
   }
+
+  /// The category grid, which is a list of names rather than a wall of
+  /// pictures.
+  ///
+  /// [forOrderGrid] is the wrong metric for it, and deliberately so. That one
+  /// exists to make a category tile the same size as the meal tiles behind it,
+  /// which was right while both were picture cards. The category tile is now a
+  /// single line of text, and a text tile wants the opposite of a picture
+  /// tile: as much width as it can get, so the whole name fits, and no more
+  /// height than it takes to read and tap.
+  ///
+  /// So the count is chosen from the *ceiling* alone — the fewest columns that
+  /// keep a card at or under [maxCardWidth] — rather than aiming at a preferred
+  /// count the way the order grid does. Fewer columns is the goal here, not a
+  /// compromise, and there is no lower bracket to balance against because a
+  /// text row has no content that stops being legible as the tile widens. Two
+  /// is the floor so a wide name never gets a full-width banner to itself.
+  ///
+  /// In practice: two columns at 1024 px, three at 1366 px, four from about
+  /// 1800 px up.
+  ///
+  /// [cardHeight] is a real height rather than an aspect ratio, because an
+  /// aspect ratio would make the row taller every time the screen got wider —
+  /// which is exactly the "big button" the tile stopped being.
+  /// [horizontalPadding] is the grid's own padding, which the caller has
+  /// already spent out of the width it reports.
+  factory PosGridMetrics.forCategoryTextGrid(
+    double availableWidth, {
+    double maxCardWidth = 500,
+    double cardHeight = 56,
+    double spacing = 12,
+    double horizontalPadding = 40,
+  }) {
+    // Never narrower than one card: a width below that is a transient
+    // constraint during layout, not a terminal anybody is standing at, and
+    // dividing by a negative column count from it would throw.
+    final available = math.max(availableWidth - horizontalPadding, maxCardWidth);
+    final columns = math.max(
+      ((available + spacing) / (maxCardWidth + spacing)).ceil(),
+      2,
+    );
+
+    return PosGridMetrics(
+      columns: columns,
+      cardWidth: (available - spacing * (columns - 1)) / columns,
+      cardHeight: cardHeight,
+      spacing: spacing,
+    );
+  }
 }
